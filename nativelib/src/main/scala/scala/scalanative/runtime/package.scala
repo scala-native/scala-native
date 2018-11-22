@@ -99,7 +99,7 @@ package object runtime {
   /** Called by the generated code in case of incorrect class cast. */
   @noinline def throwClassCast(from: Ptr[Type], to: Ptr[Type]): Nothing =
     throw new java.lang.ClassCastException(
-      s"${from.name} cannot be cast to ${to.name}")
+      s"${!from._1} cannot be cast to ${!to._1}")
 
   /** Called by the generated code in case of operations on null. */
   @noinline def throwNullPointer(): Nothing =

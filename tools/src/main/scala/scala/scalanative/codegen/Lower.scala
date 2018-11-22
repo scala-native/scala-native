@@ -118,20 +118,9 @@ object Lower {
     }
 
     def genThrow(buf: Buffer, exc: Val, unwind: Next) = {
-      import buf._
-
-      val isNullL, notNullL = fresh()
-
-      val isNull = comp(Comp.Ieq, exc.ty, exc, Val.Null, unwind)
-      branch(isNull, Next(isNullL), Next(notNullL))
-
-      label(isNullL)
-      call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null), unwind)
-      unreachable(unwind)
-
-      label(notNullL)
+      genGuardNotNull(buf, exc, unwind)
       genOp(buf, fresh(), Op.Call(throwSig, throw_, Seq(exc)), unwind)
-      unreachable(unwind)
+      buf.unreachable(unwind)
     }
 
     def genOp(buf: Buffer, n: Local, op: Op, unwind: Next): Unit = op match {
@@ -179,6 +168,21 @@ object Lower {
         buf.let(n, op, unwind)
     }
 
+    def genGuardNotNull(buf: Buffer, obj: Val, unwind: Next): Unit = {
+      import buf._
+
+      val isNullL, notNullL = fresh()
+
+      val isNull = comp(Comp.Ieq, obj.ty, obj, Val.Null, unwind)
+      branch(isNull, Next(isNullL), Next(notNullL))
+
+      label(isNullL)
+      call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null), unwind)
+      unreachable(unwind)
+
+      label(notNullL)
+    }
+
     def genFieldElemOp(buf: Buffer, obj: Val, name: Global, unwind: Next) = {
       import buf._
 
@@ -188,15 +192,7 @@ object Lower {
       val ty     = layout.struct
       val index  = layout.index(fld)
 
-      val isNullL, notNullL = fresh()
-
-      val isNull = comp(Comp.Ieq, obj.ty, obj, Val.Null, unwind)
-      branch(isNull, Next(isNullL), Next(notNullL))
-      label(isNullL)
-      call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null), unwind)
-      unreachable(unwind)
-
-      label(notNullL)
+      genGuardNotNull(buf, obj, unwind)
       elem(ty, obj, Seq(Val.Int(0), Val.Int(index)), unwind)
     }
 
@@ -225,7 +221,7 @@ object Lower {
 
       val Op.Method(obj, sig) = op
 
-      def genClassVirtual(cls: Class): Unit = {
+      def genClassVirtualLookup(cls: Class): Unit = {
         val vindex  = vtable(cls).index(sig)
         val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
         val methptrptr = let(
@@ -239,7 +235,7 @@ object Lower {
         let(n, Op.Load(Type.Ptr, methptrptr), unwind)
       }
 
-      def genTraitVirtual(trt: Trait): Unit = {
+      def genTraitVirtualLookup(trt: Trait): Unit = {
         val sigid   = dispatchTable.traitSigIds(sig)
         val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
         val idptr =
@@ -255,28 +251,33 @@ object Lower {
         let(n, Op.Load(Type.Ptr, methptrptr), unwind)
       }
 
-      val targets = obj.ty match {
-        case ScopeRef(scope) =>
-          scope.targets(sig).toSeq
-        case _ =>
-          Seq()
+      def genMethodLookup(): Unit = {
+        val targets = obj.ty match {
+          case ScopeRef(scope) =>
+            scope.targets(sig).toSeq
+          case _ =>
+            Seq()
+        }
+
+        targets match {
+          case Seq() =>
+            let(n, Op.Copy(Val.Null), unwind)
+          case Seq(impl) =>
+            let(n, Op.Copy(Val.Global(impl, Type.Ptr)), unwind)
+          case _ =>
+            obj.ty match {
+              case ClassRef(cls) =>
+                genClassVirtualLookup(cls)
+              case TraitRef(_) if Object.calls.contains(sig) =>
+                genClassVirtualLookup(Object)
+              case TraitRef(trt) =>
+                genTraitVirtualLookup(trt)
+            }
+        }
       }
 
-      targets match {
-        case Seq() =>
-          let(n, Op.Copy(Val.Null), unwind)
-        case Seq(impl) =>
-          let(n, Op.Copy(Val.Global(impl, Type.Ptr)), unwind)
-        case _ =>
-          obj.ty match {
-            case ClassRef(cls) =>
-              genClassVirtual(cls)
-            case TraitRef(_) if Object.calls.contains(sig) =>
-              genClassVirtual(Object)
-            case TraitRef(trt) =>
-              genTraitVirtual(trt)
-          }
-      }
+      genGuardNotNull(buf, obj, unwind)
+      genMethodLookup()
     }
 
     def genDynmethodOp(buf: Buffer,
@@ -308,32 +309,38 @@ object Lower {
       def throwIfNull(value: Val) =
         throwIfCond(Op.Comp(Comp.Ieq, Type.Ptr, value, Val.Null))
 
-      val methodIndex =
-        meta.linked.dynsigs.zipWithIndex.find(_._1 == sig).get._2
+      def genReflectiveLookup(): Val = {
+        val methodIndex =
+          meta.linked.dynsigs.zipWithIndex.find(_._1 == sig).get._2
 
-      // Load the type information pointer
-      val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
-      // Load the pointer of the table size
-      val methodCountPtr = let(Op.Elem(classRttiType,
-                                       typeptr,
-                                       Seq(Val.Int(0), Val.Int(3), Val.Int(0))),
-                               unwind)
-      // Load the table size
-      val methodCount = let(Op.Load(Type.Int, methodCountPtr), unwind)
-      throwIfCond(Op.Comp(Comp.Ieq, Type.Int, methodCount, Val.Int(0)))
-      // If the size is greater than 0, call the dyndispatch runtime function
-      val dyndispatchTablePtr = let(
-        Op.Elem(classRttiType,
-                typeptr,
-                Seq(Val.Int(0), Val.Int(3), Val.Int(0))),
-        unwind)
-      val methptrptr = let(
-        Op.Call(dyndispatchSig,
-                dyndispatch,
-                Seq(dyndispatchTablePtr, Val.Int(methodIndex))),
-        unwind)
-      throwIfNull(methptrptr)
-      let(n, Op.Load(Type.Ptr, methptrptr), unwind)
+        // Load the type information pointer
+        val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
+        // Load the pointer of the table size
+        val methodCountPtr = let(
+          Op.Elem(classRttiType,
+                  typeptr,
+                  Seq(Val.Int(0), Val.Int(3), Val.Int(0))),
+          unwind)
+        // Load the table size
+        val methodCount = let(Op.Load(Type.Int, methodCountPtr), unwind)
+        throwIfCond(Op.Comp(Comp.Ieq, Type.Int, methodCount, Val.Int(0)))
+        // If the size is greater than 0, call the dyndispatch runtime function
+        val dyndispatchTablePtr = let(
+          Op.Elem(classRttiType,
+                  typeptr,
+                  Seq(Val.Int(0), Val.Int(3), Val.Int(0))),
+          unwind)
+        val methptrptr = let(
+          Op.Call(dyndispatchSig,
+                  dyndispatch,
+                  Seq(dyndispatchTablePtr, Val.Int(methodIndex))),
+          unwind)
+        throwIfNull(methptrptr)
+        let(n, Op.Load(Type.Ptr, methptrptr), unwind)
+      }
+
+      genGuardNotNull(buf, obj, unwind)
+      genReflectiveLookup()
     }
 
     def genIsOp(buf: Buffer, n: Local, op: Op.Is, unwind: Next): Unit = {
@@ -725,6 +732,8 @@ object Lower {
 
       val sig  = arrayApplySig.getOrElse(ty, arrayApplySig(Rt.Object))
       val func = arrayApply.getOrElse(ty, arrayApply(Rt.Object))
+
+      genGuardNotNull(buf, arr, unwind)
       buf.let(n,
               Op.Call(sig, Val.Global(func, Type.Ptr), Seq(arr, idx)),
               unwind)
@@ -738,6 +747,8 @@ object Lower {
 
       val sig  = arrayUpdateSig.getOrElse(ty, arrayUpdateSig(Rt.Object))
       val func = arrayUpdate.getOrElse(ty, arrayUpdate(Rt.Object))
+
+      genGuardNotNull(buf, arr, unwind)
       buf.let(n,
               Op.Call(sig, Val.Global(func, Type.Ptr), Seq(arr, idx, value)),
               unwind)
@@ -751,6 +762,8 @@ object Lower {
 
       val sig  = arrayLengthSig
       val func = arrayLength
+
+      genGuardNotNull(buf, arr, unwind)
       buf.let(n, Op.Call(sig, Val.Global(func, Type.Ptr), Seq(arr)), unwind)
     }
 
