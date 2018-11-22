@@ -213,8 +213,7 @@ object Tags {
   final val FalseVal       = 1 + TrueVal
   final val NullVal        = 1 + FalseVal
   final val ZeroVal        = 1 + NullVal
-  final val UndefVal       = 1 + ZeroVal
-  final val ByteVal        = 1 + UndefVal
+  final val ByteVal        = 1 + ZeroVal
   final val ShortVal       = 1 + ByteVal
   final val IntVal         = 1 + ShortVal
   final val LongVal        = 1 + IntVal

@@ -422,8 +422,6 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   def reachVal(value: Val): Unit = value match {
     case Val.Zero(ty) =>
       reachType(ty)
-    case Val.Undef(ty) =>
-      reachType(ty)
     case Val.StructValue(values) =>
       values.foreach(reachVal)
     case Val.ArrayValue(ty, values) =>

@@ -26,12 +26,12 @@ class ConstantFolding extends Pass {
       IVal(a * b, ty)
 
     case Op.Bin(Sdiv, ty, _, IVal(0)) =>
-      Val.Undef(ty)
+      Val.Zero(ty)
     case Op.Bin(Sdiv, ty, IVal(a), IVal(b)) =>
       IVal(a / b, ty)
 
     case Op.Bin(Udiv, ty, _, IVal(0)) =>
-      Val.Undef(ty)
+      Val.Zero(ty)
     case Op.Bin(Udiv, _, Val.Byte(a), Val.Byte(b)) =>
       Val.Byte(Unsigned.Div(a, b))
     case Op.Bin(Udiv, _, Val.Short(a), Val.Short(b)) =>
@@ -42,12 +42,12 @@ class ConstantFolding extends Pass {
       Val.Long(Unsigned.Div(a, b))
 
     case Op.Bin(Srem, ty, _, IVal(0)) =>
-      Val.Undef(ty)
+      Val.Zero(ty)
     case Op.Bin(Srem, ty, IVal(a), IVal(b)) =>
       IVal(a % b, ty)
 
     case Op.Bin(Urem, ty, _, IVal(0)) =>
-      Val.Undef(ty)
+      Val.Zero(ty)
     case Op.Bin(Urem, _, Val.Byte(a), Val.Byte(b)) =>
       Val.Byte(Unsigned.Rem(a, b))
     case Op.Bin(Urem, _, Val.Short(a), Val.Short(b)) =>

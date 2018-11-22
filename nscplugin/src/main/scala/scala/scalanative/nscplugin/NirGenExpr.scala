@@ -1525,7 +1525,7 @@ trait NirGenExpr { self: NirGenPhase =>
     def genApplyNewStruct(st: SimpleType, argsp: Seq[Tree]): Val = {
       val ty       = genType(st, box = false)
       val args     = genSimpleArgs(argsp)
-      var res: Val = Val.Undef(ty)
+      var res: Val = Val.Zero(ty)
 
       args.zipWithIndex.foreach {
         case (value, index) =>
