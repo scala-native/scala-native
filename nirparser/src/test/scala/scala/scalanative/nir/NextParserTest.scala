@@ -6,11 +6,19 @@ import org.scalatest._
 
 class NextParserTest extends FunSuite {
   val local = Local(1)
+  val value = Val.Int(42)
+  val exc   = Val.Local(local, nir.Rt.Object)
 
   Seq[Next](
-    Next.Unwind(local),
-    Next.Case(Val.None, local),
-    Next.Label(local, Seq.empty)
+    Next.Unwind(exc, Next.Label(local, Seq.empty)),
+    Next.Unwind(exc, Next.Label(local, Seq(value))),
+    Next.Unwind(exc, Next.Label(local, Seq(value, value))),
+    Next.Case(Val.None, Next.Label(local, Seq.empty)),
+    Next.Case(Val.None, Next.Label(local, Seq(value))),
+    Next.Case(Val.None, Next.Label(local, Seq(value, value))),
+    Next.Label(local, Seq.empty),
+    Next.Label(local, Seq(value)),
+    Next.Label(local, Seq(value, value))
   ).zipWithIndex.foreach {
     case (next, idx) =>
       test(s"parse next `${next.show}`") {

@@ -278,9 +278,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putNexts(nexts: Seq[Next]) = putSeq(nexts)(putNext)
   private def putNext(next: Next): Unit = next match {
     case Next.None         => putInt(T.NoneNext)
-    case Next.Unwind(n)    => putInt(T.UnwindNext); putLocal(n)
-    case Next.Label(n, vs) => putInt(T.LabelNext); putLocal(n); putVals(vs)
+    case Next.Unwind(e, n) => putInt(T.UnwindNext); putParam(e); putNext(n)
     case Next.Case(v, n)   => putInt(T.CaseNext); putVal(v); putNext(n)
+    case Next.Label(n, vs) => putInt(T.LabelNext); putLocal(n); putVals(vs)
   }
 
   private def putOp(op: Op) = op match {

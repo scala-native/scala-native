@@ -274,7 +274,7 @@ trait NirGenExpr { self: NirGenPhase =>
                expr: Tree,
                catches: List[Tree],
                finallyp: Tree): Val = {
-      val unwind = fresh()
+      val handler = fresh()
       val excn    = fresh()
       val normaln = fresh()
       val mergen  = fresh()
@@ -284,14 +284,14 @@ trait NirGenExpr { self: NirGenPhase =>
       // Nested code gen to separate out try/catch-related instructions.
       val nested = new ExprBuffer
       locally {
-        scoped(curUnwind := Next.Unwind(unwind)) {
+        scoped(curUnwindHandler := Some(handler)) {
           nested.label(normaln)
           val res = nested.genExpr(expr)
           nested.jump(mergen, Seq(res))
         }
       }
       locally {
-        nested.label(unwind, Seq(excv))
+        nested.label(handler, Seq(excv))
         val res = nested.genTryCatch(retty, excv, mergen, catches)
         nested.jump(mergen, Seq(res))
       }

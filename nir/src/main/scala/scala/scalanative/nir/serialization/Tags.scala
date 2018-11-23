@@ -136,8 +136,8 @@ object Tags {
 
   final val NoneNext   = 1 + Next
   final val UnwindNext = 1 + NoneNext
-  final val LabelNext  = 1 + UnwindNext
-  final val CaseNext   = 1 + LabelNext
+  final val CaseNext   = 1 + UnwindNext
+  final val LabelNext  = 1 + CaseNext
 
   // Ops
 

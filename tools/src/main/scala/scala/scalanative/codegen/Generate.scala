@@ -126,13 +126,17 @@ object Generate {
 
       val stackBottom = Val.Local(fresh(), Type.Ptr)
 
-      val argc   = Val.Local(fresh(), Type.Int)
-      val argv   = Val.Local(fresh(), Type.Ptr)
-      val module = Val.Local(fresh(), Type.Ref(entry.top))
-      val rt     = Val.Local(fresh(), Rt)
-      val arr    = Val.Local(fresh(), ObjectArray)
-      val exc    = Val.Local(fresh(), nir.Rt.Object)
-      val unwind = Next.Unwind(fresh())
+      val argc    = Val.Local(fresh(), Type.Int)
+      val argv    = Val.Local(fresh(), Type.Ptr)
+      val module  = Val.Local(fresh(), Type.Ref(entry.top))
+      val rt      = Val.Local(fresh(), Rt)
+      val arr     = Val.Local(fresh(), ObjectArray)
+      val exc     = Val.Local(fresh(), nir.Rt.Object)
+      val handler = fresh()
+      def unwind = {
+        val exc = Val.Local(fresh(), nir.Rt.Object)
+        Next.Unwind(exc, Next.Label(handler, Seq(exc)))
+      }
 
       buf += Defn.Define(
         Attrs.None,
@@ -156,7 +160,7 @@ object Generate {
           Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr)), unwind),
           Inst.Let(Op.Call(RtLoopSig, RtLoop, Seq(module)), unwind),
           Inst.Ret(Val.Int(0)),
-          Inst.Label(unwind.name, Seq(exc)),
+          Inst.Label(handler, Seq(exc)),
           Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
                    Next.None),
           Inst.Ret(Val.Int(1))

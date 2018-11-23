@@ -36,19 +36,6 @@ object ControlFlow {
     def succ  = outEdges.map(_.to)
     def label = Inst.Label(name, params)
     def show  = name.show
-
-    def isRegular: Boolean =
-      inEdges.forall {
-        case Edge(_, _, _: Next.Case)  => true
-        case Edge(_, _, _: Next.Label) => true
-        case _                         => false
-      }
-
-    def isExceptionHandler: Boolean =
-      inEdges.forall {
-        case Edge(_, _, _: Next.Unwind) => true
-        case _                          => false
-      }
   }
 
   final class Graph(val entry: Block,
