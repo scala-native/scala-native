@@ -159,7 +159,7 @@ trait NirGenStat { self: NirGenPhase =>
         curMethodEnv := env,
         curMethodInfo := (new CollectMethodInfo).collect(dd.rhs),
         curFresh := fresh,
-        curUnwind := Next.None
+        curUnwindHandler := None
       ) {
         val sym      = dd.symbol
         val owner    = curClassSym.get
@@ -272,7 +272,7 @@ trait NirGenStat { self: NirGenPhase =>
         buf.label(fresh(), params)
         vars.foreach { sym =>
           val ty   = genType(sym.info, box = false)
-          val slot = buf.var_(ty, unwind)
+          val slot = buf.var_(ty, unwind(fresh))
           curMethodEnv.enter(sym, slot)
         }
       }

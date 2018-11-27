@@ -86,11 +86,13 @@ object UseDef {
       val deps      = mutable.UnrolledBuffer.empty[Def]
       val uses      = mutable.UnrolledBuffer.empty[Def]
       val paramDefs = params.map(defs)
+      assert(!defs.contains(n))
       defs += ((n, BlockDef(n, deps, uses, paramDefs)))
     }
     def enterInst(n: Local) = {
       val deps = mutable.UnrolledBuffer.empty[Def]
       val uses = mutable.UnrolledBuffer.empty[Def]
+      assert(!defs.contains(n))
       defs += ((n, InstDef(n, deps, uses)))
     }
     def deps(n: Local, deps: Seq[Local]) = {
@@ -111,8 +113,22 @@ object UseDef {
     blocks.foreach { block =>
       enterBlock(block.name, block.params.map(_.name))
       block.insts.foreach {
-        case Inst.Let(n, _, _) => enterInst(n)
-        case _                 => ()
+        case Inst.Let(n, _, unwind) =>
+          enterInst(n)
+          unwind match {
+            case Next.None =>
+              ()
+            case Next.Unwind(Val.Local(exc, _), _) =>
+              enterInst(exc)
+            case _ =>
+              util.unreachable
+          }
+        case Inst.Throw(_, Next.Unwind(Val.Local(exc, _), _)) =>
+          enterInst(exc)
+        case Inst.Unreachable(Next.Unwind(Val.Local(exc, _), _)) =>
+          enterInst(exc)
+        case _ =>
+          ()
       }
     }
 

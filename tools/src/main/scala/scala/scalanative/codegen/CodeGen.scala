@@ -267,6 +267,9 @@ object CodeGen {
         cfg.all.foreach { block =>
           genBlock(block)(cfg, fresh)
         }
+        cfg.all.foreach { block =>
+          genBlockLandingPads(block)(cfg, fresh)
+        }
         newline()
 
         str("}")
@@ -303,11 +306,8 @@ object CodeGen {
 
     def genBlockPrologue(block: Block)(implicit cfg: CFG,
                                        fresh: Fresh): Unit = {
-      val params = block.params
-
-      if (block.isEntry) {
-        ()
-      } else if (block.isRegular) {
+      if (!block.isEntry) {
+        val params = block.params
         params.zipWithIndex.foreach {
           case (Val.Local(name, ty), n) =>
             newline()
@@ -317,49 +317,88 @@ object CodeGen {
             genType(ty)
             str(" ")
             rep(block.inEdges, sep = ", ") { edge =>
+              def genRegularEdge(next: Next.Label): Unit = {
+                val Next.Label(_, vals) = next
+                genJustVal(vals(n))
+                str(", %")
+                genLocal(edge.from.name)
+                str(".")
+                str(edge.from.splitCount)
+              }
+              def genUnwindEdge(unwind: Next.Unwind): Unit = {
+                val Next.Unwind(Val.Local(exc, _), Next.Label(_, vals)) = unwind
+                genJustVal(vals(n))
+                str(", %")
+                genLocal(exc)
+                str(".landingpad.succ")
+              }
+
               str("[")
-              edge match {
-                case Edge(from, _, Next.Label(_, vals)) =>
-                  genJustVal(vals(n))
-                  str(", %")
-                  genLocal(from.name)
-                  str(".")
-                  str(from.splitCount)
+              edge.next match {
+                case n: Next.Label =>
+                  genRegularEdge(n)
+                case Next.Case(_, n: Next.Label) =>
+                  genRegularEdge(n)
+                case n: Next.Unwind =>
+                  genUnwindEdge(n)
               }
               str("]")
             }
         }
-      } else if (block.isExceptionHandler) {
-        val exc = "%_" + (params match {
-          case Seq()                  => fresh()
-          case Seq(Val.Local(exc, _)) => exc
-        }).id
-
-        val rec, r0, r1, id, cmp = "%_" + fresh().id
-        val fail, succ           = "_" + fresh().id
-        val w0, w1, w2           = "%_" + fresh().id
-
-        def line(s: String) = { newline(); str(s) }
-
-        line(s"$rec = $landingpad")
-        line(s"$r0 = extractvalue $excrecty $rec, 0")
-        line(s"$r1 = extractvalue $excrecty $rec, 1")
-        line(s"$id = $typeid")
-        line(s"$cmp = icmp eq i32 $r1, $id")
-        line(s"br i1 $cmp, label %$succ, label %$fail")
-        unindent()
-        line(s"$fail:")
-        indent()
-        line(s"resume $excrecty $rec")
-        unindent()
-        line(s"$succ:")
-        indent()
-        line(s"$w0 = call i8* @__cxa_begin_catch(i8* $r0)")
-        line(s"$w1 = bitcast i8* $w0 to i8**")
-        line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
-        line(s"$exc = load i8*, i8** $w2")
-        line(s"call void @__cxa_end_catch()")
       }
+    }
+
+    def genBlockLandingPads(block: Block)(implicit cfg: CFG,
+                                          fresh: Fresh): Unit = {
+      block.insts.foreach {
+        case Inst.Let(_, _, unwind: Next.Unwind) =>
+          genLandingPad(unwind)
+        case Inst.Throw(_, unwind: Next.Unwind) =>
+          genLandingPad(unwind)
+        case Inst.Unreachable(unwind: Next.Unwind) =>
+          genLandingPad(unwind)
+        case _ =>
+          ()
+      }
+    }
+
+    def genLandingPad(unwind: Next.Unwind)(implicit fresh: Fresh): Unit = {
+      val Next.Unwind(Val.Local(excname, _), next) = unwind
+
+      val excpad  = "_" + excname.id + ".landingpad"
+      val excsucc = excpad + ".succ"
+      val excfail = excpad + ".fail"
+
+      val exc                  = "%_" + excname.id
+      val rec, r0, r1, id, cmp = "%_" + fresh().id
+      val w0, w1, w2           = "%_" + fresh().id
+
+      def line(s: String) = { newline(); str(s) }
+
+      line(s"$excpad:")
+      indent()
+      line(s"$rec = $landingpad")
+      line(s"$r0 = extractvalue $excrecty $rec, 0")
+      line(s"$r1 = extractvalue $excrecty $rec, 1")
+      line(s"$id = $typeid")
+      line(s"$cmp = icmp eq i32 $r1, $id")
+      line(s"br i1 $cmp, label %$excsucc, label %$excfail")
+      unindent()
+
+      line(s"$excsucc:")
+      indent()
+      line(s"$w0 = call i8* @__cxa_begin_catch(i8* $r0)")
+      line(s"$w1 = bitcast i8* $w0 to i8**")
+      line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
+      line(s"$exc = load i8*, i8** $w2")
+      line(s"call void @__cxa_end_catch()")
+      genInst(Inst.Jump(next))
+      unindent()
+
+      line(s"$excfail:")
+      indent()
+      line(s"resume $excrecty $rec")
+      unindent()
     }
 
     def genType(ty: Type): Unit = ty match {
@@ -546,6 +585,7 @@ object CodeGen {
         genCall(noBind,
                 Op.Call(throwUndefinedTy, throwUndefinedVal, Seq(Val.Null)),
                 unwind)
+        newline()
         str("unreachable")
 
       case Inst.Ret(Val.None) =>
@@ -877,6 +917,10 @@ object CodeGen {
         str(", label %")
         genLocal(next.name)
         str(".0")
+      case Next.Unwind(Val.Local(exc, _), _) =>
+        str("label %_")
+        str(exc.id)
+        str(".landingpad")
       case next =>
         str("label %")
         genLocal(next.name)

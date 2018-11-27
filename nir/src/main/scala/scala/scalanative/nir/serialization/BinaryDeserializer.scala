@@ -188,9 +188,9 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   private def getNexts(): Seq[Next] = getSeq(getNext)
   private def getNext(): Next = getInt match {
     case T.NoneNext   => Next.None
-    case T.UnwindNext => Next.Unwind(getLocal)
-    case T.LabelNext  => Next.Label(getLocal, getVals)
+    case T.UnwindNext => Next.Unwind(getParam, getNext)
     case T.CaseNext   => Next.Case(getVal, getNext)
+    case T.LabelNext  => Next.Label(getLocal, getVals)
   }
 
   private def getOp(): Op = getInt match {

@@ -71,19 +71,21 @@ object Show {
     def next_(next: Next): Unit = next match {
       case Next.Label(name, Seq()) =>
         local_(name)
-      case Next.Label(name, args) =>
-        local_(name)
-        str("(")
-        rep(args, sep = ", ")(val_)
-        str(")")
-      case Next.Unwind(name) =>
+      case Next.Unwind(exc, next) =>
         str("unwind ")
-        local_(name)
+        val_(exc)
+        str(" to ")
+        next_(next)
       case Next.Case(v, next) =>
         str("case ")
         val_(v)
         str(" => ")
         next_(next)
+      case Next.Label(name, args) =>
+        local_(name)
+        str("(")
+        rep(args, sep = ", ")(val_)
+        str(")")
     }
 
     def inst_(inst: Inst): Unit = inst match {

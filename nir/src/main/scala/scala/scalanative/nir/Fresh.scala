@@ -18,6 +18,9 @@ object Fresh {
   def apply(insts: Seq[Inst]): Fresh = {
     var max = -1L
     insts.foreach {
+      case Inst.Let(local, _, Next.Unwind(Val.Local(exc, _), _)) =>
+        max = Math.max(max, local.id)
+        max = Math.max(max, exc.id)
       case Inst.Let(local, _, _) =>
         max = Math.max(max, local.id)
       case Inst.Label(local, params) =>
@@ -25,6 +28,10 @@ object Fresh {
         params.foreach { param =>
           max = Math.max(max, param.name.id)
         }
+      case Inst.Throw(_, Next.Unwind(Val.Local(exc, _), _)) =>
+        max = Math.max(max, exc.id)
+      case Inst.Unreachable(Next.Unwind(Val.Local(exc, _), _)) =>
+        max = Math.max(max, exc.id)
       case _ =>
         ()
     }
