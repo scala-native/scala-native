@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "../GCTypes.h"
+#include "../Constants.h"
 
 typedef struct {
     int8_t next;
@@ -21,5 +23,9 @@ static inline bool Line_IsMarked(LineMeta *lineMeta) {
 }
 static inline void Line_Mark(LineMeta *lineMeta) { *lineMeta = line_marked; }
 static inline void Line_Unmark(LineMeta *lineMeta) { *lineMeta = line_empty; }
+
+static LineMeta *Line_getFromBlockIndex(word_t *lineMetaStart, uint32_t block) {
+    return (LineMeta *)lineMetaStart + block * LINE_COUNT;
+}
 
 #endif // IMMIX_LINEMETA_H

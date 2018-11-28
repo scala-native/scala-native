@@ -4,59 +4,50 @@
 #include "../Log.h"
 #include "../metadata/BlockMeta.h"
 
+#define LAST_BLOCK -1
+
 BlockMeta *BlockList_getNextBlock(word_t *blockMetaStart,
                                   BlockMeta *blockMeta) {
     int32_t nextBlockId = blockMeta->nextBlock;
     if (nextBlockId == LAST_BLOCK) {
         return NULL;
-    } else if (nextBlockId == 0) {
-        nextBlockId = BlockMeta_GetBlockIndex(blockMetaStart, blockMeta) + 1;
+    } else {
+        return BlockMeta_GetFromIndex(blockMetaStart, nextBlockId);
     }
-    return BlockMeta_GetFromIndex(blockMetaStart, nextBlockId);
 }
 
 void BlockList_Init(BlockList *blockList, word_t *blockMetaStart) {
     blockList->blockMetaStart = blockMetaStart;
-    blockList->first = NULL;
-    blockList->last = NULL;
+    blockList->head = (word_t) NULL;
 }
 
-BlockMeta *BlockList_Poll(BlockList *blockList) {
-    BlockMeta *block = blockList->first;
-    if (block != NULL) {
-        if (block == blockList->last) {
-            blockList->first = NULL;
+BlockMeta *BlockList_Pop(BlockList *blockList) {
+    BlockMeta *block = (BlockMeta *) blockList->head;
+    word_t newValue;
+    do {
+        // block will be replaced with actual value if atomic_compare_exchange_strong fails
+        if (block == NULL) {
+            return NULL;
         }
-        blockList->first =
-            BlockList_getNextBlock(blockList->blockMetaStart, block);
-    }
+        newValue = (word_t) BlockList_getNextBlock(blockList->blockMetaStart, block);
+    } while (!atomic_compare_exchange_strong(&blockList->head, (word_t *) &block, newValue));
     return block;
 }
 
-void BlockList_AddLast(BlockList *blockList, BlockMeta *blockMeta) {
-    if (blockList->first == NULL) {
-        blockList->first = blockMeta;
-    } else {
-        blockList->last->nextBlock =
-            BlockMeta_GetBlockIndex(blockList->blockMetaStart, blockMeta);
-    }
-    blockList->last = blockMeta;
-    blockMeta->nextBlock = LAST_BLOCK;
-}
+void BlockList_Push(BlockList *blockList, BlockMeta *blockMeta) {
+    BlockMeta *block = (BlockMeta *) blockList->head;
+    do {
+        // block will be replaced with actual value if atomic_compare_exchange_strong fails
+        if (block == NULL) {
+            blockMeta->nextBlock = LAST_BLOCK;
+        } else {
+            blockMeta->nextBlock =
+                BlockMeta_GetBlockIndex(blockList->blockMetaStart, block);
+        }
+    } while(!atomic_compare_exchange_strong(&blockList->head, (word_t *) &block, (word_t) blockMeta));
 
-void BlockList_AddBlocksLast(BlockList *blockList, BlockMeta *first,
-                             BlockMeta *last) {
-    if (blockList->first == NULL) {
-        blockList->first = first;
-    } else {
-        blockList->last->nextBlock =
-            BlockMeta_GetBlockIndex(blockList->blockMetaStart, first);
-    }
-    blockList->last = last;
-    last->nextBlock = LAST_BLOCK;
 }
 
 void BlockList_Clear(BlockList *blockList) {
-    blockList->first = NULL;
-    blockList->last = NULL;
+    blockList->head = (word_t) NULL;
 }

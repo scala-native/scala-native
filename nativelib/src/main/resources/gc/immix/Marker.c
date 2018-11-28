@@ -6,7 +6,6 @@
 #include "State.h"
 #include "datastructures/Stack.h"
 #include "headers/ObjectHeader.h"
-#include "Block.h"
 
 extern word_t *__modules;
 extern int __modules_size;

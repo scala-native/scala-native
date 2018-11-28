@@ -6,9 +6,14 @@
 #include "LargeAllocator.h"
 #include "datastructures/Stack.h"
 #include "datastructures/Bytemap.h"
+#include "datastructures/BlockRange.h"
 #include "metadata/LineMeta.h"
 #include "Stats.h"
 #include <stdio.h>
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <pthread.h>
+#include <semaphore.h>
 
 typedef struct {
     word_t *blockMetaStart;
@@ -21,6 +26,18 @@ typedef struct {
     size_t maxHeapSize;
     uint32_t blockCount;
     uint32_t maxBlockCount;
+    struct {
+        sem_t start;
+    } gcThreads;
+    int gcThreadCount;
+    struct {
+        atomic_uint_fast32_t cursor;
+        atomic_uint_fast32_t limit;
+        // making cursorDone atomic so it keeps sequential consistency with the other atomics
+        atomic_uint_fast32_t cursorDone;
+    } sweep;
+    BlockRange coalesce; // _First = cursorDone, _Limit = cursor
+    atomic_bool postSweepDone;
     Bytemap *bytemap;
     Stats *stats;
 } Heap;
@@ -47,8 +64,8 @@ word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize);
 word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize);
 
 void Heap_Collect(Heap *heap, Stack *stack);
-
 void Heap_Recycle(Heap *heap);
+void Heap_GrowIfNeeded(Heap *heap);
 void Heap_Grow(Heap *heap, uint32_t increment);
 
 #endif // IMMIX_HEAP_H

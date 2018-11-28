@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/sysinfo.h>
 
 /*
  Accepts number of bytes or number with a suffix letter for indicating the units.
@@ -62,4 +63,25 @@ size_t Settings_MaxHeapSize() {
 
 char *Settings_StatsFileName() {
     return getenv(STATS_FILE_SETTING);
+}
+
+int Settings_GCThreadCount() {
+    char *str = getenv("SCALANATIVE_GC_THREADS");
+    if (str == NULL) {
+        // default is number of cores - 2, but no less than 1 and no more than 8
+        int defaultGThreadCount = get_nprocs() - 2;
+        if (defaultGThreadCount < 1) {
+            defaultGThreadCount = 1;
+        } else if (defaultGThreadCount > 8) {
+            defaultGThreadCount = 8;
+        }
+        return defaultGThreadCount;
+    } else {
+        int count;
+        sscanf(str, "%d", &count);
+        if (count < 0) {
+            count = 0;
+        }
+        return count;
+    }
 }

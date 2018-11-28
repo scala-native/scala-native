@@ -4,6 +4,7 @@
 #define LAST_HOLE -1
 
 #include <stdint.h>
+#include <string.h>
 #include "LineMeta.h"
 #include "../GCTypes.h"
 #include "../Constants.h"
@@ -14,7 +15,9 @@ typedef enum {
     block_simple = 0x1,
     block_superblock_start = 0x2,
     block_superblock_middle = 0x3,
-    block_marked = 0x5
+    block_marked = 0x5, // 0x4 | block_simple
+    block_coalesce_me = 0x8,
+    block_superblock_start_me = 0xb // block_superblock_middle | block_coalesce_me
 } BlockFlag;
 
 typedef struct {
@@ -28,20 +31,46 @@ typedef struct {
             int32_t size : BLOCK_COUNT_BITS;
         } superblock;
     } block;
+#ifdef DEBUG_ASSERT
+    int32_t nextBlock : BLOCK_COUNT_BITS;
+    uint8_t debugFlag; //only for debugging
+#else
     int32_t nextBlock;
+#endif
 } BlockMeta;
+
+#ifdef DEBUG_ASSERT
+typedef enum {
+    dbg_must_sweep = 0x0,
+
+    dbg_free = 0x1,
+    dbg_partial_free = 0x2,
+    dbg_not_free = 0x3,
+
+    dbg_free_in_collection = 0x4,
+
+    dbg_in_use = 0x5
+} DebugFlag;
+#endif
 
 static inline bool BlockMeta_IsFree(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_free;
 }
 static inline bool BlockMeta_IsSimpleBlock(BlockMeta *blockMeta) {
-    return (blockMeta->block.simple.flags & block_simple) != 0;
+    // blockMeta->block.simple.flags == block_simple || blockMeta->block.simple.flags == block_marked
+    return (blockMeta->block.simple.flags & 0x3) == block_simple;
 }
 static inline bool BlockMeta_IsSuperblockStart(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_superblock_start;
 }
 static inline bool BlockMeta_IsSuperblockMiddle(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_superblock_middle;
+}
+static inline bool BlockMeta_IsCoalesceMe(BlockMeta *blockMeta) {
+    return blockMeta->block.simple.flags == block_coalesce_me;
+}
+static inline bool BlockMeta_IsSuperblockStartMe(BlockMeta *blockMeta) {
+    return blockMeta->block.simple.flags == block_superblock_start_me;
 }
 
 static inline uint32_t BlockMeta_SuperblockSize(BlockMeta *blockMeta) {
@@ -56,6 +85,7 @@ static inline bool BlockMeta_ContainsLargeObjects(BlockMeta *blockMeta) {
 static inline void BlockMeta_SetSuperblockSize(BlockMeta *blockMeta,
                                                int32_t superblockSize) {
     assert(!BlockMeta_IsSuperblockStart(blockMeta) || superblockSize > 0);
+    assert(!BlockMeta_IsCoalesceMe(blockMeta) || superblockSize > 0);
     assert(!BlockMeta_IsSimpleBlock(blockMeta));
 
     blockMeta->block.superblock.size = superblockSize;
@@ -77,6 +107,10 @@ static inline int8_t BlockMeta_FirstFreeLine(BlockMeta *blockMeta) {
 static inline void BlockMeta_SetFlag(BlockMeta *blockMeta,
                                      BlockFlag blockFlag) {
     blockMeta->block.simple.flags = blockFlag;
+}
+
+static inline void BlockMeta_Clear(BlockMeta *blockMeta) {
+    memset(blockMeta, 0, sizeof(BlockMeta));
 }
 
 static inline bool BlockMeta_IsMarked(BlockMeta *blockMeta) {
@@ -141,11 +175,15 @@ static inline uint32_t Block_GetBlockIndexForWord(word_t *heapStart,
     return (uint32_t)((blockStart - heapStart) / WORDS_IN_BLOCK);
 }
 
+static inline word_t *Block_GetStartFromIndex(word_t *heapStart, uint32_t index) {
+    return heapStart + (WORDS_IN_BLOCK * index);
+}
+
 static inline word_t *BlockMeta_GetBlockStart(word_t *blockMetaStart,
                                               word_t *heapStart,
                                               BlockMeta *blockMeta) {
     uint32_t index = BlockMeta_GetBlockIndex(blockMetaStart, blockMeta);
-    return heapStart + (WORDS_IN_BLOCK * index);
+    return Block_GetStartFromIndex(heapStart, index);
 }
 
 static inline BlockMeta *BlockMeta_GetFromIndex(word_t *blockMetaStart,

@@ -2,7 +2,6 @@
 #include <sys/mman.h>
 #include <stdio.h>
 #include "Heap.h"
-#include "Block.h"
 #include "Log.h"
 #include "Allocator.h"
 #include "Marker.h"
@@ -11,8 +10,12 @@
 #include "StackTrace.h"
 #include "Settings.h"
 #include "Memory.h"
+#include "GCThread.h"
+#include "Sweeper.h"
 #include <memory.h>
 #include <time.h>
+#include <inttypes.h>
+#include <sched.h>
 
 // Allow read and write
 #define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
@@ -58,6 +61,7 @@ word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
     }
     return heapStart;
 }
+
 
 /**
  * Allocates the heap struct and initializes it
@@ -134,18 +138,37 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->heapSize = minHeapSize;
     heap->heapStart = heapStart;
     heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
+    heap->sweep.cursor = initialBlockCount;
+    heap->sweep.cursorDone = initialBlockCount;
+    heap->sweep.limit = initialBlockCount;
+    heap->coalesce = BlockRange_Pack(initialBlockCount, initialBlockCount);
+    heap->postSweepDone = true;
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
     Allocator_Init(&allocator, &blockAllocator, bytemap, blockMetaStart,
                    heapStart);
 
     LargeAllocator_Init(&largeAllocator, &blockAllocator, bytemap,
                         blockMetaStart, heapStart);
+
+    // Init stats if enabled.
+    // This must done before initializing other threads.
     char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
         heap->stats = malloc(sizeof(Stats));
         Stats_Init(heap->stats, statsFile);
     }
+
+    // Init all GCThreads
+    sem_init(&heap->gcThreads.start, 0, 0);
+
+    int gcThreadCount = Settings_GCThreadCount();
+    heap->gcThreadCount = gcThreadCount;
+    gcThreads = (GCThread *) malloc(sizeof(GCThread) * gcThreadCount);
+    for (int i = 0; i < gcThreadCount; i++) {
+        GCThread_Init(&gcThreads[i], i, heap);
+    }
 }
+
 /**
  * Allocates large objects using the `LargeAllocator`.
  * If allocation fails, because there is not enough memory available, it will
@@ -157,7 +180,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
     assert(size >= MIN_BLOCK_SIZE);
 
     // Request an object from the `LargeAllocator`
-    Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
+    Object *object = Sweeper_LazySweepLarge(heap, size);
     // If the object is not NULL, update it's metadata and return it
     if (object != NULL) {
         return (word_t *)object;
@@ -167,7 +190,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
 
         // After collection, try to alloc again, if it fails, grow the heap by
         // at least the size of the object we want to alloc
-        object = LargeAllocator_GetBlock(&largeAllocator, size);
+        object = Sweeper_LazySweepLarge(heap, size);
         if (object != NULL) {
             assert(Heap_IsWordInHeap(heap, (word_t *)object));
             return (word_t *)object;
@@ -185,14 +208,13 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
 }
 
 NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
-    Object *object;
-    object = (Object *)Allocator_Alloc(&allocator, size);
+    Object *object = Sweeper_LazySweep(heap, size);
 
     if (object != NULL)
         goto done;
 
     Heap_Collect(heap, &stack);
-    object = (Object *)Allocator_Alloc(&allocator, size);
+    object = Sweeper_LazySweep(heap, size);
 
     if (object != NULL)
         goto done;
@@ -206,6 +228,9 @@ done:
     assert(Heap_IsWordInHeap(heap, (word_t *)object));
     assert(object != NULL);
     ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, (word_t *)object);
+    #ifdef DEBUG_ASSERT
+        ObjectMeta_AssertIsValidAllocation(objectMeta, size);
+    #endif
     ObjectMeta_SetAllocated(objectMeta);
     return (word_t *)object;
 }
@@ -228,6 +253,9 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
 
     Object *object = (Object *)start;
     ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, (word_t *)object);
+    #ifdef DEBUG_ASSERT
+        ObjectMeta_AssertIsValidAllocation(objectMeta, size);
+    #endif
     ObjectMeta_SetAllocated(objectMeta);
 
     __builtin_prefetch(object + 36, 0, 3);
@@ -246,43 +274,84 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
     }
 }
 
-void Heap_Collect(Heap *heap, Stack *stack) {
-    uint64_t start_ns, sweep_start_ns, end_ns;
-    Stats *stats = heap->stats;
-#ifdef DEBUG_PRINT
-    printf("\nCollect\n");
-    fflush(stdout);
+#ifdef DEBUG_ASSERT
+void Heap_clearIsSwept(Heap *heap) {
+    BlockMeta *current = (BlockMeta *) heap->blockMetaStart;
+    BlockMeta *limit = (BlockMeta *) heap->blockMetaEnd;
+    while (current < limit) {
+        current->debugFlag = dbg_must_sweep;
+        current++;
+    }
+}
+
+void Heap_assertIsConsistent(Heap *heap) {
+    BlockMeta *current = (BlockMeta *) heap->blockMetaStart;
+    LineMeta *lineMetas = (LineMeta *) heap->lineMetaStart;
+    BlockMeta *limit = (BlockMeta *) heap->blockMetaEnd;
+    ObjectMeta *currentBlockStart = Bytemap_Get(heap->bytemap, heap->heapStart);
+    while (current < limit) {
+        assert(!BlockMeta_IsCoalesceMe(current));
+        assert(!BlockMeta_IsSuperblockStartMe(current));
+        assert(!BlockMeta_IsSuperblockMiddle(current));
+        assert(!BlockMeta_IsMarked(current));
+
+        int size = 1;
+        if (BlockMeta_IsSuperblockStart(current)) {
+            size = BlockMeta_SuperblockSize(current);
+        }
+        BlockMeta *next = current + size;
+        LineMeta *nextLineMetas = lineMetas + LINE_COUNT * size;
+        ObjectMeta *nextBlockStart = currentBlockStart + (WORDS_IN_BLOCK / ALLOCATION_ALIGNMENT_WORDS) * size;
+
+        for (LineMeta *line = lineMetas; line < nextLineMetas; line++) {
+            assert(!Line_IsMarked(line));
+        }
+        for (ObjectMeta *object = currentBlockStart; object < nextBlockStart; object++) {
+            assert(!ObjectMeta_IsMarked(object));
+        }
+
+        current = next;
+        lineMetas = nextLineMetas;
+        currentBlockStart = nextBlockStart;
+    }
+    assert(current == limit);
+}
 #endif
+
+void Heap_Collect(Heap *heap, Stack *stack) {
+    Stats *stats = heap->stats;
+    if (stats != NULL) {
+        stats->collection_start_ns = scalanative_nano_time();
+    }
+    assert(Sweeper_IsSweepDone(heap));
+#ifdef DEBUG_ASSERT
+    Heap_clearIsSwept(heap);
+    Heap_assertIsConsistent(heap);
+#endif
+    uint64_t start_ns, end_ns;
     if (stats != NULL) {
         start_ns = scalanative_nano_time();
     }
     Marker_MarkRoots(heap, stack);
     if (stats != NULL) {
-        sweep_start_ns = scalanative_nano_time();
+        end_ns = scalanative_nano_time();
+        Stats_RecordEvent(stats, event_mark, MUTATOR_THREAD_ID, start_ns, end_ns);
     }
     Heap_Recycle(heap);
-    if (stats != NULL) {
-        end_ns = scalanative_nano_time();
-        Stats_RecordCollection(stats, start_ns, sweep_start_ns, end_ns);
-    }
-#ifdef DEBUG_PRINT
-    printf("End collect\n");
-    fflush(stdout);
-#endif
 }
 
 bool Heap_shouldGrow(Heap *heap) {
-    uint32_t freeBlockCount = blockAllocator.freeBlockCount;
+    uint32_t freeBlockCount = (uint32_t) blockAllocator.freeBlockCount;
     uint32_t blockCount = heap->blockCount;
-    uint32_t recycledBlockCount = allocator.recycledBlockCount;
+    uint32_t recycledBlockCount = (uint32_t) allocator.recycledBlockCount;
     uint32_t unavailableBlockCount =
         blockCount - (freeBlockCount + recycledBlockCount);
 
 #ifdef DEBUG_PRINT
-    printf("\n\nBlock count: %llu\n", blockCount);
-    printf("Unavailable: %llu\n", unavailableBlockCount);
-    printf("Free: %llu\n", freeBlockCount);
-    printf("Recycled: %llu\n", recycledBlockCount);
+    printf("\n\nBlock count: %" PRIu32 "\n", blockCount);
+    printf("Unavailable: %" PRIu32 "\n", unavailableBlockCount);
+    printf("Free: %" PRIu32 "\n", freeBlockCount);
+    printf("Recycled: %" PRIu32 "\n", recycledBlockCount);
     fflush(stdout);
 #endif
 
@@ -290,33 +359,57 @@ bool Heap_shouldGrow(Heap *heap) {
            4 * unavailableBlockCount > blockCount;
 }
 
+NOINLINE void Heap_waitForGCThreadsSlow(int gcThreadCount) {
+    // extremely unlikely to enter here
+    // unless very many threads running
+    bool anyActive = true;
+    while (anyActive) {
+        sched_yield();
+        anyActive = false;
+        for (int i = 0; i < gcThreadCount; i++) {
+            anyActive |= gcThreads[i].active;
+       }
+    }
+}
+
+INLINE void Heap_waitForGCThreads(Heap *heap) {
+    int gcThreadCount = heap->gcThreadCount;
+    bool anyActive = false;
+    for (int i = 0; i < gcThreadCount; i++) {
+        anyActive |= gcThreads[i].active;
+    }
+    if (anyActive) {
+        Heap_waitForGCThreadsSlow(gcThreadCount);
+    }
+}
+
 void Heap_Recycle(Heap *heap) {
     Allocator_Clear(&allocator);
     LargeAllocator_Clear(&largeAllocator);
     BlockAllocator_Clear(&blockAllocator);
 
-    BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
-    word_t *currentBlockStart = heap->heapStart;
-    LineMeta *lineMetas = (LineMeta *)heap->lineMetaStart;
-    word_t *end = heap->blockMetaEnd;
-    while ((word_t *)current < end) {
-        int size = 1;
-        assert(!BlockMeta_IsSuperblockMiddle(current));
-        if (BlockMeta_IsSimpleBlock(current)) {
-            Block_Recycle(&allocator, current, currentBlockStart, lineMetas);
-        } else if (BlockMeta_IsSuperblockStart(current)) {
-            size = BlockMeta_SuperblockSize(current);
-            LargeAllocator_Sweep(&largeAllocator, current, currentBlockStart);
-        } else {
-            assert(BlockMeta_IsFree(current));
-            BlockAllocator_AddFreeBlocks(&blockAllocator, current, 1);
-        }
-        assert(size > 0);
-        current += size;
-        currentBlockStart += WORDS_IN_BLOCK * size;
-        lineMetas += LINE_COUNT * size;
-    }
+    // all the marking changes should be visible to all threads by now
+    atomic_thread_fence(memory_order_seq_cst);
 
+    // before changing the cursor and limit values, makes sure no gc threads are running
+    Heap_waitForGCThreads(heap);
+
+    heap->sweep.cursor = 0;
+    heap->sweep.limit = heap->blockCount;
+    heap->sweep.cursorDone = 0;
+    heap->coalesce = BlockRange_Pack(0, 0);
+    heap->postSweepDone = false;
+
+    sem_t *start = &heap->gcThreads.start;
+
+    // wake all the GC threads
+    int gcThreadCount = heap->gcThreadCount;
+    for (int i = 0; i < gcThreadCount; i++) {
+        sem_post(start);
+    }
+}
+
+void Heap_GrowIfNeeded(Heap *heap) {
     if (Heap_shouldGrow(heap)) {
         double growth;
         if (heap->heapSize < EARLY_GROWTH_THRESHOLD) {
@@ -334,11 +427,9 @@ void Heap_Recycle(Heap *heap) {
             }
         }
     }
-    BlockAllocator_SweepDone(&blockAllocator);
     if (!Allocator_CanInitCursors(&allocator)) {
         Heap_exitWithOutOfMemory();
     }
-    Allocator_InitCursors(&allocator);
 }
 
 void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
@@ -348,7 +439,7 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
 
 #ifdef DEBUG_PRINT
     printf("Growing small heap by %zu bytes, to %zu bytes\n",
-           increment * WORD_SIZE,
+           incrementInBlocks * SPACE_USED_PER_BLOCK,
            heap->heapSize + incrementInBlocks * SPACE_USED_PER_BLOCK);
     fflush(stdout);
 #endif
@@ -362,11 +453,15 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     heap->lineMetaEnd +=
         incrementInBlocks * LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
 
+#ifdef DEBUG_ASSERT
+    BlockMeta *end = (BlockMeta *)blockMetaEnd;
+    for (BlockMeta *block = end; block < end + incrementInBlocks; block++) {
+        block->debugFlag = dbg_free;
+    }
+#endif
+
     BlockAllocator_AddFreeBlocks(&blockAllocator, (BlockMeta *)blockMetaEnd,
                                  incrementInBlocks);
 
     heap->blockCount += incrementInBlocks;
-
-    // immediately add the block to freelists
-    BlockAllocator_SweepDone(&blockAllocator);
 }

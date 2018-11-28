@@ -8,5 +8,6 @@
 size_t Settings_MinHeapSize();
 size_t Settings_MaxHeapSize();
 char *Settings_StatsFileName();
+int Settings_GCThreadCount();
 
 #endif // IMMIX_SETTINGS_H

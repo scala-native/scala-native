@@ -3,8 +3,9 @@
 #include "utils/MathUtils.h"
 #include <stdio.h>
 
-void BlockAllocator_addFreeBlocksInternal(BlockAllocator *blockAllocator,
-                                          BlockMeta *block, uint32_t count);
+void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
+                                BlockMeta *superblock,
+                                uint32_t count);
 
 void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
                          uint32_t blockCount) {
@@ -13,9 +14,17 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
     }
     BlockAllocator_Clear(blockAllocator);
 
-    blockAllocator->smallestSuperblock.cursor = (BlockMeta *)blockMetaStart;
-    blockAllocator->smallestSuperblock.limit =
-        (BlockMeta *)blockMetaStart + blockCount;
+    blockAllocator->blockMetaStart = blockMetaStart;
+    BlockMeta *sCursor = (BlockMeta *)blockMetaStart;
+    BlockMeta *sLimit = (BlockMeta *)blockMetaStart + blockCount;
+    blockAllocator->smallestSuperblock.cursor = sCursor;
+    blockAllocator->smallestSuperblock.limit = sLimit;
+
+    #ifdef DEBUG_ASSERT
+        for (BlockMeta *current = sCursor; current < sLimit; current++) {
+            current->debugFlag = dbg_free_in_collection;
+        }
+    #endif
 }
 
 inline static int BlockAllocator_sizeToLinkedListIndex(uint32_t size) {
@@ -26,16 +35,13 @@ inline static int BlockAllocator_sizeToLinkedListIndex(uint32_t size) {
 }
 
 inline static BlockMeta *
-BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int first) {
-    int maxNonEmptyIndex = blockAllocator->maxNonEmptyIndex;
-    for (int i = first; i <= maxNonEmptyIndex; i++) {
+BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int* index) {
+    for (int i = *index; i < SUPERBLOCK_LIST_SIZE; i++) {
         BlockMeta *superblock =
-            BlockList_Poll(&blockAllocator->freeSuperblocks[i]);
+            BlockList_Pop(&blockAllocator->freeSuperblocks[i]);
         if (superblock != NULL) {
-            assert(BlockMeta_SuperblockSize(superblock) > 0);
+            *index = i;
             return superblock;
-        } else {
-            blockAllocator->minNonEmptyIndex = i + 1;
         }
     }
     return NULL;
@@ -43,18 +49,33 @@ BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int first) {
 
 NOINLINE BlockMeta *
 BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
-    BlockMeta *superblock = BlockAllocator_pollSuperblock(
-        blockAllocator, blockAllocator->minNonEmptyIndex);
+    int index = 0;
+    BlockMeta *superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
     if (superblock != NULL) {
         blockAllocator->smallestSuperblock.cursor = superblock + 1;
-        blockAllocator->smallestSuperblock.limit =
-            superblock + BlockMeta_SuperblockSize(superblock);
-        // it might be safe to remove this
-        BlockMeta_SetSuperblockSize(superblock, 0);
+        uint32_t size = 1 << index;
+        blockAllocator->smallestSuperblock.limit = superblock + size;
+        assert(BlockMeta_IsFree(superblock));
+        assert(superblock->debugFlag == dbg_free_in_collection);
+        #ifdef DEBUG_ASSERT
+            superblock->debugFlag = dbg_in_use;
+        #endif
         BlockMeta_SetFlag(superblock, block_simple);
         return superblock;
     } else {
-        return NULL;
+        // as the last resort look in the superblock being coalesced
+        uint32_t blockIdx = BlockRange_PollFirst(&blockAllocator->coalescingSuperblock, 1);
+        BlockMeta *block = NULL;
+        if (blockIdx != NO_BLOCK_INDEX) {
+            block = BlockMeta_GetFromIndex(blockAllocator->blockMetaStart, blockIdx);
+            assert(BlockMeta_IsFree(block));
+            assert(block->debugFlag == dbg_free_in_collection);
+            #ifdef DEBUG_ASSERT
+                block->debugFlag = dbg_in_use;
+            #endif
+            BlockMeta_SetFlag(block, block_simple);
+        }
+        return block;
     }
 }
 
@@ -64,78 +85,104 @@ INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
         return BlockAllocator_getFreeBlockSlow(blockAllocator);
     }
     BlockMeta *block = blockAllocator->smallestSuperblock.cursor;
+    assert(BlockMeta_IsFree(block));
+    assert(block->debugFlag == dbg_free_in_collection);
+    #ifdef DEBUG_ASSERT
+        block->debugFlag = dbg_in_use;
+    #endif
     BlockMeta_SetFlag(block, block_simple);
     blockAllocator->smallestSuperblock.cursor++;
 
     // not decrementing freeBlockCount, because it is only used after sweep
+    #ifdef DEBUG_PRINT
+        printf("BlockAllocator_GetFreeBlock = %p %" PRIu32 "\n",
+               block, BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, block));
+        fflush(stdout);
+    #endif
     return block;
 }
 
 BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
                                             uint32_t size) {
     BlockMeta *superblock;
-    if (blockAllocator->smallestSuperblock.limit -
-            blockAllocator->smallestSuperblock.cursor >=
-        size) {
+    BlockMeta *sCursor = blockAllocator->smallestSuperblock.cursor;
+    BlockMeta *sLimit = blockAllocator->smallestSuperblock.limit;
+
+    if (sLimit - sCursor >= size) {
         // first check the smallestSuperblock
-        superblock = blockAllocator->smallestSuperblock.cursor;
         blockAllocator->smallestSuperblock.cursor += size;
+        superblock = sCursor;
     } else {
         // look in the freelists
-        int target = MathUtils_Log2Ceil((size_t)size);
-        int minNonEmptyIndex = blockAllocator->minNonEmptyIndex;
-        int first = (minNonEmptyIndex > target) ? minNonEmptyIndex : target;
-        superblock = BlockAllocator_pollSuperblock(blockAllocator, first);
+        int index = MathUtils_Log2Ceil((size_t)size);
+        superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
+        uint32_t receivedSize = 1 << index;
+
+        if (superblock != NULL) {
+            if (receivedSize > size) {
+                BlockMeta *leftover = superblock + size;
+                BlockAllocator_splitAndAdd(
+                    blockAllocator, leftover,
+                    receivedSize - size);
+            }
+        } else {
+            // as the last resort look in the superblock being coalesced
+            uint32_t superblockIdx = BlockRange_PollFirst(&blockAllocator->coalescingSuperblock, size);
+            if (superblockIdx != NO_BLOCK_INDEX) {
+                superblock = BlockMeta_GetFromIndex(blockAllocator->blockMetaStart, superblockIdx);
+            }
+        }
+
         if (superblock == NULL) {
             return NULL;
         }
-        if (BlockMeta_SuperblockSize(superblock) > size) {
-            BlockMeta *leftover = superblock + size;
-            BlockAllocator_addFreeBlocksInternal(
-                blockAllocator, leftover,
-                BlockMeta_SuperblockSize(superblock) - size);
-        }
     }
 
+    assert(superblock != NULL);
+
+    assert(BlockMeta_IsFree(superblock));
+    assert(superblock->debugFlag == dbg_free_in_collection);
+    #ifdef DEBUG_ASSERT
+        superblock->debugFlag = dbg_in_use;
+    #endif
     BlockMeta_SetFlag(superblock, block_superblock_start);
     BlockMeta_SetSuperblockSize(superblock, size);
     BlockMeta *limit = superblock + size;
     for (BlockMeta *current = superblock + 1; current < limit; current++) {
+        assert(BlockMeta_IsFree(current));
+        assert(current->debugFlag == dbg_free_in_collection);
+        #ifdef DEBUG_ASSERT
+            current->debugFlag = dbg_in_use;
+        #endif
         BlockMeta_SetFlag(current, block_superblock_middle);
     }
     // not decrementing freeBlockCount, because it is only used after sweep
+    #ifdef DEBUG_PRINT
+        printf("BlockAllocator_GetFreeSuperblock(%" PRIu32 ") = %p %" PRIu32 "\n",
+               size, superblock, BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock));
+        fflush(stdout);
+    #endif
     return superblock;
 }
 
 static inline void
-BlockAllocator_addFreeBlocksInternal0(BlockAllocator *blockAllocator,
-                                      BlockMeta *superblock, uint32_t count) {
+BlockAllocator_addSuperblockToBlockLists(BlockAllocator *blockAllocator,
+                                         BlockMeta *superblock, uint32_t count) {
     int i = BlockAllocator_sizeToLinkedListIndex(count);
-    if (i < blockAllocator->minNonEmptyIndex) {
-        blockAllocator->minNonEmptyIndex = i;
-    }
-    if (i > blockAllocator->maxNonEmptyIndex) {
-        blockAllocator->maxNonEmptyIndex = i;
-    }
-    BlockMeta *limit = superblock + count;
-    for (BlockMeta *current = superblock; current < limit; current++) {
-        BlockMeta_SetFlag(current, block_free);
-    }
-    BlockMeta_SetSuperblockSize(superblock, count);
-    BlockList_AddLast(&blockAllocator->freeSuperblocks[i], superblock);
+    BlockList_Push(&blockAllocator->freeSuperblocks[i], superblock);
 }
 
-void BlockAllocator_addFreeBlocksInternal(BlockAllocator *blockAllocator,
-                                          BlockMeta *superblock,
-                                          uint32_t count) {
+void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
+                                BlockMeta *superblock,
+                                uint32_t count) {
     uint32_t remaining_count = count;
     uint32_t powerOf2 = 1;
     BlockMeta *current = superblock;
     // splits the superblock into smaller superblocks that are a powers of 2
     while (remaining_count > 0) {
         if ((powerOf2 & remaining_count) > 0) {
-            BlockAllocator_addFreeBlocksInternal0(blockAllocator, current,
-                                                  powerOf2);
+            BlockAllocator_addSuperblockToBlockLists(blockAllocator, current,
+                                                     powerOf2);
             remaining_count -= powerOf2;
             current += powerOf2;
         }
@@ -143,34 +190,58 @@ void BlockAllocator_addFreeBlocksInternal(BlockAllocator *blockAllocator,
     }
 }
 
-void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
-                                  BlockMeta *block, uint32_t count) {
-    assert(count > 0);
-    if (blockAllocator->coalescingSuperblock.first == NULL) {
-        blockAllocator->coalescingSuperblock.first = block;
-        blockAllocator->coalescingSuperblock.limit = block + count;
-    } else if (blockAllocator->coalescingSuperblock.limit == block) {
-        blockAllocator->coalescingSuperblock.limit = block + count;
-    } else {
-        uint32_t size = (uint32_t)(blockAllocator->coalescingSuperblock.limit -
-                                   blockAllocator->coalescingSuperblock.first);
-        BlockAllocator_addFreeBlocksInternal(
-            blockAllocator, blockAllocator->coalescingSuperblock.first, size);
-        blockAllocator->coalescingSuperblock.first = block;
-        blockAllocator->coalescingSuperblock.limit = block + count;
+void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
+                                      BlockMeta *superblock,
+                                      uint32_t count) {
+
+    #ifdef DEBUG_PRINT
+        printf("BlockAllocator_AddFreeSuperblock %p %" PRIu32 " count = %" PRIu32  "\n",
+               superblock, BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock), count);
+        fflush(stdout);
+    #endif
+    BlockMeta *limit = superblock + count;
+    for (BlockMeta *current = superblock; current < limit; current++) {
+        // check for double sweeping
+        assert(current->debugFlag == dbg_free);
+        BlockMeta_Clear(current);
+        #ifdef DEBUG_ASSERT
+            current->debugFlag = dbg_free_in_collection;
+        #endif
     }
+    // all the sweeping changes should be visible to all threads by now
+    atomic_thread_fence(memory_order_seq_cst);
+    BlockAllocator_splitAndAdd(blockAllocator, superblock, count);
     blockAllocator->freeBlockCount += count;
 }
 
-void BlockAllocator_SweepDone(BlockAllocator *blockAllocator) {
-    if (blockAllocator->coalescingSuperblock.first != NULL) {
-        uint32_t size = (uint32_t)(blockAllocator->coalescingSuperblock.limit -
-                                   blockAllocator->coalescingSuperblock.first);
-        BlockAllocator_addFreeBlocksInternal(
-            blockAllocator, blockAllocator->coalescingSuperblock.first, size);
-        blockAllocator->coalescingSuperblock.first = NULL;
-        blockAllocator->coalescingSuperblock.limit = NULL;
+void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
+                                  BlockMeta *superblock, uint32_t count) {
+    #ifdef DEBUG_PRINT
+        printf("BlockAllocator_AddFreeBlocks %p %" PRIu32 " count = %" PRIu32  "\n",
+               superblock, BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock), count);
+        fflush(stdout);
+    #endif
+    assert(count > 0);
+    BlockMeta *limit = superblock + count;
+    for (BlockMeta *current = superblock; current < limit; current++) {
+        // check for double sweeping
+        assert(current->debugFlag == dbg_free);
+        assert(!BlockMeta_IsSuperblockStartMe(current));
+        BlockMeta_Clear(current);
+        #ifdef DEBUG_ASSERT
+            current->debugFlag = dbg_free_in_collection;
+        #endif
     }
+    // all the sweeping changes should be visible to all threads by now
+    atomic_thread_fence(memory_order_seq_cst);
+    uint32_t superblockIdx = BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock);
+    BlockRangeVal oldRange = BlockRange_AppendLastOrReplace(&blockAllocator->coalescingSuperblock, superblockIdx, count);
+    uint32_t size = BlockRange_Size(oldRange);
+    if (size > 0) {
+        BlockMeta *replaced = BlockMeta_GetFromIndex(blockAllocator->blockMetaStart, BlockRange_First(oldRange));
+        BlockAllocator_splitAndAdd(blockAllocator, replaced, size);
+    }
+    blockAllocator->freeBlockCount += count;
 }
 
 void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
@@ -180,8 +251,5 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
     blockAllocator->freeBlockCount = 0;
     blockAllocator->smallestSuperblock.cursor = NULL;
     blockAllocator->smallestSuperblock.limit = NULL;
-    blockAllocator->coalescingSuperblock.first = NULL;
-    blockAllocator->coalescingSuperblock.limit = NULL;
-    blockAllocator->minNonEmptyIndex = SUPERBLOCK_LIST_SIZE;
-    blockAllocator->maxNonEmptyIndex = -1;
+    BlockRange_Clear(&blockAllocator->coalescingSuperblock);
 }
