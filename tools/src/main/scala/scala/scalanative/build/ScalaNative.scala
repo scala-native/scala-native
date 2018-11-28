@@ -35,17 +35,15 @@ private[scalanative] object ScalaNative {
   /** Optimizer high-level NIR under closed-world assumption. */
   def optimize(config: Config,
                linked: linker.Result,
-               driver: optimizer.Driver): Seq[nir.Defn] =
+               driver: optimizer.Driver): linker.Result =
     config.logger.time(s"Optimizing (${config.mode} mode)") {
       Optimizer(config, linked, driver)
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
-  def codegen(config: Config,
-              linked: linker.Result,
-              optimized: Seq[nir.Defn]): Seq[Path] = {
+  def codegen(config: Config, linked: linker.Result): Seq[Path] = {
     config.logger.time("Generating intermediate code") {
-      CodeGen(config, linked, optimized)
+      CodeGen(config, linked)
     }
     val produced = IO.getAll(config.workdir, "glob:**.ll")
     config.logger.info(s"Produced ${produced.length} files")

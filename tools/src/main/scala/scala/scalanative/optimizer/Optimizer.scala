@@ -13,9 +13,16 @@ object Optimizer {
   /** Run all of the passes on given assembly. */
   def apply(config: build.Config,
             linked: linker.Result,
-            driver: Driver): Seq[Defn] = {
+            driver: Driver): linker.Result = {
     val reporter = driver.optimizerReporter
     import reporter._
+
+    Show.dump(linked.defns, "linked.hnir")
+
+    val interflowed =
+      interflow.Interflow(config, linked, linked.defns)
+
+    Show.dump(interflowed, "interflow.hnir")
 
     def loop(batchId: Int,
              batchDefns: Seq[Defn],
@@ -35,17 +42,26 @@ object Optimizer {
           loop(batchId, passResult, rest)
       }
 
-    partitionBy(linked.defns)(_.name).par
-      .map {
-        case (batchId, batchDefns) =>
-          onStart(batchId, batchDefns)
-          val passes = driver.passes.map(_.apply(config, linked))
-          val res    = loop(batchId, batchDefns, passes.zipWithIndex)
-          onComplete(batchId, res)
-          res
-      }
-      .seq
-      .flatten
-      .toSeq
+    val optimized =
+      partitionBy(interflowed)(_.name).par
+        .map {
+          case (batchId, batchDefns) =>
+            onStart(batchId, batchDefns)
+            val passes = driver.passes.map(_.apply(config, linked))
+            val res    = loop(batchId, batchDefns, passes.zipWithIndex)
+            onComplete(batchId, res)
+            res
+        }
+        .seq
+        .flatten
+        .toSeq
+
+    Show.dump(optimized, "optimized.hnir")
+
+    val res = linker.Link(config, linked.entries, optimized)
+
+    Show.dump(res.defns, "optimized-linked.hnir")
+
+    res
   }
 }

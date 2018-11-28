@@ -13,6 +13,8 @@ sealed abstract class ScopeInfo extends Info {
   val members = mutable.UnrolledBuffer.empty[MemberInfo]
   val calls   = mutable.Set.empty[Sig]
 
+  def isClass: Boolean = this.isInstanceOf[Class]
+  def isTrait: Boolean = this.isInstanceOf[Class]
   def targets(sig: Sig): mutable.Set[Global]
 }
 
@@ -28,6 +30,7 @@ final class Unavailable(val name: Global) extends Info {
 final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])
     extends ScopeInfo {
   val implementors = mutable.Set.empty[Class]
+  val subtraits    = mutable.Set.empty[Trait]
 
   def targets(sig: Sig): mutable.Set[Global] = {
     val out = mutable.Set.empty[Global]
@@ -43,6 +46,15 @@ final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])
 
     out
   }
+
+  def is(info: ScopeInfo): Boolean = (info eq this) || {
+    info match {
+      case info: Trait =>
+        info.subtraits.contains(this)
+      case _ =>
+        false
+    }
+  }
 }
 
 final class Class(val attrs: Attrs,
@@ -54,6 +66,18 @@ final class Class(val attrs: Attrs,
   var allocated  = false
   val subclasses = mutable.Set.empty[Class]
   val responds   = mutable.Map.empty[Sig, Global]
+
+  lazy val fields: Seq[Field] = {
+    val out = mutable.UnrolledBuffer.empty[Field]
+    def add(info: Class): Unit =
+      info.members.foreach {
+        case info: Field => out += info
+        case _           => ()
+      }
+    parent.foreach(add)
+    add(this)
+    out
+  }
 
   val ty: Type =
     Type.Ref(name)
@@ -76,12 +100,23 @@ final class Class(val attrs: Attrs,
 
     out
   }
+  def is(info: ScopeInfo): Boolean = (info eq this) || {
+    info match {
+      case info: Trait =>
+        info.implementors.contains(this)
+      case info: Class =>
+        info.subclasses.contains(this)
+      case _ =>
+        false
+    }
+  }
 }
 
 final class Method(val attrs: Attrs,
                    val owner: Info,
                    val name: Global,
-                   val insts: Seq[Inst])
+                   val ty: Type,
+                   val insts: Array[Inst])
     extends MemberInfo {
   val value: Val =
     if (isConcrete) {
@@ -99,7 +134,10 @@ final class Field(val attrs: Attrs,
                   val isConst: Boolean,
                   val ty: nir.Type,
                   val init: Val)
-    extends MemberInfo
+    extends MemberInfo {
+  lazy val index: Int =
+    owner.asInstanceOf[Class].fields.indexOf(this)
+}
 
 final class Result(val infos: mutable.Map[Global, Info],
                    val entries: Seq[Global],
@@ -107,4 +145,11 @@ final class Result(val infos: mutable.Map[Global, Info],
                    val links: Seq[Attr.Link],
                    val defns: Seq[Defn],
                    val dynsigs: Seq[Sig],
-                   val dynimpls: Seq[Global])
+                   val dynimpls: Seq[Global]) {
+  lazy val StringClass       = infos(Rt.StringName).asInstanceOf[Class]
+  lazy val StringValueField  = infos(Rt.StringValueName).asInstanceOf[Field]
+  lazy val StringOffsetField = infos(Rt.StringOffsetName).asInstanceOf[Field]
+  lazy val StringCountField  = infos(Rt.StringCountName).asInstanceOf[Field]
+  lazy val StringCachedHashCodeField = infos(Rt.StringCachedHashCodeName)
+    .asInstanceOf[Field]
+}

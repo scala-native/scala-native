@@ -32,6 +32,18 @@ object Show {
   def apply(v: Type): String  = { val b = newBuilder; b.type_(v); b.toString }
   def apply(v: Val): String   = { val b = newBuilder; b.val_(v); b.toString }
 
+  def dump(defns: Seq[Defn], fileName: String): Unit = {
+    val pw = new java.io.PrintWriter(fileName)
+    try {
+      defns.foreach { defn =>
+        pw.write(defn.show)
+        pw.write("\n")
+      }
+    } finally {
+      pw.close()
+    }
+  }
+
   final class NirShowBuilder(val builder: ShowBuilder) extends AnyVal {
     import builder._
 
