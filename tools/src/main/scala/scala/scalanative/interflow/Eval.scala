@@ -209,32 +209,31 @@ trait Eval { self: Interflow =>
                             unwind)
         }
       case Op.Method(obj, sig) =>
-        def resolved(reason: String) = {
-          log(s"resolved sig $sig: $reason")
-        }
         eval(obj) match {
           case Val.Virtual(addr) =>
             val cls = state.deref(addr).cls
-            resolved(s"virtual value of type ${cls.name}")
             Val.Global(resolve(cls, sig), Type.Ptr)
           case obj if obj.ty == Type.Null =>
             emit.method(materialize(obj), sig, unwind)
           case obj =>
             targets(obj.ty, sig).toSeq match {
               case Seq() =>
-                resolved(s"no possible targets on ${obj.ty.show}")
                 Val.Zero(Type.Nothing)
               case Seq(meth) =>
-                resolved(
-                  s"single possible target ${meth.show} for ${obj.ty.show}")
                 Val.Global(meth, Type.Ptr)
               case meths =>
                 meths.foreach(visitRoot)
                 emit.method(materialize(obj), sig, unwind)
             }
         }
-      case _: Op.Dynmethod =>
-        bailOut
+      case Op.Dynmethod(obj, dynsig) =>
+        linked.dynimpls.foreach {
+          case impl @ Global.Member(_, sig) if sig.toProxy == dynsig =>
+            visitRoot(impl)
+          case _ =>
+            ()
+        }
+        emit.dynmethod(materialize(eval(obj)), dynsig, unwind)
       case Op.Module(clsName) =>
         val init = clsName member Sig.Ctor(Seq.empty)
         if (originals.contains(init)) {
