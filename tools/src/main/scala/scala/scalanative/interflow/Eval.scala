@@ -144,18 +144,24 @@ trait Eval { self: Interflow =>
 
             emit.call(msig, mtarget, margs, unwind)
         }
-      case _: Op.Load =>
-        bailOut
-      case _: Op.Store =>
-        bailOut
-      case _: Op.Elem =>
-        bailOut
-      case _: Op.Extract =>
-        bailOut
-      case _: Op.Insert =>
-        bailOut
-      case _: Op.Stackalloc =>
-        bailOut
+      case Op.Load(ty, ptr) =>
+        emit.load(ty, materialize(eval(ptr)), unwind)
+      case Op.Store(ty, ptr, value) =>
+        emit.store(ty, materialize(eval(ptr)), materialize(eval(value)), unwind)
+      case Op.Elem(ty, ptr, indexes) =>
+        emit.elem(ty,
+                  materialize(eval(ptr)),
+                  indexes.map(i => materialize(eval(i))),
+                  unwind)
+      case Op.Extract(aggr, indexes) =>
+        emit.extract(materialize(eval(aggr)), indexes, unwind)
+      case Op.Insert(aggr, value, indexes) =>
+        emit.insert(materialize(eval(aggr)),
+                    materialize(eval(value)),
+                    indexes,
+                    unwind)
+      case Op.Stackalloc(ty, n) =>
+        emit.stackalloc(ty, materialize(eval(n)), unwind)
       case Op.Bin(bin, ty, l, r) =>
         (eval(l), eval(r)) match {
           case (l, r) if l.isCanonical && r.isCanonical =>
@@ -241,15 +247,19 @@ trait Eval { self: Interflow =>
           visitRoot(init)
         }
         emit.module(clsName, unwind)
-      case Op.As(ty: Type.RefKind, obj) =>
+      case Op.As(ty, obj) =>
+        val refty = ty match {
+          case ty: Type.RefKind => ty
+          case _                => bailOut
+        }
         eval(obj) match {
-          case obj @ Val.Virtual(addr) if is(state.deref(addr).cls, ty) =>
+          case obj @ Val.Virtual(addr) if is(state.deref(addr).cls, refty) =>
             obj
           case obj if obj.ty == Type.Null =>
             obj
           case obj =>
             obj.ty match {
-              case ClassRef(cls) if is(cls, ty) =>
+              case ClassRef(cls) if is(cls, refty) =>
                 obj
               case _ =>
                 emit.as(ty, materialize(obj), unwind)
@@ -261,10 +271,10 @@ trait Eval { self: Interflow =>
           case _                => bailOut
         }
         eval(obj) match {
-          case Val.Null =>
-            Val.False
           case Val.Virtual(addr) =>
             Val.Bool(is(state.deref(addr).cls, refty))
+          case obj if obj.ty == Type.Null =>
+            Val.False
           case obj =>
             obj.ty match {
               case ExactClassRef(cls, nullable) =>
