@@ -28,16 +28,18 @@ typedef struct {
     uint32_t maxBlockCount;
     struct {
         sem_t start;
+        int count;
     } gcThreads;
-    int gcThreadCount;
     struct {
         atomic_uint_fast32_t cursor;
         atomic_uint_fast32_t limit;
+        BlockRange coalesce; // _First = cursorDone, _Limit = cursor
+        atomic_bool postSweepDone;
+    } sweep;
+    struct {
         // making cursorDone atomic so it keeps sequential consistency with the other atomics
         atomic_uint_fast32_t cursorDone;
-    } sweep;
-    BlockRange coalesce; // _First = cursorDone, _Limit = cursor
-    atomic_bool postSweepDone;
+    } lazySweep;
     Bytemap *bytemap;
     Stats *stats;
 } Heap;

@@ -7,7 +7,7 @@ void Sweeper_sweepDone(Heap *heap);
 static inline void Sweeper_advanceLazyCursor(Heap *heap) {
     atomic_uint_fast32_t cursor = heap->sweep.cursor;
     atomic_uint_fast32_t sweepLimit = heap->sweep.limit;
-    heap->sweep.cursorDone = (cursor <= sweepLimit) ? cursor : sweepLimit ;
+    heap->lazySweep.cursorDone = (cursor <= sweepLimit) ? cursor : sweepLimit ;
 }
 
 Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
@@ -23,9 +23,9 @@ Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
             start_ns = scalanative_nano_time();
         }
         while (object == NULL && !Sweeper_IsSweepDone(heap)) {
-            Sweeper_Sweep(heap, &heap->sweep.cursorDone, LAZY_SWEEP_MIN_BATCH);
+            Sweeper_Sweep(heap, &heap->lazySweep.cursorDone, LAZY_SWEEP_MIN_BATCH);
             object = (Object *)Allocator_Alloc(&allocator, size);
-            if (heap->gcThreadCount == 0) {
+            if (heap->gcThreads.count == 0) {
                 // if there are no threads the mutator must do coalescing on its own
                 Sweeper_LazyCoalesce(heap);
             }
@@ -35,7 +35,7 @@ Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
             Stats_RecordEvent(stats, event_sweep, MUTATOR_THREAD_ID, start_ns, end_ns);
         }
     }
-    if (Sweeper_IsSweepDone(heap) && !heap->postSweepDone) {
+    if (Sweeper_IsSweepDone(heap) && !heap->sweep.postSweepDone) {
         Sweeper_sweepDone(heap);
     }
     return object;
@@ -60,9 +60,9 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
             start_ns = scalanative_nano_time();
         }
         while (object == NULL && !Sweeper_IsSweepDone(heap)) {
-            Sweeper_Sweep(heap, &heap->sweep.cursorDone, LAZY_SWEEP_MIN_BATCH);
+            Sweeper_Sweep(heap, &heap->lazySweep.cursorDone, LAZY_SWEEP_MIN_BATCH);
             object = LargeAllocator_GetBlock(&largeAllocator, size);
-            if (heap->gcThreadCount == 0) {
+            if (heap->gcThreads.count == 0) {
                 // if there are no threads the mutator must do coalescing on its own
                 Sweeper_LazyCoalesce(heap);
             }
@@ -72,7 +72,7 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
             Stats_RecordEvent(stats, event_sweep, MUTATOR_THREAD_ID, start_ns, end_ns);
         }
     }
-    if (Sweeper_IsSweepDone(heap) && !heap->postSweepDone) {
+    if (Sweeper_IsSweepDone(heap) && !heap->sweep.postSweepDone) {
         Sweeper_sweepDone(heap);
     }
     return object;
@@ -199,8 +199,9 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone, uint32_t maxCou
 }
 
 uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
-    uint_fast32_t min = heap->sweep.cursorDone;
-    int gcThreadCount = heap->gcThreadCount;
+    uint_fast32_t min = heap->lazySweep.cursorDone;
+    int gcThreadCount = heap->gcThreads.count;
+
     for (int i = 0; i < gcThreadCount; i++) {
         uint_fast32_t cursorDone = gcThreads[i].sweep.cursorDone;
         if (gcThreads[i].active && cursorDone < min) {
@@ -212,14 +213,14 @@ uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
 
 void Sweeper_LazyCoalesce(Heap *heap) {
     // the previous coalesce is done and there is work
-    BlockRangeVal coalesce = heap->coalesce;
+    BlockRangeVal coalesce = heap->sweep.coalesce;
     uint_fast32_t startIdx = BlockRange_Limit(coalesce);
     uint_fast32_t coalesceDoneIdx = BlockRange_First(coalesce);
     uint_fast32_t limitIdx = Sweeper_minSweepCursor(heap);
     assert(coalesceDoneIdx <= startIdx);
     BlockRangeVal newValue = BlockRange_Pack(coalesceDoneIdx, limitIdx);
     while (startIdx == coalesceDoneIdx && startIdx < limitIdx) {
-        if (!atomic_compare_exchange_strong(&heap->coalesce, &coalesce, newValue)) {
+        if (!atomic_compare_exchange_strong(&heap->sweep.coalesce, &coalesce, newValue)) {
             // coalesce is updated by atomic_compare_exchange_strong
             startIdx = BlockRange_Limit(coalesce);
             coalesceDoneIdx = BlockRange_First(coalesce);
@@ -289,19 +290,19 @@ void Sweeper_LazyCoalesce(Heap *heap) {
                 }
                 // retreat the coalesce cursor
                 uint_fast32_t retreatTo = BlockMeta_GetBlockIndex(heap->blockMetaStart, lastCoalesceMe);
-                heap->coalesce = BlockRange_Pack(retreatTo, retreatTo);
+                heap->sweep.coalesce = BlockRange_Pack(retreatTo, retreatTo);
                 // do no more to avoid infinite loops
                 return;
             }
         }
 
-        heap->coalesce = BlockRange_Pack(limitIdx, limitIdx);
+        heap->sweep.coalesce = BlockRange_Pack(limitIdx, limitIdx);
     }
 }
 
 void Sweeper_sweepDone(Heap *heap) {
     Heap_GrowIfNeeded(heap);
-    heap->postSweepDone = true;
+    heap->sweep.postSweepDone = true;
     Stats *stats = heap->stats;
     if (stats != NULL) {
         uint64_t end_ns = scalanative_nano_time();

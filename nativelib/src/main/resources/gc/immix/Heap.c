@@ -139,10 +139,10 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->heapStart = heapStart;
     heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
     heap->sweep.cursor = initialBlockCount;
-    heap->sweep.cursorDone = initialBlockCount;
+    heap->lazySweep.cursorDone = initialBlockCount;
     heap->sweep.limit = initialBlockCount;
-    heap->coalesce = BlockRange_Pack(initialBlockCount, initialBlockCount);
-    heap->postSweepDone = true;
+    heap->sweep.coalesce = BlockRange_Pack(initialBlockCount, initialBlockCount);
+    heap->sweep.postSweepDone = true;
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
     Allocator_Init(&allocator, &blockAllocator, bytemap, blockMetaStart,
                    heapStart);
@@ -162,8 +162,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     sem_init(&heap->gcThreads.start, 0, 0);
 
     int gcThreadCount = Settings_GCThreadCount();
-    heap->gcThreadCount = gcThreadCount;
-    gcThreads = (GCThread *) malloc(sizeof(GCThread) * gcThreadCount);
+    heap->gcThreads.count = gcThreadCount;
+    GCThread *gcThreads = (GCThread *) malloc(sizeof(GCThread) * gcThreadCount);
     for (int i = 0; i < gcThreadCount; i++) {
         GCThread_Init(&gcThreads[i], i, heap);
     }
@@ -373,7 +373,7 @@ NOINLINE void Heap_waitForGCThreadsSlow(int gcThreadCount) {
 }
 
 INLINE void Heap_waitForGCThreads(Heap *heap) {
-    int gcThreadCount = heap->gcThreadCount;
+    int gcThreadCount = heap->gcThreads.count;
     bool anyActive = false;
     for (int i = 0; i < gcThreadCount; i++) {
         anyActive |= gcThreads[i].active;
@@ -396,14 +396,14 @@ void Heap_Recycle(Heap *heap) {
 
     heap->sweep.cursor = 0;
     heap->sweep.limit = heap->blockCount;
-    heap->sweep.cursorDone = 0;
-    heap->coalesce = BlockRange_Pack(0, 0);
-    heap->postSweepDone = false;
+    heap->lazySweep.cursorDone = 0;
+    heap->sweep.coalesce = BlockRange_Pack(0, 0);
+    heap->sweep.postSweepDone = false;
 
     sem_t *start = &heap->gcThreads.start;
 
     // wake all the GC threads
-    int gcThreadCount = heap->gcThreadCount;
+    int gcThreadCount = heap->gcThreads.count;
     for (int i = 0; i < gcThreadCount; i++) {
         sem_post(start);
     }
