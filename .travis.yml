@@ -31,7 +31,7 @@ script:
   - java -version
   - if [ "$MODE" == "source-checks" ]; then ./scripts/source-checks; fi
   - if [ "$MODE" == "test-tools" ]; then
-      sbt "-no-colors" "-J-Xmx2G" "^^ $SBT_VERSION" nscplugin/publishLocal sbtScalaNative/publishLocal test-tools;
+      sbt "-no-colors" "-J-Xmx3G" "^^ $SBT_VERSION" nscplugin/publishLocal sbtScalaNative/publishLocal test-tools;
     fi
   - if [ "$MODE" == "test-runtime" ]; then
       ./ci-docker/load-cached-images.sh
