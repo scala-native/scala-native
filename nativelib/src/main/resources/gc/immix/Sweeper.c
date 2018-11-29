@@ -41,8 +41,31 @@ When the coalescing reaches the end of heap sweeping is done. After sweeping `Sw
 on the mutator thread. This is done to avoid synchronization in the `Heap_Grow`. It is only called from the mutator
 thread, therefore no synchronization is needed.
 
-TODO coalescing example:
+EXAMPLE:
+SWEEP_BATCH_SIZE=3, there are 9 blocks in total and 2 threads
+? - unswept block F-free U-unavailable, C-coalesce_me, [] - superblock
 
+???|???|???
+thread 1 starts sweeping the first batch and thread 2 the second one
+U??|F??|???
+UFF|F??|???
+U[CC]|F??|???
+Thread 1 is done with its block and attempts to coalesce.
+The second batch is not done, so it can only coalesce up to item 4.
+U[FF]|FF?|???
+It starts creating a superblock, then starts sweeping batch 3.
+U[FF]|FF?|UF?
+U[FF]|FFU|UF?
+U[FF]|FFU|U[F]U
+In Batch 3 the free block in the middle gets immediately returned to BlockAllocator.
+Thread 1 is done, tries to coalesce, but there is nothing to do because batch 2 is not done yet.
+U[FF]|[CC]U|U[F]U
+Batch 2 is done, thread 2 tries to coalesce. It can coalesce the remaining 2 batches.
+U[FFFF]U|U[F]U
+The free superblock of size 4 gets returned to BlockAllocator.
+U[FFFF]U|U[F]U
+U[FFFF]UU[F]U
+All is coalesced! Sweeping is done.
 
 Note that besides coalescing `Sweeper_LazyCoalesce` also finishes the sweeping of superblocks in some cases.
 See also `block_superblock_start_me` and `LargeAllocator_Sweep`.
