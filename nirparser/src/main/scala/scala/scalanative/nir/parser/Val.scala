@@ -9,7 +9,6 @@ object Val extends Base[nir.Val] {
   import Base._
   import IgnoreWhitespace._
 
-  val None   = P("none".! map (_ => nir.Val.None))
   val True   = P("true".! map (_ => nir.Val.True))
   val False  = P("false".! map (_ => nir.Val.False))
   val Null   = P("null".! map (_ => nir.Val.Null))
@@ -42,6 +41,6 @@ object Val extends Base[nir.Val] {
   val String = P(stringLit map (nir.Val.String(_)))
 
   override val parser: P[nir.Val] =
-    None | True | False | Null | Zero | Long | Int | Short | Byte | Double | Float | StructValue | ArrayValue | Chars | Local | Global | Unit | Const | String
+    True | False | Null | Zero | Long | Int | Short | Byte | Double | Float | StructValue | ArrayValue | Chars | Local | Global | Unit | Const | String
 
 }

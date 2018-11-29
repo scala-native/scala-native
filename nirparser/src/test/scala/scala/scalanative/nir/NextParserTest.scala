@@ -13,9 +13,9 @@ class NextParserTest extends FunSuite {
     Next.Unwind(exc, Next.Label(local, Seq.empty)),
     Next.Unwind(exc, Next.Label(local, Seq(value))),
     Next.Unwind(exc, Next.Label(local, Seq(value, value))),
-    Next.Case(Val.None, Next.Label(local, Seq.empty)),
-    Next.Case(Val.None, Next.Label(local, Seq(value))),
-    Next.Case(Val.None, Next.Label(local, Seq(value, value))),
+    Next.Case(value, Next.Label(local, Seq.empty)),
+    Next.Case(value, Next.Label(local, Seq(value))),
+    Next.Case(value, Next.Label(local, Seq(value, value))),
     Next.Label(local, Seq.empty),
     Next.Label(local, Seq(value)),
     Next.Label(local, Seq(value, value))

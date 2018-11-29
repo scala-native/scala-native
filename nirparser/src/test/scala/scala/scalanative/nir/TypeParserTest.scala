@@ -8,8 +8,6 @@ class TypeParserTest extends FunSuite {
   val global = Global.Top("global")
 
   Seq[Type](
-    Type.None,
-    Type.Void,
     Type.Vararg,
     Type.Ptr,
     Type.Bool,
@@ -29,7 +27,7 @@ class TypeParserTest extends FunSuite {
     Type.StructValue(Seq(Type.Int)),
     Type.StructValue(Seq(Type.Int, Type.Ptr)),
     Type.Function(Seq.empty, Type.Unit),
-    Type.Function(Seq(Type.Int), Type.Void),
+    Type.Function(Seq(Type.Int), Type.Unit),
     Type.Function(Seq(Type.Int, Type.Long), Type.Nothing),
     Type.Nothing,
     Type.Var(Type.Int),

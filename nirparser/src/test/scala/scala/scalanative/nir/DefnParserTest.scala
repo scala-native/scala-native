@@ -9,8 +9,8 @@ class DefnParserTest extends FunSuite {
   val global = Global.Top("global")
 
   Seq[Defn](
-    Defn.Var(Attrs.None, global, ty, Val.None),
-    Defn.Const(Attrs.None, global, ty, Val.None),
+    Defn.Var(Attrs.None, global, ty, Val.Zero(ty)),
+    Defn.Const(Attrs.None, global, ty, Val.Zero(ty)),
     Defn.Declare(Attrs.None, global, ty),
     Defn.Define(Attrs.None, global, ty, Seq.empty),
     Defn.Trait(Attrs.None, global, Seq.empty),

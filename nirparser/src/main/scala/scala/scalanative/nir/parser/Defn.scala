@@ -9,14 +9,14 @@ object Defn extends Base[nir.Defn] {
   import Base.IgnoreWhitespace._
 
   val Var =
-    P(Attrs.parser ~ "var" ~ Global.parser ~ ":" ~ Type.parser ~ ("=" ~ Val.parser).? map {
+    P(Attrs.parser ~ "var" ~ Global.parser ~ ":" ~ Type.parser ~ "=" ~ Val.parser map {
       case (attrs, name, ty, v) =>
-        nir.Defn.Var(attrs, name, ty, v getOrElse nir.Val.None)
+        nir.Defn.Var(attrs, name, ty, v)
     })
   val Const =
-    P(Attrs.parser ~ "const" ~ Global.parser ~ ":" ~ Type.parser ~ ("=" ~ Val.parser).? map {
+    P(Attrs.parser ~ "const" ~ Global.parser ~ ":" ~ Type.parser ~ "=" ~ Val.parser map {
       case (attrs, name, ty, v) =>
-        nir.Defn.Const(attrs, name, ty, v getOrElse nir.Val.None)
+        nir.Defn.Const(attrs, name, ty, v)
     })
   val Declare =
     P(Attrs.parser ~ "decl" ~ Global.parser ~ ":" ~ Type.parser map {
@@ -38,7 +38,8 @@ object Defn extends Base[nir.Defn] {
     P(
       Attrs.parser ~ "class" ~ Global.parser ~ (":" ~ Global.parser.rep(
         sep = ",")).? map {
-        case (attrs, name, None) => nir.Defn.Class(attrs, name, None, Seq())
+        case (attrs, name, None) =>
+          nir.Defn.Class(attrs, name, None, Seq())
         case (attrs, name, Some(inherits)) =>
           nir.Defn.Class(attrs, name, inherits.headOption, inherits.tail)
       })
@@ -46,7 +47,8 @@ object Defn extends Base[nir.Defn] {
     P(
       Attrs.parser ~ "module" ~ Global.parser ~ (":" ~ Global.parser.rep(
         sep = ",")).? map {
-        case (attrs, name, None) => nir.Defn.Module(attrs, name, None, Seq())
+        case (attrs, name, None) =>
+          nir.Defn.Module(attrs, name, None, Seq())
         case (attrs, name, Some(inherits)) =>
           nir.Defn.Module(attrs, name, inherits.headOption, inherits.tail)
       })

@@ -5,7 +5,6 @@ import org.scalatest._
 
 class TypeManglingSuite extends FunSuite {
   Seq(
-    Type.Void,
     Type.Vararg,
     Type.Ptr,
     Type.Byte,

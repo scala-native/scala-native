@@ -10,7 +10,6 @@ object Inst extends Base[nir.Inst] {
   private val unwind: P[Next] =
     P(Next.parser.?).map(_.getOrElse(nir.Next.None))
 
-  val None = P("none".! map (_ => nir.Inst.None))
   val Label =
     P(Local.parser ~ ("(" ~ Val.Local.rep(sep = ",") ~ ")").? ~ ":" map {
       case (name, params) => nir.Inst.Label(name, params getOrElse Seq())
@@ -20,7 +19,7 @@ object Inst extends Base[nir.Inst] {
       case (name, op, unwind) => nir.Inst.Let(name, op, unwind)
     })
   val Ret =
-    P("ret" ~ Val.parser.? map (v => nir.Inst.Ret(v.getOrElse(nir.Val.None))))
+    P("ret" ~ Val.parser map (nir.Inst.Ret(_)))
   val Jump = P("jump" ~ Next.parser map (nir.Inst.Jump(_)))
   val If =
     P("if" ~ Val.parser ~ "then" ~ Next.parser ~ "else" ~ Next.parser map {
@@ -37,5 +36,5 @@ object Inst extends Base[nir.Inst] {
     P("unreachable" ~ unwind map (nir.Inst.Unreachable(_)))
 
   override val parser: P[nir.Inst] =
-    None | Label | Let | Ret | Jump | If | Switch | Throw | Unreachable
+    Label | Let | Ret | Jump | If | Switch | Throw | Unreachable
 }
