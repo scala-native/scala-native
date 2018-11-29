@@ -2,6 +2,44 @@
 #include "Stats.h"
 #include "State.h"
 
+
+/*
+
+Sweeper implements concurrent sweeping by coordinating
+lazy sweeper on the mutator thread with zero or more concurrent sweepers on GC threads.
+SCALANATIVE_GC_THREADS=0 turns it into a lazy sweeper.
+
+After the mark is done the concurrent sweepers are started.
+Each takes batch of SWEEP_BATCH_SIZE blocks using the `heap->sweep.cursor`.
+If the mutator thread fails to allocate if will sweep a batch of LAZY_SWEEP_MIN_BATCH blocks.
+This will speed up sweeping when allocation outpaces sweeping.
+
+Sweeper calls Allocator_Sweep and LargeAllocator_Sweep they update their internal structures that
+relate to partially free blocks(recycledBlocks in Allocator and freeLists in LargeAllocator).
+If there is a superblock that crosses the batch boundary, it is handled in the batch where it starts.
+Sweeper finds free superblocks (i.e. range of free blocks) within its batch.
+
+If the Sweeper would immediately return the free superblocks to BlockAllocator then we couldn't allocate anything
+bigger than a batch. Therefore the free blocks at the beginning and the end of the batch are marked as `block_coalesce_me`.
+There will be coalesced into bigger blocks by `Sweeper_LazyCoalesce`. Other free superblocks CAN be immediately
+returned to BlockAllocator because their size is already fixed by other non-free blocks around them.
+
+TODO explain coalescing
+Coalescing starts from the beginning of the heap and goes through a continuous  i.e. until we reach a batch
+that has not been swept. Coalescing progress is tracked by `heap->sweep.coalesce`. This BlockRange encodes two values:
+`cursorDone` (coalescing was done up to this point) and `cursor` .
+Each sweeper has cursorDone (even the lazy sweeper) it shows up to which block it was done sweeping.
+
+Coalescing is done incrementally - `Sweeper_LazyCoalesce` is called after each batch is swept.
+Coalescing might take a long time and lead to longer GC pauses and inconsistent performance.
+If at all possible (i.e. SCALANATIVE_GC_THREADS > 0), we avoid running it on the mutator thread.
+When the coalescing reaches the end of heap sweeping is done. After sweeping `Sweeper_sweepDone` is called
+on the mutator thread. This is done to avoid synchronization in the `Heap_Grow`. It is only called from the mutator
+thread, therefore no synchronization is needed.
+
+TODO coalescing EXAMPLE
+*/
+
 void Sweeper_sweepDone(Heap *heap);
 
 static inline void Sweeper_advanceLazyCursor(Heap *heap) {
