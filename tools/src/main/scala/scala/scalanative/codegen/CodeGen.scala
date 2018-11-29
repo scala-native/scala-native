@@ -113,9 +113,9 @@ object CodeGen {
         genDefn {
           env(n) match {
             case defn @ Defn.Var(attrs, _, _, _) =>
-              defn.copy(attrs.copy(isExtern = true), rhs = Val.None)
+              defn.copy(attrs.copy(isExtern = true))
             case defn @ Defn.Const(attrs, _, ty, _) =>
-              defn.copy(attrs.copy(isExtern = true), rhs = Val.None)
+              defn.copy(attrs.copy(isExtern = true))
             case defn @ Defn.Declare(attrs, _, _) =>
               defn.copy(attrs.copy(isExtern = true))
             case defn @ Defn.Define(attrs, name, ty, _) =>
@@ -215,9 +215,10 @@ object CodeGen {
       str(if (attrs.isExtern) "external " else "hidden ")
       str(if (isConst) "constant" else "global")
       str(" ")
-      rhs match {
-        case Val.None => genType(ty)
-        case rhs      => genVal(rhs)
+      if (attrs.isExtern) {
+        genType(ty)
+      } else {
+        genVal(rhs)
       }
     }
 
@@ -586,10 +587,6 @@ object CodeGen {
         newline()
         str("unreachable")
 
-      case Inst.Ret(Val.None) =>
-        newline()
-        str("ret void")
-
       case Inst.Ret(value) =>
         newline()
         str("ret ")
@@ -764,10 +761,8 @@ object CodeGen {
           genLocal(pointee)
           str(" = alloca ")
           genType(ty)
-          if (n ne Val.None) {
-            str(", ")
-            genVal(n)
-          }
+          str(", ")
+          genVal(n)
 
           newline()
           genBind()

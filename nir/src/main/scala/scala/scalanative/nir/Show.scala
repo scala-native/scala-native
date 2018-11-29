@@ -126,8 +126,6 @@ object Show {
           str(" ")
           next_(unwind)
         }
-      case Inst.Ret(Val.None) =>
-        str("ret")
       case Inst.Ret(value) =>
         str("ret ")
         val_(value)
@@ -215,10 +213,8 @@ object Show {
         str("stackalloc[")
         type_(ty)
         str("]")
-        if (n ne Val.None) {
-          str(" ")
-          val_(n)
-        }
+        str(" ")
+        val_(n)
       case Op.Bin(bin, ty, l, r) =>
         bin_(bin)
         str("[")
@@ -397,8 +393,6 @@ object Show {
     }
 
     def val_(value: Val): Unit = value match {
-      case Val.None =>
-        str("none")
       case Val.True =>
         str("true")
       case Val.False =>
@@ -476,20 +470,16 @@ object Show {
         global_(name)
         str(" : ")
         type_(ty)
-        if (v ne Val.None) {
-          str(" = ")
-          val_(v)
-        }
+        str(" = ")
+        val_(v)
       case Defn.Const(attrs, name, ty, v) =>
         attrs_(attrs)
         str("const ")
         global_(name)
         str(" : ")
         type_(ty)
-        if (v ne Val.None) {
-          str(" = ")
-          val_(v)
-        }
+        str(" = ")
+        val_(v)
       case Defn.Declare(attrs, name, ty) =>
         attrs_(attrs)
         str("decl ")
@@ -544,7 +534,6 @@ object Show {
     }
 
     def type_(ty: Type): Unit = ty match {
-      case Type.None   => str("none")
       case Type.Vararg => str("...")
       case Type.Bool   => str("bool")
       case Type.Ptr    => str("ptr")

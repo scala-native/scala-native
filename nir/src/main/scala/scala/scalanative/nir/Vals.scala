@@ -7,7 +7,6 @@ import scala.annotation.tailrec
 
 sealed abstract class Val {
   final def ty: Type = this match {
-    case Val.None                 => Type.None
     case Val.Null                 => Type.Null
     case Val.Zero(ty)             => ty
     case Val.True | Val.False     => Type.Bool
@@ -126,7 +125,6 @@ sealed abstract class Val {
 }
 object Val {
   // low-level
-  final case object None  extends Val
   final case object True  extends Val
   final case object False extends Val
   object Bool extends (Boolean => Val) {

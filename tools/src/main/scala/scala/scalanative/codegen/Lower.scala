@@ -99,7 +99,7 @@ object Lower {
 
       insts.foreach {
         case Inst.Let(n, Op.Var(ty), unwind) =>
-          buf.let(n, Op.Stackalloc(ty, Val.None), unwind)
+          buf.let(n, Op.Stackalloc(ty, Val.Int(1)), unwind)
         case _ =>
           ()
       }

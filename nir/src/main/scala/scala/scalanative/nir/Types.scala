@@ -21,7 +21,6 @@ sealed abstract class Type {
 }
 
 object Type {
-  final case object None extends Type
 
   // low-level second-class types
 

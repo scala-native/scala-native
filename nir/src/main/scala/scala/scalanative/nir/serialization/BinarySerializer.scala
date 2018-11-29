@@ -446,7 +446,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putTypes(tys: Seq[Type]): Unit = putSeq(tys)(putType)
   private def putType(ty: Type): Unit = ty match {
-    case Type.None   => putInt(T.NoneType)
     case Type.Vararg => putInt(T.VarargType)
     case Type.Ptr    => putInt(T.PtrType)
     case Type.Bool   => putInt(T.BoolType)
@@ -486,7 +485,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putVals(values: Seq[Val]): Unit = putSeq(values)(putVal)
   private def putVal(value: Val): Unit = value match {
-    case Val.None            => putInt(T.NoneVal)
     case Val.True            => putInt(T.TrueVal)
     case Val.False           => putInt(T.FalseVal)
     case Val.Null            => putInt(T.NullVal)
