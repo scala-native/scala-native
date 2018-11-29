@@ -20,28 +20,32 @@ Chunk *LargeAllocator_chunkAddOffset(Chunk *chunk, size_t words) {
 }
 
 void LargeAllocator_freeListPush(FreeList *freeList, Chunk *chunk) {
-    Chunk *head = (Chunk *) freeList->head;
+    Chunk *head = (Chunk *)freeList->head;
     do {
-        // head will be replaced with actual value if atomic_compare_exchange_strong fails
+        // head will be replaced with actual value if
+        // atomic_compare_exchange_strong fails
         chunk->next = head;
-    } while(!atomic_compare_exchange_strong(&freeList->head, (word_t *) &head, (word_t) chunk));
+    } while (!atomic_compare_exchange_strong(&freeList->head, (word_t *)&head,
+                                             (word_t)chunk));
 }
 
 Chunk *LargeAllocator_freeListPop(FreeList *freeList) {
-    Chunk *head = (Chunk *) freeList->head;
+    Chunk *head = (Chunk *)freeList->head;
     word_t newValue;
     do {
-        // head will be replaced with actual value if atomic_compare_exchange_strong fails
+        // head will be replaced with actual value if
+        // atomic_compare_exchange_strong fails
         if (head == NULL) {
             return NULL;
         }
-        newValue = (word_t) head->next;
-    } while (!atomic_compare_exchange_strong(&freeList->head, (word_t *) &head, newValue));
+        newValue = (word_t)head->next;
+    } while (!atomic_compare_exchange_strong(&freeList->head, (word_t *)&head,
+                                             newValue));
     return head;
 }
 
 void LargeAllocator_freeListInit(FreeList *freeList) {
-    freeList->head = (word_t) NULL;
+    freeList->head = (word_t)NULL;
 }
 
 void LargeAllocator_Init(LargeAllocator *allocator,
@@ -77,7 +81,8 @@ static inline Chunk *LargeAllocator_getChunkForSize(LargeAllocator *allocator,
     for (int listIndex =
              LargeAllocator_sizeToLinkedListIndex(requiredChunkSize);
          listIndex < FREE_LIST_COUNT; listIndex++) {
-        Chunk *chunk = LargeAllocator_freeListPop(&allocator->freeLists[listIndex]);
+        Chunk *chunk =
+            LargeAllocator_freeListPop(&allocator->freeLists[listIndex]);
         if (chunk != NULL) {
             return chunk;
         }
@@ -141,7 +146,7 @@ void LargeAllocator_Clear(LargeAllocator *allocator) {
 }
 
 uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
-                          word_t *blockStart, BlockMeta* batchLimit) {
+                              word_t *blockStart, BlockMeta *batchLimit) {
     // Objects that are larger than a block
     // are always allocated at the begining the smallest possible superblock.
     // Any gaps at the end can be filled with large objects, that are smaller
@@ -152,7 +157,8 @@ uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
     word_t *blockEnd = blockStart + WORDS_IN_BLOCK * superblockSize;
 
 #ifdef DEBUG_ASSERT
-    for (BlockMeta *block = blockMeta; block < blockMeta + superblockSize; block++) {
+    for (BlockMeta *block = blockMeta; block < blockMeta + superblockSize;
+         block++) {
         assert(block->debugFlag == dbg_must_sweep);
     }
 #endif
@@ -165,15 +171,17 @@ uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
         // release free superblock starting from the first object
         freeCount = superblockSize - 1;
 #ifdef DEBUG_ASSERT
-        for (BlockMeta *block = blockMeta; block < blockMeta + freeCount; block++) {
+        for (BlockMeta *block = blockMeta; block < blockMeta + freeCount;
+             block++) {
             block->debugFlag = dbg_free;
         }
 #endif
     } else {
 #ifdef DEBUG_ASSERT
-     for (BlockMeta *block = blockMeta; block < blockMeta + superblockSize - 1; block++) {
-         block->debugFlag = dbg_not_free;
-     }
+        for (BlockMeta *block = blockMeta;
+             block < blockMeta + superblockSize - 1; block++) {
+            block->debugFlag = dbg_not_free;
+        }
 #endif
     }
 
@@ -221,32 +229,39 @@ uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
         if (ObjectMeta_IsFree(firstObject)) {
             // the first object was free
             // the end of first object becomes a placeholder
-            ObjectMeta_SetPlaceholder(Bytemap_Get(allocator->bytemap, lastBlockStart));
+            ObjectMeta_SetPlaceholder(
+                Bytemap_Get(allocator->bytemap, lastBlockStart));
         }
         if (freeCount > 0) {
             // the last block is its own superblock
             if (lastBlock < batchLimit) {
-                // The block is within current batch, just create the superblock yourself
+                // The block is within current batch, just create the superblock
+                // yourself
                 BlockMeta_SetFlag(lastBlock, block_superblock_start);
                 BlockMeta_SetSuperblockSize(lastBlock, 1);
             } else {
-                // If we cross the current batch, then it is not to mark a block_superblock_middle to block_superblock_start.
-                // The other sweeper threads could be in the middle of skipping block_superblock_middle s.
-                // Then creating the superblock will be done by Heap_lazyCoalesce
+                // If we cross the current batch, then it is not to mark a
+                // block_superblock_middle to block_superblock_start. The other
+                // sweeper threads could be in the middle of skipping
+                // block_superblock_middle s. Then creating the superblock will
+                // be done by Heap_lazyCoalesce
                 BlockMeta_SetFlag(lastBlock, block_superblock_start_me);
             }
         }
         // handle the last chunk if any
         if (chunkStart != NULL) {
             size_t currentSize = (current - chunkStart) * WORD_SIZE;
-            LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart, currentSize);
+            LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart,
+                                    currentSize);
         }
     }
-    #ifdef DEBUG_PRINT
-        printf("LargeAllocator_Sweep %p %" PRIu32 " => FREE %" PRIu32 "/ %" PRIu32 "\n",
-               blockMeta, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta),
-               freeCount, superblockSize);
-        fflush(stdout);
-    #endif
+#ifdef DEBUG_PRINT
+    printf("LargeAllocator_Sweep %p %" PRIu32 " => FREE %" PRIu32 "/ %" PRIu32
+           "\n",
+           blockMeta,
+           BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta),
+           freeCount, superblockSize);
+    fflush(stdout);
+#endif
     return freeCount;
 }

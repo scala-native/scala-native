@@ -62,7 +62,6 @@ word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
     return heapStart;
 }
 
-
 /**
  * Allocates the heap struct and initializes it
  */
@@ -141,7 +140,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->sweep.cursor = initialBlockCount;
     heap->lazySweep.cursorDone = initialBlockCount;
     heap->sweep.limit = initialBlockCount;
-    heap->sweep.coalesce = BlockRange_Pack(initialBlockCount, initialBlockCount);
+    heap->sweep.coalesce =
+        BlockRange_Pack(initialBlockCount, initialBlockCount);
     heap->sweep.postSweepDone = true;
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
     Allocator_Init(&allocator, &blockAllocator, bytemap, blockMetaStart,
@@ -163,7 +163,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     int gcThreadCount = Settings_GCThreadCount();
     heap->gcThreads.count = gcThreadCount;
-    GCThread *gcThreads = (GCThread *) malloc(sizeof(GCThread) * gcThreadCount);
+    GCThread *gcThreads = (GCThread *)malloc(sizeof(GCThread) * gcThreadCount);
     for (int i = 0; i < gcThreadCount; i++) {
         GCThread_Init(&gcThreads[i], i, heap);
     }
@@ -228,9 +228,9 @@ done:
     assert(Heap_IsWordInHeap(heap, (word_t *)object));
     assert(object != NULL);
     ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, (word_t *)object);
-    #ifdef DEBUG_ASSERT
-        ObjectMeta_AssertIsValidAllocation(objectMeta, size);
-    #endif
+#ifdef DEBUG_ASSERT
+    ObjectMeta_AssertIsValidAllocation(objectMeta, size);
+#endif
     ObjectMeta_SetAllocated(objectMeta);
     return (word_t *)object;
 }
@@ -253,9 +253,9 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
 
     Object *object = (Object *)start;
     ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, (word_t *)object);
-    #ifdef DEBUG_ASSERT
-        ObjectMeta_AssertIsValidAllocation(objectMeta, size);
-    #endif
+#ifdef DEBUG_ASSERT
+    ObjectMeta_AssertIsValidAllocation(objectMeta, size);
+#endif
     ObjectMeta_SetAllocated(objectMeta);
 
     __builtin_prefetch(object + 36, 0, 3);
@@ -276,8 +276,8 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
 
 #ifdef DEBUG_ASSERT
 void Heap_clearIsSwept(Heap *heap) {
-    BlockMeta *current = (BlockMeta *) heap->blockMetaStart;
-    BlockMeta *limit = (BlockMeta *) heap->blockMetaEnd;
+    BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
+    BlockMeta *limit = (BlockMeta *)heap->blockMetaEnd;
     while (current < limit) {
         current->debugFlag = dbg_must_sweep;
         current++;
@@ -285,9 +285,9 @@ void Heap_clearIsSwept(Heap *heap) {
 }
 
 void Heap_assertIsConsistent(Heap *heap) {
-    BlockMeta *current = (BlockMeta *) heap->blockMetaStart;
-    LineMeta *lineMetas = (LineMeta *) heap->lineMetaStart;
-    BlockMeta *limit = (BlockMeta *) heap->blockMetaEnd;
+    BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
+    LineMeta *lineMetas = (LineMeta *)heap->lineMetaStart;
+    BlockMeta *limit = (BlockMeta *)heap->blockMetaEnd;
     ObjectMeta *currentBlockStart = Bytemap_Get(heap->bytemap, heap->heapStart);
     while (current < limit) {
         assert(!BlockMeta_IsCoalesceMe(current));
@@ -301,12 +301,15 @@ void Heap_assertIsConsistent(Heap *heap) {
         }
         BlockMeta *next = current + size;
         LineMeta *nextLineMetas = lineMetas + LINE_COUNT * size;
-        ObjectMeta *nextBlockStart = currentBlockStart + (WORDS_IN_BLOCK / ALLOCATION_ALIGNMENT_WORDS) * size;
+        ObjectMeta *nextBlockStart =
+            currentBlockStart +
+            (WORDS_IN_BLOCK / ALLOCATION_ALIGNMENT_WORDS) * size;
 
         for (LineMeta *line = lineMetas; line < nextLineMetas; line++) {
             assert(!Line_IsMarked(line));
         }
-        for (ObjectMeta *object = currentBlockStart; object < nextBlockStart; object++) {
+        for (ObjectMeta *object = currentBlockStart; object < nextBlockStart;
+             object++) {
             assert(!ObjectMeta_IsMarked(object));
         }
 
@@ -335,15 +338,16 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     Marker_MarkRoots(heap, stack);
     if (stats != NULL) {
         end_ns = scalanative_nano_time();
-        Stats_RecordEvent(stats, event_mark, MUTATOR_THREAD_ID, start_ns, end_ns);
+        Stats_RecordEvent(stats, event_mark, MUTATOR_THREAD_ID, start_ns,
+                          end_ns);
     }
     Heap_Recycle(heap);
 }
 
 bool Heap_shouldGrow(Heap *heap) {
-    uint32_t freeBlockCount = (uint32_t) blockAllocator.freeBlockCount;
+    uint32_t freeBlockCount = (uint32_t)blockAllocator.freeBlockCount;
     uint32_t blockCount = heap->blockCount;
-    uint32_t recycledBlockCount = (uint32_t) allocator.recycledBlockCount;
+    uint32_t recycledBlockCount = (uint32_t)allocator.recycledBlockCount;
     uint32_t unavailableBlockCount =
         blockCount - (freeBlockCount + recycledBlockCount);
 
@@ -368,7 +372,7 @@ NOINLINE void Heap_waitForGCThreadsSlow(int gcThreadCount) {
         anyActive = false;
         for (int i = 0; i < gcThreadCount; i++) {
             anyActive |= gcThreads[i].active;
-       }
+        }
     }
 }
 
@@ -391,7 +395,8 @@ void Heap_Recycle(Heap *heap) {
     // all the marking changes should be visible to all threads by now
     atomic_thread_fence(memory_order_seq_cst);
 
-    // before changing the cursor and limit values, makes sure no gc threads are running
+    // before changing the cursor and limit values, makes sure no gc threads are
+    // running
     Heap_waitForGCThreads(heap);
 
     heap->sweep.cursor = 0;

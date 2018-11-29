@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-const char* const Stats_eventNames[] = { "mark", "sweep" , "concmark", "concsweep", "collection"};
+const char *const Stats_eventNames[] = {"mark", "sweep", "concmark",
+                                        "concsweep", "collection"};
 
 void Stats_writeToFile(Stats *stats);
 
@@ -13,7 +14,8 @@ void Stats_Init(Stats *stats, const char *statsFile) {
     pthread_mutex_init(&stats->mutex, NULL);
 }
 
-void Stats_RecordEvent(Stats *stats, eventType eType, int8_t gc_thread, uint64_t start_ns, uint64_t end_ns) {
+void Stats_RecordEvent(Stats *stats, eventType eType, int8_t gc_thread,
+                       uint64_t start_ns, uint64_t end_ns) {
     pthread_mutex_lock(&stats->mutex);
     uint64_t index = stats->events % STATS_MEASUREMENTS;
     stats->start_ns[index] = start_ns;
@@ -35,7 +37,9 @@ void Stats_writeToFile(Stats *stats) {
     }
     FILE *outFile = stats->outFile;
     for (uint64_t i = 0; i < remainder; i++) {
-        fprintf(outFile, "%s,%" PRId8 ",%" PRIu64 ",%" PRIu64 "\n", Stats_eventNames[stats->event_types[i]], stats->gc_threads[i], stats->start_ns[i], stats->time_ns[i]);
+        fprintf(outFile, "%s,%" PRId8 ",%" PRIu64 ",%" PRIu64 "\n",
+                Stats_eventNames[stats->event_types[i]], stats->gc_threads[i],
+                stats->start_ns[i], stats->time_ns[i]);
     }
     fflush(outFile);
 }

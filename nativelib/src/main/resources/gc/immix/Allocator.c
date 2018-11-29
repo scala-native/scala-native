@@ -37,7 +37,8 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
  * otherwise.
  */
 bool Allocator_CanInitCursors(Allocator *allocator) {
-    uint32_t freeBlockCount = (uint32_t) allocator->blockAllocator->freeBlockCount;
+    uint32_t freeBlockCount =
+        (uint32_t)allocator->blockAllocator->freeBlockCount;
     return freeBlockCount >= 2 ||
            (freeBlockCount == 1 && allocator->recycledBlockCount > 0);
 }
@@ -158,15 +159,15 @@ bool Allocator_newBlock(Allocator *allocator) {
     word_t *blockStart;
 
     if (block != NULL) {
-        #ifdef DEBUG_PRINT
-            printf("Allocator_newBlock RECYCLED %p %" PRIu32 "\n",
-                   block, (uint32_t)(block - (BlockMeta *) allocator->blockMetaStart));
-            fflush(stdout);
-        #endif
+#ifdef DEBUG_PRINT
+        printf("Allocator_newBlock RECYCLED %p %" PRIu32 "\n", block,
+               (uint32_t)(block - (BlockMeta *)allocator->blockMetaStart));
+        fflush(stdout);
+#endif
         assert(block->debugFlag == dbg_partial_free);
-        #ifdef DEBUG_ASSERT
-            block->debugFlag = dbg_in_use;
-        #endif
+#ifdef DEBUG_ASSERT
+        block->debugFlag = dbg_in_use;
+#endif
         blockStart = BlockMeta_GetBlockStart(allocator->blockMetaStart,
                                              allocator->heapStart, block);
 
@@ -183,11 +184,11 @@ bool Allocator_newBlock(Allocator *allocator) {
         assert(allocator->limit <= Block_GetBlockEnd(blockStart));
     } else {
         block = BlockAllocator_GetFreeBlock(allocator->blockAllocator);
-        #ifdef DEBUG_PRINT
-            printf("Allocator_newBlock %p %" PRIu32 "\n",
-                   block, (uint32_t)(block - (BlockMeta *) allocator->blockMetaStart));
-            fflush(stdout);
-        #endif
+#ifdef DEBUG_PRINT
+        printf("Allocator_newBlock %p %" PRIu32 "\n", block,
+               (uint32_t)(block - (BlockMeta *)allocator->blockMetaStart));
+        fflush(stdout);
+#endif
         if (block == NULL) {
             return false;
         }
@@ -206,13 +207,14 @@ bool Allocator_newBlock(Allocator *allocator) {
 }
 
 uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
-                    word_t *blockStart, LineMeta *lineMetas) {
+                         word_t *blockStart, LineMeta *lineMetas) {
 
     // If the block is not marked, it means that it's completely free
     assert(blockMeta->debugFlag == dbg_must_sweep);
     if (!BlockMeta_IsMarked(blockMeta)) {
         memset(blockMeta, 0, sizeof(BlockMeta));
-        // does not unmark in LineMetas because those are ignored by the allocator
+        // does not unmark in LineMetas because those are ignored by the
+        // allocator
         ObjectMeta_ClearBlockAt(Bytemap_Get(allocator->bytemap, blockStart));
 #ifdef DEBUG_ASSERT
         blockMeta->debugFlag = dbg_free;
@@ -289,20 +291,21 @@ uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
             allocator->recycledBlockCount++;
 
 #ifdef DEBUG_ASSERT
-        blockMeta->debugFlag = dbg_partial_free;
+            blockMeta->debugFlag = dbg_partial_free;
 #endif
-            // the allocator thread must see the sweeping changes in recycled blocks
+            // the allocator thread must see the sweeping changes in recycled
+            // blocks
             atomic_thread_fence(memory_order_seq_cst);
             BlockList_Push(&allocator->recycledBlocks, blockMeta);
-            #ifdef DEBUG_PRINT
+#ifdef DEBUG_PRINT
                 printf("Allocator_Sweep %p %" PRIu32 " => RECYCLED\n",
                        blockMeta, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta));
                 fflush(stdout);
-            #endif
+#endif
         } else {
 #ifdef DEBUG_ASSERT
-        atomic_thread_fence(memory_order_seq_cst);
-        blockMeta->debugFlag = dbg_not_free;
+            atomic_thread_fence(memory_order_seq_cst);
+            blockMeta->debugFlag = dbg_not_free;
 #endif
         }
         return 0;

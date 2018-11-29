@@ -33,7 +33,7 @@ typedef struct {
     } block;
 #ifdef DEBUG_ASSERT
     int32_t nextBlock : BLOCK_COUNT_BITS;
-    uint8_t debugFlag; //only for debugging
+    uint8_t debugFlag; // only for debugging
 #else
     int32_t nextBlock;
 #endif
@@ -57,7 +57,8 @@ static inline bool BlockMeta_IsFree(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_free;
 }
 static inline bool BlockMeta_IsSimpleBlock(BlockMeta *blockMeta) {
-    // blockMeta->block.simple.flags == block_simple || blockMeta->block.simple.flags == block_marked
+    // blockMeta->block.simple.flags == block_simple ||
+    // blockMeta->block.simple.flags == block_marked
     return (blockMeta->block.simple.flags & 0x3) == block_simple;
 }
 static inline bool BlockMeta_IsSuperblockStart(BlockMeta *blockMeta) {
@@ -175,7 +176,8 @@ static inline uint32_t Block_GetBlockIndexForWord(word_t *heapStart,
     return (uint32_t)((blockStart - heapStart) / WORDS_IN_BLOCK);
 }
 
-static inline word_t *Block_GetStartFromIndex(word_t *heapStart, uint32_t index) {
+static inline word_t *Block_GetStartFromIndex(word_t *heapStart,
+                                              uint32_t index) {
     return heapStart + (WORDS_IN_BLOCK * index);
 }
 

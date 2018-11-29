@@ -4,7 +4,7 @@
 #include <semaphore.h>
 
 void *GCThread_loop(void *arg) {
-    GCThread *thread = (GCThread *) arg;
+    GCThread *thread = (GCThread *)arg;
     Heap *heap = thread->heap;
     sem_t *start = &heap->gcThreads.start;
     Stats *stats = heap->stats;
@@ -24,16 +24,17 @@ void *GCThread_loop(void *arg) {
         }
         if (stats != NULL) {
             end_ns = scalanative_nano_time();
-            Stats_RecordEvent(stats, event_concurrent_sweep, thread->id, start_ns, end_ns);
+            Stats_RecordEvent(stats, event_concurrent_sweep, thread->id,
+                              start_ns, end_ns);
         }
     }
     return NULL;
 }
 
 void GCThread_Init(GCThread *thread, int id, Heap *heap) {
-   thread->id = id;
-   thread->heap = heap;
-   thread->active = false;
+    thread->id = id;
+    thread->heap = heap;
+    thread->active = false;
 
-   pthread_create(&thread->self, NULL, GCThread_loop, (void *) thread);
+    pthread_create(&thread->self, NULL, GCThread_loop, (void *)thread);
 }

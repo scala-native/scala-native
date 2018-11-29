@@ -37,7 +37,8 @@ typedef struct {
         atomic_bool postSweepDone;
     } sweep;
     struct {
-        // making cursorDone atomic so it keeps sequential consistency with the other atomics
+        // making cursorDone atomic so it keeps sequential consistency with the
+        // other atomics
         atomic_uint_fast32_t cursorDone;
     } lazySweep;
     Bytemap *bytemap;
