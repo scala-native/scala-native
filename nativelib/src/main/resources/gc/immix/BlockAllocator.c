@@ -157,7 +157,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
 #ifdef DEBUG_ASSERT
         current->debugFlag = dbg_in_use;
 #endif
-        BlockMeta_SetFlag(current, block_superblock_middle);
+        BlockMeta_SetFlag(current, block_superblock_tail);
     }
 // not decrementing freeBlockCount, because it is only used after sweep
 #ifdef DEBUG_PRINT

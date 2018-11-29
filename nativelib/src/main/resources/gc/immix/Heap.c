@@ -292,7 +292,7 @@ void Heap_assertIsConsistent(Heap *heap) {
     while (current < limit) {
         assert(!BlockMeta_IsCoalesceMe(current));
         assert(!BlockMeta_IsSuperblockStartMe(current));
-        assert(!BlockMeta_IsSuperblockMiddle(current));
+        assert(!BlockMeta_IsSuperblockTail(current));
         assert(!BlockMeta_IsMarked(current));
 
         int size = 1;

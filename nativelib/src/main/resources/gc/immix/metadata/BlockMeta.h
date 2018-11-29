@@ -14,10 +14,10 @@ typedef enum {
     block_free = 0x0,
     block_simple = 0x1,
     block_superblock_start = 0x2,
-    block_superblock_middle = 0x3,
+    block_superblock_tail = 0x3,
     block_marked = 0x5, // 0x4 | block_simple
     block_coalesce_me = 0x8,
-    block_superblock_start_me = 0xb // block_superblock_middle | block_coalesce_me
+    block_superblock_start_me = 0xb // block_superblock_tail | block_coalesce_me
 } BlockFlag;
 
 typedef struct {
@@ -64,8 +64,8 @@ static inline bool BlockMeta_IsSimpleBlock(BlockMeta *blockMeta) {
 static inline bool BlockMeta_IsSuperblockStart(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_superblock_start;
 }
-static inline bool BlockMeta_IsSuperblockMiddle(BlockMeta *blockMeta) {
-    return blockMeta->block.simple.flags == block_superblock_middle;
+static inline bool BlockMeta_IsSuperblockTail(BlockMeta *blockMeta) {
+    return blockMeta->block.simple.flags == block_superblock_tail;
 }
 static inline bool BlockMeta_IsCoalesceMe(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_coalesce_me;
@@ -80,7 +80,7 @@ static inline uint32_t BlockMeta_SuperblockSize(BlockMeta *blockMeta) {
 
 static inline bool BlockMeta_ContainsLargeObjects(BlockMeta *blockMeta) {
     return BlockMeta_IsSuperblockStart(blockMeta) ||
-           BlockMeta_IsSuperblockMiddle(blockMeta);
+           BlockMeta_IsSuperblockTail(blockMeta);
 }
 
 static inline void BlockMeta_SetSuperblockSize(BlockMeta *blockMeta,
@@ -156,7 +156,7 @@ static inline word_t *Block_GetBlockStartForWord(word_t *word) {
 static inline BlockMeta *BlockMeta_GetSuperblockStart(word_t *blockMetaStart,
                                                       BlockMeta *blockMeta) {
     BlockMeta *current = blockMeta;
-    while (BlockMeta_IsSuperblockMiddle(current)) {
+    while (BlockMeta_IsSuperblockTail(current)) {
         current--;
         assert((word_t *)current >= blockMetaStart);
     }

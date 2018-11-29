@@ -241,9 +241,9 @@ uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
                 BlockMeta_SetSuperblockSize(lastBlock, 1);
             } else {
                 // If we cross the current batch, then it is not to mark a
-                // block_superblock_middle to block_superblock_start. The other
+                // block_superblock_tail to block_superblock_start. The other
                 // sweeper threads could be in the middle of skipping
-                // block_superblock_middle s. Then creating the superblock will
+                // block_superblock_tail s. Then creating the superblock will
                 // be done by Heap_lazyCoalesce
                 BlockMeta_SetFlag(lastBlock, block_superblock_start_me);
             }

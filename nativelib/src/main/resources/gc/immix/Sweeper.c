@@ -132,7 +132,7 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
         int size = 1;
         uint32_t freeCount = 0;
         assert(!BlockMeta_IsCoalesceMe(current));
-        assert(!BlockMeta_IsSuperblockMiddle(current));
+        assert(!BlockMeta_IsSuperblockTail(current));
         assert(!BlockMeta_IsSuperblockStartMe(current));
         if (BlockMeta_IsSimpleBlock(current)) {
             freeCount = Allocator_Sweep(&allocator, current, currentBlockStart,
