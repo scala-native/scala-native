@@ -140,8 +140,6 @@ object UseDef {
           if (!isPure(inst)) deps(block.name, Seq(inst.name))
         case inst: Inst.Cf =>
           deps(block.name, collect(inst))
-        case Inst.None =>
-          ()
         case inst =>
           unreachable
       }

@@ -649,9 +649,6 @@ object CodeGen {
         newline()
         str("]")
 
-      case Inst.None =>
-        ()
-
       case cf =>
         unsupported(cf)
     }

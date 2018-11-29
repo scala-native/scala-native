@@ -99,8 +99,7 @@ object Tags {
 
   final val Inst = Defn + 32
 
-  final val NoneInst        = 1 + Inst
-  final val LabelInst       = 1 + NoneInst
+  final val LabelInst       = 1 + Inst
   final val LetInst         = 1 + LabelInst
   final val LetUnwindInst   = 1 + LetInst
   final val RetInst         = 1 + LetUnwindInst

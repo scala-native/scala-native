@@ -26,8 +26,6 @@ trait Transform {
     insts.map(onInst)
 
   def onInst(inst: Inst): Inst = inst match {
-    case Inst.None =>
-      inst
     case Inst.Label(n, params) =>
       val newparams = params.map { param =>
         Val.Local(param.name, onType(param.ty))

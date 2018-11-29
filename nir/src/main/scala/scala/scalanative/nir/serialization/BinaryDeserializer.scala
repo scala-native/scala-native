@@ -90,7 +90,6 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   private def getInsts(): Seq[Inst] = getSeq(getInst)
   private def getInst(): Inst = getInt match {
-    case T.NoneInst        => Inst.None
     case T.LabelInst       => Inst.Label(getLocal, getParams)
     case T.LetInst         => Inst.Let(getLocal, getOp, Next.None)
     case T.LetUnwindInst   => Inst.Let(getLocal, getOp, getNext)

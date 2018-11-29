@@ -189,12 +189,12 @@ object Generate {
           val alloc = Val.Local(fresh(), clsTy)
 
           val initCall = if (cls.isStaticModule) {
-            Inst.None
+            Seq()
           } else {
             val initSig = Type.Function(Seq(clsTy), Type.Unit)
             val init    = Val.Global(name.member(Sig.Ctor(Seq())), Type.Ptr)
 
-            Inst.Let(Op.Call(initSig, init, Seq(alloc)), Next.None)
+            Seq(Inst.Let(Op.Call(initSig, init, Seq(alloc)), Next.None))
           }
 
           val loadName = name.member(Sig.Generated("load"))
@@ -219,8 +219,8 @@ object Generate {
               Inst.Ret(self),
               Inst.Label(initialize, Seq()),
               Inst.Let(alloc.name, Op.Classalloc(name), Next.None),
-              Inst.Let(Op.Store(clsTy, slot, alloc), Next.None),
-              initCall,
+              Inst.Let(Op.Store(clsTy, slot, alloc), Next.None)
+            ) ++ initCall ++ Seq(
               Inst.Ret(alloc)
             )
           )

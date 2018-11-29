@@ -101,8 +101,6 @@ object Show {
     }
 
     def inst_(inst: Inst): Unit = inst match {
-      case Inst.None =>
-        str("none")
       case Inst.Label(name, params) =>
         local_(name)
         if (params.isEmpty) {
