@@ -163,7 +163,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     int gcThreadCount = Settings_GCThreadCount();
     heap->gcThreads.count = gcThreadCount;
-    GCThread *gcThreads = (GCThread *)malloc(sizeof(GCThread) * gcThreadCount);
+    gcThreads = (GCThread *)malloc(sizeof(GCThread) * gcThreadCount);
     for (int i = 0; i < gcThreadCount; i++) {
         GCThread_Init(&gcThreads[i], i, heap);
     }
