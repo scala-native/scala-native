@@ -545,7 +545,6 @@ object Show {
 
     def type_(ty: Type): Unit = ty match {
       case Type.None   => str("none")
-      case Type.Void   => str("void")
       case Type.Vararg => str("...")
       case Type.Bool   => str("bool")
       case Type.Ptr    => str("ptr")

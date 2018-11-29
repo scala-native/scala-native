@@ -401,7 +401,6 @@ object CodeGen {
     }
 
     def genType(ty: Type): Unit = ty match {
-      case Type.Void                                             => str("void")
       case Type.Vararg                                           => str("...")
       case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing => str("i8*")
       case Type.Bool                                             => str("i1")
@@ -662,7 +661,7 @@ object CodeGen {
 
     def genLet(inst: Inst.Let)(implicit fresh: Fresh): Unit = {
       def isVoid(ty: Type): Boolean =
-        ty == Type.Void || ty == Type.Unit || ty == Type.Nothing
+        ty == Type.Unit || ty == Type.Nothing
 
       val op     = inst.op
       val name   = inst.name

@@ -25,7 +25,6 @@ object Type {
 
   // low-level second-class types
 
-  final case object Void   extends Type
   final case object Vararg extends Type
 
   // low-level primitive types

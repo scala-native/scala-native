@@ -117,7 +117,7 @@ object Generate {
     def genMain(): Unit = {
       implicit val fresh = Fresh()
       val entryMainTy =
-        Type.Function(Seq(Type.Ref(entry.top), ObjectArray), Type.Void)
+        Type.Function(Seq(Type.Ref(entry.top), ObjectArray), Type.Unit)
       val entryMainName =
         Global.Member(
           entry,
@@ -191,7 +191,7 @@ object Generate {
           val initCall = if (cls.isStaticModule) {
             Inst.None
           } else {
-            val initSig = Type.Function(Seq(clsTy), Type.Void)
+            val initSig = Type.Function(Seq(clsTy), Type.Unit)
             val init    = Val.Global(name.member(Sig.Ctor(Seq())), Type.Ptr)
 
             Inst.Let(Op.Call(initSig, init, Seq(alloc)), Next.None)

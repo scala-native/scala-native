@@ -232,7 +232,6 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   private def getTypes(): Seq[Type] = getSeq(getType)
   private def getType(): Type = getInt match {
     case T.NoneType        => Type.None
-    case T.VoidType        => Type.Void
     case T.VarargType      => Type.Vararg
     case T.PtrType         => Type.Ptr
     case T.BoolType        => Type.Bool

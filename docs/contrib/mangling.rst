@@ -24,8 +24,7 @@ that uses a notation inspired by
         K <sig-name> <type-name>+ E    // duplicate name
 
     <type-name> ::=
-        v                              // c void
-        g                              // c vararg
+        v                              // c vararg
         R _                            // c pointer type-name
         R <type-name>+ E               // c function type-name
         S <type-name>+ E               // c anonymous struct type-name
