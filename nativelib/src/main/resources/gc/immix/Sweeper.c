@@ -24,20 +24,28 @@ bigger than a batch. Therefore the free blocks at the beginning and the end of t
 There will be coalesced into bigger blocks by `Sweeper_LazyCoalesce`. Other free superblocks CAN be immediately
 returned to BlockAllocator because their size is already fixed by other non-free blocks around them.
 
-TODO explain coalescing
-Coalescing starts from the beginning of the heap and goes through a continuous  i.e. until we reach a batch
-that has not been swept. Coalescing progress is tracked by `heap->sweep.coalesce`. This BlockRange encodes two values:
-`cursorDone` (coalescing was done up to this point) and `cursor` .
-Each sweeper has cursorDone (even the lazy sweeper) it shows up to which block it was done sweeping.
+Coalescing could be done in single pass over the heap once all the batches are swept. However, then large areas
+of free blocks wouldn't be available for allocation.
+Instead coalescing is done incrementally - until we reach a batch that has not been swept.
+Coalescing progress is tracked by `heap->sweep.coalesce`. This BlockRange encodes two values:
+`cursorDone` (coalescing was done up to this point) and `cursor` (or limit of coalescing).
+Each sweeper has cursorDone (even the lazy sweeper) to track how far have we swept.
 
 Coalescing is done incrementally - `Sweeper_LazyCoalesce` is called after each batch is swept.
+There can be no more than 1 thread coalescing at a time. If a thread notices a coalescing is in progress it
+does not interfere and does not retry until it tries to sweep another batch.
 Coalescing might take a long time and lead to longer GC pauses and inconsistent performance.
 If at all possible (i.e. SCALANATIVE_GC_THREADS > 0), we avoid running it on the mutator thread.
+
 When the coalescing reaches the end of heap sweeping is done. After sweeping `Sweeper_sweepDone` is called
 on the mutator thread. This is done to avoid synchronization in the `Heap_Grow`. It is only called from the mutator
 thread, therefore no synchronization is needed.
 
-TODO coalescing EXAMPLE
+TODO coalescing example:
+
+
+Note that besides coalescing `Sweeper_LazyCoalesce` also finishes the sweeping of superblocks in some cases.
+See also `block_superblock_start_me` and `LargeAllocator_Sweep`.
 */
 
 void Sweeper_sweepDone(Heap *heap);
