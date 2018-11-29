@@ -72,8 +72,7 @@ object Mangle {
     }
 
     def mangleType(ty: Type): Unit = ty match {
-      case Type.Void         => str("v")
-      case Type.Vararg       => str("g")
+      case Type.Vararg       => str("v")
       case Type.Ptr          => str("R_")
       case Type.I(8, false)  => str("Ub")
       case Type.I(16, false) => str("Us")

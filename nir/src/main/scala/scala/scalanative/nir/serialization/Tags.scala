@@ -99,8 +99,7 @@ object Tags {
 
   final val Inst = Defn + 32
 
-  final val NoneInst        = 1 + Inst
-  final val LabelInst       = 1 + NoneInst
+  final val LabelInst       = 1 + Inst
   final val LetInst         = 1 + LabelInst
   final val LetUnwindInst   = 1 + LetInst
   final val RetInst         = 1 + LetUnwindInst
@@ -177,9 +176,7 @@ object Tags {
 
   final val Type = Op + 32
 
-  final val NoneType        = 1 + Type
-  final val VoidType        = 1 + NoneType
-  final val VarargType      = 1 + VoidType
+  final val VarargType      = 1 + Type
   final val BoolType        = 1 + VarargType
   final val PtrType         = 1 + BoolType
   final val CharType        = 1 + PtrType
@@ -208,8 +205,7 @@ object Tags {
 
   final val Val = Type + 32
 
-  final val NoneVal        = 1 + Val
-  final val TrueVal        = 1 + NoneVal
+  final val TrueVal        = 1 + Val
   final val FalseVal       = 1 + TrueVal
   final val NullVal        = 1 + FalseVal
   final val ZeroVal        = 1 + NullVal

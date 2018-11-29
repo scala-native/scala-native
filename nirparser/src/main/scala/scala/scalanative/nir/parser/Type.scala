@@ -9,8 +9,6 @@ object Type extends Base[nir.Type] {
   import Base._
   import IgnoreWhitespace._
 
-  val None   = P("none".! map (_ => nir.Type.None))
-  val Void   = P("void".! map (_ => nir.Type.Void))
   val Vararg = P("...".! map (_ => nir.Type.Vararg))
   val Ptr    = P("ptr".! map (_ => nir.Type.Ptr))
   val Bool   = P("bool".! map (_ => nir.Type.Bool))
@@ -41,5 +39,5 @@ object Type extends Base[nir.Type] {
   val Ref     = Global.parser.map(nir.Type.Ref(_))
 
   override val parser: P[nir.Type] =
-    None | Void | Vararg | Ptr | Bool | UByte | UShort | UInt | ULong | Byte | Short | Int | Long | Float | Double | ArrayValue | Function | StructValue | Nothing | Var | Unit | Array | Ref
+    Vararg | Ptr | Bool | UByte | UShort | UInt | ULong | Byte | Short | Int | Long | Float | Double | ArrayValue | Function | StructValue | Nothing | Var | Unit | Array | Ref
 }

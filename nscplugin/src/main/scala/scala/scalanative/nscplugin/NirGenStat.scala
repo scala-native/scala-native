@@ -138,7 +138,7 @@ trait NirGenStat { self: NirGenPhase =>
         val ty   = genType(f.tpe, box = false)
         val name = genFieldName(f)
 
-        buf += Defn.Var(attrs, name, ty, Val.None)
+        buf += Defn.Var(attrs, name, ty, Val.Zero(ty))
       }
     }
 

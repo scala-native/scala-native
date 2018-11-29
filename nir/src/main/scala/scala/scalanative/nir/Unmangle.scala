@@ -39,9 +39,6 @@ object Unmangle {
     def readType(): Type = peek() match {
       case 'v' =>
         next()
-        Type.Void
-      case 'g' =>
-        next()
         Type.Vararg
       case 'R' =>
         next()

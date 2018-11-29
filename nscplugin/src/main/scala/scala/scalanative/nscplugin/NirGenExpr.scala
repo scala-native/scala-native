@@ -1268,7 +1268,7 @@ trait NirGenExpr { self: NirGenPhase =>
           (Some(sizep), tagp)
       }
       val ty   = genType(unwrapTag(tagp), box = false)
-      val size = sizeopt.fold[Val](Val.None)(genExpr(_))
+      val size = sizeopt.fold[Val](Val.Int(1))(genExpr(_))
 
       buf.stackalloc(ty, size, unwind)
     }

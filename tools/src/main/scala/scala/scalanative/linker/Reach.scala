@@ -453,8 +453,6 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     insts.foreach(reachInst)
 
   def reachInst(inst: Inst): Unit = inst match {
-    case Inst.None =>
-      ()
     case Inst.Label(n, params) =>
       params.foreach(p => reachType(p.ty))
     case Inst.Let(n, op, unwind) =>

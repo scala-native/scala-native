@@ -40,8 +40,8 @@ object Op extends Base[nir.Op] {
       case (aggr, value, indices) => nir.Op.Insert(aggr, value, indices)
     })
   val Stackalloc =
-    P("stackalloc[" ~ Type.parser ~ "]" ~ Val.parser.? map {
-      case (ty, n) => nir.Op.Stackalloc(ty, n getOrElse nir.Val.None)
+    P("stackalloc[" ~ Type.parser ~ "]" ~ Val.parser map {
+      case (ty, n) => nir.Op.Stackalloc(ty, n)
     })
   val Bin =
     P(nir.parser.Bin.parser ~ "[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser map {

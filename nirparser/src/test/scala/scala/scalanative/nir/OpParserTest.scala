@@ -23,7 +23,6 @@ class OpParserTest extends FunSuite {
     Op.Insert(local, local, Seq(0)),
     Op.Insert(local, local, Seq(0, 1)),
     Op.Insert(local, local, Seq(0, 1, 2)),
-    Op.Stackalloc(ty, Val.None),
     Op.Stackalloc(ty, Val.Int(32)),
     Op.Bin(Bin.Iadd, ty, local, local),
     Op.Comp(Comp.Ieq, ty, local, local),

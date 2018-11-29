@@ -6,10 +6,8 @@ import org.scalatest._
 
 class ValParserTest extends FunSuite {
   val global = Global.Top("test")
-  val noTpe  = Type.None
 
   Seq[Val](
-    Val.None,
     Val.True,
     Val.False,
     Val.Null,

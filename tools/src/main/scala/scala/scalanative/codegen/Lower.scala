@@ -99,7 +99,7 @@ object Lower {
 
       insts.foreach {
         case Inst.Let(n, Op.Var(ty), unwind) =>
-          buf.let(n, Op.Stackalloc(ty, Val.None), unwind)
+          buf.let(n, Op.Stackalloc(ty, Val.Int(1)), unwind)
         case _ =>
           ()
       }
@@ -933,7 +933,7 @@ object Lower {
   val unitValue = Val.StructValue(Seq(unitConst))
 
   val throwName = extern("scalanative_throw")
-  val throwSig  = Type.Function(Seq(Type.Ptr), Type.Void)
+  val throwSig  = Type.Function(Seq(Type.Ptr), Type.Nothing)
   val throw_    = Val.Global(throwName, Type.Ptr)
 
   val arrayAlloc = Type.typeToArray.map {

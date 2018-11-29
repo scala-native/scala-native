@@ -20,8 +20,6 @@ trait Eval { self: Interflow =>
       def bailOut =
         throw BailOut("can't eval inst: " + inst.show)
       inst match {
-        case Inst.None =>
-          unreachable
         case _: Inst.Label =>
           unreachable
         case Inst.Let(local, op, unwind) =>
