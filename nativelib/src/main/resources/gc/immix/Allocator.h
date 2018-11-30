@@ -10,20 +10,30 @@
 #include "BlockAllocator.h"
 
 typedef struct {
-    word_t *blockMetaStart;
+    // The fields here are sorted by how often it is accessed.
+    // This should improve cache performance.
+    // frequently used by Heap_AllocSmall
+    // this is on the fast path
     Bytemap *bytemap;
-    BlockAllocator *blockAllocator;
-    word_t *heapStart;
-    BlockList recycledBlocks;
-    atomic_uint_fast32_t recycledBlockCount;
-    BlockMeta *block;
-    word_t *blockStart;
     word_t *cursor;
     word_t *limit;
-    BlockMeta *largeBlock;
-    word_t *largeBlockStart;
+
+    // additional things used for Allocator_getNextLine
+    BlockMeta *block;
+    word_t *blockStart;
+    // additional things used for Allocator_overflowAllocation
     word_t *largeCursor;
     word_t *largeLimit;
+    // additional things used for Allocator_newBlock
+    BlockList recycledBlocks;
+    word_t *blockMetaStart;
+    word_t *heapStart;
+    BlockAllocator *blockAllocator;
+    // additional things used for
+    BlockMeta *largeBlock;
+    word_t *largeBlockStart;
+    // This gets concurrently updated by other threads, keep if it as far away as possible from fast path.
+    atomic_uint_fast32_t recycledBlockCount;
 } Allocator;
 
 void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
