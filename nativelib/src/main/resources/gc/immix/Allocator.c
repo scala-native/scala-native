@@ -288,6 +288,7 @@ uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
 
             assert(BlockMeta_FirstFreeLine(blockMeta) >= 0);
             assert(BlockMeta_FirstFreeLine(blockMeta) < LINE_COUNT);
+            // clang actually moves the memfence here because of sequencial consitency
             allocator->recycledBlockCount++;
 
 #ifdef DEBUG_ASSERT

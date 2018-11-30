@@ -74,9 +74,13 @@ See also `block_superblock_start_me` and `LargeAllocator_Sweep`.
 void Sweeper_sweepDone(Heap *heap);
 
 static inline void Sweeper_advanceLazyCursor(Heap *heap) {
-    atomic_uint_fast32_t cursor = heap->sweep.cursor;
-    atomic_uint_fast32_t sweepLimit = heap->sweep.limit;
-    heap->lazySweep.cursorDone = (cursor <= sweepLimit) ? cursor : sweepLimit;
+    // It is safe to advance the cursorDone independently from anything else.
+    // An older values can only be lower which will not break correctness,
+    // maybe just delay coalescing for a tiny bit.
+    uint_fast32_t cursor = atomic_load_explicit(&heap->sweep.cursor, memory_order_relaxed);
+    uint_fast32_t sweepLimit = atomic_load_explicit(&heap->sweep.limit, memory_order_relaxed);
+    uint_fast32_t doneValue = (cursor <= sweepLimit) ? cursor : sweepLimit;
+    atomic_store_explicit(&heap->lazySweep.cursorDone, doneValue, memory_order_relaxed);
 }
 
 Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
@@ -279,9 +283,9 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
 
     // coalescing might be done by another thread
     // block_coalesce_me marks should be visible
-    atomic_thread_fence(memory_order_seq_cst);
+    atomic_thread_fence(memory_order_seq_cst); // the most expensive
 
-    *cursorDone = limitIdx;
+    *cursorDone = limitIdx; // the most expensive
 }
 
 uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
