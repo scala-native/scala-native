@@ -1,7 +1,7 @@
 #include "Sweeper.h"
 #include "Stats.h"
 #include "State.h"
-
+#include "GCThread.h"
 
 /*
 
@@ -291,7 +291,7 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
 uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
     uint_fast32_t min = heap->lazySweep.cursorDone;
     int gcThreadCount = heap->gcThreads.count;
-
+    GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
     for (int i = 0; i < gcThreadCount; i++) {
         uint_fast32_t cursorDone = gcThreads[i].sweep.cursorDone;
         if (gcThreads[i].active && cursorDone < min) {

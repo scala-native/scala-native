@@ -35,6 +35,8 @@ void GCThread_Init(GCThread *thread, int id, Heap *heap) {
     thread->id = id;
     thread->heap = heap;
     thread->active = false;
+    // we do not use the pthread value
+    pthread_t self;
 
-    pthread_create(&thread->self, NULL, GCThread_loop, (void *)thread);
+    pthread_create(&self, NULL, GCThread_loop, (void *)thread);
 }

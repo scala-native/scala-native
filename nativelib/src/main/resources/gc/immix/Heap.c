@@ -163,7 +163,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     int gcThreadCount = Settings_GCThreadCount();
     heap->gcThreads.count = gcThreadCount;
-    gcThreads = (GCThread *)malloc(sizeof(GCThread) * gcThreadCount);
+    GCThread *gcThreads = (GCThread *)malloc(sizeof(GCThread) * gcThreadCount);
+    heap->gcThreads.all = (void *)gcThreads;
     for (int i = 0; i < gcThreadCount; i++) {
         GCThread_Init(&gcThreads[i], i, heap);
     }
@@ -363,7 +364,7 @@ bool Heap_shouldGrow(Heap *heap) {
            4 * unavailableBlockCount > blockCount;
 }
 
-NOINLINE void Heap_waitForGCThreadsSlow(int gcThreadCount) {
+NOINLINE void Heap_waitForGCThreadsSlow(GCThread *gcThreads, int gcThreadCount) {
     // extremely unlikely to enter here
     // unless very many threads running
     bool anyActive = true;
@@ -378,12 +379,13 @@ NOINLINE void Heap_waitForGCThreadsSlow(int gcThreadCount) {
 
 INLINE void Heap_waitForGCThreads(Heap *heap) {
     int gcThreadCount = heap->gcThreads.count;
+    GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
     bool anyActive = false;
     for (int i = 0; i < gcThreadCount; i++) {
         anyActive |= gcThreads[i].active;
     }
     if (anyActive) {
-        Heap_waitForGCThreadsSlow(gcThreadCount);
+        Heap_waitForGCThreadsSlow(gcThreads, gcThreadCount);
     }
 }
 

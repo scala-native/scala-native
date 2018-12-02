@@ -29,6 +29,7 @@ typedef struct {
     struct {
         sem_t start;
         int count;
+        void *all;
     } gcThreads;
     struct {
         atomic_uint_fast32_t cursor;

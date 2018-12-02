@@ -8,11 +8,8 @@
 
 typedef struct {
     int id;
-    pthread_t self;
     Heap *heap;
     atomic_bool active;
-    pthread_mutex_t *startMutex;
-    pthread_cond_t *start;
     struct {
         // making cursorDone atomic so it keeps sequential consistency with the
         // other atomics

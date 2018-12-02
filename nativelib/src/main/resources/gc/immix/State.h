@@ -4,8 +4,6 @@
 #include "Heap.h"
 
 extern Heap heap;
-#include "GCThread.h"
-extern GCThread *gcThreads;
 extern Stack stack;
 extern Allocator allocator;
 extern LargeAllocator largeAllocator;
