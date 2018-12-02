@@ -8,7 +8,7 @@ object MathSuite extends tests.Suite {
   private def assert(cond: Boolean, message: String): Unit =
     assert(cond)
 
-// Max()
+  // Max()
 
   test("max with NaN arguments") {
     val a = 123.123d
@@ -48,7 +48,7 @@ object MathSuite extends tests.Suite {
     assert(Math.max(a.toLong, b.toLong) == b.toLong, "Long")
   }
 
-// Min()
+  // Min()
 
   test("min with NaN arguments") {
     val a = 773.211d
