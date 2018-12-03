@@ -3,12 +3,12 @@ package java.util
 // Ported from Harmony
 
 /* Design Note:   Lee Tibbert 2018-12-03
- * 
+ *
  * Kudos to the original scala implementation for finding a way through an
  * thicket of implementation difficulties!
- * 
+ *
  * A bread crumb for future maintainers:
- * 
+ *
  *   If you are attempting the understand the use of Locale in this file
  *   and its companion, FormatterUSSuite.scala, the important thing to know
  *   is that ScalaNative is currently explicitly documented as supporting
@@ -17,10 +17,10 @@ package java.util
  *   A number of tests in this file are disabled because they critically depend
  *   upon a Locale other than Locale.US.  The file FormatterUSSuite.scala
  *   runs many of those tests in Locale.US.
- * 
+ *
  *   Ideally, when more inclusive Locale support is implemented, the file
  *   FormatterUSsuite.scala can go away and tests in this file enabled.
- * 
+ *
  *   The astute reader will notice that a number of tests _enabled_ in
  *   this file appear to use a Locale other than Locale.US. Tracing and/or
  *   executing the test will show that the property being tested is Locale
@@ -28,7 +28,7 @@ package java.util
  *   time here on wonderment, to little or no profit.
  *
  * Status:
- * 
+ *
  *   After this and several other relevant PRs in the queue are accepted &
  *   the dust settles, I believe only one test will remain disabled.  That
  *   test relies upon Locale.GERMAN.
