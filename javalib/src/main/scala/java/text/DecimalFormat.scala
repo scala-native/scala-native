@@ -207,8 +207,12 @@ class DecimalFormat extends NumberFormat {
 
     private[this] def getDoubleDigits(number: Double): DoubleDigits = {
       // regular expressions (regex) are a good Computer Science candidate
-      // here. This is essential low level code and the implementation
-      // of regex may not be robust enough.
+      // here but are not used.
+      // This is essential low level code. I doubt the current
+      // implementation of regex is either robust or perfomant enough.
+      // I do not have time to benchmark alternate implementations, so
+      // I go for an implementation I believe I can both do quickly
+      // and get correct.
 
       val (wdPrefix, suffix) = number.toString.span(_ != '.')
 
