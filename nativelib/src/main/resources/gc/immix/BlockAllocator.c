@@ -10,7 +10,7 @@ void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
 void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
                          uint32_t blockCount) {
     for (int i = 0; i < SUPERBLOCK_LIST_SIZE; i++) {
-        BlockList_Init(&blockAllocator->freeSuperblocks[i], blockMetaStart);
+        BlockList_Init(&blockAllocator->freeSuperblocks[i]);
     }
     BlockAllocator_Clear(blockAllocator);
 
@@ -38,9 +38,10 @@ inline static int BlockAllocator_sizeToLinkedListIndex(uint32_t size) {
 
 inline static BlockMeta *
 BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int *index) {
+    word_t *blockMetaStart = blockAllocator->blockMetaStart;
     for (int i = *index; i < SUPERBLOCK_LIST_SIZE; i++) {
         BlockMeta *superblock =
-            BlockList_Pop(&blockAllocator->freeSuperblocks[i]);
+            BlockList_Pop(&blockAllocator->freeSuperblocks[i], blockMetaStart);
         if (superblock != NULL) {
             *index = i;
             return superblock;
@@ -51,9 +52,10 @@ BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int *index) {
 
 inline static BlockMeta *
 BlockAllocator_pollSuperblock_OnlyThread(BlockAllocator *blockAllocator, int *index) {
+     word_t *blockMetaStart = blockAllocator->blockMetaStart;
     for (int i = *index; i < SUPERBLOCK_LIST_SIZE; i++) {
         BlockMeta *superblock =
-            BlockList_Pop_OnlyThread(&blockAllocator->freeSuperblocks[i]);
+            BlockList_Pop_OnlyThread(&blockAllocator->freeSuperblocks[i], blockMetaStart);
         if (superblock != NULL) {
             *index = i;
             return superblock;
@@ -211,9 +213,9 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
 }
 
 static inline void BlockAllocator_addSuperblockToBlockLists(
-    BlockAllocator *blockAllocator, BlockMeta *superblock, uint32_t count) {
+    BlockAllocator *blockAllocator, word_t *blockMetaStart, BlockMeta *superblock, uint32_t count) {
     int i = BlockAllocator_sizeToLinkedListIndex(count);
-    BlockList_Push(&blockAllocator->freeSuperblocks[i], superblock);
+    BlockList_Push(&blockAllocator->freeSuperblocks[i], blockMetaStart, superblock);
 }
 
 void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
@@ -221,10 +223,11 @@ void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
     uint32_t remaining_count = count;
     uint32_t powerOf2 = 1;
     BlockMeta *current = superblock;
+    word_t *blockMetaStart = blockAllocator->blockMetaStart;
     // splits the superblock into smaller superblocks that are a powers of 2
     while (remaining_count > 0) {
         if ((powerOf2 & remaining_count) > 0) {
-            BlockAllocator_addSuperblockToBlockLists(blockAllocator, current,
+            BlockAllocator_addSuperblockToBlockLists(blockAllocator, blockMetaStart, current,
                                                      powerOf2);
             remaining_count -= powerOf2;
             current += powerOf2;

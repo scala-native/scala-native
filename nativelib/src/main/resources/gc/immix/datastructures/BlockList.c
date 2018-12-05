@@ -16,12 +16,11 @@ BlockMeta *BlockList_getNextBlock(word_t *blockMetaStart,
     }
 }
 
-void BlockList_Init(BlockList *blockList, word_t *blockMetaStart) {
-    blockList->blockMetaStart = blockMetaStart;
+void BlockList_Init(BlockList *blockList) {
     blockList->head = (word_t)NULL;
 }
 
-BlockMeta *BlockList_Pop(BlockList *blockList) {
+BlockMeta *BlockList_Pop(BlockList *blockList, word_t *blockMetaStart) {
     BlockMeta *block = (BlockMeta *)blockList->head;
     word_t newValue;
     do {
@@ -31,22 +30,22 @@ BlockMeta *BlockList_Pop(BlockList *blockList) {
             return NULL;
         }
         newValue =
-            (word_t)BlockList_getNextBlock(blockList->blockMetaStart, block);
+            (word_t)BlockList_getNextBlock(blockMetaStart, block);
     } while (!atomic_compare_exchange_strong(&blockList->head, (word_t *)&block,
                                              newValue));
     return block;
 }
 
-BlockMeta *BlockList_Pop_OnlyThread(BlockList *blockList) {
+BlockMeta *BlockList_Pop_OnlyThread(BlockList *blockList, word_t *blockMetaStart) {
     BlockMeta *block = (BlockMeta *)blockList->head;
     if (block == NULL) {
         return NULL;
     }
-    blockList->head = (word_t)BlockList_getNextBlock(blockList->blockMetaStart, block);
+    blockList->head = (word_t)BlockList_getNextBlock(blockMetaStart, block);
     return block;
 }
 
-void BlockList_Push(BlockList *blockList, BlockMeta *blockMeta) {
+void BlockList_Push(BlockList *blockList, word_t *blockMetaStart, BlockMeta *blockMeta) {
     BlockMeta *block = (BlockMeta *)blockList->head;
     do {
         // block will be replaced with actual value if
@@ -55,7 +54,7 @@ void BlockList_Push(BlockList *blockList, BlockMeta *blockMeta) {
             blockMeta->nextBlock = LAST_BLOCK;
         } else {
             blockMeta->nextBlock =
-                BlockMeta_GetBlockIndex(blockList->blockMetaStart, block);
+                BlockMeta_GetBlockIndex(blockMetaStart, block);
         }
     } while (!atomic_compare_exchange_strong(&blockList->head, (word_t *)&block,
                                              (word_t)blockMeta));
