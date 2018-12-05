@@ -160,6 +160,8 @@ bool Allocator_newBlock(Allocator *allocator) {
     word_t *blockStart;
 
     if (block != NULL) {
+        // get all the changes done by sweeping
+        atomic_thread_fence(memory_order_acquire);
 #ifdef DEBUG_PRINT
         printf("Allocator_newBlock RECYCLED %p %" PRIu32 "\n", block,
                BlockMeta_GetBlockIndex(blockMetaStart, block));
@@ -289,15 +291,15 @@ uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
 
             assert(BlockMeta_FirstFreeLine(blockMeta) >= 0);
             assert(BlockMeta_FirstFreeLine(blockMeta) < LINE_COUNT);
-            // clang actually moves the memfence here because of sequencial consitency
-            allocator->recycledBlockCount++;
+//            allocator->recycledBlockCount++;
+            atomic_fetch_add_explicit(&allocator->recycledBlockCount, 1, memory_order_relaxed);
 
 #ifdef DEBUG_ASSERT
             blockMeta->debugFlag = dbg_partial_free;
 #endif
             // the allocator thread must see the sweeping changes in recycled
             // blocks
-            atomic_thread_fence(memory_order_seq_cst);
+            atomic_thread_fence(memory_order_release);
             BlockList_Push(&allocator->recycledBlocks, allocator->blockMetaStart, blockMeta);
 #ifdef DEBUG_PRINT
                 printf("Allocator_Sweep %p %" PRIu32 " => RECYCLED\n",
@@ -306,7 +308,7 @@ uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
 #endif
         } else {
 #ifdef DEBUG_ASSERT
-            atomic_thread_fence(memory_order_seq_cst);
+            atomic_thread_fence(memory_order_release);
             blockMeta->debugFlag = dbg_not_free;
 #endif
         }

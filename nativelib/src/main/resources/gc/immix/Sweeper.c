@@ -283,9 +283,7 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
 
     // coalescing might be done by another thread
     // block_coalesce_me marks should be visible
-    atomic_thread_fence(memory_order_seq_cst); // the most expensive
-
-    *cursorDone = limitIdx; // the most expensive
+    atomic_store_explicit(cursorDone, limitIdx, memory_order_release);
 }
 
 uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
@@ -293,7 +291,7 @@ uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
     int gcThreadCount = heap->gcThreads.count;
     GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
     for (int i = 0; i < gcThreadCount; i++) {
-        uint_fast32_t cursorDone = gcThreads[i].sweep.cursorDone;
+        uint_fast32_t cursorDone = atomic_load_explicit(&gcThreads[i].sweep.cursorDone, memory_order_acquire);
         if (gcThreads[i].active && cursorDone < min) {
             min = cursorDone;
         }

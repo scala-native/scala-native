@@ -388,6 +388,8 @@ void Heap_Recycle(Heap *heap) {
 }
 
 void Heap_GrowIfNeeded(Heap *heap) {
+    // make all writes to block counts visible
+    atomic_thread_fence(memory_order_seq_cst);
     if (Heap_shouldGrow(heap)) {
         double growth;
         if (heap->heapSize < EARLY_GROWTH_THRESHOLD) {
