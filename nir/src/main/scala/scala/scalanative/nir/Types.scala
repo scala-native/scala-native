@@ -29,6 +29,7 @@ object Type {
   // low-level primitive types
 
   sealed abstract class Primitive(val width: Int) extends Type
+  final case object Bool                          extends Primitive(1)
   final case object Ptr                           extends Primitive(64)
 
   sealed abstract class I(width: Int, val signed: Boolean)
@@ -36,7 +37,6 @@ object Type {
   object I {
     def unapply(i: I): Some[(Int, Boolean)] = Some((i.width, i.signed))
   }
-  final case object Bool   extends I(1, signed = false)
   final case object Char   extends I(16, signed = false)
   final case object Byte   extends I(8, signed = true)
   final case object UByte  extends I(8, signed = false)

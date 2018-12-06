@@ -795,7 +795,7 @@ trait NirGenExpr { self: NirGenPhase =>
         case (_: Type.I, NOT)             => negateBits(coerced)
         case (_: Type.F, NEG)             => negateFloat(coerced)
         case (_: Type.I, NEG)             => negateInt(coerced)
-        case (_: Type.I, ZNOT)            => negateBool(coerced)
+        case (Type.Bool, ZNOT)            => negateBool(coerced)
         case _                            => abort("Unknown unary operation code: " + code)
       }
     }
@@ -848,7 +848,7 @@ trait NirGenExpr { self: NirGenPhase =>
                 "Unknown floating point type binary operation code: " + code)
           }
 
-        case _: Type.I =>
+        case Type.Bool | _: Type.I =>
           code match {
             case ADD =>
               genBinaryOp(Op.Bin(Bin.Iadd, _, _, _), left, right, opty)
