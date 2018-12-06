@@ -432,8 +432,10 @@ trait NirGenExpr { self: NirGenPhase =>
           if (value.booleanValue) Val.True else Val.False
         case ByteTag =>
           Val.Byte(value.intValue.toByte)
-        case ShortTag | CharTag =>
+        case ShortTag =>
           Val.Short(value.intValue.toShort)
+        case CharTag =>
+          Val.Char(value.intValue.toChar)
         case IntTag =>
           Val.Int(value.intValue)
         case LongTag =>

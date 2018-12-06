@@ -10,6 +10,7 @@ sealed abstract class Val {
     case Val.Null                 => Type.Null
     case Val.Zero(ty)             => ty
     case Val.True | Val.False     => Type.Bool
+    case Val.Char(_)              => Type.Char
     case Val.Byte(_)              => Type.Byte
     case Val.Short(_)             => Type.Short
     case Val.Int(_)               => Type.Int
@@ -77,6 +78,8 @@ sealed abstract class Val {
   final def isCanonical: Boolean = this match {
     case Val.True | Val.False =>
       true
+    case _: Val.Char =>
+      true
     case _: Val.Byte | _: Val.Short | _: Val.Int | _: Val.Long =>
       true
     case _: Val.Float | _: Val.Double =>
@@ -90,6 +93,7 @@ sealed abstract class Val {
   final def isDefault: Boolean = this match {
     case Val.False      => true
     case Val.Zero(_)    => true
+    case Val.Char('\0') => true
     case Val.Byte(0)    => true
     case Val.Short(0)   => true
     case Val.Int(0)     => true
@@ -104,7 +108,7 @@ sealed abstract class Val {
     case Val.Zero(Type.Bool) =>
       Val.False
     case Val.Zero(Type.Char) =>
-      Val.Short(0.toShort)
+      Val.Char('\0')
     case Val.Zero(Type.Byte) =>
       Val.Byte(0.toByte)
     case Val.Zero(Type.Short) =>
@@ -138,6 +142,7 @@ object Val {
   }
   final case object Null                     extends Val
   final case class Zero(of: nir.Type)        extends Val
+  final case class Char(value: scala.Char)   extends Val
   final case class Byte(value: scala.Byte)   extends Val
   final case class Short(value: scala.Short) extends Val
   final case class Int(value: scala.Int)     extends Val

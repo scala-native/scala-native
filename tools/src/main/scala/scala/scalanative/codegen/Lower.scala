@@ -789,7 +789,7 @@ object Lower {
             rtti(CharArrayCls).const,
             charsLength,
             Val.Int(0), // padding to get next field aligned properly
-            Val.ArrayValue(Type.Short, chars.map(c => Val.Short(c.toShort)))
+            Val.ArrayValue(Type.Char, chars.map(Val.Char))
           )
         ))
 

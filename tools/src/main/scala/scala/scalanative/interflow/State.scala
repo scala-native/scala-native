@@ -40,7 +40,7 @@ final class State(block: Local) {
     val chars      = derefVirtual(charsAddr)
     charsArray.zipWithIndex.foreach {
       case (value, idx) =>
-        chars.values(idx) = Val.Short(value.toShort)
+        chars.values(idx) = Val.Char(value)
     }
     val values = new Array[Val](4)
     values(linked.StringValueField.index) = Val.Virtual(charsAddr)
@@ -140,7 +140,7 @@ final class State(block: Local) {
           val Val.Virtual(charsAddr) = values(linked.StringValueField.index)
           val chars = derefVirtual(charsAddr).values
             .map {
-              case Val.Short(v) => v.toChar
+              case Val.Char(v) => v
             }
             .toArray[Char]
           Val.String(new java.lang.String(chars))
