@@ -1,6 +1,6 @@
 package java.lang
 
-import scalanative.runtime.{shortToUInt, shortToULong, Intrinsics}
+import scalanative.runtime.{shortToUInt, shortToULong, LLVMIntrinsics}
 
 final class Short(val _value: scala.Short)
     extends Number
@@ -217,7 +217,7 @@ object Short {
   }
 
   @inline def reverseBytes(i: scala.Short): scala.Short =
-    Intrinsics.`llvm.bswap.i16`(i)
+    LLVMIntrinsics.`llvm.bswap.i16`(i)
 
   @inline def toString(s: scala.Short): String =
     Integer.toString(s)

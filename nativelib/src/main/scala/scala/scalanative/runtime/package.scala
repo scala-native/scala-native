@@ -1,7 +1,7 @@
 package scala.scalanative
 
 import native._
-import runtime.Intrinsics._
+import runtime.LLVMIntrinsics._
 
 package object runtime {
 
