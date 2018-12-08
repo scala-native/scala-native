@@ -132,20 +132,23 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val TypeofMethod = getMember(RuntimeModule, TermName("typeof"))
     lazy val GetMonitorMethod =
       getMember(RuntimeModule, TermName("getMonitor"))
-    lazy val DivUIntMethod  = getMember(RuntimeModule, TermName("divUInt"))
-    lazy val DivULongMethod = getMember(RuntimeModule, TermName("divULong"))
-    lazy val RemUIntMethod  = getMember(RuntimeModule, TermName("remUInt"))
-    lazy val RemULongMethod = getMember(RuntimeModule, TermName("remULong"))
+
+    lazy val IntrinsicsModule = getRequiredModule(
+      "scala.scalanative.runtime.Intrinsics")
+    lazy val DivUIntMethod  = getMember(IntrinsicsModule, TermName("divUInt"))
+    lazy val DivULongMethod = getMember(IntrinsicsModule, TermName("divULong"))
+    lazy val RemUIntMethod  = getMember(IntrinsicsModule, TermName("remUInt"))
+    lazy val RemULongMethod = getMember(IntrinsicsModule, TermName("remULong"))
     lazy val ByteToUIntMethod =
-      getMember(RuntimeModule, TermName("byteToUInt"))
+      getMember(IntrinsicsModule, TermName("byteToUInt"))
     lazy val ByteToULongMethod =
-      getMember(RuntimeModule, TermName("byteToULong"))
+      getMember(IntrinsicsModule, TermName("byteToULong"))
     lazy val ShortToUIntMethod =
-      getMember(RuntimeModule, TermName("shortToUInt"))
+      getMember(IntrinsicsModule, TermName("shortToUInt"))
     lazy val ShortToULongMethod =
-      getMember(RuntimeModule, TermName("shortToULong"))
+      getMember(IntrinsicsModule, TermName("shortToULong"))
     lazy val IntToULongMethod =
-      getMember(RuntimeModule, TermName("intToULong"))
+      getMember(IntrinsicsModule, TermName("intToULong"))
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
       'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),

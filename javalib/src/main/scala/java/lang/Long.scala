@@ -1,6 +1,7 @@
 package java.lang
 
-import scalanative.runtime.{divULong, remULong, LLVMIntrinsics}
+import scalanative.runtime.Intrinsics.{divULong, remULong}
+import scalanative.runtime.LLVMIntrinsics
 
 final class Long(val _value: scala.Long) extends Number with Comparable[Long] {
   @inline def this(s: String) =
