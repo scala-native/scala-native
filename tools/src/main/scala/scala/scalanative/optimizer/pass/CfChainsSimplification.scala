@@ -2,8 +2,8 @@ package scala.scalanative
 package optimizer
 package pass
 
-import nir._, Inst._
-import sema._, ControlFlow.Block
+import nir._, Inst._, ControlFlow.Block
+import sema._
 
 class CfChainsSimplification extends Pass {
   import CfChainsSimplification._

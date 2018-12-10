@@ -4,11 +4,14 @@ package nir
 import Type._
 
 object Rt {
-  val Object    = Ref(Global.Top("java.lang.Object"))
-  val Class     = Ref(Global.Top("java.lang.Class"))
-  val String    = Ref(Global.Top("java.lang.String"))
-  val BoxedUnit = Ref(Global.Top("scala.runtime.BoxedUnit"))
-  val Type      = StructValue(Seq(Int, Int, Ptr, Byte))
+  val Object = Ref(Global.Top("java.lang.Object"))
+  val Class  = Ref(Global.Top("java.lang.Class"))
+  val String = Ref(Global.Top("java.lang.String"))
+  val Type   = StructValue(Seq(Int, Int, Ptr, Byte))
+
+  val BoxedNull       = Ref(Global.Top("scala.runtime.Null$"))
+  val BoxedUnit       = Ref(Global.Top("scala.runtime.BoxedUnit"))
+  val BoxedUnitModule = Ref(Global.Top("scala.scalanative.runtime.BoxedUnit$"))
 
   val JavaEqualsSig       = Sig.Method("equals", Seq(Object, Bool))
   val JavaHashCodeSig     = Sig.Method("hashCode", Seq(Int))
@@ -33,6 +36,8 @@ object Rt {
   val StringOffsetName         = StringName member Sig.Field("offset")
   val StringCountName          = StringName member Sig.Field("count")
   val StringCachedHashCodeName = StringName member Sig.Field("cachedHashCode")
+
+  val GenericArray = Ref(Global.Top("scala.scalanative.runtime.Array"))
 
   val arrayAlloc: Map[Sig, Global] = Seq(
     "BooleanArray",

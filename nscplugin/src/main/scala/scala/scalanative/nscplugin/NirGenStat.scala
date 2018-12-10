@@ -6,6 +6,7 @@ import scala.reflect.internal.Flags._
 import scala.scalanative.nir._
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
+import scalanative.nir.ControlFlow.removeDeadBlocks
 
 trait NirGenStat { self: NirGenPhase =>
 
@@ -311,7 +312,7 @@ trait NirGenStat { self: NirGenPhase =>
 
       genPrelude()
       buf.ret(genBody())
-      buf.toSeq
+      removeDeadBlocks(buf.toSeq)
     }
 
     def genFunctionPtrForwarder(sym: Symbol): Val = {

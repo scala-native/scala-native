@@ -1,9 +1,9 @@
 package scala.scalanative
 package sema
 
-import scala.collection.immutable
-import scala.collection.mutable
-import ControlFlow.Block
+import scala.collection.{immutable, mutable}
+import scalanative.nir.ControlFlow
+import scalanative.nir.ControlFlow.Block
 
 object DominatorTree {
 

@@ -22,18 +22,16 @@ sealed abstract class Type {
 
 object Type {
 
-  // low-level second-class types
+  /** Value types are either primitive or aggregate. */
+  sealed abstract class ValueKind extends Type
 
-  final case object Vararg extends Type
-
-  // low-level primitive types
-
-  sealed abstract class Primitive(val width: Int) extends Type
-  final case object Bool                          extends Primitive(1)
-  final case object Ptr                           extends Primitive(64)
+  /** Primitive value types. */
+  sealed abstract class PrimitiveKind(val width: Int) extends ValueKind
+  final case object Bool                              extends PrimitiveKind(1)
+  final case object Ptr                               extends PrimitiveKind(64)
 
   sealed abstract class I(width: Int, val signed: Boolean)
-      extends Primitive(width)
+      extends PrimitiveKind(width)
   object I {
     def unapply(i: I): Some[(Int, Boolean)] = Some((i.width, i.signed))
   }
@@ -47,37 +45,40 @@ object Type {
   final case object Long   extends I(64, signed = true)
   final case object ULong  extends I(64, signed = false)
 
-  sealed abstract class F(width: Int) extends Primitive(width)
+  sealed abstract class F(width: Int) extends PrimitiveKind(width)
   object F { def unapply(f: F): Some[Int] = Some(f.width) }
   final case object Float  extends F(32)
   final case object Double extends F(64)
 
-  // low-level composite types
+  /** Aggregate value types. */
+  sealed abstract class AggregateKind           extends ValueKind
+  final case class ArrayValue(ty: Type, n: Int) extends AggregateKind
+  final case class StructValue(tys: Seq[Type])  extends AggregateKind
 
-  final case class ArrayValue(ty: Type, n: Int)         extends Type
-  final case class StructValue(tys: Seq[Type])          extends Type
-  final case class Function(args: Seq[Type], ret: Type) extends Type
-
-  // high-level types
-
-  final case object Null         extends Type
-  final case object Nothing      extends Type
-  final case object Virtual      extends Type
-  final case class Var(ty: Type) extends Type
-
+  /** Reference types. */
   sealed abstract class RefKind extends Type {
     final def className: Global = this match {
+      case Type.Null            => Rt.BoxedNull.name
       case Type.Unit            => Rt.BoxedUnit.name
       case Type.Array(ty, _)    => toArrayClass(ty)
       case Type.Ref(name, _, _) => name
     }
   }
+  final case object Null                                     extends RefKind
   final case object Unit                                     extends RefKind
   final case class Array(ty: Type, nullable: Boolean = true) extends RefKind
   final case class Ref(name: Global,
                        exact: Boolean = false,
                        nullable: Boolean = true)
       extends RefKind
+
+  /** Second-class types. */
+  sealed abstract class SpecialKind                     extends Type
+  final case object Vararg                              extends SpecialKind
+  final case object Nothing                             extends SpecialKind
+  final case object Virtual                             extends SpecialKind
+  final case class Var(ty: Type)                        extends SpecialKind
+  final case class Function(args: Seq[Type], ret: Type) extends SpecialKind
 
   val unbox = Map[Type, Type](
     Type.Ref(Global.Top("java.lang.Boolean"))               -> Type.Bool,

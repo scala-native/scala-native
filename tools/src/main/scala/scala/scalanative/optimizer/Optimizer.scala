@@ -17,8 +17,6 @@ object Optimizer {
     val reporter = driver.optimizerReporter
     import reporter._
 
-    Show.dump(linked.defns, "linked.hnir")
-
     val interflowed =
       interflow.Interflow(config, linked, linked.defns)
 

@@ -27,18 +27,21 @@ object MemoryLayout {
     def size: Long
     def offset: Long
   }
-
   final case class Tpe(size: Long, offset: Long, ty: Type)
       extends PositionedType
   final case class Padding(size: Long, offset: Long) extends PositionedType
 
   def sizeOf(ty: Type): Long = ty match {
-    case primitive: Type.Primitive => math.max(primitive.width / WORD_SIZE, 1)
-    case Type.ArrayValue(arrTy, n) => sizeOf(arrTy) * n
-    case Type.StructValue(tys)     => MemoryLayout(tys).size
+    case primitive: Type.PrimitiveKind =>
+      math.max(primitive.width / WORD_SIZE, 1)
+    case Type.ArrayValue(arrTy, n) =>
+      sizeOf(arrTy) * n
+    case Type.StructValue(tys) =>
+      MemoryLayout(tys).size
     case Type.Nothing | Type.Ptr | _: Type.RefKind =>
       8
-    case _ => unsupported(s"sizeOf $ty")
+    case _ =>
+      unsupported(s"sizeOf $ty")
   }
 
   def apply(tys: Seq[Type]): MemoryLayout = {
@@ -46,6 +49,7 @@ object MemoryLayout {
 
     MemoryLayout(size, potys.reverse)
   }
+
   private def impl(tys: Seq[Type],
                    offset: Long): (Long, List[PositionedType]) = {
     if (tys.isEmpty) {

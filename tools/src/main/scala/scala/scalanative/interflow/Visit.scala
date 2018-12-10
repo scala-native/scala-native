@@ -2,9 +2,8 @@ package scala.scalanative
 package interflow
 
 import scalanative.nir._
-import scalanative.linker._
+import scalanative.linker._, Sema._
 import scalanative.optimizer.pass.DeadCodeElimination
-import scalanative.interflow.Sema._
 
 trait Visit { self: Interflow =>
   def shallVisit(name: Global): Boolean =

@@ -65,7 +65,8 @@ trait NirGenType { self: NirGenPhase =>
     case UShortClass  => if (!box) nir.Type.UShort  else genRefType(st)
     case UIntClass    => if (!box) nir.Type.UInt    else genRefType(st)
     case ULongClass   => if (!box) nir.Type.ULong   else genRefType(st)
-    case NothingClass => if (!box) nir.Type.Nothing else genRefType(RuntimeNothingClass)
+    case NullClass    => nir.Type.Null
+    case NothingClass => nir.Type.Nothing
     case PtrClass     => nir.Type.Ptr
     // format: on
     case sym if CStructClass.contains(sym) =>

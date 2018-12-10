@@ -8,8 +8,8 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scalanative.util.{Scope, ShowBuilder, unsupported, partitionBy, procs}
 import scalanative.io.{VirtualDirectory, withScratchBuffer}
-import scalanative.sema.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.nir._
+import scalanative.nir.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.util.Stats
 
 object CodeGen {

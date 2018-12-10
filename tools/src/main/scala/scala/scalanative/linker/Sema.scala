@@ -1,18 +1,34 @@
 package scala.scalanative
-package interflow
+package linker
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.linker._
 import scalanative.util.unreachable
 
 object Sema {
 
+  def is(l: Type, r: Type)(implicit linked: linker.Result): Boolean = {
+    (l, r) match {
+      case (l, r) if l == r =>
+        true
+      case (Type.Null, Type.Ptr) =>
+        true
+      case (Type.Null, _: Type.RefKind) =>
+        true
+      case (_: Type.RefKind, Rt.Object) =>
+        true
+      case (TraitRef(l), TraitRef(r)) =>
+        l.is(r)
+      case (ClassRef(cls), refty: Type.RefKind) =>
+        is(cls, refty)
+      case _ =>
+        false
+    }
+  }
+
   def is(cls: Class, ty: Type.RefKind)(
       implicit linked: linker.Result): Boolean = {
     ty match {
-      case ExactClassRef(othercls, _) =>
-        cls == othercls
       case ClassRef(othercls) =>
         cls.is(othercls)
       case TraitRef(trt) =>

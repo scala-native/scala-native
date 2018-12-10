@@ -36,6 +36,13 @@ trait NirGenExpr { self: NirGenPhase =>
           labeled = !inst.isInstanceOf[nir.Inst.Cf]
       }
       super.+=(inst)
+      inst match {
+        case Inst.Let(_, op, _) if op.resty == Type.Nothing =>
+          unreachable(unwind)
+          label(fresh())
+        case _ =>
+          ()
+      }
     }
 
     override def ++=(insts: Seq[Inst]): Unit =
@@ -1481,17 +1488,20 @@ trait NirGenExpr { self: NirGenPhase =>
           (fromty, toty) match {
             case _ if boxed.ty == boxty =>
               boxed
-            case (_: Type.Primitive, _: Type.Primitive) =>
+            case (_: Type.PrimitiveKind, _: Type.PrimitiveKind) =>
               genCoercion(value, fromty, toty)
             case (_, Type.Nothing) =>
               val runtimeNothing = genType(RuntimeNothingClass, box = true)
               val isNullL, notNullL = fresh()
               val isNull = buf.comp(Comp.Ieq, boxed.ty, boxed, Val.Null, unwind)
-              branch(isNull, Next(isNullL), Next(notNullL))
-              label(isNullL)
-              raise(Val.Null, unwind)
-              label(notNullL)
+              buf.branch(isNull, Next(isNullL), Next(notNullL))
+              buf.label(isNullL)
+              buf.raise(Val.Null, unwind)
+              buf.label(notNullL)
               buf.as(runtimeNothing, boxed, unwind)
+              buf.unreachable(unwind)
+              buf.label(fresh())
+              Val.Zero(Type.Nothing)
             case _ =>
               val cast = buf.as(boxty, boxed, unwind)
               unboxValue(app.tpe, partial = true, cast)

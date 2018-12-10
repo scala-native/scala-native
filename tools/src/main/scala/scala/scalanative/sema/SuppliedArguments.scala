@@ -1,9 +1,8 @@
 package scala.scalanative
 package sema
 
-import sema.ControlFlow.Block
 import scala.collection.mutable
-import nir._
+import scalanative.nir._, ControlFlow.Block
 
 class SuppliedArguments(val cfg: ControlFlow.Graph,
                         val forBlock: Map[Local, Seq[Set[Val]]]) {

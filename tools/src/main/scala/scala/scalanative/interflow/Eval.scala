@@ -3,10 +3,9 @@ package interflow
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.linker._
+import scalanative.linker._, Sema._
 import scalanative.codegen.MemoryLayout
 import scalanative.util.unreachable
-import scalanative.interflow.Sema._
 
 trait Eval { self: Interflow =>
   def run(insts: Array[Inst],
@@ -281,7 +280,7 @@ trait Eval { self: Interflow =>
                 } else if (!nullable) {
                   Val.True
                 } else {
-                  emit.comp(Comp.Ine, Type.Ptr, obj, Val.Null, unwind)
+                  emit.comp(Comp.Ine, Rt.Object, obj, Val.Null, unwind)
                 }
                 log(
                   s"isinstanceof ${obj.ty.show} a ${cls.ty.show} ? ${res.show}")

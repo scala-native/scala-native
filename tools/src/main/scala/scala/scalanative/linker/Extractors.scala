@@ -84,7 +84,9 @@ object UnitRef {
   def unapply(ty: Type): Option[Boolean] = ty match {
     case Type.Unit =>
       Some(false)
-    case Type.Ref(name, _, nullable) if name == Rt.BoxedUnit.name =>
+    case Type.Ref(name, _, nullable)
+        if name == Rt.BoxedUnit.name
+          || name == Rt.BoxedUnitModule.name =>
       Some(nullable)
     case _ =>
       None

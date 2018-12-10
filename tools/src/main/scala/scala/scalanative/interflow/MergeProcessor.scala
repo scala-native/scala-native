@@ -4,8 +4,7 @@ package interflow
 import scala.collection.mutable
 import scalanative.util.unreachable
 import scalanative.nir._
-import scalanative.linker._
-import scalanative.interflow.Sema._
+import scalanative.linker._, Sema._
 
 final class MergeProcessor(insts: Array[Inst],
                            blockFresh: Fresh,

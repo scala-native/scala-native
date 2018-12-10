@@ -54,6 +54,9 @@ object Build {
     val entries = ScalaNative.entries(config)
     val linked  = ScalaNative.link(config, entries)
 
+    nir.Show.dump(linked.defns, "linked.nir")
+    check(linked)
+
     if (linked.unavailable.nonEmpty) {
       linked.unavailable.map(_.show).sorted.foreach { signature =>
         config.logger.error(s"cannot link: $signature")
@@ -71,6 +74,8 @@ object Build {
     val optimized =
       ScalaNative.optimize(config, linked, driver)
 
+    check(optimized)
+
     IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
     ScalaNative.codegen(config, optimized)
     val generated = IO.getAll(config.workdir, "glob:**.ll")
@@ -84,5 +89,47 @@ object Build {
     }
 
     LLVM.link(config, linked, objectFiles, unpackedLib, outpath)
+  }
+
+  private def check(linked: scalanative.linker.Result): Unit = {
+    import scala.collection.mutable
+    import scalanative.nir._
+    import scalanative.checker._
+    val errors = Check(linked)
+    if (errors.nonEmpty) {
+      val grouped =
+        mutable.Map.empty[Global, mutable.UnrolledBuffer[Check.Error]]
+      errors.foreach { err =>
+        val errs =
+          grouped.getOrElseUpdate(err.name, mutable.UnrolledBuffer.empty)
+        errs += err
+      }
+      grouped.foreach {
+        case (name, errs) =>
+          println("")
+          println(s"Found ${errs.length} errors on ${name.show} :")
+          println("")
+          linked.defns
+            .collectFirst {
+              case defn if defn != null && defn.name == name => defn
+            }
+            .foreach { defn =>
+              val str   = defn.show
+              val lines = str.split("\n")
+              lines.zipWithIndex.foreach {
+                case (line, idx) =>
+                  println(String.format("  %04d  ",
+                                        java.lang.Integer.valueOf(idx)) + line)
+              }
+            }
+          println("")
+          errs.foreach { err =>
+            println("  in " + err.ctx.reverse.mkString(" / ") + " : ")
+            println("    " + err.msg)
+          }
+
+      }
+      () //throw new BuildException(s"${errors.size} found")
+    }
   }
 }

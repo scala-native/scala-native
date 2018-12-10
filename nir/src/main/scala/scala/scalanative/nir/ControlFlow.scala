@@ -1,5 +1,5 @@
 package scala.scalanative
-package sema
+package nir
 
 import scala.collection.mutable
 import util.unsupported
@@ -142,5 +142,17 @@ object ControlFlow {
 
       new Graph(entry, all, blocks)
     }
+  }
+
+  def removeDeadBlocks(insts: Seq[Inst]): Seq[Inst] = {
+    val cfg = ControlFlow.Graph(insts)
+    val buf = new nir.Buffer()(Fresh(insts))
+
+    cfg.all.foreach { b =>
+      buf += b.label
+      buf ++= b.insts
+    }
+
+    buf.toSeq
   }
 }
