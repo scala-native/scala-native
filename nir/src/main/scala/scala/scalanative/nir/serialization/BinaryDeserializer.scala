@@ -235,13 +235,9 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.BoolType        => Type.Bool
     case T.CharType        => Type.Char
     case T.ByteType        => Type.Byte
-    case T.UByteType       => Type.UByte
     case T.ShortType       => Type.Short
-    case T.UShortType      => Type.UShort
     case T.IntType         => Type.Int
-    case T.UIntType        => Type.UInt
     case T.LongType        => Type.Long
-    case T.ULongType       => Type.ULong
     case T.FloatType       => Type.Float
     case T.DoubleType      => Type.Double
     case T.ArrayValueType  => Type.ArrayValue(getType, getInt)

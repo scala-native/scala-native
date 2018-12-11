@@ -50,24 +50,6 @@ object Unmangle {
             val types = readTypes()
             Type.Function(types.init, types.last)
         }
-      case 'U' =>
-        next()
-        peek() match {
-          case 'b' =>
-            next()
-            Type.UByte
-          case 's' =>
-            next()
-            Type.UShort
-          case 'i' =>
-            next()
-            Type.UInt
-          case 'j' =>
-            next()
-            Type.ULong
-          case ch =>
-            error(s"expected primitive number type, but got $ch")
-        }
       case 'z' =>
         next()
         Type.Bool

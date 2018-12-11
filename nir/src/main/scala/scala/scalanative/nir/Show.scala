@@ -540,13 +540,9 @@ object Show {
       case Type.Ptr    => str("ptr")
       case Type.Char   => str("char")
       case Type.Byte   => str("byte")
-      case Type.UByte  => str("ubyte")
       case Type.Short  => str("short")
-      case Type.UShort => str("ushort")
       case Type.Int    => str("int")
-      case Type.UInt   => str("uint")
       case Type.Long   => str("long")
-      case Type.ULong  => str("ulong")
       case Type.Float  => str("float")
       case Type.Double => str("double")
 

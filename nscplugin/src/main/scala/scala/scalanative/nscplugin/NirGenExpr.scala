@@ -763,10 +763,10 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def numOfType(num: Int, ty: nir.Type): Val = ty match {
-      case Type.Byte | Type.UByte               => Val.Byte(num.toByte)
-      case Type.Short | Type.UShort | Type.Char => Val.Short(num.toShort)
-      case Type.Int | Type.UInt                 => Val.Int(num)
-      case Type.Long | Type.ULong               => Val.Long(num.toLong)
+      case Type.Byte                => Val.Byte(num.toByte)
+      case Type.Short  | Type.Char => Val.Short(num.toShort)
+      case Type.Int                  => Val.Int(num)
+      case Type.Long                => Val.Long(num.toLong)
       case Type.Float                           => Val.Float(num.toFloat)
       case Type.Double                          => Val.Double(num.toDouble)
       case _                                    => unsupported(s"num = $num, ty = ${ty.show}")
@@ -1094,27 +1094,36 @@ trait NirGenExpr { self: NirGenPhase =>
       }
     }
 
-    def boxValue(st: SimpleType, value: Val): Val = {
-      if (genPrimCode(st.sym) == 'O') {
-        value
-      } else {
-        genApplyBox(st, ValTree(value))
-      }
+    def boxValue(st: SimpleType, value: Val): Val = st.sym match {
+      case UByteClass | UShortClass | UIntClass | ULongClass =>
+        genApplyModuleMethod(RuntimeBoxesModule,
+                             BoxUnsignedMethod(st.sym),
+                             Seq(ValTree(value)))
+      case _ =>
+        if (genPrimCode(st.sym) == 'O') {
+          value
+        } else {
+          genApplyBox(st, ValTree(value))
+        }
     }
 
-    def unboxValue(st: SimpleType, partial: Boolean, value: Val): Val = {
-      val code = genPrimCode(st)
-
-      code match {
+    def unboxValue(st: SimpleType, partial: Boolean, value: Val): Val = st.sym match {
+      case UByteClass | UShortClass | UIntClass | ULongClass =>
         // Results of asInstanceOfs are partially unboxed, meaning
         // that non-standard value types remain to be boxed.
-        case _ if partial && 'a' <= code && code <= 'z' =>
+        if (partial) {
           value
-        case 'O' =>
+        } else {
+          genApplyModuleMethod(RuntimeBoxesModule,
+                               UnboxUnsignedMethod(st.sym),
+                               Seq(ValTree(value)))
+        }
+      case _ =>
+        if (genPrimCode(st) == 'O') {
           value
-        case _ =>
+        } else {
           genApplyUnbox(st, ValTree(value))
-      }
+        }
     }
 
     def genPtrOp(app: Apply, code: Int): Val = {
@@ -1518,13 +1527,6 @@ trait NirGenExpr { self: NirGenPhase =>
 
         case st if st.isStruct =>
           genApplyNewStruct(st, args)
-
-        case st @ SimpleType(UByteClass | UIntClass | UShortClass | ULongClass,
-                             Seq())
-            // We can't just compare the curClassSym with RuntimeBoxesModule
-            // as it's not the same when you're actually compiling Boxes module.
-            if curClassSym.fullName.toString != "scala.scalanative.runtime.Boxes" =>
-          genApplyBox(st, args.head)
 
         case SimpleType(cls, Seq()) =>
           genApplyNew(cls, fun.symbol, args)

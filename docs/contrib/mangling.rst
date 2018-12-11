@@ -29,7 +29,6 @@ that uses a notation inspired by
         R <type-name>+ E               // c function type-name
         S <type-name>+ E               // c anonymous struct type-name
         A <type-name> <number> _       // c array type-name
-        U <integer-type-name>          // unsigned integer type-name
         <integer-type-name>            // signed integer type-name
         z                              // scala.Boolean
         c                              // scala.Char

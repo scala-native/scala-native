@@ -12,10 +12,6 @@ object Type extends Base[nir.Type] {
   val Vararg = P("...".! map (_ => nir.Type.Vararg))
   val Ptr    = P("ptr".! map (_ => nir.Type.Ptr))
   val Bool   = P("bool".! map (_ => nir.Type.Bool))
-  val UByte  = P("ubyte".! map (_ => nir.Type.UByte))
-  val UShort = P("ushort".! map (_ => nir.Type.UShort))
-  val UInt   = P("uint".! map (_ => nir.Type.UInt))
-  val ULong  = P("ulong".! map (_ => nir.Type.ULong))
   val Byte   = P("byte".! map (_ => nir.Type.Byte))
   val Short  = P("short".! map (_ => nir.Type.Short))
   val Int    = P("int".! map (_ => nir.Type.Int))
@@ -39,5 +35,5 @@ object Type extends Base[nir.Type] {
   val Ref     = Global.parser.map(nir.Type.Ref(_))
 
   override val parser: P[nir.Type] =
-    Vararg | Ptr | Bool | UByte | UShort | UInt | ULong | Byte | Short | Int | Long | Float | Double | ArrayValue | Function | StructValue | Nothing | Var | Unit | Array | Ref
+    Vararg | Ptr | Bool | Byte | Short | Int | Long | Float | Double | ArrayValue | Function | StructValue | Nothing | Var | Unit | Array | Ref
 }

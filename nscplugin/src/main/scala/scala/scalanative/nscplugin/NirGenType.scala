@@ -61,14 +61,17 @@ trait NirGenType { self: NirGenPhase =>
     case LongClass    => if (!box) nir.Type.Long    else genRefType(BoxedLongClass)
     case FloatClass   => if (!box) nir.Type.Float   else genRefType(BoxedFloatClass)
     case DoubleClass  => if (!box) nir.Type.Double  else genRefType(BoxedDoubleClass)
-    case UByteClass   => if (!box) nir.Type.UByte   else genRefType(st)
-    case UShortClass  => if (!box) nir.Type.UShort  else genRefType(st)
-    case UIntClass    => if (!box) nir.Type.UInt    else genRefType(st)
-    case ULongClass   => if (!box) nir.Type.ULong   else genRefType(st)
+    // format: on
+
+    case UByteClass if !box  => nir.Type.Byte
+    case UShortClass if !box => nir.Type.Short
+    case UIntClass if !box   => nir.Type.Int
+    case ULongClass if !box  => nir.Type.Long
+
     case NullClass    => nir.Type.Null
     case NothingClass => nir.Type.Nothing
     case PtrClass     => nir.Type.Ptr
-    // format: on
+
     case sym if CStructClass.contains(sym) =>
       nir.Type.StructValue(st.targs.map(genType(_, box = false)))
     case CArrayClass =>
@@ -145,13 +148,9 @@ trait NirGenType { self: NirGenPhase =>
   def genPrimCode(st: SimpleType): Char = st.sym match {
     case CharClass    => 'C'
     case BooleanClass => 'B'
-    case UByteClass   => 'z'
     case ByteClass    => 'Z'
-    case UShortClass  => 's'
     case ShortClass   => 'S'
-    case UIntClass    => 'i'
     case IntClass     => 'I'
-    case ULongClass   => 'l'
     case LongClass    => 'L'
     case FloatClass   => 'F'
     case DoubleClass  => 'D'
@@ -163,20 +162,12 @@ trait NirGenType { self: NirGenPhase =>
       nir.Type.Ref(nir.Global.Top("java.lang.Boolean"))
     case CharClass =>
       nir.Type.Ref(nir.Global.Top("java.lang.Character"))
-    case UByteClass =>
-      nir.Type.Ref(nir.Global.Top("scala.scalanative.native.UByte"))
     case ByteClass =>
       nir.Type.Ref(nir.Global.Top("java.lang.Byte"))
-    case UShortClass =>
-      nir.Type.Ref(nir.Global.Top("scala.scalanative.native.UShort"))
     case ShortClass =>
       nir.Type.Ref(nir.Global.Top("java.lang.Short"))
-    case UIntClass =>
-      nir.Type.Ref(nir.Global.Top("scala.scalanative.native.UInt"))
     case IntClass =>
       nir.Type.Ref(nir.Global.Top("java.lang.Integer"))
-    case ULongClass =>
-      nir.Type.Ref(nir.Global.Top("scala.scalanative.native.ULong"))
     case LongClass =>
       nir.Type.Ref(nir.Global.Top("java.lang.Long"))
     case FloatClass =>

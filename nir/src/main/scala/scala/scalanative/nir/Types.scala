@@ -35,15 +35,11 @@ object Type {
   object I {
     def unapply(i: I): Some[(Int, Boolean)] = Some((i.width, i.signed))
   }
-  final case object Char   extends I(16, signed = false)
-  final case object Byte   extends I(8, signed = true)
-  final case object UByte  extends I(8, signed = false)
-  final case object Short  extends I(16, signed = true)
-  final case object UShort extends I(16, signed = false)
-  final case object Int    extends I(32, signed = true)
-  final case object UInt   extends I(32, signed = false)
-  final case object Long   extends I(64, signed = true)
-  final case object ULong  extends I(64, signed = false)
+  final case object Char  extends I(16, signed = false)
+  final case object Byte  extends I(8, signed = true)
+  final case object Short extends I(16, signed = true)
+  final case object Int   extends I(32, signed = true)
+  final case object Long  extends I(64, signed = true)
 
   sealed abstract class F(width: Int) extends PrimitiveKind(width)
   object F { def unapply(f: F): Some[Int] = Some(f.width) }
@@ -81,18 +77,14 @@ object Type {
   final case class Function(args: Seq[Type], ret: Type) extends SpecialKind
 
   val unbox = Map[Type, Type](
-    Type.Ref(Global.Top("java.lang.Boolean"))               -> Type.Bool,
-    Type.Ref(Global.Top("java.lang.Character"))             -> Type.Char,
-    Type.Ref(Global.Top("scala.scalanative.native.UByte"))  -> Type.UByte,
-    Type.Ref(Global.Top("java.lang.Byte"))                  -> Type.Byte,
-    Type.Ref(Global.Top("scala.scalanative.native.UShort")) -> Type.UShort,
-    Type.Ref(Global.Top("java.lang.Short"))                 -> Type.Short,
-    Type.Ref(Global.Top("scala.scalanative.native.UInt"))   -> Type.UInt,
-    Type.Ref(Global.Top("java.lang.Integer"))               -> Type.Int,
-    Type.Ref(Global.Top("scala.scalanative.native.ULong"))  -> Type.ULong,
-    Type.Ref(Global.Top("java.lang.Long"))                  -> Type.Long,
-    Type.Ref(Global.Top("java.lang.Float"))                 -> Type.Float,
-    Type.Ref(Global.Top("java.lang.Double"))                -> Type.Double
+    Type.Ref(Global.Top("java.lang.Boolean"))   -> Type.Bool,
+    Type.Ref(Global.Top("java.lang.Character")) -> Type.Char,
+    Type.Ref(Global.Top("java.lang.Byte"))      -> Type.Byte,
+    Type.Ref(Global.Top("java.lang.Short"))     -> Type.Short,
+    Type.Ref(Global.Top("java.lang.Integer"))   -> Type.Int,
+    Type.Ref(Global.Top("java.lang.Long"))      -> Type.Long,
+    Type.Ref(Global.Top("java.lang.Float"))     -> Type.Float,
+    Type.Ref(Global.Top("java.lang.Double"))    -> Type.Double
   )
 
   val box = unbox.map { case (k, v) => (v, k) }
