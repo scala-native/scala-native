@@ -252,6 +252,16 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
     blockAllocator->freeBlockCount += count;
 }
 
+void BlockAllocator_FinishCoalescing(BlockAllocator *blockAllocator) {
+    BlockRangeVal range = BlockRange_AppendLastOrReplace(&blockAllocator->coalescingSuperblock, 0, 0);
+    uint32_t size = BlockRange_Size(range);
+    if (size > 0) {
+        BlockMeta *replaced = BlockMeta_GetFromIndex(
+            blockAllocator->blockMetaStart, BlockRange_First(range));
+        BlockAllocator_splitAndAdd(blockAllocator, replaced, size);
+    }
+}
+
 void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
     for (int i = 0; i < SUPERBLOCK_LIST_SIZE; i++) {
         BlockList_Clear(&blockAllocator->freeSuperblocks[i]);

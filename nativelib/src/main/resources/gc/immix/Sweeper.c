@@ -405,6 +405,7 @@ void Sweeper_LazyCoalesce(Heap *heap) {
 void Sweeper_sweepDone(Heap *heap) {
     Heap_GrowIfNeeded(heap);
     heap->sweep.postSweepDone = true;
+    BlockAllocator_FinishCoalescing(&blockAllocator);
     heap->gcThreads.phase = gc_idle;
     Stats *stats = heap->stats;
     if (stats != NULL) {
