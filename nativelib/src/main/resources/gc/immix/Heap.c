@@ -163,6 +163,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     int gcThreadCount = Settings_GCThreadCount();
     heap->gcThreads.count = gcThreadCount;
+    heap->gcThreads.phase = gc_idle;
     GCThread *gcThreads = (GCThread *)malloc(sizeof(GCThread) * gcThreadCount);
     heap->gcThreads.all = (void *)gcThreads;
     for (int i = 0; i < gcThreadCount; i++) {
@@ -364,31 +365,6 @@ bool Heap_shouldGrow(Heap *heap) {
            4 * unavailableBlockCount > blockCount;
 }
 
-NOINLINE void Heap_waitForGCThreadsSlow(GCThread *gcThreads, int gcThreadCount) {
-    // extremely unlikely to enter here
-    // unless very many threads running
-    bool anyActive = true;
-    while (anyActive) {
-        sched_yield();
-        anyActive = false;
-        for (int i = 0; i < gcThreadCount; i++) {
-            anyActive |= gcThreads[i].active;
-        }
-    }
-}
-
-INLINE void Heap_waitForGCThreads(Heap *heap) {
-    int gcThreadCount = heap->gcThreads.count;
-    GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
-    bool anyActive = false;
-    for (int i = 0; i < gcThreadCount; i++) {
-        anyActive |= gcThreads[i].active;
-    }
-    if (anyActive) {
-        Heap_waitForGCThreadsSlow(gcThreads, gcThreadCount);
-    }
-}
-
 void Heap_Recycle(Heap *heap) {
     Allocator_Clear(&allocator);
     LargeAllocator_Clear(&largeAllocator);
@@ -399,7 +375,7 @@ void Heap_Recycle(Heap *heap) {
 
     // before changing the cursor and limit values, makes sure no gc threads are
     // running
-    Heap_waitForGCThreads(heap);
+    GCThread_JoinAll(heap);
 
     heap->sweep.cursor = 0;
     heap->sweep.limit = heap->blockCount;
@@ -407,13 +383,8 @@ void Heap_Recycle(Heap *heap) {
     heap->sweep.coalesce = BlockRange_Pack(0, 0);
     heap->sweep.postSweepDone = false;
 
-    sem_t *start = &heap->gcThreads.start;
-
-    // wake all the GC threads
-    int gcThreadCount = heap->gcThreads.count;
-    for (int i = 0; i < gcThreadCount; i++) {
-        sem_post(start);
-    }
+    heap->gcThreads.phase = gc_sweep;
+    GCThread_WakeAll(heap);
 }
 
 void Heap_GrowIfNeeded(Heap *heap) {
