@@ -15,7 +15,7 @@ trait NirGenType { self: NirGenPhase =>
       sym.isInterface
 
     def isScalaModule: Boolean =
-      sym.isModule || sym.isModuleClass || sym.isImplClass
+      sym.isModuleClass && !sym.isImplClass && !sym.isLifted
 
     def isExternModule: Boolean =
       isScalaModule && sym.annotations.exists(_.symbol == ExternClass)

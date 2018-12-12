@@ -488,7 +488,7 @@ trait NirGenExpr { self: NirGenPhase =>
       if (curMethodInfo.mutableVars.contains(sym)) {
         buf.varload(curMethodEnv.resolve(sym), unwind)
       } else if (sym.isModule) {
-        buf.module(genTypeName(sym), unwind)
+        genModule(sym)
       } else {
         curMethodEnv.resolve(sym)
       }
@@ -500,7 +500,7 @@ trait NirGenExpr { self: NirGenPhase =>
       val sym   = tree.symbol
       val owner = sym.owner
       if (sym.isModule) {
-        buf.module(genTypeName(sym), unwind)
+        genModule(sym)
       } else if (sym.isStaticMember) {
         genStaticMember(sym)
       } else if (sym.isMethod) {
@@ -526,7 +526,7 @@ trait NirGenExpr { self: NirGenPhase =>
         Val.Unit
       } else {
         val ty     = genType(sym.tpe, box = false)
-        val module = buf.module(genTypeName(sym.owner), unwind)
+        val module = genModule(sym.owner)
         genApplyMethod(sym, statically = true, module, Seq(ValTree(module)))
       }
     }
@@ -1569,12 +1569,17 @@ trait NirGenExpr { self: NirGenPhase =>
       genApplyMethod(method, statically = true, self, args)
     }
 
+    def isImplClass(sym: Symbol): Boolean =
+      sym.isModuleClass && nme.isImplClassName(sym.name)
+
     def genApplyMethod(sym: Symbol,
                       statically: Boolean,
                       selfp: Tree,
                       argsp: Seq[Tree]): Val = {
       if (sym.owner.isExternModule && sym.isAccessor) {
         genApplyExternAccessor(sym, argsp)
+      } else if (isImplClass(sym.owner)) {
+        genApplyMethod(sym, statically = true, Val.Null, argsp)
       } else {
         val self = genExpr(selfp)
         genApplyMethod(sym, statically, self, argsp)
@@ -1604,13 +1609,13 @@ trait NirGenExpr { self: NirGenPhase =>
       val name  = genMethodName(sym)
       val sig   = genMethodSig(sym)
       val argsPt =
-        if (owner.isExternModule || owner.isImplClass)
+        if (owner.isExternModule || isImplClass(owner))
           sig.args
         else
           sig.args.tail
       val args = genMethodArgs(sym, argsp, argsPt)
       val method =
-        if (statically || owner.isStruct || owner.isExternModule) {
+        if (isImplClass(owner) || statically || owner.isStruct || owner.isExternModule) {
           Val.Global(name, nir.Type.Ptr)
         } else {
           val Global.Member(_, sig) = name
