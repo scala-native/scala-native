@@ -2,6 +2,7 @@
 #include "Log.h"
 #include "utils/MathUtils.h"
 #include <stdio.h>
+#include "Heap.h"
 
 void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
                                 BlockMeta *superblock, uint32_t count);
@@ -18,6 +19,8 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
     BlockMeta *sLimit = (BlockMeta *)blockMetaStart + blockCount;
     blockAllocator->smallestSuperblock.cursor = sCursor;
     blockAllocator->smallestSuperblock.limit = sLimit;
+
+    blockAllocator->concurrent = false;
 
 #ifdef DEBUG_ASSERT
     for (BlockMeta *current = sCursor; current < sLimit; current++) {
@@ -46,11 +49,30 @@ BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int *index) {
     return NULL;
 }
 
+inline static BlockMeta *
+BlockAllocator_pollSuperblock_OnlyThread(BlockAllocator *blockAllocator, int *index) {
+    for (int i = *index; i < SUPERBLOCK_LIST_SIZE; i++) {
+        BlockMeta *superblock =
+            BlockList_Pop_OnlyThread(&blockAllocator->freeSuperblocks[i]);
+        if (superblock != NULL) {
+            *index = i;
+            return superblock;
+        }
+    }
+    return NULL;
+}
+
+extern Heap heap;
+
 NOINLINE BlockMeta *
 BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
     int index = 0;
-    BlockMeta *superblock =
-        BlockAllocator_pollSuperblock(blockAllocator, &index);
+    BlockMeta *superblock;
+    if (blockAllocator->concurrent) {
+        superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
+    } else {
+        superblock = BlockAllocator_pollSuperblock_OnlyThread(blockAllocator, &index);
+    }
     if (superblock != NULL) {
         blockAllocator->smallestSuperblock.cursor = superblock + 1;
         uint32_t size = 1 << index;
@@ -62,7 +84,7 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
 #endif
         BlockMeta_SetFlag(superblock, block_simple);
         return superblock;
-    } else {
+    } else if (blockAllocator->concurrent) {
         // as the last resort look in the superblock being coalesced
         uint32_t blockIdx =
             BlockRange_PollFirst(&blockAllocator->coalescingSuperblock, 1);
@@ -117,7 +139,11 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
     } else {
         // look in the freelists
         int index = MathUtils_Log2Ceil((size_t)size);
-        superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
+        if (blockAllocator->concurrent) {
+            superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
+        } else {
+            superblock = BlockAllocator_pollSuperblock_OnlyThread(blockAllocator, &index);
+        }
         uint32_t receivedSize = 1 << index;
 
         if (superblock != NULL) {
@@ -126,7 +152,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
                 BlockAllocator_splitAndAdd(blockAllocator, leftover,
                                            receivedSize - size);
             }
-        } else {
+        } else if (blockAllocator->concurrent) {
             // as the last resort look in the superblock being coalesced
             uint32_t superblockIdx = BlockRange_PollFirst(
                 &blockAllocator->coalescingSuperblock, size);
@@ -255,6 +281,7 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
 void BlockAllocator_FinishCoalescing(BlockAllocator *blockAllocator) {
     BlockRangeVal range = BlockRange_AppendLastOrReplace(&blockAllocator->coalescingSuperblock, 0, 0);
     uint32_t size = BlockRange_Size(range);
+    blockAllocator->concurrent = false;
     if (size > 0) {
         BlockMeta *replaced = BlockMeta_GetFromIndex(
             blockAllocator->blockMetaStart, BlockRange_First(range));
@@ -266,6 +293,8 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
     for (int i = 0; i < SUPERBLOCK_LIST_SIZE; i++) {
         BlockList_Clear(&blockAllocator->freeSuperblocks[i]);
     }
+    // sweeping is about to start, use concurrent data structures
+    blockAllocator->concurrent = true;
     blockAllocator->freeBlockCount = 0;
     blockAllocator->smallestSuperblock.cursor = NULL;
     blockAllocator->smallestSuperblock.limit = NULL;
