@@ -68,7 +68,8 @@ NOINLINE BlockMeta *
 BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
     int index = 0;
     BlockMeta *superblock;
-    if (blockAllocator->concurrent) {
+    bool concurrent = blockAllocator->concurrent;
+    if (concurrent) {
         superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
     } else {
         superblock = BlockAllocator_pollSuperblock_OnlyThread(blockAllocator, &index);
@@ -84,14 +85,27 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
 #endif
         BlockMeta_SetFlag(superblock, block_simple);
         return superblock;
-    } else if (blockAllocator->concurrent) {
+    } else {
         // as the last resort look in the superblock being coalesced
-        uint32_t blockIdx =
-            BlockRange_PollFirst(&blockAllocator->coalescingSuperblock, 1);
         BlockMeta *block = NULL;
-        if (blockIdx != NO_BLOCK_INDEX) {
-            block = BlockMeta_GetFromIndex(blockAllocator->blockMetaStart,
-                                           blockIdx);
+        if (concurrent) {
+            uint32_t blockIdx =
+                BlockRange_PollFirst(&blockAllocator->coalescingSuperblock, 1);
+            if (blockIdx != NO_BLOCK_INDEX) {
+                block = BlockMeta_GetFromIndex(blockAllocator->blockMetaStart, blockIdx);
+            }
+        } else {
+            BlockRangeVal range = blockAllocator->coalescingSuperblock;
+            blockAllocator->coalescingSuperblock = EMPTY_RANGE;
+            int size = BlockRange_Size(range);
+            if (size > 0) {
+                uint32_t blockIdx = BlockRange_First(range);
+                block = BlockMeta_GetFromIndex(blockAllocator->blockMetaStart, blockIdx);
+                blockAllocator->smallestSuperblock.cursor = block + 1;
+                blockAllocator->smallestSuperblock.limit = block + size;
+            }
+        }
+        if (block != NULL) {
             assert(BlockMeta_IsFree(block));
             assert(block->debugFlag == dbg_free_in_collection);
 #ifdef DEBUG_ASSERT
@@ -139,7 +153,8 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
     } else {
         // look in the freelists
         int index = MathUtils_Log2Ceil((size_t)size);
-        if (blockAllocator->concurrent) {
+        bool concurrent = blockAllocator->concurrent;
+        if (concurrent) {
             superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
         } else {
             superblock = BlockAllocator_pollSuperblock_OnlyThread(blockAllocator, &index);
@@ -152,7 +167,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
                 BlockAllocator_splitAndAdd(blockAllocator, leftover,
                                            receivedSize - size);
             }
-        } else if (blockAllocator->concurrent) {
+        } else {
             // as the last resort look in the superblock being coalesced
             uint32_t superblockIdx = BlockRange_PollFirst(
                 &blockAllocator->coalescingSuperblock, size);
@@ -279,14 +294,7 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
 }
 
 void BlockAllocator_FinishCoalescing(BlockAllocator *blockAllocator) {
-    BlockRangeVal range = BlockRange_AppendLastOrReplace(&blockAllocator->coalescingSuperblock, 0, 0);
-    uint32_t size = BlockRange_Size(range);
     blockAllocator->concurrent = false;
-    if (size > 0) {
-        BlockMeta *replaced = BlockMeta_GetFromIndex(
-            blockAllocator->blockMetaStart, BlockRange_First(range));
-        BlockAllocator_splitAndAdd(blockAllocator, replaced, size);
-    }
 }
 
 void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
