@@ -15,6 +15,7 @@ sealed abstract class ScopeInfo extends Info {
 
   def isClass: Boolean = this.isInstanceOf[Class]
   def isTrait: Boolean = this.isInstanceOf[Class]
+  def is(info: ScopeInfo): Boolean
   def targets(sig: Sig): mutable.Set[Global]
 }
 

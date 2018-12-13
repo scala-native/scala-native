@@ -3,7 +3,7 @@ package interflow
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.linker._, Sema._
+import scalanative.linker._
 import scalanative.codegen.MemoryLayout
 import scalanative.util.unreachable
 
@@ -23,6 +23,16 @@ trait Eval { self: Interflow =>
           unreachable
         case Inst.Let(local, op, unwind) =>
           val value = eval(local, op, unwind, blockFresh)
+          val gotty = value match {
+            case Val.Virtual(addr) =>
+              state.deref(addr).cls.ty
+            case _ =>
+              value.ty
+          }
+          if (!Sub.is(gotty, op.resty)) {
+            log(
+              s"returned wrong value when evaluating ${op.show}, expected ${op.resty.show}, but got ${value.show} : ${gotty.show}")
+          }
           if (value.ty == Type.Nothing) {
             return Inst.Unreachable(unwind)
           } else {
@@ -214,12 +224,23 @@ trait Eval { self: Interflow =>
       case Op.Method(obj, sig) =>
         eval(obj) match {
           case Val.Virtual(addr) =>
-            val cls = state.deref(addr).cls
-            Val.Global(resolve(cls, sig), Type.Ptr)
+            val cls      = state.deref(addr).cls
+            val resolved = cls.resolve(sig).get
+            Val.Global(resolved, Type.Ptr)
           case obj if obj.ty == Type.Null =>
             emit.method(materialize(obj), sig, unwind)
           case obj =>
-            targets(obj.ty, sig).toSeq match {
+            val targets = obj.ty match {
+              case Type.Null | Type.Nothing =>
+                Seq.empty
+              case ExactClassRef(cls, _) =>
+                cls.resolve(sig).toSeq
+              case ScopeRef(scope) =>
+                scope.targets(sig)
+              case _ =>
+                bailOut
+            }
+            targets match {
               case Seq() =>
                 Val.Zero(Type.Nothing)
               case Seq(meth) =>
@@ -249,13 +270,14 @@ trait Eval { self: Interflow =>
           case _                => bailOut
         }
         eval(obj) match {
-          case obj @ Val.Virtual(addr) if is(state.deref(addr).cls, refty) =>
+          case obj @ Val.Virtual(addr)
+              if Sub.is(state.deref(addr).cls, refty) =>
             obj
           case obj if obj.ty == Type.Null =>
             obj
           case obj =>
             obj.ty match {
-              case ClassRef(cls) if is(cls, refty) =>
+              case ClassRef(cls) if Sub.is(cls, refty) =>
                 obj
               case _ =>
                 emit.as(ty, materialize(obj), unwind)
@@ -268,13 +290,13 @@ trait Eval { self: Interflow =>
         }
         eval(obj) match {
           case Val.Virtual(addr) =>
-            Val.Bool(is(state.deref(addr).cls, refty))
+            Val.Bool(Sub.is(state.deref(addr).cls, refty))
           case obj if obj.ty == Type.Null =>
             Val.False
           case obj =>
             obj.ty match {
               case ExactClassRef(cls, nullable) =>
-                val isStatically = is(cls, refty)
+                val isStatically = Sub.is(cls, refty)
                 val res = if (!isStatically) {
                   Val.False
                 } else if (!nullable) {
@@ -656,11 +678,11 @@ trait Eval { self: Interflow =>
           case (Val.Short(v), Type.Byte) => Val.Byte(v.toByte)
           case (Val.Int(v), Type.Byte)   => Val.Byte(v.toByte)
           case (Val.Int(v), Type.Short)  => Val.Short(v.toShort)
-          case (Val.Int(v), Type.Char)   => Val.Short(v.toChar.toShort)
+          case (Val.Int(v), Type.Char)   => Val.Char(v.toChar)
           case (Val.Long(v), Type.Byte)  => Val.Int(v.toByte)
           case (Val.Long(v), Type.Short) => Val.Int(v.toShort)
           case (Val.Long(v), Type.Int)   => Val.Int(v.toInt)
-          case (Val.Long(v), Type.Char)  => Val.Short(v.toChar.toShort)
+          case (Val.Long(v), Type.Char)  => Val.Char(v.toChar)
           case _                         => bailOut
         }
       case Conv.Zext =>

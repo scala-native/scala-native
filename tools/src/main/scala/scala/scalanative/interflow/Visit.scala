@@ -2,7 +2,7 @@ package scala.scalanative
 package interflow
 
 import scalanative.nir._
-import scalanative.linker._, Sema._
+import scalanative.linker._
 import scalanative.optimizer.pass.DeadCodeElimination
 
 trait Visit { self: Interflow =>
@@ -74,13 +74,16 @@ trait Visit { self: Interflow =>
     val fresh = Fresh(0)
     val state = new State(Local(0))
 
-    // Compute argument values that are typed as an
-    // intersection of duplicate argument type and original
-    // declared argument type.
+    // Compute opaque fresh locals fore arguments.
     val args = argtys.zip(origtys).map {
       case (argty, origty) =>
-        val paramty = glb(argty, origty).getOrElse(origty)
-        Val.Local(fresh(), paramty)
+        val ty = if (!Sub.is(argty, origty)) {
+          log(s"can't pass ${argty.show} to ${origty.show} (in ${name.show})")
+          origty
+        } else {
+          argty
+        }
+        Val.Local(fresh(), ty)
     }
 
     // If any of the argument types is nothing, this method
@@ -118,10 +121,23 @@ trait Visit { self: Interflow =>
     val retty = rets match {
       case Seq()   => Type.Nothing
       case Seq(ty) => ty
-      case tys     => lub(tys)
+      case tys     => Sub.lub(tys)
     }
 
-    result(retty, insts)
+    val origRetty = {
+      val Type.Function(_, ty) = origdefn.ty
+      ty
+    }
+    val resRetty =
+      if (!Sub.is(retty, origRetty)) {
+        log(
+          s"inferred less precise type ${retty.show} than ${origRetty.show} for ${origdefn.name.show}[${argtys.map(_.show).mkString(",")}]")
+        origRetty
+      } else {
+        retty
+      }
+
+    result(resRetty, insts)
   }
 
   def originalName(name: Global): Global = name match {

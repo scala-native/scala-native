@@ -34,7 +34,7 @@ final class Check(implicit linked: linker.Result) {
     expect(expected, got.ty)
 
   def expect(expected: Type, got: Type): Unit =
-    if (!Sema.is(got, expected)) {
+    if (!Sub.is(got, expected)) {
       error(s"expected ${expected.show}, but got ${got.show}")
     }
 

@@ -141,17 +141,13 @@ object Show {
         str("switch ")
         val_(scrut)
         str(" {")
-        indent()
         rep(cases) { next =>
-          newline()
+          str(" ")
           next_(next)
         }
-        newline()
-        str("default => ")
+        str(" default => ")
         next_(default)
-        unindent()
-        newline()
-        str("}")
+        str(" }")
       case Inst.Throw(v, unwind) =>
         str("throw ")
         val_(v)

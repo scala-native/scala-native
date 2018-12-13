@@ -5,75 +5,70 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.util.unreachable
 
-object Sema {
+/** Our subtyping can be described by a following diagram:
+ *
+ *    value kind        ref kind         special kind
+ *    |     \           |    \
+ *    |     |           |      \
+ *    prim  aggr        class  trait
+ *    |     |           |      /
+ *    |     |           |    /
+ *    |     |           null
+ *    |     |           /
+ *    |     |       /
+ *    |     |   /
+ *    nothing
+ *
+ *  Primitiva value and aggregate types don't participate in
+ *  subtyping and they have to be explicitly boxed to become
+ *  compatible with a reference type.
+ *
+ *  Reference types form a natural lattice with java.lang.Object
+ *  at the top and null type at the bottom.
+ *
+ *  Nothing is the common bottom type between reference and value
+ *  types. It represents computations that may never complete
+ *  normally (either loops forever or throws an exception).
+ */
+object Sub {
 
-  def is(l: Type, r: Type)(implicit linked: linker.Result): Boolean = {
+  def is(l: Type, r: Type)(implicit linked: linker.Result): Boolean =
     (l, r) match {
       case (l, r) if l == r =>
         true
-      case (Type.Null, Type.Ptr) =>
+      case (Type.Null, (Type.Ptr | _: Type.RefKind)) =>
         true
-      case (Type.Null, _: Type.RefKind) =>
+      case (Type.Nothing, (_: Type.ValueKind | _: Type.RefKind)) =>
         true
       case (_: Type.RefKind, Rt.Object) =>
         true
-      case (TraitRef(l), TraitRef(r)) =>
-        l.is(r)
-      case (ClassRef(cls), refty: Type.RefKind) =>
-        is(cls, refty)
+      case (ScopeRef(linfo), ScopeRef(rinfo)) =>
+        linfo.is(rinfo)
       case _ =>
         false
     }
-  }
 
-  def is(cls: Class, ty: Type.RefKind)(
-      implicit linked: linker.Result): Boolean = {
+  def is(info: ScopeInfo, ty: Type.RefKind)(
+      implicit linked: linker.Result): Boolean =
     ty match {
-      case ClassRef(othercls) =>
-        cls.is(othercls)
-      case TraitRef(trt) =>
-        cls.is(trt)
+      case ScopeRef(other) =>
+        info.is(other)
       case _ =>
         util.unreachable
     }
-  }
 
-  def lub(tys: Seq[Type])(implicit linked: linker.Result): Type = tys match {
-    case Seq() =>
-      unreachable
-    case head +: tail =>
-      tail.foldLeft[Type](head)(lub)
-  }
+  def lub(tys: Seq[Type])(implicit linked: linker.Result): Type =
+    tys match {
+      case Seq() =>
+        unreachable
+      case head +: tail =>
+        tail.foldLeft[Type](head)(lub)
+    }
 
   def lub(lty: Type, rty: Type)(implicit linked: linker.Result): Type =
     (lty, rty) match {
       case _ if lty == rty =>
         lty
-      case (ClassRef(lcls), ClassRef(rcls)) =>
-        if (rcls.is(lcls)) {
-          lcls.ty
-        } else {
-          val lparent =
-            lcls.parent.getOrElse(
-              linked.infos(Rt.Object.name).asInstanceOf[Class])
-          lub(lparent.ty, rty)
-        }
-      case (ClassRef(cls), TraitRef(trt)) =>
-        if (cls.is(trt)) {
-          Type.Ref(trt.name)
-        } else {
-          Rt.Object
-        }
-      case (TraitRef(trt), ClassRef(cls)) =>
-        lub(rty, lty)
-      case (TraitRef(ltrt), TraitRef(rtrt)) =>
-        if (ltrt.is(rtrt)) {
-          Type.Ref(rtrt.name)
-        } else if (rtrt.is(ltrt)) {
-          Type.Ref(ltrt.name)
-        } else {
-          Rt.Object
-        }
       case (lty @ (_: Type.RefKind | Type.Ptr), Type.Null) =>
         lty
       case (Type.Null, rty @ (_: Type.RefKind | Type.Ptr)) =>
@@ -82,69 +77,76 @@ object Sema {
         ty
       case (Type.Nothing, ty) =>
         ty
-      case (Type.Short, Type.Char) | (Type.Char, Type.Short) =>
-        Type.Short
+      case (ScopeRef(linfo), ScopeRef(rinfo)) =>
+        Type.Ref(lub(linfo, rinfo).name)
       case _ =>
         util.unsupported(s"lub(${lty.show}, ${rty.show})")
     }
 
-  def glb(tys: (Type, Type))(implicit linked: linker.Result): Option[Type] =
-    glb(tys._1, tys._2)
+  def lub(linfo: ScopeInfo, rinfo: ScopeInfo)(
+      implicit linked: linker.Result): ScopeInfo =
+    if (linfo == rinfo) {
+      linfo
+    } else if (linfo.is(rinfo)) {
+      rinfo
+    } else if (rinfo.is(linfo)) {
+      linfo
+    } else {
+      val candidates = linearize(linfo).filter(i => rinfo.is(i))
 
-  def glb(lty: Type, rty: Type)(implicit linked: linker.Result): Option[Type] =
-    (lty, rty) match {
-      case _ if lty == rty =>
-        Some(lty)
-      case (ClassRef(lcls), ClassRef(rcls)) =>
-        if (lcls.is(rcls)) {
-          Some(lcls.ty)
-        } else if (rcls.is(lcls)) {
-          Some(rcls.ty)
-        } else {
-          None
-        }
-      case (ClassRef(cls), TraitRef(trt)) =>
-        if (cls.is(trt)) {
-          Some(cls.ty)
-        } else if (cls.ty == Rt.Object) {
-          Some(Type.Ref(trt.name))
-        } else {
-          None
-        }
-      case (TraitRef(trt), ClassRef(cls)) =>
-        glb(rty, lty)
-      case (TraitRef(ltrt), TraitRef(rtrt)) =>
-        if (ltrt.is(rtrt)) {
-          Some(Type.Ref(ltrt.name))
-        } else if (rtrt.is(ltrt)) {
-          Some(Type.Ref(rtrt.name))
-        } else {
-          None
-        }
-      case (_: Type.RefKind | Type.Ptr, Type.Null) |
-          (Type.Null, _: Type.RefKind | Type.Ptr) =>
-        Some(Type.Null)
-      case (_, Type.Nothing) | (Type.Nothing, _) =>
-        Some(Type.Nothing)
-      case (Type.Short, Type.Char) | (Type.Char, Type.Short) =>
-        Some(Type.Short)
-      case _ =>
-        util.unsupported(s"glb(${lty.show}, ${rty.show})")
+      candidates match {
+        case Seq() =>
+          linked.infos(Rt.Object.name).asInstanceOf[ScopeInfo]
+        case Seq(cand) =>
+          cand
+        case _ =>
+          val min = candidates.map(inhabitants).min
+
+          val minimums = candidates.collect {
+            case cand if inhabitants(cand) == min =>
+              cand
+          }
+
+          minimums.headOption.getOrElse {
+            linked.infos(Rt.Object.name).asInstanceOf[ScopeInfo]
+          }
+      }
     }
 
-  def resolve(cls: Class, sig: Sig)(implicit linked: linker.Result): Global =
-    cls.resolve(sig).get
+  def inhabitants(info: ScopeInfo): Int = info match {
+    case info: Class =>
+      1 + info.subclasses.size
+    case info: Trait =>
+      info.implementors.size
+  }
 
-  def targets(ty: Type, sig: Sig)(
-      implicit linked: linker.Result): mutable.Set[Global] =
-    ty match {
-      case ExactClassRef(cls, _) =>
-        val out = mutable.Set.empty[Global]
-        out ++= cls.resolve(sig)
-        out
-      case ScopeRef(scope) =>
-        scope.targets(sig)
-      case _ =>
-        mutable.Set.empty
+  def linearize(info: ScopeInfo)(
+      implicit linked: linker.Result): Seq[ScopeInfo] = {
+    val out = mutable.UnrolledBuffer.empty[ScopeInfo]
+
+    def loop(info: ScopeInfo): Unit = info match {
+      case info: Class =>
+        out += info
+        info.traits.reverse.foreach(loop)
+        info.parent.foreach(loop)
+      case info: Trait =>
+        out += info
+        info.traits.reverse.foreach(loop)
     }
+
+    def overwrite(l: Seq[ScopeInfo]): Seq[ScopeInfo] = {
+      val indexes = mutable.Map.empty[ScopeInfo, Int]
+      l.zipWithIndex.foreach {
+        case (v, idx) =>
+          indexes(v) = idx
+      }
+      l.zipWithIndex.collect {
+        case (v, idx) if indexes(v) == idx =>
+          v
+      }
+    }
+
+    loop(info)
+    overwrite(out)
+  }
 }

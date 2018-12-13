@@ -129,7 +129,7 @@ object Build {
           }
 
       }
-      () //throw new BuildException(s"${errors.size} found")
+      println(s"${errors.size} found")
     }
   }
 }
