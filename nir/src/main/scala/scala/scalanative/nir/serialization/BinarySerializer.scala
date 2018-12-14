@@ -65,10 +65,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.NoInline     => putInt(T.NoInlineAttr)
     case Attr.AlwaysInline => putInt(T.AlwaysInlineAttr)
 
-    case Attr.Dyn     => putInt(T.DynAttr)
-    case Attr.Stub    => putInt(T.StubAttr)
-    case Attr.Extern  => putInt(T.ExternAttr)
-    case Attr.Link(s) => putInt(T.LinkAttr); putString(s)
+    case Attr.Dyn      => putInt(T.DynAttr)
+    case Attr.Stub     => putInt(T.StubAttr)
+    case Attr.Extern   => putInt(T.ExternAttr)
+    case Attr.Link(s)  => putInt(T.LinkAttr); putString(s)
+    case Attr.Abstract => putInt(T.AbstractAttr)
   }
 
   private def putBin(bin: Bin) = bin match {

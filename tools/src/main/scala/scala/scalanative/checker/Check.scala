@@ -176,8 +176,15 @@ final class Check(implicit linked: linker.Result) {
         .fold {
           error(s"no info for ${name.show}")
         } {
-          case info: Class if !info.isModule =>
-            ok
+          case info: Class =>
+            if (info.isModule) {
+              error(
+                s"can't instantiate module class ${info.name.show} with classalloc")
+            } else if (info.attrs.isAbstract) {
+              error(s"can't instantiate abstract class ${info.name.show}")
+            } else {
+              ok
+            }
           case _ =>
             error(s"can't instantiate ${name.show} with clasalloc")
         }
@@ -193,6 +200,20 @@ final class Check(implicit linked: linker.Result) {
         case _ =>
           error(s"method must take a method signature, not ${sig.show}")
       }
+      obj.ty match {
+        case Type.Null =>
+          ok
+        case ScopeRef(info) =>
+          info.implementors.foreach { cls =>
+            if (cls.allocated) {
+              if (cls.resolve(sig).isEmpty) {
+                error(s"can't call ${sig.show} on ${cls.name.show}")
+              }
+            }
+          }
+        case ty =>
+          error(s"can't resolve method on ${ty.show}")
+      }
     case Op.Dynmethod(obj, sig) =>
       expect(Rt.Object, obj)
       sig match {
@@ -207,8 +228,15 @@ final class Check(implicit linked: linker.Result) {
         .fold {
           error(s"no info for $name")
         } {
-          case info: Class if info.isModule =>
-            ok
+          case info: Class =>
+            if (!info.isModule) {
+              error(
+                s"can't instantiate non-module class ${info.name.show} as module")
+            } else if (info.attrs.isAbstract) {
+              error(s"can't instantiate abstract class ${info.name.show}")
+            } else {
+              ok
+            }
           case _ =>
             error(s"can't instantiate ${name.show} as a module class")
         }

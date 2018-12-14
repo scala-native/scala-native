@@ -21,6 +21,7 @@ object Tags {
   final val LinkAttr         = 1 + ExternAttr
   final val DynAttr          = 1 + LinkAttr
   final val StubAttr         = 1 + DynAttr
+  final val AbstractAttr     = 1 + StubAttr
 
   // Binary ops
 

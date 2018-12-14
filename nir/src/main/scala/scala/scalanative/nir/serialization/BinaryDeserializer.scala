@@ -61,10 +61,11 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.NoInlineAttr     => Attr.NoInline
     case T.AlwaysInlineAttr => Attr.AlwaysInline
 
-    case T.DynAttr    => Attr.Dyn
-    case T.StubAttr   => Attr.Stub
-    case T.ExternAttr => Attr.Extern
-    case T.LinkAttr   => Attr.Link(getString)
+    case T.DynAttr      => Attr.Dyn
+    case T.StubAttr     => Attr.Stub
+    case T.ExternAttr   => Attr.Extern
+    case T.LinkAttr     => Attr.Link(getString)
+    case T.AbstractAttr => Attr.Abstract
   }
 
   private def getBin(): Bin = getInt match {

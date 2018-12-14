@@ -78,6 +78,8 @@ object Show {
         str("link(")
         str(name)
         str(")")
+      case Attr.Abstract =>
+        str("abstract")
     }
 
     def next_(next: Next): Unit = next match {

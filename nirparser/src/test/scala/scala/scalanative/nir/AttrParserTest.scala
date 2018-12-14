@@ -13,7 +13,8 @@ class AttrParserTest extends FunSuite {
     Attr.Dyn,
     Attr.Stub,
     Attr.Extern,
-    Attr.Link("test")
+    Attr.Link("test"),
+    Attr.Abstract
   ).foreach { attr =>
     test(s"parse attr `${attr.show}`") {
       val Parsed.Success(result, _) = parser.Attr.parser.parse(attr.show)

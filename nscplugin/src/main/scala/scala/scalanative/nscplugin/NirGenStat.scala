@@ -111,7 +111,7 @@ trait NirGenStat { self: NirGenPhase =>
 
     def genClassAttrs(cd: ClassDef): Attrs = {
       val sym = cd.symbol
-      val attrs = sym.annotations.collect {
+      val annotationAttrs = sym.annotations.collect {
         case ann if ann.symbol == ExternClass =>
           Attr.Extern
         case ann if ann.symbol == LinkClass =>
@@ -120,8 +120,10 @@ trait NirGenStat { self: NirGenPhase =>
         case ann if ann.symbol == StubClass =>
           Attr.Stub
       }
+      val abstractAttr =
+        if (sym.isAbstract) Seq(Attr.Abstract) else Seq()
 
-      Attrs.fromSeq(attrs)
+      Attrs.fromSeq(annotationAttrs ++ abstractAttr)
     }
 
     def genClassInterfaces(sym: Symbol) =

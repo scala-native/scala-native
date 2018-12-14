@@ -113,12 +113,8 @@ object Sub {
       }
     }
 
-  def inhabitants(info: ScopeInfo): Int = info match {
-    case info: Class =>
-      1 + info.subclasses.size
-    case info: Trait =>
-      info.implementors.size
-  }
+  def inhabitants(info: ScopeInfo): Int =
+    info.implementors.size
 
   def linearize(info: ScopeInfo)(
       implicit linked: linker.Result): Seq[ScopeInfo] = {
