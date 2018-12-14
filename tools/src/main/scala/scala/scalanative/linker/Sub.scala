@@ -19,12 +19,14 @@ import scalanative.util.unreachable
  *    |     |   /
  *    nothing
  *
- *  Primitiva value and aggregate types don't participate in
+ *  Primitive and aggregate types don't participate in
  *  subtyping and they have to be explicitly boxed to become
  *  compatible with a reference type.
  *
- *  Reference types form a natural lattice with java.lang.Object
- *  at the top and null type at the bottom.
+ *  Reference types form a simple lattice with java.lang.Object
+ *  at the top and null type at the bottom. Subtyping between
+ *  traits and classes is based on linearization of the all
+ *  transitive parents, similarly to scalac.
  *
  *  Nothing is the common bottom type between reference and value
  *  types. It represents computations that may never complete

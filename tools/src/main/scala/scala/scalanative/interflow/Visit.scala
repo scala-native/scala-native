@@ -74,7 +74,7 @@ trait Visit { self: Interflow =>
     val fresh = Fresh(0)
     val state = new State(Local(0))
 
-    // Compute opaque fresh locals fore arguments. Argument types
+    // Compute opaque fresh locals for the arguments. Argument types
     // are always a subtype of the original declared type, but in
     // some cases they might not be obviously related, despite
     // having the same concrete allocated class inhabitants.
