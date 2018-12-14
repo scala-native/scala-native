@@ -23,16 +23,6 @@ trait Eval { self: Interflow =>
           unreachable
         case Inst.Let(local, op, unwind) =>
           val value = eval(local, op, unwind, blockFresh)
-          val gotty = value match {
-            case Val.Virtual(addr) =>
-              state.deref(addr).cls.ty
-            case _ =>
-              value.ty
-          }
-          if (!Sub.is(gotty, op.resty)) {
-            log(
-              s"returned wrong value when evaluating ${op.show}, expected ${op.resty.show}, but got ${value.show} : ${gotty.show}")
-          }
           if (value.ty == Type.Nothing) {
             return Inst.Unreachable(unwind)
           } else {
