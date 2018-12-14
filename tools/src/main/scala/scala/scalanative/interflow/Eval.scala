@@ -113,7 +113,8 @@ trait Eval { self: Interflow =>
   }
 
   def eval(local: Local, op: Op, unwind: Next, blockFresh: Fresh)(
-      implicit state: State): Val = {
+      implicit state: State,
+      linked: linker.Result): Val = {
     import state.materialize
     def emit = {
       if (unwind ne Next.None) {
@@ -149,7 +150,35 @@ trait Eval { self: Interflow =>
                 (sig, mmeth)
             }
 
-            emit.call(msig, mtarget, margs, unwind)
+            val isDuplicate =
+              mmeth match {
+                case Val.Global(Global.Member(_, _: Sig.Duplicate), _) =>
+                  true
+                case _ =>
+                  false
+              }
+
+            val cargs =
+              if (!isDuplicate) {
+                margs
+              } else {
+                val Type.Function(sigtys, _) = msig
+
+                // Method target might have a more precise signature
+                // than what's known currently available at the call site.
+                // This is a side effect of a method target selection taking
+                // into account which classes are allocated across whole program.
+                margs.zip(sigtys).map {
+                  case (marg, ty) =>
+                    if (!Sub.is(marg.ty, ty)) {
+                      emit.conv(Conv.Bitcast, ty, marg, unwind)
+                    } else {
+                      marg
+                    }
+                }
+              }
+
+            emit.call(msig, mtarget, cargs, unwind)
         }
       case Op.Load(ty, ptr) =>
         emit.load(ty, materialize(eval(ptr)), unwind)
@@ -231,8 +260,6 @@ trait Eval { self: Interflow =>
             emit.method(materialize(obj), sig, unwind)
           case obj =>
             val targets = obj.ty match {
-              case Type.Null | Type.Nothing =>
-                Seq.empty
               case ExactClassRef(cls, _) =>
                 cls.resolve(sig).toSeq
               case ScopeRef(scope) =>

@@ -74,11 +74,15 @@ trait Visit { self: Interflow =>
     val fresh = Fresh(0)
     val state = new State(Local(0))
 
-    // Compute opaque fresh locals fore arguments.
+    // Compute opaque fresh locals fore arguments. Argument types
+    // are always a subtype of the original declared type, but in
+    // some cases they might not be obviously related, despite
+    // having the same concrete allocated class inhabitants.
     val args = argtys.zip(origtys).map {
       case (argty, origty) =>
         val ty = if (!Sub.is(argty, origty)) {
-          log(s"can't pass ${argty.show} to ${origty.show} (in ${name.show})")
+          log(
+            s"using original argument type ${origty.show} instead of ${argty.show}")
           origty
         } else {
           argty
@@ -124,6 +128,9 @@ trait Visit { self: Interflow =>
       case tys     => Sub.lub(tys)
     }
 
+    // Interflow usually infers better types on our erased type system
+    // than scalac, yet we live it a benefit of the doubt and make sure
+    // that if original return type is more specific, we keep it as is.
     val origRetty = {
       val Type.Function(_, ty) = origdefn.ty
       ty
@@ -131,7 +138,7 @@ trait Visit { self: Interflow =>
     val resRetty =
       if (!Sub.is(retty, origRetty)) {
         log(
-          s"inferred less precise type ${retty.show} than ${origRetty.show} for ${origdefn.name.show}[${argtys.map(_.show).mkString(",")}]")
+          s"inferred type ${retty.show} is less precise than ${origRetty.show}")
         origRetty
       } else {
         retty
