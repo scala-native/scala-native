@@ -217,16 +217,19 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val BoxMethod = Map[Char, Symbol](
       'B' -> getDecl(BoxesRunTimeModule, TermName("boxToBoolean")),
       'C' -> getDecl(BoxesRunTimeModule, TermName("boxToCharacter")),
-      'z' -> getDecl(RuntimeBoxesModule, TermName("boxToUByte")),
       'Z' -> getDecl(BoxesRunTimeModule, TermName("boxToByte")),
-      's' -> getDecl(RuntimeBoxesModule, TermName("boxToUShort")),
       'S' -> getDecl(BoxesRunTimeModule, TermName("boxToShort")),
-      'i' -> getDecl(RuntimeBoxesModule, TermName("boxToUInt")),
       'I' -> getDecl(BoxesRunTimeModule, TermName("boxToInteger")),
-      'l' -> getDecl(RuntimeBoxesModule, TermName("boxToULong")),
       'L' -> getDecl(BoxesRunTimeModule, TermName("boxToLong")),
       'F' -> getDecl(BoxesRunTimeModule, TermName("boxToFloat")),
       'D' -> getDecl(BoxesRunTimeModule, TermName("boxToDouble"))
+    )
+
+    lazy val BoxUnsignedMethod = Map[Symbol, Symbol](
+      UByteClass  -> getDecl(RuntimeBoxesModule, TermName("boxToUByte")),
+      UShortClass -> getDecl(RuntimeBoxesModule, TermName("boxToUShort")),
+      UIntClass   -> getDecl(RuntimeBoxesModule, TermName("boxToUInt")),
+      ULongClass  -> getDecl(RuntimeBoxesModule, TermName("boxToULong"))
     )
 
     lazy val HashMethods = Seq(
@@ -240,16 +243,19 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val UnboxMethod = Map[Char, Symbol](
       'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),
       'C' -> getDecl(BoxesRunTimeModule, TermName("unboxToChar")),
-      'z' -> getDecl(RuntimeBoxesModule, TermName("unboxToUByte")),
       'Z' -> getDecl(BoxesRunTimeModule, TermName("unboxToByte")),
-      's' -> getDecl(RuntimeBoxesModule, TermName("unboxToUShort")),
       'S' -> getDecl(BoxesRunTimeModule, TermName("unboxToShort")),
-      'i' -> getDecl(RuntimeBoxesModule, TermName("unboxToUInt")),
       'I' -> getDecl(BoxesRunTimeModule, TermName("unboxToInt")),
-      'l' -> getDecl(RuntimeBoxesModule, TermName("unboxToULong")),
       'L' -> getDecl(BoxesRunTimeModule, TermName("unboxToLong")),
       'F' -> getDecl(BoxesRunTimeModule, TermName("unboxToFloat")),
       'D' -> getDecl(BoxesRunTimeModule, TermName("unboxToDouble"))
+    )
+
+    lazy val UnboxUnsignedMethod = Map[Symbol, Symbol](
+      UByteClass  -> getDecl(RuntimeBoxesModule, TermName("unboxToUByte")),
+      UShortClass -> getDecl(RuntimeBoxesModule, TermName("unboxToUShort")),
+      UIntClass   -> getDecl(RuntimeBoxesModule, TermName("unboxToUInt")),
+      ULongClass  -> getDecl(RuntimeBoxesModule, TermName("unboxToULong"))
     )
 
     lazy val ClassTagModule  = getRequiredModule("scala.reflect.ClassTag")

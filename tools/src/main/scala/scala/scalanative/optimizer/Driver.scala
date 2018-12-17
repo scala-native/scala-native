@@ -28,7 +28,6 @@ object Driver {
   )
 
   private val fullOptPasses = fastOptPasses ++ Seq(
-    pass.BlockParamReduction,
     pass.CfChainsSimplification,
     pass.DeadBlockElimination,
     pass.BasicBlocksFusion,

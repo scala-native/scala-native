@@ -6,7 +6,6 @@ import scalanative.nir._
 import scalanative.linker._
 import scalanative.codegen.MemoryLayout
 import scalanative.util.unreachable
-import scalanative.interflow.Sema._
 
 trait Eval { self: Interflow =>
   def run(insts: Array[Inst],
@@ -104,7 +103,8 @@ trait Eval { self: Interflow =>
   }
 
   def eval(local: Local, op: Op, unwind: Next, blockFresh: Fresh)(
-      implicit state: State): Val = {
+      implicit state: State,
+      linked: linker.Result): Val = {
     import state.materialize
     def emit = {
       if (unwind ne Next.None) {
@@ -140,7 +140,35 @@ trait Eval { self: Interflow =>
                 (sig, mmeth)
             }
 
-            emit.call(msig, mtarget, margs, unwind)
+            val isDuplicate =
+              mmeth match {
+                case Val.Global(Global.Member(_, _: Sig.Duplicate), _) =>
+                  true
+                case _ =>
+                  false
+              }
+
+            val cargs =
+              if (!isDuplicate) {
+                margs
+              } else {
+                val Type.Function(sigtys, _) = msig
+
+                // Method target might have a more precise signature
+                // than what's known currently available at the call site.
+                // This is a side effect of a method target selection taking
+                // into account which classes are allocated across whole program.
+                margs.zip(sigtys).map {
+                  case (marg, ty) =>
+                    if (!Sub.is(marg.ty, ty)) {
+                      emit.conv(Conv.Bitcast, ty, marg, unwind)
+                    } else {
+                      marg
+                    }
+                }
+              }
+
+            emit.call(msig, mtarget, cargs, unwind)
         }
       case Op.Load(ty, ptr) =>
         emit.load(ty, materialize(eval(ptr)), unwind)
@@ -215,12 +243,21 @@ trait Eval { self: Interflow =>
       case Op.Method(obj, sig) =>
         eval(obj) match {
           case Val.Virtual(addr) =>
-            val cls = state.deref(addr).cls
-            Val.Global(resolve(cls, sig), Type.Ptr)
+            val cls      = state.deref(addr).cls
+            val resolved = cls.resolve(sig).get
+            Val.Global(resolved, Type.Ptr)
           case obj if obj.ty == Type.Null =>
             emit.method(materialize(obj), sig, unwind)
           case obj =>
-            targets(obj.ty, sig).toSeq match {
+            val targets = obj.ty match {
+              case ExactClassRef(cls, _) =>
+                cls.resolve(sig).toSeq
+              case ScopeRef(scope) =>
+                scope.targets(sig)
+              case _ =>
+                bailOut
+            }
+            targets match {
               case Seq() =>
                 Val.Zero(Type.Nothing)
               case Seq(meth) =>
@@ -250,13 +287,14 @@ trait Eval { self: Interflow =>
           case _                => bailOut
         }
         eval(obj) match {
-          case obj @ Val.Virtual(addr) if is(state.deref(addr).cls, refty) =>
+          case obj @ Val.Virtual(addr)
+              if Sub.is(state.deref(addr).cls, refty) =>
             obj
           case obj if obj.ty == Type.Null =>
             obj
           case obj =>
             obj.ty match {
-              case ClassRef(cls) if is(cls, refty) =>
+              case ClassRef(cls) if Sub.is(cls, refty) =>
                 obj
               case _ =>
                 emit.as(ty, materialize(obj), unwind)
@@ -269,19 +307,19 @@ trait Eval { self: Interflow =>
         }
         eval(obj) match {
           case Val.Virtual(addr) =>
-            Val.Bool(is(state.deref(addr).cls, refty))
+            Val.Bool(Sub.is(state.deref(addr).cls, refty))
           case obj if obj.ty == Type.Null =>
             Val.False
           case obj =>
             obj.ty match {
               case ExactClassRef(cls, nullable) =>
-                val isStatically = is(cls, refty)
+                val isStatically = Sub.is(cls, refty)
                 val res = if (!isStatically) {
                   Val.False
                 } else if (!nullable) {
                   Val.True
                 } else {
-                  emit.comp(Comp.Ine, Type.Ptr, obj, Val.Null, unwind)
+                  emit.comp(Comp.Ine, Rt.Object, obj, Val.Null, unwind)
                 }
                 log(
                   s"isinstanceof ${obj.ty.show} a ${cls.ty.show} ? ${res.show}")
@@ -657,11 +695,11 @@ trait Eval { self: Interflow =>
           case (Val.Short(v), Type.Byte) => Val.Byte(v.toByte)
           case (Val.Int(v), Type.Byte)   => Val.Byte(v.toByte)
           case (Val.Int(v), Type.Short)  => Val.Short(v.toShort)
-          case (Val.Int(v), Type.Char)   => Val.Short(v.toChar.toShort)
+          case (Val.Int(v), Type.Char)   => Val.Char(v.toChar)
           case (Val.Long(v), Type.Byte)  => Val.Int(v.toByte)
           case (Val.Long(v), Type.Short) => Val.Int(v.toShort)
           case (Val.Long(v), Type.Int)   => Val.Int(v.toInt)
-          case (Val.Long(v), Type.Char)  => Val.Short(v.toChar.toShort)
+          case (Val.Long(v), Type.Char)  => Val.Char(v.toChar)
           case _                         => bailOut
         }
       case Conv.Zext =>

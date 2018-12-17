@@ -3,7 +3,6 @@ package optimizer
 package pass
 
 import scalanative.nir._, Inst._, Bin._, Comp._
-import scalanative.sema.ControlFlow
 import scala.None
 import scala.collection.mutable
 

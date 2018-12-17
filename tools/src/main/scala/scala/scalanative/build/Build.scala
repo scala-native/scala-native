@@ -54,6 +54,9 @@ object Build {
     val entries = ScalaNative.entries(config)
     val linked  = ScalaNative.link(config, entries)
 
+    nir.Show.dump(linked.defns, "linked.hnir")
+    ScalaNative.check(config, linked)
+
     if (linked.unavailable.nonEmpty) {
       linked.unavailable.map(_.show).sorted.foreach { signature =>
         config.logger.error(s"cannot link: $signature")
@@ -70,6 +73,8 @@ object Build {
 
     val optimized =
       ScalaNative.optimize(config, linked, driver)
+
+    ScalaNative.check(config, optimized)
 
     IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
     ScalaNative.codegen(config, optimized)

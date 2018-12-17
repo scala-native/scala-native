@@ -5,7 +5,6 @@ import scala.collection.mutable
 import scalanative.util.unreachable
 import scalanative.nir._
 import scalanative.linker._
-import scalanative.interflow.Sema._
 
 final class MergeProcessor(insts: Array[Inst],
                            blockFresh: Fresh,
@@ -74,7 +73,7 @@ final class MergeProcessor(insts: Array[Inst],
                 s.materialize(v)
             }
             val name    = mergeFresh()
-            val paramty = lub(materialized.map(_.ty))
+            val paramty = Sub.lub(materialized.map(_.ty))
             val param   = Val.Local(name, paramty)
             mergePhis += MergePhi(param, names.zip(materialized))
             param
@@ -291,7 +290,7 @@ final class MergeProcessor(insts: Array[Inst],
     // If the discovered blocks contain more than one,
     // we must merge them together using a synthetic block.
     if (inline && retMergeBlocks.size > 1) {
-      val retTy = lub(retMergeBlocks.map { block =>
+      val retTy = Sub.lub(retMergeBlocks.map { block =>
         val Inst.Ret(v) = block.cf
         v match {
           case Val.Virtual(addr) => block.end.deref(addr).cls.ty

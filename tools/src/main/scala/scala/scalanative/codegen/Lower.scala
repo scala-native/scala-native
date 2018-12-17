@@ -860,24 +860,18 @@ object Lower {
   val BoxTo: Map[Type, Global] = Seq(
     "java.lang.Boolean",
     "java.lang.Character",
-    "scala.scalanative.native.UByte",
     "java.lang.Byte",
-    "scala.scalanative.native.UShort",
     "java.lang.Short",
-    "scala.scalanative.native.UInt",
     "java.lang.Integer",
-    "scala.scalanative.native.ULong",
     "java.lang.Long",
     "java.lang.Float",
     "java.lang.Double"
   ).map { name =>
-    val boxty = Type.Ref(Global.Top(name))
-    val module =
-      if (name.startsWith("java.lang")) BoxesRunTime else RuntimeBoxes
-    val id    = "boxTo" + name.split("\\.").last
-    val retty = if (name.startsWith("java.lang")) boxty else nir.Rt.Object
-    val tys   = Seq(toSigned(nir.Type.unbox(boxty)), retty)
-    val meth  = module.member(Sig.Method(id, tys))
+    val boxty  = Type.Ref(Global.Top(name))
+    val module = BoxesRunTime
+    val id     = "boxTo" + name.split("\\.").last
+    val tys    = Seq(nir.Type.unbox(boxty), boxty)
+    val meth   = module.member(Sig.Method(id, tys))
 
     boxty -> meth
   }.toMap
@@ -885,20 +879,15 @@ object Lower {
   val UnboxTo: Map[Type, Global] = Seq(
     "java.lang.Boolean",
     "java.lang.Character",
-    "scala.scalanative.native.UByte",
     "java.lang.Byte",
-    "scala.scalanative.native.UShort",
     "java.lang.Short",
-    "scala.scalanative.native.UInt",
     "java.lang.Integer",
-    "scala.scalanative.native.ULong",
     "java.lang.Long",
     "java.lang.Float",
     "java.lang.Double"
   ).map { name =>
-    val boxty = Type.Ref(Global.Top(name))
-    val module =
-      if (name.startsWith("java.lang")) BoxesRunTime else RuntimeBoxes
+    val boxty  = Type.Ref(Global.Top(name))
+    val module = BoxesRunTime
     val id = {
       val last = name.split("\\.").last
       val suffix =
@@ -907,7 +896,7 @@ object Lower {
         else last
       "unboxTo" + suffix
     }
-    val tys  = Seq(nir.Rt.Object, toSigned(nir.Type.unbox(boxty)))
+    val tys  = Seq(nir.Rt.Object, nir.Type.unbox(boxty))
     val meth = module.member(Sig.Method(id, tys))
 
     boxty -> meth
@@ -915,14 +904,6 @@ object Lower {
 
   private def extern(id: String): Global =
     Global.Member(Global.Top("__"), Sig.Extern(id))
-
-  private def toSigned(ty: Type): Type = ty match {
-    case Type.UByte  => Type.Byte
-    case Type.UShort => Type.Short
-    case Type.UInt   => Type.Int
-    case Type.ULong  => Type.Long
-    case _           => ty
-  }
 
   val unitName = Global.Top("scala.scalanative.runtime.BoxedUnit$")
   val unit     = Val.Global(unitName, Type.Ptr)

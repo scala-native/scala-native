@@ -126,11 +126,13 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     reachGlobalNow(name)
     infos.get(name) match {
       case Some(cls: Class) =>
-        reachAllocation(cls)
-        if (cls.isModule) {
-          val init = cls.name.member(Sig.Ctor(Seq()))
-          if (loaded(cls.name).contains(init)) {
-            reachGlobal(init)
+        if (!cls.attrs.isAbstract) {
+          reachAllocation(cls)
+          if (cls.isModule) {
+            val init = cls.name.member(Sig.Ctor(Seq()))
+            if (loaded(cls.name).contains(init)) {
+              reachGlobal(init)
+            }
           }
         }
       case _ =>
@@ -178,6 +180,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         // transitive parents and as an implementation
         // of all transitive traits.
         def loopParent(parentInfo: Class): Unit = {
+          parentInfo.implementors += info
           parentInfo.subclasses += info
           parentInfo.parent.foreach(loopParent)
           parentInfo.traits.foreach(loopTraits)

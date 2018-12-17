@@ -4,7 +4,7 @@ package pass
 
 import scala.collection.mutable
 import scalanative.nir._, Inst.Let
-import scalanative.sema.{ControlFlow, DominatorTree}
+import scalanative.sema.DominatorTree
 
 /** Eliminates redundant box/unbox operations within
  *  a single method definition. This is quite simplistic approach

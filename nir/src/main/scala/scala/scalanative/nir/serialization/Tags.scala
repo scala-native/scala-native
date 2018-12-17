@@ -21,6 +21,7 @@ object Tags {
   final val LinkAttr         = 1 + ExternAttr
   final val DynAttr          = 1 + LinkAttr
   final val StubAttr         = 1 + DynAttr
+  final val AbstractAttr     = 1 + StubAttr
 
   // Binary ops
 
@@ -181,14 +182,10 @@ object Tags {
   final val PtrType         = 1 + BoolType
   final val CharType        = 1 + PtrType
   final val ByteType        = 1 + CharType
-  final val UByteType       = 1 + ByteType
-  final val ShortType       = 1 + UByteType
-  final val UShortType      = 1 + ShortType
-  final val IntType         = 1 + UShortType
-  final val UIntType        = 1 + IntType
-  final val LongType        = 1 + UIntType
-  final val ULongType       = 1 + LongType
-  final val FloatType       = 1 + ULongType
+  final val ShortType       = 1 + ByteType
+  final val IntType         = 1 + ShortType
+  final val LongType        = 1 + IntType
+  final val FloatType       = 1 + LongType
   final val DoubleType      = 1 + FloatType
   final val ArrayValueType  = 1 + DoubleType
   final val StructValueType = 1 + ArrayValueType

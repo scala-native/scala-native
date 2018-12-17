@@ -17,8 +17,9 @@ object Attr extends Base[nir.Attr] {
   val Stub         = P("stub".! map (_ => nir.Attr.Stub))
   val Extern       = P("extern".! map (_ => nir.Attr.Extern))
   val Link         = P("link(" ~ qualifiedId ~ ")" map (nir.Attr.Link(_)))
+  val Abstract     = P("abstract".! map (_ => nir.Attr.Abstract))
 
   override val parser: P[nir.Attr] =
-    MayInline | InlineHint | NoInline | AlwaysInline | Dyn | Stub | Extern | Link
+    MayInline | InlineHint | NoInline | AlwaysInline | Dyn | Stub | Extern | Link | Abstract
 
 }

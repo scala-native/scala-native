@@ -4,8 +4,9 @@ package pass
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
-import nir._
-import sema._, ControlFlow.Block
+import scalanative.nir._
+import scalanative.nir.ControlFlow.Block
+import sema._
 
 class GlobalValueNumbering extends Pass {
   import GlobalValueNumbering._

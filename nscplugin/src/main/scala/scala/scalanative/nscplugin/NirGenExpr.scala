@@ -36,6 +36,13 @@ trait NirGenExpr { self: NirGenPhase =>
           labeled = !inst.isInstanceOf[nir.Inst.Cf]
       }
       super.+=(inst)
+      inst match {
+        case Inst.Let(_, op, _) if op.resty == Type.Nothing =>
+          unreachable(unwind)
+          label(fresh())
+        case _ =>
+          ()
+      }
     }
 
     override def ++=(insts: Seq[Inst]): Unit =
@@ -481,7 +488,7 @@ trait NirGenExpr { self: NirGenPhase =>
       if (curMethodInfo.mutableVars.contains(sym)) {
         buf.varload(curMethodEnv.resolve(sym), unwind)
       } else if (sym.isModule) {
-        buf.module(genTypeName(sym), unwind)
+        genModule(sym)
       } else {
         curMethodEnv.resolve(sym)
       }
@@ -493,7 +500,7 @@ trait NirGenExpr { self: NirGenPhase =>
       val sym   = tree.symbol
       val owner = sym.owner
       if (sym.isModule) {
-        buf.module(genTypeName(sym), unwind)
+        genModule(sym)
       } else if (sym.isStaticMember) {
         genStaticMember(sym)
       } else if (sym.isMethod) {
@@ -519,7 +526,7 @@ trait NirGenExpr { self: NirGenPhase =>
         Val.Unit
       } else {
         val ty     = genType(sym.tpe, box = false)
-        val module = buf.module(genTypeName(sym.owner), unwind)
+        val module = genModule(sym.owner)
         genApplyMethod(sym, statically = true, module, Seq(ValTree(module)))
       }
     }
@@ -756,10 +763,10 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def numOfType(num: Int, ty: nir.Type): Val = ty match {
-      case Type.Byte | Type.UByte               => Val.Byte(num.toByte)
-      case Type.Short | Type.UShort | Type.Char => Val.Short(num.toShort)
-      case Type.Int | Type.UInt                 => Val.Int(num)
-      case Type.Long | Type.ULong               => Val.Long(num.toLong)
+      case Type.Byte                => Val.Byte(num.toByte)
+      case Type.Short  | Type.Char => Val.Short(num.toShort)
+      case Type.Int                  => Val.Int(num)
+      case Type.Long                => Val.Long(num.toLong)
       case Type.Float                           => Val.Float(num.toFloat)
       case Type.Double                          => Val.Double(num.toDouble)
       case _                                    => unsupported(s"num = $num, ty = ${ty.show}")
@@ -1087,27 +1094,36 @@ trait NirGenExpr { self: NirGenPhase =>
       }
     }
 
-    def boxValue(st: SimpleType, value: Val): Val = {
-      if (genPrimCode(st.sym) == 'O') {
-        value
-      } else {
-        genApplyBox(st, ValTree(value))
-      }
+    def boxValue(st: SimpleType, value: Val): Val = st.sym match {
+      case UByteClass | UShortClass | UIntClass | ULongClass =>
+        genApplyModuleMethod(RuntimeBoxesModule,
+                             BoxUnsignedMethod(st.sym),
+                             Seq(ValTree(value)))
+      case _ =>
+        if (genPrimCode(st.sym) == 'O') {
+          value
+        } else {
+          genApplyBox(st, ValTree(value))
+        }
     }
 
-    def unboxValue(st: SimpleType, partial: Boolean, value: Val): Val = {
-      val code = genPrimCode(st)
-
-      code match {
+    def unboxValue(st: SimpleType, partial: Boolean, value: Val): Val = st.sym match {
+      case UByteClass | UShortClass | UIntClass | ULongClass =>
         // Results of asInstanceOfs are partially unboxed, meaning
         // that non-standard value types remain to be boxed.
-        case _ if partial && 'a' <= code && code <= 'z' =>
+        if (partial) {
           value
-        case 'O' =>
+        } else {
+          genApplyModuleMethod(RuntimeBoxesModule,
+                               UnboxUnsignedMethod(st.sym),
+                               Seq(ValTree(value)))
+        }
+      case _ =>
+        if (genPrimCode(st) == 'O') {
           value
-        case _ =>
+        } else {
           genApplyUnbox(st, ValTree(value))
-      }
+        }
     }
 
     def genPtrOp(app: Apply, code: Int): Val = {
@@ -1481,17 +1497,20 @@ trait NirGenExpr { self: NirGenPhase =>
           (fromty, toty) match {
             case _ if boxed.ty == boxty =>
               boxed
-            case (_: Type.Primitive, _: Type.Primitive) =>
+            case (_: Type.PrimitiveKind, _: Type.PrimitiveKind) =>
               genCoercion(value, fromty, toty)
             case (_, Type.Nothing) =>
               val runtimeNothing = genType(RuntimeNothingClass, box = true)
               val isNullL, notNullL = fresh()
               val isNull = buf.comp(Comp.Ieq, boxed.ty, boxed, Val.Null, unwind)
-              branch(isNull, Next(isNullL), Next(notNullL))
-              label(isNullL)
-              raise(Val.Null, unwind)
-              label(notNullL)
+              buf.branch(isNull, Next(isNullL), Next(notNullL))
+              buf.label(isNullL)
+              buf.raise(Val.Null, unwind)
+              buf.label(notNullL)
               buf.as(runtimeNothing, boxed, unwind)
+              buf.unreachable(unwind)
+              buf.label(fresh())
+              Val.Zero(Type.Nothing)
             case _ =>
               val cast = buf.as(boxty, boxed, unwind)
               unboxValue(app.tpe, partial = true, cast)
@@ -1508,13 +1527,6 @@ trait NirGenExpr { self: NirGenPhase =>
 
         case st if st.isStruct =>
           genApplyNewStruct(st, args)
-
-        case st @ SimpleType(UByteClass | UIntClass | UShortClass | ULongClass,
-                             Seq())
-            // We can't just compare the curClassSym with RuntimeBoxesModule
-            // as it's not the same when you're actually compiling Boxes module.
-            if curClassSym.fullName.toString != "scala.scalanative.runtime.Boxes" =>
-          genApplyBox(st, args.head)
 
         case SimpleType(cls, Seq()) =>
           genApplyNew(cls, fun.symbol, args)
@@ -1557,12 +1569,17 @@ trait NirGenExpr { self: NirGenPhase =>
       genApplyMethod(method, statically = true, self, args)
     }
 
+    def isImplClass(sym: Symbol): Boolean =
+      sym.isModuleClass && nme.isImplClassName(sym.name)
+
     def genApplyMethod(sym: Symbol,
                       statically: Boolean,
                       selfp: Tree,
                       argsp: Seq[Tree]): Val = {
       if (sym.owner.isExternModule && sym.isAccessor) {
         genApplyExternAccessor(sym, argsp)
+      } else if (isImplClass(sym.owner)) {
+        genApplyMethod(sym, statically = true, Val.Null, argsp)
       } else {
         val self = genExpr(selfp)
         genApplyMethod(sym, statically, self, argsp)
@@ -1592,13 +1609,13 @@ trait NirGenExpr { self: NirGenPhase =>
       val name  = genMethodName(sym)
       val sig   = genMethodSig(sym)
       val argsPt =
-        if (owner.isExternModule || owner.isImplClass)
+        if (owner.isExternModule || isImplClass(owner))
           sig.args
         else
           sig.args.tail
       val args = genMethodArgs(sym, argsp, argsPt)
       val method =
-        if (statically || owner.isStruct || owner.isExternModule) {
+        if (isImplClass(owner) || statically || owner.isStruct || owner.isExternModule) {
           Val.Global(name, nir.Type.Ptr)
         } else {
           val Global.Member(_, sig) = name

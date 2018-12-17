@@ -78,6 +78,8 @@ object Show {
         str("link(")
         str(name)
         str(")")
+      case Attr.Abstract =>
+        str("abstract")
     }
 
     def next_(next: Next): Unit = next match {
@@ -141,17 +143,13 @@ object Show {
         str("switch ")
         val_(scrut)
         str(" {")
-        indent()
         rep(cases) { next =>
-          newline()
+          str(" ")
           next_(next)
         }
-        newline()
-        str("default => ")
+        str(" default => ")
         next_(default)
-        unindent()
-        newline()
-        str("}")
+        str(" }")
       case Inst.Throw(v, unwind) =>
         str("throw ")
         val_(v)
@@ -540,13 +538,9 @@ object Show {
       case Type.Ptr    => str("ptr")
       case Type.Char   => str("char")
       case Type.Byte   => str("byte")
-      case Type.UByte  => str("ubyte")
       case Type.Short  => str("short")
-      case Type.UShort => str("ushort")
       case Type.Int    => str("int")
-      case Type.UInt   => str("uint")
       case Type.Long   => str("long")
-      case Type.ULong  => str("ulong")
       case Type.Float  => str("float")
       case Type.Double => str("double")
 

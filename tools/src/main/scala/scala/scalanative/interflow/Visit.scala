@@ -4,7 +4,6 @@ package interflow
 import scalanative.nir._
 import scalanative.linker._
 import scalanative.optimizer.pass.DeadCodeElimination
-import scalanative.interflow.Sema._
 
 trait Visit { self: Interflow =>
   def shallVisit(name: Global): Boolean =
@@ -75,13 +74,20 @@ trait Visit { self: Interflow =>
     val fresh = Fresh(0)
     val state = new State(Local(0))
 
-    // Compute argument values that are typed as an
-    // intersection of duplicate argument type and original
-    // declared argument type.
+    // Compute opaque fresh locals for the arguments. Argument types
+    // are always a subtype of the original declared type, but in
+    // some cases they might not be obviously related, despite
+    // having the same concrete allocated class inhabitants.
     val args = argtys.zip(origtys).map {
       case (argty, origty) =>
-        val paramty = glb(argty, origty).getOrElse(origty)
-        Val.Local(fresh(), paramty)
+        val ty = if (!Sub.is(argty, origty)) {
+          log(
+            s"using original argument type ${origty.show} instead of ${argty.show}")
+          origty
+        } else {
+          argty
+        }
+        Val.Local(fresh(), ty)
     }
 
     // If any of the argument types is nothing, this method
@@ -119,10 +125,26 @@ trait Visit { self: Interflow =>
     val retty = rets match {
       case Seq()   => Type.Nothing
       case Seq(ty) => ty
-      case tys     => lub(tys)
+      case tys     => Sub.lub(tys)
     }
 
-    result(retty, insts)
+    // Interflow usually infers better types on our erased type system
+    // than scalac, yet we live it a benefit of the doubt and make sure
+    // that if original return type is more specific, we keep it as is.
+    val origRetty = {
+      val Type.Function(_, ty) = origdefn.ty
+      ty
+    }
+    val resRetty =
+      if (!Sub.is(retty, origRetty)) {
+        log(
+          s"inferred type ${retty.show} is less precise than ${origRetty.show}")
+        origRetty
+      } else {
+        retty
+      }
+
+    result(resRetty, insts)
   }
 
   def originalName(name: Global): Global = name match {

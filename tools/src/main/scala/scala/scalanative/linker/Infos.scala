@@ -15,7 +15,9 @@ sealed abstract class ScopeInfo extends Info {
 
   def isClass: Boolean = this.isInstanceOf[Class]
   def isTrait: Boolean = this.isInstanceOf[Class]
+  def is(info: ScopeInfo): Boolean
   def targets(sig: Sig): mutable.Set[Global]
+  def implementors: mutable.Set[Class]
 }
 
 sealed abstract class MemberInfo extends Info {
@@ -63,9 +65,10 @@ final class Class(val attrs: Attrs,
                   val traits: Seq[Trait],
                   val isModule: Boolean)
     extends ScopeInfo {
-  var allocated  = false
-  val subclasses = mutable.Set.empty[Class]
-  val responds   = mutable.Map.empty[Sig, Global]
+  val implementors = mutable.Set[Class](this)
+  val subclasses   = mutable.Set.empty[Class]
+  val responds     = mutable.Map.empty[Sig, Global]
+  var allocated    = false
 
   lazy val fields: Seq[Field] = {
     val out = mutable.UnrolledBuffer.empty[Field]
