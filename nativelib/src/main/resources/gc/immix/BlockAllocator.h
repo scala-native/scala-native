@@ -20,7 +20,7 @@ typedef struct {
     atomic_uint_fast32_t freeBlockCount;
     BlockRange coalescingSuperblock;
     word_t *blockMetaStart;
-    bool concurrent;
+    atomic_bool concurrent;
     BlockList freeSuperblocks[SUPERBLOCK_LIST_SIZE];
 } BlockAllocator;
 
