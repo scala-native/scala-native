@@ -82,34 +82,4 @@ object Intrinsics {
   def `llvm.cttz.i16`(source: Short, iszeroundef: Boolean): Short   = extern
   def `llvm.cttz.i32`(source: Int, iszeroundef: Boolean): Int       = extern
   def `llvm.cttz.i64`(source: Long, iszeroundef: Boolean): Long     = extern
-  def `llvm.memset.p0i8.i32`(dest: Ptr[Byte],
-                             value: Byte,
-                             len: Int,
-                             align: Int,
-                             isvolatile: Boolean): Unit = extern
-  def `llvm.memset.p0i8.i64`(dest: Ptr[Byte],
-                             value: Byte,
-                             len: Long,
-                             align: Int,
-                             isvolatile: Boolean): Unit = extern
-  def `llvm.memcpy.p0i8.p0i8.i32`(dest: Ptr[Byte],
-                                  src: Ptr[Byte],
-                                  len: Int,
-                                  align: Int,
-                                  isvolatile: Boolean): Unit = extern
-  def `llvm.memcpy.p0i8.p0i8.i64`(dest: Ptr[Byte],
-                                  src: Ptr[Byte],
-                                  len: Long,
-                                  align: Int,
-                                  isvolatile: Boolean): Unit = extern
-  def `llvm.memmove.p0i8.p0i8.i32`(dest: Ptr[Byte],
-                                   src: Ptr[Byte],
-                                   len: Int,
-                                   align: Int,
-                                   isvolatile: Boolean): Unit = extern
-  def `llvm.memmove.p0i8.p0i8.i64`(dest: Ptr[Byte],
-                                   src: Ptr[Byte],
-                                   len: Long,
-                                   align: Int,
-                                   isvolatile: Boolean): Unit = extern
 }

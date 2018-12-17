@@ -1,4 +1,4 @@
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
 package scala.scalanative
 package runtime
 
@@ -85,7 +85,7 @@ object Array {
       val toPtr   = to.at(toPos).cast[Ptr[Byte]]
       val size    = to.stride * len
 
-      `llvm.memmove.p0i8.p0i8.i64`(toPtr, fromPtr, size, 1, false)
+      libc.memmove(toPtr, fromPtr, size)
     }
   }
 
@@ -134,11 +134,11 @@ object Array {
   }
 }
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 140)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 140)
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class UnitArray private () extends Array[Unit] {
   import Array._
@@ -165,11 +165,9 @@ final class UnitArray private () extends Array[Unit] {
     val arrinfo = typeof[UnitArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Unit] * length
     val arr     = GC.alloc(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                this.cast[Ptr[Byte]],
-                                arrsize,
-                                1,
-                                false)
+    val dst     = arr.cast[Ptr[Byte]]
+    val src     = this.cast[Ptr[Byte]]
+    libc.memcpy(dst, src, arrsize)
     arr.cast[UnitArray]
   }
 }
@@ -191,13 +189,13 @@ object UnitArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Unit] * length
-    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class BooleanArray private () extends Array[Boolean] {
   import Array._
@@ -224,11 +222,9 @@ final class BooleanArray private () extends Array[Boolean] {
     val arrinfo = typeof[BooleanArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Boolean] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                this.cast[Ptr[Byte]],
-                                arrsize,
-                                1,
-                                false)
+    val dst     = arr.cast[Ptr[Byte]]
+    val src     = this.cast[Ptr[Byte]]
+    libc.memcpy(dst, src, arrsize)
     arr.cast[BooleanArray]
   }
 }
@@ -250,13 +246,13 @@ object BooleanArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Boolean] * length
-    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class CharArray private () extends Array[Char] {
   import Array._
@@ -283,11 +279,9 @@ final class CharArray private () extends Array[Char] {
     val arrinfo = typeof[CharArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Char] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                this.cast[Ptr[Byte]],
-                                arrsize,
-                                1,
-                                false)
+    val dst     = arr.cast[Ptr[Byte]]
+    val src     = this.cast[Ptr[Byte]]
+    libc.memcpy(dst, src, arrsize)
     arr.cast[CharArray]
   }
 }
@@ -309,13 +303,13 @@ object CharArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Char] * length
-    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class ByteArray private () extends Array[Byte] {
   import Array._
@@ -342,11 +336,9 @@ final class ByteArray private () extends Array[Byte] {
     val arrinfo = typeof[ByteArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Byte] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                this.cast[Ptr[Byte]],
-                                arrsize,
-                                1,
-                                false)
+    val dst     = arr.cast[Ptr[Byte]]
+    val src     = this.cast[Ptr[Byte]]
+    libc.memcpy(dst, src, arrsize)
     arr.cast[ByteArray]
   }
 }
@@ -368,13 +360,13 @@ object ByteArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Byte] * length
-    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class ShortArray private () extends Array[Short] {
   import Array._
@@ -401,11 +393,9 @@ final class ShortArray private () extends Array[Short] {
     val arrinfo = typeof[ShortArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Short] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                this.cast[Ptr[Byte]],
-                                arrsize,
-                                1,
-                                false)
+    val dst     = arr.cast[Ptr[Byte]]
+    val src     = this.cast[Ptr[Byte]]
+    libc.memcpy(dst, src, arrsize)
     arr.cast[ShortArray]
   }
 }
@@ -427,13 +417,13 @@ object ShortArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Short] * length
-    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class IntArray private () extends Array[Int] {
   import Array._
@@ -460,11 +450,9 @@ final class IntArray private () extends Array[Int] {
     val arrinfo = typeof[IntArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Int] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                this.cast[Ptr[Byte]],
-                                arrsize,
-                                1,
-                                false)
+    val dst     = arr.cast[Ptr[Byte]]
+    val src     = this.cast[Ptr[Byte]]
+    libc.memcpy(dst, src, arrsize)
     arr.cast[IntArray]
   }
 }
@@ -486,13 +474,13 @@ object IntArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Int] * length
-    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class LongArray private () extends Array[Long] {
   import Array._
@@ -519,11 +507,9 @@ final class LongArray private () extends Array[Long] {
     val arrinfo = typeof[LongArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Long] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                this.cast[Ptr[Byte]],
-                                arrsize,
-                                1,
-                                false)
+    val dst     = arr.cast[Ptr[Byte]]
+    val src     = this.cast[Ptr[Byte]]
+    libc.memcpy(dst, src, arrsize)
     arr.cast[LongArray]
   }
 }
@@ -545,13 +531,13 @@ object LongArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Long] * length
-    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class FloatArray private () extends Array[Float] {
   import Array._
@@ -578,11 +564,9 @@ final class FloatArray private () extends Array[Float] {
     val arrinfo = typeof[FloatArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Float] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                this.cast[Ptr[Byte]],
-                                arrsize,
-                                1,
-                                false)
+    val dst     = arr.cast[Ptr[Byte]]
+    val src     = this.cast[Ptr[Byte]]
+    libc.memcpy(dst, src, arrsize)
     arr.cast[FloatArray]
   }
 }
@@ -604,13 +588,13 @@ object FloatArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Float] * length
-    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class DoubleArray private () extends Array[Double] {
   import Array._
@@ -637,11 +621,9 @@ final class DoubleArray private () extends Array[Double] {
     val arrinfo = typeof[DoubleArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Double] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                this.cast[Ptr[Byte]],
-                                arrsize,
-                                1,
-                                false)
+    val dst     = arr.cast[Ptr[Byte]]
+    val src     = this.cast[Ptr[Byte]]
+    libc.memcpy(dst, src, arrsize)
     arr.cast[DoubleArray]
   }
 }
@@ -663,13 +645,13 @@ object DoubleArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Double] * length
-    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
+// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class ObjectArray private () extends Array[Object] {
   import Array._
@@ -696,11 +678,9 @@ final class ObjectArray private () extends Array[Object] {
     val arrinfo = typeof[ObjectArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Object] * length
     val arr     = GC.alloc(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                this.cast[Ptr[Byte]],
-                                arrsize,
-                                1,
-                                false)
+    val dst     = arr.cast[Ptr[Byte]]
+    val src     = this.cast[Ptr[Byte]]
+    libc.memcpy(dst, src, arrsize)
     arr.cast[ObjectArray]
   }
 }
@@ -722,7 +702,7 @@ object ObjectArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Object] * length
-    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    libc.memcpy(dst, src, size)
     arr
   }
 }

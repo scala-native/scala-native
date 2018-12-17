@@ -84,7 +84,7 @@ object Array {
       val toPtr   = to.at(toPos).cast[Ptr[Byte]]
       val size    = to.stride * len
 
-      `llvm.memmove.p0i8.p0i8.i64`(toPtr, fromPtr, size, 1, false)
+      libc.memmove(toPtr, fromPtr, size)
     }
   }
 
@@ -169,11 +169,9 @@ final class ${T}Array private () extends Array[${T}] {
     val arrinfo = typeof[${T}Array].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[${T}] * length
     val arr     = ${alloc}(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                this.cast[Ptr[Byte]],
-                                arrsize,
-                                1,
-                                false)
+    val dst = arr.cast[Ptr[Byte]]
+    val src = this.cast[Ptr[Byte]]
+    libc.memcpy(dst, src, arrsize)
     arr.cast[${T}Array]
   }
 }
@@ -195,7 +193,7 @@ object ${T}Array {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[${T}] * length
-    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    libc.memcpy(dst, src, size)
     arr
   }
 }
