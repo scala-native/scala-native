@@ -2,7 +2,7 @@ package java.lang
 
 import scala.scalanative.native._
 import scala.scalanative.runtime, runtime.ClassTypeOps
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.libc
 
 class _Object {
   @inline def __equals(that: _Object): scala.Boolean =
@@ -53,11 +53,9 @@ class _Object {
     val ty    = runtime.getType(this)
     val size  = ty.size
     val clone = runtime.GC.alloc(ty, size)
-    `llvm.memcpy.p0i8.p0i8.i64`(clone.cast[Ptr[scala.Byte]],
-                                this.cast[Ptr[scala.Byte]],
-                                size,
-                                1,
-                                false)
+    val dst   = clone.cast[Ptr[scala.Byte]]
+    val src   = this.cast[Ptr[scala.Byte]]
+    libc.memcpy(dst, src, size)
     clone.cast[_Object]
   }
 
