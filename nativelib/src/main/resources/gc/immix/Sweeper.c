@@ -312,13 +312,8 @@ void Sweeper_LazyCoalesce(Heap *heap) {
     while (startIdx == coalesceDoneIdx && startIdx < limitIdx) {
         if (!atomic_compare_exchange_strong(&heap->sweep.coalesce, &coalesce,
                                             newValue)) {
-            // coalesce is updated by atomic_compare_exchange_strong
-            startIdx = BlockRange_Limit(coalesce);
-            coalesceDoneIdx = BlockRange_First(coalesce);
-            limitIdx = Sweeper_minSweepCursor(heap);
-            newValue = BlockRange_Pack(coalesceDoneIdx, limitIdx);
-            assert(coalesceDoneIdx <= startIdx);
-            continue;
+            // someone else is doing the coalescing, no need to retry
+            break;
         }
 
         BlockMeta *lastFreeBlockStart = NULL;
