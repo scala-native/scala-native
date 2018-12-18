@@ -200,7 +200,7 @@ object Generate {
           val loadName = name.member(Sig.Generated("load"))
           val loadSig  = Type.Function(Seq(), clsTy)
           val loadDefn = Defn.Define(
-            Attrs.None,
+            Attrs(inline = Attr.NoInline),
             loadName,
             loadSig,
             Seq(
