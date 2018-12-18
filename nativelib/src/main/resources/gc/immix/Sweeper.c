@@ -186,10 +186,11 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
 
     // skip superblock_middle these are handled by the previous batch
     // (BlockMeta_IsSuperblockStartMe(first) ||
-    // BlockMeta_IsSuperblockMiddle(first)) && first < limit
+    // BlockMeta_IsSuperblockTail(first) || BlockMeta_IsCoalesceMe(first)) && first < limit
+    // 0xb, 0x3, 0x13).contains(flags)
     while (((first->block.simple.flags & 0x3) == 0x3) && first < limit) {
 #ifdef DEBUG_PRINT
-        printf("Sweeper_Sweep SuperblockMiddle %p %" PRIu32 "\n", first,
+        printf("Sweeper_Sweep SuperblockTail %p %" PRIu32 "\n", first,
                BlockMeta_GetBlockIndex(heap->blockMetaStart, first));
         fflush(stdout);
 #endif
@@ -366,9 +367,13 @@ void Sweeper_LazyCoalesce(Heap *heap) {
                 // the last superblock crossed the limit
                 // other sweepers still need to sweep it
                 // add the part that is fully swept
-                uint32_t totalSize =
-                    (uint32_t)(lastCoalesceMe - lastFreeBlockStart);
-                assert(lastFreeBlockStart + totalSize <= limit);
+                uint32_t totalSize = (uint32_t)(limit - lastFreeBlockStart);
+                uint32_t remainingSize = (uint32_t)(current - limit);
+                assert(remainingSize > 0);
+                // mark the block in the next batch with the remaining size
+                BlockMeta_SetFlagAndSuperblockSize(limit, block_coalesce_me, remainingSize);
+                // other threads need to see this
+                atomic_thread_fence(memory_order_seq_cst);
                 if (totalSize > 0) {
                     BlockAllocator_AddFreeBlocks(&blockAllocator,
                                                  lastFreeBlockStart, totalSize);
@@ -382,12 +387,6 @@ void Sweeper_LazyCoalesce(Heap *heap) {
                                                    &sweepCursor, advanceTo);
                     // sweepCursor is updated by atomic_compare_exchange_strong
                 }
-                // retreat the coalesce cursor
-                uint_fast32_t retreatTo = BlockMeta_GetBlockIndex(
-                    heap->blockMetaStart, lastCoalesceMe);
-                heap->sweep.coalesce = BlockRange_Pack(retreatTo, retreatTo);
-                // do no more to avoid infinite loops
-                return;
             }
         }
 

@@ -16,8 +16,8 @@ typedef enum {
     block_superblock_start = 0x2,
     block_superblock_tail = 0x3,
     block_marked = 0x5, // 0x4 | block_simple
-    block_coalesce_me = 0x8,
-    block_superblock_start_me = 0xb // block_superblock_tail | block_coalesce_me
+    block_superblock_start_me = 0xb, // block_superblock_tail | 0x8
+    block_coalesce_me = 0x13 // block_superblock_tail | 0x10
 } BlockFlag;
 
 typedef struct {
