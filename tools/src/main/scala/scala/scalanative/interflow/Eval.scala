@@ -776,6 +776,7 @@ trait Eval { self: Interflow =>
       case Conv.Sext =>
         (value, ty) match {
           case (Val.Byte(v), Type.Short) => Val.Short(v.toShort)
+          case (Val.Byte(v), Type.Char)  => Val.Char(v.toChar)
           case (Val.Byte(v), Type.Int)   => Val.Int(v.toInt)
           case (Val.Byte(v), Type.Long)  => Val.Long(v.toLong)
           case (Val.Short(v), Type.Int)  => Val.Int(v.toInt)
