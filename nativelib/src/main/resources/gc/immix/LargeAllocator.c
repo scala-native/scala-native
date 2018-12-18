@@ -239,8 +239,7 @@ uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
             if (lastBlock < batchLimit) {
                 // The block is within current batch, just create the superblock
                 // yourself
-                BlockMeta_SetFlag(lastBlock, block_superblock_start);
-                BlockMeta_SetSuperblockSize(lastBlock, 1);
+                BlockMeta_SetFlagAndSuperblockSize(lastBlock, block_superblock_start, 1);
             } else {
                 // If we cross the current batch, then it is not to mark a
                 // block_superblock_tail to block_superblock_start. The other

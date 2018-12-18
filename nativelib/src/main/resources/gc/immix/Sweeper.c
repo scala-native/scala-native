@@ -255,8 +255,7 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
                 // Free blocks in the start or the end
                 // There may be some free blocks before this batch that needs to
                 // be coalesced with this block.
-                BlockMeta_SetFlag(lastFreeBlockStart, block_coalesce_me);
-                BlockMeta_SetSuperblockSize(lastFreeBlockStart, totalSize);
+                BlockMeta_SetFlagAndSuperblockSize(lastFreeBlockStart, block_coalesce_me, totalSize);
             } else {
                 // Free blocks in the middle
                 assert(totalSize > 0);
@@ -277,8 +276,7 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
         assert(totalSize > 0);
         // There may be some free blocks after this batch that needs to be
         // coalesced with this block.
-        BlockMeta_SetFlag(lastFreeBlockStart, block_coalesce_me);
-        BlockMeta_SetSuperblockSize(lastFreeBlockStart, totalSize);
+        BlockMeta_SetFlagAndSuperblockSize(lastFreeBlockStart, block_coalesce_me, totalSize);
     }
 
     // coalescing might be done by another thread
@@ -352,8 +350,7 @@ void Sweeper_LazyCoalesce(Heap *heap) {
             } else if (BlockMeta_IsSuperblockStartMe(current)) {
                 // finish the LargeAllocator_Sweep in the case when the last
                 // block is not free
-                BlockMeta_SetFlag(current, block_superblock_start);
-                BlockMeta_SetSuperblockSize(current, 1);
+                BlockMeta_SetFlagAndSuperblockSize(current, block_superblock_start, 1);
             }
 
             current += size;
