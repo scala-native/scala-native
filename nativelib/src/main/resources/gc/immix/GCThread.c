@@ -2,7 +2,6 @@
 #include "Constants.h"
 #include "Sweeper.h"
 #include <semaphore.h>
-#include <semaphore.h>
 
 static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
     thread->sweep.cursorDone = 0;
