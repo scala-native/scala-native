@@ -384,6 +384,8 @@ void Heap_Recycle(Heap *heap) {
     heap->sweep.postSweepDone = false;
 
     heap->gcThreads.phase = gc_sweep;
+    // make sure all running parameters are propagated
+    atomic_thread_fence(memory_order_release);
     GCThread_WakeAll(heap);
 }
 

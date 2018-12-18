@@ -257,8 +257,6 @@ void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
         current->debugFlag = dbg_free_in_collection;
 #endif
     }
-    // all the sweeping changes should be visible to all threads by now
-    atomic_thread_fence(memory_order_release);
     BlockAllocator_splitAndAdd(blockAllocator, superblock, count);
     // blockAllocator->freeBlockCount += count;
     atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count, memory_order_relaxed);

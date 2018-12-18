@@ -20,6 +20,8 @@ void BlockList_Init(BlockList *blockList) {
     blockList->head = (word_t)NULL;
 }
 
+// This could suffer from the ABA problem. However, during a single phase each BlockMeta is removed no more than once.
+// It would need to be swept before re-use.
 BlockMeta *BlockList_Pop(BlockList *blockList, word_t *blockMetaStart) {
     BlockMeta *block = (BlockMeta *)blockList->head;
     word_t newValue;

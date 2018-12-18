@@ -29,6 +29,8 @@ void LargeAllocator_freeListPush(FreeList *freeList, Chunk *chunk) {
                                              (word_t)chunk));
 }
 
+// This could suffer from the ABA problem. However, during a single phase each BlockMeta is removed no more than once.
+// It would need to be swept before re-use.
 Chunk *LargeAllocator_freeListPop(FreeList *freeList) {
     Chunk *head = (Chunk *)freeList->head;
     word_t newValue;

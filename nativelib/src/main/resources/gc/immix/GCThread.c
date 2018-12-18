@@ -2,6 +2,7 @@
 #include "Constants.h"
 #include "Sweeper.h"
 #include <semaphore.h>
+#include <semaphore.h>
 
 static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
     thread->sweep.cursorDone = 0;
@@ -28,6 +29,8 @@ void *GCThread_loop(void *arg) {
     while (true) {
         thread->active = false;
         sem_wait(start);
+        // hard fence before proceeding with the next phase
+        atomic_thread_fence(memory_order_seq_cst);
         thread->active = true;
 
         uint8_t phase = heap->gcThreads.phase;
@@ -38,6 +41,8 @@ void *GCThread_loop(void *arg) {
                 GCThread_sweep(thread, heap, stats);
                 break;
         }
+        // hard fence before proceeding with the next phase
+        atomic_thread_fence(memory_order_seq_cst);
     }
     return NULL;
 }

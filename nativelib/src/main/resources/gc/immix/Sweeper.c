@@ -283,6 +283,7 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
 
     // coalescing might be done by another thread
     // block_coalesce_me marks should be visible
+    atomic_thread_fence(memory_order_release);
     atomic_store_explicit(cursorDone, limitIdx, memory_order_release);
 }
 
@@ -313,6 +314,8 @@ void Sweeper_LazyCoalesce(Heap *heap) {
             // someone else is doing the coalescing, no need to retry
             break;
         }
+        // need to get all the coalesce_me information from Sweeper_Sweep
+        atomic_thread_fence(memory_order_acquire);
 
         BlockMeta *lastFreeBlockStart = NULL;
         BlockMeta *lastCoalesceMe = NULL;
