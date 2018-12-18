@@ -69,8 +69,8 @@ trait Intrinsics { self: Interflow =>
               state.derefVirtual(rightAddr).values(0)
 
             (linked.infos(leftName), linked.infos(rightName)) match {
-              case (left: Class, right: Class) =>
-                Val.Bool(right.subclasses.contains(left))
+              case (left: ScopeInfo, right: ScopeInfo) =>
+                Val.Bool(right.is(left))
               case _ =>
                 emit
             }
