@@ -19,9 +19,9 @@ trait List[E] extends Collection[E] {
   def contains(o: Any): Boolean
   def size(): Int
   // TODO: remove forwarders - 0.3.8 workaround
-  override def containsAll(c: Collection[_]): Boolean
-  override def equals(o: Any): Boolean
-  override def hashCode(): Int
-  override def removeAll(c: Collection[_]): Boolean
-  override def remove(o: Any): Boolean
+  def containsAll(c: Collection[_]): Boolean
+  def equals(o: Any): Boolean
+  def hashCode(): Int
+  def removeAll(c: Collection[_]): Boolean
+  def remove(o: Any): Boolean
 }
