@@ -18,4 +18,10 @@ trait List[E] extends Collection[E] {
   def iterator(): Iterator[E]
   def contains(o: Any): Boolean
   def size(): Int
+  // forwarders - 0.3.8 workaround
+  override def containsAll(c: Collection[_]): Boolean
+  override def equals(o: Any): Boolean
+  override def hashCode(): Int
+  override def removeAll(c: Collection[_]): Boolean
+  override def remove(o: Any): Boolean
 }
