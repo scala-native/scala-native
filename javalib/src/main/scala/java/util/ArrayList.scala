@@ -154,6 +154,7 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
     _size = 0
   }
 
+  // TODO: remove forwarders - 0.3.8 workaround
   override def addAll(c: Collection[_ <: E]): Boolean =
     super.addAll(c)
 
@@ -162,6 +163,9 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
 
   override def iterator(): java.util.Iterator[E] =
     super.iterator()
+
+  override def listIterator(index: Int): ListIterator[E] =
+    super.listIterator(index)
 
   // TODO: JDK 1.8
   // def forEach(action: Consumer[_ >: E]): Unit =
