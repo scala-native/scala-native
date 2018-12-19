@@ -6,6 +6,7 @@
 #include "Constants.h"
 #include <stddef.h>
 #include <stdatomic.h>
+#include <stdbool.h>
 
 #define SUPERBLOCK_LIST_SIZE (BLOCK_COUNT_BITS + 1)
 
@@ -19,6 +20,7 @@ typedef struct {
     atomic_uint_fast32_t freeBlockCount;
     BlockRange coalescingSuperblock;
     word_t *blockMetaStart;
+    atomic_bool concurrent;
     BlockList freeSuperblocks[SUPERBLOCK_LIST_SIZE];
 } BlockAllocator;
 
@@ -31,6 +33,7 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
                                   BlockMeta *block, uint32_t count);
 void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
                                       BlockMeta *block, uint32_t count);
+void BlockAllocator_FinishCoalescing(BlockAllocator *blockAllocator);
 void BlockAllocator_Clear(BlockAllocator *blockAllocator);
 
 #endif // IMMIX_BLOCKALLOCATOR_H

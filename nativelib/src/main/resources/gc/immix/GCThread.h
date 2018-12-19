@@ -18,5 +18,7 @@ typedef struct {
 } GCThread;
 
 void GCThread_Init(GCThread *thread, int id, Heap *heap);
+void GCThread_JoinAll(Heap *heap);
+void GCThread_WakeAll(Heap *heap);
 
 #endif // IMMIX_GCTHREAD_H

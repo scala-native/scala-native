@@ -37,6 +37,15 @@ BlockMeta *BlockList_Pop(BlockList *blockList) {
     return block;
 }
 
+BlockMeta *BlockList_Pop_OnlyThread(BlockList *blockList) {
+    BlockMeta *block = (BlockMeta *)blockList->head;
+    if (block == NULL) {
+        return NULL;
+    }
+    blockList->head = (word_t)BlockList_getNextBlock(blockList->blockMetaStart, block);
+    return block;
+}
+
 void BlockList_Push(BlockList *blockList, BlockMeta *blockMeta) {
     BlockMeta *block = (BlockMeta *)blockList->head;
     do {

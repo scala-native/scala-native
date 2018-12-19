@@ -15,6 +15,11 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+typedef enum {
+    gc_idle = 0x0,
+    gc_sweep = 0x2
+} GCThreadPhase;
+
 typedef struct {
     word_t *blockMetaStart;
     word_t *blockMetaEnd;
@@ -28,6 +33,7 @@ typedef struct {
     uint32_t maxBlockCount;
     struct {
         sem_t start;
+        atomic_uint_fast8_t phase;
         int count;
         void *all;
     } gcThreads;
