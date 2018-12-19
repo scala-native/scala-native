@@ -18,7 +18,7 @@ trait List[E] extends Collection[E] {
   def iterator(): Iterator[E]
   def contains(o: Any): Boolean
   def size(): Int
-  //  TODO: remove forwarders - 0.3.8 workaround
+  // TODO: remove forwarders - 0.3.8 workaround
   override def containsAll(c: Collection[_]): Boolean
   override def equals(o: Any): Boolean
   override def hashCode(): Int
