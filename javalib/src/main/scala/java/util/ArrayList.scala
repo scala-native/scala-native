@@ -154,7 +154,7 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
     _size = 0
   }
 
-  // TODO: remove forwarders - 0.3.8 workaround
+  // forwarders - https://github.com/scala-native/scala-native/issues/375
   override def addAll(c: Collection[_ <: E]): Boolean =
     super.addAll(c)
 
