@@ -108,7 +108,6 @@ Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
         }
         while (object == NULL && !Sweeper_IsSweepDone(heap)) {
             Sweeper_advanceLazyCursor(heap);
-            Sweeper_LazyCoalesce(heap);
             object = (Object *)Allocator_Alloc(&allocator, size);
             if (object == NULL) {
                 sched_yield();
@@ -157,7 +156,6 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
         }
         while (object == NULL && !Sweeper_IsSweepDone(heap)) {
             Sweeper_advanceLazyCursor(heap);
-            Sweeper_LazyCoalesce(heap);
             object = (Object *)Allocator_Alloc(&allocator, size);
             if (object == NULL) {
                 sched_yield();

@@ -11,6 +11,23 @@ static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
     }
     while (heap->sweep.cursor < heap->sweep.limit) {
         Sweeper_Sweep(heap, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE);
+    }
+    thread->sweep.cursorDone = heap->sweep.limit;
+    if (stats != NULL) {
+        end_ns = scalanative_nano_time();
+        Stats_RecordEvent(stats, event_concurrent_sweep, thread->id,
+                          start_ns, end_ns);
+    }
+}
+
+static inline void GCThread_sweep0(GCThread *thread, Heap *heap, Stats *stats) {
+    thread->sweep.cursorDone = 0;
+    uint64_t start_ns, end_ns;
+    if (stats != NULL) {
+        start_ns = scalanative_nano_time();
+    }
+    while (heap->sweep.cursor < heap->sweep.limit) {
+        Sweeper_Sweep(heap, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE);
         Sweeper_LazyCoalesce(heap);
     }
     thread->sweep.cursorDone = heap->sweep.limit;
@@ -41,7 +58,11 @@ void *GCThread_loop(void *arg) {
             case gc_idle:
                 break;
             case gc_sweep:
-                GCThread_sweep(thread, heap, stats);
+                if (thread->id == 0) {
+                    GCThread_sweep0(thread, heap, stats);
+                } else {
+                    GCThread_sweep(thread, heap, stats);
+                }
                 break;
         }
         // hard fence before proceeding with the next phase
