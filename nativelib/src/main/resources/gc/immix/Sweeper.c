@@ -28,8 +28,7 @@ returned to BlockAllocator because their size is already fixed by other non-free
 Coalescing could be done in single pass over the heap once all the batches are swept. However, then large areas
 of free blocks wouldn't be available for allocation.
 Instead coalescing is done incrementally - until we reach a batch that has not been swept.
-Coalescing progress is tracked by `heap->sweep.coalesce`. This BlockRange encodes two values:
-`cursorDone` (coalescing was done up to this point) and `cursor` (or limit of coalescing).
+Coalescing progress is tracked by `heap->sweep.coalesceDone` - coalescing was done up to this point.
 Each sweeper has cursorDone (even the lazy sweeper) to track how far have we swept.
 
 Coalescing is done incrementally - `Sweeper_LazyCoalesce` is called after each batch is swept.
@@ -316,19 +315,10 @@ uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
 
 void Sweeper_LazyCoalesce(Heap *heap) {
     // the previous coalesce is done and there is work
-    BlockRangeVal coalesce = heap->sweep.coalesce;
-    uint_fast32_t startIdx = BlockRange_Limit(coalesce);
-    assert(startIdx == heap->sweep.coalesceDone);
-    uint_fast32_t coalesceDoneIdx = BlockRange_First(coalesce);
+    uint_fast32_t startIdx = heap->sweep.coalesceDone;
     uint_fast32_t limitIdx = Sweeper_minSweepCursor(heap);
-    assert(coalesceDoneIdx <= startIdx);
-    BlockRangeVal newValue = BlockRange_Pack(coalesceDoneIdx, limitIdx);
-    while (startIdx == coalesceDoneIdx && startIdx < limitIdx) {
-        if (!atomic_compare_exchange_strong(&heap->sweep.coalesce, &coalesce,
-                                            newValue)) {
-            // someone else is doing the coalescing, no need to retry
-            break;
-        }
+    assert(startIdx <= limitIdx);
+    if (startIdx < limitIdx) {
         // need to get all the coalesce_me information from Sweeper_Sweep
         atomic_thread_fence(memory_order_acquire);
 
@@ -407,7 +397,6 @@ void Sweeper_LazyCoalesce(Heap *heap) {
         }
 
         heap->sweep.coalesceDone = limitIdx;
-        heap->sweep.coalesce = BlockRange_Pack(limitIdx, limitIdx);
     }
 }
 

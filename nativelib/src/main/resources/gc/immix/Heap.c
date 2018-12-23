@@ -141,8 +141,6 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->lazySweep.cursorDone = initialBlockCount;
     heap->sweep.limit = initialBlockCount;
     heap->sweep.coalesceDone = initialBlockCount;
-    heap->sweep.coalesce =
-        BlockRange_Pack(initialBlockCount, initialBlockCount);
     heap->sweep.postSweepDone = true;
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
     Allocator_Init(&allocator, &blockAllocator, bytemap, blockMetaStart,
@@ -381,7 +379,6 @@ void Heap_Recycle(Heap *heap) {
     heap->sweep.cursor = 0;
     heap->sweep.limit = heap->blockCount;
     heap->lazySweep.cursorDone = 0;
-    heap->sweep.coalesce = BlockRange_Pack(0, 0);
     heap->sweep.coalesceDone = 0;
     heap->sweep.postSweepDone = false;
 
