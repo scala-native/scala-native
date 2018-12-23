@@ -41,6 +41,7 @@ typedef struct {
         atomic_uint_fast32_t cursor;
         atomic_uint_fast32_t limit;
         BlockRange coalesce; // _First = cursorDone, _Limit = cursor
+        atomic_uint_fast32_t coalesceDone;
         atomic_bool postSweepDone;
     } sweep;
     struct {

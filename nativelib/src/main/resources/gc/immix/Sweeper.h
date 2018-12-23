@@ -11,6 +11,7 @@ Object *Sweeper_LazySweep(Heap *heap, uint32_t size);
 Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size);
 
 static inline bool Sweeper_IsSweepDone(Heap *heap) {
+    assert(BlockRange_First(heap->sweep.coalesce) == heap->sweep.coalesceDone);
     return BlockRange_First(heap->sweep.coalesce) >= heap->sweep.limit;
 }
 

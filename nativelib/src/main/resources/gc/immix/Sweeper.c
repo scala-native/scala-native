@@ -318,6 +318,7 @@ void Sweeper_LazyCoalesce(Heap *heap) {
     // the previous coalesce is done and there is work
     BlockRangeVal coalesce = heap->sweep.coalesce;
     uint_fast32_t startIdx = BlockRange_Limit(coalesce);
+    assert(startIdx == heap->sweep.coalesceDone);
     uint_fast32_t coalesceDoneIdx = BlockRange_First(coalesce);
     uint_fast32_t limitIdx = Sweeper_minSweepCursor(heap);
     assert(coalesceDoneIdx <= startIdx);
@@ -405,6 +406,7 @@ void Sweeper_LazyCoalesce(Heap *heap) {
             }
         }
 
+        heap->sweep.coalesceDone = limitIdx;
         heap->sweep.coalesce = BlockRange_Pack(limitIdx, limitIdx);
     }
 }
