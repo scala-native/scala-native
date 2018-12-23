@@ -210,7 +210,7 @@ bool Allocator_newBlock(Allocator *allocator) {
 }
 
 uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
-                         word_t *blockStart, LineMeta *lineMetas) {
+                         word_t *blockStart, LineMeta *lineMetas, SweepResult *result) {
 
     // If the block is not marked, it means that it's completely free
     assert(blockMeta->debugFlag == dbg_must_sweep);
@@ -300,7 +300,7 @@ uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
             // the allocator thread must see the sweeping changes in recycled
             // blocks
             atomic_thread_fence(memory_order_release);
-            BlockList_Push(&allocator->recycledBlocks, allocator->blockMetaStart, blockMeta);
+            LocalBlockList_Push(&result->recycledBlocks, allocator->blockMetaStart, blockMeta);
 #ifdef DEBUG_PRINT
                 printf("Allocator_Sweep %p %" PRIu32 " => RECYCLED\n",
                        blockMeta, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta));

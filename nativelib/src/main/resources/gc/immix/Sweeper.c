@@ -172,8 +172,15 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
     return object;
 }
 
+void Sweep_applyResult(SweepResult *result, Allocator *allocator, BlockAllocator *blockAllocator) {
+    BlockList_PushAll(&allocator->recycledBlocks, allocator->blockMetaStart, result->recycledBlocks.first, result->recycledBlocks.last);
+    SweepResult_clear(result);
+}
+
 void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
                    uint32_t maxCount) {
+    SweepResult sweepResult;
+    SweepResult_Init(&sweepResult);
     uint32_t cursor = heap->sweep.cursor;
     uint32_t sweepLimit = heap->sweep.limit;
     // protect against sweep.cursor overflow
@@ -224,7 +231,7 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
         assert(!BlockMeta_IsSuperblockStartMe(current));
         if (BlockMeta_IsSimpleBlock(current)) {
             freeCount = Allocator_Sweep(&allocator, current, currentBlockStart,
-                                        lineMetas);
+                                        lineMetas, &sweepResult);
 #ifdef DEBUG_PRINT
             printf("Sweeper_Sweep SimpleBlock %p %" PRIu32 "\n", current,
                    BlockMeta_GetBlockIndex(heap->blockMetaStart, current));
@@ -294,6 +301,7 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
         BlockMeta_SetFlagAndSuperblockSize(lastFreeBlockStart, block_coalesce_me, totalSize);
     }
 
+    Sweep_applyResult(&sweepResult, &allocator, &blockAllocator);
     // coalescing might be done by another thread
     // block_coalesce_me marks should be visible
     atomic_thread_fence(memory_order_release);

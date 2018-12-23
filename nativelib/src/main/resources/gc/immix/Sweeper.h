@@ -3,6 +3,7 @@
 
 #include "Heap.h"
 #include "datastructures/BlockRange.h"
+#include "SweepResult.h"
 
 void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
                    uint32_t maxCount);
