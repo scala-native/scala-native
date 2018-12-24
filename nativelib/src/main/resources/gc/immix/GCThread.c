@@ -58,11 +58,33 @@ void *GCThread_loop(void *arg) {
             case gc_idle:
                 break;
             case gc_sweep:
-                if (thread->id == 0) {
-                    GCThread_sweep0(thread, heap, stats);
-                } else {
-                    GCThread_sweep(thread, heap, stats);
-                }
+                GCThread_sweep(thread, heap, stats);
+                break;
+        }
+        // hard fence before proceeding with the next phase
+        atomic_thread_fence(memory_order_seq_cst);
+    }
+    return NULL;
+}
+
+void *GCThread_loop0(void *arg) {
+    GCThread *thread = (GCThread *)arg;
+    Heap *heap = thread->heap;
+    sem_t *start0 = &heap->gcThreads.start0;
+    Stats *stats = heap->stats;
+    while (true) {
+        thread->active = false;
+        sem_wait(start0);
+        // hard fence before proceeding with the next phase
+        atomic_thread_fence(memory_order_seq_cst);
+        thread->active = true;
+
+        uint8_t phase = heap->gcThreads.phase;
+        switch (phase) {
+            case gc_idle:
+                break;
+            case gc_sweep:
+                GCThread_sweep0(thread, heap, stats);
                 break;
         }
         // hard fence before proceeding with the next phase
@@ -78,7 +100,11 @@ void GCThread_Init(GCThread *thread, int id, Heap *heap) {
     // we do not use the pthread value
     pthread_t self;
 
-    pthread_create(&self, NULL, GCThread_loop, (void *)thread);
+    if (id == 0) {
+        pthread_create(&self, NULL, GCThread_loop0, (void *)thread);
+    } else {
+        pthread_create(&self, NULL, GCThread_loop, (void *)thread);
+    }
 }
 
 NOINLINE void GCThread_joinAllSlow(GCThread *gcThreads, int gcThreadCount) {
@@ -107,9 +133,13 @@ INLINE void GCThread_JoinAll(Heap *heap) {
 }
 
 void GCThread_WakeAll(Heap *heap) {
+    sem_t *start0 = &heap->gcThreads.start0;
     sem_t *start = &heap->gcThreads.start;
     int gcThreadCount = heap->gcThreads.count;
-    for (int i = 0; i < gcThreadCount; i++) {
+    if (gcThreadCount > 0) {
+        sem_post(start0);
+    }
+    for (int i = 1; i < gcThreadCount; i++) {
         sem_post(start);
     }
 }

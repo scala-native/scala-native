@@ -33,6 +33,7 @@ typedef struct {
     uint32_t maxBlockCount;
     struct {
         sem_t start;
+        sem_t start0;
         atomic_uint_fast8_t phase;
         int count;
         void *all;
