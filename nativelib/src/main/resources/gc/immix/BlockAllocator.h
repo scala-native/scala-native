@@ -33,6 +33,8 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
                                   BlockMeta *block, uint32_t count);
 void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
                                       BlockMeta *block, uint32_t count);
+void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator, LocalBlockList *localBlockListStart,
+                                         BlockMeta *superblock, uint32_t count);
 void BlockAllocator_FinishCoalescing(BlockAllocator *blockAllocator);
 void BlockAllocator_Clear(BlockAllocator *blockAllocator);
 

@@ -173,8 +173,19 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
 }
 
 void Sweep_applyResult(SweepResult *result, Allocator *allocator, BlockAllocator *blockAllocator) {
-    if (result->recycledBlocks.first != NULL) {
-        BlockList_PushAll(&allocator->recycledBlocks, allocator->blockMetaStart, result->recycledBlocks.first, result->recycledBlocks.last);
+    {
+        BlockMeta *first = result->recycledBlocks.first;
+        if (first != NULL) {
+            BlockList_PushAll(&allocator->recycledBlocks, allocator->blockMetaStart, first, result->recycledBlocks.last);
+        }
+    }
+
+    for (int i = 0; i < SUPERBLOCK_LOCAL_LIST_SIZE; i++) {
+        LocalBlockList item = result->freeSuperblocks[i];
+        BlockMeta *first = item.first;
+        if (first != NULL) {
+            BlockList_PushAll(&blockAllocator->freeSuperblocks[i], allocator->blockMetaStart, first, item.last);
+        }
     }
     SweepResult_clear(result);
 }
@@ -283,8 +294,13 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
             } else {
                 // Free blocks in the middle
                 assert(totalSize > 0);
-                BlockAllocator_AddFreeSuperblock(&blockAllocator,
-                                                 lastFreeBlockStart, totalSize);
+                if (totalSize >= SUPERBLOCK_LOCAL_LIST_MAX) {
+                    BlockAllocator_AddFreeSuperblock(&blockAllocator,
+                                                     lastFreeBlockStart, totalSize);
+                } else {
+                    BlockAllocator_AddFreeSuperblockLocal(&blockAllocator, sweepResult.freeSuperblocks,
+                                                          lastFreeBlockStart, totalSize);
+                }
             }
             lastFreeBlockStart = NULL;
         }
