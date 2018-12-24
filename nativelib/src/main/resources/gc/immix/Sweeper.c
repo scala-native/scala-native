@@ -317,7 +317,6 @@ void Sweeper_LazyCoalesce(Heap *heap) {
     // the previous coalesce is done and there is work
     uint_fast32_t startIdx = heap->sweep.coalesceDone;
     uint_fast32_t limitIdx = Sweeper_minSweepCursor(heap);
-    assert(startIdx <= limitIdx);
     if (startIdx < limitIdx) {
         // need to get all the coalesce_me information from Sweeper_Sweep
         atomic_thread_fence(memory_order_acquire);
