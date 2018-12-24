@@ -173,7 +173,9 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
 }
 
 void Sweep_applyResult(SweepResult *result, Allocator *allocator, BlockAllocator *blockAllocator) {
-    BlockList_PushAll(&allocator->recycledBlocks, allocator->blockMetaStart, result->recycledBlocks.first, result->recycledBlocks.last);
+    if (result->recycledBlocks.first != NULL) {
+        BlockList_PushAll(&allocator->recycledBlocks, allocator->blockMetaStart, result->recycledBlocks.first, result->recycledBlocks.last);
+    }
     SweepResult_clear(result);
 }
 

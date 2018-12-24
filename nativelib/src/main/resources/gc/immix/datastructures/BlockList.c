@@ -63,17 +63,17 @@ void BlockList_Push(BlockList *blockList, word_t *blockMetaStart, BlockMeta *blo
 }
 
 void BlockList_PushAll(BlockList *blockList, word_t *blockMetaStart, BlockMeta *first, BlockMeta *last) {
-    BlockMeta *block = (BlockMeta *)blockList->head;
+    BlockMeta *head = (BlockMeta *)blockList->head;
     do {
         // block will be replaced with actual value if
         // atomic_compare_exchange_strong fails
-        if (block == NULL) {
+        if (head == NULL) {
             last->nextBlock = LAST_BLOCK;
         } else {
             last->nextBlock =
-                BlockMeta_GetBlockIndex(blockMetaStart, block);
+                BlockMeta_GetBlockIndex(blockMetaStart, head);
         }
-    } while (!atomic_compare_exchange_strong(&blockList->head, (word_t *)&block,
+    } while (!atomic_compare_exchange_strong(&blockList->head, (word_t *)&head,
                                              (word_t)first));
 }
 
