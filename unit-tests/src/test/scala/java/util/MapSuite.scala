@@ -58,7 +58,7 @@ trait MapSuite extends tests.Suite {
 
   test("should store custom objects") {
     case class TestObj(num: Int)
-    val mp      = factory.empty[TestObj, TestObj]
+    val mp = factory.empty[TestObj, TestObj]
 
     val testKey = TestObj(100)
     mp.put(testKey, TestObj(12345))
