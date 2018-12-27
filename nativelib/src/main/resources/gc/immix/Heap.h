@@ -33,6 +33,7 @@ typedef struct {
     uint32_t maxBlockCount;
     struct {
         sem_t start;
+        sem_t start0;
         atomic_uint_fast8_t phase;
         int count;
         void *all;
@@ -40,7 +41,7 @@ typedef struct {
     struct {
         atomic_uint_fast32_t cursor;
         atomic_uint_fast32_t limit;
-        BlockRange coalesce; // _First = cursorDone, _Limit = cursor
+        atomic_uint_fast32_t coalesceDone;
         atomic_bool postSweepDone;
     } sweep;
     struct {

@@ -15,7 +15,7 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
     allocator->bytemap = bytemap;
     allocator->heapStart = heapStart;
 
-    BlockList_Init(&allocator->recycledBlocks, blockMetaStart);
+    BlockList_Init(&allocator->recycledBlocks);
 
     allocator->recycledBlockCount = 0;
 
@@ -155,20 +155,23 @@ bool Allocator_getNextLine(Allocator *allocator) {
  * free line of the new block.
  */
 bool Allocator_newBlock(Allocator *allocator) {
-    BlockMeta *block = BlockList_Pop(&allocator->recycledBlocks);
+    word_t *blockMetaStart = allocator->blockMetaStart;
+    BlockMeta *block = BlockList_Pop(&allocator->recycledBlocks, blockMetaStart);
     word_t *blockStart;
 
     if (block != NULL) {
+        // get all the changes done by sweeping
+        atomic_thread_fence(memory_order_acquire);
 #ifdef DEBUG_PRINT
         printf("Allocator_newBlock RECYCLED %p %" PRIu32 "\n", block,
-               (uint32_t)(block - (BlockMeta *)allocator->blockMetaStart));
+               BlockMeta_GetBlockIndex(blockMetaStart, block));
         fflush(stdout);
 #endif
         assert(block->debugFlag == dbg_partial_free);
 #ifdef DEBUG_ASSERT
         block->debugFlag = dbg_in_use;
 #endif
-        blockStart = BlockMeta_GetBlockStart(allocator->blockMetaStart,
+        blockStart = BlockMeta_GetBlockStart(blockMetaStart,
                                              allocator->heapStart, block);
 
         int lineIndex = BlockMeta_FirstFreeLine(block);
@@ -186,13 +189,13 @@ bool Allocator_newBlock(Allocator *allocator) {
         block = BlockAllocator_GetFreeBlock(allocator->blockAllocator);
 #ifdef DEBUG_PRINT
         printf("Allocator_newBlock %p %" PRIu32 "\n", block,
-               (uint32_t)(block - (BlockMeta *)allocator->blockMetaStart));
+               BlockMeta_GetBlockIndex(blockMetaStart, block));
         fflush(stdout);
 #endif
         if (block == NULL) {
             return false;
         }
-        blockStart = BlockMeta_GetBlockStart(allocator->blockMetaStart,
+        blockStart = BlockMeta_GetBlockStart(blockMetaStart,
                                              allocator->heapStart, block);
 
         allocator->cursor = blockStart;
@@ -207,7 +210,7 @@ bool Allocator_newBlock(Allocator *allocator) {
 }
 
 uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
-                         word_t *blockStart, LineMeta *lineMetas) {
+                         word_t *blockStart, LineMeta *lineMetas, SweepResult *result) {
 
     // If the block is not marked, it means that it's completely free
     assert(blockMeta->debugFlag == dbg_must_sweep);
@@ -288,16 +291,16 @@ uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
 
             assert(BlockMeta_FirstFreeLine(blockMeta) >= 0);
             assert(BlockMeta_FirstFreeLine(blockMeta) < LINE_COUNT);
-            // clang actually moves the memfence here because of sequencial consitency
-            allocator->recycledBlockCount++;
+//            allocator->recycledBlockCount++;
+            atomic_fetch_add_explicit(&allocator->recycledBlockCount, 1, memory_order_relaxed);
 
 #ifdef DEBUG_ASSERT
             blockMeta->debugFlag = dbg_partial_free;
 #endif
             // the allocator thread must see the sweeping changes in recycled
             // blocks
-            atomic_thread_fence(memory_order_seq_cst);
-            BlockList_Push(&allocator->recycledBlocks, blockMeta);
+            atomic_thread_fence(memory_order_release);
+            LocalBlockList_Push(&result->recycledBlocks, allocator->blockMetaStart, blockMeta);
 #ifdef DEBUG_PRINT
                 printf("Allocator_Sweep %p %" PRIu32 " => RECYCLED\n",
                        blockMeta, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta));
@@ -305,7 +308,7 @@ uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
 #endif
         } else {
 #ifdef DEBUG_ASSERT
-            atomic_thread_fence(memory_order_seq_cst);
+            atomic_thread_fence(memory_order_release);
             blockMeta->debugFlag = dbg_not_free;
 #endif
         }

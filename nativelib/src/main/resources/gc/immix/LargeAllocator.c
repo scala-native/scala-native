@@ -29,6 +29,8 @@ void LargeAllocator_freeListPush(FreeList *freeList, Chunk *chunk) {
                                              (word_t)chunk));
 }
 
+// This could suffer from the ABA problem. However, during a single phase each BlockMeta is removed no more than once.
+// It would need to be swept before re-use.
 Chunk *LargeAllocator_freeListPop(FreeList *freeList) {
     Chunk *head = (Chunk *)freeList->head;
     word_t newValue;
@@ -237,8 +239,7 @@ uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
             if (lastBlock < batchLimit) {
                 // The block is within current batch, just create the superblock
                 // yourself
-                BlockMeta_SetFlag(lastBlock, block_superblock_start);
-                BlockMeta_SetSuperblockSize(lastBlock, 1);
+                BlockMeta_SetFlagAndSuperblockSize(lastBlock, block_superblock_start, 1);
             } else {
                 // If we cross the current batch, then it is not to mark a
                 // block_superblock_tail to block_superblock_start. The other

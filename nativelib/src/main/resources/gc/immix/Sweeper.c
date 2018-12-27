@@ -2,6 +2,7 @@
 #include "Stats.h"
 #include "State.h"
 #include "GCThread.h"
+#include <sched.h>
 
 /*
 
@@ -27,8 +28,7 @@ returned to BlockAllocator because their size is already fixed by other non-free
 Coalescing could be done in single pass over the heap once all the batches are swept. However, then large areas
 of free blocks wouldn't be available for allocation.
 Instead coalescing is done incrementally - until we reach a batch that has not been swept.
-Coalescing progress is tracked by `heap->sweep.coalesce`. This BlockRange encodes two values:
-`cursorDone` (coalescing was done up to this point) and `cursor` (or limit of coalescing).
+Coalescing progress is tracked by `heap->sweep.coalesceDone` - coalescing was done up to this point.
 Each sweeper has cursorDone (even the lazy sweeper) to track how far have we swept.
 
 Coalescing is done incrementally - `Sweeper_LazyCoalesce` is called after each batch is swept.
@@ -95,7 +95,7 @@ Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
         if (stats != NULL) {
             start_ns = scalanative_nano_time();
         }
-        while (object == NULL && !Sweeper_IsSweepDone(heap)) {
+        while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
             Sweeper_Sweep(heap, &heap->lazySweep.cursorDone,
                           LAZY_SWEEP_MIN_BATCH);
             object = (Object *)Allocator_Alloc(&allocator, size);
@@ -103,6 +103,13 @@ Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
                 // if there are no threads the mutator must do coalescing on its
                 // own
                 Sweeper_LazyCoalesce(heap);
+            }
+        }
+        while (object == NULL && !Sweeper_IsSweepDone(heap)) {
+            Sweeper_advanceLazyCursor(heap);
+            object = (Object *)Allocator_Alloc(&allocator, size);
+            if (object == NULL) {
+                sched_yield();
             }
         }
         if (stats != NULL) {
@@ -136,7 +143,7 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
         if (stats != NULL) {
             start_ns = scalanative_nano_time();
         }
-        while (object == NULL && !Sweeper_IsSweepDone(heap)) {
+        while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
             Sweeper_Sweep(heap, &heap->lazySweep.cursorDone,
                           LAZY_SWEEP_MIN_BATCH);
             object = LargeAllocator_GetBlock(&largeAllocator, size);
@@ -144,6 +151,13 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
                 // if there are no threads the mutator must do coalescing on its
                 // own
                 Sweeper_LazyCoalesce(heap);
+            }
+        }
+        while (object == NULL && !Sweeper_IsSweepDone(heap)) {
+            Sweeper_advanceLazyCursor(heap);
+            object = (Object *)Allocator_Alloc(&allocator, size);
+            if (object == NULL) {
+                sched_yield();
             }
         }
         if (stats != NULL) {
@@ -158,8 +172,28 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
     return object;
 }
 
+void Sweep_applyResult(SweepResult *result, Allocator *allocator, BlockAllocator *blockAllocator) {
+    {
+        BlockMeta *first = result->recycledBlocks.first;
+        if (first != NULL) {
+            BlockList_PushAll(&allocator->recycledBlocks, allocator->blockMetaStart, first, result->recycledBlocks.last);
+        }
+    }
+
+    for (int i = 0; i < SUPERBLOCK_LOCAL_LIST_SIZE; i++) {
+        LocalBlockList item = result->freeSuperblocks[i];
+        BlockMeta *first = item.first;
+        if (first != NULL) {
+            BlockList_PushAll(&blockAllocator->freeSuperblocks[i], allocator->blockMetaStart, first, item.last);
+        }
+    }
+    SweepResult_clear(result);
+}
+
 void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
                    uint32_t maxCount) {
+    SweepResult sweepResult;
+    SweepResult_Init(&sweepResult);
     uint32_t cursor = heap->sweep.cursor;
     uint32_t sweepLimit = heap->sweep.limit;
     // protect against sweep.cursor overflow
@@ -186,10 +220,11 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
 
     // skip superblock_middle these are handled by the previous batch
     // (BlockMeta_IsSuperblockStartMe(first) ||
-    // BlockMeta_IsSuperblockMiddle(first)) && first < limit
+    // BlockMeta_IsSuperblockTail(first) || BlockMeta_IsCoalesceMe(first)) && first < limit
+    // 0xb, 0x3, 0x13).contains(flags)
     while (((first->block.simple.flags & 0x3) == 0x3) && first < limit) {
 #ifdef DEBUG_PRINT
-        printf("Sweeper_Sweep SuperblockMiddle %p %" PRIu32 "\n", first,
+        printf("Sweeper_Sweep SuperblockTail %p %" PRIu32 "\n", first,
                BlockMeta_GetBlockIndex(heap->blockMetaStart, first));
         fflush(stdout);
 #endif
@@ -209,7 +244,7 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
         assert(!BlockMeta_IsSuperblockStartMe(current));
         if (BlockMeta_IsSimpleBlock(current)) {
             freeCount = Allocator_Sweep(&allocator, current, currentBlockStart,
-                                        lineMetas);
+                                        lineMetas, &sweepResult);
 #ifdef DEBUG_PRINT
             printf("Sweeper_Sweep SimpleBlock %p %" PRIu32 "\n", current,
                    BlockMeta_GetBlockIndex(heap->blockMetaStart, current));
@@ -255,13 +290,17 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
                 // Free blocks in the start or the end
                 // There may be some free blocks before this batch that needs to
                 // be coalesced with this block.
-                BlockMeta_SetFlag(lastFreeBlockStart, block_coalesce_me);
-                BlockMeta_SetSuperblockSize(lastFreeBlockStart, totalSize);
+                BlockMeta_SetFlagAndSuperblockSize(lastFreeBlockStart, block_coalesce_me, totalSize);
             } else {
                 // Free blocks in the middle
                 assert(totalSize > 0);
-                BlockAllocator_AddFreeSuperblock(&blockAllocator,
-                                                 lastFreeBlockStart, totalSize);
+                if (totalSize >= SUPERBLOCK_LOCAL_LIST_MAX) {
+                    BlockAllocator_AddFreeSuperblock(&blockAllocator,
+                                                     lastFreeBlockStart, totalSize);
+                } else {
+                    BlockAllocator_AddFreeSuperblockLocal(&blockAllocator, sweepResult.freeSuperblocks,
+                                                          lastFreeBlockStart, totalSize);
+                }
             }
             lastFreeBlockStart = NULL;
         }
@@ -277,15 +316,14 @@ void Sweeper_Sweep(Heap *heap, atomic_uint_fast32_t *cursorDone,
         assert(totalSize > 0);
         // There may be some free blocks after this batch that needs to be
         // coalesced with this block.
-        BlockMeta_SetFlag(lastFreeBlockStart, block_coalesce_me);
-        BlockMeta_SetSuperblockSize(lastFreeBlockStart, totalSize);
+        BlockMeta_SetFlagAndSuperblockSize(lastFreeBlockStart, block_coalesce_me, totalSize);
     }
 
+    Sweep_applyResult(&sweepResult, &allocator, &blockAllocator);
     // coalescing might be done by another thread
     // block_coalesce_me marks should be visible
-    atomic_thread_fence(memory_order_seq_cst); // the most expensive
-
-    *cursorDone = limitIdx; // the most expensive
+    atomic_thread_fence(memory_order_release);
+    atomic_store_explicit(cursorDone, limitIdx, memory_order_release);
 }
 
 uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
@@ -293,7 +331,7 @@ uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
     int gcThreadCount = heap->gcThreads.count;
     GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
     for (int i = 0; i < gcThreadCount; i++) {
-        uint_fast32_t cursorDone = gcThreads[i].sweep.cursorDone;
+        uint_fast32_t cursorDone = atomic_load_explicit(&gcThreads[i].sweep.cursorDone, memory_order_acquire);
         if (gcThreads[i].active && cursorDone < min) {
             min = cursorDone;
         }
@@ -303,23 +341,11 @@ uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
 
 void Sweeper_LazyCoalesce(Heap *heap) {
     // the previous coalesce is done and there is work
-    BlockRangeVal coalesce = heap->sweep.coalesce;
-    uint_fast32_t startIdx = BlockRange_Limit(coalesce);
-    uint_fast32_t coalesceDoneIdx = BlockRange_First(coalesce);
+    uint_fast32_t startIdx = heap->sweep.coalesceDone;
     uint_fast32_t limitIdx = Sweeper_minSweepCursor(heap);
-    assert(coalesceDoneIdx <= startIdx);
-    BlockRangeVal newValue = BlockRange_Pack(coalesceDoneIdx, limitIdx);
-    while (startIdx == coalesceDoneIdx && startIdx < limitIdx) {
-        if (!atomic_compare_exchange_strong(&heap->sweep.coalesce, &coalesce,
-                                            newValue)) {
-            // coalesce is updated by atomic_compare_exchange_strong
-            startIdx = BlockRange_Limit(coalesce);
-            coalesceDoneIdx = BlockRange_First(coalesce);
-            limitIdx = Sweeper_minSweepCursor(heap);
-            newValue = BlockRange_Pack(coalesceDoneIdx, limitIdx);
-            assert(coalesceDoneIdx <= startIdx);
-            continue;
-        }
+    if (startIdx < limitIdx) {
+        // need to get all the coalesce_me information from Sweeper_Sweep
+        atomic_thread_fence(memory_order_acquire);
 
         BlockMeta *lastFreeBlockStart = NULL;
         BlockMeta *lastCoalesceMe = NULL;
@@ -356,8 +382,7 @@ void Sweeper_LazyCoalesce(Heap *heap) {
             } else if (BlockMeta_IsSuperblockStartMe(current)) {
                 // finish the LargeAllocator_Sweep in the case when the last
                 // block is not free
-                BlockMeta_SetFlag(current, block_superblock_start);
-                BlockMeta_SetSuperblockSize(current, 1);
+                BlockMeta_SetFlagAndSuperblockSize(current, block_superblock_start, 1);
             }
 
             current += size;
@@ -373,9 +398,13 @@ void Sweeper_LazyCoalesce(Heap *heap) {
                 // the last superblock crossed the limit
                 // other sweepers still need to sweep it
                 // add the part that is fully swept
-                uint32_t totalSize =
-                    (uint32_t)(lastCoalesceMe - lastFreeBlockStart);
-                assert(lastFreeBlockStart + totalSize <= limit);
+                uint32_t totalSize = (uint32_t)(limit - lastFreeBlockStart);
+                uint32_t remainingSize = (uint32_t)(current - limit);
+                assert(remainingSize > 0);
+                // mark the block in the next batch with the remaining size
+                BlockMeta_SetFlagAndSuperblockSize(limit, block_coalesce_me, remainingSize);
+                // other threads need to see this
+                atomic_thread_fence(memory_order_seq_cst);
                 if (totalSize > 0) {
                     BlockAllocator_AddFreeBlocks(&blockAllocator,
                                                  lastFreeBlockStart, totalSize);
@@ -389,16 +418,10 @@ void Sweeper_LazyCoalesce(Heap *heap) {
                                                    &sweepCursor, advanceTo);
                     // sweepCursor is updated by atomic_compare_exchange_strong
                 }
-                // retreat the coalesce cursor
-                uint_fast32_t retreatTo = BlockMeta_GetBlockIndex(
-                    heap->blockMetaStart, lastCoalesceMe);
-                heap->sweep.coalesce = BlockRange_Pack(retreatTo, retreatTo);
-                // do no more to avoid infinite loops
-                return;
             }
         }
 
-        heap->sweep.coalesce = BlockRange_Pack(limitIdx, limitIdx);
+        heap->sweep.coalesceDone = limitIdx;
     }
 }
 

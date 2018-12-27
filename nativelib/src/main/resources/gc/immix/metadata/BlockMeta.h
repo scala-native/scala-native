@@ -16,8 +16,8 @@ typedef enum {
     block_superblock_start = 0x2,
     block_superblock_tail = 0x3,
     block_marked = 0x5, // 0x4 | block_simple
-    block_coalesce_me = 0x8,
-    block_superblock_start_me = 0xb // block_superblock_tail | block_coalesce_me
+    block_superblock_start_me = 0xb, // block_superblock_tail | 0x8
+    block_coalesce_me = 0x13 // block_superblock_tail | 0x10
 } BlockFlag;
 
 typedef struct {
@@ -83,13 +83,20 @@ static inline bool BlockMeta_ContainsLargeObjects(BlockMeta *blockMeta) {
            BlockMeta_IsSuperblockTail(blockMeta);
 }
 
-static inline void BlockMeta_SetSuperblockSize(BlockMeta *blockMeta,
-                                               int32_t superblockSize) {
-    assert(!BlockMeta_IsSuperblockStart(blockMeta) || superblockSize > 0);
-    assert(!BlockMeta_IsCoalesceMe(blockMeta) || superblockSize > 0);
-    assert(!BlockMeta_IsSimpleBlock(blockMeta));
+static inline void BlockMeta_SetFlagAndSuperblockSize(BlockMeta *blockMeta,
+                                                      BlockFlag blockFlag,
+                                                      int32_t superblockSize) {
+    assert(blockFlag != block_superblock_start || superblockSize > 0);
+    assert(blockFlag != block_coalesce_me || superblockSize > 0);
+    assert(blockFlag != block_simple);
+    struct {
+        uint8_t flags;
+        int32_t size : BLOCK_COUNT_BITS;
+    } combined;
+    combined.flags = blockFlag;
+    combined.size = superblockSize;
 
-    blockMeta->block.superblock.size = superblockSize;
+    *((int32_t*)&blockMeta->block.superblock) = *((int32_t*)&combined);
 }
 
 static inline void BlockMeta_SetFirstFreeLine(BlockMeta *blockMeta,

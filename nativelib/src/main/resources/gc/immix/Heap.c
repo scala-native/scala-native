@@ -140,8 +140,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->sweep.cursor = initialBlockCount;
     heap->lazySweep.cursorDone = initialBlockCount;
     heap->sweep.limit = initialBlockCount;
-    heap->sweep.coalesce =
-        BlockRange_Pack(initialBlockCount, initialBlockCount);
+    heap->sweep.coalesceDone = initialBlockCount;
     heap->sweep.postSweepDone = true;
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
     Allocator_Init(&allocator, &blockAllocator, bytemap, blockMetaStart,
@@ -160,6 +159,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     // Init all GCThreads
     sem_init(&heap->gcThreads.start, 0, 0);
+    sem_init(&heap->gcThreads.start0, 0, 0);
 
     int gcThreadCount = Settings_GCThreadCount();
     heap->gcThreads.count = gcThreadCount;
@@ -380,14 +380,18 @@ void Heap_Recycle(Heap *heap) {
     heap->sweep.cursor = 0;
     heap->sweep.limit = heap->blockCount;
     heap->lazySweep.cursorDone = 0;
-    heap->sweep.coalesce = BlockRange_Pack(0, 0);
+    heap->sweep.coalesceDone = 0;
     heap->sweep.postSweepDone = false;
 
     heap->gcThreads.phase = gc_sweep;
+    // make sure all running parameters are propagated
+    atomic_thread_fence(memory_order_release);
     GCThread_WakeAll(heap);
 }
 
 void Heap_GrowIfNeeded(Heap *heap) {
+    // make all writes to block counts visible
+    atomic_thread_fence(memory_order_seq_cst);
     if (Heap_shouldGrow(heap)) {
         double growth;
         if (heap->heapSize < EARLY_GROWTH_THRESHOLD) {

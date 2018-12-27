@@ -16,51 +16,82 @@ BlockMeta *BlockList_getNextBlock(word_t *blockMetaStart,
     }
 }
 
-void BlockList_Init(BlockList *blockList, word_t *blockMetaStart) {
-    blockList->blockMetaStart = blockMetaStart;
+void BlockList_Init(BlockList *blockList) {
     blockList->head = (word_t)NULL;
 }
 
-BlockMeta *BlockList_Pop(BlockList *blockList) {
-    BlockMeta *block = (BlockMeta *)blockList->head;
+// This could suffer from the ABA problem. However, during a single phase each BlockMeta is removed no more than once.
+// It would need to be swept before re-use.
+BlockMeta *BlockList_Pop(BlockList *blockList, word_t *blockMetaStart) {
+    BlockMeta *head = (BlockMeta *)blockList->head;
     word_t newValue;
     do {
         // block will be replaced with actual value if
         // atomic_compare_exchange_strong fails
-        if (block == NULL) {
+        if (head == NULL) {
             return NULL;
         }
         newValue =
-            (word_t)BlockList_getNextBlock(blockList->blockMetaStart, block);
-    } while (!atomic_compare_exchange_strong(&blockList->head, (word_t *)&block,
+            (word_t)BlockList_getNextBlock(blockMetaStart, head);
+    } while (!atomic_compare_exchange_strong(&blockList->head, (word_t *)&head,
                                              newValue));
-    return block;
+    return head;
 }
 
-BlockMeta *BlockList_Pop_OnlyThread(BlockList *blockList) {
-    BlockMeta *block = (BlockMeta *)blockList->head;
-    if (block == NULL) {
+BlockMeta *BlockList_Pop_OnlyThread(BlockList *blockList, word_t *blockMetaStart) {
+    BlockMeta *head = (BlockMeta *)blockList->head;
+    if (head == NULL) {
         return NULL;
     }
-    blockList->head = (word_t)BlockList_getNextBlock(blockList->blockMetaStart, block);
-    return block;
+    blockList->head = (word_t)BlockList_getNextBlock(blockMetaStart, head);
+    return head;
 }
 
-void BlockList_Push(BlockList *blockList, BlockMeta *blockMeta) {
-    BlockMeta *block = (BlockMeta *)blockList->head;
+void BlockList_Push(BlockList *blockList, word_t *blockMetaStart, BlockMeta *blockMeta) {
+    BlockMeta *head = (BlockMeta *)blockList->head;
     do {
-        // block will be replaced with actual value if
+        // head will be replaced with actual value if
         // atomic_compare_exchange_strong fails
-        if (block == NULL) {
+        if (head == NULL) {
             blockMeta->nextBlock = LAST_BLOCK;
         } else {
             blockMeta->nextBlock =
-                BlockMeta_GetBlockIndex(blockList->blockMetaStart, block);
+                BlockMeta_GetBlockIndex(blockMetaStart, head);
         }
-    } while (!atomic_compare_exchange_strong(&blockList->head, (word_t *)&block,
+    } while (!atomic_compare_exchange_strong(&blockList->head, (word_t *)&head,
                                              (word_t)blockMeta));
+}
+
+void BlockList_PushAll(BlockList *blockList, word_t *blockMetaStart, BlockMeta *first, BlockMeta *last) {
+    BlockMeta *head = (BlockMeta *)blockList->head;
+    do {
+        // block will be replaced with actual value if
+        // atomic_compare_exchange_strong fails
+        if (head == NULL) {
+            last->nextBlock = LAST_BLOCK;
+        } else {
+            last->nextBlock =
+                BlockMeta_GetBlockIndex(blockMetaStart, head);
+        }
+    } while (!atomic_compare_exchange_strong(&blockList->head, (word_t *)&head,
+                                             (word_t)first));
 }
 
 void BlockList_Clear(BlockList *blockList) {
     blockList->head = (word_t)NULL;
+}
+
+void LocalBlockList_Push(LocalBlockList *list, word_t *blockMetaStart, BlockMeta *block) {
+    BlockMeta *head = list->first;
+    if (head == NULL) {
+        block->nextBlock = LAST_BLOCK;
+        list->first = list->last = block;
+    } else {
+        block->nextBlock = BlockMeta_GetBlockIndex(blockMetaStart, head);
+        list->first = block;
+    }
+}
+
+void LocalBlockList_Clear(LocalBlockList *list) {
+    list->first = list->last = NULL;
 }

@@ -7,10 +7,13 @@
 void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
                                 BlockMeta *superblock, uint32_t count);
 
+void BlockAllocator_splitAndAddLocal(BlockAllocator *blockAllocator, LocalBlockList *localBlockListStart,
+                                     BlockMeta *superblock, uint32_t count);
+
 void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
                          uint32_t blockCount) {
     for (int i = 0; i < SUPERBLOCK_LIST_SIZE; i++) {
-        BlockList_Init(&blockAllocator->freeSuperblocks[i], blockMetaStart);
+        BlockList_Init(&blockAllocator->freeSuperblocks[i]);
     }
     BlockAllocator_Clear(blockAllocator);
 
@@ -38,9 +41,12 @@ inline static int BlockAllocator_sizeToLinkedListIndex(uint32_t size) {
 
 inline static BlockMeta *
 BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int *index) {
+    // acquire all the changes done by sweeping
+    atomic_thread_fence(memory_order_acquire);
+    word_t *blockMetaStart = blockAllocator->blockMetaStart;
     for (int i = *index; i < SUPERBLOCK_LIST_SIZE; i++) {
         BlockMeta *superblock =
-            BlockList_Pop(&blockAllocator->freeSuperblocks[i]);
+            BlockList_Pop(&blockAllocator->freeSuperblocks[i], blockMetaStart);
         if (superblock != NULL) {
             *index = i;
             return superblock;
@@ -51,9 +57,10 @@ BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int *index) {
 
 inline static BlockMeta *
 BlockAllocator_pollSuperblock_OnlyThread(BlockAllocator *blockAllocator, int *index) {
+     word_t *blockMetaStart = blockAllocator->blockMetaStart;
     for (int i = *index; i < SUPERBLOCK_LIST_SIZE; i++) {
         BlockMeta *superblock =
-            BlockList_Pop_OnlyThread(&blockAllocator->freeSuperblocks[i]);
+            BlockList_Pop_OnlyThread(&blockAllocator->freeSuperblocks[i], blockMetaStart);
         if (superblock != NULL) {
             *index = i;
             return superblock;
@@ -189,8 +196,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
 #ifdef DEBUG_ASSERT
     superblock->debugFlag = dbg_in_use;
 #endif
-    BlockMeta_SetFlag(superblock, block_superblock_start);
-    BlockMeta_SetSuperblockSize(superblock, size);
+    BlockMeta_SetFlagAndSuperblockSize(superblock, block_superblock_start, size);
     BlockMeta *limit = superblock + size;
     for (BlockMeta *current = superblock + 1; current < limit; current++) {
         assert(BlockMeta_IsFree(current));
@@ -210,27 +216,66 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
     return superblock;
 }
 
-static inline void BlockAllocator_addSuperblockToBlockLists(
-    BlockAllocator *blockAllocator, BlockMeta *superblock, uint32_t count) {
-    int i = BlockAllocator_sizeToLinkedListIndex(count);
-    BlockList_Push(&blockAllocator->freeSuperblocks[i], superblock);
-}
-
 void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
                                 BlockMeta *superblock, uint32_t count) {
     uint32_t remaining_count = count;
     uint32_t powerOf2 = 1;
     BlockMeta *current = superblock;
+    word_t *blockMetaStart = blockAllocator->blockMetaStart;
     // splits the superblock into smaller superblocks that are a powers of 2
     while (remaining_count > 0) {
         if ((powerOf2 & remaining_count) > 0) {
-            BlockAllocator_addSuperblockToBlockLists(blockAllocator, current,
-                                                     powerOf2);
+            int i = BlockAllocator_sizeToLinkedListIndex(powerOf2);
+            BlockList_Push(&blockAllocator->freeSuperblocks[i], blockMetaStart, current);
+
             remaining_count -= powerOf2;
             current += powerOf2;
         }
         powerOf2 <<= 1;
     }
+}
+
+void BlockAllocator_splitAndAddLocal(BlockAllocator *blockAllocator, LocalBlockList *localBlockListStart,
+                                     BlockMeta *superblock, uint32_t count) {
+    uint32_t remaining_count = count;
+    uint32_t powerOf2 = 1;
+    BlockMeta *current = superblock;
+    word_t *blockMetaStart = blockAllocator->blockMetaStart;
+    // splits the superblock into smaller superblocks that are a powers of 2
+    while (remaining_count > 0) {
+        if ((powerOf2 & remaining_count) > 0) {
+            int i = BlockAllocator_sizeToLinkedListIndex(powerOf2);
+            LocalBlockList_Push(localBlockListStart + i, blockMetaStart, current);
+
+            remaining_count -= powerOf2;
+            current += powerOf2;
+        }
+        powerOf2 <<= 1;
+    }
+}
+
+void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator, LocalBlockList *localBlockListStart,
+                                           BlockMeta *superblock, uint32_t count) {
+
+#ifdef DEBUG_PRINT
+    printf("BlockAllocator_AddFreeSuperblock %p %" PRIu32 " count = %" PRIu32 "\n",
+           superblock,
+           BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock),
+           count);
+    fflush(stdout);
+#endif
+    BlockMeta *limit = superblock + count;
+    for (BlockMeta *current = superblock; current < limit; current++) {
+        // check for double sweeping
+        assert(current->debugFlag == dbg_free);
+        BlockMeta_Clear(current);
+#ifdef DEBUG_ASSERT
+        current->debugFlag = dbg_free_in_collection;
+#endif
+    }
+    BlockAllocator_splitAndAdd(blockAllocator, superblock, count);
+    // blockAllocator->freeBlockCount += count;
+    atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count, memory_order_relaxed);
 }
 
 void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
@@ -252,10 +297,9 @@ void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
         current->debugFlag = dbg_free_in_collection;
 #endif
     }
-    // all the sweeping changes should be visible to all threads by now
-    atomic_thread_fence(memory_order_seq_cst);
     BlockAllocator_splitAndAdd(blockAllocator, superblock, count);
-    blockAllocator->freeBlockCount += count;
+    // blockAllocator->freeBlockCount += count;
+    atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count, memory_order_relaxed);
 }
 
 void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
@@ -279,7 +323,7 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
 #endif
     }
     // all the sweeping changes should be visible to all threads by now
-    atomic_thread_fence(memory_order_seq_cst);
+    atomic_thread_fence(memory_order_release);
     uint32_t superblockIdx =
         BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock);
     BlockRangeVal oldRange = BlockRange_AppendLastOrReplace(
@@ -290,7 +334,8 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
             blockAllocator->blockMetaStart, BlockRange_First(oldRange));
         BlockAllocator_splitAndAdd(blockAllocator, replaced, size);
     }
-    blockAllocator->freeBlockCount += count;
+    // blockAllocator->freeBlockCount += count;
+    atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count, memory_order_relaxed);
 }
 
 void BlockAllocator_FinishCoalescing(BlockAllocator *blockAllocator) {

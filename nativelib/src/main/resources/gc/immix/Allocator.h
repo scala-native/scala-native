@@ -8,6 +8,7 @@
 #include "metadata/BlockMeta.h"
 #include "metadata/ObjectMeta.h"
 #include "BlockAllocator.h"
+#include "SweepResult.h"
 
 typedef struct {
     // The fields here are sorted by how often it is accessed.
@@ -43,6 +44,6 @@ bool Allocator_CanInitCursors(Allocator *allocator);
 void Allocator_Clear(Allocator *allocator);
 word_t *Allocator_Alloc(Allocator *allocator, size_t size);
 uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *block,
-                         word_t *blockStart, LineMeta *lineMetas);
+                         word_t *blockStart, LineMeta *lineMetas, SweepResult *result);
 
 #endif // IMMIX_ALLOCATOR_H
