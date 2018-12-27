@@ -5,29 +5,12 @@ package java.util
 import java.{util => ju}
 import scala.reflect.ClassTag
 
-//object IdentityHashMapSuite extends MapSuite {
-//  def factory(): IdentityHashMapSuite = new IdentityHashMapSuite
-//}
-//
-//class IdentityHashMapSuite extends AbstractMapSuiteFactory {
-//  override def implementationName: String =
-//    "java.util.IdentityHashMap"
-//
-//  override def empty[K: ClassTag, V: ClassTag]: ju.IdentityHashMap[K, V] =
-//    new ju.IdentityHashMap[K, V]
-//
-//  def allowsNullKeys: Boolean   = true
-//  def allowsNullValues: Boolean = true
-//
-//}
+object IdentityHashMapSuite extends MapSuite {
+  override def factory: IdentityMapSuiteFactory = new IdentityMapSuiteFactory
 
-object IdentityHashMapSuite extends tests.Suite {
-
-  def empty[K: ClassTag, V: ClassTag]: ju.IdentityHashMap[K, V] =
-    new ju.IdentityHashMap[K, V]
-
+  // tests from Harmony
   // tests with null keys and values
-  val map                  = empty[AnyRef, AnyRef]
+  val map                  = factory.empty[AnyRef, AnyRef]
   var result: AnyRef       = _
   var value: AnyRef        = _
   var anothervalue: AnyRef = _
@@ -74,4 +57,18 @@ object IdentityHashMapSuite extends tests.Suite {
     assertTrue(!map.containsValue(anothervalue))
     assertNull(map.get(null))
   }
+
+}
+
+class IdentityMapSuiteFactory extends AbstractMapSuiteFactory {
+  override def implementationName: String =
+    "java.util.IdentityHashMap"
+
+  override def empty[K: ClassTag, V: ClassTag]: ju.IdentityHashMap[K, V] =
+    new ju.IdentityHashMap[K, V]
+
+  def allowsNullKeys: Boolean                   = true
+  def allowsNullValues: Boolean                 = true
+  override def allowsIdentityBasedKeys: Boolean = true
+
 }
