@@ -2,25 +2,23 @@
 #define IMMIX_BLOCKALLOCATOR_H
 
 #include "datastructures/BlockList.h"
-#include "datastructures/BlockRange.h"
 #include "Constants.h"
 #include <stddef.h>
-#include <stdatomic.h>
-#include <stdbool.h>
 
 #define SUPERBLOCK_LIST_SIZE (BLOCK_COUNT_BITS + 1)
 
 typedef struct {
-    // no need to synchronize smallestSuperblock,
-    // it is only accessed from the mutator thread
     struct {
         BlockMeta *cursor;
         BlockMeta *limit;
     } smallestSuperblock;
-    atomic_uint_fast32_t freeBlockCount;
-    BlockRange coalescingSuperblock;
-    word_t *blockMetaStart;
-    atomic_bool concurrent;
+    int minNonEmptyIndex;
+    int maxNonEmptyIndex;
+    uint32_t freeBlockCount;
+    struct {
+        BlockMeta *first;
+        BlockMeta *limit;
+    } coalescingSuperblock;
     BlockList freeSuperblocks[SUPERBLOCK_LIST_SIZE];
 } BlockAllocator;
 
@@ -31,11 +29,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
                                             uint32_t size);
 void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
                                   BlockMeta *block, uint32_t count);
-void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
-                                      BlockMeta *block, uint32_t count);
-void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator, LocalBlockList *localBlockListStart,
-                                         BlockMeta *superblock, uint32_t count);
-void BlockAllocator_FinishCoalescing(BlockAllocator *blockAllocator);
+void BlockAllocator_SweepDone(BlockAllocator *blockAllocator);
 void BlockAllocator_Clear(BlockAllocator *blockAllocator);
 
 #endif // IMMIX_BLOCKALLOCATOR_H

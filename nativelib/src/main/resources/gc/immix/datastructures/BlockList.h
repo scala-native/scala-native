@@ -2,26 +2,20 @@
 #define IMMIX_BLOCLIST_H
 
 #include "../metadata/BlockMeta.h"
-#include <stdatomic.h>
+
+#define LAST_BLOCK -1
 
 typedef struct {
-    atomic_uintptr_t head;
-} BlockList;
-
-typedef struct {
+    word_t *blockMetaStart;
     BlockMeta *first;
     BlockMeta *last;
-} LocalBlockList;
+} BlockList;
 
-void BlockList_Init(BlockList *blockList);
+void BlockList_Init(BlockList *blockList, word_t *blockMetaStart);
 void BlockList_Clear(BlockList *blockList);
-BlockMeta *BlockList_Pop(BlockList *blockList, word_t *blockMetaStart);
-BlockMeta *BlockList_Pop_OnlyThread(BlockList *blockList, word_t *blockMetaStart);
-void BlockList_Push(BlockList *blockList, word_t *blockMetaStart, BlockMeta *block);
-void BlockList_PushAll(BlockList *blockList, word_t *blockMetaStart, BlockMeta *first, BlockMeta *last);
-
-void LocalBlockList_Clear(LocalBlockList *list);
-void LocalBlockList_Push(LocalBlockList *list, word_t *blockMetaStart, BlockMeta *block);
-
+BlockMeta *BlockList_Poll(BlockList *blockList);
+void BlockList_AddLast(BlockList *blockList, BlockMeta *block);
+void BlockList_AddBlocksLast(BlockList *blockList, BlockMeta *first,
+                             BlockMeta *last);
 
 #endif // IMMIX_BLOCLIST_H

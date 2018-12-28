@@ -11,7 +11,8 @@
     ((1UL << (BLOCK_SIZE_BITS - LARGE_OBJECT_MIN_SIZE_BITS)) - 1)
 
 typedef struct {
-    atomic_uintptr_t head;
+    Chunk *first;
+    Chunk *last;
 } FreeList;
 
 typedef struct {
@@ -30,7 +31,7 @@ void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
 Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
                                 size_t requestedBlockSize);
 void LargeAllocator_Clear(LargeAllocator *allocator);
-uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
-                              word_t *blockStart, BlockMeta *batchLimit);
+void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
+                          word_t *blockStart);
 
 #endif // IMMIX_LARGEALLOCATOR_H
