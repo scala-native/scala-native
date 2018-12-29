@@ -17,4 +17,5 @@ class IdentityHashMap[K, V] extends HashMap[K, V] {
   override def put(key: K, value: V): V           = super.put(key, value)
   override def remove(key: Any): V                = super.remove(key)
   override def clear(): Unit                      = super.clear()
+  override def size(): Int                        = super.size()
 }
