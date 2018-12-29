@@ -155,7 +155,7 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
         }
         while (object == NULL && !Sweeper_IsSweepDone(heap)) {
             Sweeper_advanceLazyCursor(heap);
-            object = (Object *)Allocator_Alloc(&allocator, size);
+            object = LargeAllocator_GetBlock(&largeAllocator, size);
             if (object == NULL) {
                 sched_yield();
             }
