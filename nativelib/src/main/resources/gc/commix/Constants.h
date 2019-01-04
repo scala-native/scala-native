@@ -39,6 +39,7 @@
 #define EARLY_GROWTH_THRESHOLD (128 * 1024 * 1024UL)
 #define EARLY_GROWTH_RATE 2.0
 #define GROWTH_RATE 1.414213562
+#define GROWTH_MARK_FRACTION 0.05
 
 #define METADATA_PER_BLOCK                                                     \
     (sizeof(BlockMeta) + LINE_COUNT * LINE_METADATA_SIZE +                     \

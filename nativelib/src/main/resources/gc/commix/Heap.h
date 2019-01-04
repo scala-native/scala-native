@@ -49,6 +49,11 @@ typedef struct {
         // other atomics
         atomic_uint_fast32_t cursorDone;
     } lazySweep;
+    struct {
+        uint64_t lastEnd_ns;
+        uint64_t currentStart_ns;
+        uint64_t currentEnd_ns;
+    } mark;
     Bytemap *bytemap;
     Stats *stats;
 } Heap;
