@@ -19,9 +19,9 @@ sealed abstract class GC private (val name: String, val links: Seq[String]) {
   override def toString: String = name
 }
 object GC {
-  private[scalanative] final case object None  extends GC("none", Seq())
-  private[scalanative] final case object Boehm extends GC("boehm", Seq("gc"))
-  private[scalanative] final case object Immix extends GC("immix", Seq())
+  private[scalanative] final case object None   extends GC("none", Seq())
+  private[scalanative] final case object Boehm  extends GC("boehm", Seq("gc"))
+  private[scalanative] final case object Immix  extends GC("immix", Seq())
   private[scalanative] final case object Commix extends GC("commix", Seq())
 
   /** Non-freeing garbage collector.*/

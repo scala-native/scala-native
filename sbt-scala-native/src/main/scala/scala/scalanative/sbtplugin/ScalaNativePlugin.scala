@@ -38,7 +38,8 @@ object ScalaNativePlugin extends AutoPlugin {
       settingKey[String]("Compilation mode, either \"debug\" or \"release\".")
 
     val nativeGC =
-      settingKey[String]("GC choice, either \"none\", \"boehm\", \"immix\" or \"commix\".")
+      settingKey[String](
+        "GC choice, either \"none\", \"boehm\", \"immix\" or \"commix\".")
 
     val nativeLTO =
       taskKey[String](
