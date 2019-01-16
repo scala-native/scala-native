@@ -597,7 +597,7 @@ object Lower {
     def genSizeofOp(buf: Buffer, n: Local, op: Op.Sizeof): Unit = {
       val Op.Sizeof(ty) = op
 
-      buf.let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty))), unwind)
+      buf.let(n, Op.Copy(Val.Word(MemoryLayout.sizeOf(ty))), unwind)
     }
 
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc): Unit = {
@@ -609,7 +609,7 @@ object Lower {
 
       buf.let(
         n,
-        Op.Call(allocSig, allocMethod, Seq(rtti(cls).const, Val.Long(size))),
+        Op.Call(allocSig, allocMethod, Seq(rtti(cls).const, Val.Word(size))),
         unwind)
     }
 
@@ -744,11 +744,13 @@ object Lower {
         val minus1 = ty match {
           case Type.Int  => Val.Int(-1)
           case Type.Long => Val.Long(-1L)
+          case Type.Word => Val.Word(-1L)
           case _         => util.unreachable
         }
         val minValue = ty match {
           case Type.Int  => Val.Int(java.lang.Integer.MIN_VALUE)
           case Type.Long => Val.Long(java.lang.Long.MIN_VALUE)
+          case Type.Word => Val.Word(java.lang.Long.MIN_VALUE)
           case _         => util.unreachable
         }
 
@@ -783,6 +785,7 @@ object Lower {
         val mask = ty match {
           case Type.Int  => Val.Int(31)
           case Type.Long => Val.Int(63)
+          case Type.Word => Val.Int(63)
           case _         => util.unreachable
         }
         val masked = bin(Bin.And, ty, r, mask, unwind)

@@ -58,6 +58,9 @@ object Unmangle {
       case 'c' =>
         next()
         Type.Char
+      case 'w' =>
+        next()
+        Type.Word
       case 'b' =>
         next()
         Type.Byte

@@ -30,6 +30,7 @@ class SubSuite extends ReachabilitySuite {
   val primitiveTypes = Seq(
     Type.Bool,
     Type.Ptr,
+    Type.Word,
     Type.Char,
     Type.Byte,
     Type.Short,

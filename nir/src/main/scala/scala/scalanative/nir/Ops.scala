@@ -26,7 +26,7 @@ sealed abstract class Op {
     case Op.As(ty, _)               => ty
     case Op.Is(_, _)                => Type.Bool
     case Op.Copy(v)                 => v.ty
-    case Op.Sizeof(_)               => Type.Long
+    case Op.Sizeof(_)               => Type.Word
     case Op.Box(refty: Type.RefKind, _) =>
       Type.Ref(refty.className, exact = true, nullable = false)
     case Op.Unbox(ty, _)      => Type.unbox(ty)

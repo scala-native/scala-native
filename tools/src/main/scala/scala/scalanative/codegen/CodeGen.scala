@@ -462,8 +462,9 @@ object CodeGen {
     def genType(ty: Type): Unit = ty match {
       case Type.Vararg                                           => str("...")
       case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing => str("i8*")
+      case Type.Word                                             => str("i64")
       case Type.Bool                                             => str("i1")
-      case i: Type.I                                             => str("i"); str(i.width)
+      case i: Type.SizedI                                        => str("i"); str(i.width)
       case Type.Float                                            => str("float")
       case Type.Double                                           => str("double")
       case Type.ArrayValue(ty, n) =>
@@ -516,6 +517,7 @@ object CodeGen {
       case Val.False     => str("false")
       case Val.Null      => str("null")
       case Val.Zero(ty)  => str("zeroinitializer")
+      case Val.Word(v)   => str(v)
       case Val.Byte(v)   => str(v)
       case Val.Char(v)   => str(v.toInt)
       case Val.Short(v)  => str(v)
@@ -993,7 +995,7 @@ object CodeGen {
         str(", ")
         genJustVal(r)
       case Op.Conv(conv, ty, v) =>
-        genConv(conv)
+        genConv(conv, v.ty, ty)
         str(" ")
         genVal(v)
         str(" to ")
@@ -1018,8 +1020,21 @@ object CodeGen {
         str(".0")
     }
 
-    def genConv(conv: Conv): Unit =
-      str(conv.show)
+    def genConv(conv: Conv, from: Type, to: Type): Unit = conv match {
+      case Conv.Wordtoint =>
+        str {
+          if (to.asInstanceOf[Type.SizedI].width < 64) "trunc"
+          else if (to.asInstanceOf[Type.SizedI].width == 64) "bitcast"
+          else "zext"
+        }
+      case Conv.Inttoword =>
+        str {
+          if (from.asInstanceOf[Type.SizedI].width > 64) "trunc"
+          else if (from.asInstanceOf[Type.SizedI].width == 64) "bitcast"
+          else "zext"
+        }
+      case _ => str(conv.show)
+    }
 
     def genAttr(attr: Attr): Unit =
       str(attr.show)

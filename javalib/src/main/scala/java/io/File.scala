@@ -237,7 +237,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         if (stat.stat(toCString(path), statbuf) == 0) {
           val timebuf = alloc[utime.utimbuf]
           !(timebuf._1) = !(statbuf._8)
-          !(timebuf._2) = time / 1000L
+          !(timebuf._2) = (time / 1000L).toWord
           utime.utime(toCString(path), timebuf) == 0
         } else {
           false
@@ -494,9 +494,9 @@ object File {
 
     // Find the next separator
     var i = start
-    while (i < strlen(path) && path(i) != separatorChar) i += 1
+    while (i < strlen(path).toLong && path(i) != separatorChar) i += 1
 
-    if (i == strlen(path)) resolveLink(path, resolveAbsolute = true)
+    if (i == strlen(path).toLong) resolveLink(path, resolveAbsolute = true)
     else {
       // copy path from start to next separator.
       // and resolve that subpart.

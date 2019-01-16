@@ -71,8 +71,9 @@ private[lang] class UnixProcess private (
         val nsec = unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(
           !tv._2.cast[Ptr[CInt]])
         val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
-        !ts._1 = !tv._1 + sec
-        !ts._2 = if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec
+        !ts._1 = !tv._1 + sec.toWord
+        !ts._2 =
+          (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toWord
         waitImpl(() => waitFor(ts)) == 0
       case _ => true
     }

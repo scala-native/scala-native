@@ -21,7 +21,7 @@ object CStringSuite extends tests.Suite {
       val szFrom = "abcde"
       val cstrTo = toCString(szFrom)
 
-      assert(strlen(cstrTo) == 5)
+      assert(strlen(cstrTo).toInt == 5)
       assert(cstrTo(0) == 'a'.toByte)
       assert(cstrTo(1) == 'b'.toByte)
       assert(cstrTo(2) == 'c'.toByte)

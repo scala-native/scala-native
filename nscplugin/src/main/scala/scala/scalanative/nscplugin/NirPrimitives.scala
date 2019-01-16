@@ -73,6 +73,14 @@ object NirPrimitives {
   final val CAST_RAWPTR_TO_LONG    = 1 + CAST_RAWPTR_TO_INT
   final val CAST_INT_TO_RAWPTR     = 1 + CAST_RAWPTR_TO_LONG
   final val CAST_LONG_TO_RAWPTR    = 1 + CAST_INT_TO_RAWPTR
+  
+  final val WORD_TO_INT      = 1 + CAST_LONG_TO_RAWPTR
+  final val WORD_TO_UINT     = 1 + WORD_TO_INT
+  final val WORD_PLUS        = 1 + WORD_TO_UINT
+  final val WORD_MINUS       = 1 + WORD_PLUS
+  final val WORD_TIMES       = 1 + WORD_MINUS
+  final val WORD_DIV         = 1 + WORD_TIMES
+  final val WORD_RIGHT_SHIFT = 1 + WORD_DIV
 }
 
 abstract class NirPrimitives {
@@ -123,12 +131,16 @@ abstract class NirPrimitives {
 
   def isRawCastOp(code: Int): Boolean =
     code >= CAST_RAW_PTR_TO_OBJECT && code <= CAST_LONG_TO_RAWPTR
+  
+  def isWordOp(code: Int): Boolean =
+    code >= WORD_TO_INT && code <= WORD_RIGHT_SHIFT
 
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
   private def initWithPrimitives(addPrimitive: (Symbol, Int) => Unit): Unit = {
     addPrimitive(BoxedUnit_UNIT, BOXED_UNIT)
     addPrimitive(Array_clone, ARRAY_CLONE)
+
     addPrimitive(PtrLoadMethod, PTR_LOAD)
     addPrimitive(PtrStoreMethod, PTR_STORE)
     addPrimitive(PtrAddMethod, PTR_ADD)
@@ -136,11 +148,13 @@ abstract class NirPrimitives {
     addPrimitive(PtrApplyMethod, PTR_APPLY)
     addPrimitive(PtrUpdateMethod, PTR_UPDATE)
     PtrFieldMethod.foreach(addPrimitive(_, PTR_FIELD))
+
     CFunctionPtrApply.foreach(addPrimitive(_, FUN_PTR_CALL))
     CFunctionPtrFrom.foreach(addPrimitive(_, FUN_PTR_FROM))
     addPrimitive(CQuoteMethod, CQUOTE)
     addPrimitive(CCastMethod, CCAST)
     StackallocMethods.foreach(addPrimitive(_, STACKALLOC))
+
     addPrimitive(DivUIntMethod, DIV_UINT)
     addPrimitive(DivULongMethod, DIV_ULONG)
     addPrimitive(RemUIntMethod, REM_UINT)
@@ -154,6 +168,15 @@ abstract class NirPrimitives {
     addPrimitive(ULongToFloatMethod, ULONG_TO_FLOAT)
     addPrimitive(UIntToDoubleMethod, UINT_TO_DOUBLE)
     addPrimitive(ULongToDoubleMethod, ULONG_TO_DOUBLE)
+
+    addPrimitive(WordToIntMethod, WORD_TO_INT)
+    addPrimitive(WordToUIntMethod, WORD_TO_UINT)
+    addPrimitive(WordPlusMethod, WORD_PLUS)
+    addPrimitive(WordMinusMethod, WORD_MINUS)
+    addPrimitive(WordTimesMethod, WORD_TIMES)
+    addPrimitive(WordDivMethod, WORD_DIV)
+    addPrimitive(WordRightShiftMethod, WORD_RIGHT_SHIFT)
+
     HashMethods.foreach(addPrimitive(_, HASH))
     addPrimitive(LoadBoolMethod, LOAD_BOOL)
     addPrimitive(LoadCharMethod, LOAD_CHAR)

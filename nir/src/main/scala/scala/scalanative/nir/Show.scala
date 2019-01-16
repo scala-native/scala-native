@@ -389,18 +389,20 @@ object Show {
     }
 
     def conv_(conv: Conv): Unit = conv match {
-      case Conv.Trunc    => str("trunc")
-      case Conv.Zext     => str("zext")
-      case Conv.Sext     => str("sext")
-      case Conv.Fptrunc  => str("fptrunc")
-      case Conv.Fpext    => str("fpext")
-      case Conv.Fptoui   => str("fptoui")
-      case Conv.Fptosi   => str("fptosi")
-      case Conv.Uitofp   => str("uitofp")
-      case Conv.Sitofp   => str("sitofp")
-      case Conv.Ptrtoint => str("ptrtoint")
-      case Conv.Inttoptr => str("inttoptr")
-      case Conv.Bitcast  => str("bitcast")
+      case Conv.Trunc     => str("trunc")
+      case Conv.Zext      => str("zext")
+      case Conv.Sext      => str("sext")
+      case Conv.Fptrunc   => str("fptrunc")
+      case Conv.Fpext     => str("fpext")
+      case Conv.Fptoui    => str("fptoui")
+      case Conv.Fptosi    => str("fptosi")
+      case Conv.Uitofp    => str("uitofp")
+      case Conv.Sitofp    => str("sitofp")
+      case Conv.Ptrtoint  => str("ptrtoint")
+      case Conv.Inttoptr  => str("inttoptr")
+      case Conv.Wordtoint => str("wordtoint")
+      case Conv.Inttoword => str("inttoword")
+      case Conv.Bitcast   => str("bitcast")
     }
 
     def val_(value: Val): Unit = value match {
@@ -414,6 +416,9 @@ object Show {
         str("zero[")
         type_(ty)
         str("]")
+      case Val.Word(value) =>
+        str("word ")
+        str(value)
       case Val.Char(value) =>
         str("char ")
         str(value.toInt)
@@ -549,8 +554,9 @@ object Show {
 
     def type_(ty: Type): Unit = ty match {
       case Type.Vararg => str("...")
-      case Type.Bool   => str("bool")
       case Type.Ptr    => str("ptr")
+      case Type.Word   => str("word")
+      case Type.Bool   => str("bool")
       case Type.Char   => str("char")
       case Type.Byte   => str("byte")
       case Type.Short  => str("short")

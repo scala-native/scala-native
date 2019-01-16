@@ -131,18 +131,20 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   }
 
   private def getConv(): Conv = getInt match {
-    case T.TruncConv    => Conv.Trunc
-    case T.ZextConv     => Conv.Zext
-    case T.SextConv     => Conv.Sext
-    case T.FptruncConv  => Conv.Fptrunc
-    case T.FpextConv    => Conv.Fpext
-    case T.FptouiConv   => Conv.Fptoui
-    case T.FptosiConv   => Conv.Fptosi
-    case T.UitofpConv   => Conv.Uitofp
-    case T.SitofpConv   => Conv.Sitofp
-    case T.PtrtointConv => Conv.Ptrtoint
-    case T.InttoptrConv => Conv.Inttoptr
-    case T.BitcastConv  => Conv.Bitcast
+    case T.TruncConv     => Conv.Trunc
+    case T.ZextConv      => Conv.Zext
+    case T.SextConv      => Conv.Sext
+    case T.FptruncConv   => Conv.Fptrunc
+    case T.FpextConv     => Conv.Fpext
+    case T.FptouiConv    => Conv.Fptoui
+    case T.FptosiConv    => Conv.Fptosi
+    case T.UitofpConv    => Conv.Uitofp
+    case T.SitofpConv    => Conv.Sitofp
+    case T.PtrtointConv  => Conv.Ptrtoint
+    case T.InttoptrConv  => Conv.Inttoptr
+    case T.InttowordConv => Conv.Inttoword
+    case T.WordtointConv => Conv.Wordtoint
+    case T.BitcastConv   => Conv.Bitcast
   }
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn)
@@ -234,6 +236,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   private def getType(): Type = getInt match {
     case T.VarargType      => Type.Vararg
     case T.PtrType         => Type.Ptr
+    case T.WordType        => Type.Word
     case T.BoolType        => Type.Bool
     case T.CharType        => Type.Char
     case T.ByteType        => Type.Byte
@@ -261,6 +264,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.FalseVal       => Val.False
     case T.NullVal        => Val.Null
     case T.ZeroVal        => Val.Zero(getType)
+    case T.WordVal        => Val.Word(getLong)
     case T.CharVal        => Val.Char(getShort.toChar)
     case T.ByteVal        => Val.Byte(get)
     case T.ShortVal       => Val.Short(getShort)

@@ -465,21 +465,23 @@ final class Check(implicit linked: linker.Result) {
   def checkConvOp(conv: Conv, ty: Type, value: Val): Unit = conv match {
     case Conv.Trunc =>
       (value.ty, ty) match {
-        case (lty: Type.I, rty: Type.I) if lty.width > rty.width =>
+        case (lty: Type.SizedI, rty: Type.SizedI) if lty.width > rty.width =>
+          ok
+        case (Type.Word, rty: Type.SizedI) if (rty.width < Type.Long.width) =>
           ok
         case _ =>
           error(s"can't trunc from ${value.ty.show} to ${ty.show}")
       }
     case Conv.Zext =>
       (value.ty, ty) match {
-        case (lty: Type.I, rty: Type.I) if lty.width < rty.width =>
+        case (lty: Type.SizedI, rty: Type.SizedI) if lty.width < rty.width =>
           ok
         case _ =>
           error(s"can't zext from ${value.ty.show} to ${ty.show}")
       }
     case Conv.Sext =>
       (value.ty, ty) match {
-        case (lty: Type.I, rty: Type.I) if lty.width < rty.width =>
+        case (lty: Type.SizedI, rty: Type.SizedI) if lty.width < rty.width =>
           ok
         case _ =>
           error(s"can't sext from ${value.ty.show} to ${ty.show}")
@@ -500,28 +502,28 @@ final class Check(implicit linked: linker.Result) {
       }
     case Conv.Fptoui =>
       (value.ty, ty) match {
-        case (Type.Float | Type.Double, ity: Type.I) =>
+        case (Type.Float | Type.Double, ity: Type.SizedI) =>
           ok
         case _ =>
           error(s"can't fptoui from ${value.ty.show} to ${ty.show}")
       }
     case Conv.Fptosi =>
       (value.ty, ty) match {
-        case (Type.Float | Type.Double, ity: Type.I) if ity.signed =>
+        case (Type.Float | Type.Double, ity: Type.SizedI) if ity.signed =>
           ok
         case _ =>
           error(s"can't fptosi from ${value.ty.show} to ${ty.show}")
       }
     case Conv.Uitofp =>
       (value.ty, ty) match {
-        case (ity: Type.I, Type.Float | Type.Double) =>
+        case (ity: Type.SizedI, Type.Float | Type.Double) =>
           ok
         case _ =>
           error(s"can't uitofp from ${value.ty.show} to ${ty.show}")
       }
     case Conv.Sitofp =>
       (value.ty, ty) match {
-        case (ity: Type.I, Type.Float | Type.Double) if ity.signed =>
+        case (ity: Type.SizedI, Type.Float | Type.Double) if ity.signed =>
           ok
         case _ =>
           error(s"can't sitofp from ${value.ty.show} to ${ty.show}")
@@ -539,6 +541,20 @@ final class Check(implicit linked: linker.Result) {
           ok
         case _ =>
           error(s"can't inttoptr from ${value.ty.show} to ${ty.show}")
+      }
+    case Conv.Wordtoint =>
+      (value.ty, ty) match {
+        case (Type.Word, _: Type.I) =>
+          ok
+        case _ =>
+          error(s"can't wordtoint from ${value.ty.show} to ${ty.show}")
+      }
+    case Conv.Inttoword =>
+      (value.ty, ty) match {
+        case (_: Type.I, Type.Word) =>
+          ok
+        case _ =>
+          error(s"can't inttoword from ${value.ty.show} to ${ty.show}")
       }
     case Conv.Bitcast =>
       def fail =

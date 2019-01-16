@@ -7,6 +7,7 @@ class TypeManglingSuite extends FunSuite {
   Seq(
     Type.Vararg,
     Type.Ptr,
+    Type.Word,
     Type.Byte,
     Type.Short,
     Type.Int,

@@ -24,6 +24,7 @@ object Tag {
   }
 
   % prims = [('Unit', 'scala.Unit', 8),
+  %          ('Word', 'native.Word', 8),
   %          ('Boolean', 'scala.Boolean', 1),
   %          ('Char', 'scala.Char', 2),
   %          ('Byte', 'scala.Byte', 1),

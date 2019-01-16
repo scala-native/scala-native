@@ -26,7 +26,7 @@ object System {
   }
 
   def identityHashCode(x: Object): scala.Int =
-    x.cast[Word].hashCode
+    x.cast[Word].toLong.hashCode
 
   private def loadProperties() = {
     val sysProps = new Properties()

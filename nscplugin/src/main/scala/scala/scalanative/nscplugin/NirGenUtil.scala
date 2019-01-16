@@ -58,6 +58,7 @@ trait NirGenUtil { self: NirGenPhase =>
 
         ref.symbol match {
           case UnitTagMethod    => just(UnitClass)
+          case WordTagMethod    => just(WordClass)
           case BooleanTagMethod => just(BooleanClass)
           case CharTagMethod    => just(CharClass)
           case ByteTagMethod    => just(ByteClass)

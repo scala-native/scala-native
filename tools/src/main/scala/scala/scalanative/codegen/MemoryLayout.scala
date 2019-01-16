@@ -14,10 +14,10 @@ final case class MemoryLayout(size: Long,
       tys.collect {
         // offset in words without rtti
         case MemoryLayout.PositionedType(_: RefKind, offset) =>
-          Val.Long(offset / MemoryLayout.WORD_SIZE - 1)
+          Val.Word(offset / MemoryLayout.WORD_SIZE - 1)
       }
 
-    ptrOffsets :+ Val.Long(-1)
+    ptrOffsets :+ Val.Word(-1)
   }
 }
 
@@ -33,8 +33,8 @@ object MemoryLayout {
       sizeOf(ty) * n
     case Type.StructValue(tys) =>
       MemoryLayout(tys).size
-    case Type.Nothing | Type.Ptr | _: Type.RefKind =>
-      8
+    case Type.Nothing | Type.Ptr | Type.Word | _: Type.RefKind =>
+      WORD_SIZE
     case _ =>
       unsupported(s"sizeof $ty")
   }

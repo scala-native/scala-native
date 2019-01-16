@@ -12,6 +12,16 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     // Native library
 
+    lazy val WordClass        = getRequiredClass("scala.scalanative.native.Word")
+    lazy val WordToIntMethod  = getDecl(WordClass, TermName("toInt"))
+    lazy val WordToUIntMethod = getDecl(WordClass, TermName("toUInt"))
+    lazy val WordPlusMethod   = getDecl(WordClass, TermName("$plus"))
+    lazy val WordMinusMethod  = getDecl(WordClass, TermName("$minus"))
+    lazy val WordTimesMethod  = getDecl(WordClass, TermName("$times"))
+    lazy val WordDivMethod    = getDecl(WordClass, TermName("$div"))
+    lazy val WordRightShiftMethod =
+      getDecl(WordClass, TermName("$greater$greater"))
+
     lazy val UByteClass  = getRequiredClass("scala.scalanative.native.UByte")
     lazy val UShortClass = getRequiredClass("scala.scalanative.native.UShort")
     lazy val UIntClass   = getRequiredClass("scala.scalanative.native.UInt")
@@ -88,6 +98,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val TagModule     = getRequiredModule("scala.scalanative.native.Tag")
     lazy val UnitTagMethod = getDecl(TagModule, TermName("materializeUnitTag"))
+    lazy val WordTagMethod = getDecl(TagModule, TermName("materializeWordTag"))
     lazy val BooleanTagMethod =
       getDecl(TagModule, TermName("materializeBooleanTag"))
     lazy val CharTagMethod = getDecl(TagModule, TermName("materializeCharTag"))

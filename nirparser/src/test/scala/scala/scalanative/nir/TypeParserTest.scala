@@ -11,6 +11,7 @@ class TypeParserTest extends FunSuite {
     Type.Vararg,
     Type.Ptr,
     Type.Bool,
+    Type.Word,
     Type.Byte,
     Type.Short,
     Type.Int,

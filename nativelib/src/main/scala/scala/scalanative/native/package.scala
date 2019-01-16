@@ -5,9 +5,9 @@ import scala.language.experimental.macros
 import scalanative.runtime.{libc, intrinsic}
 
 package object native {
-
-  /** Int on 32-bit architectures and Long on 64-bit ones. */
-  type Word = Long
+  implicit class LongExtension(private val long: Long) extends AnyVal {
+    @inline def toWord: Word = long.cast[Word]
+  }
 
   /** UInt on 32-bit architectures and ULong on 64-bit ones. */
   type UWord = ULong
@@ -76,7 +76,7 @@ package object native {
   type CSSize = Word
 
   /** The C/C++ 'ptrdiff_t' type. */
-  type CPtrDiff = Long
+  type CPtrDiff = Word
 
   /** C-style string with trailing 0. */
   type CString = Ptr[CChar]

@@ -18,6 +18,8 @@ class ConvParserTest extends FunSuite {
             Sitofp,
             Ptrtoint,
             Inttoptr,
+            Wordtoint,
+            Inttoword,
             Bitcast).foreach { conv =>
     test(s"parse conv `${conv.show}`") {
       val Parsed.Success(result, _) = parser.Conv.parser.parse(conv.show)

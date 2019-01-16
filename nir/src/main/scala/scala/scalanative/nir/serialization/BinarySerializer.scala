@@ -170,18 +170,20 @@ final class BinarySerializer(buffer: ByteBuffer) {
   }
 
   private def putConv(conv: Conv) = conv match {
-    case Conv.Trunc    => putInt(T.TruncConv)
-    case Conv.Zext     => putInt(T.ZextConv)
-    case Conv.Sext     => putInt(T.SextConv)
-    case Conv.Fptrunc  => putInt(T.FptruncConv)
-    case Conv.Fpext    => putInt(T.FpextConv)
-    case Conv.Fptoui   => putInt(T.FptouiConv)
-    case Conv.Fptosi   => putInt(T.FptosiConv)
-    case Conv.Uitofp   => putInt(T.UitofpConv)
-    case Conv.Sitofp   => putInt(T.SitofpConv)
-    case Conv.Ptrtoint => putInt(T.PtrtointConv)
-    case Conv.Inttoptr => putInt(T.InttoptrConv)
-    case Conv.Bitcast  => putInt(T.BitcastConv)
+    case Conv.Trunc     => putInt(T.TruncConv)
+    case Conv.Zext      => putInt(T.ZextConv)
+    case Conv.Sext      => putInt(T.SextConv)
+    case Conv.Fptrunc   => putInt(T.FptruncConv)
+    case Conv.Fpext     => putInt(T.FpextConv)
+    case Conv.Fptoui    => putInt(T.FptouiConv)
+    case Conv.Fptosi    => putInt(T.FptosiConv)
+    case Conv.Uitofp    => putInt(T.UitofpConv)
+    case Conv.Sitofp    => putInt(T.SitofpConv)
+    case Conv.Ptrtoint  => putInt(T.PtrtointConv)
+    case Conv.Inttoptr  => putInt(T.InttoptrConv)
+    case Conv.Inttoword => putInt(T.InttowordConv)
+    case Conv.Wordtoint => putInt(T.WordtointConv)
+    case Conv.Bitcast   => putInt(T.BitcastConv)
   }
 
   private def putDefn(value: Defn): Unit = value match {
@@ -430,6 +432,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putType(ty: Type): Unit = ty match {
     case Type.Vararg => putInt(T.VarargType)
     case Type.Ptr    => putInt(T.PtrType)
+    case Type.Word   => putInt(T.WordType)
     case Type.Bool   => putInt(T.BoolType)
     case Type.Char   => putInt(T.CharType)
     case Type.Byte   => putInt(T.ByteType)
@@ -467,6 +470,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.False           => putInt(T.FalseVal)
     case Val.Null            => putInt(T.NullVal)
     case Val.Zero(ty)        => putInt(T.ZeroVal); putType(ty)
+    case Val.Word(sixtyFour) => putInt(T.WordVal); putLong(sixtyFour)
     case Val.Char(v)         => putInt(T.CharVal); putShort(v.toShort)
     case Val.Byte(v)         => putInt(T.ByteVal); put(v)
     case Val.Short(v)        => putInt(T.ShortVal); putShort(v)

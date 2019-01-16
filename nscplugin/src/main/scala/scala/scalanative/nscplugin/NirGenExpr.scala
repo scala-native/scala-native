@@ -747,6 +747,8 @@ trait NirGenExpr { self: NirGenPhase =>
         Val.Unit
       } else if (code >= DIV_UINT && code <= ULONG_TO_DOUBLE) {
         genUnsignedOp(app, code)
+      } else if (nirPrimitives.isWordOp(code)) {
+        genWordOp(app, code)
       } else {
         abort(
           "Unknown primitive operation: " + sym.fullName + "(" +
@@ -1008,14 +1010,14 @@ trait NirGenExpr { self: NirGenPhase =>
         rty
       case (nir.Type.Bool, nir.Type.Bool) =>
         nir.Type.Bool
-      case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _))
+      case (nir.Type.SizedI(lwidth, _), nir.Type.SizedI(rwidth, _))
           if lwidth < 32 && rwidth < 32 =>
         nir.Type.Int
-      case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) =>
+      case (nir.Type.SizedI(lwidth, _), nir.Type.SizedI(rwidth, _)) =>
         if (lwidth >= rwidth) lty else rty
-      case (nir.Type.I(_, _), nir.Type.F(_)) =>
+      case (_: nir.Type.I, nir.Type.F(_)) =>
         rty
-      case (nir.Type.F(_), nir.Type.I(_, _)) =>
+      case (nir.Type.F(_), _: nir.Type.I) =>
         lty
       case (nir.Type.F(lwidth), nir.Type.F(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
@@ -1170,12 +1172,12 @@ trait NirGenExpr { self: NirGenPhase =>
               // Pointers in Scala Native are untyped and modeled as `i8*`.
               // Pointer substraction therefore explicitly divide the byte
               // offset by the size of pointer type.
-              val ptrInt     = buf.conv(nir.Conv.Ptrtoint, nir.Type.Long, ptr, unwind)
+              val ptrInt     = buf.conv(nir.Conv.Ptrtoint, nir.Type.Word, ptr, unwind)
               val ptrArg     = genExpr(argp)
-              val ptrArgInt  = buf.conv(nir.Conv.Ptrtoint, nir.Type.Long, ptrArg, unwind)
-              val byteOffset = buf.bin(Bin.Isub, nir.Type.Long, ptrInt, ptrArgInt, unwind)
+              val ptrArgInt  = buf.conv(nir.Conv.Ptrtoint, nir.Type.Word, ptrArg, unwind)
+              val byteOffset = buf.bin(Bin.Isub, nir.Type.Word, ptrInt, ptrArgInt, unwind)
               val sizeOf     = buf.sizeof(ty, unwind)
-              buf.bin(Bin.Sdiv, nir.Type.Long, byteOffset, sizeOf, unwind)
+              buf.bin(Bin.Sdiv, nir.Type.Word, byteOffset, sizeOf, unwind)
           }
 
         case (PTR_APPLY, Seq(offsetp, tagp)) =>
@@ -1322,8 +1324,10 @@ trait NirGenExpr { self: NirGenPhase =>
         case (Type.Ptr, _: Type.RefKind)             => Some(nir.Conv.Bitcast)
         case (_: Type.RefKind, _: Type.I)            => Some(nir.Conv.Ptrtoint)
         case (_: Type.I, _: Type.RefKind)            => Some(nir.Conv.Inttoptr)
-        case (Type.I(w1, _), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
-        case (Type.F(w1), Type.I(w2, _)) if w1 == w2 => Some(nir.Conv.Bitcast)
+        case (_: Type.I, Type.Word)                  => Some(nir.Conv.Inttoword)
+        case (Type.Word, _: Type.I)                  => Some(nir.Conv.Wordtoint)
+        case (Type.SizedI(w1, _), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
+        case (Type.F(w1), Type.SizedI(w2, _)) if w1 == w2 => Some(nir.Conv.Bitcast)
         case _ if fromty == toty                     => None
         case _ =>
           unsupported(s"cast from $fromty to $toty")
@@ -1419,6 +1423,23 @@ trait NirGenExpr { self: NirGenPhase =>
         buf.bin(bin, ty, left, right, unwind)
     }
 
+    def genWordOp(app: Tree, code: Int): Val = {
+      (app, code) match {
+        case (Apply(Select(valuep, _), _), WORD_TO_INT) =>
+          buf.conv(Conv.Wordtoint, Type.Int, genExpr(valuep), unwind)
+        case (Apply(Select(valuep, _), _), WORD_TO_UINT) =>
+          buf.conv(Conv.Wordtoint, Type.Int, genExpr(valuep), unwind)
+        case (Apply(sel @ Select(valuep, _), Seq(argp)), WORD_PLUS) =>
+          buf.bin(Bin.Iadd, nir.Type.Word, genExpr(valuep), genExpr(argp), unwind)
+        case (Apply(sel @ Select(valuep, _), Seq(argp)), WORD_MINUS) =>
+          buf.bin(Bin.Isub, nir.Type.Word, genExpr(valuep), genExpr(argp), unwind)
+        case (Apply(sel @ Select(valuep, _), Seq(argp)), WORD_TIMES) =>
+          buf.bin(Bin.Imul, nir.Type.Word, genExpr(valuep), genExpr(argp), unwind)
+        case (Apply(sel @ Select(valuep, _), Seq(argp)), WORD_RIGHT_SHIFT) =>
+          buf.bin(Bin.Lshr, nir.Type.Word, genExpr(valuep), genExpr(argp), unwind)
+      }
+    }
+
     def genSynchronized(app: Apply): Val = {
       val Apply(Select(receiverp, _), List(argp)) = app
 
@@ -1453,7 +1474,7 @@ trait NirGenExpr { self: NirGenPhase =>
             Conv.Bitcast
           case (_: nir.Type.RefKind, nir.Type.Ptr) =>
             Conv.Bitcast
-          case (nir.Type.I(fromw, froms), nir.Type.I(tow, tos)) =>
+          case (nir.Type.SizedI(fromw, froms), nir.Type.SizedI(tow, tos)) =>
             if (fromw < tow) {
               if (froms) {
                 Conv.Sext
@@ -1465,17 +1486,17 @@ trait NirGenExpr { self: NirGenPhase =>
             } else {
               Conv.Bitcast
             }
-          case (nir.Type.I(_, true), _: nir.Type.F) =>
+          case (nir.Type.SizedI(_, true), _: nir.Type.F) =>
             Conv.Sitofp
-          case (nir.Type.I(_, false), _: nir.Type.F) =>
+          case (nir.Type.SizedI(_, false), _: nir.Type.F) =>
             Conv.Uitofp
-          case (_: nir.Type.F, nir.Type.I(iwidth, true)) =>
+          case (_: nir.Type.F, nir.Type.SizedI(iwidth, true)) =>
             if (iwidth < 32) {
               val ivalue = genCoercion(value, fromty, Type.Int)
               return genCoercion(ivalue, Type.Int, toty)
             }
             Conv.Fptosi
-          case (_: nir.Type.F, nir.Type.I(iwidth, false)) =>
+          case (_: nir.Type.F, nir.Type.SizedI(iwidth, false)) =>
             if (iwidth < 32) {
               val ivalue = genCoercion(value, fromty, Type.Int)
               return genCoercion(ivalue, Type.Int, toty)

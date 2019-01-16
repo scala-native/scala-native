@@ -317,7 +317,7 @@ trait Eval { self: Interflow =>
       case Op.Copy(v) =>
         eval(v)
       case Op.Sizeof(ty) =>
-        Val.Long(MemoryLayout.sizeOf(ty))
+        Val.Word(MemoryLayout.sizeOf(ty))
       case Op.Box(Type.Ref(boxname, _, _), value) =>
         Val.Virtual(state.allocBox(boxname, eval(value)))
       case Op.Unbox(boxty @ Type.Ref(boxname, _, _), value) =>
@@ -767,6 +767,18 @@ trait Eval { self: Interflow =>
         (value, ty) match {
           case (Val.Long(0L), Type.Ptr) => Val.Null
           case _                        => bailOut
+        }
+      case Conv.Wordtoint =>
+        (value, ty) match {
+          case (Val.Word(v), Type.Long) => Val.Long(v)
+          // TODO: remaining cases
+          case _ => bailOut
+        }
+      case Conv.Inttoword =>
+        (value, ty) match {
+          case (Val.Long(v), Type.Word) => Val.Word(v)
+          // TODO: remaining cases
+          case _ => bailOut
         }
       case Conv.Bitcast =>
         (value, ty) match {

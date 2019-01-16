@@ -77,18 +77,20 @@ object Tags {
 
   final val Conv = Comp + 32
 
-  final val TruncConv    = 1 + Conv
-  final val ZextConv     = 1 + TruncConv
-  final val SextConv     = 1 + ZextConv
-  final val FptruncConv  = 1 + SextConv
-  final val FpextConv    = 1 + FptruncConv
-  final val FptouiConv   = 1 + FpextConv
-  final val FptosiConv   = 1 + FptouiConv
-  final val UitofpConv   = 1 + FptosiConv
-  final val SitofpConv   = 1 + UitofpConv
-  final val PtrtointConv = 1 + SitofpConv
-  final val InttoptrConv = 1 + PtrtointConv
-  final val BitcastConv  = 1 + InttoptrConv
+  final val TruncConv     = 1 + Conv
+  final val ZextConv      = 1 + TruncConv
+  final val SextConv      = 1 + ZextConv
+  final val FptruncConv   = 1 + SextConv
+  final val FpextConv     = 1 + FptruncConv
+  final val FptouiConv    = 1 + FpextConv
+  final val FptosiConv    = 1 + FptouiConv
+  final val UitofpConv    = 1 + FptosiConv
+  final val SitofpConv    = 1 + UitofpConv
+  final val PtrtointConv  = 1 + SitofpConv
+  final val InttoptrConv  = 1 + PtrtointConv
+  final val InttowordConv = 1 + InttoptrConv
+  final val WordtointConv = 1 + InttowordConv
+  final val BitcastConv   = 1 + WordtointConv
 
   // Definitions
 
@@ -184,9 +186,10 @@ object Tags {
   final val Type = Op + 32
 
   final val VarargType      = 1 + Type
-  final val BoolType        = 1 + VarargType
-  final val PtrType         = 1 + BoolType
-  final val CharType        = 1 + PtrType
+  final val PtrType         = 1 + VarargType
+  final val WordType        = 1 + PtrType
+  final val BoolType        = 1 + WordType
+  final val CharType        = 1 + BoolType
   final val ByteType        = 1 + CharType
   final val ShortType       = 1 + ByteType
   final val IntType         = 1 + ShortType
@@ -212,7 +215,8 @@ object Tags {
   final val FalseVal       = 1 + TrueVal
   final val NullVal        = 1 + FalseVal
   final val ZeroVal        = 1 + NullVal
-  final val CharVal        = 1 + ZeroVal
+  final val WordVal        = 1 + ZeroVal
+  final val CharVal        = 1 + WordVal
   final val ByteVal        = 1 + CharVal
   final val ShortVal       = 1 + ByteVal
   final val IntVal         = 1 + ShortVal
