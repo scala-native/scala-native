@@ -3,7 +3,7 @@ package scala.scalanative
 package runtime
 
 import scalanative.native._
-import scalanative.runtime.Intrinsics._
+import scalanative.runtime.LLVMIntrinsics._
 
 sealed abstract class Array[T]
     extends java.io.Serializable

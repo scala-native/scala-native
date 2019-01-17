@@ -1,7 +1,7 @@
 package scala.scalanative
 
 import native._
-import runtime.Intrinsics._
+import runtime.LLVMIntrinsics._
 
 package object runtime {
 
@@ -35,33 +35,6 @@ package object runtime {
 
   /** Returns info pointer for given type. */
   def typeof[T](implicit tag: Tag[T]): Ptr[Type] = intrinsic
-
-  /** Intrinsified unsigned devision on ints. */
-  def divUInt(l: Int, r: Int): Int = intrinsic
-
-  /** Intrinsified unsigned devision on longs. */
-  def divULong(l: Long, r: Long): Long = intrinsic
-
-  /** Intrinsified unsigned remainder on ints. */
-  def remUInt(l: Int, r: Int): Int = intrinsic
-
-  /** Intrinsified unsigned remainder on longs. */
-  def remULong(l: Long, r: Long): Long = intrinsic
-
-  /** Intrinsified byte to unsigned int converstion. */
-  def byteToUInt(b: Byte): Int = intrinsic
-
-  /** Intrinsified byte to unsigned long conversion. */
-  def byteToULong(b: Byte): Long = intrinsic
-
-  /** Intrinsified short to unsigned int conversion. */
-  def shortToUInt(v: Short): Int = intrinsic
-
-  /** Intrinsified short to unsigned long conversion. */
-  def shortToULong(v: Short): Long = intrinsic
-
-  /** Intrinsified int to unsigned long conversion. */
-  def intToULong(v: Int): Long = intrinsic
 
   /** Read type information of given object. */
   def getType(obj: Object): Ptr[ClassType] = !obj.cast[Ptr[Ptr[ClassType]]]
