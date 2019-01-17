@@ -726,6 +726,10 @@ trait NirGenExpr { self: NirGenPhase =>
         genPtrOp(app, code)
       } else if (nirPrimitives.isFunPtrOp(code)) {
         genFunPtrOp(app, code)
+      } else if (nirPrimitives.isRawPtrOp(code)) {
+        genRawPtrOp(app, code)
+      } else if (nirPrimitives.isRawCastOp(code)) {
+        genRawCastOp(app, code)
       } else if (isCoercion(code)) {
         genCoercion(app, receiver, code)
       } else if (code == SYNCHRONIZED) {
@@ -1230,6 +1234,81 @@ trait NirGenExpr { self: NirGenPhase =>
 
       case _ =>
         util.unreachable
+    }
+
+    def genRawPtrOp(app: Apply, code: Int): Val = code match {
+      case _ if nirPrimitives.isRawPtrLoadOp(code) =>
+        genRawPtrLoadOp(app, code)
+      case _ if nirPrimitives.isRawPtrStoreOp(code) =>
+        genRawPtrStoreOp(app, code)
+      case ELEM_RAW_PTR =>
+        genRawPtrElemOp(app, code)
+      case _ =>
+        abort(
+          s"Unknown pointer operation #$code : " + app +
+            " at: " + app.pos)
+    }
+
+    def genRawPtrLoadOp(app: Apply, code: Int): Val = {
+      val Apply(_, Seq(ptrp)) = app
+
+      val ptr = genExpr(ptrp)
+
+      val ty = code match {
+        case LOAD_BOOL    => nir.Type.Bool
+        case LOAD_CHAR    => nir.Type.Char
+        case LOAD_BYTE    => nir.Type.Byte
+        case LOAD_SHORT   => nir.Type.Short
+        case LOAD_INT     => nir.Type.Int
+        case LOAD_LONG    => nir.Type.Long
+        case LOAD_FLOAT   => nir.Type.Float
+        case LOAD_DOUBLE  => nir.Type.Double
+        case LOAD_RAW_PTR => nir.Type.Ptr
+        case LOAD_OBJECT  => Rt.Object
+      }
+
+      buf.load(ty, ptr, unwind)
+    }
+
+    def genRawPtrStoreOp(app: Apply, code: Int): Val = {
+      val Apply(_, Seq(ptrp, valuep)) = app
+
+      val ptr   = genExpr(ptrp)
+      val value = genExpr(valuep)
+
+      val ty = code match {
+        case STORE_BOOL    => nir.Type.Bool
+        case STORE_CHAR    => nir.Type.Char
+        case STORE_BYTE    => nir.Type.Byte
+        case STORE_SHORT   => nir.Type.Short
+        case STORE_INT     => nir.Type.Int
+        case STORE_LONG    => nir.Type.Long
+        case STORE_FLOAT   => nir.Type.Float
+        case STORE_DOUBLE  => nir.Type.Double
+        case STORE_RAW_PTR => nir.Type.Ptr
+        case STORE_OBJECT  => Rt.Object
+      }
+
+      buf.store(ty, ptr, value, unwind)
+    }
+
+    def genRawPtrElemOp(app: Apply, code: Int): Val = {
+      val Apply(_, Seq(ptrp, offsetp)) = app
+
+      val ptr    = genExpr(ptrp)
+      val offset = genExpr(offsetp)
+
+      buf.elem(Type.Byte, ptr, Seq(offset), unwind)
+    }
+
+    def genRawCastOp(app: Apply, code: Int): Val = {
+      val Apply(_, Seq(argp)) = app
+
+      val fromty = genType(argp.tpe, box = false)
+      val toty   = genType(app.tpe, box = false)
+      val value  = genExpr(argp)
+
+      genCastOp(fromty, toty, value)
     }
 
     def castConv(fromty: nir.Type, toty: nir.Type): Option[nir.Conv] =

@@ -28,6 +28,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getDecl(PtrClass, TermName("_" + i))
     }
 
+    lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")
+
     lazy val NameClass   = getRequiredClass("scala.scalanative.native.name")
     lazy val LinkClass   = getRequiredClass("scala.scalanative.native.link")
     lazy val ExternClass = getRequiredClass("scala.scalanative.native.extern")
@@ -157,6 +159,63 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getMember(IntrinsicsModule, TermName("shortToULong"))
     lazy val IntToULongMethod =
       getMember(IntrinsicsModule, TermName("intToULong"))
+    lazy val LoadBoolMethod =
+      getMember(IntrinsicsModule, TermName("loadBoolean"))
+    lazy val LoadCharMethod = getMember(IntrinsicsModule, TermName("loadChar"))
+    lazy val LoadByteMethod = getMember(IntrinsicsModule, TermName("loadByte"))
+    lazy val LoadShortMethod =
+      getMember(IntrinsicsModule, TermName("loadShort"))
+    lazy val LoadIntMethod  = getMember(IntrinsicsModule, TermName("loadInt"))
+    lazy val LoadLongMethod = getMember(IntrinsicsModule, TermName("loadLong"))
+    lazy val LoadFloatMethod =
+      getMember(IntrinsicsModule, TermName("loadFloat"))
+    lazy val LoadDoubleMethod =
+      getMember(IntrinsicsModule, TermName("loadDouble"))
+    lazy val LoadRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("loadRawPtr"))
+    lazy val LoadObjectMethod =
+      getMember(IntrinsicsModule, TermName("loadObject"))
+    lazy val StoreBoolMethod =
+      getMember(IntrinsicsModule, TermName("storeBoolean"))
+    lazy val StoreCharMethod =
+      getMember(IntrinsicsModule, TermName("storeChar"))
+    lazy val StoreByteMethod =
+      getMember(IntrinsicsModule, TermName("storeByte"))
+    lazy val StoreShortMethod =
+      getMember(IntrinsicsModule, TermName("storeShort"))
+    lazy val StoreIntMethod = getMember(IntrinsicsModule, TermName("storeInt"))
+    lazy val StoreLongMethod =
+      getMember(IntrinsicsModule, TermName("storeLong"))
+    lazy val StoreFloatMethod =
+      getMember(IntrinsicsModule, TermName("storeFloat"))
+    lazy val StoreDoubleMethod =
+      getMember(IntrinsicsModule, TermName("storeDouble"))
+    lazy val StoreRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("storeRawPtr"))
+    lazy val StoreObjectMethod =
+      getMember(IntrinsicsModule, TermName("storeObject"))
+    lazy val ElemRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("elemRawPtr"))
+    lazy val CastRawPtrToObjectMethod =
+      getMember(IntrinsicsModule, TermName("castRawPtrToObject"))
+    lazy val CastObjectToRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("castObjectToRawPtr"))
+    lazy val CastIntToFloatMethod =
+      getMember(IntrinsicsModule, TermName("castIntToFloat"))
+    lazy val CastFloatToIntMethod =
+      getMember(IntrinsicsModule, TermName("castFloatToInt"))
+    lazy val CastLongToDoubleMethod =
+      getMember(IntrinsicsModule, TermName("castLongToDouble"))
+    lazy val CastDoubleToLongMethod =
+      getMember(IntrinsicsModule, TermName("castDoubleToLong"))
+    lazy val CastRawPtrToIntMethod =
+      getMember(IntrinsicsModule, TermName("castRawPtrToInt"))
+    lazy val CastRawPtrToLongMethod =
+      getMember(IntrinsicsModule, TermName("castRawPtrToLong"))
+    lazy val CastIntToRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("castIntToRawPtr"))
+    lazy val CastLongToRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("castLongToRawPtr"))
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
       'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),

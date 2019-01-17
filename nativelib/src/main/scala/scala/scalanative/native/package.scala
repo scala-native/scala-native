@@ -203,12 +203,17 @@ package object native {
 
     def alloc1[T: c.WeakTypeTag](c: Context)(tag: c.Tree, z: c.Tree): c.Tree = {
       import c.universe._
-      val T         = weakTypeOf[T]
-      val size, ptr = TermName(c.freshName())
+      val T = weakTypeOf[T]
+
+      val size, ptr, rawptr = TermName(c.freshName())
+
+      val runtime = q"_root_.scala.scalanative.runtime"
+
       q"""{
-        val $size = _root_.scala.scalanative.native.sizeof[$T]($tag)
-        val $ptr = $z.alloc($size)
-        _root_.scala.scalanative.runtime.libc.memset($ptr, 0, $size)
+        val $size   = _root_.scala.scalanative.native.sizeof[$T]($tag)
+        val $ptr    = $z.alloc($size)
+        val $rawptr = $runtime.toRawPtr($ptr)
+        $runtime.libc.memset($rawptr, 0, $size)
         $ptr.cast[Ptr[$T]]
       }"""
     }
@@ -216,12 +221,18 @@ package object native {
     def allocN[T: c.WeakTypeTag](c: Context)(n: c.Tree)(tag: c.Tree,
                                                         z: c.Tree): c.Tree = {
       import c.universe._
-      val T         = weakTypeOf[T]
-      val size, ptr = TermName(c.freshName())
+
+      val T = weakTypeOf[T]
+
+      val size, ptr, rawptr = TermName(c.freshName())
+
+      val runtime = q"_root_.scala.scalanative.runtime"
+
       q"""{
-        val $size = _root_.scala.scalanative.native.sizeof[$T]($tag) * $n
-        val $ptr = $z.alloc($size)
-        _root_.scala.scalanative.runtime.libc.memset($ptr, 0, $size)
+        val $size   = _root_.scala.scalanative.native.sizeof[$T]($tag) * $n
+        val $ptr    = $z.alloc($size)
+        val $rawptr = $runtime.toRawPtr($ptr)
+        $runtime.libc.memset($rawptr, 0, $size)
         $ptr.cast[Ptr[$T]]
       }"""
     }

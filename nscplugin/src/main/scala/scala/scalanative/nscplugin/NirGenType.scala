@@ -71,6 +71,7 @@ trait NirGenType { self: NirGenPhase =>
     case NullClass    => nir.Type.Null
     case NothingClass => nir.Type.Nothing
     case PtrClass     => nir.Type.Ptr
+    case RawPtrClass  => nir.Type.Ptr
 
     case sym if CStructClass.contains(sym) =>
       nir.Type.StructValue(st.targs.map(genType(_, box = false)))

@@ -2,14 +2,16 @@ package java.lang
 
 import scala.scalanative.native._
 import scala.scalanative.runtime, runtime.ClassTypeOps
+import scala.scalanative.runtime
 import scala.scalanative.runtime.libc
+import scala.scalanative.runtime.Intrinsics._
 
 class _Object {
   @inline def __equals(that: _Object): scala.Boolean =
     this eq that
 
   @inline def __hashCode(): scala.Int = {
-    val addr = this.cast[Word]
+    val addr = castRawPtrToLong(castObjectToRawPtr(this))
     addr.toInt ^ (addr >> 32).toInt
   }
 
@@ -17,7 +19,7 @@ class _Object {
     getClass.getName + "@" + Integer.toHexString(hashCode)
 
   @inline def __getClass(): _Class[_] =
-    new _Class(runtime.getType(this).cast[Ptr[runtime.Type]])
+    new _Class(runtime.getType(this))
 
   @inline def __notify(): Unit =
     runtime.getMonitor(this)._notify
@@ -45,18 +47,17 @@ class _Object {
     // This implementation is only called for classes that don't override
     // hashCode. Otherwise, whenever hashCode is overriden, we also update the
     // vtable entry for scala_## to point to the override directly.
-    val addr = this.cast[Word]
+    val addr = castRawPtrToLong(castObjectToRawPtr(this))
     addr.toInt ^ (addr >> 32).toInt
   }
 
   protected def __clone(): _Object = {
     val ty    = runtime.getType(this)
-    val size  = ty.size
+    val size  = loadLong(elemRawPtr(ty, sizeof[runtime.Type]))
     val clone = runtime.GC.alloc(ty, size)
-    val dst   = clone.cast[Ptr[scala.Byte]]
-    val src   = this.cast[Ptr[scala.Byte]]
-    libc.memcpy(dst, src, size)
-    clone.cast[_Object]
+    val src   = castObjectToRawPtr(this)
+    libc.memcpy(clone, src, size)
+    castRawPtrToObject(clone).asInstanceOf[_Object]
   }
 
   protected def __finalize(): Unit = ()
