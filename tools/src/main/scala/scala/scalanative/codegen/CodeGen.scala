@@ -761,6 +761,7 @@ object CodeGen {
           genType(ty)
           str(", ")
           genVal(n)
+          str(", align 8")
 
           newline()
           genBind()
