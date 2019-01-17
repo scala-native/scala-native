@@ -27,6 +27,7 @@ typedef struct {
     word_t *lineMetaEnd;
     word_t *heapStart;
     word_t *heapEnd;
+    word_t *greyPacketsStart;
     size_t heapSize;
     size_t maxHeapSize;
     uint32_t blockCount;
