@@ -3,7 +3,6 @@
 #include <memory.h>
 #include "GCTypes.h"
 #include "Heap.h"
-#include "datastructures/Stack.h"
 #include "Marker.h"
 #include "Log.h"
 #include "Object.h"
@@ -27,7 +26,6 @@ void scalanative_afterexit() {
 
 NOINLINE void scalanative_init() {
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
-    Stack_Init(&stack, INITIAL_STACK_SIZE);
     atexit(scalanative_afterexit);
 }
 
@@ -59,4 +57,4 @@ INLINE void *scalanative_alloc_atomic(void *info, size_t size) {
     return scalanative_alloc(info, size);
 }
 
-INLINE void scalanative_collect() { Heap_Collect(&heap, &stack); }
+INLINE void scalanative_collect() { Heap_Collect(&heap); }
