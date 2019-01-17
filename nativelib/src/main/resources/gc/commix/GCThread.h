@@ -2,6 +2,7 @@
 #define IMMIX_GCTHREAD_H
 
 #include "Heap.h"
+#include "Stats.h"
 #include <stdatomic.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -15,9 +16,11 @@ typedef struct {
         // other atomics
         atomic_uint_fast32_t cursorDone;
     } sweep;
+    Stats *stats;
 } GCThread;
 
-void GCThread_Init(GCThread *thread, int id, Heap *heap);
+void GCThread_Init(GCThread *thread, int id, Heap *heap, Stats *stats);
+bool GCThread_AnyActive(Heap *heap);
 void GCThread_JoinAll(Heap *heap);
 void GCThread_WakeAll(Heap *heap);
 

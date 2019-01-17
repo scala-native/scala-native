@@ -11,10 +11,19 @@
 #include "utils/MathUtils.h"
 #include "Constants.h"
 #include "Settings.h"
+#include "GCThread.h"
 
 void scalanative_collect();
 
-void scalanative_afterexit() { Stats_OnExit(heap.stats); }
+void scalanative_afterexit() {
+    Stats_OnExit(heap.stats);
+
+    int gcThreadCount = heap.gcThreads.count;
+    GCThread *gcThreads = (GCThread *) heap.gcThreads.all;
+    for (int i = 0; i < gcThreadCount; i++) {
+        Stats_OnExit(gcThreads[i].stats);
+    }
+}
 
 NOINLINE void scalanative_init() {
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());

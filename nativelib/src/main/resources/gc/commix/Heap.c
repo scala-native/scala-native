@@ -126,6 +126,13 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     word_t *heapStart = Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
 
     BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
+    GreyList_Init(&heap->mark.empty);
+    GreyList_Init(&heap->mark.full);
+    uint32_t greyPacketCount = (uint32_t)(maxHeapSize * GREY_PACKET_RATIO / GREY_PACKET_SIZE);
+    heap->mark.total = greyPacketCount;
+    word_t* greyPacketsStart = Heap_mapAndAlign(greyPacketCount * sizeof(GreyPacket), WORD_SIZE);
+    heap->greyPacketsStart = greyPacketsStart;
+    GreyList_PushAll(&heap->mark.empty, greyPacketsStart, (GreyPacket *) greyPacketsStart, greyPacketCount);
 
     // reserve space for bytemap
     Bytemap *bytemap = (Bytemap *)Heap_mapAndAlign(
@@ -154,7 +161,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
         heap->stats = malloc(sizeof(Stats));
-        Stats_Init(heap->stats, statsFile);
+        Stats_Init(heap->stats, statsFile, MUTATOR_THREAD_ID);
     }
 
     // Init all GCThreads
@@ -167,7 +174,17 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     GCThread *gcThreads = (GCThread *)malloc(sizeof(GCThread) * gcThreadCount);
     heap->gcThreads.all = (void *)gcThreads;
     for (int i = 0; i < gcThreadCount; i++) {
-        GCThread_Init(&gcThreads[i], i, heap);
+        Stats *stats;
+        if (statsFile != NULL) {
+            int len = strlen(statsFile) + 5;
+            char *threadSpecificFile = (char *) malloc(len);
+            snprintf(threadSpecificFile, len, "%s.t%d", statsFile, i);
+            stats = malloc(sizeof(Stats));
+            Stats_Init(stats, threadSpecificFile, (uint8_t)i);
+        } else {
+            stats = NULL;
+        }
+        GCThread_Init(&gcThreads[i], i, heap, stats);
     }
 
     heap->mark.lastEnd_ns = scalanative_nano_time();
@@ -190,7 +207,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
         return (word_t *)object;
     } else {
         // Otherwise collect
-        Heap_Collect(heap, &stack);
+        Heap_Collect(heap);
 
         // After collection, try to alloc again, if it fails, grow the heap by
         // at least the size of the object we want to alloc
@@ -217,7 +234,7 @@ NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
     if (object != NULL)
         goto done;
 
-    Heap_Collect(heap, &stack);
+    Heap_Collect(heap);
     object = Sweeper_LazySweep(heap, size);
 
     if (object != NULL)
@@ -325,7 +342,7 @@ void Heap_assertIsConsistent(Heap *heap) {
 }
 #endif
 
-void Heap_Collect(Heap *heap, Stack *stack) {
+void Heap_Collect(Heap *heap) {
     Stats *stats = heap->stats;
     if (stats != NULL) {
         stats->collection_start_ns = scalanative_nano_time();
@@ -337,10 +354,18 @@ void Heap_Collect(Heap *heap, Stack *stack) {
 #endif
     heap->mark.lastEnd_ns = heap->mark.currentEnd_ns;
     heap->mark.currentStart_ns = scalanative_nano_time();
-    Marker_MarkRoots(heap, stack);
+    Marker_MarkRoots(heap);
+    heap->gcThreads.phase = gc_mark;
+    // make sure the gc phase is propagated
+    atomic_thread_fence(memory_order_release);
+    GCThread_WakeAll(heap);
+    while (!Marker_IsMarkDone(heap)) {
+        Marker_Mark(heap, stats);
+    }
+    heap->gcThreads.phase = gc_idle;
     heap->mark.currentEnd_ns = scalanative_nano_time();
     if (stats != NULL) {
-        Stats_RecordEvent(stats, event_mark, MUTATOR_THREAD_ID, heap->mark.currentStart_ns,
+        Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
                           heap->mark.currentEnd_ns);
     }
     Heap_Recycle(heap);
