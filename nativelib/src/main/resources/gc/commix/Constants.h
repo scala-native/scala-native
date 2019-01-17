@@ -66,7 +66,12 @@
 #endif
 #define ARRAY_SPLIT_BATCH ARRAY_SPLIT_THRESHOLD
 
+#ifndef SWEEP_BATCH_SIZE
 #define SWEEP_BATCH_SIZE 32
+#endif
+
+#ifndef LAZY_SWEEP_MIN_BATCH
 #define LAZY_SWEEP_MIN_BATCH 4
+#endif
 
 #endif // IMMIX_CONSTANTS_H
