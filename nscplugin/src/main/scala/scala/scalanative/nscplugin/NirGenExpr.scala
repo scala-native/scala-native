@@ -732,8 +732,6 @@ trait NirGenExpr { self: NirGenPhase =>
         genSynchronized(app)
       } else if (code == CCAST) {
         genCastOp(app)
-      } else if (code == SIZEOF || code == TYPEOF) {
-        genOfOp(app, code)
       } else if (code == STACKALLOC) {
         genStackalloc(app)
       } else if (code == CQUOTE) {
@@ -1265,18 +1263,6 @@ trait NirGenExpr { self: NirGenPhase =>
 
     def genCastOp(fromty: nir.Type, toty: nir.Type, value: Val): Val =
       castConv(fromty, toty).fold(value)(buf.conv(_, toty, value, unwind))
-
-    def genOfOp(app: Apply, code: Int): Val = {
-      val Apply(_, Seq(tagp)) = app
-
-      val st = unwrapTag(tagp)
-
-      code match {
-        case SIZEOF => buf.sizeof(genType(st, box = false), unwind)
-        case TYPEOF => genTypeValue(st)
-        case _      => util.unreachable
-      }
-    }
 
     def genStackalloc(app: Apply): Val = {
       val (sizeopt, tagp) = app match {

@@ -41,7 +41,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
       "scala.scalanative.native.package")
     lazy val CastMethod   = getMember(NativeModule, TermName("cast"))
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
-    lazy val SizeofMethod = getMember(NativeModule, TermName("sizeof"))
     lazy val StackallocMethods =
       getMember(NativeModule, TermName("stackalloc")).alternatives
 
@@ -139,7 +138,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val RuntimeModule = getRequiredModule(
       "scala.scalanative.runtime.package")
-    lazy val TypeofMethod = getMember(RuntimeModule, TermName("typeof"))
     lazy val GetMonitorMethod =
       getMember(RuntimeModule, TermName("getMonitor"))
 

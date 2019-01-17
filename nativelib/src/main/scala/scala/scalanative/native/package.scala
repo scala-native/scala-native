@@ -85,7 +85,7 @@ package object native {
   def tagof[T](implicit tag: Tag[T]): Tag[T] = tag
 
   /** The C 'sizeof' operator. */
-  def sizeof[T](implicit tag: Tag[T]): CSize = intrinsic
+  def sizeof[T](implicit tag: Tag[T]): CSize = tag.size
 
   /** C-style alignment operator. */
   def alignmentof[T](implicit tag: Tag[T]): CSize = tag.alignment

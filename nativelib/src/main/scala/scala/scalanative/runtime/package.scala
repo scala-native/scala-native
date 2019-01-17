@@ -34,10 +34,12 @@ package object runtime {
   def intrinsic: Nothing = throwUndefined()
 
   /** Returns info pointer for given type. */
-  def typeof[T](implicit tag: Tag[T]): Ptr[Type] = intrinsic
+  def typeof[T](implicit ct: scala.reflect.ClassTag[T]): Ptr[Type] =
+    ct.runtimeClass.asInstanceOf[java.lang._Class[_]].ty
 
   /** Read type information of given object. */
-  def getType(obj: Object): Ptr[ClassType] = !obj.cast[Ptr[Ptr[ClassType]]]
+  def getType(obj: Object): Ptr[ClassType] =
+    !obj.cast[Ptr[Ptr[ClassType]]]
 
   /** Get monitor for given object. */
   def getMonitor(obj: Object): Monitor = Monitor.dummy
