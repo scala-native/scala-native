@@ -20,10 +20,6 @@ bool GreyPacket_IsEmpty(GreyPacket *packet) {
    return packet->size == 0;
 }
 
-bool GreyPacket_IsFull(GreyPacket *packet) {
-   return packet->size == GREY_PACKET_ITEMS;
-}
-
 void GreyList_Init(GreyList *list) {
     assert(sizeof(GreyPacketRef) == sizeof(uint64_t));
     list->head.atom = GreyPacketRef_Empty();
