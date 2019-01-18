@@ -2,6 +2,7 @@
 #include "Stats.h"
 #include "State.h"
 #include "GCThread.h"
+#include "GCTypes.h"
 #include <sched.h>
 
 /*
@@ -75,7 +76,7 @@ void Sweeper_sweepDone(Heap *heap);
 
 Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
     Object *object = (Object *)Allocator_Alloc(&allocator, size);
-    if (object == NULL) {
+    if (UNLIKELY(object == NULL)) {
         // lazy sweep will happen
         uint64_t start_ns, end_ns;
         Stats *stats = heap->stats;
@@ -122,7 +123,7 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
            increment);
     fflush(stdout);
 #endif
-    if (object == NULL) {
+    if (UNLIKELY(object == NULL)) {
         // lazy sweep will happen
         uint64_t start_ns, end_ns;
         Stats *stats = heap->stats;
