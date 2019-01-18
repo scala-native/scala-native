@@ -19,9 +19,7 @@ object NirPrimitives {
   final val FUN_PTR_CALL = 1 + PTR_FIELD
   final val FUN_PTR_FROM = 1 + FUN_PTR_CALL
 
-  final val SIZEOF     = 1 + FUN_PTR_FROM
-  final val TYPEOF     = 1 + SIZEOF
-  final val CQUOTE     = 1 + TYPEOF
+  final val CQUOTE     = 1 + FUN_PTR_FROM
   final val CCAST      = 1 + CQUOTE
   final val STACKALLOC = 1 + CCAST
 
@@ -87,8 +85,6 @@ abstract class NirPrimitives {
     PtrFieldMethod.foreach(addPrimitive(_, PTR_FIELD))
     CFunctionPtrApply.foreach(addPrimitive(_, FUN_PTR_CALL))
     CFunctionPtrFrom.foreach(addPrimitive(_, FUN_PTR_FROM))
-    addPrimitive(SizeofMethod, SIZEOF)
-    addPrimitive(TypeofMethod, TYPEOF)
     addPrimitive(CQuoteMethod, CQUOTE)
     addPrimitive(CCastMethod, CCAST)
     StackallocMethods.foreach(addPrimitive(_, STACKALLOC))

@@ -41,7 +41,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
       "scala.scalanative.native.package")
     lazy val CastMethod   = getMember(NativeModule, TermName("cast"))
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
-    lazy val SizeofMethod = getMember(NativeModule, TermName("sizeof"))
     lazy val StackallocMethods =
       getMember(NativeModule, TermName("stackalloc")).alternatives
 
@@ -79,29 +78,39 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NatDigitClass =
       getRequiredClass("scala.scalanative.native.Nat$Digit")
 
-    lazy val TagModule        = getRequiredModule("scala.scalanative.native.Tag")
-    lazy val UnitTagMethod    = getDecl(TagModule, TermName("Unit"))
-    lazy val BooleanTagMethod = getDecl(TagModule, TermName("Boolean"))
-    lazy val CharTagMethod    = getDecl(TagModule, TermName("Char"))
-    lazy val ByteTagMethod    = getDecl(TagModule, TermName("Byte"))
-    lazy val UByteTagMethod   = getDecl(TagModule, TermName("UByte"))
-    lazy val ShortTagMethod   = getDecl(TagModule, TermName("Short"))
-    lazy val UShortTagMethod  = getDecl(TagModule, TermName("UShort"))
-    lazy val IntTagMethod     = getDecl(TagModule, TermName("Int"))
-    lazy val UIntTagMethod    = getDecl(TagModule, TermName("UInt"))
-    lazy val LongTagMethod    = getDecl(TagModule, TermName("Long"))
-    lazy val ULongTagMethod   = getDecl(TagModule, TermName("ULong"))
-    lazy val FloatTagMethod   = getDecl(TagModule, TermName("Float"))
-    lazy val DoubleTagMethod  = getDecl(TagModule, TermName("Double"))
-    lazy val PtrTagMethod     = getDecl(TagModule, TermName("Ptr"))
-    lazy val RefTagMethod     = getDecl(TagModule, TermName("Ref"))
+    lazy val TagModule     = getRequiredModule("scala.scalanative.native.Tag")
+    lazy val UnitTagMethod = getDecl(TagModule, TermName("materializeUnitTag"))
+    lazy val BooleanTagMethod =
+      getDecl(TagModule, TermName("materializeBooleanTag"))
+    lazy val CharTagMethod = getDecl(TagModule, TermName("materializeCharTag"))
+    lazy val ByteTagMethod = getDecl(TagModule, TermName("materializeByteTag"))
+    lazy val UByteTagMethod =
+      getDecl(TagModule, TermName("materializeUByteTag"))
+    lazy val ShortTagMethod =
+      getDecl(TagModule, TermName("materializeShortTag"))
+    lazy val UShortTagMethod =
+      getDecl(TagModule, TermName("materializeUShortTag"))
+    lazy val IntTagMethod  = getDecl(TagModule, TermName("materializeIntTag"))
+    lazy val UIntTagMethod = getDecl(TagModule, TermName("materializeUIntTag"))
+    lazy val LongTagMethod = getDecl(TagModule, TermName("materializeLongTag"))
+    lazy val ULongTagMethod =
+      getDecl(TagModule, TermName("materializeULongTag"))
+    lazy val FloatTagMethod =
+      getDecl(TagModule, TermName("materializeFloatTag"))
+    lazy val DoubleTagMethod =
+      getDecl(TagModule, TermName("materializeDoubleTag"))
+    lazy val PtrTagMethod = getDecl(TagModule, TermName("materializePtrTag"))
+    lazy val ClassTagMethod =
+      getDecl(TagModule, TermName("materializeClassTag"))
     lazy val NatBaseTagMethod = (0 to 9).map { n =>
-      getDecl(TagModule, TermName("Nat" + n))
+      getDecl(TagModule, TermName("materializeNat" + n + "Tag"))
     }
-    lazy val NatDigitTagMethod = getDecl(TagModule, TermName("NatDigit"))
-    lazy val CArrayTagMethod   = getDecl(TagModule, TermName("CArray"))
+    lazy val NatDigitTagMethod =
+      getDecl(TagModule, TermName("materializeNatDigitTag"))
+    lazy val CArrayTagMethod =
+      getDecl(TagModule, TermName("materializeCArrayTag"))
     lazy val CStructTagMethod = (0 to 22).map { n =>
-      getDecl(TagModule, TermName("CStruct" + n))
+      getDecl(TagModule, TermName("materializeCStruct" + n + "Tag"))
     }
 
     // scala names
@@ -129,7 +138,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val RuntimeModule = getRequiredModule(
       "scala.scalanative.runtime.package")
-    lazy val TypeofMethod = getMember(RuntimeModule, TermName("typeof"))
     lazy val GetMonitorMethod =
       getMember(RuntimeModule, TermName("getMonitor"))
 
