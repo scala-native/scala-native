@@ -1,7 +1,9 @@
 package scala.scalanative
 
-import native._
-import runtime.LLVMIntrinsics._
+import scala.reflect.ClassTag
+import scalanative.native._
+import scalanative.runtime.Intrinsics._
+import scalanative.runtime.LLVMIntrinsics._
 
 package object runtime {
 
@@ -34,12 +36,14 @@ package object runtime {
   def intrinsic: Nothing = throwUndefined()
 
   /** Returns info pointer for given type. */
-  def typeof[T](implicit ct: scala.reflect.ClassTag[T]): Ptr[Type] =
-    ct.runtimeClass.asInstanceOf[java.lang._Class[_]].ty
+  def typeof[T](implicit ct: scala.reflect.ClassTag[T]): RawPtr =
+    ct.runtimeClass.asInstanceOf[java.lang._Class[_]].rawty
 
   /** Read type information of given object. */
-  def getType(obj: Object): Ptr[ClassType] =
-    !obj.cast[Ptr[Ptr[ClassType]]]
+  def getType(obj: Object): RawPtr = {
+    val rawptr = Intrinsics.castObjectToRawPtr(obj)
+    Intrinsics.loadRawPtr(rawptr)
+  }
 
   /** Get monitor for given object. */
   def getMonitor(obj: Object): Monitor = Monitor.dummy
@@ -47,7 +51,8 @@ package object runtime {
   /** Initialize runtime with given arguments and return the
    *  rest as Java-style array.
    */
-  def init(argc: Int, argv: Ptr[Ptr[Byte]]): scala.Array[String] = {
+  def init(argc: Int, rawargv: RawPtr): scala.Array[String] = {
+    val argv = fromRawPtr[CString](rawargv)
     val args = new scala.Array[String](argc - 1)
 
     // skip the executable name in argv(0)
@@ -61,6 +66,12 @@ package object runtime {
     args
   }
 
+  def fromRawPtr[T](rawptr: RawPtr): Ptr[T] =
+    rawptr.cast[Ptr[T]]
+
+  def toRawPtr[T](ptr: Ptr[T]): RawPtr =
+    ptr.cast[RawPtr]
+
   /** Run the runtime's event loop. The method is called from the
    *  generated C-style after the application's main method terminates.
    */
@@ -72,9 +83,12 @@ package object runtime {
     throw new java.lang.ArithmeticException("/ by zero")
 
   /** Called by the generated code in case of incorrect class cast. */
-  @noinline def throwClassCast(from: Ptr[Type], to: Ptr[Type]): Nothing =
+  @noinline def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
+    val fromName = loadObject(elemRawPtr(from, 8))
+    val toName   = loadObject(elemRawPtr(to, 8))
     throw new java.lang.ClassCastException(
-      s"${!from._1} cannot be cast to ${!to._1}")
+      s"$fromName cannot be cast to $toName")
+  }
 
   /** Called by the generated code in case of operations on null. */
   @noinline def throwNullPointer(): Nothing =

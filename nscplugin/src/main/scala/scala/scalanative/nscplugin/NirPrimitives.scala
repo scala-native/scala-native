@@ -32,6 +32,41 @@ object NirPrimitives {
   final val SHORT_TO_UINT  = 1 + BYTE_TO_ULONG
   final val SHORT_TO_ULONG = 1 + SHORT_TO_UINT
   final val INT_TO_ULONG   = 1 + SHORT_TO_ULONG
+
+  final val LOAD_BOOL    = 1 + INT_TO_ULONG
+  final val LOAD_CHAR    = 1 + LOAD_BOOL
+  final val LOAD_BYTE    = 1 + LOAD_CHAR
+  final val LOAD_SHORT   = 1 + LOAD_BYTE
+  final val LOAD_INT     = 1 + LOAD_SHORT
+  final val LOAD_LONG    = 1 + LOAD_INT
+  final val LOAD_FLOAT   = 1 + LOAD_LONG
+  final val LOAD_DOUBLE  = 1 + LOAD_FLOAT
+  final val LOAD_RAW_PTR = 1 + LOAD_DOUBLE
+  final val LOAD_OBJECT  = 1 + LOAD_RAW_PTR
+
+  final val STORE_BOOL    = 1 + LOAD_OBJECT
+  final val STORE_CHAR    = 1 + STORE_BOOL
+  final val STORE_BYTE    = 1 + STORE_CHAR
+  final val STORE_SHORT   = 1 + STORE_BYTE
+  final val STORE_INT     = 1 + STORE_SHORT
+  final val STORE_LONG    = 1 + STORE_INT
+  final val STORE_FLOAT   = 1 + STORE_LONG
+  final val STORE_DOUBLE  = 1 + STORE_FLOAT
+  final val STORE_RAW_PTR = 1 + STORE_DOUBLE
+  final val STORE_OBJECT  = 1 + STORE_RAW_PTR
+
+  final val ELEM_RAW_PTR = 1 + STORE_OBJECT
+
+  final val CAST_RAW_PTR_TO_OBJECT = 1 + ELEM_RAW_PTR
+  final val CAST_OBJECT_TO_RAW_PTR = 1 + CAST_RAW_PTR_TO_OBJECT
+  final val CAST_INT_TO_FLOAT      = 1 + CAST_OBJECT_TO_RAW_PTR
+  final val CAST_FLOAT_TO_INT      = 1 + CAST_INT_TO_FLOAT
+  final val CAST_LONG_TO_DOUBLE    = 1 + CAST_FLOAT_TO_INT
+  final val CAST_DOUBLE_TO_LONG    = 1 + CAST_LONG_TO_DOUBLE
+  final val CAST_RAWPTR_TO_INT     = 1 + CAST_DOUBLE_TO_LONG
+  final val CAST_RAWPTR_TO_LONG    = 1 + CAST_RAWPTR_TO_INT
+  final val CAST_INT_TO_RAWPTR     = 1 + CAST_RAWPTR_TO_LONG
+  final val CAST_LONG_TO_RAWPTR    = 1 + CAST_INT_TO_RAWPTR
 }
 
 abstract class NirPrimitives {
@@ -71,6 +106,18 @@ abstract class NirPrimitives {
   def isFunPtrOp(code: Int): Boolean =
     code == FUN_PTR_CALL || code == FUN_PTR_FROM
 
+  def isRawPtrOp(code: Int): Boolean =
+    code >= LOAD_BOOL && code <= ELEM_RAW_PTR
+
+  def isRawPtrLoadOp(code: Int): Boolean =
+    code >= LOAD_BOOL && code <= LOAD_OBJECT
+
+  def isRawPtrStoreOp(code: Int): Boolean =
+    code >= STORE_BOOL && code <= STORE_OBJECT
+
+  def isRawCastOp(code: Int): Boolean =
+    code >= CAST_RAW_PTR_TO_OBJECT && code <= CAST_LONG_TO_RAWPTR
+
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
   private def initWithPrimitives(addPrimitive: (Symbol, Int) => Unit): Unit = {
@@ -98,5 +145,36 @@ abstract class NirPrimitives {
     addPrimitive(ShortToULongMethod, SHORT_TO_ULONG)
     addPrimitive(IntToULongMethod, INT_TO_ULONG)
     HashMethods.foreach(addPrimitive(_, HASH))
+    addPrimitive(LoadBoolMethod, LOAD_BOOL)
+    addPrimitive(LoadCharMethod, LOAD_CHAR)
+    addPrimitive(LoadByteMethod, LOAD_BYTE)
+    addPrimitive(LoadShortMethod, LOAD_SHORT)
+    addPrimitive(LoadIntMethod, LOAD_INT)
+    addPrimitive(LoadLongMethod, LOAD_LONG)
+    addPrimitive(LoadFloatMethod, LOAD_FLOAT)
+    addPrimitive(LoadDoubleMethod, LOAD_DOUBLE)
+    addPrimitive(LoadRawPtrMethod, LOAD_RAW_PTR)
+    addPrimitive(LoadObjectMethod, LOAD_OBJECT)
+    addPrimitive(StoreBoolMethod, STORE_BOOL)
+    addPrimitive(StoreCharMethod, STORE_CHAR)
+    addPrimitive(StoreByteMethod, STORE_BYTE)
+    addPrimitive(StoreShortMethod, STORE_SHORT)
+    addPrimitive(StoreIntMethod, STORE_INT)
+    addPrimitive(StoreLongMethod, STORE_LONG)
+    addPrimitive(StoreFloatMethod, STORE_FLOAT)
+    addPrimitive(StoreDoubleMethod, STORE_DOUBLE)
+    addPrimitive(StoreRawPtrMethod, STORE_RAW_PTR)
+    addPrimitive(StoreObjectMethod, STORE_OBJECT)
+    addPrimitive(ElemRawPtrMethod, ELEM_RAW_PTR)
+    addPrimitive(CastRawPtrToObjectMethod, CAST_RAW_PTR_TO_OBJECT)
+    addPrimitive(CastObjectToRawPtrMethod, CAST_OBJECT_TO_RAW_PTR)
+    addPrimitive(CastIntToFloatMethod, CAST_INT_TO_FLOAT)
+    addPrimitive(CastFloatToIntMethod, CAST_FLOAT_TO_INT)
+    addPrimitive(CastLongToDoubleMethod, CAST_LONG_TO_DOUBLE)
+    addPrimitive(CastDoubleToLongMethod, CAST_DOUBLE_TO_LONG)
+    addPrimitive(CastRawPtrToIntMethod, CAST_RAWPTR_TO_INT)
+    addPrimitive(CastRawPtrToLongMethod, CAST_RAWPTR_TO_LONG)
+    addPrimitive(CastIntToRawPtrMethod, CAST_INT_TO_RAWPTR)
+    addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
   }
 }

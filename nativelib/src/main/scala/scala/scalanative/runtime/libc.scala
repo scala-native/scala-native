@@ -8,12 +8,12 @@ import native._
 // and nativelib. The actual bindings should go to clib namespace.
 @extern
 object libc {
-  def malloc(size: CSize): Ptr[Byte]                                    = extern
-  def free(ptr: Ptr[Byte]): Unit                                        = extern
-  def strlen(str: CString): CSize                                       = extern
-  def memcpy(dst: Ptr[Byte], src: Ptr[Byte], count: CSize): Ptr[Byte]   = extern
-  def memcmp(lhs: Ptr[Byte], rhs: Ptr[Byte], count: CSize): CInt        = extern
-  def memset(dest: Ptr[Byte], ch: CInt, count: CSize): Ptr[Byte]        = extern
-  def memmove(dest: Ptr[Byte], src: Ptr[Byte], count: CSize): Ptr[Byte] = extern
-  def remove(fname: CString): CInt                                      = extern
+  def malloc(size: CSize): RawPtr                              = extern
+  def free(ptr: RawPtr): Unit                                  = extern
+  def strlen(str: CString): CSize                              = extern
+  def memcpy(dst: RawPtr, src: RawPtr, count: CSize): RawPtr   = extern
+  def memcmp(lhs: RawPtr, rhs: RawPtr, count: CSize): CInt     = extern
+  def memset(dest: RawPtr, ch: CInt, count: CSize): RawPtr     = extern
+  def memmove(dest: RawPtr, src: RawPtr, count: CSize): RawPtr = extern
+  def remove(fname: CString): CInt                             = extern
 }
