@@ -43,7 +43,6 @@ typedef struct {
 bool GreyPacket_Push(GreyPacket *packet, Stack_Type value);
 Stack_Type GreyPacket_Pop(GreyPacket *packet);
 bool GreyPacket_IsEmpty(GreyPacket *packet);
-bool GreyPacket_IsFull(GreyPacket *packet);
 
 void GreyList_Init(GreyList *list);
 uint32_t GreyList_Size(GreyList *list);
