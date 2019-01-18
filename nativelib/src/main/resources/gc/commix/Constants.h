@@ -74,4 +74,7 @@
 #define LAZY_SWEEP_MIN_BATCH 4
 #endif
 
+#define MIN_SWEEP_BATCHES_PER_THREAD 3
+
+
 #endif // IMMIX_CONSTANTS_H

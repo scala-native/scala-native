@@ -172,14 +172,13 @@ INLINE void GCThread_JoinAll(Heap *heap) {
     }
 }
 
-void GCThread_WakeAll(Heap *heap) {
+void GCThread_Wake(Heap *heap, int toWake) {
     sem_t *start0 = &heap->gcThreads.start0;
     sem_t *start = &heap->gcThreads.start;
-    int gcThreadCount = heap->gcThreads.count;
-    if (gcThreadCount > 0) {
+    if (toWake > 0) {
         sem_post(start0);
     }
-    for (int i = 1; i < gcThreadCount; i++) {
+    for (int i = 1; i < toWake; i++) {
         sem_post(start);
     }
 }
