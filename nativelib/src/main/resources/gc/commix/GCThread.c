@@ -154,6 +154,13 @@ NOINLINE void GCThread_joinAllSlow(GCThread *gcThreads, int gcThreadCount) {
 }
 
 INLINE void GCThread_JoinAll(Heap *heap) {
+    // semaphore drain - make sure no new threads are started
+    heap->gcThreads.phase = gc_idle;
+    sem_t *start0 = &heap->gcThreads.start0;
+    sem_t *start = &heap->gcThreads.start;
+    while (!sem_trywait(start0)){}
+    while (!sem_trywait(start)){}
+
     int gcThreadCount = heap->gcThreads.count;
     GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
     bool anyActive = false;
