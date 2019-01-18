@@ -73,28 +73,17 @@ See also `block_superblock_start_me` and `LargeAllocator_Sweep`.
 
 void Sweeper_sweepDone(Heap *heap);
 
-static inline void Sweeper_advanceLazyCursor(Heap *heap) {
-    // It is safe to advance the cursorDone independently from anything else.
-    // An older values can only be lower which will not break correctness,
-    // maybe just delay coalescing for a tiny bit.
-    uint_fast32_t cursor = atomic_load_explicit(&heap->sweep.cursor, memory_order_relaxed);
-    uint_fast32_t sweepLimit = atomic_load_explicit(&heap->sweep.limit, memory_order_relaxed);
-    uint_fast32_t doneValue = (cursor <= sweepLimit) ? cursor : sweepLimit;
-    atomic_store_explicit(&heap->lazySweep.cursorDone, doneValue, memory_order_relaxed);
-}
-
 Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
     Object *object = (Object *)Allocator_Alloc(&allocator, size);
-    if (object != NULL) {
-        // advance the cursor so other threads can coalesce
-        Sweeper_advanceLazyCursor(heap);
-    } else {
+    if (object == NULL) {
         // lazy sweep will happen
         uint64_t start_ns, end_ns;
         Stats *stats = heap->stats;
         if (stats != NULL) {
             start_ns = scalanative_nano_time();
         }
+        // mark as active
+        heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
         while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
             Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
                           LAZY_SWEEP_MIN_BATCH);
@@ -105,8 +94,9 @@ Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
                 Sweeper_LazyCoalesce(heap, heap->stats);
             }
         }
+        // mark as inactive
+        heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
         while (object == NULL && !Sweeper_IsSweepDone(heap)) {
-            Sweeper_advanceLazyCursor(heap);
             object = (Object *)Allocator_Alloc(&allocator, size);
             if (object == NULL) {
                 sched_yield();
@@ -132,16 +122,15 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
            increment);
     fflush(stdout);
 #endif
-    if (object != NULL) {
-        // advance the cursor so other threads can coalesce
-        Sweeper_advanceLazyCursor(heap);
-    } else {
+    if (object == NULL) {
         // lazy sweep will happen
         uint64_t start_ns, end_ns;
         Stats *stats = heap->stats;
         if (stats != NULL) {
             start_ns = scalanative_nano_time();
         }
+        // mark as active
+        heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
         while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
             Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
                           LAZY_SWEEP_MIN_BATCH);
@@ -152,8 +141,9 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
                 Sweeper_LazyCoalesce(heap, heap->stats);
             }
         }
+        // mark as inactive
+        heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
         while (object == NULL && !Sweeper_IsSweepDone(heap)) {
-            Sweeper_advanceLazyCursor(heap);
             object = LargeAllocator_GetBlock(&largeAllocator, size);
             if (object == NULL) {
                 sched_yield();
@@ -333,7 +323,16 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
 }
 
 uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
-    uint_fast32_t min = heap->lazySweep.cursorDone;
+    BlockRangeVal lastActivity = heap->lazySweep.lastActivity;
+    uint_fast32_t min;
+    if (BlockRange_First(lastActivity) == 1 || lastActivity != heap->lazySweep.lastActivityObserved) {
+        // the mutator thread is doing some lazy sweeping
+        min = heap->lazySweep.cursorDone;
+    } else {
+        // the mutator thread has not done any lazy sweeping since last time, it can be ignored
+        min = heap->sweep.limit;
+    }
+
     int gcThreadCount = heap->gcThreads.count;
     GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
     for (int i = 0; i < gcThreadCount; i++) {
@@ -342,6 +341,7 @@ uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
             min = cursorDone;
         }
     }
+    heap->lazySweep.lastActivityObserved = lastActivity;
     return min;
 }
 

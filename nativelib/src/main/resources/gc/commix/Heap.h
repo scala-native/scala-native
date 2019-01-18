@@ -50,6 +50,10 @@ typedef struct {
         // making cursorDone atomic so it keeps sequential consistency with the
         // other atomics
         atomic_uint_fast32_t cursorDone;
+        // NB! This must be sequentially consistent with sweep.cursor.
+        // Otherwise coalescing can miss updates.
+        BlockRange lastActivity; // _First = 1 if active, _Limit = last cursor observed
+        BlockRangeVal lastActivityObserved; // _First = 1 if active, _Limit = last cursor observed
     } lazySweep;
     struct {
         uint64_t lastEnd_ns;

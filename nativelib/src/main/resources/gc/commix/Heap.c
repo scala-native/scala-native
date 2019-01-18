@@ -410,6 +410,9 @@ void Heap_Recycle(Heap *heap) {
     uint32_t blockCount = heap->blockCount;
     heap->sweep.limit = blockCount;
     heap->lazySweep.cursorDone = 0;
+    // mark as unitialized
+    heap->lazySweep.lastActivity = BlockRange_Pack(2, 0);
+    heap->lazySweep.lastActivityObserved = BlockRange_Pack(2, 0);
     heap->sweep.coalesceDone = 0;
     heap->sweep.postSweepDone = false;
 
