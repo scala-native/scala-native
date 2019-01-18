@@ -106,23 +106,33 @@ void Marker_markPacket(Heap *heap, GreyPacket* in, GreyPacket **outHolder) {
                 if (length <= ARRAY_SPLIT_THRESHOLD) {
                     Marker_markRange(heap, in, outHolder, bytemap, fields, length);
                 } else {
-                    // leave the last batch for the current thread
-                    word_t **limit = fields + length;
-                    word_t **lastBatch = fields + (length / ARRAY_SPLIT_BATCH) * ARRAY_SPLIT_BATCH;
+                    if (GreyPacket_IsEmpty(in)) {
+                        // last item - deal with it now
 
-                    assert(lastBatch <= limit);
-                    for (word_t **batchFields = fields; batchFields < limit; batchFields += ARRAY_SPLIT_BATCH) {
+                        // leave the last batch for the current thread
+                        word_t **limit = fields + length;
+                        word_t **lastBatch = fields + (length / ARRAY_SPLIT_BATCH) * ARRAY_SPLIT_BATCH;
+
+                        assert(lastBatch <= limit);
+                        for (word_t **batchFields = fields; batchFields < limit; batchFields += ARRAY_SPLIT_BATCH) {
+                            GreyPacket *slice = Marker_takeEmptyPacket(heap);
+                            assert(slice != NULL);
+                            slice->type = grey_packet_refrange;
+                            slice->items[0] = (Stack_Type) batchFields;
+                            // no point writing the size, because it is constant
+                            Marker_giveFullPacket(heap, slice);
+                        }
+
+                        size_t lastBatchSize = limit - lastBatch;
+                        if (lastBatchSize > 0) {
+                            Marker_markRange(heap, in, outHolder, bytemap, lastBatch, lastBatchSize);
+                        }
+                    } else {
+                        // pass it on to someone else
                         GreyPacket *slice = Marker_takeEmptyPacket(heap);
                         assert(slice != NULL);
-                        slice->type = grey_packet_refrange;
-                        slice->items[0] = (Stack_Type) batchFields;
-                        // no point writing the size, because it is constant
+                        GreyPacket_Push(slice, object);
                         Marker_giveFullPacket(heap, slice);
-                    }
-
-                    size_t lastBatchSize = limit - lastBatch;
-                    if (lastBatchSize > 0) {
-                        Marker_markRange(heap, in, outHolder, bytemap, lastBatch, lastBatchSize);
                     }
                 }
             }
