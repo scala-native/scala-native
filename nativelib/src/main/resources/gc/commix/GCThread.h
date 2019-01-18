@@ -22,6 +22,6 @@ typedef struct {
 void GCThread_Init(GCThread *thread, int id, Heap *heap, Stats *stats);
 bool GCThread_AnyActive(Heap *heap);
 void GCThread_JoinAll(Heap *heap);
-void GCThread_WakeAll(Heap *heap);
+void GCThread_Wake(Heap *heap, int toWake);
 
 #endif // IMMIX_GCTHREAD_H
