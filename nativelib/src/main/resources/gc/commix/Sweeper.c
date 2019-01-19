@@ -89,11 +89,6 @@ Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
             Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
                           LAZY_SWEEP_MIN_BATCH);
             object = (Object *)Allocator_Alloc(&allocator, size);
-            if (heap->gcThreads.count == 0) {
-                // if there are no threads the mutator must do coalescing on its
-                // own
-                Sweeper_LazyCoalesce(heap, heap->stats);
-            }
         }
         // mark as inactive
         heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
@@ -136,11 +131,6 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
             Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
                           LAZY_SWEEP_MIN_BATCH);
             object = LargeAllocator_GetBlock(&largeAllocator, size);
-            if (heap->gcThreads.count == 0) {
-                // if there are no threads the mutator must do coalescing on its
-                // own
-                Sweeper_LazyCoalesce(heap, heap->stats);
-            }
         }
         // mark as inactive
         heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);

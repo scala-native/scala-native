@@ -78,8 +78,8 @@ int Settings_GCThreadCount() {
     } else {
         int count;
         sscanf(str, "%d", &count);
-        if (count < 0) {
-            count = 0;
+        if (count < 1) {
+            count = 1;
         }
         return count;
     }
