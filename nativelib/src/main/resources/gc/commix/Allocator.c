@@ -155,8 +155,14 @@ bool Allocator_getNextLine(Allocator *allocator) {
  * free line of the new block.
  */
 bool Allocator_newBlock(Allocator *allocator) {
+    bool concurrent = allocator->blockAllocator->concurrent;
     word_t *blockMetaStart = allocator->blockMetaStart;
-    BlockMeta *block = BlockList_Pop(&allocator->recycledBlocks, blockMetaStart);
+    BlockMeta *block;
+    if (concurrent) {
+        block = BlockList_Pop(&allocator->recycledBlocks, blockMetaStart);
+    } else {
+        block = BlockList_Pop_OnlyThread(&allocator->recycledBlocks, blockMetaStart);
+    }
     word_t *blockStart;
 
     if (block != NULL) {
