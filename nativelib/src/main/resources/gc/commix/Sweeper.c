@@ -72,6 +72,7 @@ Note that besides coalescing `Sweeper_LazyCoalesce` also finishes the sweeping o
 See also `block_superblock_start_me` and `LargeAllocator_Sweep`.
 */
 
+INLINE
 Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
     Object *object = NULL;
     uint64_t start_ns, end_ns;
@@ -101,6 +102,7 @@ Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
     return object;
 }
 
+INLINE
 Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
     Object *object = NULL;
 #ifdef DEBUG_PRINT
