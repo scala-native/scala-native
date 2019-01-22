@@ -72,8 +72,6 @@ Note that besides coalescing `Sweeper_LazyCoalesce` also finishes the sweeping o
 See also `block_superblock_start_me` and `LargeAllocator_Sweep`.
 */
 
-void Sweeper_sweepDone(Heap *heap);
-
 Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
     Object *object = (Object *)Allocator_Alloc(&allocator, size);
     if (UNLIKELY(object == NULL)) {
@@ -102,9 +100,6 @@ Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
             end_ns = scalanative_nano_time();
             Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
         }
-    }
-    if (Sweeper_IsSweepDone(heap) && !heap->sweep.postSweepDone) {
-        Sweeper_sweepDone(heap);
     }
     return object;
 }
@@ -144,9 +139,6 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
             end_ns = scalanative_nano_time();
             Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
         }
-    }
-    if (Sweeper_IsSweepDone(heap) && !heap->sweep.postSweepDone) {
-        Sweeper_sweepDone(heap);
     }
     return object;
 }
@@ -430,14 +422,15 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
     }
 }
 
-void Sweeper_sweepDone(Heap *heap) {
-    Heap_GrowIfNeeded(heap);
-    heap->sweep.postSweepDone = true;
-    BlockAllocator_FinishCoalescing(&blockAllocator);
-    heap->gcThreads.phase = gc_idle;
-    Stats *stats = heap->stats;
-    if (stats != NULL) {
-        uint64_t end_ns = scalanative_nano_time();
-        Stats_RecordEvent(stats, event_collection, stats->collection_start_ns, end_ns);
+void Sweeper_SweepDone(Heap *heap, Stats *stats) {
+    if (!heap->sweep.postSweepDone) {
+        Heap_GrowIfNeeded(heap);
+        BlockAllocator_FinishCoalescing(&blockAllocator);
+        heap->gcThreads.phase = gc_idle;
+        if (stats != NULL) {
+            uint64_t end_ns = scalanative_nano_time();
+            Stats_RecordEvent(stats, event_collection, heap->stats->collection_start_ns, end_ns);
+        }
+        heap->sweep.postSweepDone = true;
     }
 }

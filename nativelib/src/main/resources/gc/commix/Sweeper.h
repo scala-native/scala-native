@@ -11,9 +11,14 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
 void Sweeper_LazyCoalesce(Heap *heap, Stats *stats);
 Object *Sweeper_LazySweep(Heap *heap, uint32_t size);
 Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size);
+void Sweeper_SweepDone(Heap *heap, Stats *stats);
+
+static inline bool Sweeper_IsCoalescingDone(Heap *heap) {
+    return heap->sweep.coalesceDone >= heap->sweep.limit;
+}
 
 static inline bool Sweeper_IsSweepDone(Heap *heap) {
-    return heap->sweep.coalesceDone >= heap->sweep.limit;
+    return heap->sweep.postSweepDone;
 }
 
 #endif // IMMIX_SWEEPER_H
