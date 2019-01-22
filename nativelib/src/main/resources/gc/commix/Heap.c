@@ -192,51 +192,58 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     pthread_mutex_init(&heap->sweep.growMutex, NULL);
 }
 
-/**
- * Allocates large objects using the `LargeAllocator`.
- * If allocation fails, because there is not enough memory available, it will
- * trigger a collection of both the small and the large heap.
- */
 word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
 
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size >= MIN_BLOCK_SIZE);
 
-    // Request an object from the `LargeAllocator`
-    Object *object = Sweeper_LazySweepLarge(heap, size);
-    // If the object is not NULL, update it's metadata and return it
-    if (object != NULL) {
-        return (word_t *)object;
-    } else {
-        // Otherwise collect
-        Heap_Collect(heap);
+    Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
+    if (object != NULL)
+        goto done;
 
-        // After collection, try to alloc again, if it fails, grow the heap by
-        // at least the size of the object we want to alloc
-        object = Sweeper_LazySweepLarge(heap, size);
-        if (object != NULL) {
-            assert(Heap_IsWordInHeap(heap, (word_t *)object));
-            return (word_t *)object;
-        } else {
-            size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
-            uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
-            Heap_Grow(heap, pow2increment);
+    object = Sweeper_LazySweepLarge(heap, size);
+    if (object != NULL)
+        goto done;
 
-            object = LargeAllocator_GetBlock(&largeAllocator, size);
-            assert(object != NULL);
-            assert(Heap_IsWordInHeap(heap, (word_t *)object));
-            return (word_t *)object;
-        }
-    }
+    Heap_Collect(heap);
+
+    object = LargeAllocator_GetBlock(&largeAllocator, size);
+    if (object != NULL)
+        goto done;
+
+    object = Sweeper_LazySweepLarge(heap, size);
+    if (object != NULL)
+        goto done;
+
+    size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
+    uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
+    Heap_Grow(heap, pow2increment);
+
+    object = LargeAllocator_GetBlock(&largeAllocator, size);
+
+done:
+    assert(object != NULL);
+    assert(Heap_IsWordInHeap(heap, (word_t *)object));
+    return (word_t *)object;
 }
 
 NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
-    Object *object = Sweeper_LazySweep(heap, size);
+    Object *object = (Object *) Allocator_Alloc(&allocator, size);
+
+    if (object != NULL)
+        goto done;
+
+    object = Sweeper_LazySweep(heap, size);
 
     if (object != NULL)
         goto done;
 
     Heap_Collect(heap);
+    object = (Object *) Allocator_Alloc(&allocator, size);
+
+    if (object != NULL)
+        goto done;
+
     object = Sweeper_LazySweep(heap, size);
 
     if (object != NULL)
@@ -245,7 +252,7 @@ NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
     // A small object can always fit in a single free block
     // because it is no larger than 8K while the block is 32K.
     Heap_Grow(heap, 1);
-    object = (Object *)Allocator_Alloc(&allocator, size);
+    object = (Object *) Allocator_Alloc(&allocator, size);
 
 done:
     assert(Heap_IsWordInHeap(heap, (word_t *)object));
