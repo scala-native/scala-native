@@ -73,39 +73,36 @@ See also `block_superblock_start_me` and `LargeAllocator_Sweep`.
 */
 
 Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
-    Object *object = (Object *)Allocator_Alloc(&allocator, size);
-    if (UNLIKELY(object == NULL)) {
-        // lazy sweep will happen
-        uint64_t start_ns, end_ns;
-        Stats *stats = heap->stats;
-        if (stats != NULL) {
-            start_ns = scalanative_nano_time();
+    Object *object = NULL;
+    uint64_t start_ns, end_ns;
+    Stats *stats = heap->stats;
+    if (stats != NULL) {
+        start_ns = scalanative_nano_time();
+    }
+    // mark as active
+    heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
+    while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
+        Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
+                      LAZY_SWEEP_MIN_BATCH);
+        object = (Object *)Allocator_Alloc(&allocator, size);
+    }
+    // mark as inactive
+    heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
+    while (object == NULL && !Sweeper_IsSweepDone(heap)) {
+        object = (Object *)Allocator_Alloc(&allocator, size);
+        if (object == NULL) {
+            sched_yield();
         }
-        // mark as active
-        heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
-        while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
-            Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
-                          LAZY_SWEEP_MIN_BATCH);
-            object = (Object *)Allocator_Alloc(&allocator, size);
-        }
-        // mark as inactive
-        heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
-        while (object == NULL && !Sweeper_IsSweepDone(heap)) {
-            object = (Object *)Allocator_Alloc(&allocator, size);
-            if (object == NULL) {
-                sched_yield();
-            }
-        }
-        if (stats != NULL) {
-            end_ns = scalanative_nano_time();
-            Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
-        }
+    }
+    if (stats != NULL) {
+        end_ns = scalanative_nano_time();
+        Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
     }
     return object;
 }
 
 Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
-    Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
+    Object *object = NULL;
 #ifdef DEBUG_PRINT
     uint32_t increment =
         (uint32_t)MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
@@ -113,32 +110,30 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
            increment);
     fflush(stdout);
 #endif
-    if (UNLIKELY(object == NULL)) {
-        // lazy sweep will happen
-        uint64_t start_ns, end_ns;
-        Stats *stats = heap->stats;
-        if (stats != NULL) {
-            start_ns = scalanative_nano_time();
+    // lazy sweep will happen
+    uint64_t start_ns, end_ns;
+    Stats *stats = heap->stats;
+    if (stats != NULL) {
+        start_ns = scalanative_nano_time();
+    }
+    // mark as active
+    heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
+    while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
+        Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
+                      LAZY_SWEEP_MIN_BATCH);
+        object = LargeAllocator_GetBlock(&largeAllocator, size);
+    }
+    // mark as inactive
+    heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
+    while (object == NULL && !Sweeper_IsSweepDone(heap)) {
+        object = LargeAllocator_GetBlock(&largeAllocator, size);
+        if (object == NULL) {
+            sched_yield();
         }
-        // mark as active
-        heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
-        while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
-            Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
-                          LAZY_SWEEP_MIN_BATCH);
-            object = LargeAllocator_GetBlock(&largeAllocator, size);
-        }
-        // mark as inactive
-        heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
-        while (object == NULL && !Sweeper_IsSweepDone(heap)) {
-            object = LargeAllocator_GetBlock(&largeAllocator, size);
-            if (object == NULL) {
-                sched_yield();
-            }
-        }
-        if (stats != NULL) {
-            end_ns = scalanative_nano_time();
-            Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
-        }
+    }
+    if (stats != NULL) {
+        end_ns = scalanative_nano_time();
+        Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
     }
     return object;
 }
