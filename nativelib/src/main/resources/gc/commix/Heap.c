@@ -188,6 +188,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     }
 
     heap->mark.lastEnd_ns = scalanative_nano_time();
+
+    pthread_mutex_init(&heap->sweep.growMutex, NULL);
 }
 
 /**
@@ -458,6 +460,7 @@ void Heap_GrowIfNeeded(Heap *heap) {
 }
 
 void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
+    pthread_mutex_lock(&heap->sweep.growMutex);
     if (!Heap_isGrowingPossible(heap, incrementInBlocks)) {
         Heap_exitWithOutOfMemory();
     }
@@ -489,4 +492,5 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
                                  incrementInBlocks);
 
     heap->blockCount += incrementInBlocks;
+    pthread_mutex_unlock(&heap->sweep.growMutex);
 }

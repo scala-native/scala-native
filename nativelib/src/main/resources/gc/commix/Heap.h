@@ -45,6 +45,7 @@ typedef struct {
         atomic_uint_fast32_t limit;
         atomic_uint_fast32_t coalesceDone;
         atomic_bool postSweepDone;
+        pthread_mutex_t growMutex;
     } sweep;
     struct {
         // making cursorDone atomic so it keeps sequential consistency with the
