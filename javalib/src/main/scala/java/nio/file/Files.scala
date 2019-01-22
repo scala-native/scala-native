@@ -332,7 +332,7 @@ object Files {
         } else {
           stat.stat(toCString(path.toFile.getPath()), buf)
         }
-      if (err == 0) stat.S_ISREG(!(buf._13)) == 1
+      if (err == 0) stat.S_ISREG(buf._13) == 1
       else false
     }
 
@@ -343,7 +343,7 @@ object Files {
     Zone { implicit z =>
       val buf = alloc[stat.stat]
       if (stat.lstat(toCString(path.toFile.getPath()), buf) == 0) {
-        stat.S_ISLNK(!(buf._13)) == 1
+        stat.S_ISLNK(buf._13) == 1
       } else {
         false
       }

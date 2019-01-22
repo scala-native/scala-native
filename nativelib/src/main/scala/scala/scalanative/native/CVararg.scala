@@ -8,5 +8,5 @@ import runtime.intrinsic
 final abstract class CVararg
 
 object CVararg {
-  implicit def apply[T](value: T)(implicit tag: Tag[T]): CVararg = intrinsic
+  implicit def apply[T](value: T): CVararg = intrinsic
 }

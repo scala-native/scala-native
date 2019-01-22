@@ -106,9 +106,21 @@ abstract class Suite {
                                             indent: Int): String = {
     if (thrown.isEmpty) ""
     else {
+      val exc          = thrown.get
       val indentSpaces = " " * indent
-      val info         = thrown.get.toString
-      s"\n${color}${indentSpaces}${info}"
+      val info         = exc.toString
+      val writer       = new java.io.StringWriter
+      val printer      = new java.io.PrintWriter(writer)
+      exc.printStackTrace(printer)
+
+      val stacktrace = writer.toString
+        .split('\n')
+        .map { line =>
+          s"\n${color}${indentSpaces}${line}"
+        }
+        .mkString("")
+
+      s"\n${color}${indentSpaces}${info}" + stacktrace
     }
   }
 

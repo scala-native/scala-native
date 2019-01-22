@@ -16,12 +16,12 @@ object stdlib {
 
   // Program utilities
 
-  def abort(): Unit                                  = extern
-  def exit(exitCode: CInt): Unit                     = extern
-  def quick_exit(exitCode: CInt): Unit               = extern
-  def _Exit(exitCode: CInt): Unit                    = extern
-  def atexit(func: CFunctionPtr0[Unit]): CInt        = extern
-  def at_quick_exit(func: CFunctionPtr0[Unit]): CInt = extern
+  def abort(): Unit                             = extern
+  def exit(exitCode: CInt): Unit                = extern
+  def quick_exit(exitCode: CInt): Unit          = extern
+  def _Exit(exitCode: CInt): Unit               = extern
+  def atexit(func: FuncPtr0[Unit]): CInt        = extern
+  def at_quick_exit(func: FuncPtr0[Unit]): CInt = extern
 
   // Communicating with the environment
 

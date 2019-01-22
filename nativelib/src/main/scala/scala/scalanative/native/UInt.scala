@@ -10,9 +10,8 @@ import scalanative.runtime.Intrinsics.{
 import java.lang.{Integer => JInteger}
 
 /** `UInt`, a 32-bit unsigned integer. */
-final class UInt private[scala] (private val underlying: Int)
-    extends AnyVal
-    with java.io.Serializable
+final class UInt private[scalanative] (private[scalanative] val underlying: Int)
+    extends java.io.Serializable
     with Comparable[UInt] {
 
   @inline final def toByte: Byte     = underlying.toByte

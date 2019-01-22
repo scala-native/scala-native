@@ -32,11 +32,14 @@ object CInteropSuite extends tests.Suite {
     }
   }
 
-  def randFunc = CFunctionPtr.fromFunction0(stdlib.rand _)
+  def randFunc = new FuncPtr0[CInt] {
+    def apply(): CInt = stdlib.rand()
+  }
 
   test("CFunctionPtr cast and call with given signature") {
-    val wrongRand = randFunc.cast[CFunctionPtr1[Int, Int]] // wrong signature
-    wrongRand(42) // no argument declared
+    assertThrows[ClassCastException] {
+      randFunc.asInstanceOf[FuncPtr1[Int, Int]] // wrong arity
+    }
   }
 
   test("extern variable read and assign") {

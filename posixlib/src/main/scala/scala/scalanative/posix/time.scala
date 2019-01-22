@@ -49,54 +49,30 @@ object timeOps {
   import time.{time_t, timespec, tm}
 
   implicit class timespecOps(val ptr: Ptr[timespec]) extends AnyVal {
-    def tv_sec: time_t = !ptr._1
-
-    def tv_nsec: CLong = !ptr._2
-
-    def tv_sec_=(v: time_t): Unit = !ptr._1 = v
-
-    def tv_nsec_=(v: CLong): Unit = !ptr._2 = v
-
+    def tv_sec: time_t            = ptr._1
+    def tv_nsec: CLong            = ptr._2
+    def tv_sec_=(v: time_t): Unit = ptr._1 = v
+    def tv_nsec_=(v: CLong): Unit = ptr._2 = v
   }
 
   implicit class tmOps(val ptr: Ptr[tm]) extends AnyVal {
-
-    def tm_sec: CInt = !ptr._1
-
-    def tm_min: CInt = !ptr._2
-
-    def tm_hour: CInt = !ptr._3
-
-    def tm_mday: CInt = !ptr._4
-
-    def tm_mon: CInt = !ptr._5
-
-    def tm_year: CInt = !ptr._6
-
-    def tm_wday: CInt = !ptr._7
-
-    def tm_yday: CInt = !ptr._8
-
-    def tm_isdst: CInt = !ptr._9
-
-    def tm_sec_=(v: CInt): Unit = !ptr._1 = v
-
-    def tm_min_=(v: CInt): Unit = !ptr._2 = v
-
-    def tm_hour_=(v: CInt): Unit = !ptr._3 = v
-
-    def tm_mday_=(v: CInt): Unit = !ptr._4 = v
-
-    def tm_mon_=(v: CInt): Unit = !ptr._5 = v
-
-    def tm_year_=(v: CInt): Unit = !ptr._6 = v
-
-    def tm_wday_=(v: CInt): Unit = !ptr._7 = v
-
-    def tm_yday_=(v: CInt): Unit = !ptr._8 = v
-
-    def tm_isdst_=(v: CInt): Unit = !ptr._9 = v
-
+    def tm_sec: CInt              = ptr._1
+    def tm_min: CInt              = ptr._2
+    def tm_hour: CInt             = ptr._3
+    def tm_mday: CInt             = ptr._4
+    def tm_mon: CInt              = ptr._5
+    def tm_year: CInt             = ptr._6
+    def tm_wday: CInt             = ptr._7
+    def tm_yday: CInt             = ptr._8
+    def tm_isdst: CInt            = ptr._9
+    def tm_sec_=(v: CInt): Unit   = ptr._1 = v
+    def tm_min_=(v: CInt): Unit   = ptr._2 = v
+    def tm_hour_=(v: CInt): Unit  = ptr._3 = v
+    def tm_mday_=(v: CInt): Unit  = ptr._4 = v
+    def tm_mon_=(v: CInt): Unit   = ptr._5 = v
+    def tm_year_=(v: CInt): Unit  = ptr._6 = v
+    def tm_wday_=(v: CInt): Unit  = ptr._7 = v
+    def tm_yday_=(v: CInt): Unit  = ptr._8 = v
+    def tm_isdst_=(v: CInt): Unit = ptr._9 = v
   }
-
 }

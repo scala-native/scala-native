@@ -195,7 +195,7 @@ final class Check(implicit linked: linker.Result) {
     case Op.Method(obj, sig) =>
       expect(Rt.Object, obj)
       sig match {
-        case sig if sig.isMethod || sig.isCtor =>
+        case sig if sig.isMethod || sig.isCtor || sig.isGenerated =>
           ok
         case _ =>
           error(s"method must take a method signature, not ${sig.show}")

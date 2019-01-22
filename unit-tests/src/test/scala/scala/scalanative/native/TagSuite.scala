@@ -143,7 +143,7 @@ object TagSuite extends tests.Suite {
 
   type socklen_t   = CUnsignedInt
   type sa_family_t = CUnsignedShort
-  type _14         = Nat.Digit[Nat._1, Nat._4]
+  type _14         = Nat.Digit2[Nat._1, Nat._4]
   type sockaddr =
     CStruct2[sa_family_t, // sa_family
              CArray[CChar, _14]] // sa_data, size = 14 in OS X and Linux
@@ -163,7 +163,7 @@ object TagSuite extends tests.Suite {
 
   type in_port_t = uint16_t
   type in_addr_t = uint32_t
-  type _16       = Nat.Digit[Nat._1, Nat._6]
+  type _16       = Nat.Digit2[Nat._1, Nat._6]
 
   type in_addr = CStruct1[in_addr_t] // s_addr
   type sockaddr_in = CStruct3[sa_family_t, // sin_family

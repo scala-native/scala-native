@@ -67,7 +67,7 @@ trait NirGenName { self: NirGenPhase =>
     val id    = nativeIdOf(sym)
     val tpe   = sym.tpe.widen
 
-    val paramTypes = tpe.params.toSeq.map(p => genType(p.info, box = false))
+    val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
 
     if (sym == String_+) {
       genMethodName(StringConcatMethod)
@@ -81,9 +81,14 @@ trait NirGenName { self: NirGenPhase =>
     } else if (sym.name == nme.CONSTRUCTOR) {
       owner.member(nir.Sig.Ctor(paramTypes))
     } else {
-      val retType = genType(tpe.resultType, box = false)
+      val retType = genType(tpe.resultType)
       owner.member(nir.Sig.Method(id, paramTypes :+ retType))
     }
+  }
+
+  def genFuncPtrExternForwarderName(ownerSym: Symbol): nir.Global = {
+    val owner = genTypeName(ownerSym)
+    owner.member(nir.Sig.Generated("$extern$forwarder"))
   }
 
   private def nativeIdOf(sym: Symbol): String = {

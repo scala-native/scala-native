@@ -11,8 +11,8 @@ object zlib {
   type uInt       = CUnsignedInt
   type uLong      = CUnsignedLong
   type uLongf     = CUnsignedLong
-  type alloc_func = CFunctionPtr3[voidpf, uInt, uInt, voidpf]
-  type free_func  = CFunctionPtr2[voidpf, voidpf, Void]
+  type alloc_func = FuncPtr3[voidpf, uInt, uInt, voidpf]
+  type free_func  = FuncPtr2[voidpf, voidpf, Void]
   type Bytef      = Byte
   type z_size_t   = CUnsignedLong
   type z_off_t    = CLong
@@ -51,9 +51,9 @@ object zlib {
   type gz_headerp = Ptr[gz_header]
 
   type in_func =
-    CFunctionPtr2[Ptr[Byte], Ptr[Ptr[CUnsignedChar]], CUnsignedInt]
+    FuncPtr2[Ptr[Byte], Ptr[Ptr[CUnsignedChar]], CUnsignedInt]
   type out_func =
-    CFunctionPtr3[Ptr[Byte], Ptr[CUnsignedChar], CUnsignedInt, CInt]
+    FuncPtr3[Ptr[Byte], Ptr[CUnsignedChar], CUnsignedInt, CInt]
   type gzFile = Ptr[Byte]
 
   @name("scalanative_Z_NO_FLUSH")

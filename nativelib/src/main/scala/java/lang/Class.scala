@@ -18,7 +18,7 @@ object rtti {
 import rtti._
 
 final class _Class[A](val rawty: RawPtr) {
-  private def ty: Ptr[Type] =
+  @alwaysinline private def ty: Ptr[Type] =
     fromRawPtr[Type](rawty)
 
   def cast(obj: Object): A =
@@ -62,7 +62,6 @@ final class _Class[A](val rawty: RawPtr) {
       rawty == toRawType(classOf[FloatArray]) ||
       rawty == toRawType(classOf[DoubleArray]) ||
       rawty == toRawType(classOf[ObjectArray]))
-
   def isAssignableFrom(that: Class[_]): scala.Boolean =
     is(that.asInstanceOf[_Class[_]].ty, ty)
 
@@ -128,18 +127,24 @@ final class _Class[A](val rawty: RawPtr) {
   def getConstructor(args: Array[Object]): java.lang.reflect.Constructor[_] =
     ???
   @stub
-  def getConstructors(): Array[Object]  = ???
+  def getConstructors(): Array[Object] = ???
+  @stub
   def getDeclaredFields(): Array[Field] = ???
+  @stub
   def getMethod(name: java.lang.String,
-                args: Array[Class[_]]): java.lang.reflect.Method       = ???
-  def getMethods(): Array[Method]                                      = ???
+                args: Array[Class[_]]): java.lang.reflect.Method = ???
+  @stub
+  def getMethods(): Array[Method] = ???
+  @stub
   def getResourceAsStream(name: java.lang.String): java.io.InputStream = ???
 }
 
 object _Class {
-  private[java] implicit def _class2class[A](cls: _Class[A]): Class[A] =
+  @alwaysinline private[java] implicit def _class2class[A](
+      cls: _Class[A]): Class[A] =
     cls.asInstanceOf[Class[A]]
-  private[java] implicit def class2_class[A](cls: Class[A]): _Class[A] =
+  @alwaysinline private[java] implicit def class2_class[A](
+      cls: Class[A]): _Class[A] =
     cls.asInstanceOf[_Class[A]]
 
   @stub

@@ -79,7 +79,7 @@ private[lang] object PipeIO {
     private[this] var drained = false
     private def availableFD() = {
       val res = stackalloc[CInt]
-      ioctl(is.getFD.fd, FIONREAD, res.cast[Ptr[scala.Byte]]) match {
+      ioctl(is.getFD.fd, FIONREAD, res.asInstanceOf[Ptr[scala.Byte]]) match {
         case -1 => 0
         case _  => !res
       }

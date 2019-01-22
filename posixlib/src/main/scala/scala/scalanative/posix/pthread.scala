@@ -2,8 +2,8 @@ package scala.scalanative
 package posix
 
 import scala.scalanative.native.{
-  CFunctionPtr0,
-  CFunctionPtr1,
+  FuncPtr0,
+  FuncPtr1,
   CInt,
   CSize,
   Ptr,
@@ -104,7 +104,7 @@ object pthread {
   @name("scalanative_pthread_create")
   def pthread_create(thread: Ptr[pthread_t],
                      attr: Ptr[pthread_attr_t],
-                     startroutine: CFunctionPtr1[Ptr[Byte], Ptr[Byte]],
+                     startroutine: FuncPtr1[Ptr[Byte], Ptr[Byte]],
                      args: Ptr[Byte]): CInt = extern
 
   @name("scalanative_pthread_detach")
@@ -127,7 +127,7 @@ object pthread {
   def pthread_join(thread: pthread_t, value_ptr: Ptr[Ptr[Byte]]): CInt = extern
 
   def pthread_key_create(key: Ptr[pthread_key_t],
-                         destructor: CFunctionPtr1[Ptr[Byte], Unit]): CInt =
+                         destructor: FuncPtr1[Ptr[Byte], Unit]): CInt =
     extern
 
   def pthread_key_delete(key: pthread_key_t): CInt = extern
@@ -226,7 +226,7 @@ object pthread {
   def pthread_testcancel(): Unit = extern
 
   // Types
-  type routine = CFunctionPtr0[Unit]
+  type routine = FuncPtr0[Unit]
 
   // Macros
   @name("scalanative_pthread_cancel_asynchronous")
