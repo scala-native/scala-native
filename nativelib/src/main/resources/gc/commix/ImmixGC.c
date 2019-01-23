@@ -15,6 +15,7 @@
 void scalanative_collect();
 
 void scalanative_afterexit() {
+#ifdef ENABLE_GC_STATS
     Stats_OnExit(heap.stats);
 
     int gcThreadCount = heap.gcThreads.count;
@@ -22,11 +23,14 @@ void scalanative_afterexit() {
     for (int i = 0; i < gcThreadCount; i++) {
         Stats_OnExit(gcThreads[i].stats);
     }
+#endif
 }
 
 NOINLINE void scalanative_init() {
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
+#ifdef ENABLE_GC_STATS
     atexit(scalanative_afterexit);
+#endif
 }
 
 INLINE void *scalanative_alloc(void *info, size_t size) {

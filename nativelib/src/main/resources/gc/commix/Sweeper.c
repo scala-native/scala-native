@@ -75,11 +75,13 @@ See also `block_superblock_start_me` and `LargeAllocator_Sweep`.
 INLINE
 Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
     Object *object = NULL;
+#ifdef ENABLE_GC_STATS
     uint64_t start_ns, end_ns;
     Stats *stats = heap->stats;
     if (stats != NULL) {
         start_ns = scalanative_nano_time();
     }
+#endif
     // mark as active
     heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
     while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
@@ -95,10 +97,12 @@ Object *Sweeper_LazySweep(Heap *heap, uint32_t size) {
             sched_yield();
         }
     }
+#ifdef ENABLE_GC_STATS
     if (stats != NULL) {
         end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
     }
+#endif
     return object;
 }
 
@@ -113,11 +117,13 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
     fflush(stdout);
 #endif
     // lazy sweep will happen
+#ifdef ENABLE_GC_STATS
     uint64_t start_ns, end_ns;
     Stats *stats = heap->stats;
     if (stats != NULL) {
         start_ns = scalanative_nano_time();
     }
+#endif
     // mark as active
     heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
     while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
@@ -133,10 +139,12 @@ Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size) {
             sched_yield();
         }
     }
+#ifdef ENABLE_GC_STATS
     if (stats != NULL) {
         end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
     }
+#endif
     return object;
 }
 
@@ -160,10 +168,12 @@ void Sweep_applyResult(SweepResult *result, Allocator *allocator, BlockAllocator
 
 void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
                    uint32_t maxCount) {
-    uint64_t start_ns, end_ns;
+#ifdef ENABLE_GC_STATS_BATCHES
+    uint64_t start_ns, end_ns, presync_end_ns;
     if (stats != NULL) {
         start_ns = scalanative_nano_time();
     }
+#endif
     SweepResult sweepResult;
     SweepResult_Init(&sweepResult);
     uint32_t cursor = heap->sweep.cursor;
@@ -173,6 +183,14 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
     if (cursor < sweepLimit) {
         startIdx = (uint32_t)atomic_fetch_add(&heap->sweep.cursor, maxCount);
     }
+
+#ifdef ENABLE_GC_STATS_SYNC
+    if (stats != NULL) {
+        presync_end_ns = scalanative_nano_time();
+        Stats_RecordEvent(stats, event_sync, start_ns, presync_end_ns);
+    }
+#endif
+
     uint32_t limitIdx = startIdx + maxCount;
     assert(*cursorDone <= startIdx);
     if (limitIdx > sweepLimit) {
@@ -291,15 +309,29 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
         BlockMeta_SetFlagAndSuperblockSize(lastFreeBlockStart, block_coalesce_me, totalSize);
     }
 
+#ifdef ENABLE_GC_STATS_SYNC
+    uint64_t postsync_start_ns;
+    if (stats != NULL) {
+        postsync_start_ns = scalanative_nano_time();
+    }
+#endif
+
     Sweep_applyResult(&sweepResult, &allocator, &blockAllocator);
     // coalescing might be done by another thread
     // block_coalesce_me marks should be visible
     atomic_thread_fence(memory_order_release);
     atomic_store_explicit(cursorDone, limitIdx, memory_order_release);
+
+
+#ifdef ENABLE_GC_STATS_BATCHES
     if (stats != NULL) {
         end_ns = scalanative_nano_time();
+#ifdef ENABLE_GC_STATS_SYNC
+        Stats_RecordEvent(stats, event_sync, postsync_start_ns, end_ns);
+#endif //ENABLE_GC_STATS_SYNC
         Stats_RecordEvent(stats, event_sweep_batch, start_ns, end_ns);
     }
+#endif //ENABLE_GC_STATS_BATCHES
 }
 
 uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
@@ -331,10 +363,12 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
     uint_fast32_t limitIdx = Sweeper_minSweepCursor(heap);
     if (startIdx < limitIdx) {
         // need to get all the coalesce_me information from Sweeper_Sweep
+#ifdef ENABLE_GC_STATS_BATCHES
         uint64_t start_ns, end_ns;
         if (stats != NULL) {
             start_ns = scalanative_nano_time();
         }
+#endif
         atomic_thread_fence(memory_order_acquire);
 
         BlockMeta *lastFreeBlockStart = NULL;
@@ -412,10 +446,12 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
         }
 
         heap->sweep.coalesceDone = limitIdx;
+#ifdef ENABLE_GC_STATS_BATCHES
         if (stats != NULL) {
             end_ns = scalanative_nano_time();
             Stats_RecordEvent(stats, event_coalesce_batch, start_ns, end_ns);
         }
+#endif
     }
 }
 
@@ -424,10 +460,12 @@ void Sweeper_SweepDone(Heap *heap, Stats *stats) {
         Heap_GrowIfNeeded(heap);
         BlockAllocator_FinishCoalescing(&blockAllocator);
         heap->gcThreads.phase = gc_idle;
+#ifdef ENABLE_GC_STATS
         if (stats != NULL) {
             uint64_t end_ns = scalanative_nano_time();
             Stats_RecordEvent(stats, event_collection, heap->stats->collection_start_ns, end_ns);
         }
+#endif
         heap->sweep.postSweepDone = true;
     }
 }
