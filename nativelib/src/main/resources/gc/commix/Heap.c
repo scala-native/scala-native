@@ -162,6 +162,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     if (statsFile != NULL) {
         heap->stats = malloc(sizeof(Stats));
         Stats_Init(heap->stats, statsFile, MUTATOR_THREAD_ID);
+    } else {
+        heap->stats = NULL;
     }
 
     // Init all GCThreads
