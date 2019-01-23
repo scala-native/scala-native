@@ -68,6 +68,8 @@ typedef struct {
     Stats *stats;
 } Heap;
 
+extern long long scalanative_nano_time();
+
 static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {
     return word >= heap->heapStart && word < heap->heapEnd;
 }

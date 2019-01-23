@@ -156,19 +156,24 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     LargeAllocator_Init(&largeAllocator, &blockAllocator, bytemap,
                         blockMetaStart, heapStart);
 
+    // Init all GCThreads
+    sem_init(&heap->gcThreads.start, 0, 0);
+    sem_init(&heap->gcThreads.start0, 0, 0);
+
     // Init stats if enabled.
     // This must done before initializing other threads.
+#ifdef ENABLE_GC_STATS
     char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
         heap->stats = malloc(sizeof(Stats));
         Stats_Init(heap->stats, statsFile, MUTATOR_THREAD_ID);
     } else {
+#endif
         heap->stats = NULL;
+#ifdef ENABLE_GC_STATS
     }
+#endif
 
-    // Init all GCThreads
-    sem_init(&heap->gcThreads.start, 0, 0);
-    sem_init(&heap->gcThreads.start0, 0, 0);
 
     int gcThreadCount = Settings_GCThreadCount();
     heap->gcThreads.count = gcThreadCount;
@@ -177,6 +182,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->gcThreads.all = (void *)gcThreads;
     for (int i = 0; i < gcThreadCount; i++) {
         Stats *stats;
+#ifdef ENABLE_GC_STATS
         if (statsFile != NULL) {
             int len = strlen(statsFile) + 5;
             char *threadSpecificFile = (char *) malloc(len);
@@ -184,8 +190,11 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
             stats = malloc(sizeof(Stats));
             Stats_Init(stats, threadSpecificFile, (uint8_t)i);
         } else {
+#endif
             stats = NULL;
+#ifdef ENABLE_GC_STATS
         }
+#endif
         GCThread_Init(&gcThreads[i], i, heap, stats);
     }
 
@@ -355,10 +364,14 @@ void Heap_assertIsConsistent(Heap *heap) {
 #endif
 
 void Heap_Collect(Heap *heap) {
+#ifdef ENABLE_GC_STATS
     Stats *stats = heap->stats;
     if (stats != NULL) {
         stats->collection_start_ns = scalanative_nano_time();
     }
+#else
+    Stats *stats = NULL;
+#endif
     assert(Sweeper_IsSweepDone(heap));
 #ifdef DEBUG_ASSERT
     Heap_clearIsSwept(heap);
@@ -366,7 +379,7 @@ void Heap_Collect(Heap *heap) {
 #endif
     heap->mark.lastEnd_ns = heap->mark.currentEnd_ns;
     heap->mark.currentStart_ns = scalanative_nano_time();
-    Marker_MarkRoots(heap);
+    Marker_MarkRoots(heap, stats);
     heap->gcThreads.phase = gc_mark;
     // make sure the gc phase is propagated
     atomic_thread_fence(memory_order_release);
@@ -377,10 +390,12 @@ void Heap_Collect(Heap *heap) {
     }
     heap->gcThreads.phase = gc_idle;
     heap->mark.currentEnd_ns = scalanative_nano_time();
+#ifdef ENABLE_GC_STATS
     if (stats != NULL) {
         Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
                           heap->mark.currentEnd_ns);
     }
+#endif
     Heap_Recycle(heap);
 }
 

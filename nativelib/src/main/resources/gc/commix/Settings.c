@@ -62,7 +62,9 @@ size_t Settings_MaxHeapSize() {
     }
 }
 
+#ifdef ENABLE_GC_STATS
 char *Settings_StatsFileName() { return getenv(STATS_FILE_SETTING); }
+#endif
 
 int Settings_GCThreadCount() {
     char *str = getenv("SCALANATIVE_GC_THREADS");
