@@ -380,6 +380,14 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
         }
     }
 
+#ifdef DEBUG_ASSERT
+    BlockMeta *limit = superblock + SWEEP_RESERVE_BLOCKS;
+    for (BlockMeta *current = superblock; current < limit; current++) {
+        assert(BlockMeta_IsFree(current));
+        assert(current->debugFlag == dbg_free_in_collection);
+    }
+#endif
+
     if (superblock != NULL) {
         blockAllocator->reservedSuperblock = (word_t) superblock;
         atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -SWEEP_RESERVE_BLOCKS, memory_order_relaxed);

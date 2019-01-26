@@ -208,6 +208,7 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
     // reserved block are at the start
     if (first >= reserveFirst && first < reserveLimit) {
         // skip it
+        assert(reserveFirst != NULL);
         first = reserveLimit;
     }
 
@@ -243,7 +244,8 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
         assert(!BlockMeta_IsSuperblockStartMe(current));
         if (current == reserveFirst) {
             // skip reserved blocks
-            size = SWEEP_BATCH_SIZE;
+            assert(reserveFirst != NULL);
+            size = SWEEP_RESERVE_BLOCKS;
         } else if (BlockMeta_IsSimpleBlock(current)) {
             freeCount = Allocator_Sweep(&allocator, current, currentBlockStart,
                                         lineMetas, &sweepResult);
