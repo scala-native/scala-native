@@ -382,14 +382,6 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
 
     if (superblock != NULL) {
         blockAllocator->reservedSuperblock = (word_t) superblock;
-        #ifdef DEBUG_ASSERT
-            BlockMeta *limit = superblock + SWEEP_RESERVE_BLOCKS;
-            for (BlockMeta *current = superblock; current < limit; current++) {
-                assert(current->debugFlag == dbg_free);
-                current->debugFlag = dbg_free;
-            }
-            atomic_thread_fence(memory_order_release);
-        #endif
         atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -SWEEP_RESERVE_BLOCKS, memory_order_relaxed);
     } else {
         blockAllocator->reservedSuperblock = (word_t) NULL;
@@ -399,6 +391,6 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
 void BlockAllocator_UseReserve(BlockAllocator *blockAllocator) {
     BlockMeta *reserved = (BlockMeta *) blockAllocator->reservedSuperblock;
     if (reserved != NULL) {
-        BlockAllocator_AddFreeBlocks(blockAllocator, reserved, SWEEP_RESERVE_BLOCKS);
+        BlockAllocator_splitAndAdd(blockAllocator, reserved, SWEEP_RESERVE_BLOCKS);
     }
 }
