@@ -19,9 +19,12 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
 
     blockAllocator->blockMetaStart = blockMetaStart;
     BlockMeta *sCursor = (BlockMeta *)blockMetaStart;
-    BlockMeta *sLimit = (BlockMeta *)blockMetaStart + blockCount;
+    assert(blockCount > SWEEP_RESERVE_BLOCKS);
+    BlockMeta *sLimit = (BlockMeta *)blockMetaStart + blockCount - SWEEP_RESERVE_BLOCKS;
     blockAllocator->smallestSuperblock.cursor = sCursor;
     blockAllocator->smallestSuperblock.limit = sLimit;
+
+    blockAllocator->reservedSuperblock = (word_t) sLimit;
 
     blockAllocator->concurrent = false;
 
@@ -352,4 +355,50 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
     blockAllocator->smallestSuperblock.cursor = NULL;
     blockAllocator->smallestSuperblock.limit = NULL;
     BlockRange_Clear(&blockAllocator->coalescingSuperblock);
+}
+
+void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
+    int index = MathUtils_Log2Ceil((size_t)SWEEP_RESERVE_BLOCKS);
+    assert(blockAllocator->concurrent);
+    BlockMeta *superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
+
+    uint32_t receivedSize = 1 << index;
+
+    if (superblock != NULL) {
+        if (receivedSize > SWEEP_RESERVE_BLOCKS) {
+            BlockMeta *leftover = superblock + SWEEP_RESERVE_BLOCKS;
+            BlockAllocator_splitAndAdd(blockAllocator, leftover,
+                                       receivedSize - SWEEP_RESERVE_BLOCKS);
+        }
+    } else {
+        // as the last resort look in the superblock being coalesced
+        uint32_t superblockIdx = BlockRange_PollFirst(
+            &blockAllocator->coalescingSuperblock, SWEEP_RESERVE_BLOCKS);
+        if (superblockIdx != NO_BLOCK_INDEX) {
+            superblock = BlockMeta_GetFromIndex(
+                blockAllocator->blockMetaStart, superblockIdx);
+        }
+    }
+
+    if (superblock != NULL) {
+        blockAllocator->reservedSuperblock = (word_t) superblock;
+        #ifdef DEBUG_ASSERT
+            BlockMeta *limit = superblock + SWEEP_RESERVE_BLOCKS;
+            for (BlockMeta *current = superblock; current < limit; current++) {
+                assert(current->debugFlag == dbg_free);
+                current->debugFlag = dbg_free;
+            }
+            atomic_thread_fence(memory_order_release);
+        #endif
+        atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -SWEEP_RESERVE_BLOCKS, memory_order_relaxed);
+    } else {
+        blockAllocator->reservedSuperblock = (word_t) NULL;
+    }
+}
+
+void BlockAllocator_UseReserve(BlockAllocator *blockAllocator) {
+    BlockMeta *reserved = (BlockMeta *) blockAllocator->reservedSuperblock;
+    if (reserved != NULL) {
+        BlockAllocator_AddFreeBlocks(blockAllocator, reserved, SWEEP_RESERVE_BLOCKS);
+    }
 }

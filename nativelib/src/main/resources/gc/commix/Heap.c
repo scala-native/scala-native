@@ -388,6 +388,9 @@ void Heap_Collect(Heap *heap) {
     while (!Marker_IsMarkDone(heap)) {
         Marker_Mark(heap, stats);
     }
+    // use the reserved block so mutator can does not have to lazy sweep
+    // but can allocate imminently
+    BlockAllocator_UseReserve(&blockAllocator);
     heap->gcThreads.phase = gc_idle;
     heap->mark.currentEnd_ns = scalanative_nano_time();
 #ifdef ENABLE_GC_STATS

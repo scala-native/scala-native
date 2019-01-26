@@ -202,6 +202,15 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
     BlockMeta *first = BlockMeta_GetFromIndex(heap->blockMetaStart, startIdx);
     BlockMeta *limit = BlockMeta_GetFromIndex(heap->blockMetaStart, limitIdx);
 
+    BlockMeta *reserveFirst = (BlockMeta *) blockAllocator.reservedSuperblock;
+    BlockMeta *reserveLimit = reserveFirst + SWEEP_RESERVE_BLOCKS;
+
+    // reserved block are at the start
+    if (first >= reserveFirst && first < reserveLimit) {
+        // skip it
+        first = reserveLimit;
+    }
+
 #ifdef DEBUG_PRINT
     printf("Sweeper_Sweep(%p %" PRIu32 ",%p %" PRIu32 "\n", first, startIdx,
            limit, limitIdx);
@@ -232,7 +241,10 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
         assert(!BlockMeta_IsCoalesceMe(current));
         assert(!BlockMeta_IsSuperblockTail(current));
         assert(!BlockMeta_IsSuperblockStartMe(current));
-        if (BlockMeta_IsSimpleBlock(current)) {
+        if (current == reserveFirst) {
+            // skip reserved blocks
+            size = SWEEP_BATCH_SIZE;
+        } else if (BlockMeta_IsSimpleBlock(current)) {
             freeCount = Allocator_Sweep(&allocator, current, currentBlockStart,
                                         lineMetas, &sweepResult);
 #ifdef DEBUG_PRINT
@@ -458,6 +470,7 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
 void Sweeper_SweepDone(Heap *heap, Stats *stats) {
     if (!heap->sweep.postSweepDone) {
         Heap_GrowIfNeeded(heap);
+        BlockAllocator_ReserveBlocks(&blockAllocator);
         BlockAllocator_FinishCoalescing(&blockAllocator);
         heap->gcThreads.phase = gc_idle;
 #ifdef ENABLE_GC_STATS
