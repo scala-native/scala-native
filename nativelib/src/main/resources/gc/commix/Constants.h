@@ -71,7 +71,7 @@
 #endif
 
 #ifndef LAZY_SWEEP_MIN_BATCH
-#define LAZY_SWEEP_MIN_BATCH 4
+#define LAZY_SWEEP_MIN_BATCH 16
 #endif
 
 #define MIN_SWEEP_BATCHES_PER_THREAD 3
