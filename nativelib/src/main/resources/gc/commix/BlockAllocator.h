@@ -22,6 +22,7 @@ typedef struct {
     word_t *blockMetaStart;
     atomic_bool concurrent;
     BlockList freeSuperblocks[SUPERBLOCK_LIST_SIZE];
+    atomic_uintptr_t reservedSuperblock;
 } BlockAllocator;
 
 void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
@@ -36,6 +37,8 @@ void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
 void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator, LocalBlockList *localBlockListStart,
                                          BlockMeta *superblock, uint32_t count);
 void BlockAllocator_FinishCoalescing(BlockAllocator *blockAllocator);
+void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator);
+void BlockAllocator_UseReserve(BlockAllocator *blockAllocator);
 void BlockAllocator_Clear(BlockAllocator *blockAllocator);
 
 #endif // IMMIX_BLOCKALLOCATOR_H
