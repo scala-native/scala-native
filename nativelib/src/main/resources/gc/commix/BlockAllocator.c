@@ -390,7 +390,6 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
 
     if (superblock != NULL) {
         blockAllocator->reservedSuperblock = (word_t) superblock;
-        atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -SWEEP_RESERVE_BLOCKS, memory_order_relaxed);
     } else {
         blockAllocator->reservedSuperblock = (word_t) NULL;
     }
