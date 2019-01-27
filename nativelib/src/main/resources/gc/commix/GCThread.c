@@ -14,9 +14,7 @@ static inline void GCThread_mark(Heap *heap, Stats *stats) {
     }
 #endif
 
-    while (!Marker_IsMarkDone(heap)) {
-        Marker_Mark(heap, stats);
-    }
+    Marker_Mark(heap, stats);
 
 #ifdef ENABLE_GC_STATS
     if (stats != NULL) {

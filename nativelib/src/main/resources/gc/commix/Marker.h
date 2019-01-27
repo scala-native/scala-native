@@ -6,6 +6,7 @@
 
 void Marker_MarkRoots(Heap *heap, Stats *stats);
 void Marker_Mark(Heap *heap, Stats *stats);
+void Marker_MarkAndScale(Heap *heap, Stats *stats);
 bool Marker_IsMarkDone(Heap *heap);
 
 #endif // IMMIX_MARKER_H

@@ -386,7 +386,10 @@ void Heap_Collect(Heap *heap) {
     int gcThreadCount = heap->gcThreads.count;
     GCThread_Wake(heap, gcThreadCount);
     while (!Marker_IsMarkDone(heap)) {
-        Marker_Mark(heap, stats);
+        Marker_MarkAndScale(heap, stats);
+        if (!Marker_IsMarkDone(heap)) {
+            sched_yield();
+        }
     }
     // use the reserved block so mutator can does not have to lazy sweep
     // but can allocate imminently

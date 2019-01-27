@@ -6,6 +6,7 @@
 #include "State.h"
 #include "headers/ObjectHeader.h"
 #include "datastructures/GreyPacket.h"
+#include "GCThread.h"
 #include <sched.h>
 
 extern word_t *__modules;
@@ -46,10 +47,7 @@ static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
     }
 #endif
     GreyPacket *packet = GreyList_Pop(&heap->mark.full, heap->greyPacketsStart);
-    if (packet == NULL) {
-        // failed to get a full packet, back off
-        sched_yield();
-    } else {
+    if (packet != NULL) {
         atomic_thread_fence(memory_order_release);
     }
 #ifdef ENABLE_GC_STATS_SYNC
@@ -268,6 +266,45 @@ void Marker_Mark(Heap *heap, Stats *stats) {
         GreyPacket *next = Marker_takeFullPacket(heap, stats);
         if (next != NULL) {
             Marker_giveEmptyPacket(heap, stats, in);
+        } else {
+            if (!GreyPacket_IsEmpty(out)) {
+                // use the out packet as source
+                next = out;
+                out = in;
+            } else {
+                // next == NULL, exits
+                Marker_giveEmptyPacket(heap, stats, in);
+                Marker_giveEmptyPacket(heap, stats, out);
+            }
+        }
+        in = next;
+    }
+}
+
+void Marker_MarkAndScale(Heap *heap, Stats *stats) {
+    GreyPacket* in = Marker_takeFullPacket(heap, stats);
+    GreyPacket *out = NULL;
+    while (in != NULL) {
+        Marker_markBatch(heap, stats, in, &out);
+
+        assert(out != NULL);
+        assert(GreyPacket_IsEmpty(in));
+        GreyPacket *next = Marker_takeFullPacket(heap, stats);
+        if (next != NULL) {
+            Marker_giveEmptyPacket(heap, stats, in);
+            uint32_t remainingFullPackets = next->next.sep.size;
+            if (remainingFullPackets > MARK_SPAWN_THREADS_MIN_PACKETS) {
+                int maxThreads = heap->gcThreads.count;
+                int activeThreads = GCThread_ActiveCount(heap);
+                int targetThreadCount = (remainingFullPackets - MARK_SPAWN_THREADS_MIN_PACKETS) / MARK_MIN_PACKETS_PER_THREAD;
+                if (targetThreadCount > maxThreads) {
+                    targetThreadCount = maxThreads;
+                }
+                int toSpawn = targetThreadCount - activeThreads;
+                if (toSpawn > 0) {
+                    GCThread_Wake(heap, toSpawn);
+                }
+            }
         } else {
             if (!GreyPacket_IsEmpty(out)) {
                 // use the out packet as source
