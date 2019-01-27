@@ -234,47 +234,52 @@ void Marker_markRangePacket(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket
     in->size = 0;
 }
 
+static inline void Marker_markBatch(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket **outHolder) {
+#ifdef ENABLE_GC_STATS_BATCHES
+    uint64_t start_ns, end_ns;
+    if (stats != NULL) {
+        start_ns = scalanative_nano_time();
+    }
+#endif
+    switch (in->type) {
+        case grey_packet_reflist:
+            Marker_markPacket(heap, stats, in, outHolder);
+            break;
+        case grey_packet_refrange:
+            Marker_markRangePacket(heap, stats, in, outHolder);
+            break;
+    }
+#ifdef ENABLE_GC_STATS_BATCHES
+    if (stats != NULL) {
+        end_ns = scalanative_nano_time();
+        Stats_RecordEvent(stats, event_mark_batch, start_ns, end_ns);
+    }
+#endif
+}
+
 void Marker_Mark(Heap *heap, Stats *stats) {
     GreyPacket* in = Marker_takeFullPacket(heap, stats);
     GreyPacket *out = NULL;
     while (in != NULL) {
-#ifdef ENABLE_GC_STATS_BATCHES
-        uint64_t start_ns, end_ns;
-        if (stats != NULL) {
-            start_ns = scalanative_nano_time();
-        }
-#endif
-        switch (in->type) {
-            case grey_packet_reflist:
-                Marker_markPacket(heap, stats, in, &out);
-                break;
-            case grey_packet_refrange:
-                Marker_markRangePacket(heap, stats, in, &out);
-                break;
-        }
-#ifdef ENABLE_GC_STATS_BATCHES
-        if (stats != NULL) {
-            end_ns = scalanative_nano_time();
-            Stats_RecordEvent(stats, event_mark_batch, start_ns, end_ns);
-        }
-#endif
+        Marker_markBatch(heap, stats, in, &out);
+
+        assert(out != NULL);
+        assert(GreyPacket_IsEmpty(in));
         GreyPacket *next = Marker_takeFullPacket(heap, stats);
-        if (next == NULL && !GreyPacket_IsEmpty(out)) {
-            GreyPacket *tmp = out;
-            out = in;
-            in = tmp;
-        } else {
+        if (next != NULL) {
             Marker_giveEmptyPacket(heap, stats, in);
-            in = next;
-        }
-    }
-    assert(in == NULL);
-    if (out != NULL) {
-        if (out->size > 0) {
-            Marker_giveFullPacket(heap, stats, out);
         } else {
-            Marker_giveEmptyPacket(heap, stats, out);
+            if (!GreyPacket_IsEmpty(out)) {
+                // use the out packet as source
+                next = out;
+                out = in;
+            } else {
+                // next == NULL, exits
+                Marker_giveEmptyPacket(heap, stats, in);
+                Marker_giveEmptyPacket(heap, stats, out);
+            }
         }
+        in = next;
     }
 }
 
