@@ -206,11 +206,6 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
     BlockMeta *reserveLimit = reserveFirst + SWEEP_RESERVE_BLOCKS;
 
     // reserved block are at the start
-    if (first >= reserveFirst && first < reserveLimit) {
-        // skip it
-        assert(reserveFirst != NULL);
-        first = reserveLimit;
-    }
 
 #ifdef DEBUG_PRINT
     printf("Sweeper_Sweep(%p %" PRIu32 ",%p %" PRIu32 "\n", first, startIdx,
@@ -242,10 +237,10 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
         assert(!BlockMeta_IsCoalesceMe(current));
         assert(!BlockMeta_IsSuperblockTail(current));
         assert(!BlockMeta_IsSuperblockStartMe(current));
-        if (current == reserveFirst) {
-            // skip reserved blocks
+        if (current >= reserveFirst && current < reserveLimit) {
+            // skip reserved block
             assert(reserveFirst != NULL);
-            size = SWEEP_RESERVE_BLOCKS;
+            // size = 1, freeCount = 0
         } else if (BlockMeta_IsSimpleBlock(current)) {
             freeCount = Allocator_Sweep(&allocator, current, currentBlockStart,
                                         lineMetas, &sweepResult);
