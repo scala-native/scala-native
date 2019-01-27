@@ -4,7 +4,7 @@
 #include "Marker.h"
 #include <semaphore.h>
 
-static inline void GCThread_mark(GCThread *thread, Heap *heap, Stats *stats) {
+static inline void GCThread_mark(Heap *heap, Stats *stats) {
 #ifdef ENABLE_GC_STATS
     uint64_t start_ns, end_ns;
     if (stats != NULL) {
@@ -103,7 +103,7 @@ void *GCThread_loop(void *arg) {
             case gc_idle:
                 break;
             case gc_mark:
-                GCThread_mark(thread, heap, stats);
+                GCThread_mark(heap, stats);
                 break;
             case gc_sweep:
                 GCThread_sweep(thread, heap, stats);
@@ -141,7 +141,7 @@ void *GCThread_loop0(void *arg) {
             case gc_idle:
                 break;
             case gc_mark:
-                GCThread_mark(thread, heap, stats);
+                GCThread_mark(heap, stats);
                 break;
             case gc_sweep:
                 GCThread_sweep0(thread, heap, stats);
@@ -183,6 +183,18 @@ bool GCThread_AnyActive(Heap *heap) {
         }
     }
     return false;
+}
+
+int GCThread_ActiveCount(Heap *heap) {
+    int gcThreadCount = heap->gcThreads.count;
+    GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
+    int count = 0;
+    for (int i = 0; i < gcThreadCount; i++) {
+        if (gcThreads[i].active) {
+            count += 1;
+        }
+    }
+    return count;
 }
 
 NOINLINE void GCThread_joinAllSlow(GCThread *gcThreads, int gcThreadCount) {

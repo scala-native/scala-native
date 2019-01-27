@@ -246,7 +246,7 @@ void Marker_Mark(Heap *heap, Stats *stats) {
 #endif
         switch (in->type) {
             case grey_packet_reflist:
-                Marker_markPacket(heap, stats , in, &out);
+                Marker_markPacket(heap, stats, in, &out);
                 break;
             case grey_packet_refrange:
                 Marker_markRangePacket(heap, stats, in, &out);
