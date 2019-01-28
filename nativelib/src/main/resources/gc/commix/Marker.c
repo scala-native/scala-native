@@ -302,7 +302,7 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats) {
                 }
                 int toSpawn = targetThreadCount - activeThreads;
                 if (toSpawn > 0) {
-                    GCThread_Wake(heap, toSpawn);
+                    GCThread_WakeWorkers(heap, toSpawn);
                 }
             }
         } else {
