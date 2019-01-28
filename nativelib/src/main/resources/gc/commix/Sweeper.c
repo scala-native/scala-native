@@ -235,7 +235,8 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
         int size = 1;
         uint32_t freeCount = 0;
         assert(!BlockMeta_IsCoalesceMe(current));
-        assert(!BlockMeta_IsSuperblockTail(current));
+        assert(current >= reserveFirst && current < reserveLimit
+            || !BlockMeta_IsSuperblockTail(current));
         assert(!BlockMeta_IsSuperblockStartMe(current));
         if (current >= reserveFirst && current < reserveLimit) {
             // skip reserved block
