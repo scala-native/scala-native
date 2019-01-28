@@ -4,6 +4,37 @@
 #include "Marker.h"
 #include <semaphore.h>
 
+static inline void GCThread_mark0(Heap *heap, Stats *stats) {
+#ifdef ENABLE_GC_STATS
+    uint64_t start_ns, end_ns;
+    if (stats != NULL) {
+        start_ns = scalanative_nano_time();
+        stats->mark_waiting_start_ns = 0;
+        stats->mark_waiting_end_ns = 0;
+    }
+#endif
+
+    while (!Marker_IsMarkDone(heap)) {
+        Marker_MarkAndScale(heap, stats);
+        if (!Marker_IsMarkDone(heap)) {
+            sched_yield();
+        }
+    }
+
+#ifdef ENABLE_GC_STATS
+    if (stats != NULL) {
+        end_ns = scalanative_nano_time();
+        Stats_RecordEvent(stats, event_concurrent_mark,
+                          start_ns, end_ns);
+#ifdef ENABLE_GC_STATS_SYNC
+        if (stats->mark_waiting_start_ns != 0) {
+            Stats_RecordEvent(stats, mark_waiting, stats->mark_waiting_start_ns, stats->mark_waiting_end_ns);
+        }
+#endif // ENABLE_GC_STATS_SYNC
+    }
+#endif // ENABLE_GC_STATS_BATCHES
+}
+
 static inline void GCThread_mark(Heap *heap, Stats *stats) {
 #ifdef ENABLE_GC_STATS
     uint64_t start_ns, end_ns;
@@ -139,7 +170,7 @@ void *GCThread_loop0(void *arg) {
             case gc_idle:
                 break;
             case gc_mark:
-                GCThread_mark(heap, stats);
+                GCThread_mark0(heap, stats);
                 break;
             case gc_sweep:
                 GCThread_sweep0(thread, heap, stats);
@@ -224,6 +255,13 @@ INLINE void GCThread_JoinAll(Heap *heap) {
     }
     if (anyActive) {
         GCThread_joinAllSlow(gcThreads, gcThreadCount);
+    }
+}
+
+void GCThread_WakeWorkers(Heap *heap, int toWake) {
+    sem_t *start = &heap->gcThreads.start;
+    for (int i = 0; i < toWake; i++) {
+        sem_post(start);
     }
 }
 
