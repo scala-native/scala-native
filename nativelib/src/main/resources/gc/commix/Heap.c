@@ -384,7 +384,6 @@ void Heap_Collect(Heap *heap) {
     // make sure the gc phase is propagated
     atomic_thread_fence(memory_order_release);
     int gcThreadCount = heap->gcThreads.count;
-    GCThread_Wake(heap, gcThreadCount);
     while (!Marker_IsMarkDone(heap)) {
         Marker_MarkAndScale(heap, stats);
         if (!Marker_IsMarkDone(heap)) {
