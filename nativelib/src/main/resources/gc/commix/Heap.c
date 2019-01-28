@@ -391,9 +391,6 @@ void Heap_Collect(Heap *heap) {
             sched_yield();
         }
     }
-    // use the reserved block so mutator can does not have to lazy sweep
-    // but can allocate imminently
-    BlockAllocator_UseReserve(&blockAllocator);
     heap->gcThreads.phase = gc_idle;
     heap->mark.currentEnd_ns = scalanative_nano_time();
 #ifdef ENABLE_GC_STATS
@@ -431,6 +428,10 @@ void Heap_Recycle(Heap *heap) {
     Allocator_Clear(&allocator);
     LargeAllocator_Clear(&largeAllocator);
     BlockAllocator_Clear(&blockAllocator);
+
+    // use the reserved block so mutator can does not have to lazy sweep
+    // but can allocate imminently
+    BlockAllocator_UseReserve(&blockAllocator);
 
     // all the marking changes should be visible to all threads by now
     atomic_thread_fence(memory_order_seq_cst);
