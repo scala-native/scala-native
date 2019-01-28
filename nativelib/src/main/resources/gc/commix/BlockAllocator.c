@@ -29,7 +29,8 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
     blockAllocator->concurrent = false;
 
 #ifdef DEBUG_ASSERT
-    for (BlockMeta *current = sCursor; current < sLimit; current++) {
+    BlockMeta *limit = sCursor + blockCount;
+    for (BlockMeta *current = sCursor; current < limit; current++) {
         current->debugFlag = dbg_free_in_collection;
     }
 #endif
