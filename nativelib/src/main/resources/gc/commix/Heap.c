@@ -321,7 +321,12 @@ void Heap_clearIsSwept(Heap *heap) {
     BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
     BlockMeta *limit = (BlockMeta *)heap->blockMetaEnd;
     while (current < limit) {
-        current->debugFlag = dbg_must_sweep;
+        BlockMeta *reserveFirst = (BlockMeta *) blockAllocator.reservedSuperblock;
+        BlockMeta *reserveLimit = reserveFirst + SWEEP_RESERVE_BLOCKS;
+        if (current < reserveFirst || current >= reserveLimit) {
+            assert(reserveFirst !=  NULL);
+            current->debugFlag = dbg_must_sweep;
+        }
         current++;
     }
 }
