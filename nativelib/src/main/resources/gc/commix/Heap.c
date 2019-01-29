@@ -216,9 +216,11 @@ done:
         return (word_t *)object;
 }
 
-    object = Sweeper_LazySweepLarge(heap, size);
-    if (object != NULL)
-        goto done;
+    if (!Sweeper_IsSweepDone(heap)) {
+        object = Sweeper_LazySweepLarge(heap, size);
+        if (object != NULL)
+            goto done;
+    }
 
     Heap_Collect(heap);
 
@@ -244,19 +246,22 @@ NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
 
     if (object != NULL) {
 done:
-    assert(Heap_IsWordInHeap(heap, (word_t *)object));
-    assert(object != NULL);
-    ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, (word_t *)object);
+        assert(Heap_IsWordInHeap(heap, (word_t *)object));
+        assert(object != NULL);
+        ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, (word_t *)object);
 #ifdef DEBUG_ASSERT
-    ObjectMeta_AssertIsValidAllocation(objectMeta, size);
+        ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif
-    ObjectMeta_SetAllocated(objectMeta);
-    return (word_t *)object;
+        ObjectMeta_SetAllocated(objectMeta);
+        return (word_t *)object;
     }
-    object = Sweeper_LazySweep(heap, size);
 
-    if (object != NULL)
-        goto done;
+    if (!Sweeper_IsSweepDone(heap)) {
+        object = Sweeper_LazySweep(heap, size);
+
+        if (object != NULL)
+            goto done;
+    }
 
     Heap_Collect(heap);
     object = (Object *) Allocator_Alloc(&allocator, size);
