@@ -228,9 +228,11 @@ done:
     if (object != NULL)
         goto done;
 
-    object = Sweeper_LazySweepLarge(heap, size);
-    if (object != NULL)
-        goto done;
+    if (!Sweeper_IsSweepDone(heap)) {
+        object = Sweeper_LazySweepLarge(heap, size);
+        if (object != NULL)
+            goto done;
+    }
 
     size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
     uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
@@ -269,10 +271,12 @@ done:
     if (object != NULL)
         goto done;
 
-    object = Sweeper_LazySweep(heap, size);
+    if (!Sweeper_IsSweepDone(heap)) {
+        object = Sweeper_LazySweep(heap, size);
 
-    if (object != NULL)
-        goto done;
+        if (object != NULL)
+            goto done;
+    }
 
     // A small object can always fit in a single free block
     // because it is no larger than 8K while the block is 32K.
