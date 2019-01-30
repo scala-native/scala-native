@@ -29,7 +29,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   final def deserialize(): Seq[Defn] = {
     val allDefns = mutable.UnrolledBuffer.empty[Defn]
-    header.map {
+    header.foreach {
       case (g, offset) =>
         buffer.position(offset)
         allDefns += getDefn
@@ -37,15 +37,42 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     allDefns
   }
 
-  private def getSeq[T](getT: => T): Seq[T] =
-    (1 to getInt).map(_ => getT).toSeq
+  private def getSeq[T](getT: => T): Seq[T] = {
+    var i: Int = 1
+    val end = getInt
+    var seq: List[T] = Nil
+    while (i <= end) {
+        seq = getT :: seq
+        i += 1
+    }
+    seq.reverse
+  }
 
   private def getOpt[T](getT: => T): Option[T] =
     if (get == 0) None else Some(getT)
 
-  private def getInts(): Seq[Int] = getSeq(getInt)
+  private def getInts(): Seq[Int] = {
+    var i: Int = 1
+    val end = getInt
+    var seq: List[Int] = Nil
+    while (i <= end) {
+        seq = getInt :: seq
+        i += 1
+    }
+    seq.reverse
+  }
 
-  private def getStrings(): Seq[String] = getSeq(getString)
+  private def getStrings(): Seq[String] = {
+    var i: Int = 1
+    val end = getInt
+    var seq: List[String] = Nil
+    while (i <= end) {
+        seq = getString :: seq
+        i += 1
+    }
+    seq.reverse
+  }
+
   private def getString(): String = {
     val arr = new Array[Byte](getInt)
     get(arr)
