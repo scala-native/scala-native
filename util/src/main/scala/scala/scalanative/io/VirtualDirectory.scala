@@ -90,8 +90,9 @@ object VirtualDirectory {
         .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
         .iterator()
         .asScala
+        .filter(_.toString.endsWith(".nir"))
         .map(fp => path.relativize(fp))
-        .toSeq
+        .toList
   }
 
   private final class JarDirectory(path: Path)(implicit scope: Scope)
@@ -120,6 +121,8 @@ object VirtualDirectory {
             .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
             .iterator()
             .asScala
+            .filter(_.toString.endsWith(".nir"))
+            .toList
         }
     }
   }

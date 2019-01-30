@@ -77,12 +77,13 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
   }
 
   private def getString(): String = {
+    import scala.scalanative.io.internedStrings
     val arr = new Array[Byte](getInt)
     get(arr)
     val s = new String(arr, "UTF-8")
-    val ref = BinaryDeserializer.internedStrings.get(s)
+    val ref = internedStrings.get(s)
     if (ref == null) {
-      BinaryDeserializer.internedStrings.put(s, new java.lang.ref.WeakReference(s))
+      internedStrings.put(s, new java.lang.ref.WeakReference(s))
       s
     } else {
       ref.get()
@@ -316,11 +317,4 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
     case T.StringVal  => Val.String(getString)
     case T.VirtualVal => Val.Virtual(getLong)
   }
-}
-
-object BinaryDeserializer {
-    import java.util.WeakHashMap
-    import java.lang.ref.WeakReference
-    private[scalanative] val internedStrings: WeakHashMap[String, WeakReference[String]] =
-      new WeakHashMap[String, WeakReference[String]]()
 }
