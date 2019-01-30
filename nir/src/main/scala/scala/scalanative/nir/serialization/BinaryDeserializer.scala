@@ -6,7 +6,9 @@ import java.nio.ByteBuffer
 import scala.collection.mutable
 import scalanative.nir.serialization.{Tags => T}
 
-final class BinaryDeserializer(buffer: ByteBuffer) {
+import scala.scalanative.util.Scope
+
+final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
   import buffer._
 
   private val header: Map[Global, Int] = {
@@ -34,6 +36,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
         buffer.position(offset)
         allDefns += getDefn
     }
+    scope.close()
     allDefns
   }
 

@@ -46,7 +46,9 @@ object ClassPath {
     def load(name: Global): Option[Seq[Defn]] =
       cache.getOrElseUpdate(name, {
         files.get(name.top).map { file =>
-          deserializeBinary(directory.read(file))
+          Scope { implicit scope =>
+            deserializeBinary(directory.read(file))
+          }
         }
       })
   }

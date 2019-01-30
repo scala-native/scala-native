@@ -5,6 +5,8 @@ import java.nio._
 import java.nio.file.{StandardOpenOption => OpenOpt, _}
 import java.nio.channels._
 
+import scala.scalanative.util.Scope
+
 package object serialization {
   def serializeText(defns: Seq[Defn], buffer: ByteBuffer): Unit = {
     val builder = Show.newBuilder
@@ -15,6 +17,6 @@ package object serialization {
   def serializeBinary(defns: Seq[Defn], buffer: ByteBuffer): Unit =
     (new BinarySerializer(buffer)).serialize(defns)
 
-  def deserializeBinary(buffer: ByteBuffer): Seq[Defn] =
-    (new BinaryDeserializer(buffer)).deserialize()
+  def deserializeBinary(buffer: ByteBuffer)(implicit scope: Scope): Seq[Defn] =
+    (new BinaryDeserializer(buffer, scope)).deserialize()
 }
