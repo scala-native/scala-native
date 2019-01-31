@@ -11,7 +11,7 @@ import scala.scalanative.util.Scope
 final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
   import buffer._
 
-  private val header: Map[Global, Int] = {
+  private val header: List[(Global, Int)] = {
     buffer.position(0)
 
     val magic    = getInt
@@ -24,19 +24,25 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
       "Can't read binary-incompatible version of NIR."
     )
 
-    val pairs = getSeq((getGlobal, getInt))
-    val map   = pairs.toMap
-    map
+    
+    var i: Int       = 1
+    val end          = getInt
+    var seq: List[(Global, Int)] = Nil
+    while (i <= end) {
+      seq = (getGlobal, getInt) :: seq
+      i += 1
+    }
+    seq
   }
 
-  final def globals: Set[Global] = header.keySet
+  //final def globals: Set[Global] = header.keySet
 
   final def deserialize(): Seq[Defn] = {
-    val allDefns = mutable.UnrolledBuffer.empty[Defn]
+    var allDefns = List.empty[Defn]
     header.foreach {
       case (g, offset) =>
         buffer.position(offset)
-        allDefns += getDefn
+        allDefns ::= getDefn
     }
     scope.close()
     allDefns
