@@ -4,7 +4,7 @@ package nir
 import scala.language.implicitConversions
 
 final class Sig(val mangle: String) {
-  final def toProxy: Sig =
+  final lazy val toProxy: Sig =
     if (isMethod) {
       val Sig.Method(id, types) = this.unmangled
       Sig.Proxy(id, types.init).mangled
