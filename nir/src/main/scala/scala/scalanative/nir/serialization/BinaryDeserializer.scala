@@ -9,7 +9,6 @@ import scalanative.nir.serialization.{Tags => T}
 import scala.scalanative.util.Scope
 
 final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
-  private val sharedArr = new Array[Byte](512)
   import buffer._
 
   private val header: Map[Global, Int] = {
@@ -82,25 +81,23 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
   private def getString(): String = {
     import scala.scalanative.io.internedStrings
 
-    def read(
-        buffer: ByteBuffer,
-        arr: Array[Byte],
-        offset: Int,
-        length: Int,
-        lookahead: Int
-    ): Array[Byte] = {
-      if (length <= lookahead) {
-        buffer.get(arr, offset, length)
-        arr
+    val length = getInt
+    val arr = {
+      if (length <= 128) {
+          buffer.get(BinaryDeserializer.sharedArr128, 0, length)
+          BinaryDeserializer.sharedArr128
+      } else if (length <= 256) {
+          buffer.get(BinaryDeserializer.sharedArr256, 0, length)
+          BinaryDeserializer.sharedArr256
+      } else if (length <= 512) {
+          buffer.get(BinaryDeserializer.sharedArr512, 0, length)
+          BinaryDeserializer.sharedArr512
       } else {
-        val arr = new Array[Byte](length)
-        buffer.get(arr)
-        arr
+          buffer.get(BinaryDeserializer.sharedArr4096, 0, length)
+          BinaryDeserializer.sharedArr4096
       }
     }
 
-    val length = getInt
-    val arr = read(buffer, sharedArr, 0, length, 512)
     val string = new String(arr, 0, length, "UTF-8")
 
     val ref = internedStrings.get(string)
@@ -340,4 +337,11 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
     case T.StringVal  => Val.String(getString)
     case T.VirtualVal => Val.Virtual(getLong)
   }
+}
+
+object BinaryDeserializer {
+  private[serialization] val sharedArr128 = new Array[Byte](128)
+  private[serialization] val sharedArr256 = new Array[Byte](256)
+  private[serialization] val sharedArr512 = new Array[Byte](512)
+  private[serialization] val sharedArr4096 = new Array[Byte](4096)
 }
