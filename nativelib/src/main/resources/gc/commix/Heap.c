@@ -4,6 +4,7 @@
 #include "Heap.h"
 #include "Log.h"
 #include "Allocator.h"
+#include "LargeAllocator.h"
 #include "Marker.h"
 #include "State.h"
 #include "utils/MathUtils.h"
@@ -203,125 +204,13 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     pthread_mutex_init(&heap->sweep.growMutex, NULL);
 }
 
-word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
-
-    assert(size % ALLOCATION_ALIGNMENT == 0);
-    assert(size >= MIN_BLOCK_SIZE);
-
-    Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
-    if (object != NULL) {
-done:
-        assert(object != NULL);
-        assert(Heap_IsWordInHeap(heap, (word_t *)object));
-        return (word_t *)object;
-}
-
-    if (!Sweeper_IsSweepDone(heap)) {
-        object = Sweeper_LazySweepLarge(heap, size);
-        if (object != NULL)
-            goto done;
-    }
-
-    Heap_Collect(heap);
-
-    object = LargeAllocator_GetBlock(&largeAllocator, size);
-    if (object != NULL)
-        goto done;
-
-    if (!Sweeper_IsSweepDone(heap)) {
-        object = Sweeper_LazySweepLarge(heap, size);
-        if (object != NULL)
-            goto done;
-    }
-
-    size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
-    uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
-    Heap_Grow(heap, pow2increment);
-
-    object = LargeAllocator_GetBlock(&largeAllocator, size);
-
-    goto done;
-}
-
-NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
-    Object *object = (Object *) Allocator_Alloc(&allocator, size);
-
-    if (object != NULL) {
-done:
-        assert(Heap_IsWordInHeap(heap, (word_t *)object));
-        assert(object != NULL);
-        ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, (word_t *)object);
-#ifdef DEBUG_ASSERT
-        ObjectMeta_AssertIsValidAllocation(objectMeta, size);
-#endif
-        ObjectMeta_SetAllocated(objectMeta);
-        return (word_t *)object;
-    }
-
-    if (!Sweeper_IsSweepDone(heap)) {
-        object = Sweeper_LazySweep(heap, size);
-
-        if (object != NULL)
-            goto done;
-    }
-
-    Heap_Collect(heap);
-    object = (Object *) Allocator_Alloc(&allocator, size);
-
-    if (object != NULL)
-        goto done;
-
-    if (!Sweeper_IsSweepDone(heap)) {
-        object = Sweeper_LazySweep(heap, size);
-
-        if (object != NULL)
-            goto done;
-    }
-
-    // A small object can always fit in a single free block
-    // because it is no larger than 8K while the block is 32K.
-    Heap_Grow(heap, 1);
-    object = (Object *) Allocator_Alloc(&allocator, size);
-
-    goto done;
-}
-
-INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
-    assert(size % ALLOCATION_ALIGNMENT == 0);
-    assert(size < MIN_BLOCK_SIZE);
-
-    word_t *start = allocator.cursor;
-    word_t *end = (word_t *)((uint8_t *)start + size);
-
-    // Checks if the end of the block overlaps with the limit
-    if (end >= allocator.limit) {
-        return Heap_allocSmallSlow(heap, size);
-    }
-
-    allocator.cursor = end;
-
-    memset(start, 0, size);
-
-    Object *object = (Object *)start;
-    ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, (word_t *)object);
-#ifdef DEBUG_ASSERT
-    ObjectMeta_AssertIsValidAllocation(objectMeta, size);
-#endif
-    ObjectMeta_SetAllocated(objectMeta);
-
-    __builtin_prefetch(object + 36, 0, 3);
-
-    assert(Heap_IsWordInHeap(heap, (word_t *)object));
-    return (word_t *)object;
-}
-
 word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
     assert(objectSize % ALLOCATION_ALIGNMENT == 0);
 
     if (objectSize >= LARGE_BLOCK_SIZE) {
-        return Heap_AllocLarge(heap, objectSize);
+        return LargeAllocator_AllocLarge(heap, objectSize);
     } else {
-        return Heap_AllocSmall(heap, objectSize);
+        return Allocator_AllocSmall(heap, objectSize);
     }
 }
 

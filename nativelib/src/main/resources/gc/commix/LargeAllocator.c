@@ -4,6 +4,8 @@
 #include "LargeAllocator.h"
 #include "utils/MathUtils.h"
 #include "Object.h"
+#include "State.h"
+#include "Sweeper.h"
 #include "Log.h"
 #include "headers/ObjectHeader.h"
 
@@ -63,6 +65,12 @@ void LargeAllocator_Init(LargeAllocator *allocator,
     }
 }
 
+void LargeAllocator_Clear(LargeAllocator *allocator) {
+    for (int i = 0; i < FREE_LIST_COUNT; i++) {
+        LargeAllocator_freeListInit(&allocator->freeLists[i]);
+    }
+}
+
 void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size) {
     assert(total_block_size >= MIN_BLOCK_SIZE);
@@ -92,7 +100,7 @@ static inline Chunk *LargeAllocator_getChunkForSize(LargeAllocator *allocator,
     return NULL;
 }
 
-Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
+word_t *LargeAllocator_getBlock(LargeAllocator *allocator,
                                 size_t requestedBlockSize) {
     size_t actualBlockSize =
         MathUtils_RoundToNextMultiple(requestedBlockSize, MIN_BLOCK_SIZE);
@@ -136,15 +144,91 @@ Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
     ObjectMeta_AssertIsValidAllocation(objectMeta, actualBlockSize);
 #endif
     ObjectMeta_SetAllocated(objectMeta);
-    Object *object = (Object *)chunk;
+    word_t *object = (word_t *)chunk;
     memset(object, 0, actualBlockSize);
     return object;
 }
 
-void LargeAllocator_Clear(LargeAllocator *allocator) {
-    for (int i = 0; i < FREE_LIST_COUNT; i++) {
-        LargeAllocator_freeListInit(&allocator->freeLists[i]);
+INLINE
+word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
+    word_t *object = NULL;
+#ifdef DEBUG_PRINT
+    uint32_t increment =
+        (uint32_t)MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
+    printf("Sweeper_LazySweepLarge (%" PRIu32 ") => %" PRIu32 "\n", size,
+           increment);
+    fflush(stdout);
+#endif
+    // lazy sweep will happen
+#ifdef ENABLE_GC_STATS
+    uint64_t start_ns, end_ns;
+    Stats *stats = heap->stats;
+    if (stats != NULL) {
+        start_ns = scalanative_nano_time();
     }
+#endif
+    // mark as active
+    heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
+    while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
+        Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
+                      LAZY_SWEEP_MIN_BATCH);
+        object = LargeAllocator_getBlock(&largeAllocator, size);
+    }
+    // mark as inactive
+    heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
+    while (object == NULL && !Sweeper_IsSweepDone(heap)) {
+        object = LargeAllocator_getBlock(&largeAllocator, size);
+        if (object == NULL) {
+            sched_yield();
+        }
+    }
+#ifdef ENABLE_GC_STATS
+    if (stats != NULL) {
+        end_ns = scalanative_nano_time();
+        Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
+    }
+#endif
+    return object;
+}
+
+word_t *LargeAllocator_AllocLarge(Heap *heap, uint32_t size) {
+
+    assert(size % ALLOCATION_ALIGNMENT == 0);
+    assert(size >= MIN_BLOCK_SIZE);
+
+    word_t *object = LargeAllocator_getBlock(&largeAllocator, size);
+    if (object != NULL) {
+done:
+        assert(object != NULL);
+        assert(Heap_IsWordInHeap(heap, (word_t *)object));
+        return object;
+}
+
+    if (!Sweeper_IsSweepDone(heap)) {
+        object = LargeAllocator_lazySweep(heap, size);
+        if (object != NULL)
+            goto done;
+    }
+
+    Heap_Collect(heap);
+
+    object = LargeAllocator_getBlock(&largeAllocator, size);
+    if (object != NULL)
+        goto done;
+
+    if (!Sweeper_IsSweepDone(heap)) {
+        object = LargeAllocator_lazySweep(heap, size);
+        if (object != NULL)
+            goto done;
+    }
+
+    size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
+    uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
+    Heap_Grow(heap, pow2increment);
+
+    object = LargeAllocator_getBlock(&largeAllocator, size);
+
+    goto done;
 }
 
 uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,

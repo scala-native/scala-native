@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include "Allocator.h"
+#include "State.h"
+#include "Sweeper.h"
 #include <stdio.h>
 #include <memory.h>
 
@@ -95,7 +97,7 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
 /**
  * Allocation fast path, uses the cursor and limit.
  */
-INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
+INLINE word_t *Allocator_alloc(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
 
@@ -109,7 +111,7 @@ INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
         } else {
             // Otherwise try to get a new line.
             if (Allocator_getNextLine(allocator)) {
-                return Allocator_Alloc(allocator, size);
+                return Allocator_alloc(allocator, size);
             }
 
             return NULL;
@@ -213,6 +215,112 @@ bool Allocator_newBlock(Allocator *allocator) {
     allocator->blockStart = blockStart;
 
     return true;
+}
+
+INLINE
+word_t *Allocator_lazySweep(Heap *heap, uint32_t size) {
+    word_t *object = NULL;
+#ifdef ENABLE_GC_STATS
+    uint64_t start_ns, end_ns;
+    Stats *stats = heap->stats;
+    if (stats != NULL) {
+        start_ns = scalanative_nano_time();
+    }
+#endif
+    // mark as active
+    heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
+    while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
+        Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
+                      LAZY_SWEEP_MIN_BATCH);
+        object = Allocator_alloc(&allocator, size);
+    }
+    // mark as inactive
+    heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
+    while (object == NULL && !Sweeper_IsSweepDone(heap)) {
+        object = Allocator_alloc(&allocator, size);
+        if (object == NULL) {
+            sched_yield();
+        }
+    }
+#ifdef ENABLE_GC_STATS
+    if (stats != NULL) {
+        end_ns = scalanative_nano_time();
+        Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
+    }
+#endif
+    return object;
+}
+
+NOINLINE word_t *Allocator_allocSmallSlow(Heap *heap, uint32_t size) {
+    word_t *object = Allocator_alloc(&allocator, size);
+
+    if (object != NULL) {
+done:
+        assert(Heap_IsWordInHeap(heap, object));
+        assert(object != NULL);
+        ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, object);
+#ifdef DEBUG_ASSERT
+        ObjectMeta_AssertIsValidAllocation(objectMeta, size);
+#endif
+        ObjectMeta_SetAllocated(objectMeta);
+        return object;
+    }
+
+    if (!Sweeper_IsSweepDone(heap)) {
+        object = Allocator_lazySweep(heap, size);
+
+        if (object != NULL)
+            goto done;
+    }
+
+    Heap_Collect(heap);
+    object = Allocator_alloc(&allocator, size);
+
+    if (object != NULL)
+        goto done;
+
+    if (!Sweeper_IsSweepDone(heap)) {
+        object = Allocator_lazySweep(heap, size);
+
+        if (object != NULL)
+            goto done;
+    }
+
+    // A small object can always fit in a single free block
+    // because it is no larger than 8K while the block is 32K.
+    Heap_Grow(heap, 1);
+    object = Allocator_alloc(&allocator, size);
+
+    goto done;
+}
+
+INLINE word_t *Allocator_AllocSmall(Heap *heap, uint32_t size) {
+    assert(size % ALLOCATION_ALIGNMENT == 0);
+    assert(size < MIN_BLOCK_SIZE);
+
+    word_t *start = allocator.cursor;
+    word_t *end = (word_t *)((uint8_t *)start + size);
+
+    // Checks if the end of the block overlaps with the limit
+    if (end >= allocator.limit) {
+        return Allocator_allocSmallSlow(heap, size);
+    }
+
+    allocator.cursor = end;
+
+    memset(start, 0, size);
+
+    word_t *object = start;
+    ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, object);
+#ifdef DEBUG_ASSERT
+    ObjectMeta_AssertIsValidAllocation(objectMeta, size);
+#endif
+    ObjectMeta_SetAllocated(objectMeta);
+
+    __builtin_prefetch(object + 36, 0, 3);
+
+    assert(Heap_IsWordInHeap(heap, object));
+    return object;
 }
 
 uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,

@@ -9,8 +9,6 @@
 void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
                    uint32_t maxCount);
 void Sweeper_LazyCoalesce(Heap *heap, Stats *stats);
-Object *Sweeper_LazySweep(Heap *heap, uint32_t size);
-Object *Sweeper_LazySweepLarge(Heap *heap, uint32_t size);
 void Sweeper_SweepDone(Heap *heap, Stats *stats);
 
 static inline bool Sweeper_IsCoalescingDone(Heap *heap) {
