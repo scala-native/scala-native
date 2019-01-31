@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.codegen.Metadata
 
-class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
+final class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val unavailable = mutable.Set.empty[Global]
   val loaded      = mutable.Map.empty[Global, mutable.Map[Global, Defn]]
   val enqueued    = mutable.Set.empty[Global]
