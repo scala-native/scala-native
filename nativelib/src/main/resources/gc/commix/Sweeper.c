@@ -7,40 +7,41 @@
 
 /*
 
-Sweeper implements concurrent sweeping by coordinating
-lazy sweeper on the mutator thread with zero or more concurrent sweepers on GC threads.
-SCALANATIVE_GC_THREADS=0 turns it into a lazy sweeper.
+Sweeper implements concurrent sweeping by coordinating lazy sweeper on the
+mutator thread with one or more concurrent sweepers on GC threads.
 
 After the mark is done the concurrent sweepers are started.
 Each takes batch of SWEEP_BATCH_SIZE blocks using the `heap->sweep.cursor`.
-If the mutator thread fails to allocate if will sweep a batch of LAZY_SWEEP_MIN_BATCH blocks.
-This will speed up sweeping when allocation outpaces sweeping.
+If the mutator thread fails to allocate if will sweep a batch of
+LAZY_SWEEP_MIN_BATCH blocks. This will speed up sweeping when allocation outpaces
+sweeping.
 
-Sweeper calls Allocator_Sweep and LargeAllocator_Sweep they update their internal structures that
-relate to partially free blocks(recycledBlocks in Allocator and freeLists in LargeAllocator).
-If there is a superblock that crosses the batch boundary, it is handled in the batch where it starts.
+Sweeper calls Allocator_Sweep and LargeAllocator_Sweep they update their
+internal structures that relate to partially free blocks
+(recycledBlocks in Allocator and freeLists in LargeAllocator).
+If there is a superblock that crosses the batch boundary,
+it is handled in the batch where it starts.
 Sweeper finds free superblocks (i.e. range of free blocks) within its batch.
 
-If the Sweeper would immediately return the free superblocks to BlockAllocator then we couldn't allocate anything
-bigger than a batch. Therefore the free blocks at the beginning and the end of the batch are marked as `block_coalesce_me`.
-There will be coalesced into bigger blocks by `Sweeper_LazyCoalesce`. Other free superblocks CAN be immediately
-returned to BlockAllocator because their size is already fixed by other non-free blocks around them.
+If the Sweeper would immediately return the free superblocks to BlockAllocator
+then we couldn't allocate anything bigger than a batch. Therefore the free blocks
+at the beginning and the end of the batch are marked as `block_coalesce_me`.
+There will be coalesced into bigger blocks by `Sweeper_LazyCoalesce`.
+Other free superblocks CAN be immediately returned to BlockAllocator because
+their size is already fixed by other non-free blocks around them.
 
-Coalescing could be done in single pass over the heap once all the batches are swept. However, then large areas
-of free blocks wouldn't be available for allocation.
-Instead coalescing is done incrementally - until we reach a batch that has not been swept.
-Coalescing progress is tracked by `heap->sweep.coalesceDone` - coalescing was done up to this point.
+Coalescing could be done in single pass over the heap once all the batches
+are swept. However, then large areas of free blocks wouldn't be available
+for allocation. Instead coalescing is done incrementally - until we reach a
+batch that has not been swept. Coalescing progress is tracked by
+`heap->sweep.coalesceDone` - coalescing was done up to this point.
 Each sweeper has cursorDone (even the lazy sweeper) to track how far have we swept.
 
-Coalescing is done incrementally - `Sweeper_LazyCoalesce` is called after each batch is swept.
-There can be no more than 1 thread coalescing at a time. If a thread notices a coalescing is in progress it
-does not interfere and does not retry until it tries to sweep another batch.
-Coalescing might take a long time and lead to longer GC pauses and inconsistent performance.
-If at all possible (i.e. SCALANATIVE_GC_THREADS > 0), we avoid running it on the mutator thread.
+Coalescing is done incrementally - `Sweeper_LazyCoalesce` is called on the 0-th
+GC thread after each batch is swept.
 
-When the coalescing reaches the end of heap sweeping is done. After sweeping `Sweeper_sweepDone` is called
-on the mutator thread. This is done to avoid synchronization in the `Heap_Grow`. It is only called from the mutator
-thread, therefore no synchronization is needed.
+When the coalescing reaches the end of heap `Sweeper_SweepDone` is called on the
+0-th gc thread. Then the sweeping is done
 
 EXAMPLE:
 SWEEP_BATCH_SIZE=3, there are 9 blocks in total and 2 threads
