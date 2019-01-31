@@ -208,9 +208,9 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
     assert(objectSize % ALLOCATION_ALIGNMENT == 0);
 
     if (objectSize >= LARGE_BLOCK_SIZE) {
-        return LargeAllocator_AllocLarge(heap, objectSize);
+        return LargeAllocator_Alloc(heap, objectSize);
     } else {
-        return Allocator_AllocSmall(heap, objectSize);
+        return Allocator_Alloc(heap, objectSize);
     }
 }
 

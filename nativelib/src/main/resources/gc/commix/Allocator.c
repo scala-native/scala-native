@@ -97,7 +97,7 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
 /**
  * Allocation fast path, uses the cursor and limit.
  */
-INLINE word_t *Allocator_alloc(Allocator *allocator, size_t size) {
+INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
 
@@ -111,7 +111,7 @@ INLINE word_t *Allocator_alloc(Allocator *allocator, size_t size) {
         } else {
             // Otherwise try to get a new line.
             if (Allocator_getNextLine(allocator)) {
-                return Allocator_alloc(allocator, size);
+                return Allocator_tryAlloc(allocator, size);
             }
 
             return NULL;
@@ -232,12 +232,12 @@ word_t *Allocator_lazySweep(Heap *heap, uint32_t size) {
     while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
         Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
                       LAZY_SWEEP_MIN_BATCH);
-        object = Allocator_alloc(&allocator, size);
+        object = Allocator_tryAlloc(&allocator, size);
     }
     // mark as inactive
     heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
     while (object == NULL && !Sweeper_IsSweepDone(heap)) {
-        object = Allocator_alloc(&allocator, size);
+        object = Allocator_tryAlloc(&allocator, size);
         if (object == NULL) {
             sched_yield();
         }
@@ -251,8 +251,8 @@ word_t *Allocator_lazySweep(Heap *heap, uint32_t size) {
     return object;
 }
 
-NOINLINE word_t *Allocator_allocSmallSlow(Heap *heap, uint32_t size) {
-    word_t *object = Allocator_alloc(&allocator, size);
+NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
+    word_t *object = Allocator_tryAlloc(&allocator, size);
 
     if (object != NULL) {
 done:
@@ -274,7 +274,7 @@ done:
     }
 
     Heap_Collect(heap);
-    object = Allocator_alloc(&allocator, size);
+    object = Allocator_tryAlloc(&allocator, size);
 
     if (object != NULL)
         goto done;
@@ -289,12 +289,12 @@ done:
     // A small object can always fit in a single free block
     // because it is no larger than 8K while the block is 32K.
     Heap_Grow(heap, 1);
-    object = Allocator_alloc(&allocator, size);
+    object = Allocator_tryAlloc(&allocator, size);
 
     goto done;
 }
 
-INLINE word_t *Allocator_AllocSmall(Heap *heap, uint32_t size) {
+INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size < MIN_BLOCK_SIZE);
 
@@ -303,7 +303,7 @@ INLINE word_t *Allocator_AllocSmall(Heap *heap, uint32_t size) {
 
     // Checks if the end of the block overlaps with the limit
     if (end >= allocator.limit) {
-        return Allocator_allocSmallSlow(heap, size);
+        return Allocator_allocSlow(heap, size);
     }
 
     allocator.cursor = end;
