@@ -9,6 +9,7 @@ import scalanative.nir.serialization.{Tags => T}
 import scala.scalanative.util.Scope
 
 final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
+  private val sharedArr = new Array[Byte](512)
   import buffer._
 
   private val header: Map[Global, Int] = {
@@ -19,8 +20,10 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
     val revision = getInt
 
     assert(magic == Versions.magic, "Can't read non-NIR file.")
-    assert(compat == Versions.compat && revision <= Versions.revision,
-           "Can't read binary-incompatible version of NIR.")
+    assert(
+      compat == Versions.compat && revision <= Versions.revision,
+      "Can't read binary-incompatible version of NIR."
+    )
 
     val pairs = getSeq((getGlobal, getInt))
     val map   = pairs.toMap
@@ -41,12 +44,12 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
   }
 
   private def getSeq[T](getT: => T): Seq[T] = {
-    var i: Int = 1
-    val end = getInt
+    var i: Int       = 1
+    val end          = getInt
     var seq: List[T] = Nil
     while (i <= end) {
-        seq = getT :: seq
-        i += 1
+      seq = getT :: seq
+      i += 1
     }
     seq.reverse
   }
@@ -55,36 +58,56 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
     if (get == 0) None else Some(getT)
 
   private def getInts(): Seq[Int] = {
-    var i: Int = 1
-    val end = getInt
+    var i: Int         = 1
+    val end            = getInt
     var seq: List[Int] = Nil
     while (i <= end) {
-        seq = getInt :: seq
-        i += 1
+      seq = getInt :: seq
+      i += 1
     }
     seq.reverse
   }
 
   private def getStrings(): Seq[String] = {
-    var i: Int = 1
-    val end = getInt
+    var i: Int            = 1
+    val end               = getInt
     var seq: List[String] = Nil
     while (i <= end) {
-        seq = getString :: seq
-        i += 1
+      seq = getString :: seq
+      i += 1
     }
     seq.reverse
   }
 
   private def getString(): String = {
     import scala.scalanative.io.internedStrings
-    val arr = new Array[Byte](getInt)
-    get(arr)
-    val s = new String(arr, "UTF-8")
-    val ref = internedStrings.get(s)
+
+    def read(
+        buffer: ByteBuffer,
+        arr: Array[Byte],
+        offset: Int,
+        length: Int,
+        lookahead: Int
+    ): Array[Byte] = {
+      if (length <= lookahead) {
+        buffer.get(arr, offset, length)
+        arr
+      } else {
+        val arr = new Array[Byte](length)
+        buffer.get(arr)
+        arr
+      }
+    }
+
+    val length = getInt
+    val arr = read(buffer, sharedArr, 0, length, 512)
+    val string = new String(arr, 0, length, "UTF-8")
+
+    val ref = internedStrings.get(string)
     if (ref == null) {
-      internedStrings.put(s, new java.lang.ref.WeakReference(s))
-      s
+      val ref = new java.lang.ref.WeakReference(string)
+      internedStrings.put(string, ref)
+      string
     } else {
       ref.get()
     }
