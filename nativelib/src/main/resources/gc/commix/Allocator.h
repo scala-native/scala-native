@@ -9,6 +9,7 @@
 #include "metadata/ObjectMeta.h"
 #include "BlockAllocator.h"
 #include "SweepResult.h"
+#include "Heap.h"
 
 typedef struct {
     // The fields here are sorted by how often it is accessed.
@@ -42,7 +43,7 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
                     word_t *heapStart);
 bool Allocator_CanInitCursors(Allocator *allocator);
 void Allocator_Clear(Allocator *allocator);
-word_t *Allocator_Alloc(Allocator *allocator, size_t size);
+word_t *Allocator_AllocSmall(Heap *heap, uint32_t objectSize);
 uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *block,
                          word_t *blockStart, LineMeta *lineMetas, SweepResult *result);
 

@@ -8,6 +8,7 @@
 #include "../GCTypes.h"
 #include "BlockRange.h"
 #include "../Log.h"
+#include "../headers/ObjectHeader.h"
 
 typedef Object *Stack_Type;
 

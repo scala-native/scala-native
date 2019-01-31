@@ -6,6 +6,7 @@
 #include "Constants.h"
 #include "headers/ObjectHeader.h"
 #include "BlockAllocator.h"
+#include "Heap.h"
 
 #define FREE_LIST_COUNT                                                        \
     ((1UL << (BLOCK_SIZE_BITS - LARGE_OBJECT_MIN_SIZE_BITS)) - 1)
@@ -27,8 +28,7 @@ void LargeAllocator_Init(LargeAllocator *allocator,
                          word_t *blockMetaStart, word_t *heapStart);
 void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size);
-Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
-                                size_t requestedBlockSize);
+word_t *LargeAllocator_AllocLarge(Heap *heap, uint32_t objectSize);
 void LargeAllocator_Clear(LargeAllocator *allocator);
 uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
                               word_t *blockStart, BlockMeta *batchLimit);

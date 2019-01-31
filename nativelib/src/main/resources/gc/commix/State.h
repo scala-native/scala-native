@@ -2,6 +2,9 @@
 #define IMMIX_STATE_H
 
 #include "Heap.h"
+#include "Allocator.h"
+#include "LargeAllocator.h"
+#include "BlockAllocator.h"
 
 extern Heap heap;
 extern Allocator allocator;

@@ -2,8 +2,6 @@
 #define IMMIX_HEAP_H
 
 #include "GCTypes.h"
-#include "Allocator.h"
-#include "LargeAllocator.h"
 #include "datastructures/Bytemap.h"
 #include "datastructures/BlockRange.h"
 #include "datastructures/GreyPacket.h"
@@ -88,8 +86,7 @@ static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
 
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 word_t *Heap_Alloc(Heap *heap, uint32_t objectSize);
-word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize);
-word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize);
+
 
 void Heap_Collect(Heap *heap);
 void Heap_Recycle(Heap *heap);
