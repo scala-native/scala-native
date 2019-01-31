@@ -71,7 +71,7 @@ void LargeAllocator_Clear(LargeAllocator *allocator) {
     }
 }
 
-void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
+void LargeAllocator_addChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size) {
     assert(total_block_size >= MIN_BLOCK_SIZE);
     assert(total_block_size < BLOCK_TOTAL_SIZE);
@@ -100,7 +100,7 @@ static inline Chunk *LargeAllocator_getChunkForSize(LargeAllocator *allocator,
     return NULL;
 }
 
-word_t *LargeAllocator_getBlock(LargeAllocator *allocator,
+word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
                                 size_t requestedBlockSize) {
     size_t actualBlockSize =
         MathUtils_RoundToNextMultiple(requestedBlockSize, MIN_BLOCK_SIZE);
@@ -136,7 +136,7 @@ word_t *LargeAllocator_getBlock(LargeAllocator *allocator,
             LargeAllocator_chunkAddOffset(chunk, actualBlockSize);
 
         size_t remainingChunkSize = chunkSize - actualBlockSize;
-        LargeAllocator_AddChunk(allocator, remainingChunk, remainingChunkSize);
+        LargeAllocator_addChunk(allocator, remainingChunk, remainingChunkSize);
     }
 
     ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, (word_t *)chunk);
@@ -172,12 +172,12 @@ word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
     while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
         Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
                       LAZY_SWEEP_MIN_BATCH);
-        object = LargeAllocator_getBlock(&largeAllocator, size);
+        object = LargeAllocator_tryAlloc(&largeAllocator, size);
     }
     // mark as inactive
     heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
     while (object == NULL && !Sweeper_IsSweepDone(heap)) {
-        object = LargeAllocator_getBlock(&largeAllocator, size);
+        object = LargeAllocator_tryAlloc(&largeAllocator, size);
         if (object == NULL) {
             sched_yield();
         }
@@ -191,12 +191,12 @@ word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
     return object;
 }
 
-word_t *LargeAllocator_AllocLarge(Heap *heap, uint32_t size) {
+word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
 
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size >= MIN_BLOCK_SIZE);
 
-    word_t *object = LargeAllocator_getBlock(&largeAllocator, size);
+    word_t *object = LargeAllocator_tryAlloc(&largeAllocator, size);
     if (object != NULL) {
 done:
         assert(object != NULL);
@@ -212,7 +212,7 @@ done:
 
     Heap_Collect(heap);
 
-    object = LargeAllocator_getBlock(&largeAllocator, size);
+    object = LargeAllocator_tryAlloc(&largeAllocator, size);
     if (object != NULL)
         goto done;
 
@@ -226,7 +226,7 @@ done:
     uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
     Heap_Grow(heap, pow2increment);
 
-    object = LargeAllocator_getBlock(&largeAllocator, size);
+    object = LargeAllocator_tryAlloc(&largeAllocator, size);
 
     goto done;
 }
@@ -292,7 +292,7 @@ uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
         } else {
             if (ObjectMeta_IsMarked(currentMeta)) {
                 size_t currentSize = (current - chunkStart) * WORD_SIZE;
-                LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart,
+                LargeAllocator_addChunk(allocator, (Chunk *)chunkStart,
                                         currentSize);
                 chunkStart = NULL;
             }
@@ -336,7 +336,7 @@ uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
         // handle the last chunk if any
         if (chunkStart != NULL) {
             size_t currentSize = (current - chunkStart) * WORD_SIZE;
-            LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart,
+            LargeAllocator_addChunk(allocator, (Chunk *)chunkStart,
                                     currentSize);
         }
     }

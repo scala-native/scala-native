@@ -43,7 +43,7 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
                     word_t *heapStart);
 bool Allocator_CanInitCursors(Allocator *allocator);
 void Allocator_Clear(Allocator *allocator);
-word_t *Allocator_AllocSmall(Heap *heap, uint32_t objectSize);
+word_t *Allocator_Alloc(Heap *heap, uint32_t objectSize);
 uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *block,
                          word_t *blockStart, LineMeta *lineMetas, SweepResult *result);
 

@@ -46,7 +46,7 @@ INLINE void *scalanative_alloc(void *info, size_t size) {
 INLINE void *scalanative_alloc_small(void *info, size_t size) {
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
-    void **alloc = (void **)Allocator_AllocSmall(&heap, size);
+    void **alloc = (void **)Allocator_Alloc(&heap, size);
     *alloc = info;
     return (void *)alloc;
 }
@@ -54,7 +54,7 @@ INLINE void *scalanative_alloc_small(void *info, size_t size) {
 INLINE void *scalanative_alloc_large(void *info, size_t size) {
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
-    void **alloc = (void **)LargeAllocator_AllocLarge(&heap, size);
+    void **alloc = (void **)LargeAllocator_Alloc(&heap, size);
     *alloc = info;
     return (void *)alloc;
 }
