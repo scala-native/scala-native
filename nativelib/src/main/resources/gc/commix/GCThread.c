@@ -258,20 +258,23 @@ INLINE void GCThread_JoinAll(Heap *heap) {
     }
 }
 
-void GCThread_WakeWorkers(Heap *heap, int toWake) {
+
+INLINE void GCThread_WakeMain(Heap *heap) {
+    sem_t *start0 = &heap->gcThreads.start0;
+    sem_post(start0);
+}
+
+INLINE void GCThread_WakeWorkers(Heap *heap, int toWake) {
     sem_t *start = &heap->gcThreads.start;
     for (int i = 0; i < toWake; i++) {
         sem_post(start);
     }
 }
 
-void GCThread_Wake(Heap *heap, int toWake) {
-    sem_t *start0 = &heap->gcThreads.start0;
+INLINE void GCThread_Wake(Heap *heap, int toWake) {
     sem_t *start = &heap->gcThreads.start;
     if (toWake > 0) {
-        sem_post(start0);
+        GCThread_WakeMain(heap);
     }
-    for (int i = 1; i < toWake; i++) {
-        sem_post(start);
-    }
+    GCThread_WakeWorkers(heap, toWake - 1);
 }
