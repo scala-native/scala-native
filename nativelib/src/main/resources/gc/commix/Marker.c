@@ -140,8 +140,9 @@ void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder, w
 
 void Marker_markRange(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket **outHolder, Bytemap *bytemap,
                       word_t **fields, size_t length) {
-    for (int i = 0; i < length; i++) {
-        word_t *field = fields[i];
+    word_t **limit = fields + length;
+    for (word_t **current = fields; current < limit; current++) {
+        word_t *field = *current;
         if (Heap_IsWordInHeap(heap, field)) {
             ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
             if (ObjectMeta_IsAllocated(fieldMeta)) {
@@ -203,9 +204,8 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket **ou
             // non-object arrays do not contain pointers
         } else {
             int64_t *ptr_map = object->rtti->refMapStruct;
-            int i = 0;
-            while (ptr_map[i] != LAST_FIELD_OFFSET) {
-                word_t *field = object->fields[ptr_map[i]];
+            for (int64_t *current = ptr_map; *current != LAST_FIELD_OFFSET; current++) {
+                word_t *field = object->fields[*current];
                 if (Heap_IsWordInHeap(heap, field)) {
                     ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
                     if (ObjectMeta_IsAllocated(fieldMeta)) {
@@ -213,7 +213,6 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket **ou
                                           fieldMeta);
                     }
                 }
-                ++i;
             }
         }
     }
@@ -343,8 +342,9 @@ void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder) {
     word_t **modules = &__modules;
     int nb_modules = __modules_size;
     Bytemap *bytemap = heap->bytemap;
-    for (int i = 0; i < nb_modules; i++) {
-        Object *object = (Object *)modules[i];
+    word_t **limit = modules + nb_modules;
+    for (word_t **current = modules; current < limit; current++) {
+        Object *object = (Object *) *current;
         if (Heap_IsWordInHeap(heap, (word_t *)object)) {
             // is within heap
             ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
