@@ -4,7 +4,7 @@
 #include "Marker.h"
 #include <semaphore.h>
 
-static inline void GCThread_mark0(Heap *heap, Stats *stats) {
+static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
 #ifdef ENABLE_GC_STATS
     uint64_t start_ns, end_ns;
     if (stats != NULL) {
@@ -83,7 +83,7 @@ static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
 #endif
 }
 
-static inline void GCThread_sweep0(GCThread *thread, Heap *heap, Stats *stats) {
+static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap, Stats *stats) {
     thread->sweep.cursorDone = 0;
 #ifdef ENABLE_GC_STATS
     uint64_t start_ns, end_ns;
@@ -114,7 +114,7 @@ static inline void GCThread_sweep0(GCThread *thread, Heap *heap, Stats *stats) {
 void *GCThread_loop(void *arg) {
     GCThread *thread = (GCThread *)arg;
     Heap *heap = thread->heap;
-    sem_t *start = &heap->gcThreads.start;
+    sem_t *start = &heap->gcThreads.startWorkers;
 #ifdef ENABLE_GC_STATS
     Stats *stats = thread->stats;
 #else
@@ -149,10 +149,10 @@ void *GCThread_loop(void *arg) {
     return NULL;
 }
 
-void *GCThread_loop0(void *arg) {
+void *GCThread_loopMaster(void *arg) {
     GCThread *thread = (GCThread *)arg;
     Heap *heap = thread->heap;
-    sem_t *start0 = &heap->gcThreads.start0;
+    sem_t *start = &heap->gcThreads.startMaster;
 #ifdef ENABLE_GC_STATS
     Stats *stats = thread->stats;
 #else
@@ -160,7 +160,7 @@ void *GCThread_loop0(void *arg) {
 #endif
     while (true) {
         thread->active = false;
-        sem_wait(start0);
+        sem_wait(start);
         // hard fence before proceeding with the next phase
         atomic_thread_fence(memory_order_seq_cst);
         thread->active = true;
@@ -170,10 +170,10 @@ void *GCThread_loop0(void *arg) {
             case gc_idle:
                 break;
             case gc_mark:
-                GCThread_mark0(heap, stats);
+                GCThread_markMaster(heap, stats);
                 break;
             case gc_sweep:
-                GCThread_sweep0(thread, heap, stats);
+                GCThread_sweepMaster(thread, heap, stats);
 #ifdef ENABLE_GC_STATS
                 if (stats != NULL) {
                     Stats_WriteToFile(stats);
@@ -196,7 +196,7 @@ void GCThread_Init(GCThread *thread, int id, Heap *heap, Stats *stats) {
     pthread_t self;
 
     if (id == 0) {
-        pthread_create(&self, NULL, GCThread_loop0, (void *)thread);
+        pthread_create(&self, NULL, GCThread_loopMaster, (void *)thread);
     } else {
         pthread_create(&self, NULL, GCThread_loop, (void *)thread);
     }
@@ -242,10 +242,10 @@ NOINLINE void GCThread_joinAllSlow(GCThread *gcThreads, int gcThreadCount) {
 INLINE void GCThread_JoinAll(Heap *heap) {
     // semaphore drain - make sure no new threads are started
     heap->gcThreads.phase = gc_idle;
-    sem_t *start0 = &heap->gcThreads.start0;
-    sem_t *start = &heap->gcThreads.start;
-    while (!sem_trywait(start0)){}
-    while (!sem_trywait(start)){}
+    sem_t *startMaster = &heap->gcThreads.startMaster;
+    sem_t *startWorkers = &heap->gcThreads.startWorkers;
+    while (!sem_trywait(startMaster)){}
+    while (!sem_trywait(startWorkers)){}
 
     int gcThreadCount = heap->gcThreads.count;
     GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
@@ -259,22 +259,20 @@ INLINE void GCThread_JoinAll(Heap *heap) {
 }
 
 
-INLINE void GCThread_WakeMain(Heap *heap) {
-    sem_t *start0 = &heap->gcThreads.start0;
-    sem_post(start0);
+INLINE void GCThread_WakeMaster(Heap *heap) {
+    sem_post(&heap->gcThreads.startMaster);
 }
 
 INLINE void GCThread_WakeWorkers(Heap *heap, int toWake) {
-    sem_t *start = &heap->gcThreads.start;
+    sem_t *startWorkers = &heap->gcThreads.startWorkers;
     for (int i = 0; i < toWake; i++) {
-        sem_post(start);
+        sem_post(startWorkers);
     }
 }
 
 INLINE void GCThread_Wake(Heap *heap, int toWake) {
-    sem_t *start = &heap->gcThreads.start;
     if (toWake > 0) {
-        GCThread_WakeMain(heap);
+        GCThread_WakeMaster(heap);
     }
     GCThread_WakeWorkers(heap, toWake - 1);
 }
