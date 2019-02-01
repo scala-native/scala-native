@@ -19,7 +19,7 @@ sealed abstract class Val {
     case Val.Double(_)            => Type.Double
     case Val.StructValue(vals)    => Type.StructValue(vals.map(_.ty))
     case Val.ArrayValue(ty, vals) => Type.ArrayValue(ty, vals.length)
-    case Val.Chars(s)             => Type.ArrayValue(Type.Byte, countBytes(s))
+    case v: Val.Chars             => Type.ArrayValue(Type.Byte, v.byteCount)
     case Val.Local(_, ty)         => ty
     case Val.Global(_, ty)        => ty
 
@@ -27,47 +27,6 @@ sealed abstract class Val {
     case Val.Const(_)   => Type.Ptr
     case Val.String(_)  => Rt.String
     case Val.Virtual(_) => Type.Virtual
-  }
-
-  private def countBytes(s: String): Int = {
-    import Character.isDigit
-
-    def malformed() =
-      throw new IllegalArgumentException("malformed C string: " + s)
-
-    // Subtracts from the length of the bytes for each escape sequence
-    // uses String, not Seq[Byte], but should be okay since we handle ASCII only
-    @tailrec def uncountEscapes(from: Int, accum: Int): Int =
-      s.indexOf('\\', from) match {
-        case -1 => accum
-        case idx if idx == s.length - 1 =>
-          malformed()
-        case idx =>
-          def isOct(c: Char): Boolean = isDigit(c) && c != '8' && c != '9'
-          def isHex(c: Char): Boolean =
-            isDigit(c) ||
-              c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
-              c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
-          s(idx + 1) match {
-            case d if isOct(d) =>
-              // octal ("\O", "\OO", "\OOO")
-              val digitNum = s.drop(idx + 1).take(3).takeWhile(isOct).length
-              uncountEscapes(idx + 1 + digitNum, accum - digitNum)
-            case 'x' =>
-              // hexademical ("\xH", "\xHH")
-              val digitNum = s.drop(idx + 2).takeWhile(isHex).length
-              // mimic clang, which reports compilation error against too many hex digits
-              if (digitNum >= 3)
-                malformed()
-              uncountEscapes(idx + 2 + digitNum, accum - 1 - digitNum)
-            // TODO: support unicode?
-            // case 'u' =>
-            // case 'U' =>
-            case _ =>
-              uncountEscapes(idx + 2, accum - 1)
-          }
-      }
-    uncountEscapes(0, s.getBytes.length + 1)
   }
 
   final def show: String = nir.Show(this)
@@ -167,9 +126,63 @@ object Val {
   }
   final case class StructValue(values: Seq[Val])                  extends Val
   final case class ArrayValue(elemty: nir.Type, values: Seq[Val]) extends Val
-  final case class Chars(value: java.lang.String)                 extends Val
-  final case class Local(name: nir.Local, valty: nir.Type)        extends Val
-  final case class Global(name: nir.Global, valty: nir.Type)      extends Val
+  final case class Chars(value: java.lang.String) extends Val {
+    lazy val byteCount: scala.Int = {
+      import Character.isDigit
+
+      def isOct(c: scala.Char): Boolean =
+        isDigit(c) && c != '8' && c != '9'
+      def isHex(c: scala.Char): Boolean =
+        isDigit(c) ||
+          c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
+          c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
+      def malformed() =
+        throw new IllegalArgumentException("malformed C string: " + value)
+
+      // Subtracts from the length of the bytes for each escape sequence
+      // uses String, not Seq[Byte], but should be okay since we handle ASCII only
+      val chars = value.toArray
+      var accum = chars.length + 1
+      var idx   = 0
+
+      while (idx < chars.length) {
+        if (chars(idx) == '\\') {
+          if (idx == chars.length - 1) {
+            malformed()
+          } else {
+            chars(idx + 1) match {
+              case d if isOct(d) =>
+                // octal ("\O", "\OO", "\OOO")
+                val digitNum =
+                  chars.drop(idx + 1).take(3).takeWhile(isOct).length
+                idx += digitNum
+                accum -= digitNum
+              case 'x' =>
+                // hexademical ("\xH", "\xHH")
+                val digitNum = chars.drop(idx + 2).takeWhile(isHex).length
+                // mimic clang, which reports compilation error against too many hex digits
+                if (digitNum >= 3) {
+                  malformed()
+                }
+                idx += digitNum + 1
+                accum -= digitNum + 1
+              // TODO: support unicode?
+              // case 'u' =>
+              // case 'U' =>
+              case _ =>
+                idx += 1
+                accum -= 1
+            }
+          }
+        }
+        idx += 1
+      }
+
+      accum
+    }
+  }
+  final case class Local(name: nir.Local, valty: nir.Type)   extends Val
+  final case class Global(name: nir.Global, valty: nir.Type) extends Val
 
   // high-level
   final case object Unit                           extends Val
