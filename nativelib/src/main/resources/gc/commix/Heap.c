@@ -286,8 +286,7 @@ void Heap_Collect(Heap *heap) {
     heap->gcThreads.phase = gc_mark;
     // make sure the gc phase is propagated
     atomic_thread_fence(memory_order_release);
-    // start main gc thread (0)
-    sem_post(&heap->gcThreads.start0);
+    GCThread_WakeMain(heap);
     while (!Marker_IsMarkDone(heap)) {
         Marker_Mark(heap, stats);
         if (!Marker_IsMarkDone(heap)) {

@@ -24,6 +24,7 @@ bool GCThread_AnyActive(Heap *heap);
 int GCThread_ActiveCount(Heap *heap);
 void GCThread_JoinAll(Heap *heap);
 void GCThread_Wake(Heap *heap, int toWake);
+void GCThread_WakeMain(Heap *heap);
 void GCThread_WakeWorkers(Heap *heap, int toWake);
 
 #endif // IMMIX_GCTHREAD_H
