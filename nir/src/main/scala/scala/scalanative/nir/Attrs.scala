@@ -66,7 +66,6 @@ object Attrs {
     var isDyn      = false
     var isStub     = false
     var isAbstract = false
-    val overrides  = mutable.UnrolledBuffer.empty[Global]
     val links      = mutable.UnrolledBuffer.empty[Attr.Link]
 
     attrs.foreach {

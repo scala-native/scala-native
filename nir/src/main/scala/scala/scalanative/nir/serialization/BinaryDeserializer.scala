@@ -24,9 +24,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
       "Can't read binary-incompatible version of NIR."
     )
 
-    
-    var i: Int       = 1
-    val end          = getInt
+    var i: Int                   = 1
+    val end                      = getInt
     var seq: List[(Global, Int)] = Nil
     while (i <= end) {
       seq = (getGlobal, getInt) :: seq
@@ -90,17 +89,17 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
     val length = getInt
     val arr = {
       if (length <= 128) {
-          buffer.get(BinaryDeserializer.sharedArr128, 0, length)
-          BinaryDeserializer.sharedArr128
+        buffer.get(BinaryDeserializer.sharedArr128, 0, length)
+        BinaryDeserializer.sharedArr128
       } else if (length <= 256) {
-          buffer.get(BinaryDeserializer.sharedArr256, 0, length)
-          BinaryDeserializer.sharedArr256
+        buffer.get(BinaryDeserializer.sharedArr256, 0, length)
+        BinaryDeserializer.sharedArr256
       } else if (length <= 512) {
-          buffer.get(BinaryDeserializer.sharedArr512, 0, length)
-          BinaryDeserializer.sharedArr512
+        buffer.get(BinaryDeserializer.sharedArr512, 0, length)
+        BinaryDeserializer.sharedArr512
       } else {
-          buffer.get(BinaryDeserializer.sharedArr4096, 0, length)
-          BinaryDeserializer.sharedArr4096
+        buffer.get(BinaryDeserializer.sharedArr4096, 0, length)
+        BinaryDeserializer.sharedArr4096
       }
     }
 
@@ -118,7 +117,34 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
 
   private def getBool(): Boolean = get != 0
 
-  private def getAttrs(): Attrs = Attrs.fromSeq(getSeq(getAttr))
+  private def getAttrs(): Attrs = {
+    // Inlined because overhead of creating sequence + using `Attrs.fromSeq` is high
+    import scala.scalanative.nir.Attr._
+    var inline     = Attrs.None.inline
+    var isExtern   = false
+    var isDyn      = false
+    var isStub     = false
+    var isAbstract = false
+    var links      = List.empty[Attr.Link]
+
+    var i: Int          = 1
+    val end             = getInt
+    var seq: List[Attr] = Nil
+    while (i <= end) {
+      getAttr match {
+        case attr: Inline    => inline = attr
+        case Extern          => isExtern = true
+        case Dyn             => isDyn = true
+        case Stub            => isStub = true
+        case link: Attr.Link => links ::= link
+        case Abstract        => isAbstract = true
+      }
+      i += 1
+    }
+
+    new Attrs(inline, isExtern, isDyn, isStub, isAbstract, links)
+  }
+
   private def getAttr(): Attr = getInt match {
     case T.MayInlineAttr    => Attr.MayInline
     case T.InlineHintAttr   => Attr.InlineHint
@@ -346,8 +372,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
 }
 
 object BinaryDeserializer {
-  private[serialization] val sharedArr128 = new Array[Byte](128)
-  private[serialization] val sharedArr256 = new Array[Byte](256)
-  private[serialization] val sharedArr512 = new Array[Byte](512)
+  private[serialization] val sharedArr128  = new Array[Byte](128)
+  private[serialization] val sharedArr256  = new Array[Byte](256)
+  private[serialization] val sharedArr512  = new Array[Byte](512)
   private[serialization] val sharedArr4096 = new Array[Byte](4096)
 }
