@@ -267,7 +267,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
       case g =>
         val top = Global.Top(getString)
         g match {
-          case T.TopGlobal => top
+          case T.TopGlobal    => top
           case T.MemberGlobal => Global.Member(top, getSig)
         }
     }
@@ -324,53 +324,65 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
   private def getParam(): Val.Local       = Val.Local(getLocal, getType)
 
   private def getTypes(): Seq[Type] = getSeq(getType)
-  private def getType(): Type = getInt match {
-    case T.VarargType      => Type.Vararg
-    case T.PtrType         => Type.Ptr
-    case T.BoolType        => Type.Bool
-    case T.CharType        => Type.Char
-    case T.ByteType        => Type.Byte
-    case T.ShortType       => Type.Short
-    case T.IntType         => Type.Int
-    case T.LongType        => Type.Long
-    case T.FloatType       => Type.Float
-    case T.DoubleType      => Type.Double
-    case T.ArrayValueType  => Type.ArrayValue(getType, getInt)
-    case T.StructValueType => Type.StructValue(getTypes)
-    case T.FunctionType    => Type.Function(getTypes, getType)
+  private def getType(): Type = {
+    val kind = getInt
+    kind match {
+      case T.RefType => Type.Ref(getGlobal, getBool, getBool)
+      case otherKind =>
+        otherKind match {
+          case T.VarargType      => Type.Vararg
+          case T.PtrType         => Type.Ptr
+          case T.BoolType        => Type.Bool
+          case T.CharType        => Type.Char
+          case T.ByteType        => Type.Byte
+          case T.ShortType       => Type.Short
+          case T.IntType         => Type.Int
+          case T.LongType        => Type.Long
+          case T.FloatType       => Type.Float
+          case T.DoubleType      => Type.Double
+          case T.ArrayValueType  => Type.ArrayValue(getType, getInt)
+          case T.StructValueType => Type.StructValue(getTypes)
+          case T.FunctionType    => Type.Function(getTypes, getType)
 
-    case T.NullType    => Type.Null
-    case T.NothingType => Type.Nothing
-    case T.VirtualType => Type.Virtual
-    case T.VarType     => Type.Var(getType)
-    case T.UnitType    => Type.Unit
-    case T.ArrayType   => Type.Array(getType, getBool)
-    case T.RefType     => Type.Ref(getGlobal, getBool, getBool)
+          case T.NullType    => Type.Null
+          case T.NothingType => Type.Nothing
+          case T.VirtualType => Type.Virtual
+          case T.VarType     => Type.Var(getType)
+          case T.UnitType    => Type.Unit
+          case T.ArrayType   => Type.Array(getType, getBool)
+        }
+    }
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal)
-  private def getVal(): Val = getInt match {
-    case T.TrueVal        => Val.True
-    case T.FalseVal       => Val.False
-    case T.NullVal        => Val.Null
-    case T.ZeroVal        => Val.Zero(getType)
-    case T.CharVal        => Val.Char(getShort.toChar)
-    case T.ByteVal        => Val.Byte(get)
-    case T.ShortVal       => Val.Short(getShort)
-    case T.IntVal         => Val.Int(getInt)
-    case T.LongVal        => Val.Long(getLong)
-    case T.FloatVal       => Val.Float(getFloat)
-    case T.DoubleVal      => Val.Double(getDouble)
-    case T.StructValueVal => Val.StructValue(getVals)
-    case T.ArrayValueVal  => Val.ArrayValue(getType, getVals)
-    case T.CharsVal       => Val.Chars(getString)
-    case T.LocalVal       => Val.Local(getLocal, getType)
-    case T.GlobalVal      => Val.Global(getGlobal, getType)
+  private def getVal(): Val = {
+    val kind = getInt
+    kind match {
+      case T.LocalVal => Val.Local(getLocal, getType)
+      case otherKind =>
+        otherKind match {
+          case T.TrueVal        => Val.True
+          case T.FalseVal       => Val.False
+          case T.NullVal        => Val.Null
+          case T.ZeroVal        => Val.Zero(getType)
+          case T.CharVal        => Val.Char(getShort.toChar)
+          case T.ByteVal        => Val.Byte(get)
+          case T.ShortVal       => Val.Short(getShort)
+          case T.IntVal         => Val.Int(getInt)
+          case T.LongVal        => Val.Long(getLong)
+          case T.FloatVal       => Val.Float(getFloat)
+          case T.DoubleVal      => Val.Double(getDouble)
+          case T.StructValueVal => Val.StructValue(getVals)
+          case T.ArrayValueVal  => Val.ArrayValue(getType, getVals)
+          case T.CharsVal       => Val.Chars(getString)
+          case T.GlobalVal      => Val.Global(getGlobal, getType)
 
-    case T.UnitVal    => Val.Unit
-    case T.ConstVal   => Val.Const(getVal)
-    case T.StringVal  => Val.String(getString)
-    case T.VirtualVal => Val.Virtual(getLong)
+          case T.UnitVal    => Val.Unit
+          case T.ConstVal   => Val.Const(getVal)
+          case T.StringVal  => Val.String(getString)
+          case T.VirtualVal => Val.Virtual(getLong)
+        }
+    }
   }
 }
 
