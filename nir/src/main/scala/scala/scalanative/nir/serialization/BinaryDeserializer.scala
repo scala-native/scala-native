@@ -180,15 +180,8 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
       Global.Member(Global.Top(getString), getSig)
   }
 
-  private def getSig(): Sig = getInt match {
-    case T.FieldSig     => Sig.Field(getString)
-    case T.CtorSig      => Sig.Ctor(getTypes)
-    case T.MethodSig    => Sig.Method(getString, getTypes)
-    case T.ProxySig     => Sig.Proxy(getString, getTypes)
-    case T.ExternSig    => Sig.Extern(getString)
-    case T.GeneratedSig => Sig.Generated(getString)
-    case T.DuplicateSig => Sig.Duplicate(getSig, getTypes)
-  }
+  private def getSig(): Sig =
+    new Sig(getString)
 
   private def getLocal(): Local =
     Local(getLong)

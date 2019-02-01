@@ -14,9 +14,9 @@ object Mangle {
     impl.toString
   }
 
-  def apply(sig: Sig): String = {
+  def apply(sig: Sig.Unmangled): String = {
     val impl = new Impl
-    impl.mangleSig(sig)
+    impl.mangleUnmangledSig(sig)
     impl.toString
   }
 
@@ -40,7 +40,10 @@ object Mangle {
         util.unreachable
     }
 
-    def mangleSig(sig: Sig): Unit = sig match {
+    def mangleSig(sig: Sig): Unit =
+      str(sig.mangle)
+
+    def mangleUnmangledSig(sig: Sig.Unmangled): Unit = sig match {
       case Sig.Field(id) =>
         str("F")
         mangleIdent(id)

@@ -4,6 +4,7 @@ package nir
 sealed abstract class Global {
   def top: Global.Top
   def member(sig: Sig): Global.Member
+  def member(sig: Sig.Unmangled): Global.Member = member(sig.mangled)
 
   final def isTop: Boolean =
     this.isInstanceOf[Global.Top]
