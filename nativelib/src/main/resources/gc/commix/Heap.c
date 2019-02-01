@@ -158,8 +158,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
                         blockMetaStart, heapStart);
 
     // Init all GCThreads
-    sem_init(&heap->gcThreads.start, 0, 0);
-    sem_init(&heap->gcThreads.start0, 0, 0);
+    sem_init(&heap->gcThreads.startWorkers, 0, 0);
+    sem_init(&heap->gcThreads.startMaster, 0, 0);
 
     // Init stats if enabled.
     // This must done before initializing other threads.
@@ -174,7 +174,6 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 #ifdef ENABLE_GC_STATS
     }
 #endif
-
 
     int gcThreadCount = Settings_GCThreadCount();
     heap->gcThreads.count = gcThreadCount;
@@ -286,7 +285,7 @@ void Heap_Collect(Heap *heap) {
     heap->gcThreads.phase = gc_mark;
     // make sure the gc phase is propagated
     atomic_thread_fence(memory_order_release);
-    GCThread_WakeMain(heap);
+    GCThread_WakeMaster(heap);
     while (!Marker_IsMarkDone(heap)) {
         Marker_Mark(heap, stats);
         if (!Marker_IsMarkDone(heap)) {
