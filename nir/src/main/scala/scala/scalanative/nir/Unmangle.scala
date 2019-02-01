@@ -32,6 +32,8 @@ object Unmangle {
         Sig.Extern(readIdent())
       case 'G' =>
         Sig.Generated(readIdent())
+      case 'K' =>
+        Sig.Duplicate(readSig(), readTypes())
       case ch =>
         error(s"expected sig, but got $ch")
     }

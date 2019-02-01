@@ -20,7 +20,9 @@ class SigManglingSuite extends FunSuite {
     Sig.Extern("read"),
     Sig.Extern("malloc"),
     Sig.Generated("layout"),
-    Sig.Generated("type")
+    Sig.Generated("type"),
+    Sig.Duplicate(Sig.Method("bar", Seq()), Seq()),
+    Sig.Duplicate(Sig.Method("bar", Seq(Type.Unit)), Seq(Type.Unit))
   ).foreach { sig =>
     test(s"mangle/unmangle sig `${sig.toString}`") {
       val mangled = sig.mangle
