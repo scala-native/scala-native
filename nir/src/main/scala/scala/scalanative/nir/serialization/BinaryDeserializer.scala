@@ -261,13 +261,16 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
 
   private def getGlobals(): Seq[Global]      = getSeq(getGlobal)
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
-  private def getGlobal(): Global = getInt match {
-    case T.NoneGlobal =>
-      Global.None
-    case T.TopGlobal =>
-      Global.Top(getString)
-    case T.MemberGlobal =>
-      Global.Member(Global.Top(getString), getSig)
+  private def getGlobal(): Global = {
+    getInt match {
+      case T.NoneGlobal => Global.None
+      case g =>
+        val top = Global.Top(getString)
+        g match {
+          case T.TopGlobal => top
+          case T.MemberGlobal => Global.Member(top, getSig)
+        }
+    }
   }
 
   private def getSig(): Sig =
