@@ -13,6 +13,8 @@ class Buffer(implicit fresh: Fresh) {
     buffer ++= other.buffer
   def toSeq: Seq[Inst] =
     buffer
+  def size: Int =
+    buffer.size
 
   // Control-flow ops
   def label(name: Local): Unit =
