@@ -89,7 +89,6 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize);
 
 
 void Heap_Collect(Heap *heap);
-void Heap_Recycle(Heap *heap);
 void Heap_GrowIfNeeded(Heap *heap);
 void Heap_Grow(Heap *heap, uint32_t increment);
 
