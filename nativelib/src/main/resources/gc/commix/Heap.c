@@ -300,32 +300,7 @@ void Heap_Collect(Heap *heap) {
                           heap->mark.currentEnd_ns);
     }
 #endif
-    Heap_Recycle(heap);
-}
 
-bool Heap_shouldGrow(Heap *heap) {
-    uint32_t freeBlockCount = (uint32_t)blockAllocator.freeBlockCount;
-    uint32_t blockCount = heap->blockCount;
-    uint32_t recycledBlockCount = (uint32_t)allocator.recycledBlockCount;
-    uint32_t unavailableBlockCount =
-        blockCount - (freeBlockCount + recycledBlockCount);
-
-#ifdef DEBUG_PRINT
-    printf("\n\nBlock count: %" PRIu32 "\n", blockCount);
-    printf("Unavailable: %" PRIu32 "\n", unavailableBlockCount);
-    printf("Free: %" PRIu32 "\n", freeBlockCount);
-    printf("Recycled: %" PRIu32 "\n", recycledBlockCount);
-    fflush(stdout);
-#endif
-
-    uint64_t timeInMark = heap->mark.currentEnd_ns - heap->mark.currentStart_ns;
-    uint64_t timeTotal = heap->mark.currentEnd_ns - heap->mark.lastEnd_ns;
-
-    return timeInMark >= GROWTH_MARK_FRACTION * timeTotal || freeBlockCount * 2 < blockCount ||
-           4 * unavailableBlockCount > blockCount;
-}
-
-void Heap_Recycle(Heap *heap) {
     Allocator_Clear(&allocator);
     LargeAllocator_Clear(&largeAllocator);
     BlockAllocator_Clear(&blockAllocator);
@@ -365,6 +340,28 @@ void Heap_Recycle(Heap *heap) {
         threadsToStart = gcThreadCount;
     }
     GCThread_Wake(heap, threadsToStart);
+}
+
+bool Heap_shouldGrow(Heap *heap) {
+    uint32_t freeBlockCount = (uint32_t)blockAllocator.freeBlockCount;
+    uint32_t blockCount = heap->blockCount;
+    uint32_t recycledBlockCount = (uint32_t)allocator.recycledBlockCount;
+    uint32_t unavailableBlockCount =
+        blockCount - (freeBlockCount + recycledBlockCount);
+
+#ifdef DEBUG_PRINT
+    printf("\n\nBlock count: %" PRIu32 "\n", blockCount);
+    printf("Unavailable: %" PRIu32 "\n", unavailableBlockCount);
+    printf("Free: %" PRIu32 "\n", freeBlockCount);
+    printf("Recycled: %" PRIu32 "\n", recycledBlockCount);
+    fflush(stdout);
+#endif
+
+    uint64_t timeInMark = heap->mark.currentEnd_ns - heap->mark.currentStart_ns;
+    uint64_t timeTotal = heap->mark.currentEnd_ns - heap->mark.lastEnd_ns;
+
+    return timeInMark >= GROWTH_MARK_FRACTION * timeTotal || freeBlockCount * 2 < blockCount ||
+           4 * unavailableBlockCount > blockCount;
 }
 
 void Heap_GrowIfNeeded(Heap *heap) {
