@@ -177,7 +177,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     int gcThreadCount = Settings_GCThreadCount();
     heap->gcThreads.count = gcThreadCount;
-    heap->gcThreads.phase = gc_idle;
+    GCThread_SetPhase(heap, gc_idle);
     GCThread *gcThreads = (GCThread *)malloc(sizeof(GCThread) * gcThreadCount);
     heap->gcThreads.all = (void *)gcThreads;
     for (int i = 0; i < gcThreadCount; i++) {
@@ -282,7 +282,7 @@ void Heap_Collect(Heap *heap) {
     heap->mark.lastEnd_ns = heap->mark.currentEnd_ns;
     heap->mark.currentStart_ns = scalanative_nano_time();
     Marker_MarkRoots(heap, stats);
-    heap->gcThreads.phase = gc_mark;
+    GCThread_SetPhase(heap, gc_mark);
     // make sure the gc phase is propagated
     atomic_thread_fence(memory_order_release);
     GCThread_WakeMaster(heap);
@@ -292,7 +292,7 @@ void Heap_Collect(Heap *heap) {
             sched_yield();
         }
     }
-    heap->gcThreads.phase = gc_idle;
+    GCThread_SetPhase(heap, gc_idle);
     heap->mark.currentEnd_ns = scalanative_nano_time();
 #ifdef ENABLE_GC_STATS
     if (stats != NULL) {
@@ -326,7 +326,7 @@ void Heap_Collect(Heap *heap) {
     heap->sweep.coalesceDone = 0;
     heap->sweep.postSweepDone = false;
 
-    heap->gcThreads.phase = gc_sweep;
+    GCThread_SetPhase(heap, gc_sweep);
     // make sure all running parameters are propagated
     atomic_thread_fence(memory_order_release);
     // determine how many threads need to start

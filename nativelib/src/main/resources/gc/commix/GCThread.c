@@ -241,7 +241,7 @@ NOINLINE void GCThread_joinAllSlow(GCThread *gcThreads, int gcThreadCount) {
 
 INLINE void GCThread_JoinAll(Heap *heap) {
     // semaphore drain - make sure no new threads are started
-    heap->gcThreads.phase = gc_idle;
+    GCThread_SetPhase(heap, gc_idle);
     sem_t *startMaster = &heap->gcThreads.startMaster;
     sem_t *startWorkers = &heap->gcThreads.startWorkers;
     while (!sem_trywait(startMaster)){}

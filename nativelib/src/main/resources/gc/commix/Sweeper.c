@@ -395,7 +395,7 @@ void Sweeper_SweepDone(Heap *heap, Stats *stats) {
         Heap_GrowIfNeeded(heap);
         BlockAllocator_ReserveBlocks(&blockAllocator);
         BlockAllocator_FinishCoalescing(&blockAllocator);
-        heap->gcThreads.phase = gc_idle;
+        GCThread_SetPhase(heap, gc_idle);
 #ifdef ENABLE_GC_STATS
         if (stats != NULL) {
             uint64_t end_ns = scalanative_nano_time();
