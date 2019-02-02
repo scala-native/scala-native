@@ -27,4 +27,8 @@ void GCThread_Wake(Heap *heap, int toWake);
 void GCThread_WakeMaster(Heap *heap);
 void GCThread_WakeWorkers(Heap *heap, int toWake);
 
+static inline void GCThread_SetPhase(Heap *heap, GCThreadPhase phase) {
+    heap->gcThreads.phase = phase;
+}
+
 #endif // IMMIX_GCTHREAD_H
