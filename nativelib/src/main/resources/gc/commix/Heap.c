@@ -63,6 +63,34 @@ word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
     return heapStart;
 }
 
+#ifdef ENABLE_GC_STATS
+Stats *Heap_createMutatorStats(void) {
+    char *statsFile = Settings_StatsFileName();
+    if (statsFile != NULL) {
+        Stats *stats = malloc(sizeof(Stats));
+        Stats_Init(stats, statsFile, MUTATOR_THREAD_ID);
+        return stats;
+    } else {
+        return NULL;
+    }
+}
+
+Stats *Heap_createStatsForThread(int id) {
+    char *statsFile = Settings_StatsFileName();
+    if (statsFile != NULL) {
+        int len = strlen(statsFile) + 5;
+        char *threadSpecificFile = (char *) malloc(len);
+        snprintf(threadSpecificFile, len, "%s.t%d", statsFile, id);
+        Stats *stats = malloc(sizeof(Stats));
+        Stats_Init(stats, threadSpecificFile, (uint8_t)id);
+        return stats;
+    } else {
+        return NULL;
+    }
+}
+
+#endif
+
 /**
  * Allocates the heap struct and initializes it
  */
@@ -158,17 +186,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     // Init all GCThreads
     // Init stats if enabled.
     // This must done before initializing other threads.
-#ifdef ENABLE_GC_STATS
-    char *statsFile = Settings_StatsFileName();
-    if (statsFile != NULL) {
-        heap->stats = malloc(sizeof(Stats));
-        Stats_Init(heap->stats, statsFile, MUTATOR_THREAD_ID);
-    } else {
-        heap->stats = NULL;
-    }
-#else
-    heap->stats = NULL;
-#endif
+    heap->stats = Stats_OrNull(Heap_createMutatorStats());
 
     int gcThreadCount = Settings_GCThreadCount();
     heap->gcThreads.count = gcThreadCount;
@@ -176,20 +194,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     GCThread *gcThreads = (GCThread *)malloc(sizeof(GCThread) * gcThreadCount);
     heap->gcThreads.all = (void *)gcThreads;
     for (int i = 0; i < gcThreadCount; i++) {
-        Stats *stats;
-#ifdef ENABLE_GC_STATS
-        if (statsFile != NULL) {
-            int len = strlen(statsFile) + 5;
-            char *threadSpecificFile = (char *) malloc(len);
-            snprintf(threadSpecificFile, len, "%s.t%d", statsFile, i);
-            stats = malloc(sizeof(Stats));
-            Stats_Init(stats, threadSpecificFile, (uint8_t)i);
-        } else {
-            stats = NULL;
-        }
-#else
-        stats = NULL;
-#endif
+        Stats *stats = Stats_OrNull(Heap_createStatsForThread(i));
         GCThread_Init(&gcThreads[i], i, heap, stats);
     }
 
@@ -261,13 +266,11 @@ void Heap_assertIsConsistent(Heap *heap) {
 #endif
 
 void Heap_Collect(Heap *heap) {
+    Stats *stats = Stats_OrNull(heap->stats);
 #ifdef ENABLE_GC_STATS
-    Stats *stats = heap->stats;
     if (stats != NULL) {
         stats->collection_start_ns = scalanative_nano_time();
     }
-#else
-    Stats *stats = NULL;
 #endif
     assert(Sweeper_IsSweepDone(heap));
 #ifdef DEBUG_ASSERT

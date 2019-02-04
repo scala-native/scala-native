@@ -220,9 +220,7 @@ bool Allocator_newBlock(Allocator *allocator) {
 INLINE
 word_t *Allocator_lazySweep(Heap *heap, uint32_t size) {
     word_t *object = NULL;
-#ifdef ENABLE_GC_STATS
-    Stats *stats = heap->stats;
-#endif
+    Stats_DefineOrNothing(stats, heap->stats);
     Stats_RecordTime(stats, start_ns);
     // mark as active
     heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
