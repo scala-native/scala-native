@@ -22,8 +22,7 @@ static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
     }
 
     Stats_RecordTime(stats, end_ns);
-    Stats_RecordEvent(stats, event_concurrent_mark,
-                      start_ns, end_ns);
+    Stats_RecordEvent(stats, event_concurrent_mark, start_ns, end_ns);
     Stats_RecordEventSync(stats, mark_waiting, stats->mark_waiting_start_ns, stats->mark_waiting_end_ns);
 }
 
@@ -79,11 +78,8 @@ void *GCThread_loop(void *arg) {
     GCThread *thread = (GCThread *)arg;
     Heap *heap = thread->heap;
     sem_t *start = &heap->gcThreads.startWorkers;
-#ifdef ENABLE_GC_STATS
-    Stats *stats = thread->stats;
-#else
-    Stats *stats = NULL;
-#endif
+    Stats *stats = Stats_OrNull(thread->stats);
+
     while (true) {
         thread->active = false;
         sem_wait(start);
@@ -113,11 +109,7 @@ void *GCThread_loopMaster(void *arg) {
     GCThread *thread = (GCThread *)arg;
     Heap *heap = thread->heap;
     sem_t *start = &heap->gcThreads.startMaster;
-#ifdef ENABLE_GC_STATS
-    Stats *stats = thread->stats;
-#else
-    Stats *stats = NULL;
-#endif
+    Stats *stats = Stats_OrNull(thread->stats);
     while (true) {
         thread->active = false;
         sem_wait(start);

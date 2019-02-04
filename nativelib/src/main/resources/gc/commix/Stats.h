@@ -45,6 +45,7 @@ static inline void Stats_RecordEventSync(Stats *stats, eventType eType,
 #else
 #define Stats_RecordTimeSync(S, T)
 #define Stats_RecordEventSync(S, E, A, B)
+#define Stats_MarkTook
 #endif
 
 #ifdef ENABLE_GC_STATS
@@ -81,10 +82,16 @@ void Stats_RecordEvent(Stats *stats, eventType eType,
 void Stats_OnExit(Stats *stats);
 void Stats_WriteToFile(Stats *stats);
 
+#define Stats_OrNull(S) S
+#define Stats_DefineOrNothing(D, S) Stats *D = S
+
 #else
 typedef void* Stats;
 
 #define Stats_RecordEvent(S, E, A, B)
+// it is always NULL no need to read the expression
+#define Stats_OrNull(S) NULL
+#define Stats_DefineOrNothing(D, S)
 static inline void Stats_WriteToFile(Stats *stats) {}
 
 #endif // ENABLE_GC_STATS
