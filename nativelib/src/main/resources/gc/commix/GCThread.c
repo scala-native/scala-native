@@ -6,10 +6,9 @@
 #include <semaphore.h>
 
 static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
+    Stats_RecordTime(stats, start_ns);
 #ifdef ENABLE_GC_STATS
-    uint64_t start_ns, end_ns;
     if (stats != NULL) {
-        start_ns = scalanative_nano_time();
         stats->mark_waiting_start_ns = 0;
         stats->mark_waiting_end_ns = 0;
     }
@@ -22,9 +21,9 @@ static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
         }
     }
 
+    Stats_RecordTime(stats, end_ns);
 #ifdef ENABLE_GC_STATS
     if (stats != NULL) {
-        end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_concurrent_mark,
                           start_ns, end_ns);
 #ifdef ENABLE_GC_STATS_SYNC
@@ -37,10 +36,9 @@ static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
 }
 
 static inline void GCThread_mark(Heap *heap, Stats *stats) {
+    Stats_RecordTime(stats, start_ns);
 #ifdef ENABLE_GC_STATS
-    uint64_t start_ns, end_ns;
     if (stats != NULL) {
-        start_ns = scalanative_nano_time();
         stats->mark_waiting_start_ns = 0;
         stats->mark_waiting_end_ns = 0;
     }
@@ -48,9 +46,9 @@ static inline void GCThread_mark(Heap *heap, Stats *stats) {
 
     Marker_Mark(heap, stats);
 
+    Stats_RecordTime(stats, end_ns);
 #ifdef ENABLE_GC_STATS
     if (stats != NULL) {
-        end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_concurrent_mark,
                           start_ns, end_ns);
 #ifdef ENABLE_GC_STATS_SYNC
@@ -64,21 +62,16 @@ static inline void GCThread_mark(Heap *heap, Stats *stats) {
 
 static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
     thread->sweep.cursorDone = 0;
-#ifdef ENABLE_GC_STATS
-    uint64_t start_ns, end_ns;
-    if (stats != NULL) {
-        start_ns = scalanative_nano_time();
-    }
-#endif
+    Stats_RecordTime(stats, start_ns);
 
     while (heap->sweep.cursor < heap->sweep.limit) {
         Sweeper_Sweep(heap, stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE);
     }
     thread->sweep.cursorDone = heap->sweep.limit;
 
+    Stats_RecordTime(stats, end_ns);
 #ifdef ENABLE_GC_STATS
     if (stats != NULL) {
-        end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_concurrent_sweep, start_ns, end_ns);
     }
 #endif
@@ -86,12 +79,7 @@ static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
 
 static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap, Stats *stats) {
     thread->sweep.cursorDone = 0;
-#ifdef ENABLE_GC_STATS
-    uint64_t start_ns, end_ns;
-    if (stats != NULL) {
-        start_ns = scalanative_nano_time();
-    }
-#endif
+    Stats_RecordTime(stats, start_ns);
 
     while (heap->sweep.cursor < heap->sweep.limit) {
         Sweeper_Sweep(heap, stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE);
@@ -104,9 +92,9 @@ static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap, Stats *sta
     if (!heap->sweep.postSweepDone) {
         Phase_SweepDone(heap, stats);
     }
+    Stats_RecordTime(stats, end_ns);
 #ifdef ENABLE_GC_STATS
     if (stats != NULL) {
-        end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_concurrent_sweep, start_ns, end_ns);
     }
 #endif

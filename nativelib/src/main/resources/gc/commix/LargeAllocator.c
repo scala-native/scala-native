@@ -161,12 +161,9 @@ word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
 #endif
     // lazy sweep will happen
 #ifdef ENABLE_GC_STATS
-    uint64_t start_ns, end_ns;
     Stats *stats = heap->stats;
-    if (stats != NULL) {
-        start_ns = scalanative_nano_time();
-    }
 #endif
+    Stats_RecordTime(stats, start_ns);
     // mark as active
     heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
     while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
@@ -182,9 +179,9 @@ word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
             sched_yield();
         }
     }
+    Stats_RecordTime(stats, end_ns);
 #ifdef ENABLE_GC_STATS
     if (stats != NULL) {
-        end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
     }
 #endif

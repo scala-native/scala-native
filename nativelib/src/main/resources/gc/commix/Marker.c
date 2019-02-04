@@ -16,16 +16,11 @@ extern word_t **__stack_bottom;
 #define LAST_FIELD_OFFSET -1
 
 static inline GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
-#ifdef ENABLE_GC_STATS_SYNC
-    uint64_t start_ns, end_ns;
-    if (stats != NULL) {
-        start_ns = scalanative_nano_time();
-    }
-#endif
+    Stats_RecordTimeSync(stats, start_ns);
     GreyPacket *packet = GreyList_Pop(&heap->mark.empty, heap->greyPacketsStart);
+    Stats_RecordTimeSync(stats, end_ns);
 #ifdef ENABLE_GC_STATS_SYNC
     if (stats != NULL) {
-        end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_sync, start_ns, end_ns);
     }
 #endif
@@ -40,19 +35,14 @@ static inline GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
 }
 
 static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
-#ifdef ENABLE_GC_STATS_SYNC
-    uint64_t start_ns, end_ns;
-    if (stats != NULL) {
-        start_ns = scalanative_nano_time();
-    }
-#endif
+    Stats_RecordTimeSync(stats, start_ns);
     GreyPacket *packet = GreyList_Pop(&heap->mark.full, heap->greyPacketsStart);
     if (packet != NULL) {
         atomic_thread_fence(memory_order_release);
     }
+    Stats_RecordTimeSync(stats, end_ns);
 #ifdef ENABLE_GC_STATS_SYNC
     if (stats != NULL) {
-        end_ns = scalanative_nano_time();
 
         Stats_RecordEvent(stats, event_sync, start_ns, end_ns);
         if (packet == NULL) {
@@ -75,16 +65,11 @@ static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
 static inline void Marker_giveEmptyPacket(Heap *heap, Stats *stats, GreyPacket *packet) {
     assert(packet->size == 0);
     // no memfence needed see Marker_takeEmptyPacket
-#ifdef ENABLE_GC_STATS_SYNC
-    uint64_t start_ns, end_ns;
-    if (stats != NULL) {
-        start_ns = scalanative_nano_time();
-    }
-#endif
+    Stats_RecordTimeSync(stats, start_ns);
     GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, packet);
+    Stats_RecordTimeSync(stats, end_ns);
 #ifdef ENABLE_GC_STATS_SYNC
     if (stats != NULL) {
-        end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_sync, start_ns, end_ns);
     }
 #endif
@@ -95,16 +80,11 @@ static inline void Marker_giveFullPacket(Heap *heap, Stats *stats, GreyPacket *p
     // make all the contents visible to other threads
     atomic_thread_fence(memory_order_acquire);
     assert(GreyList_Size(&heap->mark.full) <= heap->mark.total);
-#ifdef ENABLE_GC_STATS_SYNC
-    uint64_t start_ns, end_ns;
-    if (stats != NULL) {
-        start_ns = scalanative_nano_time();
-    }
-#endif
+    Stats_RecordTimeSync(stats, start_ns);
     GreyList_Push(&heap->mark.full, heap->greyPacketsStart, packet);
+    Stats_RecordTimeSync(stats, end_ns);
 #ifdef ENABLE_GC_STATS_SYNC
     if (stats != NULL) {
-        end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_sync, start_ns, end_ns);
     }
 #endif
@@ -232,12 +212,7 @@ void Marker_markRangePacket(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket
 }
 
 static inline void Marker_markBatch(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket **outHolder) {
-#ifdef ENABLE_GC_STATS_BATCHES
-    uint64_t start_ns, end_ns;
-    if (stats != NULL) {
-        start_ns = scalanative_nano_time();
-    }
-#endif
+    Stats_RecordTimeBatch(stats, start_ns);
     switch (in->type) {
         case grey_packet_reflist:
             Marker_markPacket(heap, stats, in, outHolder);
@@ -246,9 +221,9 @@ static inline void Marker_markBatch(Heap *heap, Stats *stats, GreyPacket* in, Gr
             Marker_markRangePacket(heap, stats, in, outHolder);
             break;
     }
+    Stats_RecordTimeBatch(stats, end_ns);
 #ifdef ENABLE_GC_STATS_BATCHES
     if (stats != NULL) {
-        end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_mark_batch, start_ns, end_ns);
     }
 #endif
