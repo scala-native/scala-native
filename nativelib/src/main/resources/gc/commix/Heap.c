@@ -13,10 +13,10 @@
 #include "Memory.h"
 #include "GCThread.h"
 #include "Sweeper.h"
+#include "Phase.h"
 #include <memory.h>
 #include <time.h>
 #include <inttypes.h>
-#include <sched.h>
 
 // Allow read and write
 #define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
@@ -145,11 +145,9 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->heapSize = minHeapSize;
     heap->heapStart = heapStart;
     heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
-    heap->sweep.cursor = initialBlockCount;
-    heap->lazySweep.cursorDone = initialBlockCount;
-    heap->sweep.limit = initialBlockCount;
-    heap->sweep.coalesceDone = initialBlockCount;
-    heap->sweep.postSweepDone = true;
+
+    Phase_Init(heap, initialBlockCount);
+
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
     Allocator_Init(&allocator, &blockAllocator, bytemap, blockMetaStart,
                    heapStart);
@@ -158,9 +156,6 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
                         blockMetaStart, heapStart);
 
     // Init all GCThreads
-    sem_init(&heap->gcThreads.startWorkers, 0, 0);
-    sem_init(&heap->gcThreads.startMaster, 0, 0);
-
     // Init stats if enabled.
     // This must done before initializing other threads.
 #ifdef ENABLE_GC_STATS
@@ -177,7 +172,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     int gcThreadCount = Settings_GCThreadCount();
     heap->gcThreads.count = gcThreadCount;
-    GCThread_SetPhase(heap, gc_idle);
+    Phase_Set(heap, gc_idle);
     GCThread *gcThreads = (GCThread *)malloc(sizeof(GCThread) * gcThreadCount);
     heap->gcThreads.all = (void *)gcThreads;
     for (int i = 0; i < gcThreadCount; i++) {
@@ -279,67 +274,17 @@ void Heap_Collect(Heap *heap) {
     Heap_clearIsSwept(heap);
     Heap_assertIsConsistent(heap);
 #endif
-    heap->mark.lastEnd_ns = heap->mark.currentEnd_ns;
-    heap->mark.currentStart_ns = scalanative_nano_time();
+    Phase_StartMark(heap);
     Marker_MarkRoots(heap, stats);
-    GCThread_SetPhase(heap, gc_mark);
-    // make sure the gc phase is propagated
-    atomic_thread_fence(memory_order_release);
-    GCThread_WakeMaster(heap);
-    while (!Marker_IsMarkDone(heap)) {
-        Marker_Mark(heap, stats);
-        if (!Marker_IsMarkDone(heap)) {
-            sched_yield();
-        }
-    }
-    GCThread_SetPhase(heap, gc_idle);
-    heap->mark.currentEnd_ns = scalanative_nano_time();
+    Marker_MarkUtilDone(heap, stats);
+    Phase_MarkDone(heap);
 #ifdef ENABLE_GC_STATS
     if (stats != NULL) {
         Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
                           heap->mark.currentEnd_ns);
     }
 #endif
-
-    Allocator_Clear(&allocator);
-    LargeAllocator_Clear(&largeAllocator);
-    BlockAllocator_Clear(&blockAllocator);
-
-    // use the reserved block so mutator can does not have to lazy sweep
-    // but can allocate imminently
-    BlockAllocator_UseReserve(&blockAllocator);
-
-    // all the marking changes should be visible to all threads by now
-    atomic_thread_fence(memory_order_seq_cst);
-
-    // before changing the cursor and limit values, makes sure no gc threads are
-    // running
-    GCThread_JoinAll(heap);
-
-    heap->sweep.cursor = 0;
-    uint32_t blockCount = heap->blockCount;
-    heap->sweep.limit = blockCount;
-    heap->lazySweep.cursorDone = 0;
-    // mark as unitialized
-    heap->lazySweep.lastActivity = BlockRange_Pack(2, 0);
-    heap->lazySweep.lastActivityObserved = BlockRange_Pack(2, 0);
-    heap->sweep.coalesceDone = 0;
-    heap->sweep.postSweepDone = false;
-
-    GCThread_SetPhase(heap, gc_sweep);
-    // make sure all running parameters are propagated
-    atomic_thread_fence(memory_order_release);
-    // determine how many threads need to start
-    int gcThreadCount = heap->gcThreads.count;
-    int numberOfBatches = blockCount / SWEEP_BATCH_SIZE;
-    int threadsToStart = numberOfBatches / MIN_SWEEP_BATCHES_PER_THREAD;
-    if (threadsToStart <= 0) {
-        threadsToStart = 1;
-    }
-    if (threadsToStart > gcThreadCount){
-        threadsToStart = gcThreadCount;
-    }
-    GCThread_Wake(heap, threadsToStart);
+    Phase_StartSweep(heap);
 }
 
 bool Heap_shouldGrow(Heap *heap) {
