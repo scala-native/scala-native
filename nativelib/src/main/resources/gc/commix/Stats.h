@@ -16,6 +16,27 @@
 #define ENABLE_GC_STATS
 #endif
 
+
+// do { } while(0) allows to write multiline macros and
+// make them look like functions by handling ; correctly
+#ifdef ENABLE_GC_STATS
+#define Stats_RecordTime(S, T) uint64_t T; do { if (S != NULL) {T = scalanative_nano_time();}} while(0)
+#else
+#define Stats_RecordTime(S, T)
+#endif
+
+#ifdef ENABLE_GC_STATS_BATCHES
+#define Stats_RecordTimeBatch(S, T) uint64_t T; do { if (S != NULL) {T = scalanative_nano_time();}} while(0)
+#else
+#define Stats_RecordTimeBatch(S, T)
+#endif
+
+#ifdef ENABLE_GC_STATS_SYNC
+#define Stats_RecordTimeSync(S, T) uint64_t T; do { if (S != NULL) {T = scalanative_nano_time();}} while(0)
+#else
+#define Stats_RecordTimeSync(S, T)
+#endif
+
 #ifdef ENABLE_GC_STATS
 
 typedef enum {

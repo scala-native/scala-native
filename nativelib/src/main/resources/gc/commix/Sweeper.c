@@ -93,12 +93,7 @@ void Sweep_applyResult(SweepResult *result, Allocator *allocator, BlockAllocator
 
 void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
                    uint32_t maxCount) {
-#ifdef ENABLE_GC_STATS_BATCHES
-    uint64_t start_ns, end_ns, presync_end_ns;
-    if (stats != NULL) {
-        start_ns = scalanative_nano_time();
-    }
-#endif
+    Stats_RecordTimeBatch(stats, start_ns);
     SweepResult sweepResult;
     SweepResult_Init(&sweepResult);
     uint32_t cursor = heap->sweep.cursor;
@@ -108,10 +103,9 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
     if (cursor < sweepLimit) {
         startIdx = (uint32_t)atomic_fetch_add(&heap->sweep.cursor, maxCount);
     }
-
+    Stats_RecordTimeSync(stats, presync_end_ns);
 #ifdef ENABLE_GC_STATS_SYNC
     if (stats != NULL) {
-        presync_end_ns = scalanative_nano_time();
         Stats_RecordEvent(stats, event_sync, start_ns, presync_end_ns);
     }
 #endif
@@ -244,12 +238,7 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
         BlockMeta_SetFlagAndSuperblockSize(lastFreeBlockStart, block_coalesce_me, totalSize);
     }
 
-#ifdef ENABLE_GC_STATS_SYNC
-    uint64_t postsync_start_ns;
-    if (stats != NULL) {
-        postsync_start_ns = scalanative_nano_time();
-    }
-#endif
+    Stats_RecordTimeSync(stats, postsync_start_ns);
 
     Sweep_applyResult(&sweepResult, &allocator, &blockAllocator);
     // coalescing might be done by another thread
@@ -258,15 +247,18 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
     atomic_store_explicit(cursorDone, limitIdx, memory_order_release);
 
 
+    Stats_RecordTimeSync(stats, end_ns);
+
+#ifdef ENABLE_GC_STATS_SYNC
+    if (stats != NULL) {
+        Stats_RecordEvent(stats, event_sync, postsync_start_ns, end_ns);
+    }
+#endif
 #ifdef ENABLE_GC_STATS_BATCHES
     if (stats != NULL) {
-        end_ns = scalanative_nano_time();
-#ifdef ENABLE_GC_STATS_SYNC
-        Stats_RecordEvent(stats, event_sync, postsync_start_ns, end_ns);
-#endif //ENABLE_GC_STATS_SYNC
         Stats_RecordEvent(stats, event_sweep_batch, start_ns, end_ns);
     }
-#endif //ENABLE_GC_STATS_BATCHES
+#endif
 }
 
 uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
@@ -298,12 +290,7 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
     uint_fast32_t limitIdx = Sweeper_minSweepCursor(heap);
     if (startIdx < limitIdx) {
         // need to get all the coalesce_me information from Sweeper_Sweep
-#ifdef ENABLE_GC_STATS_BATCHES
-        uint64_t start_ns, end_ns;
-        if (stats != NULL) {
-            start_ns = scalanative_nano_time();
-        }
-#endif
+        Stats_RecordTimeBatch(stats, start_ns);
         atomic_thread_fence(memory_order_acquire);
 
         BlockMeta *lastFreeBlockStart = NULL;
@@ -381,9 +368,9 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
         }
 
         heap->sweep.coalesceDone = limitIdx;
+        Stats_RecordTimeBatch(stats, end_ns);
 #ifdef ENABLE_GC_STATS_BATCHES
         if (stats != NULL) {
-            end_ns = scalanative_nano_time();
             Stats_RecordEvent(stats, event_coalesce_batch, start_ns, end_ns);
         }
 #endif
