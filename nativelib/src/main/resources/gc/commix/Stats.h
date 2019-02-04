@@ -27,14 +27,24 @@
 
 #ifdef ENABLE_GC_STATS_BATCHES
 #define Stats_RecordTimeBatch(S, T) uint64_t T; do { if (S != NULL) {T = scalanative_nano_time();}} while(0)
+#define Stats_RecordEventBatches(Stats *stats, eventType eType,
+                                            uint64_t start_ns, uint64_t end_ns){
+    Stats_RecordEvent(stats, eType, start_ns, end_ns);
+}
 #else
 #define Stats_RecordTimeBatch(S, T)
+#define Stats_RecordEventBatches(S, E, A, B)
 #endif
 
 #ifdef ENABLE_GC_STATS_SYNC
 #define Stats_RecordTimeSync(S, T) uint64_t T; do { if (S != NULL) {T = scalanative_nano_time();}} while(0)
+static inline void Stats_RecordEventSync(Stats *stats, eventType eType,
+                                         uint64_t start_ns, uint64_t end_ns){
+    Stats_RecordEvent(stats, eType, start_ns, end_ns);
+}
 #else
 #define Stats_RecordTimeSync(S, T)
+#define Stats_RecordEventSync(S, E, A, B)
 #endif
 
 #ifdef ENABLE_GC_STATS
@@ -73,6 +83,9 @@ void Stats_WriteToFile(Stats *stats);
 
 #else
 typedef void* Stats;
+
+#define Stats_RecordEvent(S, E, A, B)
+static inline void Stats_WriteToFile(Stats *stats) {}
 
 #endif // ENABLE_GC_STATS
 #endif // IMMIX_STATS_H

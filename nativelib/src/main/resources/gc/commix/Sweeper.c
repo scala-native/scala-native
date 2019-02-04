@@ -103,12 +103,9 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
     if (cursor < sweepLimit) {
         startIdx = (uint32_t)atomic_fetch_add(&heap->sweep.cursor, maxCount);
     }
+
     Stats_RecordTimeSync(stats, presync_end_ns);
-#ifdef ENABLE_GC_STATS_SYNC
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_sync, start_ns, presync_end_ns);
-    }
-#endif
+    Stats_RecordEventSync(stats, event_sync, start_ns, presync_end_ns);
 
     uint32_t limitIdx = startIdx + maxCount;
     assert(*cursorDone <= startIdx);
@@ -248,17 +245,8 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
 
 
     Stats_RecordTimeSync(stats, end_ns);
-
-#ifdef ENABLE_GC_STATS_SYNC
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_sync, postsync_start_ns, end_ns);
-    }
-#endif
-#ifdef ENABLE_GC_STATS_BATCHES
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_sweep_batch, start_ns, end_ns);
-    }
-#endif
+    Stats_RecordEventSync(stats, event_sync, postsync_start_ns, end_ns);
+    Stats_RecordEventBatches(stats, event_sweep_batch, start_ns, end_ns);
 }
 
 uint_fast32_t Sweeper_minSweepCursor(Heap *heap) {
@@ -369,10 +357,6 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
 
         heap->sweep.coalesceDone = limitIdx;
         Stats_RecordTimeBatch(stats, end_ns);
-#ifdef ENABLE_GC_STATS_BATCHES
-        if (stats != NULL) {
-            Stats_RecordEvent(stats, event_coalesce_batch, start_ns, end_ns);
-        }
-#endif
+        Stats_RecordEventBatches(stats, event_coalesce_batch, start_ns, end_ns);
     }
 }

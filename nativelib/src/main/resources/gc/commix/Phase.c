@@ -77,12 +77,10 @@ void Phase_SweepDone(Heap *heap, Stats *stats) {
         BlockAllocator_ReserveBlocks(&blockAllocator);
         BlockAllocator_FinishCoalescing(&blockAllocator);
         Phase_Set(heap, gc_idle);
-#ifdef ENABLE_GC_STATS
-        if (stats != NULL) {
-            uint64_t end_ns = scalanative_nano_time();
-            Stats_RecordEvent(stats, event_collection, heap->stats->collection_start_ns, end_ns);
-        }
-#endif
+
+        Stats_RecordTime(stats, end_ns);
+        Stats_RecordEvent(stats, event_collection, heap->stats->collection_start_ns, end_ns);
+
         heap->sweep.postSweepDone = true;
     }
 }

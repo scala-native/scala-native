@@ -19,11 +19,7 @@ static inline GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
     Stats_RecordTimeSync(stats, start_ns);
     GreyPacket *packet = GreyList_Pop(&heap->mark.empty, heap->greyPacketsStart);
     Stats_RecordTimeSync(stats, end_ns);
-#ifdef ENABLE_GC_STATS_SYNC
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_sync, start_ns, end_ns);
-    }
-#endif
+    Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
     if (packet != NULL) {
         // Another thread setting size = 0 might not arrived, just write it now.
         // Avoiding a memfence.
@@ -41,10 +37,9 @@ static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
         atomic_thread_fence(memory_order_release);
     }
     Stats_RecordTimeSync(stats, end_ns);
+    Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
 #ifdef ENABLE_GC_STATS_SYNC
     if (stats != NULL) {
-
-        Stats_RecordEvent(stats, event_sync, start_ns, end_ns);
         if (packet == NULL) {
             if (stats->mark_waiting_start_ns == 0) {
                 stats->mark_waiting_start_ns = start_ns;
@@ -52,7 +47,7 @@ static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
             stats->mark_waiting_end_ns = end_ns;
         } else {
             if (stats->mark_waiting_start_ns != 0) {
-                Stats_RecordEvent(stats, mark_waiting, stats->mark_waiting_start_ns, end_ns);
+                Stats_RecordEventSync(stats, mark_waiting, stats->mark_waiting_start_ns, end_ns);
                 stats->mark_waiting_start_ns = 0;
             }
         }
@@ -68,11 +63,7 @@ static inline void Marker_giveEmptyPacket(Heap *heap, Stats *stats, GreyPacket *
     Stats_RecordTimeSync(stats, start_ns);
     GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, packet);
     Stats_RecordTimeSync(stats, end_ns);
-#ifdef ENABLE_GC_STATS_SYNC
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_sync, start_ns, end_ns);
-    }
-#endif
+    Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
 }
 
 static inline void Marker_giveFullPacket(Heap *heap, Stats *stats, GreyPacket *packet) {
@@ -83,11 +74,7 @@ static inline void Marker_giveFullPacket(Heap *heap, Stats *stats, GreyPacket *p
     Stats_RecordTimeSync(stats, start_ns);
     GreyList_Push(&heap->mark.full, heap->greyPacketsStart, packet);
     Stats_RecordTimeSync(stats, end_ns);
-#ifdef ENABLE_GC_STATS_SYNC
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_sync, start_ns, end_ns);
-    }
-#endif
+    Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
 }
 
 void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder, Bytemap *bytemap,
@@ -222,11 +209,7 @@ static inline void Marker_markBatch(Heap *heap, Stats *stats, GreyPacket* in, Gr
             break;
     }
     Stats_RecordTimeBatch(stats, end_ns);
-#ifdef ENABLE_GC_STATS_BATCHES
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_mark_batch, start_ns, end_ns);
-    }
-#endif
+    Stats_RecordEventBatches(stats, event_mark_batch, start_ns, end_ns);
 }
 
 void Marker_Mark(Heap *heap, Stats *stats) {
