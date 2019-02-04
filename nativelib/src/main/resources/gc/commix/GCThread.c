@@ -2,6 +2,7 @@
 #include "Constants.h"
 #include "Sweeper.h"
 #include "Marker.h"
+#include "Phase.h"
 #include <semaphore.h>
 
 static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
@@ -101,7 +102,7 @@ static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap, Stats *sta
         Sweeper_LazyCoalesce(heap, stats);
     }
     if (!heap->sweep.postSweepDone) {
-        Sweeper_SweepDone(heap, stats);
+        Phase_SweepDone(heap, stats);
     }
 #ifdef ENABLE_GC_STATS
     if (stats != NULL) {
@@ -241,7 +242,7 @@ NOINLINE void GCThread_joinAllSlow(GCThread *gcThreads, int gcThreadCount) {
 
 INLINE void GCThread_JoinAll(Heap *heap) {
     // semaphore drain - make sure no new threads are started
-    GCThread_SetPhase(heap, gc_idle);
+    Phase_Set(heap, gc_idle);
     sem_t *startMaster = &heap->gcThreads.startMaster;
     sem_t *startWorkers = &heap->gcThreads.startWorkers;
     while (!sem_trywait(startMaster)){}

@@ -389,19 +389,3 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
 #endif
     }
 }
-
-void Sweeper_SweepDone(Heap *heap, Stats *stats) {
-    if (!heap->sweep.postSweepDone) {
-        Heap_GrowIfNeeded(heap);
-        BlockAllocator_ReserveBlocks(&blockAllocator);
-        BlockAllocator_FinishCoalescing(&blockAllocator);
-        GCThread_SetPhase(heap, gc_idle);
-#ifdef ENABLE_GC_STATS
-        if (stats != NULL) {
-            uint64_t end_ns = scalanative_nano_time();
-            Stats_RecordEvent(stats, event_collection, heap->stats->collection_start_ns, end_ns);
-        }
-#endif
-        heap->sweep.postSweepDone = true;
-    }
-}

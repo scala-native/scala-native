@@ -319,6 +319,15 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats) {
     }
 }
 
+void Marker_MarkUtilDone(Heap *heap, Stats *stats) {
+    while (!Marker_IsMarkDone(heap)) {
+        Marker_Mark(heap, stats);
+        if (!Marker_IsMarkDone(heap)) {
+            sched_yield();
+        }
+    }
+}
+
 void Marker_markProgramStack(Heap *heap, Stats *stats, GreyPacket **outHolder) {
     // Dumps registers into 'regs' which is on stack
     jmp_buf regs;
