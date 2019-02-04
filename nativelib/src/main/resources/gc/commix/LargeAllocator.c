@@ -180,11 +180,7 @@ word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
         }
     }
     Stats_RecordTime(stats, end_ns);
-#ifdef ENABLE_GC_STATS
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
-    }
-#endif
+    Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
     return object;
 }
 

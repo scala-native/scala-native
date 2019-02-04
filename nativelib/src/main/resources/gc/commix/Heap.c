@@ -164,10 +164,10 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         heap->stats = malloc(sizeof(Stats));
         Stats_Init(heap->stats, statsFile, MUTATOR_THREAD_ID);
     } else {
-#endif
         heap->stats = NULL;
-#ifdef ENABLE_GC_STATS
     }
+#else
+    heap->stats = NULL;
 #endif
 
     int gcThreadCount = Settings_GCThreadCount();
@@ -185,10 +185,10 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
             stats = malloc(sizeof(Stats));
             Stats_Init(stats, threadSpecificFile, (uint8_t)i);
         } else {
-#endif
             stats = NULL;
-#ifdef ENABLE_GC_STATS
         }
+#else
+        stats = NULL;
 #endif
         GCThread_Init(&gcThreads[i], i, heap, stats);
     }
@@ -278,12 +278,8 @@ void Heap_Collect(Heap *heap) {
     Marker_MarkRoots(heap, stats);
     Marker_MarkUtilDone(heap, stats);
     Phase_MarkDone(heap);
-#ifdef ENABLE_GC_STATS
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
-                          heap->mark.currentEnd_ns);
-    }
-#endif
+    Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
+                      heap->mark.currentEnd_ns);
     Phase_StartSweep(heap);
 }
 

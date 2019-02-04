@@ -22,17 +22,9 @@ static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
     }
 
     Stats_RecordTime(stats, end_ns);
-#ifdef ENABLE_GC_STATS
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_concurrent_mark,
-                          start_ns, end_ns);
-#ifdef ENABLE_GC_STATS_SYNC
-        if (stats->mark_waiting_start_ns != 0) {
-            Stats_RecordEvent(stats, mark_waiting, stats->mark_waiting_start_ns, stats->mark_waiting_end_ns);
-        }
-#endif // ENABLE_GC_STATS_SYNC
-    }
-#endif // ENABLE_GC_STATS_BATCHES
+    Stats_RecordEvent(stats, event_concurrent_mark,
+                      start_ns, end_ns);
+    Stats_RecordEventSync(stats, mark_waiting, stats->mark_waiting_start_ns, stats->mark_waiting_end_ns);
 }
 
 static inline void GCThread_mark(Heap *heap, Stats *stats) {
@@ -47,17 +39,8 @@ static inline void GCThread_mark(Heap *heap, Stats *stats) {
     Marker_Mark(heap, stats);
 
     Stats_RecordTime(stats, end_ns);
-#ifdef ENABLE_GC_STATS
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_concurrent_mark,
-                          start_ns, end_ns);
-#ifdef ENABLE_GC_STATS_SYNC
-        if (stats->mark_waiting_start_ns != 0) {
-            Stats_RecordEvent(stats, mark_waiting, stats->mark_waiting_start_ns, stats->mark_waiting_end_ns);
-        }
-#endif // ENABLE_GC_STATS_SYNC
-    }
-#endif // ENABLE_GC_STATS_BATCHES
+    Stats_RecordEvent(stats, event_concurrent_mark, start_ns, end_ns);
+    Stats_RecordEvent(stats, mark_waiting, stats->mark_waiting_start_ns, stats->mark_waiting_end_ns);
 }
 
 static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
@@ -70,11 +53,7 @@ static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
     thread->sweep.cursorDone = heap->sweep.limit;
 
     Stats_RecordTime(stats, end_ns);
-#ifdef ENABLE_GC_STATS
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_concurrent_sweep, start_ns, end_ns);
-    }
-#endif
+    Stats_RecordEvent(stats, event_concurrent_sweep, start_ns, end_ns);
 }
 
 static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap, Stats *stats) {
@@ -93,11 +72,7 @@ static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap, Stats *sta
         Phase_SweepDone(heap, stats);
     }
     Stats_RecordTime(stats, end_ns);
-#ifdef ENABLE_GC_STATS
-    if (stats != NULL) {
-        Stats_RecordEvent(stats, event_concurrent_sweep, start_ns, end_ns);
-    }
-#endif
+    Stats_RecordEvent(stats, event_concurrent_sweep, start_ns, end_ns);
 }
 
 void *GCThread_loop(void *arg) {
@@ -125,11 +100,7 @@ void *GCThread_loop(void *arg) {
                 break;
             case gc_sweep:
                 GCThread_sweep(thread, heap, stats);
-#ifdef ENABLE_GC_STATS
-                if (stats != NULL) {
-                    Stats_WriteToFile(stats);
-                }
-#endif
+                Stats_WriteToFile(stats);
                 break;
         }
         // hard fence before proceeding with the next phase
@@ -163,11 +134,7 @@ void *GCThread_loopMaster(void *arg) {
                 break;
             case gc_sweep:
                 GCThread_sweepMaster(thread, heap, stats);
-#ifdef ENABLE_GC_STATS
-                if (stats != NULL) {
-                    Stats_WriteToFile(stats);
-                }
-#endif
+                Stats_WriteToFile(stats);
                 break;
         }
         // hard fence before proceeding with the next phase
