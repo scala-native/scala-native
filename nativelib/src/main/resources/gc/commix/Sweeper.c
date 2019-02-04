@@ -244,7 +244,7 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
     atomic_store_explicit(cursorDone, limitIdx, memory_order_release);
 
 
-    Stats_RecordTimeSync(stats, end_ns);
+    Stats_RecordTimeBatch(stats, end_ns);
     Stats_RecordEventSync(stats, event_sync, postsync_start_ns, end_ns);
     Stats_RecordEventBatches(stats, event_sweep_batch, start_ns, end_ns);
 }

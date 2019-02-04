@@ -64,7 +64,7 @@ word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
 }
 
 #ifdef ENABLE_GC_STATS
-Stats *Heap_createMutatorStats(void) {
+INLINE Stats *Heap_createMutatorStats(void) {
     char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
         Stats *stats = malloc(sizeof(Stats));
@@ -75,7 +75,7 @@ Stats *Heap_createMutatorStats(void) {
     }
 }
 
-Stats *Heap_createStatsForThread(int id) {
+INLINE Stats *Heap_createStatsForThread(int id) {
     char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
         int len = strlen(statsFile) + 5;
@@ -267,11 +267,7 @@ void Heap_assertIsConsistent(Heap *heap) {
 
 void Heap_Collect(Heap *heap) {
     Stats *stats = Stats_OrNull(heap->stats);
-#ifdef ENABLE_GC_STATS
-    if (stats != NULL) {
-        stats->collection_start_ns = scalanative_nano_time();
-    }
-#endif
+    Stats_CollectionStarted(stats);
     assert(Sweeper_IsSweepDone(heap));
 #ifdef DEBUG_ASSERT
     Heap_clearIsSwept(heap);
