@@ -85,8 +85,30 @@ final class Class(val attrs: Attrs,
 
   val ty: Type =
     Type.Ref(name)
-  def isStaticModule(implicit top: Result): Boolean =
-    isModule && !top.infos.contains(name.member(Sig.Ctor(Seq())))
+  def isConstantModule(implicit top: Result): Boolean = {
+    val hasNoFields =
+      fields.isEmpty
+    val hasEmptyOrNoCtor = {
+      val ctor = name member Sig.Ctor(Seq.empty)
+      top.infos
+        .get(ctor)
+        .fold[Boolean] {
+          true
+        } {
+          case meth: Method =>
+            meth.insts match {
+              case Array(_: Inst.Label, _: Inst.Ret) =>
+                true
+              case _ =>
+                false
+            }
+          case _ =>
+            false
+        }
+    }
+
+    isModule && (attrs.isExtern || (hasEmptyOrNoCtor && hasNoFields))
+  }
   def resolve(sig: Sig): Option[Global] =
     responds.get(sig)
   def targets(sig: Sig): mutable.Set[Global] = {

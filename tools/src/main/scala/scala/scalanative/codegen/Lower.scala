@@ -716,10 +716,17 @@ object Lower {
     def genModuleOp(buf: Buffer, n: Local, op: Op.Module) = {
       val Op.Module(name) = op
 
-      val loadSig = Type.Function(Seq(), Type.Ref(name))
-      val load    = Val.Global(name.member(Sig.Generated("load")), Type.Ptr)
+      meta.linked.infos(name) match {
+        case cls: Class if cls.isConstantModule =>
+          val instance = name.member(Sig.Generated("instance"))
+          buf.let(n, Op.Copy(Val.Global(instance, Type.Ptr)), unwind)
 
-      buf.let(n, Op.Call(loadSig, load, Seq()), unwind)
+        case _ =>
+          val loadSig = Type.Function(Seq(), Type.Ref(name))
+          val load    = Val.Global(name.member(Sig.Generated("load")), Type.Ptr)
+
+          buf.let(n, Op.Call(loadSig, load, Seq()), unwind)
+      }
     }
 
     def genArrayallocOp(buf: Buffer, n: Local, op: Op.Arrayalloc): Unit = {
@@ -905,13 +912,9 @@ object Lower {
   private def extern(id: String): Global =
     Global.Member(Global.Top("__"), Sig.Extern(id))
 
-  val unitName = Global.Top("scala.scalanative.runtime.BoxedUnit$")
-  val unit     = Val.Global(unitName, Type.Ptr)
-  val unitTy =
-    Type.StructValue(Seq(Type.Ptr))
-  val unitConst =
-    Val.Global(unitName.member(Sig.Generated("type")), Type.Ptr)
-  val unitValue = Val.StructValue(Seq(unitConst))
+  val unitName     = Global.Top("scala.scalanative.runtime.BoxedUnit$")
+  val unitInstance = unitName.member(Sig.Generated("instance"))
+  val unit         = Val.Global(unitInstance, Type.Ptr)
 
   val throwName = extern("scalanative_throw")
   val throwSig  = Type.Function(Seq(Type.Ptr), Type.Nothing)
@@ -1028,7 +1031,6 @@ object Lower {
     buf += Defn.Declare(Attrs.None, allocSmallName, allocSig)
     buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)
     buf += Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig)
-    buf += Defn.Const(Attrs.None, unitName, unitTy, unitValue)
     buf += Defn.Declare(Attrs.None, throwName, throwSig)
     buf
   }
