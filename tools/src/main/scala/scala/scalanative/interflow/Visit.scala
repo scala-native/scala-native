@@ -19,6 +19,23 @@ trait Visit { self: Interflow =>
         notExtern && hasInsts && hasSema
       }
 
+  def visitEntry(name: Global): Unit = {
+    if (!name.isTop) {
+      visitEntry(name.top)
+    }
+    linked.infos(name) match {
+      case meth: Method =>
+        visitRoot(name)
+      case cls: Class if cls.isModule =>
+        val init = cls.name member Sig.Ctor(Seq.empty)
+        if (originals.contains(init)) {
+          visitRoot(init)
+        }
+      case _ =>
+        ()
+    }
+  }
+
   def visitRoot(name: Global): Unit =
     if (shallVisit(name)) {
       todo.enqueue(name)

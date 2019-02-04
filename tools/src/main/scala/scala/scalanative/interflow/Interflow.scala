@@ -28,14 +28,7 @@ object Interflow {
         defn.name -> defn
     }.toMap
     val interflow = new Interflow(defnsMap)(linked)
-    linked.entries.foreach { entry =>
-      linked.infos(entry) match {
-        case info: Method =>
-          interflow.visitRoot(entry)
-        case _ =>
-          ()
-      }
-    }
+    linked.entries.foreach(interflow.visitEntry)
     interflow.visitLoop()
     val done = interflow.done.values.map { defn =>
       defn.name -> defn
