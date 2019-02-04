@@ -7,12 +7,7 @@
 
 static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
     Stats_RecordTime(stats, start_ns);
-#ifdef ENABLE_GC_STATS
-    if (stats != NULL) {
-        stats->mark_waiting_start_ns = 0;
-        stats->mark_waiting_end_ns = 0;
-    }
-#endif
+    Stats_MarkStarted(stats);
 
     while (!Marker_IsMarkDone(heap)) {
         Marker_MarkAndScale(heap, stats);
@@ -28,12 +23,7 @@ static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
 
 static inline void GCThread_mark(Heap *heap, Stats *stats) {
     Stats_RecordTime(stats, start_ns);
-#ifdef ENABLE_GC_STATS
-    if (stats != NULL) {
-        stats->mark_waiting_start_ns = 0;
-        stats->mark_waiting_end_ns = 0;
-    }
-#endif
+    Stats_MarkStarted(stats);
 
     Marker_Mark(heap, stats);
 

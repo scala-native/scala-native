@@ -37,22 +37,12 @@ static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
         atomic_thread_fence(memory_order_release);
     }
     Stats_RecordTimeSync(stats, end_ns);
-    Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
-#ifdef ENABLE_GC_STATS_SYNC
-    if (stats != NULL) {
-        if (packet == NULL) {
-            if (stats->mark_waiting_start_ns == 0) {
-                stats->mark_waiting_start_ns = start_ns;
-            }
-            stats->mark_waiting_end_ns = end_ns;
-        } else {
-            if (stats->mark_waiting_start_ns != 0) {
-                Stats_RecordEventSync(stats, mark_waiting, stats->mark_waiting_start_ns, end_ns);
-                stats->mark_waiting_start_ns = 0;
-            }
-        }
+    Stats_RecordEventSync(stats, event_sync, stats->mark_waiting_start_ns, end_ns);
+    if (packet == NULL) {
+        Stats_MarkerNoFullPacket(stats, start_ns, end_ns);
+    } else {
+        Stats_MarkerGotFullPacket(stats, end_ns);
     }
-#endif
     assert(packet == NULL || packet->type == grey_packet_refrange || packet->size > 0);
     return packet;
 }
