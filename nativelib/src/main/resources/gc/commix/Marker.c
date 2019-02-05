@@ -15,6 +15,19 @@ extern word_t **__stack_bottom;
 
 #define LAST_FIELD_OFFSET -1
 
+// Marking is done using grey packets. A grey packet is a fixes size list that
+// contains pointers to objects for marking.
+//
+// Each marker has a grey packet with references to check ("in" packet).
+// When it finds a new unmarked object the marker puts a pointer to
+// it in the "out" packet. When the "in" packet is empty it gets
+// another from the full packet list and returns the empty one to the empty
+// packet list. Similarly, when the "out" packet get full, marker gets another
+// empty packet and pushes the full one on the full packet list.
+//
+// Marking is done when all the packets are empty and in the empty packet list.
+
+
 static inline GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
     Stats_RecordTimeSync(stats, start_ns);
     GreyPacket *packet = GreyList_Pop(&heap->mark.empty, heap->greyPacketsStart);
