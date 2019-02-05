@@ -168,40 +168,6 @@ int GCThread_ActiveCount(Heap *heap) {
     return count;
 }
 
-NOINLINE void GCThread_joinAllSlow(GCThread *gcThreads, int gcThreadCount) {
-    // extremely unlikely to enter here
-    // unless very many threads running
-    bool anyActive = true;
-    while (anyActive) {
-        sched_yield();
-        anyActive = false;
-        for (int i = 0; i < gcThreadCount; i++) {
-            anyActive |= gcThreads[i].active;
-        }
-    }
-}
-
-INLINE void GCThread_JoinAll(Heap *heap) {
-    // semaphore drain - make sure no new threads are started
-    Phase_Set(heap, gc_idle);
-    sem_t *startMaster = &heap->gcThreads.startMaster;
-    sem_t *startWorkers = &heap->gcThreads.startWorkers;
-    while (!sem_trywait(startMaster)) {
-    }
-    while (!sem_trywait(startWorkers)) {
-    }
-
-    int gcThreadCount = heap->gcThreads.count;
-    GCThread *gcThreads = (GCThread *)heap->gcThreads.all;
-    bool anyActive = false;
-    for (int i = 0; i < gcThreadCount; i++) {
-        anyActive |= gcThreads[i].active;
-    }
-    if (anyActive) {
-        GCThread_joinAllSlow(gcThreads, gcThreadCount);
-    }
-}
-
 INLINE void GCThread_WakeMaster(Heap *heap) {
     sem_post(&heap->gcThreads.startMaster);
 }

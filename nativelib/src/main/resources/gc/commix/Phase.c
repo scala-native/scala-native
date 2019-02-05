@@ -41,10 +41,6 @@ void Phase_StartSweep(Heap *heap) {
     // all the marking changes should be visible to all threads by now
     atomic_thread_fence(memory_order_seq_cst);
 
-    // before changing the cursor and limit values, makes sure no gc threads are
-    // running
-    GCThread_JoinAll(heap);
-
     heap->sweep.cursor = 0;
     uint32_t blockCount = heap->blockCount;
     heap->sweep.limit = blockCount;
@@ -55,8 +51,10 @@ void Phase_StartSweep(Heap *heap) {
     heap->sweep.coalesceDone = 0;
     heap->sweep.postSweepDone = false;
 
+    // make sure all running parameters are propagated before phase change
+    atomic_thread_fence(memory_order_release);
     Phase_Set(heap, gc_sweep);
-    // make sure all running parameters are propagated
+    // make sure all threads see the phase change
     atomic_thread_fence(memory_order_release);
     // determine how many threads need to start
     int gcThreadCount = heap->gcThreads.count;
