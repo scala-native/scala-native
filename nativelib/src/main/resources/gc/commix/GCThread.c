@@ -26,6 +26,7 @@ static inline void GCThread_mark(Heap *heap, Stats *stats) {
     Stats_MarkStarted(stats);
 
     Marker_Mark(heap, stats);
+    // Marker on the worker thread stops after failing to get a full packet.
 
     Stats_RecordTime(stats, end_ns);
     Stats_RecordEvent(stats, event_concurrent_mark, start_ns, end_ns);
