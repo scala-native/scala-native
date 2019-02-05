@@ -15,9 +15,9 @@ typedef enum {
     block_simple = 0x1,
     block_superblock_start = 0x2,
     block_superblock_tail = 0x3,
-    block_marked = 0x5, // 0x4 | block_simple
+    block_marked = 0x5,              // 0x4 | block_simple
     block_superblock_start_me = 0xb, // block_superblock_tail | 0x8
-    block_coalesce_me = 0x13 // block_superblock_tail | 0x10
+    block_coalesce_me = 0x13         // block_superblock_tail | 0x10
 } BlockFlag;
 
 typedef struct {
@@ -96,7 +96,7 @@ static inline void BlockMeta_SetFlagAndSuperblockSize(BlockMeta *blockMeta,
     combined.flags = blockFlag;
     combined.size = superblockSize;
 
-    *((int32_t*)&blockMeta->block.superblock) = *((int32_t*)&combined);
+    *((int32_t *)&blockMeta->block.superblock) = *((int32_t *)&combined);
 }
 
 static inline void BlockMeta_SetFirstFreeLine(BlockMeta *blockMeta,

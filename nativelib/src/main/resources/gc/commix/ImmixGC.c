@@ -21,7 +21,7 @@ void scalanative_afterexit() {
     Stats_OnExit(heap.stats);
 
     int gcThreadCount = heap.gcThreads.count;
-    GCThread *gcThreads = (GCThread *) heap.gcThreads.all;
+    GCThread *gcThreads = (GCThread *)heap.gcThreads.all;
     for (int i = 0; i < gcThreadCount; i++) {
         Stats_OnExit(gcThreads[i].stats);
     }

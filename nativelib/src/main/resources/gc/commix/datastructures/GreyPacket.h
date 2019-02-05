@@ -14,8 +14,8 @@ typedef Object *Stack_Type;
 
 typedef union {
     struct __attribute__((packed)) {
-        uint32_t idx: BLOCK_COUNT_BITS;
-        uint32_t size: BLOCK_COUNT_BITS;
+        uint32_t idx : BLOCK_COUNT_BITS;
+        uint32_t size : BLOCK_COUNT_BITS;
         uint16_t timesPoped; // used to avoid ABA problems when popping
     } sep;
     atomic_uint_least64_t atom;
@@ -47,19 +47,23 @@ bool GreyPacket_IsEmpty(GreyPacket *packet);
 
 void GreyList_Init(GreyList *list);
 uint32_t GreyList_Size(GreyList *list);
-void GreyList_Push(GreyList *list, word_t *greyPacketsStart, GreyPacket *packet);
-void GreyList_PushAll(GreyList *list, word_t *greyPacketsStart, GreyPacket *first, uint_fast32_t size);
+void GreyList_Push(GreyList *list, word_t *greyPacketsStart,
+                   GreyPacket *packet);
+void GreyList_PushAll(GreyList *list, word_t *greyPacketsStart,
+                      GreyPacket *first, uint_fast32_t size);
 GreyPacket *GreyList_Pop(GreyList *list, word_t *greyPacketsStart);
 
-static inline uint32_t GreyPacket_IndexOf(word_t *greyPacketsStart, GreyPacket *packet) {
+static inline uint32_t GreyPacket_IndexOf(word_t *greyPacketsStart,
+                                          GreyPacket *packet) {
     assert(packet != NULL);
-    assert((void*)packet >= (void*)greyPacketsStart);
-    return (uint32_t)(packet - (GreyPacket *) greyPacketsStart) + 2;
+    assert((void *)packet >= (void *)greyPacketsStart);
+    return (uint32_t)(packet - (GreyPacket *)greyPacketsStart) + 2;
 }
 
-static inline GreyPacket *GreyPacket_FromIndex(word_t *greyPacketsStart, uint32_t idx) {
+static inline GreyPacket *GreyPacket_FromIndex(word_t *greyPacketsStart,
+                                               uint32_t idx) {
     assert(idx >= 2);
-    return (GreyPacket *) greyPacketsStart + (idx - 2);
+    return (GreyPacket *)greyPacketsStart + (idx - 2);
 }
 
 static inline uint64_t GreyPacketRef_Empty() {

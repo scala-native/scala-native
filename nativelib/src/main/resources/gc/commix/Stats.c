@@ -6,10 +6,9 @@
 extern long long scalanative_nano_time();
 
 #ifdef ENABLE_GC_STATS
-const char *const Stats_eventNames[] = {"mark", "sweep", "concmark",
-                                        "concsweep", "collection",
-                                        "mark_batch", "sweep_batch", "coalesce_batch",
-                                        "mark_waiting", "sync"};
+const char *const Stats_eventNames[] = {
+    "mark",       "sweep",       "concmark",       "concsweep",    "collection",
+    "mark_batch", "sweep_batch", "coalesce_batch", "mark_waiting", "sync"};
 
 void Stats_Init(Stats *stats, const char *statsFile, int8_t gc_thread) {
     stats->outFile = fopen(statsFile, "w");
@@ -25,8 +24,8 @@ void Stats_CollectionStarted(Stats *stats) {
 }
 
 INLINE
-void Stats_RecordEvent(Stats *stats, eventType eType,
-                       uint64_t start_ns, uint64_t end_ns) {
+void Stats_RecordEvent(Stats *stats, eventType eType, uint64_t start_ns,
+                       uint64_t end_ns) {
     if (stats != NULL && start_ns != 0) {
         uint64_t index = stats->events;
         stats->start_ns[index] = start_ns;
@@ -63,7 +62,7 @@ void Stats_OnExit(Stats *stats) {
         fclose(stats->outFile);
     }
 }
-#endif //ENABLE_GC_STATS
+#endif // ENABLE_GC_STATS
 
 #ifdef ENABLE_GC_STATS_SYNC
 void Stats_MarkStarted(Stats *stats) {
@@ -75,18 +74,19 @@ void Stats_MarkStarted(Stats *stats) {
 void Stats_MarkerGotFullPacket(Stats *stats, uint64_t end_ns) {
     if (stats != NULL) {
         if (stats->mark_waiting_start_ns != 0) {
-            Stats_RecordEventSync(stats, mark_waiting, stats->mark_waiting_start_ns, end_ns);
+            Stats_RecordEventSync(stats, mark_waiting,
+                                  stats->mark_waiting_start_ns, end_ns);
             stats->mark_waiting_start_ns = 0;
         }
     }
 }
-void Stats_MarkerNoFullPacket(Stats *stats, uint64_t start_ns, uint64_t end_ns) {
+void Stats_MarkerNoFullPacket(Stats *stats, uint64_t start_ns,
+                              uint64_t end_ns) {
     if (stats != NULL) {
         if (stats->mark_waiting_start_ns == 0) {
             stats->mark_waiting_start_ns = start_ns;
         }
         stats->mark_waiting_end_ns = end_ns;
     }
-
 }
-#endif //ENABLE_GC_STATS_SYNC
+#endif // ENABLE_GC_STATS_SYNC

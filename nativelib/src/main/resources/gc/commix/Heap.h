@@ -45,8 +45,10 @@ typedef struct {
         atomic_uint_fast32_t cursorDone;
         // NB! This must be sequentially consistent with sweep.cursor.
         // Otherwise coalescing can miss updates.
-        BlockRange lastActivity; // _First = 1 if active, _Limit = last cursor observed
-        BlockRangeVal lastActivityObserved; // _First = 1 if active, _Limit = last cursor observed
+        // _First = 1 if active, _Limit = last cursor observed
+        BlockRange lastActivity;
+        // _First = 1 if active, _Limit = last cursor observed
+        BlockRangeVal lastActivityObserved;
     } lazySweep;
     struct {
         uint64_t lastEnd_ns;
@@ -80,7 +82,6 @@ static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
 
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 word_t *Heap_Alloc(Heap *heap, uint32_t objectSize);
-
 
 void Heap_Collect(Heap *heap);
 void Heap_GrowIfNeeded(Heap *heap);
