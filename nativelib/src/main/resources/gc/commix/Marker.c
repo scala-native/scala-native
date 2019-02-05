@@ -108,7 +108,7 @@ void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder, w
     }
 }
 
-void Marker_markRange(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket **outHolder, Bytemap *bytemap,
+void Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder, Bytemap *bytemap,
                       word_t **fields, size_t length) {
     word_t **limit = fields + length;
     for (word_t **current = fields; current < limit; current++) {
@@ -123,6 +123,54 @@ void Marker_markRange(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket **out
     }
 }
 
+void Marker_markRegularObject(Heap *heap, Stats *stats, Object *object, GreyPacket **outHolder, Bytemap *bytemap) {
+    int64_t *ptr_map = object->rtti->refMapStruct;
+    for (int64_t *current = ptr_map; *current != LAST_FIELD_OFFSET; current++) {
+        word_t *field = object->fields[*current];
+        if (Heap_IsWordInHeap(heap, field)) {
+            ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
+            if (ObjectMeta_IsAllocated(fieldMeta)) {
+                Marker_markObject(heap, stats, outHolder, bytemap, (Object *)field,
+                                  fieldMeta);
+            }
+        }
+    }
+}
+
+void Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder, Bytemap *bytemap,
+                             word_t **fields, size_t length) {
+    word_t **limit = fields + length;
+    word_t **lastBatch = fields + (length / ARRAY_SPLIT_BATCH) * ARRAY_SPLIT_BATCH;
+
+    assert(lastBatch <= limit);
+    // first
+    for (word_t **batchFields = fields; batchFields < limit; batchFields += ARRAY_SPLIT_BATCH) {
+        GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
+        assert(slice != NULL);
+        slice->type = grey_packet_refrange;
+        slice->items[0] = (Stack_Type) batchFields;
+        // no point writing the size, because it is constant
+        Marker_giveFullPacket(heap, stats, slice);
+    }
+
+    size_t lastBatchSize = limit - lastBatch;
+    if (lastBatchSize > 0) {
+        Marker_markRange(heap, stats, outHolder, bytemap, lastBatch, lastBatchSize);
+    }
+}
+
+void Marker_markObjectArray(Heap *heap, Stats *stats, Object *object, GreyPacket **outHolder, Bytemap *bytemap) {
+    ArrayHeader *arrayHeader = (ArrayHeader *)object;
+    size_t length = arrayHeader->length;
+    word_t **fields = (word_t **)(arrayHeader + 1);
+    if (length <= ARRAY_SPLIT_THRESHOLD) {
+        Marker_markRange(heap, stats, outHolder, bytemap, fields, length);
+    } else {
+        // object array is two large, split it into pieces for multiple threads to handle
+        Marker_splitObjectArray(heap, stats, outHolder, bytemap, fields, length);
+    }
+}
+
 void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket **outHolder) {
     Bytemap *bytemap = heap->bytemap;
     if (*outHolder == NULL) {
@@ -132,58 +180,13 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket **ou
     }
     while (!GreyPacket_IsEmpty(in)) {
         Object *object = GreyPacket_Pop(in);
-
         if (Object_IsArray(object)) {
             if (object->rtti->rt.id == __object_array_id) {
-                ArrayHeader *arrayHeader = (ArrayHeader *)object;
-                size_t length = arrayHeader->length;
-                word_t **fields = (word_t **)(arrayHeader + 1);
-                if (length <= ARRAY_SPLIT_THRESHOLD) {
-                    Marker_markRange(heap, stats, in, outHolder, bytemap, fields, length);
-                } else {
-                    if (GreyPacket_IsEmpty(in)) {
-                        // last item - deal with it now
-
-                        // leave the last batch for the current thread
-                        word_t **limit = fields + length;
-                        word_t **lastBatch = fields + (length / ARRAY_SPLIT_BATCH) * ARRAY_SPLIT_BATCH;
-
-                        assert(lastBatch <= limit);
-                        for (word_t **batchFields = fields; batchFields < limit; batchFields += ARRAY_SPLIT_BATCH) {
-                            GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
-                            assert(slice != NULL);
-                            slice->type = grey_packet_refrange;
-                            slice->items[0] = (Stack_Type) batchFields;
-                            // no point writing the size, because it is constant
-                            Marker_giveFullPacket(heap, stats, slice);
-                        }
-
-                        size_t lastBatchSize = limit - lastBatch;
-                        if (lastBatchSize > 0) {
-                            Marker_markRange(heap, stats , in, outHolder, bytemap, lastBatch, lastBatchSize);
-                        }
-                    } else {
-                        // pass it on to someone else
-                        GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
-                        assert(slice != NULL);
-                        GreyPacket_Push(slice, object);
-                        Marker_giveFullPacket(heap, stats, slice);
-                    }
-                }
+                Marker_markObjectArray(heap, stats, object, outHolder, bytemap);
             }
             // non-object arrays do not contain pointers
         } else {
-            int64_t *ptr_map = object->rtti->refMapStruct;
-            for (int64_t *current = ptr_map; *current != LAST_FIELD_OFFSET; current++) {
-                word_t *field = object->fields[*current];
-                if (Heap_IsWordInHeap(heap, field)) {
-                    ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
-                    if (ObjectMeta_IsAllocated(fieldMeta)) {
-                        Marker_markObject(heap, stats, outHolder, bytemap, (Object *)field,
-                                          fieldMeta);
-                    }
-                }
-            }
+            Marker_markRegularObject(heap, stats, object, outHolder, bytemap);
         }
     }
 }
@@ -196,7 +199,7 @@ void Marker_markRangePacket(Heap *heap, Stats *stats, GreyPacket* in, GreyPacket
         *outHolder = fresh;
     }
     word_t **fields = (word_t **) in->items[0];
-    Marker_markRange(heap, stats, in, outHolder, bytemap, fields, ARRAY_SPLIT_BATCH);
+    Marker_markRange(heap, stats, outHolder, bytemap, fields, ARRAY_SPLIT_BATCH);
     in->type = grey_packet_reflist;
     in->size = 0;
 }
@@ -253,18 +256,7 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats) {
         if (next != NULL) {
             Marker_giveEmptyPacket(heap, stats, in);
             uint32_t remainingFullPackets = next->next.sep.size;
-            if (remainingFullPackets > MARK_SPAWN_THREADS_MIN_PACKETS) {
-                int maxThreads = heap->gcThreads.count;
-                int activeThreads = GCThread_ActiveCount(heap);
-                int targetThreadCount = (remainingFullPackets - MARK_SPAWN_THREADS_MIN_PACKETS) / MARK_MIN_PACKETS_PER_THREAD;
-                if (targetThreadCount > maxThreads) {
-                    targetThreadCount = maxThreads;
-                }
-                int toSpawn = targetThreadCount - activeThreads;
-                if (toSpawn > 0) {
-                    GCThread_WakeWorkers(heap, toSpawn);
-                }
-            }
+            GCThread_ScaleMarkerThreads(heap, remainingFullPackets);
         } else {
             if (!GreyPacket_IsEmpty(out)) {
                 // use the out packet as source
