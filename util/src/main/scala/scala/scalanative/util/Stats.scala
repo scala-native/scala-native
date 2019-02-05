@@ -6,6 +6,7 @@ import scala.collection.mutable
 object Stats {
   private val times  = mutable.Map.empty[String, Long]
   private val counts = mutable.Map.empty[String, Long]
+  private val dists  = mutable.Map.empty[String, mutable.UnrolledBuffer[Long]]
   private def printTotal(): Unit = {
     val totalTimes   = mutable.Map.empty[String, Long]
     val totalCounts  = mutable.Map.empty[String, Long]
@@ -28,6 +29,21 @@ object Stats {
         val count   = totalCounts(key)
         val threads = totalThreads(key)
         println(s"$key: $ms ms, $count times, $threads threads")
+    }
+    if (dists.nonEmpty) {
+      println("--- Total (Dist)")
+      printDist()
+    }
+  }
+  private def printDist(): Unit = {
+    val elems = dists.toSeq.sortBy(_._1)
+    elems.foreach {
+      case (key, measurements) =>
+        println(key + ":")
+        println("  min: " + measurements.min)
+        println("  max: " + measurements.max)
+        println(
+          "  avg: " + measurements.map(_.toDouble).sum / measurements.size)
     }
   }
   private def printThread(id: String): Unit = {
@@ -79,5 +95,11 @@ object Stats {
       counts(k) = counts.getOrElse(k, 0L) + 1
     }
     res
+  }
+  def dist(key: String)(value: Long): Unit = {
+    dists.synchronized {
+      val buf = dists.getOrElseUpdate(key, mutable.UnrolledBuffer.empty[Long])
+      buf += value
+    }
   }
 }
