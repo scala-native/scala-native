@@ -71,16 +71,28 @@ object Sub {
     (lty, rty) match {
       case _ if lty == rty =>
         lty
-      case (lty @ (_: Type.RefKind | Type.Ptr), Type.Null) =>
-        lty
-      case (Type.Null, rty @ (_: Type.RefKind | Type.Ptr)) =>
-        rty
       case (ty, Type.Nothing) =>
         ty
       case (Type.Nothing, ty) =>
         ty
-      case (ScopeRef(linfo), ScopeRef(rinfo)) =>
-        Type.Ref(lub(linfo, rinfo).name)
+      case (Type.Ptr, Type.Null) =>
+        Type.Ptr
+      case (Type.Null, Type.Ptr) =>
+        Type.Ptr
+      case (refty: Type.RefKind, Type.Null) =>
+        Type.Ref(refty.className, refty.isExact, nullable = true)
+      case (Type.Null, refty: Type.RefKind) =>
+        Type.Ref(refty.className, refty.isExact, nullable = true)
+      case (lty: Type.RefKind, rty: Type.RefKind) =>
+        val ScopeRef(linfo) = lty
+        val ScopeRef(rinfo) = rty
+        val lubinfo         = lub(linfo, rinfo)
+        val exact =
+          lubinfo.name == rinfo.name && rty.isExact &&
+            lubinfo.name == linfo.name && lty.isExact
+        val nullable =
+          lty.isNullable || rty.isNullable
+        Type.Ref(lub(linfo, rinfo).name, exact, nullable)
       case _ =>
         util.unsupported(s"lub(${lty.show}, ${rty.show})")
     }
