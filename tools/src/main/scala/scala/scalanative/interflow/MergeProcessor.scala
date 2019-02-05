@@ -61,7 +61,7 @@ final class MergeProcessor(insts: Array[Inst],
         val mergePhis   = mutable.UnrolledBuffer.empty[MergePhi]
         val newEscapes  = mutable.Set.empty[Addr]
 
-        def mergePhi(values: Seq[Val]): Val =
+        def mergePhi(values: Seq[Val]): Val = {
           if (values.distinct.size == 1) {
             values.head
           } else {
@@ -78,21 +78,24 @@ final class MergeProcessor(insts: Array[Inst],
             mergePhis += MergePhi(param, names.zip(materialized))
             param
           }
+        }
 
         def computeMerge(): Unit = {
 
           // 1. Merge locals
-          def includeLocal(local: Local): Boolean =
-            states.forall(_.locals.contains(local))
-          val locals =
-            headState.locals.keysIterator
-              .filter(includeLocal)
-              .toArray
-              .sortBy(_.id)
-          locals.foreach { local =>
-            val values = states.map(_.locals(local))
-            mergeLocals(local) = mergePhi(values)
+
+          def mergeLocal(local: Local): Unit = {
+            val values = mutable.UnrolledBuffer.empty[Val]
+            states.foreach { s =>
+              if (s.locals.contains(local)) {
+                values += s.locals(local)
+              }
+            }
+            if (states.size == values.size) {
+              mergeLocals(local) = mergePhi(values)
+            }
           }
+          headState.locals.keys.foreach(mergeLocal)
 
           // 2. Merge heap
 
@@ -103,32 +106,35 @@ final class MergeProcessor(insts: Array[Inst],
             }
           def escapes(addr: Addr): Boolean =
             states.exists(_.escaped(addr))
-          val addrs =
-            states.head.heap.keys.filter(includeAddr).toArray.sorted
-          addrs.foreach { addr =>
-            val headInstance = states.head.deref(addr)
-            if (escapes(addr)) {
-              val values = states.map { s =>
-                s.deref(addr) match {
-                  case _: VirtualInstance        => Val.Virtual(addr)
-                  case EscapedInstance(_, value) => value
-                }
-              }
-              val param = mergePhi(values)
-              mergeHeap(addr) = EscapedInstance(headInstance.cls, param)
-            } else {
-              val VirtualInstance(headKind, _, headValues) = headInstance
-              val mergeValues = headValues.zipWithIndex.map {
-                case (_, idx) =>
-                  val values = states.map { state =>
-                    if (state.escaped(addr)) restart()
-                    state.derefVirtual(addr).values(idx)
+          val addrs = {
+            val out =
+              states.head.heap.keys.filter(includeAddr).toArray.sorted
+            out.foreach { addr =>
+              val headInstance = states.head.deref(addr)
+              if (escapes(addr)) {
+                val values = states.map { s =>
+                  s.deref(addr) match {
+                    case _: VirtualInstance        => Val.Virtual(addr)
+                    case EscapedInstance(_, value) => value
                   }
-                  mergePhi(values)
+                }
+                val param = mergePhi(values)
+                mergeHeap(addr) = EscapedInstance(headInstance.cls, param)
+              } else {
+                val VirtualInstance(headKind, _, headValues) = headInstance
+                val mergeValues = headValues.zipWithIndex.map {
+                  case (_, idx) =>
+                    val values = states.map { state =>
+                      if (state.escaped(addr)) restart()
+                      state.derefVirtual(addr).values(idx)
+                    }
+                    mergePhi(values)
+                }
+                mergeHeap(addr) =
+                  VirtualInstance(headKind, headInstance.cls, mergeValues)
               }
-              mergeHeap(addr) =
-                VirtualInstance(headKind, headInstance.cls, mergeValues)
             }
+            out
           }
 
           // 3. Merge params
