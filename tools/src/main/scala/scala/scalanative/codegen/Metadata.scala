@@ -3,7 +3,6 @@ package codegen
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.sema._
 import scalanative.linker.{Trait, Class}
 
 class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {

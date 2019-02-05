@@ -1,5 +1,5 @@
 package scala.scalanative
-package sema
+package interflow
 
 import scala.collection.mutable
 import scalanative.nir._
@@ -149,5 +149,28 @@ object UseDef {
     alive(defs(cfg.entry.name))
 
     defs.toMap
+  }
+
+  def eliminateDeadCode(insts: Seq[Inst]): Seq[Inst] = {
+    val fresh  = Fresh(insts)
+    val cfg    = ControlFlow.Graph(insts)
+    val usedef = UseDef(cfg)
+    val buf    = new nir.Buffer()(fresh)
+
+    cfg.all.foreach { block =>
+      if (usedef(block.name).alive) {
+        buf += block.label
+        block.insts.foreach {
+          case inst @ Inst.Let(n, _, _) =>
+            if (usedef(n).alive) buf += inst
+          case inst: Inst.Cf =>
+            buf += inst
+          case _ =>
+            ()
+        }
+      }
+    }
+
+    buf.toSeq
   }
 }

@@ -14,6 +14,7 @@ import scalanative.linker.{
   FieldRef,
   MethodRef
 }
+import scalanative.interflow.UseDef.eliminateDeadCode
 
 object Lower {
 
@@ -125,7 +126,7 @@ object Lower {
 
       buf ++= handlers
 
-      optimizer.pass.DeadCodeElimination(buf.toSeq.map(super.onInst))
+      eliminateDeadCode(buf.toSeq.map(super.onInst))
     }
 
     override def onVal(value: Val): Val = value match {

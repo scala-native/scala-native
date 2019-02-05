@@ -8,7 +8,6 @@ import java.nio.file.{Files, Path, Paths}
 import scalanative.build.{ScalaNative, Config, Mode}
 import scalanative.util.Scope
 import scalanative.nir.Global
-import scalanative.optimizer.Driver
 
 import org.scalatest.FlatSpec
 
@@ -26,17 +25,14 @@ abstract class LinkerSpec extends FlatSpec {
    * @param fn      A function to apply to the products of the compilation.
    * @return The result of applying `fn` to the resulting definitions.
    */
-  def link[T](
-      entry: String,
-      sources: Map[String, String],
-      linkStubs: Boolean = false,
-      driver: Option[Driver] = None)(f: (Config, linker.Result) => T): T =
+  def link[T](entry: String,
+              sources: Map[String, String],
+              linkStubs: Boolean = false)(f: (Config, linker.Result) => T): T =
     Scope { implicit in =>
       val outDir     = Files.createTempDirectory("native-test-out")
       val compiler   = NIRCompiler.getCompiler(outDir)
       val sourcesDir = NIRCompiler.writeSources(sources)
       val files      = compiler.compile(sourcesDir)
-      val driver_    = driver.fold(Driver.default(Mode.default))(identity)
       val config     = makeConfig(outDir, entry, linkStubs)
       val entries    = ScalaNative.entries(config)
       val result     = ScalaNative.link(config, entries)
