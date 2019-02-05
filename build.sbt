@@ -127,6 +127,10 @@ lazy val mavenPublishSettings = Seq(
 lazy val publishSettings = Seq(
   publishArtifact in Compile := true,
   publishArtifact in Test := false,
+  publishArtifact in (Compile, packageDoc) :=
+    !version.value.contains("SNAPSHOT"),
+  publishArtifact in (Compile, packageSrc) :=
+    !version.value.contains("SNAPSHOT"),
   homepage := Some(url("http://www.scala-native.org")),
   startYear := Some(2015),
   licenses := Seq(
