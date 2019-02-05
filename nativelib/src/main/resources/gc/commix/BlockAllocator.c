@@ -7,7 +7,8 @@
 void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
                                 BlockMeta *superblock, uint32_t count);
 
-void BlockAllocator_splitAndAddLocal(BlockAllocator *blockAllocator, LocalBlockList *localBlockListStart,
+void BlockAllocator_splitAndAddLocal(BlockAllocator *blockAllocator,
+                                     LocalBlockList *localBlockListStart,
                                      BlockMeta *superblock, uint32_t count);
 
 void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
@@ -20,11 +21,12 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
     blockAllocator->blockMetaStart = blockMetaStart;
     BlockMeta *sCursor = (BlockMeta *)blockMetaStart;
     assert(blockCount > SWEEP_RESERVE_BLOCKS);
-    BlockMeta *sLimit = (BlockMeta *)blockMetaStart + blockCount - SWEEP_RESERVE_BLOCKS;
+    BlockMeta *sLimit =
+        (BlockMeta *)blockMetaStart + blockCount - SWEEP_RESERVE_BLOCKS;
     blockAllocator->smallestSuperblock.cursor = sCursor;
     blockAllocator->smallestSuperblock.limit = sLimit;
 
-    blockAllocator->reservedSuperblock = (word_t) sLimit;
+    blockAllocator->reservedSuperblock = (word_t)sLimit;
 
     blockAllocator->concurrent = false;
 
@@ -60,11 +62,12 @@ BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int *index) {
 }
 
 inline static BlockMeta *
-BlockAllocator_pollSuperblock_OnlyThread(BlockAllocator *blockAllocator, int *index) {
-     word_t *blockMetaStart = blockAllocator->blockMetaStart;
+BlockAllocator_pollSuperblock_OnlyThread(BlockAllocator *blockAllocator,
+                                         int *index) {
+    word_t *blockMetaStart = blockAllocator->blockMetaStart;
     for (int i = *index; i < SUPERBLOCK_LIST_SIZE; i++) {
-        BlockMeta *superblock =
-            BlockList_Pop_OnlyThread(&blockAllocator->freeSuperblocks[i], blockMetaStart);
+        BlockMeta *superblock = BlockList_Pop_OnlyThread(
+            &blockAllocator->freeSuperblocks[i], blockMetaStart);
         if (superblock != NULL) {
             *index = i;
             return superblock;
@@ -83,7 +86,8 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
     if (concurrent) {
         superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
     } else {
-        superblock = BlockAllocator_pollSuperblock_OnlyThread(blockAllocator, &index);
+        superblock =
+            BlockAllocator_pollSuperblock_OnlyThread(blockAllocator, &index);
     }
     if (superblock != NULL) {
         blockAllocator->smallestSuperblock.cursor = superblock + 1;
@@ -103,7 +107,8 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
             uint32_t blockIdx =
                 BlockRange_PollFirst(&blockAllocator->coalescingSuperblock, 1);
             if (blockIdx != NO_BLOCK_INDEX) {
-                block = BlockMeta_GetFromIndex(blockAllocator->blockMetaStart, blockIdx);
+                block = BlockMeta_GetFromIndex(blockAllocator->blockMetaStart,
+                                               blockIdx);
             }
         } else {
             BlockRangeVal range = blockAllocator->coalescingSuperblock;
@@ -111,7 +116,8 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
             int size = BlockRange_Size(range);
             if (size > 0) {
                 uint32_t blockIdx = BlockRange_First(range);
-                block = BlockMeta_GetFromIndex(blockAllocator->blockMetaStart, blockIdx);
+                block = BlockMeta_GetFromIndex(blockAllocator->blockMetaStart,
+                                               blockIdx);
                 blockAllocator->smallestSuperblock.cursor = block + 1;
                 blockAllocator->smallestSuperblock.limit = block + size;
             }
@@ -168,7 +174,8 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         if (concurrent) {
             superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
         } else {
-            superblock = BlockAllocator_pollSuperblock_OnlyThread(blockAllocator, &index);
+            superblock = BlockAllocator_pollSuperblock_OnlyThread(
+                blockAllocator, &index);
         }
         uint32_t receivedSize = 1 << index;
 
@@ -200,7 +207,8 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
 #ifdef DEBUG_ASSERT
     superblock->debugFlag = dbg_in_use;
 #endif
-    BlockMeta_SetFlagAndSuperblockSize(superblock, block_superblock_start, size);
+    BlockMeta_SetFlagAndSuperblockSize(superblock, block_superblock_start,
+                                       size);
     BlockMeta *limit = superblock + size;
     for (BlockMeta *current = superblock + 1; current < limit; current++) {
         assert(BlockMeta_IsFree(current));
@@ -230,7 +238,8 @@ void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
     while (remaining_count > 0) {
         if ((powerOf2 & remaining_count) > 0) {
             int i = BlockAllocator_sizeToLinkedListIndex(powerOf2);
-            BlockList_Push(&blockAllocator->freeSuperblocks[i], blockMetaStart, current);
+            BlockList_Push(&blockAllocator->freeSuperblocks[i], blockMetaStart,
+                           current);
 
             remaining_count -= powerOf2;
             current += powerOf2;
@@ -239,7 +248,8 @@ void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
     }
 }
 
-void BlockAllocator_splitAndAddLocal(BlockAllocator *blockAllocator, LocalBlockList *localBlockListStart,
+void BlockAllocator_splitAndAddLocal(BlockAllocator *blockAllocator,
+                                     LocalBlockList *localBlockListStart,
                                      BlockMeta *superblock, uint32_t count) {
     uint32_t remaining_count = count;
     uint32_t powerOf2 = 1;
@@ -249,7 +259,8 @@ void BlockAllocator_splitAndAddLocal(BlockAllocator *blockAllocator, LocalBlockL
     while (remaining_count > 0) {
         if ((powerOf2 & remaining_count) > 0) {
             int i = BlockAllocator_sizeToLinkedListIndex(powerOf2);
-            LocalBlockList_Push(localBlockListStart + i, blockMetaStart, current);
+            LocalBlockList_Push(localBlockListStart + i, blockMetaStart,
+                                current);
 
             remaining_count -= powerOf2;
             current += powerOf2;
@@ -258,11 +269,14 @@ void BlockAllocator_splitAndAddLocal(BlockAllocator *blockAllocator, LocalBlockL
     }
 }
 
-void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator, LocalBlockList *localBlockListStart,
-                                           BlockMeta *superblock, uint32_t count) {
+void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator,
+                                           LocalBlockList *localBlockListStart,
+                                           BlockMeta *superblock,
+                                           uint32_t count) {
 
 #ifdef DEBUG_PRINT
-    printf("BlockAllocator_AddFreeSuperblock %p %" PRIu32 " count = %" PRIu32 "\n",
+    printf("BlockAllocator_AddFreeSuperblock %p %" PRIu32 " count = %" PRIu32
+           "\n",
            superblock,
            BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock),
            count);
@@ -279,14 +293,16 @@ void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator, Local
     }
     BlockAllocator_splitAndAdd(blockAllocator, superblock, count);
     // blockAllocator->freeBlockCount += count;
-    atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count, memory_order_relaxed);
+    atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count,
+                              memory_order_relaxed);
 }
 
 void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
                                       BlockMeta *superblock, uint32_t count) {
 
 #ifdef DEBUG_PRINT
-    printf("BlockAllocator_AddFreeSuperblock %p %" PRIu32 " count = %" PRIu32 "\n",
+    printf("BlockAllocator_AddFreeSuperblock %p %" PRIu32 " count = %" PRIu32
+           "\n",
            superblock,
            BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock),
            count);
@@ -303,7 +319,8 @@ void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
     }
     BlockAllocator_splitAndAdd(blockAllocator, superblock, count);
     // blockAllocator->freeBlockCount += count;
-    atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count, memory_order_relaxed);
+    atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count,
+                              memory_order_relaxed);
 }
 
 void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
@@ -339,7 +356,8 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
         BlockAllocator_splitAndAdd(blockAllocator, replaced, size);
     }
     // blockAllocator->freeBlockCount += count;
-    atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count, memory_order_relaxed);
+    atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count,
+                              memory_order_relaxed);
 }
 
 void BlockAllocator_FinishCoalescing(BlockAllocator *blockAllocator) {
@@ -361,7 +379,8 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
 void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
     int index = MathUtils_Log2Ceil((size_t)SWEEP_RESERVE_BLOCKS);
     assert(blockAllocator->concurrent);
-    BlockMeta *superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
+    BlockMeta *superblock =
+        BlockAllocator_pollSuperblock(blockAllocator, &index);
 
     uint32_t receivedSize = 1 << index;
 
@@ -376,8 +395,8 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
         uint32_t superblockIdx = BlockRange_PollFirst(
             &blockAllocator->coalescingSuperblock, SWEEP_RESERVE_BLOCKS);
         if (superblockIdx != NO_BLOCK_INDEX) {
-            superblock = BlockMeta_GetFromIndex(
-                blockAllocator->blockMetaStart, superblockIdx);
+            superblock = BlockMeta_GetFromIndex(blockAllocator->blockMetaStart,
+                                                superblockIdx);
         }
     }
 
@@ -390,15 +409,16 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
 #endif
 
     if (superblock != NULL) {
-        blockAllocator->reservedSuperblock = (word_t) superblock;
+        blockAllocator->reservedSuperblock = (word_t)superblock;
     } else {
-        blockAllocator->reservedSuperblock = (word_t) NULL;
+        blockAllocator->reservedSuperblock = (word_t)NULL;
     }
 }
 
 void BlockAllocator_UseReserve(BlockAllocator *blockAllocator) {
-    BlockMeta *reserved = (BlockMeta *) blockAllocator->reservedSuperblock;
+    BlockMeta *reserved = (BlockMeta *)blockAllocator->reservedSuperblock;
     if (reserved != NULL) {
-        BlockAllocator_splitAndAdd(blockAllocator, reserved, SWEEP_RESERVE_BLOCKS);
+        BlockAllocator_splitAndAdd(blockAllocator, reserved,
+                                   SWEEP_RESERVE_BLOCKS);
     }
 }

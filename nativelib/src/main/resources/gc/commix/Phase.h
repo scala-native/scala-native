@@ -21,4 +21,4 @@ void Phase_MarkDone(Heap *heap);
 void Phase_StartSweep(Heap *heap);
 void Phase_SweepDone(Heap *heap, Stats *stats);
 
-#endif //IMMIX_PHASE_H
+#endif // IMMIX_PHASE_H

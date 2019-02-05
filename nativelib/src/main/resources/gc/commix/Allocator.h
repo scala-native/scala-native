@@ -34,7 +34,8 @@ typedef struct {
     // additional things used for
     BlockMeta *largeBlock;
     word_t *largeBlockStart;
-    // This gets concurrently updated by other threads, keep if it as far away as possible from fast path.
+    // This gets concurrently updated by other threads, keep if it as far away
+    // as possible from fast path.
     atomic_uint_fast32_t recycledBlockCount;
 } Allocator;
 
@@ -45,6 +46,7 @@ bool Allocator_CanInitCursors(Allocator *allocator);
 void Allocator_Clear(Allocator *allocator);
 word_t *Allocator_Alloc(Heap *heap, uint32_t objectSize);
 uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *block,
-                         word_t *blockStart, LineMeta *lineMetas, SweepResult *result);
+                         word_t *blockStart, LineMeta *lineMetas,
+                         SweepResult *result);
 
 #endif // IMMIX_ALLOCATOR_H

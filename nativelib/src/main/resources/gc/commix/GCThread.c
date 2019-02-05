@@ -18,7 +18,8 @@ static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
 
     Stats_RecordTime(stats, end_ns);
     Stats_RecordEvent(stats, event_concurrent_mark, start_ns, end_ns);
-    Stats_RecordEventSync(stats, mark_waiting, stats->mark_waiting_start_ns, stats->mark_waiting_end_ns);
+    Stats_RecordEventSync(stats, mark_waiting, stats->mark_waiting_start_ns,
+                          stats->mark_waiting_end_ns);
 }
 
 static inline void GCThread_mark(Heap *heap, Stats *stats) {
@@ -30,7 +31,8 @@ static inline void GCThread_mark(Heap *heap, Stats *stats) {
 
     Stats_RecordTime(stats, end_ns);
     Stats_RecordEvent(stats, event_concurrent_mark, start_ns, end_ns);
-    Stats_RecordEvent(stats, mark_waiting, stats->mark_waiting_start_ns, stats->mark_waiting_end_ns);
+    Stats_RecordEvent(stats, mark_waiting, stats->mark_waiting_start_ns,
+                      stats->mark_waiting_end_ns);
 }
 
 static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
@@ -46,7 +48,8 @@ static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
     Stats_RecordEvent(stats, event_concurrent_sweep, start_ns, end_ns);
 }
 
-static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap, Stats *stats) {
+static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap,
+                                        Stats *stats) {
     thread->sweep.cursorDone = 0;
     Stats_RecordTime(stats, start_ns);
 
@@ -80,15 +83,15 @@ void *GCThread_loop(void *arg) {
 
         uint8_t phase = heap->gcThreads.phase;
         switch (phase) {
-            case gc_idle:
-                break;
-            case gc_mark:
-                GCThread_mark(heap, stats);
-                break;
-            case gc_sweep:
-                GCThread_sweep(thread, heap, stats);
-                Stats_WriteToFile(stats);
-                break;
+        case gc_idle:
+            break;
+        case gc_mark:
+            GCThread_mark(heap, stats);
+            break;
+        case gc_sweep:
+            GCThread_sweep(thread, heap, stats);
+            Stats_WriteToFile(stats);
+            break;
         }
         // hard fence before proceeding with the next phase
         atomic_thread_fence(memory_order_seq_cst);
@@ -110,15 +113,15 @@ void *GCThread_loopMaster(void *arg) {
 
         uint8_t phase = heap->gcThreads.phase;
         switch (phase) {
-            case gc_idle:
-                break;
-            case gc_mark:
-                GCThread_markMaster(heap, stats);
-                break;
-            case gc_sweep:
-                GCThread_sweepMaster(thread, heap, stats);
-                Stats_WriteToFile(stats);
-                break;
+        case gc_idle:
+            break;
+        case gc_mark:
+            GCThread_markMaster(heap, stats);
+            break;
+        case gc_sweep:
+            GCThread_sweepMaster(thread, heap, stats);
+            Stats_WriteToFile(stats);
+            break;
         }
         // hard fence before proceeding with the next phase
         atomic_thread_fence(memory_order_seq_cst);
@@ -143,7 +146,7 @@ void GCThread_Init(GCThread *thread, int id, Heap *heap, Stats *stats) {
 
 bool GCThread_AnyActive(Heap *heap) {
     int gcThreadCount = heap->gcThreads.count;
-    GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
+    GCThread *gcThreads = (GCThread *)heap->gcThreads.all;
     bool anyActive = false;
     for (int i = 0; i < gcThreadCount; i++) {
         if (gcThreads[i].active) {
@@ -155,7 +158,7 @@ bool GCThread_AnyActive(Heap *heap) {
 
 int GCThread_ActiveCount(Heap *heap) {
     int gcThreadCount = heap->gcThreads.count;
-    GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
+    GCThread *gcThreads = (GCThread *)heap->gcThreads.all;
     int count = 0;
     for (int i = 0; i < gcThreadCount; i++) {
         if (gcThreads[i].active) {
@@ -183,11 +186,13 @@ INLINE void GCThread_JoinAll(Heap *heap) {
     Phase_Set(heap, gc_idle);
     sem_t *startMaster = &heap->gcThreads.startMaster;
     sem_t *startWorkers = &heap->gcThreads.startWorkers;
-    while (!sem_trywait(startMaster)){}
-    while (!sem_trywait(startWorkers)){}
+    while (!sem_trywait(startMaster)) {
+    }
+    while (!sem_trywait(startWorkers)) {
+    }
 
     int gcThreadCount = heap->gcThreads.count;
-    GCThread *gcThreads = (GCThread *) heap->gcThreads.all;
+    GCThread *gcThreads = (GCThread *)heap->gcThreads.all;
     bool anyActive = false;
     for (int i = 0; i < gcThreadCount; i++) {
         anyActive |= gcThreads[i].active;
@@ -196,7 +201,6 @@ INLINE void GCThread_JoinAll(Heap *heap) {
         GCThread_joinAllSlow(gcThreads, gcThreadCount);
     }
 }
-
 
 INLINE void GCThread_WakeMaster(Heap *heap) {
     sem_post(&heap->gcThreads.startMaster);
@@ -220,7 +224,9 @@ void GCThread_ScaleMarkerThreads(Heap *heap, uint32_t remainingFullPackets) {
     if (remainingFullPackets > MARK_SPAWN_THREADS_MIN_PACKETS) {
         int maxThreads = heap->gcThreads.count;
         int activeThreads = GCThread_ActiveCount(heap);
-        int targetThreadCount = (remainingFullPackets - MARK_SPAWN_THREADS_MIN_PACKETS) / MARK_MIN_PACKETS_PER_THREAD;
+        int targetThreadCount =
+            (remainingFullPackets - MARK_SPAWN_THREADS_MIN_PACKETS) /
+            MARK_MIN_PACKETS_PER_THREAD;
         if (targetThreadCount > maxThreads) {
             targetThreadCount = maxThreads;
         }

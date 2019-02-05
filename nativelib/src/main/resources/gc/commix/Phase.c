@@ -79,7 +79,8 @@ void Phase_SweepDone(Heap *heap, Stats *stats) {
         Phase_Set(heap, gc_idle);
 
         Stats_RecordTime(stats, end_ns);
-        Stats_RecordEvent(stats, event_collection, heap->stats->collection_start_ns, end_ns);
+        Stats_RecordEvent(stats, event_collection,
+                          heap->stats->collection_start_ns, end_ns);
 
         heap->sweep.postSweepDone = true;
     }

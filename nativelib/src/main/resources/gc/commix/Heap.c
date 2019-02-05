@@ -79,7 +79,7 @@ INLINE Stats *Heap_createStatsForThread(int id) {
     char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
         int len = strlen(statsFile) + 5;
-        char *threadSpecificFile = (char *) malloc(len);
+        char *threadSpecificFile = (char *)malloc(len);
         snprintf(threadSpecificFile, len, "%s.t%d", statsFile, id);
         Stats *stats = malloc(sizeof(Stats));
         Stats_Init(stats, threadSpecificFile, (uint8_t)id);
@@ -157,11 +157,14 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
     GreyList_Init(&heap->mark.empty);
     GreyList_Init(&heap->mark.full);
-    uint32_t greyPacketCount = (uint32_t)(maxHeapSize * GREY_PACKET_RATIO / GREY_PACKET_SIZE);
+    uint32_t greyPacketCount =
+        (uint32_t)(maxHeapSize * GREY_PACKET_RATIO / GREY_PACKET_SIZE);
     heap->mark.total = greyPacketCount;
-    word_t* greyPacketsStart = Heap_mapAndAlign(greyPacketCount * sizeof(GreyPacket), WORD_SIZE);
+    word_t *greyPacketsStart =
+        Heap_mapAndAlign(greyPacketCount * sizeof(GreyPacket), WORD_SIZE);
     heap->greyPacketsStart = greyPacketsStart;
-    GreyList_PushAll(&heap->mark.empty, greyPacketsStart, (GreyPacket *) greyPacketsStart, greyPacketCount);
+    GreyList_PushAll(&heap->mark.empty, greyPacketsStart,
+                     (GreyPacket *)greyPacketsStart, greyPacketCount);
 
     // reserve space for bytemap
     Bytemap *bytemap = (Bytemap *)Heap_mapAndAlign(
@@ -218,10 +221,11 @@ void Heap_clearIsSwept(Heap *heap) {
     BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
     BlockMeta *limit = (BlockMeta *)heap->blockMetaEnd;
     while (current < limit) {
-        BlockMeta *reserveFirst = (BlockMeta *) blockAllocator.reservedSuperblock;
+        BlockMeta *reserveFirst =
+            (BlockMeta *)blockAllocator.reservedSuperblock;
         BlockMeta *reserveLimit = reserveFirst + SWEEP_RESERVE_BLOCKS;
         if (current < reserveFirst || current >= reserveLimit) {
-            assert(reserveFirst !=  NULL);
+            assert(reserveFirst != NULL);
             current->debugFlag = dbg_must_sweep;
         }
         current++;
@@ -300,7 +304,8 @@ bool Heap_shouldGrow(Heap *heap) {
     uint64_t timeInMark = heap->mark.currentEnd_ns - heap->mark.currentStart_ns;
     uint64_t timeTotal = heap->mark.currentEnd_ns - heap->mark.lastEnd_ns;
 
-    return timeInMark >= GROWTH_MARK_FRACTION * timeTotal || freeBlockCount * 2 < blockCount ||
+    return timeInMark >= GROWTH_MARK_FRACTION * timeTotal ||
+           freeBlockCount * 2 < blockCount ||
            4 * unavailableBlockCount > blockCount;
 }
 

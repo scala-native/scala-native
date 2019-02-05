@@ -163,7 +163,8 @@ bool Allocator_newBlock(Allocator *allocator) {
     if (concurrent) {
         block = BlockList_Pop(&allocator->recycledBlocks, blockMetaStart);
     } else {
-        block = BlockList_Pop_OnlyThread(&allocator->recycledBlocks, blockMetaStart);
+        block = BlockList_Pop_OnlyThread(&allocator->recycledBlocks,
+                                         blockMetaStart);
     }
     word_t *blockStart;
 
@@ -246,7 +247,7 @@ NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
     word_t *object = Allocator_tryAlloc(&allocator, size);
 
     if (object != NULL) {
-done:
+    done:
         assert(Heap_IsWordInHeap(heap, object));
         assert(object != NULL);
         ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, object);
@@ -315,7 +316,8 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
 }
 
 uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
-                         word_t *blockStart, LineMeta *lineMetas, SweepResult *result) {
+                         word_t *blockStart, LineMeta *lineMetas,
+                         SweepResult *result) {
 
     // If the block is not marked, it means that it's completely free
     assert(blockMeta->debugFlag == dbg_must_sweep);
@@ -396,8 +398,9 @@ uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
 
             assert(BlockMeta_FirstFreeLine(blockMeta) >= 0);
             assert(BlockMeta_FirstFreeLine(blockMeta) < LINE_COUNT);
-//            allocator->recycledBlockCount++;
-            atomic_fetch_add_explicit(&allocator->recycledBlockCount, 1, memory_order_relaxed);
+            // allocator->recycledBlockCount++;
+            atomic_fetch_add_explicit(&allocator->recycledBlockCount, 1,
+                                      memory_order_relaxed);
 
 #ifdef DEBUG_ASSERT
             blockMeta->debugFlag = dbg_partial_free;
@@ -405,11 +408,13 @@ uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *blockMeta,
             // the allocator thread must see the sweeping changes in recycled
             // blocks
             atomic_thread_fence(memory_order_release);
-            LocalBlockList_Push(&result->recycledBlocks, allocator->blockMetaStart, blockMeta);
+            LocalBlockList_Push(&result->recycledBlocks,
+                                allocator->blockMetaStart, blockMeta);
 #ifdef DEBUG_PRINT
-                printf("Allocator_Sweep %p %" PRIu32 " => RECYCLED\n",
-                       blockMeta, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta));
-                fflush(stdout);
+            printf(
+                "Allocator_Sweep %p %" PRIu32 " => RECYCLED\n", blockMeta,
+                BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta));
+            fflush(stdout);
 #endif
         } else {
 #ifdef DEBUG_ASSERT
