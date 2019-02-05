@@ -19,15 +19,21 @@
 #ifdef ENABLE_GC_STATS
 
 typedef enum {
+// mark and sweep phases on mutator thread
     event_mark = 0x0,
     event_sweep = 0x1,
+// mark and sweep phases on GCThreads
     event_concurrent_mark = 0x2,
     event_concurrent_sweep = 0x3,
+// the whole collection from initialization until concurrent sweep stops
     event_collection = 0x4,
+// batches being processed
     event_mark_batch = 0x5,
     event_sweep_batch = 0x6,
     event_coalesce_batch = 0x7,
+// thread is waiting for full packets to be available during mark
     mark_waiting = 0x8,
+// any synchronization on common concurrent data structures
     event_sync = 0x9
 } eventType;
 
