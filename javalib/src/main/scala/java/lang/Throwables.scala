@@ -31,7 +31,7 @@ private[lang] object StackTrace {
                                       ip: CUnsignedLong): StackTraceElement =
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
-  private[lang] def currentStackTrace(): Array[StackTraceElement] = {
+  @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
     val cursor  = stackalloc[scala.Byte](2048)
     val context = stackalloc[scala.Byte](2048)
     val offset  = stackalloc[scala.Byte](8)
