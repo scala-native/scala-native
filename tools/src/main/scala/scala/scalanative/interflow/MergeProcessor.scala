@@ -224,8 +224,6 @@ final class MergeProcessor(insts: Array[Inst],
     sb.toString
   }
 
-  var cnt = 0
-
   def advance(): Unit = {
     val sortedTodo = todo.toArray.sortBy(_.id)
     val block      = findMergeBlock(sortedTodo.head)
@@ -353,7 +351,7 @@ object MergeProcessor {
     val entryName       = insts.head.asInstanceOf[Inst.Label].name
     val entryMergeBlock = builder.findMergeBlock(entryName)
     val entryState      = new State(entryMergeBlock.name)
-    entryState.inherit(state)
+    entryState.inherit(state, args)
     entryMergeBlock.incoming(Local(-1)) = ((args, entryState))
     builder.todo += entryName
     builder

@@ -90,20 +90,20 @@ trait Inline { self: Interflow =>
 
         case Seq(block) =>
           block.cf match {
-            case Inst.Ret(v) =>
+            case Inst.Ret(value) =>
               state.emit ++= block.end.emit
-              state.inherit(block.end)
-              v
+              state.inherit(block.end, value +: args)
+              value
             case Inst.Throw(value, unwind) =>
               val excv = block.end.materialize(value)
               state.emit ++= block.end.emit
               state.emit.raise(excv, unwind)
-              state.inherit(block.end)
+              state.inherit(block.end, value +: args)
               nothing
             case Inst.Unreachable(unwind) =>
               state.emit ++= block.end.emit
               state.emit.unreachable(unwind)
-              state.inherit(block.end)
+              state.inherit(block.end, args)
               nothing
           }
 
@@ -126,10 +126,10 @@ trait Inline { self: Interflow =>
           rest
             .collectFirst {
               case block if block.cf.isInstanceOf[Inst.Ret] =>
-                val Inst.Ret(v) = block.cf
+                val Inst.Ret(value) = block.cf
                 state.emit ++= block.toInsts.init
-                state.inherit(block.end)
-                v
+                state.inherit(block.end, value +: args)
+                value
             }
             .getOrElse {
               nothing
