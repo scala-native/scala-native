@@ -256,6 +256,12 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats) {
         if (next != NULL) {
             Marker_giveEmptyPacket(heap, stats, in);
             uint32_t remainingFullPackets = next->next.sep.size;
+            // Make sure than enough worker threads are running
+            // given the number of packets available.
+            // They will automatically stop if they run out of full packets.
+            // If too many threads are started only a fraction of them would
+            // get a packet and do useful work. Others would add unnecessary
+            // overhead by checking the list of full packets.
             GCThread_ScaleMarkerThreads(heap, remainingFullPackets);
         } else {
             if (!GreyPacket_IsEmpty(out)) {
