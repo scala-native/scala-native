@@ -214,3 +214,18 @@ INLINE void GCThread_Wake(Heap *heap, int toWake) {
     }
     GCThread_WakeWorkers(heap, toWake - 1);
 }
+
+void GCThread_ScaleMarkerThreads(Heap *heap, uint32_t remainingFullPackets) {
+    if (remainingFullPackets > MARK_SPAWN_THREADS_MIN_PACKETS) {
+        int maxThreads = heap->gcThreads.count;
+        int activeThreads = GCThread_ActiveCount(heap);
+        int targetThreadCount = (remainingFullPackets - MARK_SPAWN_THREADS_MIN_PACKETS) / MARK_MIN_PACKETS_PER_THREAD;
+        if (targetThreadCount > maxThreads) {
+            targetThreadCount = maxThreads;
+        }
+        int toSpawn = targetThreadCount - activeThreads;
+        if (toSpawn > 0) {
+            GCThread_WakeWorkers(heap, toSpawn);
+        }
+    }
+}

@@ -26,5 +26,6 @@ void GCThread_JoinAll(Heap *heap);
 void GCThread_Wake(Heap *heap, int toWake);
 void GCThread_WakeMaster(Heap *heap);
 void GCThread_WakeWorkers(Heap *heap, int toWake);
+void GCThread_ScaleMarkerThreads(Heap *heap, uint32_t remainingFullPackets);
 
 #endif // IMMIX_GCTHREAD_H
