@@ -25,6 +25,8 @@ trait Inline { self: Interflow =>
         }
         val isSmall =
           defn.insts.size <= 8
+        val hasVirtualArgs =
+          args.exists(_.isInstanceOf[Val.Virtual])
         val noInline =
           defn.attrs.inline == Attr.NoInline
         val hintInline =
@@ -37,7 +39,7 @@ trait Inline { self: Interflow =>
           blacklist.contains(name)
 
         val shall =
-          isCtor || hintInline || isSmall
+          isCtor || hintInline || isSmall || (mode == build.Mode.Release && hasVirtualArgs)
         val shallNot =
           noInline || hasUnwind || isRecursive || isBlacklisted
 
