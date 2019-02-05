@@ -17,7 +17,7 @@ trait Eval { self: Interflow =>
     val initialSize = state.emit.size
 
     def shallContinue(): Boolean =
-      state.emit.size - initialSize <= 8 && continues < 65536
+      false
 
     def continue(next: Next.Label): Unit = {
       val Next.Label(to, args)  = next
@@ -379,8 +379,6 @@ trait Eval { self: Interflow =>
                 } else {
                   emit.comp(Comp.Ine, Rt.Object, obj, Val.Null, unwind)
                 }
-                log(
-                  s"isinstanceof ${obj.ty.show} a ${cls.ty.show} ? ${res.show}")
                 res
               case _ =>
                 emit.is(refty, materialize(obj), unwind)
@@ -421,7 +419,8 @@ trait Eval { self: Interflow =>
         }
       case Op.Arrayload(ty, arr, idx) =>
         (eval(arr), eval(idx)) match {
-          case (Val.Virtual(addr), Val.Int(offset)) =>
+          case (Val.Virtual(addr), Val.Int(offset))
+              if state.inBounds(addr, offset) =>
             val instance = state.derefVirtual(addr)
             instance.values(offset)
           case (arr, idx) =>
@@ -429,7 +428,8 @@ trait Eval { self: Interflow =>
         }
       case Op.Arraystore(ty, arr, idx, value) =>
         (eval(arr), eval(idx)) match {
-          case (Val.Virtual(addr), Val.Int(offset)) =>
+          case (Val.Virtual(addr), Val.Int(offset))
+              if state.inBounds(addr, offset) =>
             val instance = state.derefVirtual(addr)
             instance.values(offset) = eval(value)
             Val.Unit
@@ -903,19 +903,21 @@ trait Eval { self: Interflow =>
     }
   }
 
-  def eval(value: Val)(implicit state: State): Val = value match {
-    case Val.Local(local, _) if local.id >= 0 =>
-      state.loadLocal(local) match {
-        case value: Val.Virtual =>
-          eval(value)
-        case value =>
-          value
-      }
-    case Val.Virtual(addr) if state.escaped(addr) =>
-      state.derefEscaped(addr).escapedValue
-    case Val.String(value) =>
-      Val.Virtual(state.allocString(value))
-    case _ =>
-      value.canonicalize
+  def eval(value: Val)(implicit state: State): Val = {
+    value match {
+      case Val.Local(local, _) if local.id >= 0 =>
+        state.loadLocal(local) match {
+          case value: Val.Virtual =>
+            eval(value)
+          case value =>
+            value
+        }
+      case Val.Virtual(addr) if state.escaped(addr) =>
+        state.derefEscaped(addr).escapedValue
+      case Val.String(value) =>
+        Val.Virtual(state.allocString(value))
+      case _ =>
+        value.canonicalize
+    }
   }
 }

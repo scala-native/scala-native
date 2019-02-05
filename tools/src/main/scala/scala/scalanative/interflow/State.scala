@@ -59,6 +59,14 @@ final class State(block: Local) {
   def derefEscaped(addr: Addr): EscapedInstance = {
     heap(addr).asInstanceOf[EscapedInstance]
   }
+  def inBounds(addr: Addr, offset: Int): Boolean = {
+    heap(addr) match {
+      case VirtualInstance(_, _, v) =>
+        addr >= 0 && addr < v.length
+      case _ =>
+        false
+    }
+  }
   def escaped(addr: Addr): Boolean = {
     deref(addr).isInstanceOf[EscapedInstance]
   }
