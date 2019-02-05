@@ -12,23 +12,7 @@ trait Eval { self: Interflow =>
           offsets: Map[Local, Int],
           from: Local,
           blockFresh: Fresh)(implicit state: State): Inst.Cf = {
-    var pc          = offsets(from) + 1
-    var continues   = 0
-    val initialSize = state.emit.size
-
-    def shallContinue(): Boolean =
-      false
-
-    def continue(next: Next.Label): Unit = {
-      val Next.Label(to, args)  = next
-      val Inst.Label(_, params) = insts(offsets(to))
-      pc = offsets(to) + 1
-      params.zip(args).foreach {
-        case (param, value) =>
-          state.storeLocal(param.name, value)
-      }
-      continues += 1
-    }
+    var pc = offsets(from) + 1
 
     while (true) {
       val inst = insts(pc)
@@ -52,11 +36,7 @@ trait Eval { self: Interflow =>
         case Inst.Jump(Next.Label(target, args)) =>
           val evalArgs = args.map(eval)
           val next     = Next.Label(target, evalArgs)
-          if (shallContinue()) {
-            continue(next)
-          } else {
-            return Inst.Jump(next)
-          }
+          return Inst.Jump(next)
         case Inst.If(cond,
                      Next.Label(thenTarget, thenArgs),
                      Next.Label(elseTarget, elseArgs)) =>
@@ -66,17 +46,9 @@ trait Eval { self: Interflow =>
             Next.Label(elseTarget, elseArgs.map(eval))
           val next = eval(cond) match {
             case Val.True =>
-              if (shallContinue()) {
-                continue(thenNext)
-              } else {
-                return Inst.Jump(thenNext)
-              }
+              return Inst.Jump(thenNext)
             case Val.False =>
-              if (shallContinue()) {
-                continue(elseNext)
-              } else {
-                return Inst.Jump(elseNext)
-              }
+              return Inst.Jump(elseNext)
             case cond =>
               return Inst.If(cond, thenNext, elseNext)
           }
@@ -93,18 +65,10 @@ trait Eval { self: Interflow =>
                       if caseValue == value =>
                     val evalArgs = caseArgs.map(eval)
                     val next     = Next.Label(caseTarget, evalArgs)
-                    if (shallContinue()) {
-                      continue(next)
-                    } else {
-                      return Inst.Jump(next)
-                    }
+                    return Inst.Jump(next)
                 }
                 .getOrElse {
-                  if (shallContinue()) {
-                    continue(defaultNext)
-                  } else {
-                    return Inst.Jump(defaultNext)
-                  }
+                  return Inst.Jump(defaultNext)
                 }
             case scrut =>
               return Inst.Switch(scrut, defaultNext, cases)
@@ -118,11 +82,7 @@ trait Eval { self: Interflow =>
               state.storeLocal(exc, excv)
               val eargs = args.map(eval)
               val next  = Next.Label(name, eargs)
-              if (shallContinue) {
-                continue(next)
-              } else {
-                return Inst.Jump(next)
-              }
+              return Inst.Jump(next)
             case _ =>
               unreachable
           }
