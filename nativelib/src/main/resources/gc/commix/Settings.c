@@ -69,8 +69,8 @@ char *Settings_StatsFileName() { return getenv(STATS_FILE_SETTING); }
 int Settings_GCThreadCount() {
     char *str = getenv("SCALANATIVE_GC_THREADS");
     if (str == NULL) {
-        // default is number of cores - 2, but no less than 1 and no more than 8
-        int defaultGThreadCount = get_nprocs() - 2;
+        // default is number of cores - 1, but no less than 1 and no more than 8
+        int defaultGThreadCount = get_nprocs() - 1;
         if (defaultGThreadCount < 1) {
             defaultGThreadCount = 1;
         } else if (defaultGThreadCount > 8) {
