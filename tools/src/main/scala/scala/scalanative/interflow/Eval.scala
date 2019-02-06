@@ -225,6 +225,30 @@ trait Eval { self: Interflow =>
             Val.True
           case (Comp.Ine, l, Val.Virtual(addr)) if !r.isCanonical =>
             Val.True
+          case (Comp.Ieq, v @ Of(ty: Type.RefKind), Val.Null)
+              if !ty.isNullable =>
+            Val.False
+          case (Comp.Ieq, Val.Null, v @ Of(ty: Type.RefKind))
+              if !ty.isNullable =>
+            Val.False
+          case (Comp.Ine, v @ Of(ty: Type.RefKind), Val.Null)
+              if !ty.isNullable =>
+            Val.True
+          case (Comp.Ine, Val.Null, v @ Of(ty: Type.RefKind))
+              if !ty.isNullable =>
+            Val.True
+          case (Comp.Ieq,
+                l @ Of2(lty: Type.RefKind, ClassRef(lcls)),
+                r @ Of2(rty: Type.RefKind, ClassRef(rcls)))
+              if !lty.isNullable && lty.isExact && lcls.isModule
+                && !rty.isNullable && rty.isExact && rcls.isModule =>
+            Val.Bool(lcls.name == rcls.name)
+          case (Comp.Ine,
+                l @ Of2(lty: Type.RefKind, ClassRef(lcls)),
+                r @ Of2(rty: Type.RefKind, ClassRef(rcls)))
+              if !lty.isNullable && lty.isExact && lcls.isModule
+                && !rty.isNullable && rty.isExact && rcls.isModule =>
+            Val.Bool(lcls.name != rcls.name)
           case (_, l, r) =>
             emit.comp(comp, ty, materialize(l), materialize(r), unwind)
         }
