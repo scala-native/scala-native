@@ -59,6 +59,18 @@ object Type {
       case Type.Array(ty, _)    => toArrayClass(ty)
       case Type.Ref(name, _, _) => name
     }
+    final def isExact: Boolean = this match {
+      case Type.Null         => true
+      case Type.Unit         => true
+      case _: Type.Array     => true
+      case Type.Ref(_, e, _) => e
+    }
+    final def isNullable: Boolean = this match {
+      case Type.Null         => true
+      case Type.Unit         => true
+      case Type.Array(_, n)  => n
+      case Type.Ref(_, _, n) => n
+    }
   }
   final case object Null                                     extends RefKind
   final case object Unit                                     extends RefKind

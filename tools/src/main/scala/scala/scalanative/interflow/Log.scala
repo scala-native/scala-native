@@ -16,7 +16,7 @@ trait Log { self: Interflow =>
       res
     } catch {
       case e: Throwable =>
-        log("unwinding " + msg)
+        log("unwinding " + msg + " due to: " + e.toString)
         throw e
     } finally {
       context = context.tail
@@ -25,7 +25,7 @@ trait Log { self: Interflow =>
 
   def log(msg: String): Unit =
     if (show) {
-      println("  " * context.size + msg)
+      println(("  " * context.size) + msg)
     }
 
   def debug[T](msg: String)(f: => T): T = {

@@ -8,7 +8,7 @@ import scalanative.build.IO.RichPath
 import scalanative.nir.{Type, Rt, Sig, Global}
 import scalanative.linker.Link
 import scalanative.codegen.CodeGen
-import scalanative.optimizer.Optimizer
+import scalanative.interflow.Interflow
 import scalanative.checker.Check
 
 /** Internal utilities to instrument Scala Native linker, otimizer and codegen. */
@@ -35,11 +35,12 @@ private[scalanative] object ScalaNative {
   }
 
   /** Optimizer high-level NIR under closed-world assumption. */
-  def optimize(config: Config,
-               linked: linker.Result,
-               driver: optimizer.Driver): linker.Result =
+  def optimize(config: Config, linked: linker.Result): linker.Result =
     config.logger.time(s"Optimizing (${config.mode} mode)") {
-      Optimizer(config, linked, driver)
+      val optimized =
+        interflow.Interflow(config, linked, linked.defns)
+
+      linker.Link(config, linked.entries, optimized)
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */

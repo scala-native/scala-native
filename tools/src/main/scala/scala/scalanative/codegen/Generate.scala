@@ -34,6 +34,7 @@ object Generate {
       genObjectArrayId()
       genArrayIds()
       genStackBottom()
+
       buf
     }
 
@@ -188,44 +189,57 @@ object Generate {
           val cond  = Val.Local(fresh(), Type.Bool)
           val alloc = Val.Local(fresh(), clsTy)
 
-          val initCall = if (cls.isStaticModule) {
-            Seq()
+          if (cls.isConstantModule) {
+            val moduleTyName =
+              name.member(Sig.Generated("type"))
+            val moduleTyVal =
+              Val.Global(moduleTyName, Type.Ptr)
+            val instanceName =
+              name.member(Sig.Generated("instance"))
+            val instanceVal =
+              Val.StructValue(Seq(moduleTyVal))
+            val instanceDefn = Defn.Const(
+              Attrs.None,
+              instanceName,
+              Type.StructValue(Seq(Type.Ptr)),
+              instanceVal
+            )
+
+            buf += instanceDefn
           } else {
             val initSig = Type.Function(Seq(clsTy), Type.Unit)
             val init    = Val.Global(name.member(Sig.Ctor(Seq())), Type.Ptr)
 
-            Seq(Inst.Let(Op.Call(initSig, init, Seq(alloc)), Next.None))
-          }
-
-          val loadName = name.member(Sig.Generated("load"))
-          val loadSig  = Type.Function(Seq(), clsTy)
-          val loadDefn = Defn.Define(
-            Attrs.None,
-            loadName,
-            loadSig,
-            Seq(
-              Inst.Label(entry, Seq()),
-              Inst.Let(slot.name,
-                       Op.Elem(Type.Ptr,
-                               Val.Global(moduleArrayName, Type.Ptr),
-                               Seq(Val.Int(meta.moduleArray.index(cls)))),
-                       Next.None),
-              Inst.Let(self.name, Op.Load(clsTy, slot), Next.None),
-              Inst.Let(cond.name,
-                       Op.Comp(Comp.Ine, nir.Rt.Object, self, Val.Null),
-                       Next.None),
-              Inst.If(cond, Next(existing), Next(initialize)),
-              Inst.Label(existing, Seq()),
-              Inst.Ret(self),
-              Inst.Label(initialize, Seq()),
-              Inst.Let(alloc.name, Op.Classalloc(name), Next.None),
-              Inst.Let(Op.Store(clsTy, slot, alloc), Next.None)
-            ) ++ initCall ++ Seq(
-              Inst.Ret(alloc)
+            val loadName = name.member(Sig.Generated("load"))
+            val loadSig  = Type.Function(Seq(), clsTy)
+            val loadDefn = Defn.Define(
+              Attrs(inline = Attr.NoInline),
+              loadName,
+              loadSig,
+              Seq(
+                Inst.Label(entry, Seq()),
+                Inst.Let(slot.name,
+                         Op.Elem(Type.Ptr,
+                                 Val.Global(moduleArrayName, Type.Ptr),
+                                 Seq(Val.Int(meta.moduleArray.index(cls)))),
+                         Next.None),
+                Inst.Let(self.name, Op.Load(clsTy, slot), Next.None),
+                Inst.Let(cond.name,
+                         Op.Comp(Comp.Ine, nir.Rt.Object, self, Val.Null),
+                         Next.None),
+                Inst.If(cond, Next(existing), Next(initialize)),
+                Inst.Label(existing, Seq()),
+                Inst.Ret(self),
+                Inst.Label(initialize, Seq()),
+                Inst.Let(alloc.name, Op.Classalloc(name), Next.None),
+                Inst.Let(Op.Store(clsTy, slot, alloc), Next.None),
+                Inst.Let(Op.Call(initSig, init, Seq(alloc)), Next.None),
+                Inst.Ret(alloc)
+              )
             )
-          )
 
-          buf += loadDefn
+            buf += loadDefn
+          }
         }
       }
     }

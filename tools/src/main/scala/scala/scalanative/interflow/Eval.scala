@@ -35,7 +35,8 @@ trait Eval { self: Interflow =>
           return Inst.Ret(eval(v))
         case Inst.Jump(Next.Label(target, args)) =>
           val evalArgs = args.map(eval)
-          return Inst.Jump(Next.Label(target, evalArgs))
+          val next     = Next.Label(target, evalArgs)
+          return Inst.Jump(next)
         case Inst.If(cond,
                      Next.Label(thenTarget, thenArgs),
                      Next.Label(elseTarget, elseArgs)) =>
@@ -63,7 +64,8 @@ trait Eval { self: Interflow =>
                   case Next.Case(caseValue, Next.Label(caseTarget, caseArgs))
                       if caseValue == value =>
                     val evalArgs = caseArgs.map(eval)
-                    return Inst.Jump(Next.Label(caseTarget, evalArgs))
+                    val next     = Next.Label(caseTarget, evalArgs)
+                    return Inst.Jump(next)
                 }
                 .getOrElse {
                   return Inst.Jump(defaultNext)
@@ -79,7 +81,8 @@ trait Eval { self: Interflow =>
             case Next.Unwind(Val.Local(exc, _), Next.Label(name, args)) =>
               state.storeLocal(exc, excv)
               val eargs = args.map(eval)
-              return Inst.Jump(Next.Label(name, eargs))
+              val next  = Next.Label(name, eargs)
+              return Inst.Jump(next)
             case _ =>
               unreachable
           }
@@ -123,52 +126,67 @@ trait Eval { self: Interflow =>
           case Val.Global(name, _) if intrinsics.contains(name) =>
             intrinsic(local, sig, name, eargs, unwind)
           case _ =>
-            val mmeth   = materialize(emeth)
-            val margs   = eargs.map(materialize(_))
-            val margtys = margs.map(_.ty)
+            val argtys = eargs.map {
+              case Val.Virtual(addr) =>
+                state.deref(addr).cls.ty
+              case value =>
+                value.ty
+            }
 
-            val (msig, mtarget) = mmeth match {
+            val (dsig, dtarget) = emeth match {
               case Val.Global(name, _) =>
-                visitDuplicate(name, margtys)
+                visitDuplicate(name, argtys)
                   .map { defn =>
                     (defn.ty, Val.Global(defn.name, Type.Ptr))
                   }
                   .getOrElse {
-                    (sig, mmeth)
+                    (sig, emeth)
                   }
               case _ =>
-                (sig, mmeth)
+                (sig, emeth)
             }
 
-            val isDuplicate =
-              mmeth match {
-                case Val.Global(Global.Member(_, _: Sig.Duplicate), _) =>
-                  true
-                case _ =>
-                  false
-              }
+            def fallback = {
+              val mtarget = materialize(dtarget)
+              val margs   = eargs.map(materialize)
 
-            val cargs =
-              if (!isDuplicate) {
-                margs
-              } else {
-                val Type.Function(sigtys, _) = msig
-
-                // Method target might have a more precise signature
-                // than what's known currently available at the call site.
-                // This is a side effect of a method target selection taking
-                // into account which classes are allocated across whole program.
-                margs.zip(sigtys).map {
-                  case (marg, ty) =>
-                    if (!Sub.is(marg.ty, ty)) {
-                      emit.conv(Conv.Bitcast, ty, marg, unwind)
-                    } else {
-                      marg
-                    }
+              val isDuplicate =
+                mtarget match {
+                  case Val.Global(Global.Member(_, _: Sig.Duplicate), _) =>
+                    true
+                  case _ =>
+                    false
                 }
-              }
 
-            emit.call(msig, mtarget, cargs, unwind)
+              val cargs =
+                if (!isDuplicate) {
+                  margs
+                } else {
+                  val Type.Function(sigtys, _) = dsig
+
+                  // Method target might have a more precise signature
+                  // than what's known currently available at the call site.
+                  // This is a side effect of a method target selection taking
+                  // into account which classes are allocated across whole program.
+                  margs.zip(sigtys).map {
+                    case (marg, ty) =>
+                      if (!Sub.is(marg.ty, ty)) {
+                        emit.conv(Conv.Bitcast, ty, marg, unwind)
+                      } else {
+                        marg
+                      }
+                  }
+                }
+
+              emit.call(dsig, mtarget, cargs, unwind)
+            }
+
+            dtarget match {
+              case Val.Global(name, _) if shallInline(name, eargs, unwind) =>
+                inline(name, eargs, unwind, blockFresh)
+              case _ =>
+                fallback
+            }
         }
       case Op.Load(ty, ptr) =>
         emit.load(ty, materialize(eval(ptr)), unwind)
@@ -191,7 +209,7 @@ trait Eval { self: Interflow =>
       case Op.Bin(bin, ty, l, r) =>
         (eval(l), eval(r)) match {
           case (l, r) if l.isCanonical && r.isCanonical =>
-            eval(bin, ty, l, r)
+            eval(bin, ty, l, r, unwind)
           case (l, r) =>
             emit.bin(bin, ty, materialize(l), materialize(r), unwind)
         }
@@ -321,8 +339,6 @@ trait Eval { self: Interflow =>
                 } else {
                   emit.comp(Comp.Ine, Rt.Object, obj, Val.Null, unwind)
                 }
-                log(
-                  s"isinstanceof ${obj.ty.show} a ${cls.ty.show} ? ${res.show}")
                 res
               case _ =>
                 emit.is(refty, materialize(obj), unwind)
@@ -363,7 +379,8 @@ trait Eval { self: Interflow =>
         }
       case Op.Arrayload(ty, arr, idx) =>
         (eval(arr), eval(idx)) match {
-          case (Val.Virtual(addr), Val.Int(offset)) =>
+          case (Val.Virtual(addr), Val.Int(offset))
+              if state.inBounds(addr, offset) =>
             val instance = state.derefVirtual(addr)
             instance.values(offset)
           case (arr, idx) =>
@@ -371,7 +388,8 @@ trait Eval { self: Interflow =>
         }
       case Op.Arraystore(ty, arr, idx, value) =>
         (eval(arr), eval(idx)) match {
-          case (Val.Virtual(addr), Val.Int(offset)) =>
+          case (Val.Virtual(addr), Val.Int(offset))
+              if state.inBounds(addr, offset) =>
             val instance = state.derefVirtual(addr)
             instance.values(offset) = eval(value)
             Val.Unit
@@ -424,7 +442,15 @@ trait Eval { self: Interflow =>
     }
   }
 
-  def eval(bin: Bin, ty: Type, l: Val, r: Val)(implicit state: State): Val = {
+  def eval(bin: Bin, ty: Type, l: Val, r: Val, unwind: Next)(
+      implicit state: State): Val = {
+    import state.materialize
+    def emit = {
+      if (unwind ne Next.None) {
+        throw BailOut("try-catch")
+      }
+      state.emit.bin(bin, ty, materialize(l), materialize(r), unwind)
+    }
     def bailOut =
       throw BailOut(s"can't eval bin op: $bin[${ty.show}] ${l.show}, ${r.show}")
     bin match {
@@ -466,19 +492,35 @@ trait Eval { self: Interflow =>
         }
       case Bin.Sdiv =>
         (l, r) match {
-          case (Val.Int(l), Val.Int(r)) if r != 0 =>
-            Val.Int(l / r)
-          case (Val.Long(l), Val.Long(r)) if r != 0L =>
-            Val.Long(l / r)
+          case (Val.Int(l), Val.Int(r)) =>
+            if (r != 0) {
+              Val.Int(l / r)
+            } else {
+              emit
+            }
+          case (Val.Long(l), Val.Long(r)) =>
+            if (r != 0L) {
+              Val.Long(l / r)
+            } else {
+              emit
+            }
           case _ =>
             bailOut
         }
       case Bin.Udiv =>
         (l, r) match {
-          case (Val.Int(l), Val.Int(r)) if r != 0 =>
-            Val.Int(java.lang.Integer.divideUnsigned(l, r))
-          case (Val.Long(l), Val.Long(r)) if r != 0 =>
-            Val.Long(java.lang.Long.divideUnsigned(l, r))
+          case (Val.Int(l), Val.Int(r)) =>
+            if (r != 0) {
+              Val.Int(java.lang.Integer.divideUnsigned(l, r))
+            } else {
+              emit
+            }
+          case (Val.Long(l), Val.Long(r)) =>
+            if (r != 0) {
+              Val.Long(java.lang.Long.divideUnsigned(l, r))
+            } else {
+              emit
+            }
           case _ =>
             bailOut
         }
@@ -490,19 +532,35 @@ trait Eval { self: Interflow =>
         }
       case Bin.Srem =>
         (l, r) match {
-          case (Val.Int(l), Val.Int(r)) if r != 0 =>
-            Val.Int(l % r)
-          case (Val.Long(l), Val.Long(r)) if r != 0L =>
-            Val.Long(l % r)
+          case (Val.Int(l), Val.Int(r)) =>
+            if (r != 0) {
+              Val.Int(l % r)
+            } else {
+              emit
+            }
+          case (Val.Long(l), Val.Long(r)) =>
+            if (r != 0L) {
+              Val.Long(l % r)
+            } else {
+              emit
+            }
           case _ =>
             bailOut
         }
       case Bin.Urem =>
         (l, r) match {
-          case (Val.Int(l), Val.Int(r)) if r != 0 =>
-            Val.Int(java.lang.Integer.remainderUnsigned(l, r))
-          case (Val.Long(l), Val.Long(r)) if r != 0L =>
-            Val.Long(java.lang.Long.remainderUnsigned(l, r))
+          case (Val.Int(l), Val.Int(r)) =>
+            if (r != 0) {
+              Val.Int(java.lang.Integer.remainderUnsigned(l, r))
+            } else {
+              emit
+            }
+          case (Val.Long(l), Val.Long(r)) =>
+            if (r != 0L) {
+              Val.Long(java.lang.Long.remainderUnsigned(l, r))
+            } else {
+              emit
+            }
           case _ =>
             bailOut
         }
@@ -692,6 +750,7 @@ trait Eval { self: Interflow =>
         value
       case Conv.Trunc =>
         (value, ty) match {
+          case (Val.Char(v), Type.Byte)  => Val.Byte(v.toByte)
           case (Val.Short(v), Type.Byte) => Val.Byte(v.toByte)
           case (Val.Int(v), Type.Byte)   => Val.Byte(v.toByte)
           case (Val.Int(v), Type.Short)  => Val.Short(v.toShort)
@@ -704,6 +763,10 @@ trait Eval { self: Interflow =>
         }
       case Conv.Zext =>
         (value, ty) match {
+          case (Val.Char(v), Type.Int) =>
+            Val.Int(v.toInt)
+          case (Val.Char(v), Type.Long) =>
+            Val.Long(v.toLong)
           case (Val.Short(v), Type.Int) =>
             Val.Int(v.toChar.toInt)
           case (Val.Short(v), Type.Long) =>
@@ -716,6 +779,7 @@ trait Eval { self: Interflow =>
       case Conv.Sext =>
         (value, ty) match {
           case (Val.Byte(v), Type.Short) => Val.Short(v.toShort)
+          case (Val.Byte(v), Type.Char)  => Val.Char(v.toChar)
           case (Val.Byte(v), Type.Int)   => Val.Int(v.toInt)
           case (Val.Byte(v), Type.Long)  => Val.Long(v.toLong)
           case (Val.Short(v), Type.Int)  => Val.Int(v.toInt)
@@ -734,7 +798,11 @@ trait Eval { self: Interflow =>
           case _                           => bailOut
         }
       case Conv.Fptoui =>
-        bailOut
+        (value, ty) match {
+          case (Val.Float(v), Type.Char)  => Val.Char(v.toChar)
+          case (Val.Double(v), Type.Char) => Val.Char(v.toChar)
+          case _                          => bailOut
+        }
       case Conv.Fptosi =>
         (value, ty) match {
           case (Val.Float(v), Type.Int)   => Val.Int(v.toInt)
@@ -744,14 +812,22 @@ trait Eval { self: Interflow =>
           case _                          => bailOut
         }
       case Conv.Uitofp =>
-        bailOut
+        (value, ty) match {
+          case (Val.Char(v), Type.Float)  => Val.Float(v.toInt.toFloat)
+          case (Val.Char(v), Type.Double) => Val.Double(v.toInt.toFloat)
+          case _                          => bailOut
+        }
       case Conv.Sitofp =>
         (value, ty) match {
-          case (Val.Int(v), Type.Float)   => Val.Float(v.toFloat)
-          case (Val.Int(v), Type.Double)  => Val.Double(v.toDouble)
-          case (Val.Long(v), Type.Float)  => Val.Float(v.toFloat)
-          case (Val.Long(v), Type.Double) => Val.Double(v.toDouble)
-          case _                          => bailOut
+          case (Val.Byte(v), Type.Float)   => Val.Float(v.toFloat)
+          case (Val.Byte(v), Type.Double)  => Val.Double(v.toDouble)
+          case (Val.Short(v), Type.Float)  => Val.Float(v.toFloat)
+          case (Val.Short(v), Type.Double) => Val.Double(v.toDouble)
+          case (Val.Int(v), Type.Float)    => Val.Float(v.toFloat)
+          case (Val.Int(v), Type.Double)   => Val.Double(v.toDouble)
+          case (Val.Long(v), Type.Float)   => Val.Float(v.toFloat)
+          case (Val.Long(v), Type.Double)  => Val.Double(v.toDouble)
+          case _                           => bailOut
         }
       case Conv.Ptrtoint =>
         (value, ty) match {
@@ -767,6 +843,10 @@ trait Eval { self: Interflow =>
         (value, ty) match {
           case (value, ty) if value.ty == ty =>
             value
+          case (Val.Char(value), Type.Short) =>
+            Val.Short(value.toShort)
+          case (Val.Short(value), Type.Char) =>
+            Val.Char(value.toChar)
           case (Val.Int(value), Type.Float) =>
             Val.Float(java.lang.Float.intBitsToFloat(value))
           case (Val.Long(value), Type.Double) =>
@@ -775,25 +855,29 @@ trait Eval { self: Interflow =>
             Val.Int(java.lang.Float.floatToRawIntBits(value))
           case (Val.Double(value), Type.Long) =>
             Val.Long(java.lang.Double.doubleToRawLongBits(value))
+          case (Val.Null, Type.Ptr) =>
+            Val.Null
           case _ =>
             bailOut
         }
     }
   }
 
-  def eval(value: Val)(implicit state: State): Val = value match {
-    case Val.Local(local, _) if local.id >= 0 =>
-      state.loadLocal(local) match {
-        case value: Val.Virtual =>
-          eval(value)
-        case value =>
-          value
-      }
-    case Val.Virtual(addr) if state.escaped(addr) =>
-      state.derefEscaped(addr).escapedValue
-    case Val.String(value) =>
-      Val.Virtual(state.allocString(value))
-    case _ =>
-      value.canonicalize
+  def eval(value: Val)(implicit state: State): Val = {
+    value match {
+      case Val.Local(local, _) if local.id >= 0 =>
+        state.loadLocal(local) match {
+          case value: Val.Virtual =>
+            eval(value)
+          case value =>
+            value
+        }
+      case Val.Virtual(addr) if state.escaped(addr) =>
+        state.derefEscaped(addr).escapedValue
+      case Val.String(value) =>
+        Val.Virtual(state.allocString(value))
+      case _ =>
+        value.canonicalize
+    }
   }
 }

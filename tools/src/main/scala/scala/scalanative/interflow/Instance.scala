@@ -32,6 +32,7 @@ final case class VirtualInstance(val kind: Kind,
                                  val cls: Class,
                                  var values: Array[Val])
     extends Instance {
+
   // We can't use case class generated equals, due to the fact
   // that equals on arrays does reference equality by default.
   override def equals(other: Any): Boolean = other match {
@@ -43,4 +44,7 @@ final case class VirtualInstance(val kind: Kind,
     case _ =>
       false
   }
+
+  override def toString: String =
+    s"VirtualInstance($kind, ${cls.name.show}, Array(${values.map(_.show).mkString(", ")}))"
 }

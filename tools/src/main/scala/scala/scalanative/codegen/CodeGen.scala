@@ -87,6 +87,8 @@ object CodeGen {
     var currentBlockName: Local = _
     var currentBlockSplit: Int  = _
 
+    var unreachableSlowPath = mutable.Map.empty[Next, Local]
+
     val copies    = mutable.Map.empty[Local, Val]
     val deps      = mutable.Set.empty[Global]
     val generated = mutable.Set.empty[String]
@@ -270,11 +272,15 @@ object CodeGen {
         cfg.all.foreach { block =>
           genBlockLandingPads(block)(cfg, fresh)
         }
+        if (unreachableSlowPath.nonEmpty) {
+          genUnreachableSlowPath()(fresh)
+        }
         newline()
 
         str("}")
 
         copies.clear()
+        unreachableSlowPath.clear()
       }
     }
 
@@ -399,6 +405,20 @@ object CodeGen {
       indent()
       line(s"resume $excrecty $rec")
       unindent()
+    }
+
+    def genUnreachableSlowPath()(implicit fresh: Fresh): Unit = {
+      unreachableSlowPath.foreach {
+        case (unwind, slowPath) =>
+          newline()
+          line(s"_${slowPath.id}.0:")
+          val noBind = () => ()
+          genCall(noBind,
+                  Op.Call(throwUndefinedTy, throwUndefinedVal, Seq(Val.Null)),
+                  unwind)
+          newline()
+          str("unreachable")
+      }
     }
 
     def genType(ty: Type): Unit = ty match {
@@ -581,12 +601,9 @@ object CodeGen {
 
       case Inst.Unreachable(unwind) =>
         newline()
-        val noBind = () => ()
-        genCall(noBind,
-                Op.Call(throwUndefinedTy, throwUndefinedVal, Seq(Val.Null)),
-                unwind)
-        newline()
-        str("unreachable")
+        val slowPath = unreachableSlowPath.getOrElseUpdate(unwind, fresh())
+        str("br ")
+        genNext(Next.Label(slowPath, Seq.empty))
 
       case Inst.Ret(value) =>
         newline()

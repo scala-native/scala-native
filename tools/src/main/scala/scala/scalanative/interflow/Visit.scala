@@ -3,7 +3,7 @@ package interflow
 
 import scalanative.nir._
 import scalanative.linker._
-import scalanative.optimizer.pass.DeadCodeElimination
+import scalanative.interflow.UseDef.eliminateDeadCode
 
 trait Visit { self: Interflow =>
   def shallVisit(name: Global): Boolean =
@@ -18,6 +18,23 @@ trait Visit { self: Interflow =>
 
         notExtern && hasInsts && hasSema
       }
+
+  def visitEntry(name: Global): Unit = {
+    if (!name.isTop) {
+      visitEntry(name.top)
+    }
+    linked.infos(name) match {
+      case meth: Method =>
+        visitRoot(name)
+      case cls: Class if cls.isModule =>
+        val init = cls.name member Sig.Ctor(Seq.empty)
+        if (originals.contains(init)) {
+          visitRoot(init)
+        }
+      case _ =>
+        ()
+    }
+  }
 
   def visitRoot(name: Global): Unit =
     if (shallVisit(name)) {
@@ -68,7 +85,7 @@ trait Visit { self: Interflow =>
     def result(retty: Type, insts: Seq[Inst]) =
       origdefn.copy(name = name,
                     ty = Type.Function(argtys, retty),
-                    insts = insts)
+                    insts = eliminateDeadCode(insts))
 
     // Create new fresh and state for the first basic block.
     val fresh = Fresh(0)

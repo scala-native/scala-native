@@ -63,12 +63,17 @@ trait Intrinsics { self: Interflow =>
       case Rt.IsAssignableFromSig =>
         args match {
           case Seq(Val.Virtual(leftAddr), Val.Virtual(rightAddr)) =>
-            val Val.Global(leftName, _) = state.derefVirtual(leftAddr).values(0)
+            val Val.Global(leftName, _) =
+              state.derefVirtual(leftAddr).values(0)
             val Val.Global(rightName, _) =
               state.derefVirtual(rightAddr).values(0)
-            val left  = linked.infos(leftName).asInstanceOf[Class]
-            val right = linked.infos(rightName).asInstanceOf[Class]
-            Val.Bool(right.subclasses.contains(left))
+
+            (linked.infos(leftName), linked.infos(rightName)) match {
+              case (left: ScopeInfo, right: ScopeInfo) =>
+                Val.Bool(right.is(left))
+              case _ =>
+                emit
+            }
           case _ =>
             emit
         }

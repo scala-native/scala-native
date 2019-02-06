@@ -50,20 +50,33 @@ final class State(block: Local) {
       Val.Int(Lower.stringHashCode(value))
     alloc(StringKind, linked.StringClass, values)
   }
-  def deref(addr: Addr): Instance =
+  def deref(addr: Addr): Instance = {
     heap(addr)
-  def derefVirtual(addr: Addr): VirtualInstance =
+  }
+  def derefVirtual(addr: Addr): VirtualInstance = {
     heap(addr).asInstanceOf[VirtualInstance]
-  def derefEscaped(addr: Addr): EscapedInstance =
+  }
+  def derefEscaped(addr: Addr): EscapedInstance = {
     heap(addr).asInstanceOf[EscapedInstance]
-  def escaped(addr: Addr): Boolean =
+  }
+  def inBounds(addr: Addr, offset: Int): Boolean = {
+    heap(addr) match {
+      case VirtualInstance(_, _, v) =>
+        addr >= 0 && addr < v.length
+      case _ =>
+        false
+    }
+  }
+  def escaped(addr: Addr): Boolean = {
     deref(addr).isInstanceOf[EscapedInstance]
+  }
   def escaped(value: Val): Boolean = value match {
     case Val.Virtual(addr) => escaped(addr)
     case _                 => false
   }
-  def loadLocal(local: Local): Val =
+  def loadLocal(local: Local): Val = {
     locals(local)
+  }
   def storeLocal(local: Local, value: Val): Unit = {
     locals(local) = value
   }
@@ -206,8 +219,38 @@ final class State(block: Local) {
 
     escapedValueOf(addr)
   }
-  def inherit(other: State): Unit = {
-    this.heap = other.heap.map { case (k, v) => (k, v.clone()) }
+  def inherit(other: State, roots: Seq[Val]): Unit = {
+    val closure = heapClosure(roots) ++ other.heapClosure(roots)
+
+    closure.foreach { addr =>
+      heap(addr) = other.heap(addr).clone()
+    }
+  }
+  def heapClosure(roots: Seq[Val]): mutable.Set[Addr] = {
+    val reachable = mutable.Set.empty[Addr]
+
+    def reachAddr(addr: Addr): Unit = {
+      if (heap.contains(addr) && !reachable.contains(addr)) {
+        reachable += addr
+        deref(addr) match {
+          case VirtualInstance(_, _, vals) =>
+            vals.foreach(reachVal)
+          case EscapedInstance(_, value) =>
+            reachVal(value)
+        }
+      }
+    }
+
+    def reachVal(v: Val): Unit = v match {
+      case Val.Virtual(addr)       => reachAddr(addr)
+      case Val.ArrayValue(_, vals) => vals.foreach(reachVal)
+      case Val.StructValue(vals)   => vals.foreach(reachVal)
+      case _                       => ()
+    }
+
+    roots.foreach(reachVal)
+
+    reachable
   }
   def fullClone(block: Local): State = {
     val newstate = new State(block)

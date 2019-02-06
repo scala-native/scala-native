@@ -5,10 +5,11 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.linker._
 
-class Interflow(val originals: Map[Global, Defn.Define])(
+class Interflow(val mode: build.Mode, val originals: Map[Global, Defn.Define])(
     implicit val linked: linker.Result)
     extends Visit
     with Eval
+    with Inline
     with Intrinsics
     with Log {
   val todo      = mutable.Queue.empty[Global]
@@ -26,15 +27,8 @@ object Interflow {
       case defn: Defn.Define =>
         defn.name -> defn
     }.toMap
-    val interflow = new Interflow(defnsMap)(linked)
-    linked.entries.foreach { entry =>
-      linked.infos(entry) match {
-        case info: Method =>
-          interflow.visitRoot(entry)
-        case _ =>
-          ()
-      }
-    }
+    val interflow = new Interflow(config.mode, defnsMap)(linked)
+    linked.entries.foreach(interflow.visitEntry)
     interflow.visitLoop()
     val done = interflow.done.values.map { defn =>
       defn.name -> defn

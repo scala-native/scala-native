@@ -1,6 +1,6 @@
 package java.lang
 
-class StackTraceDummy1 {
+class StackTraceDummy1 @noinline() {
   def dummy1: StackTraceElement =
     (new Exception).getStackTrace
       .filter(_.toString.contains("StackTraceDummy"))
@@ -12,14 +12,14 @@ class StackTraceDummy1 {
       .head
 }
 
-class StackTraceDummy3_:: {
+class StackTraceDummy3_:: @noinline() {
   def dummy3: StackTraceElement =
     (new Exception).getStackTrace
       .filter(_.toString.contains("StackTraceDummy"))
       .head
 }
 
-class StackTraceDummy4 {
+class StackTraceDummy4 @noinline() {
   val dummy4: StackTraceElement =
     (new Exception).getStackTrace
       .filter(_.toString.contains("StackTraceDummy"))
