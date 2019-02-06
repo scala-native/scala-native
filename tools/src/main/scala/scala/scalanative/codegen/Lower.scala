@@ -206,16 +206,22 @@ object Lower {
     def genGuardNotNull(buf: Buffer, obj: Val): Unit = {
       import buf._
 
-      val isNullL, notNullL = fresh()
+      obj.ty match {
+        case ty: Type.RefKind if !ty.isNullable =>
+          ()
 
-      val isNull = comp(Comp.Ieq, obj.ty, obj, Val.Null, unwind)
-      branch(isNull, Next(isNullL), Next(notNullL))
+        case _ =>
+          val isNullL, notNullL = fresh()
 
-      label(isNullL)
-      call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null), unwind)
-      unreachable(unwind)
+          val isNull = comp(Comp.Ieq, obj.ty, obj, Val.Null, unwind)
+          branch(isNull, Next(isNullL), Next(notNullL))
 
-      label(notNullL)
+          label(isNullL)
+          call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null), unwind)
+          unreachable(unwind)
+
+          label(notNullL)
+      }
     }
 
     def genFieldElemOp(buf: Buffer, obj: Val, name: Global) = {
