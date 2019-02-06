@@ -20,6 +20,16 @@ def projectName(project: sbt.ResolvedProject): String = {
   convertCamelKebab(project.id)
 }
 
+lazy val startupTransition: State => State = { s: State =>
+  if (System.getProperty("METALS_ENABLED") != null) "^^1.2.6" :: s
+  else s
+}
+
+onLoad in Global := {
+  val old = (onLoad in Global).value
+  startupTransition compose old
+}
+
 // Provide consistent project name pattern.
 lazy val nameSettings = Seq(
   normalizedName := projectName(thisProject.value), // Maven <artifactId>
