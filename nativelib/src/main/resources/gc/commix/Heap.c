@@ -206,76 +206,13 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     pthread_mutex_init(&heap->sweep.growMutex, NULL);
 }
 
-word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
-    assert(objectSize % ALLOCATION_ALIGNMENT == 0);
-
-    if (objectSize >= LARGE_BLOCK_SIZE) {
-        return LargeAllocator_Alloc(heap, objectSize);
-    } else {
-        return Allocator_Alloc(heap, objectSize);
-    }
-}
-
-#ifdef DEBUG_ASSERT
-void Heap_clearIsSwept(Heap *heap) {
-    BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
-    BlockMeta *limit = (BlockMeta *)heap->blockMetaEnd;
-    while (current < limit) {
-        BlockMeta *reserveFirst =
-            (BlockMeta *)blockAllocator.reservedSuperblock;
-        BlockMeta *reserveLimit = reserveFirst + SWEEP_RESERVE_BLOCKS;
-        if (current < reserveFirst || current >= reserveLimit) {
-            assert(reserveFirst != NULL);
-            current->debugFlag = dbg_must_sweep;
-        }
-        current++;
-    }
-}
-
-void Heap_assertIsConsistent(Heap *heap) {
-    BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
-    LineMeta *lineMetas = (LineMeta *)heap->lineMetaStart;
-    BlockMeta *limit = (BlockMeta *)heap->blockMetaEnd;
-    ObjectMeta *currentBlockStart = Bytemap_Get(heap->bytemap, heap->heapStart);
-    while (current < limit) {
-        assert(!BlockMeta_IsCoalesceMe(current));
-        assert(!BlockMeta_IsSuperblockStartMe(current));
-        assert(!BlockMeta_IsSuperblockTail(current));
-        assert(!BlockMeta_IsMarked(current));
-
-        int size = 1;
-        if (BlockMeta_IsSuperblockStart(current)) {
-            size = BlockMeta_SuperblockSize(current);
-        }
-        BlockMeta *next = current + size;
-        LineMeta *nextLineMetas = lineMetas + LINE_COUNT * size;
-        ObjectMeta *nextBlockStart =
-            currentBlockStart +
-            (WORDS_IN_BLOCK / ALLOCATION_ALIGNMENT_WORDS) * size;
-
-        for (LineMeta *line = lineMetas; line < nextLineMetas; line++) {
-            assert(!Line_IsMarked(line));
-        }
-        for (ObjectMeta *object = currentBlockStart; object < nextBlockStart;
-             object++) {
-            assert(!ObjectMeta_IsMarked(object));
-        }
-
-        current = next;
-        lineMetas = nextLineMetas;
-        currentBlockStart = nextBlockStart;
-    }
-    assert(current == limit);
-}
-#endif
-
 void Heap_Collect(Heap *heap) {
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
     assert(Sweeper_IsSweepDone(heap));
 #ifdef DEBUG_ASSERT
-    Heap_clearIsSwept(heap);
-    Heap_assertIsConsistent(heap);
+    Sweeper_ClearIsSwept(heap);
+    Sweeper_AssertIsConsistent(heap);
 #endif
     Phase_StartMark(heap);
     Marker_MarkRoots(heap, stats);

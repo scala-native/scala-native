@@ -376,3 +376,56 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
         Stats_RecordEventBatches(stats, event_coalesce_batch, start_ns, end_ns);
     }
 }
+
+#ifdef DEBUG_ASSERT
+void Sweeper_ClearIsSwept(Heap *heap) {
+    BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
+    BlockMeta *limit = (BlockMeta *)heap->blockMetaEnd;
+    while (current < limit) {
+        BlockMeta *reserveFirst =
+            (BlockMeta *)blockAllocator.reservedSuperblock;
+        BlockMeta *reserveLimit = reserveFirst + SWEEP_RESERVE_BLOCKS;
+        if (current < reserveFirst || current >= reserveLimit) {
+            assert(reserveFirst != NULL);
+            current->debugFlag = dbg_must_sweep;
+        }
+        current++;
+    }
+}
+
+void Sweeper_AssertIsConsistent(Heap *heap) {
+    BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
+    LineMeta *lineMetas = (LineMeta *)heap->lineMetaStart;
+    BlockMeta *limit = (BlockMeta *)heap->blockMetaEnd;
+    ObjectMeta *currentBlockStart = Bytemap_Get(heap->bytemap, heap->heapStart);
+    while (current < limit) {
+        assert(!BlockMeta_IsCoalesceMe(current));
+        assert(!BlockMeta_IsSuperblockStartMe(current));
+        assert(!BlockMeta_IsSuperblockTail(current));
+        assert(!BlockMeta_IsMarked(current));
+
+        int size = 1;
+        if (BlockMeta_IsSuperblockStart(current)) {
+            size = BlockMeta_SuperblockSize(current);
+        }
+        BlockMeta *next = current + size;
+        LineMeta *nextLineMetas = lineMetas + LINE_COUNT * size;
+        ObjectMeta *nextBlockStart =
+            currentBlockStart +
+            (WORDS_IN_BLOCK / ALLOCATION_ALIGNMENT_WORDS) * size;
+
+        for (LineMeta *line = lineMetas; line < nextLineMetas; line++) {
+            assert(!Line_IsMarked(line));
+        }
+        for (ObjectMeta *object = currentBlockStart; object < nextBlockStart;
+             object++) {
+            assert(!ObjectMeta_IsMarked(object));
+        }
+
+        current = next;
+        lineMetas = nextLineMetas;
+        currentBlockStart = nextBlockStart;
+    }
+    assert(current == limit);
+}
+#endif

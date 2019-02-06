@@ -37,8 +37,15 @@ NOINLINE void scalanative_init() {
 
 INLINE void *scalanative_alloc(void *info, size_t size) {
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
+    assert(size % ALLOCATION_ALIGNMENT == 0);
 
-    void **alloc = (void **)Heap_Alloc(&heap, size);
+    void **alloc;
+    if (size >= LARGE_BLOCK_SIZE) {
+        alloc = (void **)LargeAllocator_Alloc(&heap, size);
+    } else {
+        alloc = (void **)Allocator_Alloc(&heap, size);
+    }
+
     *alloc = info;
     return (void *)alloc;
 }
