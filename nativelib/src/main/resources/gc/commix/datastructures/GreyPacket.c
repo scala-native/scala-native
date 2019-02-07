@@ -1,6 +1,7 @@
 #include "../Object.h"
 #include "GreyPacket.h"
 #include "../Log.h"
+#include <string.h>
 
 bool GreyPacket_Push(GreyPacket *packet, Stack_Type value) {
     assert(value != NULL);
@@ -14,6 +15,16 @@ bool GreyPacket_Push(GreyPacket *packet, Stack_Type value) {
 Stack_Type GreyPacket_Pop(GreyPacket *packet) {
     assert(packet->size > 0);
     return packet->items[--packet->size];
+}
+
+void GreyPacket_Move(GreyPacket *src, GreyPacket *dst, int count) {
+    assert(dst->size + count < GREY_PACKET_ITEMS);
+    assert(src->size >= count);
+    void *target = (void *) &dst->items[dst->size];
+    void *first = (void *) &src->items[src->size - count];
+    memcpy(target, first, count * sizeof(Stack_Type));
+    dst->size += count;
+    src->size -= count;
 }
 
 bool GreyPacket_IsEmpty(GreyPacket *packet) { return packet->size == 0; }
