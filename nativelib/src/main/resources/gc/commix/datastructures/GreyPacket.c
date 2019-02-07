@@ -20,8 +20,8 @@ Stack_Type GreyPacket_Pop(GreyPacket *packet) {
 void GreyPacket_Move(GreyPacket *src, GreyPacket *dst, int count) {
     assert(dst->size + count < GREY_PACKET_ITEMS);
     assert(src->size >= count);
-    void *target = (void *) &dst->items[dst->size];
-    void *first = (void *) &src->items[src->size - count];
+    void *target = (void *)&dst->items[dst->size];
+    void *first = (void *)&src->items[src->size - count];
     memcpy(target, first, count * sizeof(Stack_Type));
     dst->size += count;
     src->size -= count;

@@ -23,11 +23,11 @@
 //
 // If the Sweeper would immediately return the free superblocks to
 // BlockAllocator  then we couldn't allocate anything bigger than a batch.
-// Therefore the free blocks  at the beginning and the end of the batch are marked
-// as `block_coalesce_me`.  There will be coalesced into bigger blocks by
-// `Sweeper_LazyCoalesce`.  Other free superblocks CAN be immediately returned to
-// BlockAllocator because  their size is already fixed by other non-free blocks
-// around them.
+// Therefore the free blocks  at the beginning and the end of the batch are
+// marked as `block_coalesce_me`.  There will be coalesced into bigger blocks by
+// `Sweeper_LazyCoalesce`.  Other free superblocks CAN be immediately returned
+// to BlockAllocator because  their size is already fixed by other non-free
+// blocks around them.
 //
 // Coalescing could be done in single pass over the heap once all the batches
 // are swept. However, then large areas of free blocks wouldn't be available

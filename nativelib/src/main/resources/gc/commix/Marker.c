@@ -116,8 +116,9 @@ void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
     }
 }
 
-void Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                      Bytemap *bytemap, word_t **fields, size_t length) {
+int Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder,
+                     Bytemap *bytemap, word_t **fields, size_t length) {
+    int objectsTraced = 0;
     word_t **limit = fields + length;
     for (word_t **current = fields; current < limit; current++) {
         word_t *field = *current;
@@ -127,12 +128,15 @@ void Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder,
                 Marker_markObject(heap, stats, outHolder, bytemap,
                                   (Object *)field, fieldMeta);
             }
+            objectsTraced += 1;
         }
     }
+    return objectsTraced;
 }
 
-void Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
-                              GreyPacket **outHolder, Bytemap *bytemap) {
+int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
+                             GreyPacket **outHolder, Bytemap *bytemap) {
+    int objectsTraced = 0;
     int64_t *ptr_map = object->rtti->refMapStruct;
     for (int64_t *current = ptr_map; *current != LAST_FIELD_OFFSET; current++) {
         word_t *field = object->fields[*current];
@@ -142,12 +146,14 @@ void Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                 Marker_markObject(heap, stats, outHolder, bytemap,
                                   (Object *)field, fieldMeta);
             }
+            objectsTraced += 1;
         }
     }
+    return objectsTraced;
 }
 
-void Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                             Bytemap *bytemap, word_t **fields, size_t length) {
+int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
+                            Bytemap *bytemap, word_t **fields, size_t length) {
     word_t **limit = fields + length;
     word_t **lastBatch =
         fields + (length / ARRAY_SPLIT_BATCH) * ARRAY_SPLIT_BATCH;
@@ -165,30 +171,36 @@ void Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
     }
 
     size_t lastBatchSize = limit - lastBatch;
+    int objectsTraced = 0;
     if (lastBatchSize > 0) {
-        Marker_markRange(heap, stats, outHolder, bytemap, lastBatch,
-                         lastBatchSize);
+        objectsTraced = Marker_markRange(heap, stats, outHolder, bytemap,
+                                         lastBatch, lastBatchSize);
     }
+    return objectsTraced;
 }
 
-void Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
+int Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
                             GreyPacket **outHolder, Bytemap *bytemap) {
     ArrayHeader *arrayHeader = (ArrayHeader *)object;
     size_t length = arrayHeader->length;
     word_t **fields = (word_t **)(arrayHeader + 1);
+    int objectsTraced;
     if (length <= ARRAY_SPLIT_THRESHOLD) {
-        Marker_markRange(heap, stats, outHolder, bytemap, fields, length);
+        objectsTraced =
+            Marker_markRange(heap, stats, outHolder, bytemap, fields, length);
     } else {
         // object array is two large, split it into pieces for multiple threads
         // to handle
-        Marker_splitObjectArray(heap, stats, outHolder, bytemap, fields,
-                                length);
+        objectsTraced = Marker_splitObjectArray(heap, stats, outHolder, bytemap,
+                                                fields, length);
     }
+    return objectsTraced;
 }
 
 void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
                        GreyPacket **outHolder) {
     Bytemap *bytemap = heap->bytemap;
+    int objectsTraced = 0;
     if (*outHolder == NULL) {
         GreyPacket *fresh = Marker_takeEmptyPacket(heap, stats);
         assert(fresh != NULL);
@@ -198,11 +210,24 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
         Object *object = GreyPacket_Pop(in);
         if (Object_IsArray(object)) {
             if (object->rtti->rt.id == __object_array_id) {
-                Marker_markObjectArray(heap, stats, object, outHolder, bytemap);
+                objectsTraced += Marker_markObjectArray(heap, stats, object,
+                                                        outHolder, bytemap);
             }
             // non-object arrays do not contain pointers
         } else {
-            Marker_markRegularObject(heap, stats, object, outHolder, bytemap);
+            objectsTraced += Marker_markRegularObject(heap, stats, object,
+                                                      outHolder, bytemap);
+        }
+        if (objectsTraced > MARK_MAX_WORK_PER_PACKET) {
+            // the packet has a lot of work split the remainder in two
+            int toMove = in->size / 2;
+            if (toMove > 0) {
+                GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
+                assert(slice != NULL);
+                GreyPacket_Move(in, slice, toMove);
+                Marker_giveFullPacket(heap, stats, slice);
+            }
+            objectsTraced = 0;
         }
     }
 }
