@@ -49,6 +49,17 @@ Chunk *LargeAllocator_freeListPop(FreeList *freeList) {
     return head;
 }
 
+Chunk *LargeAllocator_freeListPop_OnlyThread(FreeList *freeList) {
+    Chunk *head = (Chunk *)freeList->head;
+    word_t newValue;
+    if (head == NULL) {
+        return NULL;
+    }
+    freeList->head = (word_t) head->next;
+
+    return head;
+}
+
 void LargeAllocator_freeListInit(FreeList *freeList) {
     freeList->head = (word_t)NULL;
 }
@@ -101,6 +112,20 @@ static inline Chunk *LargeAllocator_getChunkForSize(LargeAllocator *allocator,
     return NULL;
 }
 
+static inline Chunk *LargeAllocator_getChunkForSize_OnlyThread(LargeAllocator *allocator,
+                                                               size_t requiredChunkSize) {
+    for (int listIndex =
+             LargeAllocator_sizeToLinkedListIndex(requiredChunkSize);
+         listIndex < FREE_LIST_COUNT; listIndex++) {
+        Chunk *chunk =
+            LargeAllocator_freeListPop_OnlyThread(&allocator->freeLists[listIndex]);
+        if (chunk != NULL) {
+            return chunk;
+        }
+    }
+    return NULL;
+}
+
 word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
                                 size_t requestedBlockSize) {
     size_t actualBlockSize =
@@ -109,7 +134,12 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
     Chunk *chunk = NULL;
     if (actualBlockSize < BLOCK_TOTAL_SIZE) {
         // only need to look in free lists for chunks smaller than a block
-        chunk = LargeAllocator_getChunkForSize(allocator, actualBlockSize);
+        if (allocator->blockAllocator->concurrent) {
+            chunk = LargeAllocator_getChunkForSize(allocator, actualBlockSize);
+        } else {
+            chunk = LargeAllocator_getChunkForSize_OnlyThread(allocator, actualBlockSize);
+
+        }
     }
 
     if (chunk == NULL) {
