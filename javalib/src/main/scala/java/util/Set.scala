@@ -11,12 +11,5 @@ trait Set[E] extends Collection[E] {
   def remove(obj: Any): scala.Boolean
   def removeAll(c: Collection[_]): Boolean
   def retainAll(c: Collection[_]): Boolean
-
-  //TODO:
-  //def addAll(coll: Collection[_ <: E]): scala.Boolean
-  //def hashCode(): scala.Int
-  //def toArray(): Array[Any]
-  //def toArray[T](array: Array[T]): Array[T]
-  //def contains(coll: Collection[_]): scala.Boolean
-  //def equals(obj: Any): scala.Boolean
+  def addAll(coll: Collection[_ <: E]): Boolean
 }
