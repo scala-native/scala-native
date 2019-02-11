@@ -71,7 +71,7 @@ object Build {
       s"Discovered ${classCount} classes and ${methodCount} methods")
 
     val optimized = ScalaNative.optimize(config, linked)
-    nir.Show.dump(linked.defns, "optimized.hnir")
+    nir.Show.dump(optimized.defns, "optimized.hnir")
     ScalaNative.check(config, optimized)
 
     IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)

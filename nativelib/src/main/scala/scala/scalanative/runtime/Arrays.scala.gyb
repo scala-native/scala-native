@@ -5,6 +5,9 @@ import scalanative.native._
 import scalanative.runtime.Intrinsics._
 import scalanative.runtime.LLVMIntrinsics._
 
+% sizePtr = 8
+% sizeHeader = 16
+
 sealed abstract class Array[T]
     extends java.io.Serializable
     with java.lang.Cloneable {
@@ -36,8 +39,6 @@ sealed abstract class Array[T]
 }
 
 object Array {
-  final val HeaderSize = 16
-
   @noinline def throwIndexOutOfBoundsException(i: Int): Nothing =
     throw new IndexOutOfBoundsException(i.toString)
 
@@ -68,7 +69,7 @@ object Array {
            len: Int): Unit = {
     if (from == null || to == null) {
       throw new NullPointerException()
-    } else if (getType(from) != getType(to)) {
+    } else if (getRawType(from) != getRawType(to)) {
       throw new ArrayStoreException("Invalid array copy.")
     } else if (len < 0) {
       throw new IndexOutOfBoundsException("length is negative")
@@ -113,7 +114,7 @@ object Array {
               len: Int): Int = {
     if (left == null || right == null) {
       throw new NullPointerException()
-    } else if (getType(left) != getType(right)) {
+    } else if (getRawType(left) != getRawType(right)) {
       throw new ArrayStoreException("Invalid array copy.")
     } else if (len < 0) {
       throw new IndexOutOfBoundsException("length is negative")
@@ -132,11 +133,11 @@ object Array {
 }
 
 %{
-   types = ['Unit', 'Boolean', 'Char', 'Byte', 'Short',
-            'Int', 'Long', 'Float', 'Double', 'Object']
+   types = {'Unit': sizePtr, 'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
+            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': sizePtr}
 }%
 
-% for T in types:
+% for T, sizeT in types.iteritems():
 
 %{
    alloc = 'GC.alloc_atomic' if T != 'Object' and T != 'Unit' else 'GC.alloc'
@@ -146,14 +147,14 @@ final class ${T}Array private () extends Array[${T}] {
   import Array._
 
   @inline def stride: CSize =
-    sizeof[${T}]
+    ${sizeT}
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
       throwIndexOutOfBoundsException(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, HeaderSize + stride * i)
+      elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
     }
 
   @inline def apply(i: Int): ${T} =
@@ -161,7 +162,7 @@ final class ${T}Array private () extends Array[${T}] {
       throwIndexOutOfBoundsException(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, HeaderSize + stride * i)
+      val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
       % if T != 'Unit':
       load${T}(ith)
       % else:
@@ -174,7 +175,7 @@ final class ${T}Array private () extends Array[${T}] {
       throwIndexOutOfBoundsException(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, HeaderSize + stride * i)
+      val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
       % if T != 'Unit':
       store${T}(ith, value)
       % else:
@@ -183,9 +184,9 @@ final class ${T}Array private () extends Array[${T}] {
     }
 
   @inline override def clone(): ${T}Array = {
-    val arrinfo = typeof[${T}Array]
-    val arrsize = HeaderSize + sizeof[${T}] * length
-    val arr     = ${alloc}(arrinfo, arrsize)
+    val arrty   = toRawType(classOf[${T}Array])
+    val arrsize = ${sizeHeader} + ${sizeT} * length
+    val arr     = ${alloc}(arrty, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
@@ -196,9 +197,9 @@ object ${T}Array {
   import Array._
 
   @inline def alloc(length: Int): ${T}Array = {
-    val arrinfo = typeof[${T}Array]
-    val arrsize = HeaderSize + sizeof[${T}] * length
-    val arr     = ${alloc}(arrinfo, arrsize)
+    val arrty   = toRawType(classOf[${T}Array])
+    val arrsize = ${sizeHeader} + ${sizeT} * length
+    val arr     = ${alloc}(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
     storeInt(elemRawPtr(arr, 12), sizeof[${T}].toInt)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
@@ -207,7 +208,7 @@ object ${T}Array {
   @inline def snapshot(length: Int, data: RawPtr): ${T}Array = {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
-    val src  = castObjectToRawPtr(data)
+    val src  = data
     val size = sizeof[${T}] * length
     libc.memcpy(dst, src, size)
     arr

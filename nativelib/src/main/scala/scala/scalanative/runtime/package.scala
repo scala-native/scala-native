@@ -35,18 +35,17 @@ package object runtime {
   /** Used as a stub right hand of intrinsified methods. */
   def intrinsic: Nothing = throwUndefined()
 
-  /** Returns info pointer for given type. */
-  def typeof[T](implicit ct: scala.reflect.ClassTag[T]): RawPtr =
-    ct.runtimeClass.asInstanceOf[java.lang._Class[_]].rawty
+  @inline def toRawType(cls: Class[_]): RawPtr =
+    cls.asInstanceOf[java.lang._Class[_]].rawty
 
   /** Read type information of given object. */
-  def getType(obj: Object): RawPtr = {
+  @inline def getRawType(obj: Object): RawPtr = {
     val rawptr = Intrinsics.castObjectToRawPtr(obj)
     Intrinsics.loadRawPtr(rawptr)
   }
 
   /** Get monitor for given object. */
-  def getMonitor(obj: Object): Monitor = Monitor.dummy
+  @inline def getMonitor(obj: Object): Monitor = Monitor.dummy
 
   /** Initialize runtime with given arguments and return the
    *  rest as Java-style array.
