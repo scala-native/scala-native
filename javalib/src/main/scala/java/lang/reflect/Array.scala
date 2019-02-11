@@ -7,14 +7,22 @@ object Array {
   def newInstance(componentType: _Class[_], length: Int): AnyRef = {
     val rawty = componentType.rawty
 
-    if (rawty == typeof[PrimitiveBoolean]) new scala.Array[Boolean](length)
-    else if (rawty == typeof[PrimitiveChar]) new scala.Array[Char](length)
-    else if (rawty == typeof[PrimitiveByte]) new scala.Array[Byte](length)
-    else if (rawty == typeof[PrimitiveShort]) new scala.Array[Short](length)
-    else if (rawty == typeof[PrimitiveInt]) new scala.Array[Int](length)
-    else if (rawty == typeof[PrimitiveLong]) new scala.Array[Long](length)
-    else if (rawty == typeof[PrimitiveFloat]) new scala.Array[Float](length)
-    else if (rawty == typeof[PrimitiveDouble]) new scala.Array[Double](length)
+    if (rawty == getRawType(classOf[PrimitiveBoolean]))
+      new scala.Array[Boolean](length)
+    else if (rawty == getRawType(classOf[PrimitiveChar]))
+      new scala.Array[Char](length)
+    else if (rawty == getRawType(classOf[PrimitiveByte]))
+      new scala.Array[Byte](length)
+    else if (rawty == getRawType(classOf[PrimitiveShort]))
+      new scala.Array[Short](length)
+    else if (rawty == getRawType(classOf[PrimitiveInt]))
+      new scala.Array[Int](length)
+    else if (rawty == getRawType(classOf[PrimitiveLong]))
+      new scala.Array[Long](length)
+    else if (rawty == getRawType(classOf[PrimitiveFloat]))
+      new scala.Array[Float](length)
+    else if (rawty == getRawType(classOf[PrimitiveDouble]))
+      new scala.Array[Double](length)
     else new scala.Array[Object](length)
   }
 

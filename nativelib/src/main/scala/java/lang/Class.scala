@@ -25,14 +25,14 @@ final class _Class[A](val rawty: RawPtr) {
     obj.asInstanceOf[A]
 
   def getComponentType(): _Class[_] = {
-    if (rawty == typeof[BooleanArray]) classOf[scala.Boolean]
-    else if (rawty == typeof[CharArray]) classOf[scala.Char]
-    else if (rawty == typeof[ByteArray]) classOf[scala.Byte]
-    else if (rawty == typeof[ShortArray]) classOf[scala.Short]
-    else if (rawty == typeof[IntArray]) classOf[scala.Int]
-    else if (rawty == typeof[LongArray]) classOf[scala.Long]
-    else if (rawty == typeof[FloatArray]) classOf[scala.Float]
-    else if (rawty == typeof[DoubleArray]) classOf[scala.Double]
+    if (rawty == toRawType(classOf[BooleanArray])) classOf[scala.Boolean]
+    else if (rawty == toRawType(classOf[CharArray])) classOf[scala.Char]
+    else if (rawty == toRawType(classOf[ByteArray])) classOf[scala.Byte]
+    else if (rawty == toRawType(classOf[ShortArray])) classOf[scala.Short]
+    else if (rawty == toRawType(classOf[IntArray])) classOf[scala.Int]
+    else if (rawty == toRawType(classOf[LongArray])) classOf[scala.Long]
+    else if (rawty == toRawType(classOf[FloatArray])) classOf[scala.Float]
+    else if (rawty == toRawType(classOf[DoubleArray])) classOf[scala.Double]
     else classOf[java.lang.Object]
   }
 
@@ -53,15 +53,15 @@ final class _Class[A](val rawty: RawPtr) {
     ???
 
   def isArray(): scala.Boolean =
-    (rawty == typeof[BooleanArray] ||
-      rawty == typeof[CharArray] ||
-      rawty == typeof[ByteArray] ||
-      rawty == typeof[ShortArray] ||
-      rawty == typeof[IntArray] ||
-      rawty == typeof[LongArray] ||
-      rawty == typeof[FloatArray] ||
-      rawty == typeof[DoubleArray] ||
-      rawty == typeof[ObjectArray])
+    (rawty == toRawType(classOf[BooleanArray]) ||
+      rawty == toRawType(classOf[CharArray]) ||
+      rawty == toRawType(classOf[ByteArray]) ||
+      rawty == toRawType(classOf[ShortArray]) ||
+      rawty == toRawType(classOf[IntArray]) ||
+      rawty == toRawType(classOf[LongArray]) ||
+      rawty == toRawType(classOf[FloatArray]) ||
+      rawty == toRawType(classOf[DoubleArray]) ||
+      rawty == toRawType(classOf[ObjectArray]))
 
   def isAssignableFrom(that: Class[_]): scala.Boolean =
     is(that.asInstanceOf[_Class[_]].ty, ty)
@@ -111,15 +111,15 @@ final class _Class[A](val rawty: RawPtr) {
     ty.kind == TRAIT_KIND
 
   def isPrimitive(): scala.Boolean =
-    (rawty == typeof[PrimitiveBoolean] ||
-      rawty == typeof[PrimitiveChar] ||
-      rawty == typeof[PrimitiveByte] ||
-      rawty == typeof[PrimitiveShort] ||
-      rawty == typeof[PrimitiveInt] ||
-      rawty == typeof[PrimitiveLong] ||
-      rawty == typeof[PrimitiveFloat] ||
-      rawty == typeof[PrimitiveDouble] ||
-      rawty == typeof[PrimitiveUnit])
+    (rawty == toRawType(classOf[PrimitiveBoolean]) ||
+      rawty == toRawType(classOf[PrimitiveChar]) ||
+      rawty == toRawType(classOf[PrimitiveByte]) ||
+      rawty == toRawType(classOf[PrimitiveShort]) ||
+      rawty == toRawType(classOf[PrimitiveInt]) ||
+      rawty == toRawType(classOf[PrimitiveLong]) ||
+      rawty == toRawType(classOf[PrimitiveFloat]) ||
+      rawty == toRawType(classOf[PrimitiveDouble]) ||
+      rawty == toRawType(classOf[PrimitiveUnit]))
 
   override def equals(other: Any): scala.Boolean =
     other match {
