@@ -43,7 +43,8 @@ object CodeGen {
   }
 
   /** Generate code for given assembly. */
-  private def emit(config: build.Config, assembly: Seq[Defn]): Unit =
+  private def emit(config: build.Config, assembly: Seq[Defn])(
+      implicit meta: Metadata): Unit =
     Scope { implicit in =>
       val env     = assembly.map(defn => defn.name -> defn).toMap
       val workdir = VirtualDirectory.real(config.workdir)
@@ -81,7 +82,7 @@ object CodeGen {
 
   private final class Impl(targetTriple: String,
                            env: Map[Global, Defn],
-                           defns: Seq[Defn]) {
+                           defns: Seq[Defn])(implicit meta: Metadata) {
     import Impl._
 
     var currentBlockName: Local = _
@@ -234,7 +235,7 @@ object CodeGen {
       val isDecl = insts.isEmpty
 
       str(if (isDecl) "declare " else "define ")
-      genType(retty)
+      genFunctionReturnType(retty)
       str(" @")
       genGlobal(name)
       str("(")
@@ -281,6 +282,53 @@ object CodeGen {
 
         copies.clear()
         unreachableSlowPath.clear()
+      }
+    }
+
+    def genFunctionReturnType(retty: Type): Unit = {
+      retty match {
+        case refty: Type.RefKind =>
+          genReferenceTypeAttribute(refty)
+        case _ =>
+          ()
+      }
+      genType(retty)
+    }
+
+    def genFunctionParam(param: Val.Local): Unit = {
+      param.ty match {
+        case refty: Type.RefKind =>
+          genReferenceTypeAttribute(refty)
+        case _ =>
+          ()
+      }
+      genVal(param)
+    }
+
+    def genReferenceTypeAttribute(refty: Type.RefKind): Unit = {
+      val (nonnull, deref, size) = toDereferenceable(refty)
+
+      if (nonnull) {
+        str("nonnull ")
+      }
+      str(deref)
+      str("(")
+      str(size)
+      str(") ")
+    }
+
+    def toDereferenceable(refty: Type.RefKind): (Boolean, String, Long) = {
+      val size = meta.linked.infos(refty.className) match {
+        case info: linker.Trait =>
+          meta.layout(meta.linked.ObjectClass).size
+        case info: linker.Class =>
+          meta.layout(info).size
+      }
+
+      if (!refty.isNullable) {
+        (true, "dereferenceable", size)
+      } else {
+        (false, "dereferenceable_or_null", size)
       }
     }
 
@@ -713,6 +761,20 @@ object CodeGen {
           genType(ty)
           str("* %")
           genLocal(pointee)
+          ty match {
+            case refty: Type.RefKind =>
+              val (nonnull, deref, size) = toDereferenceable(refty)
+              if (nonnull) {
+                str(", !nonnull !{}")
+              }
+              str(", !")
+              str(deref)
+              str(" !{i64 ")
+              str(size)
+              str("}")
+            case _ =>
+              ()
+          }
 
         case Op.Store(ty, ptr, value) =>
           val pointee = fresh()
@@ -805,11 +867,11 @@ object CodeGen {
         newline()
         genBind()
         str(if (unwind ne Next.None) "invoke " else "call ")
-        genType(ty)
+        genCallFunctionType(ty)
         str(" @")
         genGlobal(pointee)
         str("(")
-        rep(args, sep = ", ")(genVal)
+        rep(args, sep = ", ")(genCallArgument)
         str(")")
 
         if (unwind ne Next.None) {
@@ -841,11 +903,11 @@ object CodeGen {
         newline()
         genBind()
         str(if (unwind ne Next.None) "invoke " else "call ")
-        genType(ty)
+        genCallFunctionType(ty)
         str(" %")
         genLocal(pointee)
         str("(")
-        rep(args, sep = ", ")(genVal)
+        rep(args, sep = ", ")(genCallArgument)
         str(")")
 
         if (unwind ne Next.None) {
@@ -859,6 +921,34 @@ object CodeGen {
           genBlockHeader()
           indent()
         }
+    }
+
+    def genCallFunctionType(ty: Type): Unit = ty match {
+      case Type.Function(argtys, retty) =>
+        val hasVarArgs = argtys.contains(Type.Vararg)
+        if (hasVarArgs) {
+          genType(ty)
+        } else {
+          genFunctionReturnType(retty)
+        }
+    }
+
+    def genCallArgument(v: Val): Unit = v match {
+      case Val.Local(_, refty: Type.RefKind) =>
+        val (nonnull, deref, size) = toDereferenceable(refty)
+        genType(refty)
+        if (nonnull) {
+          str(" nonnull")
+        }
+        str(" ")
+        str(deref)
+        str("(")
+        str(size)
+        str(")")
+        str(" ")
+        genJustVal(v)
+      case _ =>
+        genVal(v)
     }
 
     def genOp(op: Op): Unit = op match {
