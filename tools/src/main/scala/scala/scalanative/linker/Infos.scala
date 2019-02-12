@@ -14,7 +14,7 @@ sealed abstract class ScopeInfo extends Info {
   val calls   = mutable.Set.empty[Sig]
 
   def isClass: Boolean = this.isInstanceOf[Class]
-  def isTrait: Boolean = this.isInstanceOf[Class]
+  def isTrait: Boolean = this.isInstanceOf[Trait]
   def is(info: ScopeInfo): Boolean
   def targets(sig: Sig): mutable.Set[Global]
   def implementors: mutable.Set[Class]
@@ -206,6 +206,7 @@ final class Result(val infos: mutable.Map[Global, Info],
                    val defns: Seq[Defn],
                    val dynsigs: Seq[Sig],
                    val dynimpls: Seq[Global]) {
+  lazy val ObjectClass       = infos(Rt.Object.name).asInstanceOf[Class]
   lazy val StringClass       = infos(Rt.StringName).asInstanceOf[Class]
   lazy val StringValueField  = infos(Rt.StringValueName).asInstanceOf[Field]
   lazy val StringOffsetField = infos(Rt.StringOffsetName).asInstanceOf[Field]
