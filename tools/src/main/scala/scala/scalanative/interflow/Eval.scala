@@ -388,9 +388,9 @@ trait Eval { self: Interflow =>
         }
       case Op.Arrayalloc(ty, init) =>
         eval(init) match {
-          case Val.Int(count) if count < 4096 =>
+          case Val.Int(count) if count <= 128 =>
             Val.Virtual(state.allocArray(ty, count))
-          case Val.ArrayValue(_, values) if values.size < 4096 =>
+          case Val.ArrayValue(_, values) if values.size <= 128 =>
             val addr     = state.allocArray(ty, values.size)
             val instance = state.derefVirtual(addr)
             values.zipWithIndex.foreach {
