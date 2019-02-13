@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.linker._
 import scalanative.codegen.MemoryLayout
-import scalanative.util.unreachable
+import scalanative.util.{unreachable, And}
 
 trait Eval { self: Interflow =>
   def run(insts: Array[Inst],
@@ -238,14 +238,14 @@ trait Eval { self: Interflow =>
               if !ty.isNullable =>
             Val.True
           case (Comp.Ieq,
-                l @ Of2(lty: Type.RefKind, ClassRef(lcls)),
-                r @ Of2(rty: Type.RefKind, ClassRef(rcls)))
+                l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
+                r @ Of(And(rty: Type.RefKind, ClassRef(rcls))))
               if !lty.isNullable && lty.isExact && lcls.isModule
                 && !rty.isNullable && rty.isExact && rcls.isModule =>
             Val.Bool(lcls.name == rcls.name)
           case (Comp.Ine,
-                l @ Of2(lty: Type.RefKind, ClassRef(lcls)),
-                r @ Of2(rty: Type.RefKind, ClassRef(rcls)))
+                l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
+                r @ Of(And(rty: Type.RefKind, ClassRef(rcls))))
               if !lty.isNullable && lty.isExact && lcls.isModule
                 && !rty.isNullable && rty.isExact && rcls.isModule =>
             Val.Bool(lcls.name != rcls.name)
