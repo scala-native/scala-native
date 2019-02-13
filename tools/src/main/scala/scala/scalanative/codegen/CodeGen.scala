@@ -23,6 +23,7 @@ object CodeGen {
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
     val lowered   = lower(generated)
+    nir.Show.dump(lowered, "lowered.hnir")
     emit(config, lowered)
   }
 
