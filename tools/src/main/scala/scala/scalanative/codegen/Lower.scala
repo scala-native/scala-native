@@ -43,7 +43,8 @@ object Lower {
     private val fresh         = new util.ScopedVar[Fresh]
     private val unwindHandler = new util.ScopedVar[Option[Local]]
 
-    private val nullPointerSlowPath = mutable.Map.empty[Option[Local], Local]
+    private val nullPointerSlowPath    = mutable.Map.empty[Option[Local], Local]
+    private val divisionByZeroSlowPath = mutable.Map.empty[Option[Local], Local]
 
     private def unwind: Next =
       unwindHandler.get.fold[Next](Next.None) { handler =>
@@ -127,7 +128,10 @@ object Lower {
       }
 
       genNullPointerSlowPath(buf)
+      genDivisionByZeroSlowPath(buf)
+
       nullPointerSlowPath.clear()
+      divisionByZeroSlowPath.clear()
 
       buf ++= handlers
 
@@ -154,6 +158,22 @@ object Lower {
             buf.label(slowPath)
             buf.call(throwNullPointerTy,
                      throwNullPointerVal,
+                     Seq(Val.Null),
+                     unwind)
+            buf.unreachable(unwind)
+          }
+      }
+    }
+
+    def genDivisionByZeroSlowPath(buf: Buffer): Unit = {
+      divisionByZeroSlowPath.toSeq.sortBy(_._2.id).foreach {
+        case (slowPathUnwindHandler, slowPath) =>
+          ScopedVar.scoped(
+            unwindHandler := slowPathUnwindHandler
+          ) {
+            buf.label(slowPath)
+            buf.call(throwDivisionByZeroTy,
+                     throwDivisionByZeroVal,
                      Seq(Val.Null),
                      unwind)
             buf.unreachable(unwind)
@@ -604,18 +624,15 @@ object Lower {
 
         val thenL, elseL = fresh()
 
+        val succL = fresh()
+        val failL =
+          divisionByZeroSlowPath.getOrElseUpdate(unwindHandler, fresh())
+
         val isZero =
-          comp(Comp.Ieq, ty, divisor, Val.Zero(ty), unwind)
-        branch(isZero, Next(thenL), Next(elseL))
+          comp(Comp.Ine, ty, divisor, Val.Zero(ty), unwind)
+        branch(isZero, Next(succL), Next(failL))
 
-        label(thenL)
-        call(throwDivisionByZeroTy,
-             throwDivisionByZeroVal,
-             Seq(Val.Null),
-             unwind)
-        unreachable(unwind)
-
-        label(elseL)
+        label(succL)
         if (bin == Bin.Srem || bin == Bin.Sdiv) {
           checkDivisionOverflow(op)
         } else {
