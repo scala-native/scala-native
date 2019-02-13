@@ -128,16 +128,19 @@ object ControlFlow {
 
       val entry   = block(insts.head.asInstanceOf[Inst.Label].name)
       val visited = mutable.Set.empty[Local]
-      val all     = mutable.UnrolledBuffer.empty[Block]
 
       while (todo.nonEmpty) {
         val block = todo.pop()
         val name  = block.name
         if (!visited(name)) {
-          all += block
           visited += name
           visit(block)
         }
+      }
+
+      val all = insts.collect {
+        case Inst.Label(name, _) if visited.contains(name) =>
+          blocks(name)
       }
 
       new Graph(entry, all, blocks)
