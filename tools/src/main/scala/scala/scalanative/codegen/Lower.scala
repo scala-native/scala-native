@@ -43,6 +43,7 @@ object Lower {
     private val fresh         = new util.ScopedVar[Fresh]
     private val unwindHandler = new util.ScopedVar[Option[Local]]
 
+    private val unreachableSlowPath    = mutable.Map.empty[Option[Local], Local]
     private val nullPointerSlowPath    = mutable.Map.empty[Option[Local], Local]
     private val divisionByZeroSlowPath = mutable.Map.empty[Option[Local], Local]
     private val classCastSlowPath      = mutable.Map.empty[Option[Local], Local]
@@ -124,6 +125,13 @@ object Lower {
             genThrow(buf, v)
           }
 
+        case Inst.Unreachable(unwind) =>
+          ScopedVar.scoped(
+            unwindHandler := newUnwindHandler(unwind)
+          ) {
+            genUnreachable(buf)
+          }
+
         case inst =>
           buf += inst
       }
@@ -131,10 +139,12 @@ object Lower {
       genNullPointerSlowPath(buf)
       genDivisionByZeroSlowPath(buf)
       genClassCastSlowPath(buf)
+      genUnreachableSlowPath(buf)
 
       nullPointerSlowPath.clear()
       divisionByZeroSlowPath.clear()
       classCastSlowPath.clear()
+      unreachableSlowPath.clear()
 
       buf ++= handlers
 
@@ -163,7 +173,7 @@ object Lower {
                      throwNullPointerVal,
                      Seq(Val.Null),
                      unwind)
-            buf.unreachable(unwind)
+            buf.unreachable(Next.None)
           }
       }
     }
@@ -179,7 +189,7 @@ object Lower {
                      throwDivisionByZeroVal,
                      Seq(Val.Null),
                      unwind)
-            buf.unreachable(unwind)
+            buf.unreachable(Next.None)
           }
       }
     }
@@ -199,7 +209,20 @@ object Lower {
                      throwClassCastVal,
                      Seq(Val.Null, fromty, toty),
                      unwind)
-            buf.unreachable(unwind)
+            buf.unreachable(Next.None)
+          }
+      }
+    }
+
+    def genUnreachableSlowPath(buf: Buffer): Unit = {
+      unreachableSlowPath.toSeq.sortBy(_._2.id).foreach {
+        case (slowPathUnwindHandler, slowPath) =>
+          ScopedVar.scoped(
+            unwindHandler := slowPathUnwindHandler
+          ) {
+            buf.label(slowPath)
+            buf.call(throwUndefinedTy, throwUndefinedVal, Seq(Val.Null), unwind)
+            buf.unreachable(Next.None)
           }
       }
     }
@@ -210,7 +233,7 @@ object Lower {
         buf.let(n, Op.Copy(unit), unwind)
       case Type.Nothing =>
         genOp(buf, fresh(), op)
-        buf.unreachable(unwind)
+        genUnreachable(buf)
         buf.label(fresh(), Seq(Val.Local(n, op.resty)))
       case _ =>
         genOp(buf, n, op)
@@ -219,7 +242,13 @@ object Lower {
     def genThrow(buf: Buffer, exc: Val) = {
       genGuardNotNull(buf, exc)
       genOp(buf, fresh(), Op.Call(throwSig, throw_, Seq(exc)))
-      buf.unreachable(unwind)
+      buf.unreachable(Next.None)
+    }
+
+    def genUnreachable(buf: Buffer) = {
+      val failL = unreachableSlowPath.getOrElseUpdate(unwindHandler, fresh())
+
+      buf.jump(Next(failL))
     }
 
     def genOp(buf: Buffer, n: Local, op: Op): Unit = op match {
@@ -1079,6 +1108,14 @@ object Lower {
   val throwNullPointerVal =
     Val.Global(throwNullPointer, Type.Ptr)
 
+  val throwUndefinedTy =
+    Type.Function(Seq(Type.Ptr), Type.Nothing)
+  val throwUndefined =
+    Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+                  Sig.Method("throwUndefined", Seq(Type.Nothing)))
+  val throwUndefinedVal =
+    Val.Global(throwUndefined, Type.Ptr)
+
   val RuntimeNull    = Type.Ref(Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
 
@@ -1116,6 +1153,7 @@ object Lower {
     buf += throwDivisionByZero
     buf += throwClassCast
     buf += throwNullPointer
+    buf += throwUndefined
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
     buf
