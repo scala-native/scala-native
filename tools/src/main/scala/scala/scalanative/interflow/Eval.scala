@@ -418,33 +418,11 @@ trait Eval { self: Interflow =>
             instance.values(offset) = eval(value)
             Val.Unit
           case (arr, idx) =>
-            def fallback =
-              emit.arraystore(ty,
-                              materialize(arr),
-                              materialize(idx),
-                              materialize(eval(value)),
-                              unwind)
-            eval(value) match {
-              case Val.Virtual(addr) =>
-                arr.ty match {
-                  case ArrayRef(elemty, _) =>
-                    state.deref(addr).cls.ty match {
-                      case BoxRef(boxty) if elemty == boxty =>
-                        val boxvalue = state.derefVirtual(addr).values(0)
-                        emit.arraystore(elemty,
-                                        materialize(arr),
-                                        materialize(idx),
-                                        materialize(boxvalue),
-                                        unwind)
-                      case _ =>
-                        fallback
-                    }
-                  case _ =>
-                    fallback
-                }
-              case _ =>
-                fallback
-            }
+            emit.arraystore(ty,
+                            materialize(arr),
+                            materialize(idx),
+                            materialize(eval(value)),
+                            unwind)
         }
       case Op.Arraylength(arr) =>
         eval(arr) match {
