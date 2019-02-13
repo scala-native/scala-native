@@ -96,4 +96,8 @@ package object runtime {
   /** Called by the generated code in case of unexpected condition. */
   @noinline def throwUndefined(): Nothing =
     throw new UndefinedBehaviorError
+
+  /** Called by the generated code in case of out of bounds on array access. */
+  @noinline def throwOutOfBounds(i: Int): Nothing =
+    throw new IndexOutOfBoundsException(i.toString)
 }
