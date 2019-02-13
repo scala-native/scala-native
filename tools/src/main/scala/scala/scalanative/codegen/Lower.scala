@@ -43,6 +43,8 @@ object Lower {
     private val fresh         = new util.ScopedVar[Fresh]
     private val unwindHandler = new util.ScopedVar[Option[Local]]
 
+    private val nullPointerSlowPath = mutable.Map.empty[Option[Local], Local]
+
     private def unwind: Next =
       unwindHandler.get.fold[Next](Next.None) { handler =>
         val exc = Val.Local(fresh(), Rt.Object)
@@ -124,6 +126,9 @@ object Lower {
           buf += inst
       }
 
+      genNullPointerSlowPath(buf)
+      nullPointerSlowPath.clear()
+
       buf ++= handlers
 
       eliminateDeadCode(buf.toSeq.map(super.onInst))
@@ -138,6 +143,22 @@ object Lower {
         unit
       case _ =>
         super.onVal(value)
+    }
+
+    def genNullPointerSlowPath(buf: Buffer): Unit = {
+      nullPointerSlowPath.toSeq.sortBy(_._2.id).foreach {
+        case (slowPathUnwindHandler, slowPath) =>
+          ScopedVar.scoped(
+            unwindHandler := slowPathUnwindHandler
+          ) {
+            buf.label(slowPath)
+            buf.call(throwNullPointerTy,
+                     throwNullPointerVal,
+                     Seq(Val.Null),
+                     unwind)
+            buf.unreachable(unwind)
+          }
+      }
     }
 
     def genLet(buf: Buffer, n: Local, op: Op): Unit = op.resty match {
@@ -203,25 +224,20 @@ object Lower {
         buf.let(n, op, unwind)
     }
 
-    def genGuardNotNull(buf: Buffer, obj: Val): Unit = {
-      import buf._
+    def genGuardNotNull(buf: Buffer, obj: Val): Unit = obj.ty match {
+      case ty: Type.RefKind if !ty.isNullable =>
+        ()
 
-      obj.ty match {
-        case ty: Type.RefKind if !ty.isNullable =>
-          ()
+      case _ =>
+        import buf._
 
-        case _ =>
-          val isNullL, notNullL = fresh()
+        val notNullL = fresh()
+        val isNullL =
+          nullPointerSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
-          val isNull = comp(Comp.Ieq, obj.ty, obj, Val.Null, unwind)
-          branch(isNull, Next(isNullL), Next(notNullL))
-
-          label(isNullL)
-          call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null), unwind)
-          unreachable(unwind)
-
-          label(notNullL)
-      }
+        val isNull = comp(Comp.Ine, obj.ty, obj, Val.Null, unwind)
+        branch(isNull, Next(notNullL), Next(isNullL))
+        label(notNullL)
     }
 
     def genFieldElemOp(buf: Buffer, obj: Val, name: Global) = {
