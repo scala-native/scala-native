@@ -45,6 +45,7 @@ object Lower {
 
     private val nullPointerSlowPath    = mutable.Map.empty[Option[Local], Local]
     private val divisionByZeroSlowPath = mutable.Map.empty[Option[Local], Local]
+    private val classCastSlowPath      = mutable.Map.empty[Option[Local], Local]
 
     private def unwind: Next =
       unwindHandler.get.fold[Next](Next.None) { handler =>
@@ -129,9 +130,11 @@ object Lower {
 
       genNullPointerSlowPath(buf)
       genDivisionByZeroSlowPath(buf)
+      genClassCastSlowPath(buf)
 
       nullPointerSlowPath.clear()
       divisionByZeroSlowPath.clear()
+      classCastSlowPath.clear()
 
       buf ++= handlers
 
@@ -175,6 +178,26 @@ object Lower {
             buf.call(throwDivisionByZeroTy,
                      throwDivisionByZeroVal,
                      Seq(Val.Null),
+                     unwind)
+            buf.unreachable(unwind)
+          }
+      }
+    }
+
+    def genClassCastSlowPath(buf: Buffer): Unit = {
+      classCastSlowPath.toSeq.sortBy(_._2.id).foreach {
+        case (slowPathUnwindHandler, slowPath) =>
+          ScopedVar.scoped(
+            unwindHandler := slowPathUnwindHandler
+          ) {
+            val obj  = Val.Local(fresh(), Type.Ptr)
+            val toty = Val.Local(fresh(), Type.Ptr)
+
+            buf.label(slowPath, Seq(obj, toty))
+            val fromty = buf.let(Op.Load(Type.Ptr, obj), unwind)
+            buf.call(throwClassCastTy,
+                     throwClassCastVal,
+                     Seq(Val.Null, fromty, toty),
                      unwind)
             buf.unreachable(unwind)
           }
@@ -484,23 +507,16 @@ object Lower {
           let(n, Op.Copy(Val.Null), unwind)
 
         case Op.As(ty: Type.RefKind, v) if v.ty.isInstanceOf[Type.RefKind] =>
-          val checkIfIsInstanceOfL, castL, failL = fresh()
+          val checkIfIsInstanceOfL, castL = fresh()
+          val failL                       = classCastSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
           val isNull = comp(Comp.Ieq, v.ty, v, Val.Null, unwind)
           branch(isNull, Next(castL), Next(checkIfIsInstanceOfL))
 
           label(checkIfIsInstanceOfL)
           val isInstanceOf = genIsOp(buf, ty, v)
-          branch(isInstanceOf, Next(castL), Next(failL))
-
-          label(failL)
-          val fromTy = let(Op.Load(Type.Ptr, v), unwind)
-          val toTy   = Val.Global(rtti(linked.infos(ty.className)).name, Type.Ptr)
-          call(throwClassCastTy,
-               throwClassCastVal,
-               Seq(Val.Null, fromTy, toTy),
-               unwind)
-          unreachable(unwind)
+          val toTy         = Val.Global(rtti(linked.infos(ty.className)).name, Type.Ptr)
+          branch(isInstanceOf, Next(castL), Next.Label(failL, Seq(v, toTy)))
 
           label(castL)
           let(n, Op.Conv(Conv.Bitcast, ty, v), unwind)
