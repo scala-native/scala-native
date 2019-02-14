@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.linker._
 import scalanative.codegen.MemoryLayout
-import scalanative.util.unreachable
+import scalanative.util.{unreachable, And}
 
 trait Eval { self: Interflow =>
   def run(insts: Array[Inst],
@@ -238,14 +238,14 @@ trait Eval { self: Interflow =>
               if !ty.isNullable =>
             Val.True
           case (Comp.Ieq,
-                l @ Of2(lty: Type.RefKind, ClassRef(lcls)),
-                r @ Of2(rty: Type.RefKind, ClassRef(rcls)))
+                l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
+                r @ Of(And(rty: Type.RefKind, ClassRef(rcls))))
               if !lty.isNullable && lty.isExact && lcls.isModule
                 && !rty.isNullable && rty.isExact && rcls.isModule =>
             Val.Bool(lcls.name == rcls.name)
           case (Comp.Ine,
-                l @ Of2(lty: Type.RefKind, ClassRef(lcls)),
-                r @ Of2(rty: Type.RefKind, ClassRef(rcls)))
+                l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
+                r @ Of(And(rty: Type.RefKind, ClassRef(rcls))))
               if !lty.isNullable && lty.isExact && lcls.isModule
                 && !rty.isNullable && rty.isExact && rcls.isModule =>
             Val.Bool(lcls.name != rcls.name)
@@ -388,9 +388,9 @@ trait Eval { self: Interflow =>
         }
       case Op.Arrayalloc(ty, init) =>
         eval(init) match {
-          case Val.Int(count) if count < 4096 =>
+          case Val.Int(count) if count <= 128 =>
             Val.Virtual(state.allocArray(ty, count))
-          case Val.ArrayValue(_, values) if values.size < 4096 =>
+          case Val.ArrayValue(_, values) if values.size <= 128 =>
             val addr     = state.allocArray(ty, values.size)
             val instance = state.derefVirtual(addr)
             values.zipWithIndex.foreach {
@@ -418,33 +418,11 @@ trait Eval { self: Interflow =>
             instance.values(offset) = eval(value)
             Val.Unit
           case (arr, idx) =>
-            def fallback =
-              emit.arraystore(ty,
-                              materialize(arr),
-                              materialize(idx),
-                              materialize(eval(value)),
-                              unwind)
-            eval(value) match {
-              case Val.Virtual(addr) =>
-                arr.ty match {
-                  case ArrayRef(elemty, _) =>
-                    state.deref(addr).cls.ty match {
-                      case BoxRef(boxty) if elemty == boxty =>
-                        val boxvalue = state.derefVirtual(addr).values(0)
-                        emit.arraystore(elemty,
-                                        materialize(arr),
-                                        materialize(idx),
-                                        materialize(boxvalue),
-                                        unwind)
-                      case _ =>
-                        fallback
-                    }
-                  case _ =>
-                    fallback
-                }
-              case _ =>
-                fallback
-            }
+            emit.arraystore(ty,
+                            materialize(arr),
+                            materialize(idx),
+                            materialize(eval(value)),
+                            unwind)
         }
       case Op.Arraylength(arr) =>
         eval(arr) match {

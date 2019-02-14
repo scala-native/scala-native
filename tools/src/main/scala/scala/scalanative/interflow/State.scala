@@ -62,7 +62,7 @@ final class State(block: Local) {
   def inBounds(addr: Addr, offset: Int): Boolean = {
     heap(addr) match {
       case VirtualInstance(_, _, v) =>
-        addr >= 0 && addr < v.length
+        offset >= 0 && offset < v.length
       case _ =>
         false
     }

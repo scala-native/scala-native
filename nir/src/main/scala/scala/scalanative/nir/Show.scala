@@ -36,8 +36,10 @@ object Show {
     val pw = new java.io.PrintWriter(fileName)
     try {
       defns.foreach { defn =>
-        pw.write(defn.show)
-        pw.write("\n")
+        if (defn != null) {
+          pw.write(defn.show)
+          pw.write("\n")
+        }
       }
     } finally {
       pw.close()

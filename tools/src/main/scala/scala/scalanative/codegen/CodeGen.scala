@@ -23,6 +23,7 @@ object CodeGen {
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
     val lowered   = lower(generated)
+    nir.Show.dump(lowered, "lowered.hnir")
     emit(config, lowered)
   }
 
@@ -87,8 +88,6 @@ object CodeGen {
 
     var currentBlockName: Local = _
     var currentBlockSplit: Int  = _
-
-    var unreachableSlowPath = mutable.Map.empty[Next, Local]
 
     val copies    = mutable.Map.empty[Local, Val]
     val deps      = mutable.Set.empty[Global]
@@ -273,15 +272,11 @@ object CodeGen {
         cfg.all.foreach { block =>
           genBlockLandingPads(block)(cfg, fresh)
         }
-        if (unreachableSlowPath.nonEmpty) {
-          genUnreachableSlowPath()(fresh)
-        }
         newline()
 
         str("}")
 
         copies.clear()
-        unreachableSlowPath.clear()
       }
     }
 
@@ -407,10 +402,6 @@ object CodeGen {
       block.insts.foreach {
         case Inst.Let(_, _, unwind: Next.Unwind) =>
           genLandingPad(unwind)
-        case Inst.Throw(_, unwind: Next.Unwind) =>
-          genLandingPad(unwind)
-        case Inst.Unreachable(unwind: Next.Unwind) =>
-          genLandingPad(unwind)
         case _ =>
           ()
       }
@@ -453,20 +444,6 @@ object CodeGen {
       indent()
       line(s"resume $excrecty $rec")
       unindent()
-    }
-
-    def genUnreachableSlowPath()(implicit fresh: Fresh): Unit = {
-      unreachableSlowPath.foreach {
-        case (unwind, slowPath) =>
-          newline()
-          line(s"_${slowPath.id}.0:")
-          val noBind = () => ()
-          genCall(noBind,
-                  Op.Call(throwUndefinedTy, throwUndefinedVal, Seq(Val.Null)),
-                  unwind)
-          newline()
-          str("unreachable")
-      }
     }
 
     def genType(ty: Type): Unit = ty match {
@@ -648,10 +625,9 @@ object CodeGen {
         genLet(inst)
 
       case Inst.Unreachable(unwind) =>
+        assert(unwind eq Next.None)
         newline()
-        val slowPath = unreachableSlowPath.getOrElseUpdate(unwind, fresh())
-        str("br ")
-        genNext(Next.Label(slowPath, Seq.empty))
+        str("unreachable")
 
       case Inst.Ret(value) =>
         newline()
@@ -1041,20 +1017,12 @@ object CodeGen {
       "landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
     val typeid =
       "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
-    val throwUndefinedTy =
-      Type.Function(Seq(Type.Ptr), Type.Nothing)
-    val throwUndefined =
-      Global.Member(Global.Top("scala.scalanative.runtime.package$"),
-                    Sig.Method("throwUndefined", Seq(Type.Nothing)))
-    val throwUndefinedVal =
-      Val.Global(throwUndefined, Type.Ptr)
   }
 
   val depends: Seq[Global] = {
     val buf = mutable.UnrolledBuffer.empty[Global]
     buf ++= Lower.depends
     buf ++= Generate.depends
-    buf += Impl.throwUndefined
     buf
   }
 }

@@ -43,6 +43,12 @@ object Lower {
     private val fresh         = new util.ScopedVar[Fresh]
     private val unwindHandler = new util.ScopedVar[Option[Local]]
 
+    private val unreachableSlowPath    = mutable.Map.empty[Option[Local], Local]
+    private val nullPointerSlowPath    = mutable.Map.empty[Option[Local], Local]
+    private val divisionByZeroSlowPath = mutable.Map.empty[Option[Local], Local]
+    private val classCastSlowPath      = mutable.Map.empty[Option[Local], Local]
+    private val outOfBoundsSlowPath    = mutable.Map.empty[Option[Local], Local]
+
     private def unwind: Next =
       unwindHandler.get.fold[Next](Next.None) { handler =>
         val exc = Val.Local(fresh(), Rt.Object)
@@ -120,9 +126,28 @@ object Lower {
             genThrow(buf, v)
           }
 
+        case Inst.Unreachable(unwind) =>
+          ScopedVar.scoped(
+            unwindHandler := newUnwindHandler(unwind)
+          ) {
+            genUnreachable(buf)
+          }
+
         case inst =>
           buf += inst
       }
+
+      genNullPointerSlowPath(buf)
+      genDivisionByZeroSlowPath(buf)
+      genClassCastSlowPath(buf)
+      genUnreachableSlowPath(buf)
+      genOutOfBoundsSlowPath(buf)
+
+      nullPointerSlowPath.clear()
+      divisionByZeroSlowPath.clear()
+      classCastSlowPath.clear()
+      unreachableSlowPath.clear()
+      outOfBoundsSlowPath.clear()
 
       buf ++= handlers
 
@@ -140,13 +165,96 @@ object Lower {
         super.onVal(value)
     }
 
+    def genNullPointerSlowPath(buf: Buffer): Unit = {
+      nullPointerSlowPath.toSeq.sortBy(_._2.id).foreach {
+        case (slowPathUnwindHandler, slowPath) =>
+          ScopedVar.scoped(
+            unwindHandler := slowPathUnwindHandler
+          ) {
+            buf.label(slowPath)
+            buf.call(throwNullPointerTy,
+                     throwNullPointerVal,
+                     Seq(Val.Null),
+                     unwind)
+            buf.unreachable(Next.None)
+          }
+      }
+    }
+
+    def genDivisionByZeroSlowPath(buf: Buffer): Unit = {
+      divisionByZeroSlowPath.toSeq.sortBy(_._2.id).foreach {
+        case (slowPathUnwindHandler, slowPath) =>
+          ScopedVar.scoped(
+            unwindHandler := slowPathUnwindHandler
+          ) {
+            buf.label(slowPath)
+            buf.call(throwDivisionByZeroTy,
+                     throwDivisionByZeroVal,
+                     Seq(Val.Null),
+                     unwind)
+            buf.unreachable(Next.None)
+          }
+      }
+    }
+
+    def genClassCastSlowPath(buf: Buffer): Unit = {
+      classCastSlowPath.toSeq.sortBy(_._2.id).foreach {
+        case (slowPathUnwindHandler, slowPath) =>
+          ScopedVar.scoped(
+            unwindHandler := slowPathUnwindHandler
+          ) {
+            val obj  = Val.Local(fresh(), Type.Ptr)
+            val toty = Val.Local(fresh(), Type.Ptr)
+
+            buf.label(slowPath, Seq(obj, toty))
+            val fromty = buf.let(Op.Load(Type.Ptr, obj), unwind)
+            buf.call(throwClassCastTy,
+                     throwClassCastVal,
+                     Seq(Val.Null, fromty, toty),
+                     unwind)
+            buf.unreachable(Next.None)
+          }
+      }
+    }
+
+    def genUnreachableSlowPath(buf: Buffer): Unit = {
+      unreachableSlowPath.toSeq.sortBy(_._2.id).foreach {
+        case (slowPathUnwindHandler, slowPath) =>
+          ScopedVar.scoped(
+            unwindHandler := slowPathUnwindHandler
+          ) {
+            buf.label(slowPath)
+            buf.call(throwUndefinedTy, throwUndefinedVal, Seq(Val.Null), unwind)
+            buf.unreachable(Next.None)
+          }
+      }
+    }
+
+    def genOutOfBoundsSlowPath(buf: Buffer): Unit = {
+      outOfBoundsSlowPath.toSeq.sortBy(_._2.id).foreach {
+        case (slowPathUnwindHandler, slowPath) =>
+          ScopedVar.scoped(
+            unwindHandler := slowPathUnwindHandler
+          ) {
+            val idx = Val.Local(fresh(), Type.Int)
+
+            buf.label(slowPath, Seq(idx))
+            buf.call(throwOutOfBoundsTy,
+                     throwOutOfBoundsVal,
+                     Seq(Val.Null, idx),
+                     unwind)
+            buf.unreachable(Next.None)
+          }
+      }
+    }
+
     def genLet(buf: Buffer, n: Local, op: Op): Unit = op.resty match {
       case Type.Unit =>
         genOp(buf, fresh(), op)
         buf.let(n, Op.Copy(unit), unwind)
       case Type.Nothing =>
         genOp(buf, fresh(), op)
-        buf.unreachable(unwind)
+        genUnreachable(buf)
         buf.label(fresh(), Seq(Val.Local(n, op.resty)))
       case _ =>
         genOp(buf, n, op)
@@ -155,7 +263,13 @@ object Lower {
     def genThrow(buf: Buffer, exc: Val) = {
       genGuardNotNull(buf, exc)
       genOp(buf, fresh(), Op.Call(throwSig, throw_, Seq(exc)))
-      buf.unreachable(unwind)
+      buf.unreachable(Next.None)
+    }
+
+    def genUnreachable(buf: Buffer) = {
+      val failL = unreachableSlowPath.getOrElseUpdate(unwindHandler, fresh())
+
+      buf.jump(Next(failL))
     }
 
     def genOp(buf: Buffer, n: Local, op: Op): Unit = op match {
@@ -203,25 +317,34 @@ object Lower {
         buf.let(n, op, unwind)
     }
 
-    def genGuardNotNull(buf: Buffer, obj: Val): Unit = {
+    def genGuardNotNull(buf: Buffer, obj: Val): Unit = obj.ty match {
+      case ty: Type.RefKind if !ty.isNullable =>
+        ()
+
+      case _ =>
+        import buf._
+
+        val notNullL = fresh()
+        val isNullL =
+          nullPointerSlowPath.getOrElseUpdate(unwindHandler, fresh())
+
+        val isNull = comp(Comp.Ine, obj.ty, obj, Val.Null, unwind)
+        branch(isNull, Next(notNullL), Next(isNullL))
+        label(notNullL)
+    }
+
+    def genGuardInBounds(buf: Buffer, idx: Val, len: Val): Unit = {
       import buf._
 
-      obj.ty match {
-        case ty: Type.RefKind if !ty.isNullable =>
-          ()
+      val inBoundsL = fresh()
+      val outOfBoundsL =
+        outOfBoundsSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
-        case _ =>
-          val isNullL, notNullL = fresh()
-
-          val isNull = comp(Comp.Ieq, obj.ty, obj, Val.Null, unwind)
-          branch(isNull, Next(isNullL), Next(notNullL))
-
-          label(isNullL)
-          call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null), unwind)
-          unreachable(unwind)
-
-          label(notNullL)
-      }
+      val gt0      = comp(Comp.Sge, Type.Int, idx, Val.Int(0), unwind)
+      val ltLen    = comp(Comp.Slt, Type.Int, idx, len, unwind)
+      val inBounds = bin(Bin.And, Type.Bool, gt0, ltLen, unwind)
+      branch(inBounds, Next(inBoundsL), Next.Label(outOfBoundsL, Seq(idx)))
+      label(inBoundsL)
     }
 
     def genFieldElemOp(buf: Buffer, obj: Val, name: Global) = {
@@ -448,23 +571,16 @@ object Lower {
           let(n, Op.Copy(Val.Null), unwind)
 
         case Op.As(ty: Type.RefKind, v) if v.ty.isInstanceOf[Type.RefKind] =>
-          val checkIfIsInstanceOfL, castL, failL = fresh()
+          val checkIfIsInstanceOfL, castL = fresh()
+          val failL                       = classCastSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
           val isNull = comp(Comp.Ieq, v.ty, v, Val.Null, unwind)
           branch(isNull, Next(castL), Next(checkIfIsInstanceOfL))
 
           label(checkIfIsInstanceOfL)
           val isInstanceOf = genIsOp(buf, ty, v)
-          branch(isInstanceOf, Next(castL), Next(failL))
-
-          label(failL)
-          val fromTy = let(Op.Load(Type.Ptr, v), unwind)
-          val toTy   = Val.Global(rtti(linked.infos(ty.className)).name, Type.Ptr)
-          call(throwClassCastTy,
-               throwClassCastVal,
-               Seq(Val.Null, fromTy, toTy),
-               unwind)
-          unreachable(unwind)
+          val toTy         = Val.Global(rtti(linked.infos(ty.className)).name, Type.Ptr)
+          branch(isInstanceOf, Next(castL), Next.Label(failL, Seq(v, toTy)))
 
           label(castL)
           let(n, Op.Conv(Conv.Bitcast, ty, v), unwind)
@@ -588,18 +704,15 @@ object Lower {
 
         val thenL, elseL = fresh()
 
+        val succL = fresh()
+        val failL =
+          divisionByZeroSlowPath.getOrElseUpdate(unwindHandler, fresh())
+
         val isZero =
-          comp(Comp.Ieq, ty, divisor, Val.Zero(ty), unwind)
-        branch(isZero, Next(thenL), Next(elseL))
+          comp(Comp.Ine, ty, divisor, Val.Zero(ty), unwind)
+        branch(isZero, Next(succL), Next(failL))
 
-        label(thenL)
-        call(throwDivisionByZeroTy,
-             throwDivisionByZeroVal,
-             Seq(Val.Null),
-             unwind)
-        unreachable(unwind)
-
-        label(elseL)
+        label(succL)
         if (bin == Bin.Srem || bin == Bin.Sdiv) {
           checkDivisionOverflow(op)
         } else {
@@ -760,25 +873,31 @@ object Lower {
     def genArrayloadOp(buf: Buffer, n: Local, op: Op.Arrayload): Unit = {
       val Op.Arrayload(ty, arr, idx) = op
 
-      val sig  = arrayApplySig.getOrElse(ty, arrayApplySig(Rt.Object))
-      val func = arrayApply.getOrElse(ty, arrayApply(Rt.Object))
+      val len = fresh()
 
-      genGuardNotNull(buf, arr)
-      buf.let(n,
-              Op.Call(sig, Val.Global(func, Type.Ptr), Seq(arr, idx)),
-              unwind)
+      genArraylengthOp(buf, len, Op.Arraylength(arr))
+      genGuardInBounds(buf, idx, Val.Local(len, Type.Int))
+
+      val arrTy = Type.StructValue(
+        Seq(Type.Ptr, Type.Int, Type.Int, Type.ArrayValue(ty, 0)))
+      val elemPath = Seq(Val.Int(0), Val.Int(3), idx)
+      val elemPtr  = buf.elem(arrTy, arr, elemPath, unwind)
+      buf.let(n, Op.Load(ty, elemPtr), unwind)
     }
 
     def genArraystoreOp(buf: Buffer, n: Local, op: Op.Arraystore): Unit = {
       val Op.Arraystore(ty, arr, idx, value) = op
 
-      val sig  = arrayUpdateSig.getOrElse(ty, arrayUpdateSig(Rt.Object))
-      val func = arrayUpdate.getOrElse(ty, arrayUpdate(Rt.Object))
+      val len = fresh()
 
-      genGuardNotNull(buf, arr)
-      buf.let(n,
-              Op.Call(sig, Val.Global(func, Type.Ptr), Seq(arr, idx, value)),
-              unwind)
+      genArraylengthOp(buf, len, Op.Arraylength(arr))
+      genGuardInBounds(buf, idx, Val.Local(len, Type.Int))
+
+      val arrTy = Type.StructValue(
+        Seq(Type.Ptr, Type.Int, Type.Int, Type.ArrayValue(ty, 0)))
+      val elemPtr =
+        buf.elem(arrTy, arr, Seq(Val.Int(0), Val.Int(3), idx), unwind)
+      buf.let(n, Op.Store(ty, elemPtr, value), unwind)
     }
 
     def genArraylengthOp(buf: Buffer, n: Local, op: Op.Arraylength): Unit = {
@@ -788,7 +907,9 @@ object Lower {
       val func = arrayLength
 
       genGuardNotNull(buf, arr)
-      buf.let(n, Op.Call(sig, Val.Global(func, Type.Ptr), Seq(arr)), unwind)
+      val arrTy  = Type.StructValue(Seq(Type.Ptr, Type.Int))
+      val lenPtr = buf.elem(arrTy, arr, Seq(Val.Int(0), Val.Int(1)), unwind)
+      buf.let(n, Op.Load(Type.Int, lenPtr), unwind)
     }
 
     def genStringVal(value: String): Val = {
@@ -1030,6 +1151,22 @@ object Lower {
   val throwNullPointerVal =
     Val.Global(throwNullPointer, Type.Ptr)
 
+  val throwUndefinedTy =
+    Type.Function(Seq(Type.Ptr), Type.Nothing)
+  val throwUndefined =
+    Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+                  Sig.Method("throwUndefined", Seq(Type.Nothing)))
+  val throwUndefinedVal =
+    Val.Global(throwUndefined, Type.Ptr)
+
+  val throwOutOfBoundsTy =
+    Type.Function(Seq(Type.Ptr, Type.Int), Type.Nothing)
+  val throwOutOfBounds =
+    Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+                  Sig.Method("throwOutOfBounds", Seq(Type.Int, Type.Nothing)))
+  val throwOutOfBoundsVal =
+    Val.Global(throwOutOfBounds, Type.Ptr)
+
   val RuntimeNull    = Type.Ref(Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
 
@@ -1067,6 +1204,8 @@ object Lower {
     buf += throwDivisionByZero
     buf += throwClassCast
     buf += throwNullPointer
+    buf += throwUndefined
+    buf += throwOutOfBounds
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
     buf

@@ -39,9 +39,6 @@ sealed abstract class Array[T]
 }
 
 object Array {
-  @noinline def throwIndexOutOfBoundsException(i: Int): Nothing =
-    throw new IndexOutOfBoundsException(i.toString)
-
   def copy(from: AnyRef,
            fromPos: Int,
            to: AnyRef,
@@ -151,7 +148,7 @@ final class ${T}Array private () extends Array[${T}] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwIndexOutOfBoundsException(i)
+      throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
       elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
@@ -159,7 +156,7 @@ final class ${T}Array private () extends Array[${T}] {
 
   @inline def apply(i: Int): ${T} =
     if (i < 0 || i >= length) {
-      throwIndexOutOfBoundsException(i)
+      throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
@@ -172,7 +169,7 @@ final class ${T}Array private () extends Array[${T}] {
 
   @inline def update(i: Int, value: ${T}): Unit =
     if (i < 0 || i >= length) {
-      throwIndexOutOfBoundsException(i)
+      throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
