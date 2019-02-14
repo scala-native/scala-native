@@ -290,6 +290,18 @@ final class MergeProcessor(insts: Array[Inst],
         block
     }.toSeq
 
+    val sortedBlocks = blocks.values.toSeq.sortBy { block =>
+      offsets(block.label.name)
+    }
+
+    def isExceptional(block: MergeBlock): Boolean = {
+      val cf = block.cf
+      cf.isInstanceOf[Inst.Unreachable] || cf.isInstanceOf[Inst.Throw]
+    }
+
+    val orderedBlocks = mutable.UnrolledBuffer.empty[MergeBlock]
+    orderedBlocks ++= sortedBlocks.filterNot(isExceptional)
+
     // Inlining expects at most one block that returns.
     // If the discovered blocks contain more than one,
     // we must merge them together using a synthetic block.
@@ -311,6 +323,7 @@ final class MergeProcessor(insts: Array[Inst],
       val resultMergeBlock =
         new MergeBlock(syntheticLabel, Local(blockFresh().id * 10000))
       blocks(syntheticLabel.name) = resultMergeBlock
+      orderedBlocks += resultMergeBlock
 
       // Update all returning blocks to jump to result block,
       // and update incoming/outgoing edges to include result block.
@@ -332,7 +345,8 @@ final class MergeProcessor(insts: Array[Inst],
       resultMergeBlock.cf = Inst.Ret(eval.eval(syntheticParam)(state))
     }
 
-    blocks.values.toSeq.sortBy(_.label.name.id)
+    orderedBlocks ++= sortedBlocks.filter(isExceptional)
+    orderedBlocks
   }
 }
 
