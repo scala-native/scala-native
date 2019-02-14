@@ -15,7 +15,7 @@ sealed abstract class Array[T]
   /** Number of elements of the array. */
   @inline def length: Int = {
     val rawptr = castObjectToRawPtr(this)
-    val lenptr = elemRawPtr(rawptr, sizeof[Ptr[Byte]])
+    val lenptr = elemRawPtr(rawptr, 8)
     loadInt(lenptr)
   }
 
@@ -189,7 +189,7 @@ object CharArray {
     val arrsize = 16 + 2 * length
     val arr     = GC.alloc_atomic(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), sizeof[Char].toInt)
+    storeInt(elemRawPtr(arr, 12), 2.toInt)
     castRawPtrToObject(arr).asInstanceOf[CharArray]
   }
 
@@ -197,7 +197,7 @@ object CharArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = sizeof[Char] * length
+    val size = 2 * length
     libc.memcpy(dst, src, size)
     arr
   }
@@ -260,7 +260,7 @@ object ObjectArray {
     val arrsize = 16 + 8 * length
     val arr     = GC.alloc(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), sizeof[Object].toInt)
+    storeInt(elemRawPtr(arr, 12), 8.toInt)
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]
   }
 
@@ -268,7 +268,7 @@ object ObjectArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = sizeof[Object] * length
+    val size = 8 * length
     libc.memcpy(dst, src, size)
     arr
   }
@@ -331,7 +331,7 @@ object BooleanArray {
     val arrsize = 16 + 1 * length
     val arr     = GC.alloc_atomic(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), sizeof[Boolean].toInt)
+    storeInt(elemRawPtr(arr, 12), 1.toInt)
     castRawPtrToObject(arr).asInstanceOf[BooleanArray]
   }
 
@@ -339,7 +339,7 @@ object BooleanArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = sizeof[Boolean] * length
+    val size = 1 * length
     libc.memcpy(dst, src, size)
     arr
   }
@@ -402,7 +402,7 @@ object LongArray {
     val arrsize = 16 + 8 * length
     val arr     = GC.alloc_atomic(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), sizeof[Long].toInt)
+    storeInt(elemRawPtr(arr, 12), 8.toInt)
     castRawPtrToObject(arr).asInstanceOf[LongArray]
   }
 
@@ -410,7 +410,7 @@ object LongArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = sizeof[Long] * length
+    val size = 8 * length
     libc.memcpy(dst, src, size)
     arr
   }
@@ -473,7 +473,7 @@ object ShortArray {
     val arrsize = 16 + 2 * length
     val arr     = GC.alloc_atomic(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), sizeof[Short].toInt)
+    storeInt(elemRawPtr(arr, 12), 2.toInt)
     castRawPtrToObject(arr).asInstanceOf[ShortArray]
   }
 
@@ -481,7 +481,7 @@ object ShortArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = sizeof[Short] * length
+    val size = 2 * length
     libc.memcpy(dst, src, size)
     arr
   }
@@ -544,7 +544,7 @@ object IntArray {
     val arrsize = 16 + 4 * length
     val arr     = GC.alloc_atomic(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), sizeof[Int].toInt)
+    storeInt(elemRawPtr(arr, 12), 4.toInt)
     castRawPtrToObject(arr).asInstanceOf[IntArray]
   }
 
@@ -552,7 +552,7 @@ object IntArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = sizeof[Int] * length
+    val size = 4 * length
     libc.memcpy(dst, src, size)
     arr
   }
@@ -615,7 +615,7 @@ object DoubleArray {
     val arrsize = 16 + 8 * length
     val arr     = GC.alloc_atomic(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), sizeof[Double].toInt)
+    storeInt(elemRawPtr(arr, 12), 8.toInt)
     castRawPtrToObject(arr).asInstanceOf[DoubleArray]
   }
 
@@ -623,7 +623,7 @@ object DoubleArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = sizeof[Double] * length
+    val size = 8 * length
     libc.memcpy(dst, src, size)
     arr
   }
@@ -686,7 +686,7 @@ object ByteArray {
     val arrsize = 16 + 1 * length
     val arr     = GC.alloc_atomic(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), sizeof[Byte].toInt)
+    storeInt(elemRawPtr(arr, 12), 1.toInt)
     castRawPtrToObject(arr).asInstanceOf[ByteArray]
   }
 
@@ -694,7 +694,7 @@ object ByteArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = sizeof[Byte] * length
+    val size = 1 * length
     libc.memcpy(dst, src, size)
     arr
   }
@@ -757,7 +757,7 @@ object FloatArray {
     val arrsize = 16 + 4 * length
     val arr     = GC.alloc_atomic(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), sizeof[Float].toInt)
+    storeInt(elemRawPtr(arr, 12), 4.toInt)
     castRawPtrToObject(arr).asInstanceOf[FloatArray]
   }
 
@@ -765,7 +765,7 @@ object FloatArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = sizeof[Float] * length
+    val size = 4 * length
     libc.memcpy(dst, src, size)
     arr
   }
@@ -828,7 +828,7 @@ object UnitArray {
     val arrsize = 16 + 8 * length
     val arr     = GC.alloc(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), sizeof[Unit].toInt)
+    storeInt(elemRawPtr(arr, 12), 8.toInt)
     castRawPtrToObject(arr).asInstanceOf[UnitArray]
   }
 
@@ -836,7 +836,7 @@ object UnitArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = sizeof[Unit] * length
+    val size = 8 * length
     libc.memcpy(dst, src, size)
     arr
   }

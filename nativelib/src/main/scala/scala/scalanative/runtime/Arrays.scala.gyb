@@ -15,7 +15,7 @@ sealed abstract class Array[T]
   /** Number of elements of the array. */
   @inline def length: Int = {
     val rawptr = castObjectToRawPtr(this)
-    val lenptr = elemRawPtr(rawptr, sizeof[Ptr[Byte]])
+    val lenptr = elemRawPtr(rawptr, ${sizePtr})
     loadInt(lenptr)
   }
 
@@ -198,7 +198,7 @@ object ${T}Array {
     val arrsize = ${sizeHeader} + ${sizeT} * length
     val arr     = ${alloc}(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), sizeof[${T}].toInt)
+    storeInt(elemRawPtr(arr, 12), ${sizeT}.toInt)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 
@@ -206,7 +206,7 @@ object ${T}Array {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = sizeof[${T}] * length
+    val size = ${sizeT} * length
     libc.memcpy(dst, src, size)
     arr
   }

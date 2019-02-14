@@ -1,11 +1,19 @@
 package scala.scalanative
 package interflow
 
+import scalanative.codegen.Lower
+
 import java.util.Arrays
 import scalanative.nir._
 import scalanative.linker._
 
 trait Intrinsics { self: Interflow =>
+  val arrayApplyIntrinsics  = Lower.arrayApply.values.toSet[Global]
+  val arrayUpdateIntrinsics = Lower.arrayUpdate.values.toSet[Global]
+  val arrayLengthIntrinsic  = Lower.arrayLength
+  val arrayIntrinsics =
+    arrayApplyIntrinsics ++ arrayUpdateIntrinsics + arrayLengthIntrinsic
+
   val intrinsics = Set[Global](
     Global.Member(Global.Top("java.lang.Object"), Rt.GetClassSig),
     Global.Member(Global.Top("java.lang.Class"), Rt.IsArraySig),
@@ -19,14 +27,17 @@ trait Intrinsics { self: Interflow =>
     Global.Member(Global.Top("java.lang.Math$"), Rt.PowSig),
     Global.Member(Global.Top("java.lang.Math$"), Rt.MaxSig),
     Global.Member(Global.Top("java.lang.Math$"), Rt.SqrtSig)
-  )
+  ) ++ arrayIntrinsics
 
   def intrinsic(local: Local,
                 ty: Type,
                 name: Global,
-                args: Seq[Val],
-                unwind: Next)(implicit state: State): Val = {
+                rawArgs: Seq[Val],
+                unwind: Next,
+                blockFresh: Fresh)(implicit state: State): Val = {
     val Global.Member(_, sig) = name
+
+    val args = rawArgs.map(eval)
 
     def emit = {
       if (unwind ne Next.None) {
@@ -142,6 +153,17 @@ trait Intrinsics { self: Interflow =>
           case _ =>
             emit
         }
+      case _ if arrayApplyIntrinsics.contains(name) =>
+        val Seq(arr, idx)            = rawArgs
+        val Type.Function(_, elemty) = ty
+        eval(local, Op.Arrayload(elemty, arr, idx), unwind, blockFresh)
+      case _ if arrayUpdateIntrinsics.contains(name) =>
+        val Seq(arr, idx, value)                = rawArgs
+        val Type.Function(Seq(_, _, elemty), _) = ty
+        eval(local, Op.Arraystore(elemty, arr, idx, value), unwind, blockFresh)
+      case _ if name == arrayLengthIntrinsic =>
+        val Seq(arr) = rawArgs
+        eval(local, Op.Arraylength(arr), unwind, blockFresh)
     }
   }
 }

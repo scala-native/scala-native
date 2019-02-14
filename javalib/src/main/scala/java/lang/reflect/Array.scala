@@ -5,25 +5,27 @@ import java.lang._Class
 
 object Array {
   def newInstance(componentType: _Class[_], length: Int): AnyRef = {
-    val rawty = componentType.rawty
+    val ty = componentType
 
-    if (rawty == getRawType(classOf[PrimitiveBoolean]))
+    if (ty == classOf[PrimitiveBoolean]) {
       new scala.Array[Boolean](length)
-    else if (rawty == getRawType(classOf[PrimitiveChar]))
+    } else if (ty == classOf[PrimitiveChar]) {
       new scala.Array[Char](length)
-    else if (rawty == getRawType(classOf[PrimitiveByte]))
+    } else if (ty == classOf[PrimitiveByte]) {
       new scala.Array[Byte](length)
-    else if (rawty == getRawType(classOf[PrimitiveShort]))
+    } else if (ty == classOf[PrimitiveShort]) {
       new scala.Array[Short](length)
-    else if (rawty == getRawType(classOf[PrimitiveInt]))
+    } else if (ty == classOf[PrimitiveInt]) {
       new scala.Array[Int](length)
-    else if (rawty == getRawType(classOf[PrimitiveLong]))
+    } else if (ty == classOf[PrimitiveLong]) {
       new scala.Array[Long](length)
-    else if (rawty == getRawType(classOf[PrimitiveFloat]))
+    } else if (ty == classOf[PrimitiveFloat]) {
       new scala.Array[Float](length)
-    else if (rawty == getRawType(classOf[PrimitiveDouble]))
+    } else if (ty == classOf[PrimitiveDouble]) {
       new scala.Array[Double](length)
-    else new scala.Array[Object](length)
+    } else {
+      new scala.Array[Object](length)
+    }
   }
 
   def getLength(array: AnyRef): Int = array match {
