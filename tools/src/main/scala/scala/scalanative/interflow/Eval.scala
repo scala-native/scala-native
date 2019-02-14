@@ -119,13 +119,11 @@ trait Eval { self: Interflow =>
       throw BailOut("can't eval op: " + op.show)
     op match {
       case Op.Call(sig, meth, args) =>
-        val emeth = eval(meth)
-        val eargs = args.map(eval)
-
-        emeth match {
+        eval(meth) match {
           case Val.Global(name, _) if intrinsics.contains(name) =>
-            intrinsic(local, sig, name, eargs, unwind)
-          case _ =>
+            intrinsic(local, sig, name, args, unwind, blockFresh)
+          case emeth =>
+            val eargs = args.map(eval)
             val argtys = eargs.map {
               case Val.Virtual(addr) =>
                 state.deref(addr).cls.ty
@@ -217,14 +215,28 @@ trait Eval { self: Interflow =>
         (comp, eval(l), eval(r)) match {
           case (_, l, r) if l.isCanonical && r.isCanonical =>
             eval(comp, ty, l, r)
-          case (Comp.Ieq, Val.Virtual(addr), r) if !r.isCanonical =>
+
+          // Two virtual allocations will compare equal if
+          // and only if they have the same virtual address.
+          case (Comp.Ieq, Val.Virtual(l), Val.Virtual(r)) =>
+            Val.Bool(l == r)
+          case (Comp.Ine, Val.Virtual(l), Val.Virtual(r)) =>
+            Val.Bool(l != r)
+
+          // Not-yet-materialized virtual allocation will never be
+          // the same as already existing allocation (be it null
+          // or any other value).
+          case (Comp.Ieq, Val.Virtual(addr), r) =>
             Val.False
-          case (Comp.Ieq, l, Val.Virtual(addr)) if !r.isCanonical =>
+          case (Comp.Ieq, l, Val.Virtual(addr)) =>
             Val.False
-          case (Comp.Ine, Val.Virtual(addr), r) if !r.isCanonical =>
+          case (Comp.Ine, Val.Virtual(addr), r) =>
             Val.True
-          case (Comp.Ine, l, Val.Virtual(addr)) if !r.isCanonical =>
+          case (Comp.Ine, l, Val.Virtual(addr)) =>
             Val.True
+
+          // Comparing non-nullable value with null will always
+          // yield the same result.
           case (Comp.Ieq, v @ Of(ty: Type.RefKind), Val.Null)
               if !ty.isNullable =>
             Val.False
@@ -237,6 +249,9 @@ trait Eval { self: Interflow =>
           case (Comp.Ine, Val.Null, v @ Of(ty: Type.RefKind))
               if !ty.isNullable =>
             Val.True
+
+          // Comparing two non-null module references will
+          // yield true only if it's the same module.
           case (Comp.Ieq,
                 l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
                 r @ Of(And(rty: Type.RefKind, ClassRef(rcls))))
@@ -249,6 +264,7 @@ trait Eval { self: Interflow =>
               if !lty.isNullable && lty.isExact && lcls.isModule
                 && !rty.isNullable && rty.isExact && rcls.isModule =>
             Val.Bool(lcls.name != rcls.name)
+
           case (_, l, r) =>
             emit.comp(comp, ty, materialize(l), materialize(r), unwind)
         }
@@ -621,29 +637,23 @@ trait Eval { self: Interflow =>
     comp match {
       case Comp.Ieq =>
         (l, r) match {
-          case (Val.Bool(l), Val.Bool(r))           => Val.Bool(l == r)
-          case (Val.Int(l), Val.Int(r))             => Val.Bool(l == r)
-          case (Val.Long(l), Val.Long(r))           => Val.Bool(l == r)
-          case (Val.Null, Val.Null)                 => Val.True
-          case (Val.Virtual(l), Val.Virtual(r))     => Val.Bool(l == r)
-          case (Val.Global(l, _), Val.Global(r, _)) => Val.Bool(l == r)
-          case (Val.Null | _: Val.Virtual | _: Val.Global,
-                Val.Null | _: Val.Virtual | _: Val.Global) =>
-            Val.False
-          case _ => bailOut
+          case (Val.Bool(l), Val.Bool(r))                           => Val.Bool(l == r)
+          case (Val.Int(l), Val.Int(r))                             => Val.Bool(l == r)
+          case (Val.Long(l), Val.Long(r))                           => Val.Bool(l == r)
+          case (Val.Null, Val.Null)                                 => Val.True
+          case (Val.Global(l, _), Val.Global(r, _))                 => Val.Bool(l == r)
+          case (Val.Null | _: Val.Global, Val.Null | _: Val.Global) => Val.False
+          case _                                                    => bailOut
         }
       case Comp.Ine =>
         (l, r) match {
-          case (Val.Bool(l), Val.Bool(r))           => Val.Bool(l != r)
-          case (Val.Int(l), Val.Int(r))             => Val.Bool(l != r)
-          case (Val.Long(l), Val.Long(r))           => Val.Bool(l != r)
-          case (Val.Null, Val.Null)                 => Val.False
-          case (Val.Virtual(l), Val.Virtual(r))     => Val.Bool(l != r)
-          case (Val.Global(l, _), Val.Global(r, _)) => Val.Bool(l != r)
-          case (Val.Null | _: Val.Virtual | _: Val.Global,
-                Val.Null | _: Val.Virtual | _: Val.Global) =>
-            Val.True
-          case _ => bailOut
+          case (Val.Bool(l), Val.Bool(r))                           => Val.Bool(l != r)
+          case (Val.Int(l), Val.Int(r))                             => Val.Bool(l != r)
+          case (Val.Long(l), Val.Long(r))                           => Val.Bool(l != r)
+          case (Val.Null, Val.Null)                                 => Val.False
+          case (Val.Global(l, _), Val.Global(r, _))                 => Val.Bool(l != r)
+          case (Val.Null | _: Val.Global, Val.Null | _: Val.Global) => Val.True
+          case _                                                    => bailOut
         }
       case Comp.Ugt =>
         (l, r) match {

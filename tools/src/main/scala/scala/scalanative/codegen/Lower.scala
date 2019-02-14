@@ -1096,13 +1096,6 @@ object Lower {
         Sig.Method("update", Seq(Type.Int, nir.Rt.Object, Type.Unit)))
   }
   val arrayUpdate = Type.typeToArray.map {
-    case (ty @ Type.Unit, arrname) =>
-      ty -> Global.Member(
-        arrname,
-        Sig.Method("update",
-                   Seq(Type.Int,
-                       Type.Ref(Global.Top("scala.runtime.BoxedUnit")),
-                       Type.Unit)))
     case (ty, arrname) =>
       ty -> Global.Member(arrname,
                           Sig.Method("update", Seq(Type.Int, ty, Type.Unit)))

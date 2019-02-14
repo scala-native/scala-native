@@ -43,7 +43,7 @@ sealed abstract class Val {
       true
     case _: Val.Float | _: Val.Double =>
       true
-    case _: Val.Global | Val.Null | _: Val.Virtual =>
+    case _: Val.Global | Val.Null =>
       true
     case _ =>
       false
