@@ -18,6 +18,11 @@ final class MergeProcessor(insts: Array[Inst],
   val blocks = mutable.Map.empty[Local, MergeBlock]
   var todo   = mutable.Set.empty[Local]
 
+  def currentSize(): Int =
+    blocks.values.map { b =>
+      if (b.end == null) 0 else b.end.emit.size
+    }.sum
+
   def findMergeBlock(name: Local): MergeBlock = {
     def newMergeBlock = {
       val label = insts(offsets(name)).asInstanceOf[Inst.Label]
@@ -257,8 +262,7 @@ final class MergeProcessor(insts: Array[Inst],
 
       block.start = newState.fullClone(block.name)
       block.end = newState
-      block.cf =
-        eval.run(insts, offsets, block.label.name, blockFresh)(block.end)
+      block.cf = eval.run(insts, offsets, block.label.name)(block.end)
       block.outgoing.clear()
       block.cf match {
         case _: Inst.Ret =>
@@ -358,8 +362,8 @@ object MergeProcessor {
   def fromEntry(insts: Array[Inst],
                 args: Seq[Val],
                 state: State,
-                blockFresh: Fresh,
                 inline: Boolean,
+                blockFresh: Fresh,
                 eval: Eval)(implicit linked: linker.Result): MergeProcessor = {
     val builder         = new MergeProcessor(insts, blockFresh, inline, eval)
     val entryName       = insts.head.asInstanceOf[Inst.Label].name
@@ -369,21 +373,5 @@ object MergeProcessor {
     entryMergeBlock.incoming(Local(-1)) = ((args, entryState))
     builder.todo += entryName
     builder
-  }
-
-  def process(insts: Array[Inst],
-              args: Seq[Val],
-              state: State,
-              blockFresh: Fresh,
-              inline: Boolean,
-              eval: Eval)(implicit linked: linker.Result): Seq[MergeBlock] = {
-    val builder =
-      MergeProcessor.fromEntry(insts, args, state, blockFresh, inline, eval)
-
-    while (!builder.done()) {
-      builder.advance()
-    }
-
-    builder.toSeq()
   }
 }

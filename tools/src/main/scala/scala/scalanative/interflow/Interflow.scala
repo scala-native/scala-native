@@ -17,6 +17,9 @@ class Interflow(val mode: build.Mode, val originals: Map[Global, Defn.Define])(
   val started   = mutable.Set.empty[Global]
   val blacklist = mutable.Set.empty[Global]
   var context   = List.empty[String]
+
+  val mergeProcessor = new util.ScopedVar[MergeProcessor]
+  val blockFresh     = new util.ScopedVar[Fresh]
 }
 
 object Interflow {

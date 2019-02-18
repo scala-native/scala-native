@@ -4,7 +4,6 @@ package interflow
 import scala.util.{Try, Success, Failure}
 import scalanative.nir._
 import scalanative.linker._
-import scalanative.interflow.MergeProcessor.process
 
 trait Inline { self: Interflow =>
   def shallInline(name: Global, args: Seq[Val], unwind: Next)(
@@ -37,11 +36,15 @@ trait Inline { self: Interflow =>
           context.contains(s"inlining ${name.show}")
         val isBlacklisted =
           blacklist.contains(name)
+        val calleeTooBig =
+          defn.insts.size > 8192
+        val callerTooBig =
+          mergeProcessor.currentSize() > 8192
 
         val shall =
           isCtor || hintInline || isSmall || (mode == build.Mode.Release && hasVirtualArgs)
         val shallNot =
-          noInline || hasUnwind || isRecursive || isBlacklisted
+          noInline || hasUnwind || isRecursive || isBlacklisted || calleeTooBig || callerTooBig
 
         if (shall) {
           if (shallNot) {
@@ -50,6 +53,8 @@ trait Inline { self: Interflow =>
             if (hasUnwind) { log("* has unwind") }
             if (isRecursive) { log("* is recursive") }
             if (isBlacklisted) { log("* is blacklisted") }
+            if (callerTooBig) { log("* caller is too big") }
+            if (calleeTooBig) { log("* callee is too big") }
           }
         } else {
           log(
@@ -59,10 +64,12 @@ trait Inline { self: Interflow =>
         shall && !shallNot
       }
 
-  def inline(name: Global, args: Seq[Val], unwind: Next, blockFresh: Fresh)(
+  def inline(name: Global, args: Seq[Val], unwind: Next)(
       implicit state: State,
       linked: linker.Result): Val =
     in(s"inlining ${name.show}") {
+      val emit = new nir.Buffer()(state.fresh)
+
       val defn = done(name)
       val defnArgTys = {
         val Type.Function(argtys, _) = defn.ty
@@ -70,47 +77,40 @@ trait Inline { self: Interflow =>
       }
       val inlineArgs = args.zip(defnArgTys).foreach {
         case (local @ Val.Local(_, ty), argTy) if !Sub.is(ty, argTy) =>
-          state.emit.conv(Conv.Bitcast, argTy, local, unwind)
+          emit.conv(Conv.Bitcast, argTy, local, unwind)
         case v =>
           v
       }
       val inlineInsts = defn.insts
       val blocks =
-        process(inlineInsts.toArray,
-                args,
-                state,
-                blockFresh,
-                inline = true,
-                this)
+        process(inlineInsts.toArray, args, state, inline = true)
       def nothing = {
-        state.emit.label(state.fresh(), Seq.empty)
+        emit.label(state.fresh(), Seq.empty)
         Val.Zero(Type.Nothing)
       }
-      blocks match {
+
+      val (res, endState) = blocks match {
         case Seq() =>
           util.unreachable
 
         case Seq(block) =>
           block.cf match {
             case Inst.Ret(value) =>
-              state.emit ++= block.end.emit
-              state.inherit(block.end, value +: args)
-              value
+              emit ++= block.end.emit
+              (value, block.end)
             case Inst.Throw(value, unwind) =>
               val excv = block.end.materialize(value)
-              state.emit ++= block.end.emit
-              state.emit.raise(excv, unwind)
-              state.inherit(block.end, value +: args)
-              nothing
+              emit ++= block.end.emit
+              emit.raise(excv, unwind)
+              (nothing, block.end)
             case Inst.Unreachable(unwind) =>
-              state.emit ++= block.end.emit
-              state.emit.unreachable(unwind)
-              state.inherit(block.end, args)
-              nothing
+              emit ++= block.end.emit
+              emit.unreachable(unwind)
+              (nothing, block.end)
           }
 
         case first +: rest =>
-          state.emit ++= first.toInsts.tail
+          emit ++= first.toInsts.tail
 
           rest.foreach { block =>
             block.cf match {
@@ -118,10 +118,10 @@ trait Inline { self: Interflow =>
                 ()
               case Inst.Throw(value, unwind) =>
                 val excv = block.end.materialize(value)
-                state.emit ++= block.toInsts.init
-                state.emit.raise(excv, unwind)
+                emit ++= block.toInsts.init
+                emit.raise(excv, unwind)
               case _ =>
-                state.emit ++= block.toInsts
+                emit ++= block.toInsts
             }
           }
 
@@ -129,13 +129,16 @@ trait Inline { self: Interflow =>
             .collectFirst {
               case block if block.cf.isInstanceOf[Inst.Ret] =>
                 val Inst.Ret(value) = block.cf
-                state.emit ++= block.toInsts.init
-                state.inherit(block.end, value +: args)
-                value
+                emit ++= block.toInsts.init
+                (value, block.end)
             }
             .getOrElse {
-              nothing
+              (nothing, state)
             }
       }
+
+      state.emit ++= emit
+      state.inherit(endState, res +: args)
+      res
     }
 }
