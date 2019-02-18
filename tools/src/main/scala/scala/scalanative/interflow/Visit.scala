@@ -115,13 +115,11 @@ trait Visit { self: Interflow =>
     }
 
     // Run a merge processor starting from the entry basic block.
-    val blocks =
-      MergeProcessor.process(origdefn.insts.toArray,
-                             args,
-                             state,
-                             fresh,
-                             inline = false,
-                             this)
+    val blocks = util.ScopedVar.scoped(
+      blockFresh := fresh
+    ) {
+      process(origdefn.insts.toArray, args, state, inline = false)
+    }
 
     // Collect instructions, materialize all returned values
     // and compute the result type.
@@ -187,5 +185,23 @@ trait Visit { self: Interflow =>
     case _ =>
       val Type.Function(argtys, _) = linked.infos(name).asInstanceOf[Method].ty
       argtys
+  }
+
+  def process(insts: Array[Inst],
+              args: Seq[Val],
+              state: State,
+              inline: Boolean): Seq[MergeBlock] = {
+    val processor =
+      MergeProcessor.fromEntry(insts, args, state, inline, blockFresh.get, this)
+
+    util.ScopedVar.scoped(
+      mergeProcessor := processor
+    ) {
+      while (!processor.done()) {
+        processor.advance()
+      }
+
+      processor.toSeq()
+    }
   }
 }

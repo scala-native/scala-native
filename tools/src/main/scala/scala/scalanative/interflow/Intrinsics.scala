@@ -33,8 +33,7 @@ trait Intrinsics { self: Interflow =>
                 ty: Type,
                 name: Global,
                 rawArgs: Seq[Val],
-                unwind: Next,
-                blockFresh: Fresh)(implicit state: State): Val = {
+                unwind: Next)(implicit state: State): Val = {
     val Global.Member(_, sig) = name
 
     val args = rawArgs.map(eval)
@@ -156,14 +155,14 @@ trait Intrinsics { self: Interflow =>
       case _ if arrayApplyIntrinsics.contains(name) =>
         val Seq(arr, idx)            = rawArgs
         val Type.Function(_, elemty) = ty
-        eval(local, Op.Arrayload(elemty, arr, idx), unwind, blockFresh)
+        eval(local, Op.Arrayload(elemty, arr, idx), unwind)
       case _ if arrayUpdateIntrinsics.contains(name) =>
         val Seq(arr, idx, value)                = rawArgs
         val Type.Function(Seq(_, _, elemty), _) = ty
-        eval(local, Op.Arraystore(elemty, arr, idx, value), unwind, blockFresh)
+        eval(local, Op.Arraystore(elemty, arr, idx, value), unwind)
       case _ if name == arrayLengthIntrinsic =>
         val Seq(arr) = rawArgs
-        eval(local, Op.Arraylength(arr), unwind, blockFresh)
+        eval(local, Op.Arraylength(arr), unwind)
     }
   }
 }
