@@ -197,12 +197,49 @@ object FloatSuite extends tests.Suite {
   }
 
   test("toString") {
-    assert(Float.toString(1.0f).equals("1.000000"))
-    assert(Float.toString(-1.0f).equals("-1.000000"))
-    assert(Float.toString(0.0f).equals("0.000000"))
-    assert(Float.toString(-0.0f).equals("-0.000000"))
+
+// Test non-finite values.
     assert(Float.toString(Float.POSITIVE_INFINITY).equals("Infinity"))
     assert(Float.toString(Float.NEGATIVE_INFINITY).equals("-Infinity"))
     assert(Float.toString(Float.NaN).equals("NaN"))
+
+// Test simple values around zero.
+    assert(Float.toString(0.0F).equals("0.0"))
+    assert(Float.toString(-0.0F).equals("-0.0"))
+
+    assert(Float.toString(1.0F).equals("1.0"))
+    assert(Float.toString(-1.0F).equals("-1.0"))
+
+    assert(Float.toString(2.0F).equals("2.0"))
+    assert(Float.toString(-2.0F).equals("-2.0"))
+
+// Test maximum & minima.
+    assert(
+      Float
+        .toString(scala.Float.MaxValue)
+        .equals("3.4028235E38"))
+
+    assert(
+      Float
+        .toString(scala.Float.MinValue)
+        .equals("-3.4028235E38"))
+
+    assert(Float.toString(scala.Float.MinPositiveValue).equals("1.4E-45"))
+
+// Test correctness least significant digits  & number of digits after the
+// decimal point of values with 'infinite' number of fraction digits.
+
+    assert((math.Pi * 1.0E+0).toFloat.toString.equals("3.1415927"))
+
+    assert((math.Pi * 1.0E+1).toFloat.toString.equals("31.415926"))
+    assert((math.Pi * 1.0E-1).toFloat.toString.equals("0.31415927"))
+
+// Test transitions to scientific notation.
+
+    assert((math.Pi * 1.0E+6).toFloat.toString.equals("3141592.8"))
+    assert((math.Pi * 1.0E+7).toFloat.toString.equals("3.1415926E7"))
+
+    assert((math.Pi * 1.0E-3).toFloat.toString.equals("0.0031415927"))
+    assert((math.Pi * 1.0E-4).toFloat.toString.equals("3.1415926E-4"))
   }
 }

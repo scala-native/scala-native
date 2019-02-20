@@ -3,6 +3,8 @@ package java.lang
 import scalanative.native._
 import scalanative.libc._
 
+import java.lang.ieee754tostring.ryu.{RyuRoundingMode, RyuDouble}
+
 final class Double(val _value: scala.Double)
     extends Number
     with Comparable[Double] {
@@ -317,17 +319,7 @@ object Double {
   }
 
   @inline def toString(d: scala.Double): String = {
-    if (isNaN(d)) {
-      "NaN"
-    } else if (d == POSITIVE_INFINITY) {
-      "Infinity"
-    } else if (d == NEGATIVE_INFINITY) {
-      "-Infinity"
-    } else {
-      val cstr = stackalloc[CChar](32)
-      stdio.snprintf(cstr, 32, c"%f", d)
-      fromCString(cstr)
-    }
+    RyuDouble.doubleToString(d, RyuRoundingMode.ROUND_EVEN);
   }
 
   @inline def valueOf(d: scala.Double): Double =

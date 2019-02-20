@@ -25,7 +25,7 @@ object StringBuilderSuite extends tests.Suite {
     assertEquals("100000", newBuilder.append(100000).toString)
   }
 
-  testFails("append float", issue = 481) {
+  test("append float") {
     assertEquals("2.5", newBuilder.append(2.5f).toString)
     assertEquals("3.5", newBuilder.append(3.5).toString)
   }
@@ -62,7 +62,7 @@ object StringBuilderSuite extends tests.Suite {
                  initBuilder("abcd").insert(5, "whatever"))
   }
 
-  testFails("insert float", issue = 481) {
+  test("insert float") {
     assertEquals("2.5", newBuilder.insert(0, 2.5f).toString)
     assertEquals("3.5", newBuilder.insert(0, 3.5).toString)
   }

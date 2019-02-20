@@ -900,12 +900,7 @@ object FormatterSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for general conversion type 's' and 'S'",
-    481) {
-    // 1.1.toString = "1.1" on Scala JVM, "1.100000" on Scala Native
-    // Formatter$.Transformer.padding trims to `precision` number of chars, and then pads up to `width`.
-    // The excess '0's lead to test failure.
+  test("format(String, Array[Object]) for general conversion type 's' and 'S'") {
     val triple = Array(
       Array(Boolean.box(false), "%2.3s", "fal"),
       Array(Boolean.box(false), "%-6.4s", "fals  "),
@@ -2492,7 +2487,7 @@ object FormatterSuite extends tests.Suite {
 
   testFails(
     "format(String, Array[Object]) for Float/Double conversion type 'e' and 'E'",
-    0) { // issue not filed yet
+    1296) {
     val tripleE = Array(
       Array(0f, "%e", "0.000000e+00"),
       Array(0f, "%#.0e", "0.e+00"),
