@@ -9,8 +9,7 @@ object InstanceRef {
     unapply(Val.Virtual(addr))
   def unapply(value: Val)(implicit state: State): Option[Type] = value match {
     case Val.Virtual(addr) =>
-      val cls = state.deref(addr).cls
-      Some(Type.Ref(cls.name, exact = true, nullable = false))
+      Some(state.deref(addr).ty)
     case _ =>
       None
   }
@@ -40,7 +39,7 @@ object EscapedRef {
   def unapply(value: Val)(implicit state: State): Option[Val] = value match {
     case Val.Virtual(addr) =>
       state.deref(addr) match {
-        case EscapedInstance(_, value) =>
+        case EscapedInstance(value) =>
           Some(value)
         case _ =>
           None

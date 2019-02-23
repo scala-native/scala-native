@@ -116,7 +116,7 @@ final class State(block: Local) {
         heap(addr) match {
           case VirtualInstance(_, _, vals) =>
             vals.foreach(reachVal)
-          case EscapedInstance(_, value) =>
+          case EscapedInstance(value) =>
             reachVal(value)
         }
       }
@@ -153,7 +153,7 @@ final class State(block: Local) {
         val local = reachAlloc(addr)
         locals(addr) = local
         reachInit(local, addr)
-        heap(addr) = EscapedInstance(heap(addr).cls, local)
+        heap(addr) = EscapedInstance(local)
       }
     }
 
@@ -185,7 +185,7 @@ final class State(block: Local) {
         Val.String(new java.lang.String(chars))
       case VirtualInstance(_, cls, values) =>
         emit.classalloc(cls.name, Next.None)
-      case EscapedInstance(_, value) =>
+      case EscapedInstance(value) =>
         reachVal(value)
         escapedVal(value)
     }
@@ -227,7 +227,7 @@ final class State(block: Local) {
                               Next.None)
             }
         }
-      case EscapedInstance(_, value) =>
+      case EscapedInstance(value) =>
         ()
     }
 

@@ -119,12 +119,11 @@ final class MergeProcessor(insts: Array[Inst],
                 case _ if escapes(addr) =>
                   val values = states.map { s =>
                     s.deref(addr) match {
-                      case EscapedInstance(_, value) => value
-                      case _                         => Val.Virtual(addr)
+                      case EscapedInstance(value) => value
+                      case _                      => Val.Virtual(addr)
                     }
                   }
-                  mergeHeap(addr) =
-                    EscapedInstance(headInstance.cls, mergePhi(values))
+                  mergeHeap(addr) = EscapedInstance(mergePhi(values))
                 case VirtualInstance(headKind, headCls, headValues) =>
                   val mergeValues = headValues.zipWithIndex.map {
                     case (_, idx) =>
