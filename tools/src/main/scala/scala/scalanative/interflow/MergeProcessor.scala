@@ -106,8 +106,7 @@ final class MergeProcessor(insts: Array[Inst],
 
           def includeAddr(addr: Addr): Boolean =
             states.forall { state =>
-              state.heap.contains(addr) &&
-              (state.deref(addr).cls eq states.head.deref(addr).cls)
+              state.heap.contains(addr)
             }
           def escapes(addr: Addr): Boolean =
             states.exists(_.hasEscaped(addr))
@@ -116,27 +115,27 @@ final class MergeProcessor(insts: Array[Inst],
               states.head.heap.keys.filter(includeAddr).toArray.sorted
             out.foreach { addr =>
               val headInstance = states.head.deref(addr)
-              if (escapes(addr)) {
-                val values = states.map { s =>
-                  s.deref(addr) match {
-                    case _: VirtualInstance        => Val.Virtual(addr)
-                    case EscapedInstance(_, value) => value
-                  }
-                }
-                val param = mergePhi(values)
-                mergeHeap(addr) = EscapedInstance(headInstance.cls, param)
-              } else {
-                val VirtualInstance(headKind, _, headValues) = headInstance
-                val mergeValues = headValues.zipWithIndex.map {
-                  case (_, idx) =>
-                    val values = states.map { state =>
-                      if (state.hasEscaped(addr)) restart()
-                      state.derefVirtual(addr).values(idx)
+              headInstance match {
+                case _ if escapes(addr) =>
+                  val values = states.map { s =>
+                    s.deref(addr) match {
+                      case EscapedInstance(_, value) => value
+                      case _                         => Val.Virtual(addr)
                     }
-                    mergePhi(values)
-                }
-                mergeHeap(addr) =
-                  VirtualInstance(headKind, headInstance.cls, mergeValues)
+                  }
+                  mergeHeap(addr) =
+                    EscapedInstance(headInstance.cls, mergePhi(values))
+                case VirtualInstance(headKind, headCls, headValues) =>
+                  val mergeValues = headValues.zipWithIndex.map {
+                    case (_, idx) =>
+                      val values = states.map { state =>
+                        if (state.hasEscaped(addr)) restart()
+                        state.derefVirtual(addr).values(idx)
+                      }
+                      mergePhi(values)
+                  }
+                  mergeHeap(addr) =
+                    VirtualInstance(headKind, headCls, mergeValues)
               }
             }
             out
@@ -193,44 +192,139 @@ final class MergeProcessor(insts: Array[Inst],
   def done(): Boolean =
     todo.isEmpty
 
-  def snapshot(): String = {
-    val sb = new StringBuilder
-    def println(msg: String) = {
-      sb.append(msg)
-      sb.append('\n')
-    }
-    blocks.values.toSeq.sortBy(_.name.id).foreach { block =>
-      println("-- block " + block.label.show)
-      println("name " + block.name.show)
-      if (block.phis != null) {
-        block.phis.foreach {
-          case MergePhi(name, incoming) =>
-            println(
-              s"phi " + name.show + " = " + incoming
-                .map {
-                  case (from, value) => s"(${from.show}, ${value.show})"
-                }
-                .mkString("{ ", ", ", "}"))
+  def invalidate(rootBlock: MergeBlock): Unit = {
+    val invalid = mutable.Map.empty[Local, MergeBlock]
+
+    def visitBlock(from: MergeBlock, block: MergeBlock): Unit = {
+      val fromName = from.label.name
+      val name     = block.label.name
+      if (!invalid.contains(name)) {
+        if (offsets(name) > offsets(fromName)) {
+          invalid(name) = block
+          if (block.cf != null) {
+            visitCf(from, block.cf)
+          }
         }
-      } else {
-        println("phis = null")
-      }
-      if (block.end != null) {
-        block.end.emit.toSeq.foreach(i => println(i.show))
-      } else {
-        println("insts = null")
-      }
-      if (block.cf != null) {
-        println(block.cf.show)
-      } else {
-        println("cf = null")
       }
     }
-    sb.toString
+
+    def visitLabel(from: MergeBlock, next: Next.Label): Unit =
+      visitBlock(from, findMergeBlock(next.name))
+
+    def visitUnwind(from: MergeBlock, next: Next): Unit = next match {
+      case Next.None =>
+        ()
+      case Next.Unwind(_, next: Next.Label) =>
+        visitLabel(from, next)
+      case _ =>
+        util.unreachable
+    }
+
+    def visitCf(from: MergeBlock, cf: Inst.Cf): Unit = {
+      cf match {
+        case _: Inst.Ret =>
+          ()
+        case Inst.Jump(next: Next.Label) =>
+          visitLabel(from, next)
+        case Inst.If(_, thenNext: Next.Label, elseNext: Next.Label) =>
+          visitLabel(from, thenNext)
+          visitLabel(from, elseNext)
+        case Inst.Switch(_, defaultNext: Next.Label, cases) =>
+          visitLabel(from, defaultNext)
+          cases.foreach {
+            case Next.Case(_, caseNext: Next.Label) =>
+              visitLabel(from, caseNext)
+          }
+        case Inst.Throw(_, next) =>
+          visitUnwind(from, next)
+        case Inst.Unreachable(next) =>
+          visitUnwind(from, next)
+        case _ =>
+          unreachable
+      }
+    }
+
+    if (rootBlock.cf != null) {
+      visitCf(rootBlock, rootBlock.cf)
+    }
+
+    invalid.values.foreach { block =>
+      block.incoming = block.incoming.filter {
+        case (name, _) =>
+          !invalid.contains(name)
+      }
+      block.outgoing.clear()
+      block.phis = null
+      block.start = null
+      block.end = null
+      block.cf = null
+    }
+
+    todo = todo.filterNot(n => invalid.contains(n))
+  }
+
+  def updateDirectSuccessors(block: MergeBlock): Unit = {
+    def nextLabel(next: Next.Label): Unit = {
+      val nextMergeBlock = findMergeBlock(next.name)
+      block.outgoing(next.name) = nextMergeBlock
+      nextMergeBlock.incoming(block.label.name) = ((next.args, block.end))
+      todo += next.name
+    }
+    def nextUnwind(next: Next): Unit = next match {
+      case Next.None =>
+        ()
+      case Next.Unwind(_, next: Next.Label) =>
+        nextLabel(next)
+      case _ =>
+        util.unreachable
+    }
+
+    block.cf match {
+      case _: Inst.Ret =>
+        ()
+      case Inst.Jump(next: Next.Label) =>
+        nextLabel(next)
+      case Inst.If(_, thenNext: Next.Label, elseNext: Next.Label) =>
+        nextLabel(thenNext)
+        nextLabel(elseNext)
+      case Inst.Switch(_, defaultNext: Next.Label, cases) =>
+        nextLabel(defaultNext)
+        cases.foreach {
+          case Next.Case(_, caseNext: Next.Label) =>
+            nextLabel(caseNext)
+        }
+      case Inst.Throw(_, next) =>
+        nextUnwind(next)
+      case Inst.Unreachable(next) =>
+        nextUnwind(next)
+      case _ =>
+        unreachable
+    }
+  }
+
+  def visit(block: MergeBlock,
+            newPhis: Seq[MergePhi],
+            newState: State): Unit = {
+    if (block.invalidations > 8) {
+      throw BailOut("too many block invalidations")
+    } else {
+      if (block.invalidations > 0) {
+        invalidate(block)
+      }
+      block.invalidations += 1
+    }
+
+    block.start = newState.fullClone(block.name)
+    block.end = newState
+    block.cf = eval.run(insts, offsets, block.label.name)(block.end)
+    block.outgoing.clear()
+    updateDirectSuccessors(block)
+
+    todo = todo.filter(n => findMergeBlock(n).incoming.nonEmpty)
   }
 
   def advance(): Unit = {
-    val sortedTodo = todo.toArray.sortBy(_.id)
+    val sortedTodo = todo.toArray.sortBy(n => offsets(n))
     val block      = findMergeBlock(sortedTodo.head)
     todo.clear()
     todo ++= sortedTodo.tail
@@ -239,52 +333,7 @@ final class MergeProcessor(insts: Array[Inst],
     block.phis = newPhis
 
     if (newState != block.start) {
-      if (block.invalidations > 128) {
-        throw BailOut("too many block invalidations")
-      } else {
-        block.invalidations += 1
-      }
-
-      def nextLabel(next: Next.Label): Unit = {
-        val nextMergeBlock = findMergeBlock(next.name)
-        block.outgoing(next.name) = nextMergeBlock
-        nextMergeBlock.incoming(block.label.name) = ((next.args, block.end))
-        todo += next.name
-      }
-      def nextUnwind(next: Next): Unit = next match {
-        case Next.None =>
-          ()
-        case Next.Unwind(_, next: Next.Label) =>
-          nextLabel(next)
-        case _ =>
-          util.unreachable
-      }
-
-      block.start = newState.fullClone(block.name)
-      block.end = newState
-      block.cf = eval.run(insts, offsets, block.label.name)(block.end)
-      block.outgoing.clear()
-      block.cf match {
-        case _: Inst.Ret =>
-          ()
-        case Inst.Jump(next: Next.Label) =>
-          nextLabel(next)
-        case Inst.If(_, thenNext: Next.Label, elseNext: Next.Label) =>
-          nextLabel(thenNext)
-          nextLabel(elseNext)
-        case Inst.Switch(_, defaultNext: Next.Label, cases) =>
-          nextLabel(defaultNext)
-          cases.foreach {
-            case Next.Case(_, caseNext: Next.Label) =>
-              nextLabel(caseNext)
-          }
-        case Inst.Throw(_, next) =>
-          nextUnwind(next)
-        case Inst.Unreachable(next) =>
-          nextUnwind(next)
-        case _ =>
-          unreachable
-      }
+      visit(block, newPhis, newState)
     }
   }
 
@@ -311,7 +360,8 @@ final class MergeProcessor(insts: Array[Inst],
     // we must merge them together using a synthetic block.
     if (inline && retMergeBlocks.size > 1) {
       val retTy = Sub.lub(retMergeBlocks.map { block =>
-        val Inst.Ret(v) = block.cf
+        val Inst.Ret(v)    = block.cf
+        implicit val state = block.end
         v match {
           case Val.Virtual(addr) => block.end.deref(addr).cls.ty
           case _                 => v.ty
