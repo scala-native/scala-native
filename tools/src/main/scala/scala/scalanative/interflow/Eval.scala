@@ -389,13 +389,8 @@ trait Eval { self: Interflow =>
         Val.Virtual(state.allocBox(boxname, eval(value)))
       case Op.Unbox(boxty @ Type.Ref(boxname, _, _), value) =>
         eval(value) match {
-          case Val.Virtual(addr) =>
-            val instance = state.derefVirtual(addr)
-            if (boxname == instance.cls.name) {
-              instance.values(0)
-            } else {
-              Val.Zero(Type.Nothing)
-            }
+          case VirtualRef(_, cls, Array(value)) if boxname == cls.name =>
+            value
           case value =>
             emit.unbox(boxty, materialize(value), unwind)
         }
@@ -416,19 +411,17 @@ trait Eval { self: Interflow =>
         }
       case Op.Arrayload(ty, arr, idx) =>
         (eval(arr), eval(idx)) match {
-          case (Val.Virtual(addr), Val.Int(offset))
-              if state.inBounds(addr, offset) =>
-            val instance = state.derefVirtual(addr)
-            instance.values(offset)
+          case (VirtualRef(_, _, values), Val.Int(offset))
+              if inBounds(values, offset) =>
+            values(offset)
           case (arr, idx) =>
             emit.arrayload(ty, materialize(arr), materialize(idx), unwind)
         }
       case Op.Arraystore(ty, arr, idx, value) =>
         (eval(arr), eval(idx)) match {
-          case (Val.Virtual(addr), Val.Int(offset))
-              if state.inBounds(addr, offset) =>
-            val instance = state.derefVirtual(addr)
-            instance.values(offset) = eval(value)
+          case (VirtualRef(_, _, values), Val.Int(offset))
+              if inBounds(values, offset) =>
+            values(offset) = eval(value)
             Val.Unit
           case (arr, idx) =>
             emit.arraystore(ty,
@@ -439,9 +432,8 @@ trait Eval { self: Interflow =>
         }
       case Op.Arraylength(arr) =>
         eval(arr) match {
-          case Val.Virtual(addr) =>
-            val instance = state.derefVirtual(addr)
-            Val.Int(instance.values.length)
+          case VirtualRef(_, _, values) =>
+            Val.Int(values.length)
           case arr =>
             emit.arraylength(materialize(arr), unwind)
         }
@@ -888,5 +880,9 @@ trait Eval { self: Interflow =>
       case _ =>
         value.canonicalize
     }
+  }
+
+  private def inBounds(values: Array[Val], offset: Int): Boolean = {
+    offset >= 0 && offset < values.length
   }
 }
