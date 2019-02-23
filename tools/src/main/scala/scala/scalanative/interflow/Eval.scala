@@ -293,32 +293,34 @@ trait Eval { self: Interflow =>
                             materialize(eval(value)),
                             unwind)
         }
-      case Op.Method(obj, sig) =>
-        eval(obj) match {
-          case Val.Virtual(addr) =>
-            val cls      = state.deref(addr).cls
-            val resolved = cls.resolve(sig).get
-            Val.Global(resolved, Type.Ptr)
-          case obj if obj.ty == Type.Null =>
-            emit.method(materialize(obj), sig, unwind)
-          case obj =>
-            val targets = obj.ty match {
-              case ExactClassRef(cls, _) =>
-                cls.resolve(sig).toSeq
-              case ScopeRef(scope) =>
-                scope.targets(sig)
-              case _ =>
-                bailOut
-            }
-            targets match {
-              case Seq() =>
-                Val.Zero(Type.Nothing)
-              case Seq(meth) =>
-                Val.Global(meth, Type.Ptr)
-              case meths =>
-                meths.foreach(visitRoot)
-                emit.method(materialize(obj), sig, unwind)
-            }
+      case Op.Method(rawObj, sig) =>
+        val obj = eval(rawObj)
+        def fallback(targets: Iterable[Global]) = {
+          targets.foreach(visitRoot)
+          emit.method(materialize(obj), sig, unwind)
+        }
+        val objty = obj match {
+          case InstanceRef(ty) =>
+            ty
+          case _ =>
+            obj.ty
+        }
+        val targets = objty match {
+          case Type.Null =>
+            Seq.empty
+          case ExactClassRef(cls, _) =>
+            cls.resolve(sig).toSeq
+          case ScopeRef(scope) =>
+            scope.targets(sig)
+          case _ =>
+            bailOut
+        }
+        targets match {
+          case Seq(meth) =>
+            Val.Global(meth, Type.Ptr)
+          case _ =>
+            val res = fallback(targets)
+            if (targets.isEmpty) Val.Zero(Type.Nothing) else res
         }
       case Op.Dynmethod(obj, dynsig) =>
         linked.dynimpls.foreach {
@@ -333,51 +335,82 @@ trait Eval { self: Interflow =>
         if (originals.contains(init)) {
           visitRoot(init)
         }
+        val emptyCtor =
+          if (!shallVisit(init)) {
+            true
+          } else {
+            visitDuplicate(init, argumentTypes(init)).fold {
+              false
+            } { defn =>
+              defn.insts match {
+                case Seq(_: Inst.Label, _: Inst.Ret) =>
+                  true
+                case _ =>
+                  false
+              }
+            }
+          }
+        val isWhitelisted =
+          UseDef.pureWhitelist.contains(clsName)
+        val canDelay =
+          emptyCtor || isWhitelisted
+
         emit.module(clsName, unwind)
-      case Op.As(ty, obj) =>
+      case Op.As(ty, rawObj) =>
         val refty = ty match {
           case ty: Type.RefKind => ty
           case _                => bailOut
         }
-        eval(obj) match {
-          case obj @ Val.Virtual(addr)
-              if Sub.is(state.deref(addr).cls, refty) =>
-            obj
-          case obj if obj.ty == Type.Null =>
-            obj
-          case obj =>
-            obj.ty match {
-              case ClassRef(cls) if Sub.is(cls, refty) =>
-                obj
-              case _ =>
-                emit.as(ty, materialize(obj), unwind)
-            }
+        val obj = eval(rawObj)
+        def fallback =
+          emit.as(ty, materialize(obj), unwind)
+        val objty = obj match {
+          case InstanceRef(ty) =>
+            ty
+          case _ =>
+            obj.ty
         }
-      case Op.Is(ty, obj) =>
+        objty match {
+          case Type.Null =>
+            Val.Null
+          case ScopeRef(scope) if Sub.is(scope, refty) =>
+            obj
+          case _ =>
+            fallback
+        }
+      case Op.Is(ty, rawObj) =>
         val refty = ty match {
           case ty: Type.RefKind => ty
           case _                => bailOut
         }
-        eval(obj) match {
-          case Val.Virtual(addr) =>
-            Val.Bool(Sub.is(state.deref(addr).cls, refty))
-          case obj if obj.ty == Type.Null =>
+        val obj = eval(rawObj)
+        def fallback =
+          emit.is(refty, materialize(obj), unwind)
+        def objNotNull =
+          emit.comp(Comp.Ine, Rt.Object, materialize(obj), Val.Null, unwind)
+        val objty = obj match {
+          case InstanceRef(ty) =>
+            ty
+          case _ =>
+            obj.ty
+        }
+        objty match {
+          case Type.Null =>
             Val.False
-          case obj =>
-            obj.ty match {
-              case ExactClassRef(cls, nullable) =>
-                val isStatically = Sub.is(cls, refty)
-                val res = if (!isStatically) {
-                  Val.False
-                } else if (!nullable) {
-                  Val.True
-                } else {
-                  emit.comp(Comp.Ine, Rt.Object, obj, Val.Null, unwind)
-                }
-                res
-              case _ =>
-                emit.is(refty, materialize(obj), unwind)
+          case And(scoperef: Type.RefKind, ScopeRef(scope)) =>
+            if (Sub.is(scope, refty)) {
+              if (!scoperef.isNullable) {
+                Val.True
+              } else {
+                objNotNull
+              }
+            } else if (scoperef.isExact) {
+              Val.False
+            } else {
+              fallback
             }
+          case _ =>
+            fallback
         }
       case Op.Copy(v) =>
         eval(v)
