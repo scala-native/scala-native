@@ -71,7 +71,7 @@ final class MergeProcessor(insts: Array[Inst],
             values.head
           } else {
             val materialized = states.zip(values).map {
-              case (s, v @ Val.Virtual(addr)) if !s.escaped(addr) =>
+              case (s, v @ Val.Virtual(addr)) if !s.hasEscaped(addr) =>
                 newEscapes += addr
                 s.materialize(v)
               case (s, v) =>
@@ -110,7 +110,7 @@ final class MergeProcessor(insts: Array[Inst],
               (state.deref(addr).cls eq states.head.deref(addr).cls)
             }
           def escapes(addr: Addr): Boolean =
-            states.exists(_.escaped(addr))
+            states.exists(_.hasEscaped(addr))
           val addrs = {
             val out =
               states.head.heap.keys.filter(includeAddr).toArray.sorted
@@ -130,7 +130,7 @@ final class MergeProcessor(insts: Array[Inst],
                 val mergeValues = headValues.zipWithIndex.map {
                   case (_, idx) =>
                     val values = states.map { state =>
-                      if (state.escaped(addr)) restart()
+                      if (state.hasEscaped(addr)) restart()
                       state.derefVirtual(addr).values(idx)
                     }
                     mergePhi(values)

@@ -881,7 +881,7 @@ trait Eval { self: Interflow =>
           case value =>
             value
         }
-      case Val.Virtual(addr) if state.escaped(addr) =>
+      case Val.Virtual(addr) if state.hasEscaped(addr) =>
         state.derefEscaped(addr).escapedValue
       case Val.String(value) =>
         Val.Virtual(state.allocString(value))
