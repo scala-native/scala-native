@@ -27,15 +27,17 @@ sealed abstract class Op {
     case Op.Is(_, _)                => Type.Bool
     case Op.Copy(v)                 => v.ty
     case Op.Sizeof(_)               => Type.Long
-    case Op.Box(ty, _)              => ty
-    case Op.Unbox(ty, _)            => Type.unbox(ty)
-    case Op.Var(ty)                 => Type.Var(ty)
-    case Op.Varload(slot)           => val Type.Var(ty) = slot.ty; ty
-    case Op.Varstore(slot, _)       => Type.Unit
-    case Op.Arrayalloc(ty, _)       => Type.Array(ty, nullable = false)
-    case Op.Arrayload(ty, _, _)     => ty
-    case Op.Arraystore(_, _, _, _)  => Type.Unit
-    case Op.Arraylength(_)          => Type.Int
+    case Op.Box(refty: Type.RefKind, _) =>
+      Type.Ref(refty.className, exact = true, nullable = false)
+    case Op.Unbox(ty, _)      => Type.unbox(ty)
+    case Op.Var(ty)           => Type.Var(ty)
+    case Op.Varload(slot)     => val Type.Var(ty) = slot.ty; ty
+    case Op.Varstore(slot, _) => Type.Unit
+    case Op.Arrayalloc(ty, _) =>
+      Type.Ref(Type.toArrayClass(ty), exact = true, nullable = false)
+    case Op.Arrayload(ty, _, _)    => ty
+    case Op.Arraystore(_, _, _, _) => Type.Unit
+    case Op.Arraylength(_)         => Type.Int
   }
 
   final def show: String = nir.Show(this)
