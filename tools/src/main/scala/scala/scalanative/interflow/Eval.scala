@@ -215,21 +215,23 @@ trait Eval { self: Interflow =>
 
           // Two virtual allocations will compare equal if
           // and only if they have the same virtual address.
-          case (Comp.Ieq, Val.Virtual(l), Val.Virtual(r)) =>
+          case (Comp.Ieq, Val.Virtual(l), Val.Virtual(r))
+              if state.isVirtual(l) && state.isVirtual(r) =>
             Val.Bool(l == r)
-          case (Comp.Ine, Val.Virtual(l), Val.Virtual(r)) =>
+          case (Comp.Ine, Val.Virtual(l), Val.Virtual(r))
+              if state.isVirtual(l) && state.isVirtual(r) =>
             Val.Bool(l != r)
 
           // Not-yet-materialized virtual allocation will never be
           // the same as already existing allocation (be it null
           // or any other value).
-          case (Comp.Ieq, Val.Virtual(addr), r) =>
+          case (Comp.Ieq, Val.Virtual(addr), r) if state.isVirtual(addr) =>
             Val.False
-          case (Comp.Ieq, l, Val.Virtual(addr)) =>
+          case (Comp.Ieq, l, Val.Virtual(addr)) if state.isVirtual(addr) =>
             Val.False
-          case (Comp.Ine, Val.Virtual(addr), r) =>
+          case (Comp.Ine, Val.Virtual(addr), r) if state.isVirtual(addr) =>
             Val.True
-          case (Comp.Ine, l, Val.Virtual(addr)) =>
+          case (Comp.Ine, l, Val.Virtual(addr)) if state.isVirtual(addr) =>
             Val.True
 
           // Comparing non-nullable value with null will always
