@@ -276,17 +276,15 @@ trait Eval { self: Interflow =>
         Val.Virtual(state.allocClass(cls))
       case Op.Fieldload(ty, obj, name @ FieldRef(cls, fld)) =>
         eval(obj) match {
-          case Val.Virtual(addr) =>
-            val instance = state.derefVirtual(addr)
-            instance.values(fld.index)
+          case VirtualRef(_, _, values) =>
+            values(fld.index)
           case obj =>
             emit.fieldload(ty, materialize(obj), name, unwind)
         }
       case Op.Fieldstore(ty, obj, name @ FieldRef(cls, fld), value) =>
         eval(obj) match {
-          case Val.Virtual(addr) =>
-            val instance = state.derefVirtual(addr)
-            instance.values(fld.index) = eval(value)
+          case VirtualRef(_, _, values) =>
+            values(fld.index) = eval(value)
             Val.Unit
           case obj =>
             emit.fieldstore(ty,
