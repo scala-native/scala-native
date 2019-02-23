@@ -363,8 +363,8 @@ final class MergeProcessor(insts: Array[Inst],
         val Inst.Ret(v)    = block.cf
         implicit val state = block.end
         v match {
-          case Val.Virtual(addr) => block.end.deref(addr).cls.ty
-          case _                 => v.ty
+          case InstanceRef(ty) => ty
+          case _               => v.ty
         }
       })
 

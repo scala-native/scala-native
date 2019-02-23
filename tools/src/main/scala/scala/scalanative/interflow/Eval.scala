@@ -122,8 +122,8 @@ trait Eval { self: Interflow =>
           case emeth =>
             val eargs = args.map(eval)
             val argtys = eargs.map {
-              case Val.Virtual(addr) =>
-                state.deref(addr).cls.ty
+              case InstanceRef(refty: Type.RefKind) =>
+                Type.Ref(refty.className)
               case value =>
                 value.ty
             }
