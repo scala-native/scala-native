@@ -70,7 +70,7 @@ object RyuFloat {
 
   private val INV_TABLE_SIZE: Int = 31
 
-// Only for debugging.
+  // Only for debugging.
   private val POW5: Array[BigInteger] = new Array[BigInteger](POS_TABLE_SIZE)
 
   private val POW5_INV: Array[BigInteger] =
@@ -131,18 +131,21 @@ object RyuFloat {
     floatToString(value, RyuRoundingMode.ROUND_EVEN)
 
   def floatToString(value: Float, roundingMode: RyuRoundingMode): String = {
-// Step 1: Decode the floating point number, and unify normalized and subnormal cases.
-// First, handle all the trivial cases.
+    // Step 1: Decode the floating point number, and unify normalized and
+    // subnormal cases.
+    // First, handle all the trivial cases.
     if (java.lang.Float.isNaN(value)) return "NaN"
     if (value == java.lang.Float.POSITIVE_INFINITY) return "Infinity"
     if (value == java.lang.Float.NEGATIVE_INFINITY) return "-Infinity"
     val bits: Int = java.lang.Float.floatToIntBits(value)
     if (bits == 0) return "0.0"
     if (bits == 0x80000000) return "-0.0"
-// Otherwise extract the mantissa and exponent bits and run the full algorithm.
+    // Otherwise extract the mantissa and exponent bits and run the full
+    // algorithm.
     val ieeeExponent: Int = (bits >> FLOAT_MANTISSA_BITS) & FLOAT_EXPONENT_MASK
     val ieeeMantissa: Int = bits & FLOAT_MANTISSA_MASK
-// By default, the correct mantissa starts with a 1, except for denormal numbers.
+    // By default, the correct mantissa starts with a 1, except for
+    // denormal numbers.
     var e2: Int = 0
     var m2: Int = 0
     if (ieeeExponent == 0) {
@@ -159,7 +162,7 @@ object RyuFloat {
         "   S=" + (if (sign) "-" else "+") + " E=" + e2 + " M=" +
           m2)
     }
-// Step 2: Determine the interval of legal decimal representations.
+    // Step 2: Determine the interval of legal decimal representations.
     val even: Boolean = (m2 & 1) == 0
     val mv: Int       = 4 * m2
     val mp: Int       = 4 * m2 + 2
@@ -194,8 +197,8 @@ object RyuFloat {
       println("  e2=" + e2)
     }
 
-// Step 3: Convert to a decimal power base using 128-bit arithmetic.
-// -151 = 1 - 127 - 23 - 2 <= e_2 - 2 <= 254 - 127 - 23 - 2 = 102
+    // Step 3: Convert to a decimal power base using 128-bit arithmetic.
+    // -151 = 1 - 127 - 23 - 2 <= e_2 - 2 <= 254 - 127 - 23 - 2 = 102
     var dp: Int                    = 0
     var dv: Int                    = 0
     var dm: Int                    = 0
@@ -205,7 +208,7 @@ object RyuFloat {
     var dmIsTrailingZeros: Boolean = false
     var lastRemovedDigit: Int      = 0
     if (e2 >= 0) {
-// Compute m * 2^e_2 / 10^q = m * 2^(e_2 - q) / 5^q
+      // Compute m * 2^e_2 / 10^q = m * 2^(e_2 - q) / 5^q
       val q: Int = (e2 * LOG10_2_NUMERATOR / LOG10_2_DENOMINATOR).toInt
       val k: Int = POW5_INV_BITCOUNT + pow5bits(q) - 1
       val i: Int = -e2 + q + k
@@ -213,15 +216,16 @@ object RyuFloat {
       dp = mulPow5InvDivPow2(mp, q, i).toInt
       dm = mulPow5InvDivPow2(mm, q, i).toInt
       if (q != 0 && ((dp - 1) / 10 <= dm / 10)) {
-// 32-bit arithmetic is faster even on 64-bit machines.
+        // 32-bit arithmetic is faster even on 64-bit machines.
         val l: Int = POW5_INV_BITCOUNT + pow5bits(q - 1) - 1
         lastRemovedDigit =
           (mulPow5InvDivPow2(mv, q - 1, -e2 + q - 1 + l) % 10).toInt
       }
-// We need to know one removed digit even if we are not going to loop below. We could use
-// q = X - 1 above, except that would require 33 bits for the result, and we've found that
-// We need to know one removed digit even if we are not going to loop below. We could use
-// q = X - 1 above, except that would require 33 bits for the result, and we've found that
+      // We need to know one removed digit even if we are not going to loop
+      // below. We could use
+      // q = X - 1 above, except that would require 33 bits for the result,
+      // and we've found that
+      // 32-bit arithmetic is faster even on 64-bit machines
       e10 = q
       if (DEBUG) {
         println(mv + " * 2^" + e2 + " / 10^" + q)
@@ -230,7 +234,7 @@ object RyuFloat {
       dvIsTrailingZeros = pow5Factor(mv) >= q
       dmIsTrailingZeros = pow5Factor(mm) >= q
     } else {
-// Compute m * 5^(-e_2) / 10^q = m * 5^(-e_2 - q) / 2^q
+      // Compute m * 5^(-e_2) / 10^q = m * 5^(-e_2 - q) / 2^q
       val q: Int = (-e2 * LOG10_5_NUMERATOR / LOG10_5_DENOMINATOR).toInt
       val i: Int = -e2 - q
       val k: Int = pow5bits(i) - POW5_BITCOUNT
@@ -242,8 +246,7 @@ object RyuFloat {
         j = q - 1 - (pow5bits(i + 1) - POW5_BITCOUNT)
         lastRemovedDigit = (mulPow5divPow2(mv, i + 1, j) % 10).toInt
       }
-// Note: e2 and e10 are both negative here.
-      e10 = q + e2
+      e10 = q + e2 // Note: e2 and e10 are both negative here.
       if (DEBUG) {
         println(
           mv + " * 5^" + (-e2) + " / 10^" + q + " = " + mv + " * 5^" +
@@ -267,18 +270,22 @@ object RyuFloat {
       println("  d-10=" + dmIsTrailingZeros)
     }
 
-// Step 4: Find the shortest decimal representation in the interval of legal representations.
-//
-// We do some extra work here in order to follow Float/Double.toString semantics. In particular,
-// that requires printing in scientific format if and only if the exponent is between -3 and 7,
-// and it requires printing at least two decimal digits.
-//
-// Above, we moved the decimal dot all the way to the right, so now we need to count digits to
-// figure out the correct exponent for scientific notation.
+    // Step 4: Find the shortest decimal representation in the interval of
+    // legal representations.
+    //
+    // We do some extra work here in order to follow Float/Double.toString
+    // semantics. In particular, that requires printing in scientific format
+    // if and only if the exponent is between -3 and 7, and it requires
+    // printing at least two decimal digits.
+    //
+    // Above, we moved the decimal dot all the way to the right, so now we
+    // need to count digits to
+    // figure out the correct exponent for scientific notation.
 
     val dplength: Int = decimalLength(dp)
     var exp: Int      = e10 + dplength - 1
-// Float.toString semantics requires using scientific notation if and only if outside this range.
+    // Float.toString semantics requires using scientific notation if and
+    // only if outside this range.
     val scientificNotation: Boolean = !((exp >= -3) && (exp < 7))
     var removed: Int                = 0
     if (dpIsTrailingZeros && !roundingMode.acceptUpperBound(even)) {
@@ -289,7 +296,7 @@ object RyuFloat {
 
     while ((dp / 10 > dm / 10) && !done) {
       if ((dp < 100) && scientificNotation) {
-// We print at least two digits, so we might as well stop now.
+        // We print at least two digits, so we might as well stop now.
         done = true
       } else {
         dmIsTrailingZeros &= dm % 10 == 0
@@ -303,7 +310,7 @@ object RyuFloat {
       var done = false // workaround break in .java source
       while ((dm % 10 == 0) && !done) {
         if ((dp < 100) && scientificNotation) {
-// We print at least two digits, so we might as well stop now.
+          // We print at least two digits, so we might as well stop now.
           done = true
         } else {
           dp /= 10
@@ -314,7 +321,7 @@ object RyuFloat {
       }
     }
     if (dvIsTrailingZeros && (lastRemovedDigit == 5) && (dv % 2 == 0)) {
-// Round down not up if the number ends in X50000 and the number is even.
+      // Round down not up if the number ends in X50000 and the number is even.
       lastRemovedDigit = 4
     }
     var output: Int = dv +
@@ -337,8 +344,8 @@ object RyuFloat {
       println("  output_exponent=" + exp)
     }
 
-// Step 5: Print the decimal representation.
-// We follow Float.toString semantics here.
+    // Step 5: Print the decimal representation.
+    // We follow Float.toString semantics here.
 
     val result: Array[Char] = Array.ofDim[Char](15)
     var index: Int          = 0
@@ -357,7 +364,8 @@ object RyuFloat {
       if (olength == 1) {
         result({ index += 1; index - 1 }) = '0'
       }
-// Print 'E', the exponent sign, and the exponent, which has at most two digits.
+      // Print 'E', the exponent sign, and the exponent, which has at most
+      // two digits.
       result({ index += 1; index - 1 }) = 'E'
       if (exp < 0) {
         result({ index += 1; index - 1 }) = '-'
@@ -368,9 +376,9 @@ object RyuFloat {
       }
       result({ index += 1; index - 1 }) = ('0' + exp % 10).toChar
     } else {
-// Otherwise follow the Java spec for values in the interval [1E-3, 1E7).
+      // Otherwise follow the Java spec for values in the interval [1E-3, 1E7).
       if (exp < 0) {
-// Decimal dot is before any of the digits.
+        // Decimal dot is before any of the digits.
         result({ index += 1; index - 1 }) = '0'
         result({ index += 1; index - 1 }) = '.'
         var i: Int = -1
@@ -394,7 +402,7 @@ object RyuFloat {
         result({ index += 1; index - 1 }) = '.'
         result({ index += 1; index - 1 }) = '0'
       } else {
-// Decimal dot is somewhere between the digits.
+        // Decimal dot is somewhere between the digits.
         var current: Int = index + 1
         for (i <- 0 until olength) {
           if (olength - i - 1 == exp) {
@@ -415,11 +423,12 @@ object RyuFloat {
   private def pow5bits(e: Int): Int =
     if (e == 0) 1
     else
-      ((e * LOG2_5_NUMERATOR + LOG2_5_DENOMINATOR - 1) / LOG2_5_DENOMINATOR).toInt
+      ((e * LOG2_5_NUMERATOR + LOG2_5_DENOMINATOR - 1)
+        / LOG2_5_DENOMINATOR).toInt
 
   /**
-   * Returns the exponent of the largest power of 5 that divides the given value, i.e., returns
-   * i such that value = 5^i * x, where x is an integer.
+   * Returns the exponent of the largest power of 5 that divides the given
+   * value, i.e., returns i such that value = 5^i * x, where x is an integer.
    */
   private def pow5Factor(_value: Int): Int = {
     var value      = _value
@@ -434,8 +443,9 @@ object RyuFloat {
   }
 
   /**
-   * Compute the exact result of [m * 5^(-e_2) / 10^q] = [m * 5^(-e_2 - q) / 2^q]
-   * = [m * [5^(p - q)/2^k] / 2^(q - k)] = [m * POW5[i] / 2^j].
+   * Compute the exact result of:
+   *   [m * 5^(-e_2) / 10^q] = [m * 5^(-e_2 - q) / 2^q]
+   *   = [m * [5^(p - q)/2^k] / 2^(q - k)] = [m * POW5[i] / 2^j].
    */
   private def mulPow5divPow2(m: Int, i: Int, j: Int): Long = {
     if (j - POW5_HALF_BITCOUNT < 0) {
@@ -447,8 +457,9 @@ object RyuFloat {
   }
 
   /**
-   * Compute the exact result of [m * 2^p / 10^q] = [m * 2^(p - q) / 5 ^ q]
-   * = [m * [2^k / 5^q] / 2^-(p - q - k)] = [m * POW5_INV[q] / 2^j].
+   * Compute the exact result of:
+   *   [m * 2^p / 10^q] = [m * 2^(p - q) / 5 ^ q]
+   *   = [m * [2^k / 5^q] / 2^-(p - q - k)] = [m * POW5_INV[q] / 2^j].
    */
   private def mulPow5InvDivPow2(m: Int, q: Int, j: Int): Long = {
     if (j - POW5_INV_HALF_BITCOUNT < 0) {

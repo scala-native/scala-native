@@ -70,22 +70,20 @@ object RyuDouble {
 
   private val NEG_TABLE_SIZE: Int = 291
 
-// Only for debugging.
+  // Only for debugging.
   private val POW5: Array[BigInteger] = new Array[BigInteger](POS_TABLE_SIZE)
 
   private val POW5_INV: Array[BigInteger] =
     new Array[BigInteger](NEG_TABLE_SIZE)
 
-// max 3*31 = 124
-  private val POW5_BITCOUNT: Int = 121
+  private val POW5_BITCOUNT: Int = 121 // max 3*31 = 124
 
   private val POW5_QUARTER_BITCOUNT: Int = 31
 
   private val POW5_SPLIT: Array[Array[Int]] =
     Array.ofDim[Int](POS_TABLE_SIZE, 4)
 
-// max 3*31 = 124
-  private val POW5_INV_BITCOUNT: Int = 122
+  private val POW5_INV_BITCOUNT: Int = 122 // max 3*31 = 124
 
   private val POW5_INV_QUARTER_BITCOUNT: Int = 31
 
@@ -115,13 +113,15 @@ object RyuDouble {
     if (i < POW5_SPLIT.length) {
       for (j <- 0.until(4)) {
         POW5_SPLIT(i)(j) = pow
-          .shiftRight(pow5len - POW5_BITCOUNT + (3 - j) * POW5_QUARTER_BITCOUNT)
+          .shiftRight(
+            pow5len - POW5_BITCOUNT + (3 - j)
+              * POW5_QUARTER_BITCOUNT)
           .and(mask)
           .intValue()
       }
     }
     if (i < POW5_INV_SPLIT.length) {
-// We want floor(log_2 5^q) here, which is pow5len - 1.
+      // We want floor(log_2 5^q) here, which is pow5len - 1.
       val j: Int = pow5len - 1 + POW5_INV_BITCOUNT
       val inv: BigInteger =
         BigInteger.ONE.shiftLeft(j).divide(pow).add(BigInteger.ONE)
@@ -145,7 +145,7 @@ object RyuDouble {
   def doubleToString(value: Double, roundingMode: RyuRoundingMode): String = {
     // Step 1: Decode the floating point number, and unify normalized and
     // subnormal cases.
-// First, handle all the trivial cases.
+    // First, handle all the trivial cases.
     if (java.lang.Double.isNaN(value)) return "NaN"
     if (value == java.lang.Double.POSITIVE_INFINITY) return "Infinity"
     if (value == java.lang.Double.NEGATIVE_INFINITY) return "-Infinity"
@@ -153,22 +153,19 @@ object RyuDouble {
     if (bits == 0) return "0.0"
     if (bits == 0x8000000000000000L) return "-0.0"
 
-    // FIX ME: Far better to understand why the algorithm is not working.
-    // Did I miss a missing return or such?
-//    if (bits == 1L) return "4.9E-324" // j.l.Double.MIN_VALUE
-
-// Otherwise extract the mantissa and exponent bits and run the full algorithm.
+    // Otherwise extract the mantissa and exponent bits and run the full
+    // algorithm.
     val ieeeExponent: Int =
       ((bits >>> DOUBLE_MANTISSA_BITS) & DOUBLE_EXPONENT_MASK).toInt
     val ieeeMantissa: Long = bits & DOUBLE_MANTISSA_MASK
     var e2: Int            = 0
     var m2: Long           = 0l
     if (ieeeExponent == 0) {
-// Denormal number - no implicit leading 1, and the exponent is 1, not 0.
+      // Denormal number - no implicit leading 1, and the exponent is 1, not 0.
       e2 = 1 - DOUBLE_EXPONENT_BIAS - DOUBLE_MANTISSA_BITS
       m2 = ieeeMantissa
     } else {
-// Add implicit leading 1.
+      // Add implicit leading 1.
       e2 = ieeeExponent - DOUBLE_EXPONENT_BIAS - DOUBLE_MANTISSA_BITS
       m2 = ieeeMantissa | (1L << DOUBLE_MANTISSA_BITS)
     }
@@ -225,7 +222,7 @@ object RyuDouble {
         0,
         (e2 * LOG10_2_NUMERATOR / LOG10_2_DENOMINATOR).toInt -
           1)
-// k = constant + floor(log_2(5^q))
+      // k = constant + floor(log_2(5^q))
       val k: Int = POW5_INV_BITCOUNT + pow5bits(q) - 1
       val i: Int = -e2 + q + k
       dv = mulPow5InvDivPow2(mv, q, i)
@@ -307,7 +304,8 @@ object RyuDouble {
     // figure out the correct exponent for scientific notation.
     val vplength: Int = decimalLength(dp)
     var exp: Int      = e10 + vplength - 1
-// Double.toString semantics requires using scientific notation if and only if outside this range.
+    // Double.toString semantics requires using scientific notation if and
+    // only if outside this range.
     val scientificNotation: Boolean = !((exp >= -3) && (exp < 7))
     var removed: Int                = 0
     var lastRemovedDigit: Int       = 0
@@ -316,7 +314,7 @@ object RyuDouble {
       var done = false // workaround break in .java source
       while ((dp / 10 > dm / 10) && !done) {
         if ((dp < 100) && scientificNotation) {
-// Double.toString semantics requires printing at least two digits.
+          // Double.toString semantics requires printing at least two digits.
           done = true
         } else {
           dmIsTrailingZeros &= dm % 10 == 0
@@ -331,7 +329,7 @@ object RyuDouble {
         var done = false // workaround break in .java source
         while ((dm % 10 == 0) && !done) {
           if ((dp < 100) && scientificNotation) {
-// Double.toString semantics requires printing at least two digits.
+            // Double.toString semantics requires printing at least two digits.
             done = true
           } else {
             dvIsTrailingZeros &= lastRemovedDigit == 0
@@ -344,7 +342,7 @@ object RyuDouble {
       }
 
       if (dvIsTrailingZeros && (lastRemovedDigit == 5) && (dv % 2 == 0)) {
-// Round even if the exact numbers is .....50..0.
+        // Round even if the exact numbers is .....50..0.
         lastRemovedDigit = 4
       }
       output = dv +
@@ -356,7 +354,7 @@ object RyuDouble {
       var done = false // workaround break in .java source
       while ((dp / 10 > dm / 10) && !done) {
         if ((dp < 100) && scientificNotation) {
-// Double.toString semantics requires printing at least two digits.
+          // Double.toString semantics requires printing at least two digits.
           done = true
         } else {
           lastRemovedDigit = (dv % 10).toInt
@@ -379,14 +377,15 @@ object RyuDouble {
       println("EXP=" + exp)
     }
 
-// We follow Double.toString semantics here.
+    // Step 5: Print the decimal representation.
+    // We follow Double.toString semantics here.
     val result: Array[Char] = Array.ofDim[Char](24)
     var index: Int          = 0
     if (sign) {
       result({ index += 1; index - 1 }) = '-'
     }
 
-// Values in the interval [1E-3, 1E7) are special.
+    // Values in the interval [1E-3, 1E7) are special.
     if (scientificNotation) {
       for (i <- 0 until olength - 1) {
         val c: Int = (output % 10).toInt
@@ -400,7 +399,8 @@ object RyuDouble {
         result({ index += 1; index - 1 }) = '0'
       }
 
-// Print 'E', the exponent sign, and the exponent, which has at most three digits.
+      // Print 'E', the exponent sign, and the exponent, which has at most
+      // three digits.
       result({ index += 1; index - 1 }) = 'E'
       if (exp < 0) {
         result({ index += 1; index - 1 }) = '-'
@@ -416,9 +416,9 @@ object RyuDouble {
       result({ index += 1; index - 1 }) = ('0' + exp % 10).toChar
       new String(result, 0, index)
     } else {
-// Otherwise follow the Java spec for values in the interval [1E-3, 1E7).
+      // Otherwise follow the Java spec for values in the interval [1E-3, 1E7).
       if (exp < 0) {
-// Decimal dot is before any of the digits.
+        // Decimal dot is before any of the digits.
         result({ index += 1; index - 1 }) = '0'
         result({ index += 1; index - 1 }) = '.'
         var i: Int = -1
@@ -442,7 +442,7 @@ object RyuDouble {
         result({ index += 1; index - 1 }) = '.'
         result({ index += 1; index - 1 }) = '0'
       } else {
-// Decimal dot is somewhere between the digits.
+        // Decimal dot is somewhere between the digits.
         var current: Int = index + 1
         for (i <- 0 until olength) {
           if (olength - i - 1 == exp) {
@@ -457,11 +457,11 @@ object RyuDouble {
     }
   }
 
-  // Step 5: Print the decimal representation.
   private def pow5bits(e: Int): Int =
     if (e == 0) 1
     else
-      ((e * LOG2_5_NUMERATOR + LOG2_5_DENOMINATOR - 1) / LOG2_5_DENOMINATOR).toInt
+      ((e * LOG2_5_NUMERATOR + LOG2_5_DENOMINATOR - 1)
+        / LOG2_5_DENOMINATOR).toInt
 
   private def decimalLength(v: Long): Int = {
     if (v >= 1000000000000000000L) return 19
@@ -490,7 +490,7 @@ object RyuDouble {
 
   private def pow5Factor(_value: Long): Int = {
     var value = _value
-// We want to find the largest power of 5 that divides value.
+    // We want to find the largest power of 5 that divides value.
     if ((value % 5) != 0) return 0
     if ((value % 25) != 0) return 1
     if ((value % 125) != 0) return 2
@@ -507,29 +507,22 @@ object RyuDouble {
   }
 
   /**
-   * Compute the high digits of m * 5^p / 10^q = m * 5^(p - q) / 2^q = m * 5^i / 2^j, with q chosen
-   * such that m * 5^i / 2^j has sufficiently many decimal digits to represent the original floating
-   * point number.
+   * Compute the high digits of
+   * m * 5^p / 10^q = m * 5^(p - q) / 2^q = m * 5^i / 2^j, with q chosen
+   * such that m * 5^i / 2^j has sufficiently many decimal digits to
+   * represent the original floating point number.
    */
   private def mulPow5divPow2(m: Long, i: Int, j: Int): Long = {
-// m has at most 55 bits.
-    val mHigh: Long = m >>> 31
-    val mLow: Long  = m & 0x7fffffff
-// 124
-    val bits13: Long = mHigh * POW5_SPLIT(i)(0)
-// 93
-    val bits03: Long = mLow * POW5_SPLIT(i)(0)
-// 93
-    val bits12: Long = mHigh * POW5_SPLIT(i)(1)
-// 62
-    val bits02: Long = mLow * POW5_SPLIT(i)(1)
-// 62
-    val bits11: Long = mHigh * POW5_SPLIT(i)(2)
-// 31
-    val bits01: Long = mLow * POW5_SPLIT(i)(2)
-// 31
-    val bits10: Long = mHigh * POW5_SPLIT(i)(3)
-// 0
+    // m has at most 55 bits.
+    val mHigh: Long      = m >>> 31
+    val mLow: Long       = m & 0x7fffffff // 124
+    val bits13: Long     = mHigh * POW5_SPLIT(i)(0) // 93
+    val bits03: Long     = mLow * POW5_SPLIT(i)(0) // 93
+    val bits12: Long     = mHigh * POW5_SPLIT(i)(1) // 62
+    val bits02: Long     = mLow * POW5_SPLIT(i)(1) // 62
+    val bits11: Long     = mHigh * POW5_SPLIT(i)(2) // 31
+    val bits01: Long     = mLow * POW5_SPLIT(i)(2) // 31
+    val bits10: Long     = mHigh * POW5_SPLIT(i)(3) // 0
     val bits00: Long     = mLow * POW5_SPLIT(i)(3)
     val actualShift: Int = j - 3 * 31 - 21
     if (actualShift < 0) {
@@ -546,11 +539,12 @@ object RyuDouble {
   }
 
   /**
-   * Compute the high digits of m / 5^i / 2^j such that the result is accurate to at least 9
+   * Compute the high digits of
+   * m / 5^i / 2^j such that the result is accurate to at least 9
    * decimal digits. i and j are already chosen appropriately.
    */
   private def mulPow5InvDivPow2(m: Long, i: Int, j: Int): Long = {
-// m has at most 55 bits.
+    // m has at most 55 bits.
     val mHigh: Long      = m >>> 31
     val mLow: Long       = m & 0x7fffffff
     val bits13: Long     = mHigh * POW5_INV_SPLIT(i)(0)
