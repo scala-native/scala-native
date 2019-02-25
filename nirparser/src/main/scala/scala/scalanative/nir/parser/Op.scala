@@ -9,24 +9,21 @@ object Op extends Base[nir.Op] {
 
   import Base.IgnoreWhitespace._
 
-  private val unwind: P[Next] =
-    P(Next.parser.?).map(_.getOrElse(nir.Next.None))
-
   val Call =
     P(
       "call[" ~ Type.parser ~ "]" ~ Val.parser ~ "(" ~ Val.parser
-        .rep(sep = ",") ~ ")" ~ unwind).map {
-      case (ty, f, args, unwind) => nir.Op.Call(ty, f, args, unwind)
+        .rep(sep = ",") ~ ")").map {
+      case (ty, f, args) => nir.Op.Call(ty, f, args)
     }
   val Load =
-    P("volatile".!.? ~ "load[" ~ Type.parser ~ "]" ~ Val.parser map {
-      case (volatile, ty, ptr) =>
-        nir.Op.Load(ty, ptr, isVolatile = volatile.nonEmpty)
+    P("load[" ~ Type.parser ~ "]" ~ Val.parser map {
+      case (ty, ptr) =>
+        nir.Op.Load(ty, ptr)
     })
   val Store =
-    P("volatile".!.? ~ "store[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser map {
-      case (volatile, ty, ptr, value) =>
-        nir.Op.Store(ty, ptr, value, isVolatile = volatile.nonEmpty)
+    P("store[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser map {
+      case (ty, ptr, value) =>
+        nir.Op.Store(ty, ptr, value)
     })
   val Elem =
     P(
@@ -43,8 +40,8 @@ object Op extends Base[nir.Op] {
       case (aggr, value, indices) => nir.Op.Insert(aggr, value, indices)
     })
   val Stackalloc =
-    P("stackalloc[" ~ Type.parser ~ "]" ~ Val.parser.? map {
-      case (ty, n) => nir.Op.Stackalloc(ty, n getOrElse nir.Val.None)
+    P("stackalloc[" ~ Type.parser ~ "]" ~ Val.parser map {
+      case (ty, n) => nir.Op.Stackalloc(ty, n)
     })
   val Bin =
     P(nir.parser.Bin.parser ~ "[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser map {
@@ -58,26 +55,25 @@ object Op extends Base[nir.Op] {
     P(nir.parser.Conv.parser ~ "[" ~ Type.parser ~ "]" ~ Val.parser map {
       case (name, ty, v) => nir.Op.Conv(name, ty, v)
     })
-  val Select =
-    P("select" ~ Val.parser ~ "," ~ Val.parser ~ "," ~ Val.parser map {
-      case (cond, thenp, elsep) => nir.Op.Select(cond, thenp, elsep)
-    })
   val Classalloc = P("classalloc" ~ Global.parser map (nir.Op.Classalloc(_)))
-  val Field =
-    P("field" ~ Val.parser ~ "," ~ Global.parser map {
-      case (value, name) => nir.Op.Field(value, name)
+  val Fieldload =
+    P("fieldload" ~ "[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Global.parser map {
+      case (ty, value, name) => nir.Op.Fieldload(ty, value, name)
+    })
+  val Fieldstore =
+    P("fieldstore" ~ "[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Global.parser ~ "," ~ Val.parser map {
+      case (ty, obj, name, value) => nir.Op.Fieldstore(ty, obj, name, value)
     })
   val Method =
-    P("method" ~ Val.parser ~ "," ~ Global.parser map {
-      case (value, name) => nir.Op.Method(value, name)
+    P("method" ~ Val.parser ~ "," ~ Base.stringLit map {
+      case (v, sig) => nir.Op.Method(v, Unmangle.unmangleSig(sig))
     })
   val Dynmethod =
     P("dynmethod" ~ Val.parser ~ "," ~ Base.stringLit map {
-      case (obj, signature) => nir.Op.Dynmethod(obj, signature)
+      case (v, sig) => nir.Op.Dynmethod(v, Unmangle.unmangleSig(sig))
     })
-  val Module = P("module" ~ Global.parser ~ unwind).map {
-    case (name, unwind) =>
-      nir.Op.Module(name, unwind)
+  val Module = P("module" ~ Global.parser).map {
+    case name => nir.Op.Module(name)
   }
   val As =
     P("as[" ~ Type.parser ~ "]" ~ Val.parser map {
@@ -89,16 +85,35 @@ object Op extends Base[nir.Op] {
     })
   val Copy   = P("copy" ~ Val.parser map (nir.Op.Copy(_)))
   val Sizeof = P("sizeof[" ~ Type.parser ~ "]" map (nir.Op.Sizeof(_)))
-  val Closure =
-    P("closure[" ~ Type.parser ~ "]" ~ Val.parser.rep(sep = ",") map {
-      case (ty, fun +: captures) => nir.Op.Closure(ty, fun, captures)
-    })
   val Box = P("box[" ~ Type.parser ~ "]" ~ Val.parser map {
     case (ty, obj) => nir.Op.Box(ty, obj)
   })
   val Unbox = P("unbox[" ~ Type.parser ~ "]" ~ Val.parser map {
     case (ty, obj) => nir.Op.Unbox(ty, obj)
   })
+  val Var = P("var[" ~ Type.parser ~ "]" map {
+    case ty => nir.Op.Var(ty)
+  })
+  val Varload = P("varload" ~ Val.parser map {
+    case slot => nir.Op.Varload(slot)
+  })
+  val Varstore = P("varstore" ~ Val.parser ~ "," ~ Val.parser map {
+    case (slot, value) => nir.Op.Varstore(slot, value)
+  })
+  val Arrayalloc = P("arrayalloc[" ~ Type.parser ~ "]" ~ Val.parser map {
+    case (ty, init) => nir.Op.Arrayalloc(ty, init)
+  })
+  val Arrayload = P(
+    "arrayload[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser map {
+      case (ty, arr, idx) => nir.Op.Arrayload(ty, arr, idx)
+    })
+  val Arraystore = P(
+    "arraystore[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser ~ "," ~ Val.parser map {
+      case (ty, arr, idx, value) => nir.Op.Arraystore(ty, arr, idx, value)
+    })
+  val Arraylength = P("arraylength" ~ Val.parser map {
+    case arr => nir.Op.Arraylength(arr)
+  })
   override val parser: P[nir.Op] =
-    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Field | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox
+    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Classalloc | Fieldload | Fieldstore | Method | Dynmethod | Module | As | Is | Copy | Sizeof | Box | Unbox | Var | Varload | Varstore | Arrayalloc | Arrayload | Arraystore | Arraylength
 }

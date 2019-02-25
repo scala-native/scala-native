@@ -4,11 +4,10 @@ package nir
 import fastparse.all.Parsed
 import org.scalatest._
 
-class LocalParserTest extends FlatSpec with Matchers {
-
-  "The NIR parser" should "parse `Local`" in {
+class LocalParserTest extends FunSuite {
+  test("parse local") {
     val local                     = Local(1)
     val Parsed.Success(result, _) = parser.Local.parser.parse(local.show)
-    result should be(local)
+    assert(result == local)
   }
 }

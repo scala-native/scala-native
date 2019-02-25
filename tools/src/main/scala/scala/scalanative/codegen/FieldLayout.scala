@@ -2,7 +2,7 @@ package scala.scalanative
 package codegen
 
 import scalanative.nir._
-import scalanative.sema._
+import scalanative.linker.{Class, Field}
 
 class FieldLayout(meta: Metadata, cls: Class) {
   def index(fld: Field) =
@@ -13,20 +13,18 @@ class FieldLayout(meta: Metadata, cls: Class) {
     } { parent =>
       meta.layout(parent).entries
     }
-    base ++ cls.fields
+    base ++ cls.members.collect { case f: Field => f }
   }
-  val name = cls.name member "layout"
-  val struct: Type.Struct = {
+  val struct: Type.StructValue = {
     val data = entries.map(_.ty)
     val body = Type.Ptr +: data
-    val ty   = Type.Struct(name, body)
-    Type.Struct(name, body)
+    Type.StructValue(body)
   }
   val layout = MemoryLayout(struct.tys)
   val size   = layout.size
   val referenceOffsetsTy =
-    Type.Struct(Global.None, Seq(Type.Ptr))
+    Type.StructValue(Seq(Type.Ptr))
   val referenceOffsetsValue =
-    Val.Struct(Global.None,
-               Seq(Val.Const(Val.Array(Type.Long, layout.offsetArray))))
+    Val.StructValue(
+      Seq(Val.Const(Val.ArrayValue(Type.Long, layout.offsetArray))))
 }

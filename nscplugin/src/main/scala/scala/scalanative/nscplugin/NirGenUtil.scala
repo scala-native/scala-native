@@ -71,7 +71,7 @@ trait NirGenUtil { self: NirGenPhase =>
           case FloatTagMethod   => just(FloatClass)
           case DoubleTagMethod  => just(DoubleClass)
           case PtrTagMethod     => just(PtrClass)
-          case RefTagMethod     => just(unwrapClassTagOption(args.head).get)
+          case ClassTagMethod   => just(unwrapClassTagOption(args.head).get)
           case sym if NatBaseTagMethod.contains(sym) =>
             just(NatBaseClass(NatBaseTagMethod.indexOf(sym)))
           case NatDigitTagMethod =>

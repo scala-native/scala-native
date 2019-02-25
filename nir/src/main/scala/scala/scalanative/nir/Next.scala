@@ -11,9 +11,16 @@ object Next {
     def name: Local =
       throw new UnsupportedOperationException
   }
-  final case class Unwind(name: Local)                extends Next
-  final case class Case(value: Val, name: Local)      extends Next
+  final case class Unwind(exc: Val.Local, next: Next) extends Next {
+    def name: Local = next.name
+  }
+  final case class Case(value: Val, next: Next) extends Next {
+    def name: Local = next.name
+  }
   final case class Label(name: Local, args: Seq[Val]) extends Next
 
-  def apply(name: Local) = Label(name, Seq())
+  def apply(name: Local): Label =
+    Label(name, Seq())
+  def Case(value: Val, name: Local): Case =
+    Case(value, Next(name))
 }

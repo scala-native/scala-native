@@ -1,7 +1,7 @@
 package scala.scalanative
 package native
 
-import scalanative.runtime.{divULong, remULong}
+import scalanative.runtime.Intrinsics.{divULong, remULong}
 import java.lang.{Long => JLong}
 
 /** `ULong`, a 64-bit unsigned integer. */

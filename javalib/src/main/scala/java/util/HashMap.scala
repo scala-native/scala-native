@@ -156,9 +156,6 @@ class HashMap[K, V] protected (inner: mutable.Map[AnyRef, V])
       }
     }
   }
-
-  override def putAll(m: Map[_ <: K, _ <: V]): Unit =
-    super.putAll(m)
 }
 
 object HashMap {

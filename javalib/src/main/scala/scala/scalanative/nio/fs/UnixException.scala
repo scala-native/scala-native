@@ -4,6 +4,7 @@ import scala.scalanative.native._
 import scala.scalanative.posix.errno._
 import java.io.IOException
 import java.nio.file._
+import scalanative.libc.string
 
 object UnixException {
   def apply(file: String, errno: CInt): IOException = errno match {

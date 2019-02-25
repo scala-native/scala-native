@@ -28,6 +28,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getDecl(PtrClass, TermName("_" + i))
     }
 
+    lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")
+
     lazy val NameClass   = getRequiredClass("scala.scalanative.native.name")
     lazy val LinkClass   = getRequiredClass("scala.scalanative.native.link")
     lazy val ExternClass = getRequiredClass("scala.scalanative.native.extern")
@@ -41,7 +43,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
       "scala.scalanative.native.package")
     lazy val CastMethod   = getMember(NativeModule, TermName("cast"))
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
-    lazy val SizeofMethod = getMember(NativeModule, TermName("sizeof"))
     lazy val StackallocMethods =
       getMember(NativeModule, TermName("stackalloc")).alternatives
 
@@ -79,29 +80,39 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NatDigitClass =
       getRequiredClass("scala.scalanative.native.Nat$Digit")
 
-    lazy val TagModule        = getRequiredModule("scala.scalanative.native.Tag")
-    lazy val UnitTagMethod    = getDecl(TagModule, TermName("Unit"))
-    lazy val BooleanTagMethod = getDecl(TagModule, TermName("Boolean"))
-    lazy val CharTagMethod    = getDecl(TagModule, TermName("Char"))
-    lazy val ByteTagMethod    = getDecl(TagModule, TermName("Byte"))
-    lazy val UByteTagMethod   = getDecl(TagModule, TermName("UByte"))
-    lazy val ShortTagMethod   = getDecl(TagModule, TermName("Short"))
-    lazy val UShortTagMethod  = getDecl(TagModule, TermName("UShort"))
-    lazy val IntTagMethod     = getDecl(TagModule, TermName("Int"))
-    lazy val UIntTagMethod    = getDecl(TagModule, TermName("UInt"))
-    lazy val LongTagMethod    = getDecl(TagModule, TermName("Long"))
-    lazy val ULongTagMethod   = getDecl(TagModule, TermName("ULong"))
-    lazy val FloatTagMethod   = getDecl(TagModule, TermName("Float"))
-    lazy val DoubleTagMethod  = getDecl(TagModule, TermName("Double"))
-    lazy val PtrTagMethod     = getDecl(TagModule, TermName("Ptr"))
-    lazy val RefTagMethod     = getDecl(TagModule, TermName("Ref"))
+    lazy val TagModule     = getRequiredModule("scala.scalanative.native.Tag")
+    lazy val UnitTagMethod = getDecl(TagModule, TermName("materializeUnitTag"))
+    lazy val BooleanTagMethod =
+      getDecl(TagModule, TermName("materializeBooleanTag"))
+    lazy val CharTagMethod = getDecl(TagModule, TermName("materializeCharTag"))
+    lazy val ByteTagMethod = getDecl(TagModule, TermName("materializeByteTag"))
+    lazy val UByteTagMethod =
+      getDecl(TagModule, TermName("materializeUByteTag"))
+    lazy val ShortTagMethod =
+      getDecl(TagModule, TermName("materializeShortTag"))
+    lazy val UShortTagMethod =
+      getDecl(TagModule, TermName("materializeUShortTag"))
+    lazy val IntTagMethod  = getDecl(TagModule, TermName("materializeIntTag"))
+    lazy val UIntTagMethod = getDecl(TagModule, TermName("materializeUIntTag"))
+    lazy val LongTagMethod = getDecl(TagModule, TermName("materializeLongTag"))
+    lazy val ULongTagMethod =
+      getDecl(TagModule, TermName("materializeULongTag"))
+    lazy val FloatTagMethod =
+      getDecl(TagModule, TermName("materializeFloatTag"))
+    lazy val DoubleTagMethod =
+      getDecl(TagModule, TermName("materializeDoubleTag"))
+    lazy val PtrTagMethod = getDecl(TagModule, TermName("materializePtrTag"))
+    lazy val ClassTagMethod =
+      getDecl(TagModule, TermName("materializeClassTag"))
     lazy val NatBaseTagMethod = (0 to 9).map { n =>
-      getDecl(TagModule, TermName("Nat" + n))
+      getDecl(TagModule, TermName("materializeNat" + n + "Tag"))
     }
-    lazy val NatDigitTagMethod = getDecl(TagModule, TermName("NatDigit"))
-    lazy val CArrayTagMethod   = getDecl(TagModule, TermName("CArray"))
+    lazy val NatDigitTagMethod =
+      getDecl(TagModule, TermName("materializeNatDigitTag"))
+    lazy val CArrayTagMethod =
+      getDecl(TagModule, TermName("materializeCArrayTag"))
     lazy val CStructTagMethod = (0 to 22).map { n =>
-      getDecl(TagModule, TermName("CStruct" + n))
+      getDecl(TagModule, TermName("materializeCStruct" + n + "Tag"))
     }
 
     // scala names
@@ -129,24 +140,82 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val RuntimeModule = getRequiredModule(
       "scala.scalanative.runtime.package")
-    lazy val TypeofMethod = getMember(RuntimeModule, TermName("typeof"))
     lazy val GetMonitorMethod =
       getMember(RuntimeModule, TermName("getMonitor"))
-    lazy val DivUIntMethod  = getMember(RuntimeModule, TermName("divUInt"))
-    lazy val DivULongMethod = getMember(RuntimeModule, TermName("divULong"))
-    lazy val RemUIntMethod  = getMember(RuntimeModule, TermName("remUInt"))
-    lazy val RemULongMethod = getMember(RuntimeModule, TermName("remULong"))
+
+    lazy val IntrinsicsModule = getRequiredModule(
+      "scala.scalanative.runtime.Intrinsics")
+    lazy val DivUIntMethod  = getMember(IntrinsicsModule, TermName("divUInt"))
+    lazy val DivULongMethod = getMember(IntrinsicsModule, TermName("divULong"))
+    lazy val RemUIntMethod  = getMember(IntrinsicsModule, TermName("remUInt"))
+    lazy val RemULongMethod = getMember(IntrinsicsModule, TermName("remULong"))
     lazy val ByteToUIntMethod =
-      getMember(RuntimeModule, TermName("byteToUInt"))
+      getMember(IntrinsicsModule, TermName("byteToUInt"))
     lazy val ByteToULongMethod =
-      getMember(RuntimeModule, TermName("byteToULong"))
+      getMember(IntrinsicsModule, TermName("byteToULong"))
     lazy val ShortToUIntMethod =
-      getMember(RuntimeModule, TermName("shortToUInt"))
+      getMember(IntrinsicsModule, TermName("shortToUInt"))
     lazy val ShortToULongMethod =
-      getMember(RuntimeModule, TermName("shortToULong"))
+      getMember(IntrinsicsModule, TermName("shortToULong"))
     lazy val IntToULongMethod =
-      getMember(RuntimeModule, TermName("intToULong"))
-    lazy val SelectMethod = getMember(RuntimeModule, TermName("select"))
+      getMember(IntrinsicsModule, TermName("intToULong"))
+    lazy val LoadBoolMethod =
+      getMember(IntrinsicsModule, TermName("loadBoolean"))
+    lazy val LoadCharMethod = getMember(IntrinsicsModule, TermName("loadChar"))
+    lazy val LoadByteMethod = getMember(IntrinsicsModule, TermName("loadByte"))
+    lazy val LoadShortMethod =
+      getMember(IntrinsicsModule, TermName("loadShort"))
+    lazy val LoadIntMethod  = getMember(IntrinsicsModule, TermName("loadInt"))
+    lazy val LoadLongMethod = getMember(IntrinsicsModule, TermName("loadLong"))
+    lazy val LoadFloatMethod =
+      getMember(IntrinsicsModule, TermName("loadFloat"))
+    lazy val LoadDoubleMethod =
+      getMember(IntrinsicsModule, TermName("loadDouble"))
+    lazy val LoadRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("loadRawPtr"))
+    lazy val LoadObjectMethod =
+      getMember(IntrinsicsModule, TermName("loadObject"))
+    lazy val StoreBoolMethod =
+      getMember(IntrinsicsModule, TermName("storeBoolean"))
+    lazy val StoreCharMethod =
+      getMember(IntrinsicsModule, TermName("storeChar"))
+    lazy val StoreByteMethod =
+      getMember(IntrinsicsModule, TermName("storeByte"))
+    lazy val StoreShortMethod =
+      getMember(IntrinsicsModule, TermName("storeShort"))
+    lazy val StoreIntMethod = getMember(IntrinsicsModule, TermName("storeInt"))
+    lazy val StoreLongMethod =
+      getMember(IntrinsicsModule, TermName("storeLong"))
+    lazy val StoreFloatMethod =
+      getMember(IntrinsicsModule, TermName("storeFloat"))
+    lazy val StoreDoubleMethod =
+      getMember(IntrinsicsModule, TermName("storeDouble"))
+    lazy val StoreRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("storeRawPtr"))
+    lazy val StoreObjectMethod =
+      getMember(IntrinsicsModule, TermName("storeObject"))
+    lazy val ElemRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("elemRawPtr"))
+    lazy val CastRawPtrToObjectMethod =
+      getMember(IntrinsicsModule, TermName("castRawPtrToObject"))
+    lazy val CastObjectToRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("castObjectToRawPtr"))
+    lazy val CastIntToFloatMethod =
+      getMember(IntrinsicsModule, TermName("castIntToFloat"))
+    lazy val CastFloatToIntMethod =
+      getMember(IntrinsicsModule, TermName("castFloatToInt"))
+    lazy val CastLongToDoubleMethod =
+      getMember(IntrinsicsModule, TermName("castLongToDouble"))
+    lazy val CastDoubleToLongMethod =
+      getMember(IntrinsicsModule, TermName("castDoubleToLong"))
+    lazy val CastRawPtrToIntMethod =
+      getMember(IntrinsicsModule, TermName("castRawPtrToInt"))
+    lazy val CastRawPtrToLongMethod =
+      getMember(IntrinsicsModule, TermName("castRawPtrToLong"))
+    lazy val CastIntToRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("castIntToRawPtr"))
+    lazy val CastLongToRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("castLongToRawPtr"))
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
       'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),
@@ -218,16 +287,19 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val BoxMethod = Map[Char, Symbol](
       'B' -> getDecl(BoxesRunTimeModule, TermName("boxToBoolean")),
       'C' -> getDecl(BoxesRunTimeModule, TermName("boxToCharacter")),
-      'z' -> getDecl(RuntimeBoxesModule, TermName("boxToUByte")),
       'Z' -> getDecl(BoxesRunTimeModule, TermName("boxToByte")),
-      's' -> getDecl(RuntimeBoxesModule, TermName("boxToUShort")),
       'S' -> getDecl(BoxesRunTimeModule, TermName("boxToShort")),
-      'i' -> getDecl(RuntimeBoxesModule, TermName("boxToUInt")),
       'I' -> getDecl(BoxesRunTimeModule, TermName("boxToInteger")),
-      'l' -> getDecl(RuntimeBoxesModule, TermName("boxToULong")),
       'L' -> getDecl(BoxesRunTimeModule, TermName("boxToLong")),
       'F' -> getDecl(BoxesRunTimeModule, TermName("boxToFloat")),
       'D' -> getDecl(BoxesRunTimeModule, TermName("boxToDouble"))
+    )
+
+    lazy val BoxUnsignedMethod = Map[Symbol, Symbol](
+      UByteClass  -> getDecl(RuntimeBoxesModule, TermName("boxToUByte")),
+      UShortClass -> getDecl(RuntimeBoxesModule, TermName("boxToUShort")),
+      UIntClass   -> getDecl(RuntimeBoxesModule, TermName("boxToUInt")),
+      ULongClass  -> getDecl(RuntimeBoxesModule, TermName("boxToULong"))
     )
 
     lazy val HashMethods = Seq(
@@ -241,16 +313,19 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val UnboxMethod = Map[Char, Symbol](
       'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),
       'C' -> getDecl(BoxesRunTimeModule, TermName("unboxToChar")),
-      'z' -> getDecl(RuntimeBoxesModule, TermName("unboxToUByte")),
       'Z' -> getDecl(BoxesRunTimeModule, TermName("unboxToByte")),
-      's' -> getDecl(RuntimeBoxesModule, TermName("unboxToUShort")),
       'S' -> getDecl(BoxesRunTimeModule, TermName("unboxToShort")),
-      'i' -> getDecl(RuntimeBoxesModule, TermName("unboxToUInt")),
       'I' -> getDecl(BoxesRunTimeModule, TermName("unboxToInt")),
-      'l' -> getDecl(RuntimeBoxesModule, TermName("unboxToULong")),
       'L' -> getDecl(BoxesRunTimeModule, TermName("unboxToLong")),
       'F' -> getDecl(BoxesRunTimeModule, TermName("unboxToFloat")),
       'D' -> getDecl(BoxesRunTimeModule, TermName("unboxToDouble"))
+    )
+
+    lazy val UnboxUnsignedMethod = Map[Symbol, Symbol](
+      UByteClass  -> getDecl(RuntimeBoxesModule, TermName("unboxToUByte")),
+      UShortClass -> getDecl(RuntimeBoxesModule, TermName("unboxToUShort")),
+      UIntClass   -> getDecl(RuntimeBoxesModule, TermName("unboxToUInt")),
+      ULongClass  -> getDecl(RuntimeBoxesModule, TermName("unboxToULong"))
     )
 
     lazy val ClassTagModule  = getRequiredModule("scala.reflect.ClassTag")
@@ -270,11 +345,5 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val AnyRefClassTag  = getDecl(ClassTagModule, TermName("AnyRef"))
     lazy val NothingClassTag = getDecl(ClassTagModule, TermName("Nothing"))
     lazy val NullClassTag    = getDecl(ClassTagModule, TermName("Null"))
-
-    lazy val PureModules: Set[Symbol] =
-      Set(PredefModule, BoxesRunTimeModule, NativeModule, RuntimeBoxesModule)
-        .map(_.moduleClass)
-    lazy val PureMethods: Set[Symbol] =
-      (BoxMethod.values ++ UnboxMethod.values).toSet
   }
 }

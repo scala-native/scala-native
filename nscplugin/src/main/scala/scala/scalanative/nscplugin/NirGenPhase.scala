@@ -29,14 +29,20 @@ abstract class NirGenPhase
 
   protected val curLazyAnonDefs =
     new util.ScopedVar[mutable.Map[Symbol, ClassDef]]
-  protected val curClassSym   = new util.ScopedVar[Symbol]
-  protected val curMethodSym  = new util.ScopedVar[Symbol]
-  protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
-  protected val curMethodEnv  = new util.ScopedVar[MethodEnv]
-  protected val curMethodThis = new util.ScopedVar[Option[Val]]
-  protected val curFresh      = new util.ScopedVar[nir.Fresh]
-  protected val curUnwind     = new util.ScopedVar[nir.Next]
-  protected val curStatBuffer = new util.ScopedVar[StatBuffer]
+  protected val curClassSym      = new util.ScopedVar[Symbol]
+  protected val curMethodSym     = new util.ScopedVar[Symbol]
+  protected val curMethodInfo    = new util.ScopedVar[CollectMethodInfo]
+  protected val curMethodEnv     = new util.ScopedVar[MethodEnv]
+  protected val curMethodThis    = new util.ScopedVar[Option[Val]]
+  protected val curFresh         = new util.ScopedVar[nir.Fresh]
+  protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
+  protected val curStatBuffer    = new util.ScopedVar[StatBuffer]
+
+  protected def unwind(implicit fresh: Fresh): Next =
+    curUnwindHandler.get.fold[Next](Next.None) { handler =>
+      val exc = Val.Local(fresh(), nir.Rt.Object)
+      Next.Unwind(exc, Next.Label(handler, Seq(exc)))
+    }
 
   protected def lazyAnonDefs =
     curLazyAnonDefs.get

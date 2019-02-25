@@ -81,9 +81,9 @@ private[scalanative] object LLVM {
     // delete .o files for all excluded source files
     paths.foreach { path =>
       if (!include(path)) {
-        val ofile = Paths.get(path + ".o")
-        if (Files.exists(ofile)) {
-          Files.delete(ofile)
+        val opath = Paths.get(path + ".o")
+        if (Files.exists(opath)) {
+          Files.delete(opath)
         }
       }
     }

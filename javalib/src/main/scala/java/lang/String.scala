@@ -1,7 +1,8 @@
 package java.lang
 
 import scalanative.native._
-import scalanative.runtime
+import scalanative.libc.string.memcmp
+import scalanative.runtime.CharArray
 import java.io.Serializable
 import java.util._
 import java.util.regex._
@@ -233,7 +234,11 @@ final class _String()
           if (thisHash != thatHash && thisHash != 0 && thatHash != 0) {
             false
           } else {
-            runtime.Array.compare(value, offset, s.value, s.offset, count) == 0
+            val data1 =
+              value.asInstanceOf[CharArray].at(offset).cast[Ptr[scala.Byte]]
+            val data2 =
+              s.value.asInstanceOf[CharArray].at(s.offset).cast[Ptr[scala.Byte]]
+            memcmp(data1, data2, count * 2) == 0
           }
         }
       }
@@ -332,12 +337,11 @@ final class _String()
       if (count == 0) {
         0
       } else {
-        val base = offset
-        val data = value
+        val data = value.asInstanceOf[CharArray].at(offset)
         var hash = 0
         var i    = 0
         while (i < count) {
-          hash = data(base + i) + ((hash << 5) - hash)
+          hash = data(i) + ((hash << 5) - hash)
           i += 1
         }
         cachedHashCode = hash

@@ -1,7 +1,9 @@
 package scala.scalanative
 
-import native._
-import runtime.Intrinsics._
+import scala.reflect.ClassTag
+import scalanative.native._
+import scalanative.runtime.Intrinsics._
+import scalanative.runtime.LLVMIntrinsics._
 
 package object runtime {
 
@@ -31,53 +33,25 @@ package object runtime {
   final val STRUCT_KIND = 2
 
   /** Used as a stub right hand of intrinsified methods. */
-  def undefined: Nothing = throw new UndefinedBehaviorError
+  def intrinsic: Nothing = throwUndefined()
 
-  /** Returns info pointer for given type. */
-  def typeof[T](implicit tag: Tag[T]): Ptr[Type] = undefined
-
-  /** Intrinsified unsigned devision on ints. */
-  def divUInt(l: Int, r: Int): Int = undefined
-
-  /** Intrinsified unsigned devision on longs. */
-  def divULong(l: Long, r: Long): Long = undefined
-
-  /** Intrinsified unsigned remainder on ints. */
-  def remUInt(l: Int, r: Int): Int = undefined
-
-  /** Intrinsified unsigned remainder on longs. */
-  def remULong(l: Long, r: Long): Long = undefined
-
-  /** Intrinsified byte to unsigned int converstion. */
-  def byteToUInt(b: Byte): Int = undefined
-
-  /** Intrinsified byte to unsigned long conversion. */
-  def byteToULong(b: Byte): Long = undefined
-
-  /** Intrinsified short to unsigned int conversion. */
-  def shortToUInt(v: Short): Int = undefined
-
-  /** Intrinsified short to unsigned long conversion. */
-  def shortToULong(v: Short): Long = undefined
-
-  /** Intrinsified int to unsigned long conversion. */
-  def intToULong(v: Int): Long = undefined
-
-  /** Select value without branching. */
-  @deprecated("Use if-then-else instead.", "0.3.3")
-  def select[T](cond: Boolean, thenp: T, elsep: T)(implicit tag: Tag[T]): T =
-    undefined
+  @inline def toRawType(cls: Class[_]): RawPtr =
+    cls.asInstanceOf[java.lang._Class[_]].rawty
 
   /** Read type information of given object. */
-  def getType(obj: Object): Ptr[ClassType] = !obj.cast[Ptr[Ptr[ClassType]]]
+  @inline def getRawType(obj: Object): RawPtr = {
+    val rawptr = Intrinsics.castObjectToRawPtr(obj)
+    Intrinsics.loadRawPtr(rawptr)
+  }
 
   /** Get monitor for given object. */
-  def getMonitor(obj: Object): Monitor = Monitor.dummy
+  @inline def getMonitor(obj: Object): Monitor = Monitor.dummy
 
   /** Initialize runtime with given arguments and return the
    *  rest as Java-style array.
    */
-  def init(argc: Int, argv: Ptr[Ptr[Byte]]): ObjectArray = {
+  def init(argc: Int, rawargv: RawPtr): scala.Array[String] = {
+    val argv = fromRawPtr[CString](rawargv)
     val args = new scala.Array[String](argc - 1)
 
     // skip the executable name in argv(0)
@@ -88,11 +62,42 @@ package object runtime {
       c += 1
     }
 
-    args.asInstanceOf[ObjectArray]
+    args
   }
+
+  def fromRawPtr[T](rawptr: RawPtr): Ptr[T] =
+    rawptr.cast[Ptr[T]]
+
+  def toRawPtr[T](ptr: Ptr[T]): RawPtr =
+    ptr.cast[RawPtr]
 
   /** Run the runtime's event loop. The method is called from the
    *  generated C-style after the application's main method terminates.
    */
-  def loop(): Unit = ExecutionContext.loop()
+  def loop(): Unit =
+    ExecutionContext.loop()
+
+  /** Called by the generated code in case of division by zero. */
+  @noinline def throwDivisionByZero(): Nothing =
+    throw new java.lang.ArithmeticException("/ by zero")
+
+  /** Called by the generated code in case of incorrect class cast. */
+  @noinline def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
+    val fromName = loadObject(elemRawPtr(from, 8))
+    val toName   = loadObject(elemRawPtr(to, 8))
+    throw new java.lang.ClassCastException(
+      s"$fromName cannot be cast to $toName")
+  }
+
+  /** Called by the generated code in case of operations on null. */
+  @noinline def throwNullPointer(): Nothing =
+    throw new NullPointerException()
+
+  /** Called by the generated code in case of unexpected condition. */
+  @noinline def throwUndefined(): Nothing =
+    throw new UndefinedBehaviorError
+
+  /** Called by the generated code in case of out of bounds on array access. */
+  @noinline def throwOutOfBounds(i: Int): Nothing =
+    throw new IndexOutOfBoundsException(i.toString)
 }

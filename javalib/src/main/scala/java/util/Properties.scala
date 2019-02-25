@@ -51,24 +51,6 @@ class Properties(protected val defaults: Properties)
     set
   }
 
-  override def clear(): Unit =
-    super.clear()
-
-  override def entrySet(): ju.Set[ju.Map.Entry[AnyRef, AnyRef]] =
-    super.entrySet()
-
-  override def get(key: Any): AnyRef =
-    super.get(key)
-
-  override def put(key: AnyRef, value: AnyRef): AnyRef =
-    super.put(key, value)
-
-  override def remove(key: Any): AnyRef =
-    super.remove(key)
-
-  override def size(): Int =
-    super.size()
-
   // TODO:
   // def load(reader: Reader): Unit
   // @deprecated("", "") def save(out: OutputStream, comments: String): Unit

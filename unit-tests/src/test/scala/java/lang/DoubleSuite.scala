@@ -3,7 +3,8 @@ package java.lang
 import java.lang.Double.{
   doubleToLongBits,
   doubleToRawLongBits,
-  longBitsToDouble
+  longBitsToDouble,
+  toHexString
 }
 
 object DoubleSuite extends tests.Suite {
@@ -210,4 +211,22 @@ object DoubleSuite extends tests.Suite {
     assert(Double.toString(Double.NEGATIVE_INFINITY).equals("-Infinity"))
     assert(Double.toString(Double.NaN).equals("NaN"))
   }
+
+  test("toHexString - MIN_VALUE, Issue #1341") {
+    assert(
+      toHexString(java.lang.Double.MIN_VALUE).equals("0x0.0000000000001p-1022"))
+  }
+
+  test("toHexString - assorted other values") {
+
+    assert(
+      toHexString(java.lang.Double.MAX_VALUE).equals("0x1.fffffffffffffp1023"))
+
+    // A value > 1.0 requiring lots of, but not all,  zeros.
+    assert(toHexString(1.00000000000003).equals("0x1.0000000000087p0"))
+
+    // An arbitrary but negative value.
+    assert(java.lang.Double.toHexString(-31.0).equals("-0x1.fp4"))
+  }
+
 }

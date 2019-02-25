@@ -7,8 +7,6 @@ extern Heap heap;
 extern Stack stack;
 extern Allocator allocator;
 extern LargeAllocator largeAllocator;
-
-extern bool overflow;
-extern word_t *currentOverflowAddress;
+extern BlockAllocator blockAllocator;
 
 #endif // IMMIX_STATE_H

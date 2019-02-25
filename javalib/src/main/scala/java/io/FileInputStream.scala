@@ -1,6 +1,7 @@
 package java.io
 
-import scalanative.native._, stdlib._, stdio._, string._
+import scalanative.native._
+import scalanative.libc._, stdlib._, stdio._, string._
 import scalanative.nio.fs.UnixException
 import scalanative.posix.{fcntl, unistd}, unistd._
 import scalanative.runtime
