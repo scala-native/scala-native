@@ -1,6 +1,7 @@
 package java.lang
 
-import scalanative.runtime.{divULong, remULong, undefined, Intrinsics}
+import scalanative.runtime.Intrinsics.{divULong, remULong}
+import scalanative.runtime.LLVMIntrinsics
 
 final class Long(val _value: scala.Long) extends Number with Comparable[Long] {
   @inline def this(s: String) =
@@ -189,7 +190,7 @@ object Long {
   final val BYTES     = 8
 
   @inline def bitCount(l: scala.Long): scala.Int =
-    Intrinsics.`llvm.ctpop.i64`(l).toInt
+    LLVMIntrinsics.`llvm.ctpop.i64`(l).toInt
 
   @inline def compare(x: scala.Long, y: scala.Long): scala.Int =
     if (x == y) 0
@@ -292,10 +293,10 @@ object Long {
     Math.min(a, b)
 
   @inline def numberOfLeadingZeros(l: scala.Long): Int =
-    Intrinsics.`llvm.ctlz.i64`(l, iszeroundef = false).toInt
+    LLVMIntrinsics.`llvm.ctlz.i64`(l, iszeroundef = false).toInt
 
   @inline def numberOfTrailingZeros(l: scala.Long): Int =
-    Intrinsics.`llvm.cttz.i64`(l, iszeroundef = false).toInt
+    LLVMIntrinsics.`llvm.cttz.i64`(l, iszeroundef = false).toInt
 
   @inline def parseLong(s: String): scala.Long =
     parseLong(s, 10)
@@ -352,10 +353,10 @@ object Long {
     remULong(dividend, divisor)
 
   @inline def reverse(l: scala.Long): scala.Long =
-    Intrinsics.`llvm.bitreverse.i64`(l)
+    LLVMIntrinsics.`llvm.bitreverse.i64`(l)
 
   @inline def reverseBytes(l: scala.Long): scala.Long =
-    Intrinsics.`llvm.bswap.i64`(l)
+    LLVMIntrinsics.`llvm.bswap.i64`(l)
 
   @inline def rotateLeft(i: scala.Long, distance: scala.Int): scala.Long =
     (i << distance) | (i >>> -distance)

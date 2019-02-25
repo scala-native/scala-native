@@ -25,8 +25,6 @@ struct scalanative_sockaddr_in6 {
     in_port_t sin6_port;
     uint32_t sin6_flowinfo;
     uint32_t sin6_scope_id;
-    uint32_t padding; // So that the struct has the same
-                      // size in C and in Native.
 };
 
 void scalanative_convert_in_addr(struct scalanative_in_addr *in,

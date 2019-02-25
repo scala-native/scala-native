@@ -49,15 +49,14 @@ object IssuesSuite extends tests.Suite {
   }
 
   test("#314") {
-    // Division by zero is undefined behavior in production mode.
-    // Optimizer can assume it never happens and remove unused result.
+    // Division by zero is defined behavior.
     assert {
       try {
         5 / 0
-        true
+        false
       } catch {
-        case _: Throwable =>
-          false
+        case _: ArithmeticException =>
+          true
       }
     }
   }
@@ -354,8 +353,29 @@ object IssuesSuite extends tests.Suite {
     assert(null.asInstanceOf[AnyRef].## == 0)
   }
 
+  test("#900") {
+    val c = new issue900.C("any")
+    assert(c.init == "foobar")
+  }
+
   test("#1155") {
     assert(issue1155.C.CLASS.toString.contains("C$CLASS$@"))
+  }
+
+  test("#1090") {
+    val xs = new Array[issue1090.X](20)
+    val ys = new Array[issue1090.Y](20)
+    assert(issue1090.A.foo(xs) == "X array")
+    assert(issue1090.A.foo(ys) == "Y array")
+  }
+}
+
+package issue1090 {
+  class X
+  class Y
+  object A {
+    def foo(a: Array[X]) = "X array"
+    def foo(a: Array[Y]) = "Y array"
   }
 }
 
@@ -366,5 +386,11 @@ package issue1155 {
 
   object C {
     object CLASS extends C
+  }
+}
+
+package issue900 {
+  class C(any: Any) {
+    def init: Any = "foobar"
   }
 }

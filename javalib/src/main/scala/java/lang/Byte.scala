@@ -1,6 +1,6 @@
 package java.lang
 
-import scalanative.runtime.{byteToUInt, byteToULong}
+import scalanative.runtime.Intrinsics.{byteToUInt, byteToULong}
 
 final class Byte(val _value: scala.Byte) extends Number with Comparable[Byte] {
   @inline def this(s: String) =

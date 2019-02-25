@@ -2,6 +2,7 @@ package scala.scalanative
 package native
 
 import scala.annotation.implicitNotFound
+import scalanative.runtime.{libc, RawPtr, fromRawPtr}
 
 /** Zone allocator that automatically frees allocations whenever
  *  syntactic boundary of the zone is over.
@@ -27,19 +28,19 @@ object Zone {
    *  the allocations once the zone is closed.
    */
   private class ZoneImpl extends Zone {
-    final class Node(val head: Ptr[Byte], val tail: Node)
+    final class Node(val head: RawPtr, val tail: Node)
 
     private var node: Node = null
 
     final def alloc(size: CSize): Ptr[Byte] = {
-      val ptr = stdlib.malloc(size)
-      node = new Node(ptr, node)
-      ptr
+      val rawptr = libc.malloc(size)
+      node = new Node(rawptr, node)
+      fromRawPtr[Byte](rawptr)
     }
 
     final def close(): Unit = {
       while (node != null) {
-        stdlib.free(node.head)
+        libc.free(node.head)
         node = node.tail
       }
     }

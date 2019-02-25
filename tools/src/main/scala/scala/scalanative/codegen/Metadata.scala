@@ -3,53 +3,73 @@ package codegen
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.sema._
-import scalanative.util.Stats
+import scalanative.linker.{Trait, Class}
 
-class Metadata(top: Top, val dyns: Seq[String]) {
-  import Metadata._
+class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
+  val rtti   = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
+  val vtable = mutable.Map.empty[linker.Class, VirtualTable]
+  val layout = mutable.Map.empty[linker.Class, FieldLayout]
+  val dynmap = mutable.Map.empty[linker.Class, DynamicHashMap]
+  val ids    = mutable.Map.empty[linker.ScopeInfo, Int]
+  val ranges = mutable.Map.empty[linker.Class, Range]
 
-  val javaEquals    = top.nodes(javaEqualsName).asInstanceOf[Method]
-  val javaHashCode  = top.nodes(javaHashCodeName).asInstanceOf[Method]
-  val scalaEquals   = top.nodes(scalaEqualsName).asInstanceOf[Method]
-  val scalaHashCode = top.nodes(scalaHashCodeName).asInstanceOf[Method]
+  val classes        = initClassIdsAndRanges()
+  val traits         = initTraitIds()
+  val moduleArray    = new ModuleArray(this)
+  val dispatchTable  = new TraitDispatchTable(this)
+  val hasTraitTables = new HasTraitTables(this)
 
-  val rtti   = mutable.Map.empty[sema.Node, RuntimeTypeInformation]
-  val vtable = mutable.Map.empty[sema.Class, VirtualTable]
-  val layout = mutable.Map.empty[sema.Class, FieldLayout]
-  val dynmap = mutable.Map.empty[sema.Class, DynamicHashMap]
+  initClassMetadata()
+  initTraitMetadata()
 
-  locally {
-    top.classes.foreach { node =>
+  def initTraitIds(): Seq[Trait] = {
+    val traits =
+      linked.infos.valuesIterator
+        .collect { case info: Trait => info }
+        .toArray
+        .sortBy(_.name.show)
+    traits.zipWithIndex.foreach {
+      case (node, id) =>
+        ids(node) = id
+    }
+    traits
+  }
+
+  def initClassIdsAndRanges(): Seq[Class] = {
+    val out = mutable.UnrolledBuffer.empty[Class]
+    var id  = 0
+
+    def loop(node: Class): Unit = {
+      out += node
+      val start = id
+      id += 1
+      val directSubclasses =
+        node.subclasses.filter(_.parent == Some(node)).toArray
+      directSubclasses.sortBy(_.name.show).foreach { subcls =>
+        loop(subcls)
+      }
+      val end = id - 1
+      ids(node) = start
+      ranges(node) = start to end
+    }
+
+    loop(linked.infos(Rt.Object.name).asInstanceOf[Class])
+
+    out
+  }
+
+  def initClassMetadata(): Unit = {
+    classes.foreach { node =>
       vtable(node) = new VirtualTable(this, node)
       layout(node) = new FieldLayout(this, node)
-      dynmap(node) = new DynamicHashMap(this, node, dyns)
-      rtti(node) = new RuntimeTypeInformation(this, node)
-    }
-    top.traits.foreach { node =>
-      rtti(node) = new RuntimeTypeInformation(this, node)
-    }
-    top.structs.foreach { node =>
+      dynmap(node) = new DynamicHashMap(this, node, proxies)
       rtti(node) = new RuntimeTypeInformation(this, node)
     }
   }
 
-  val tables      = new TraitDispatchTables(top)
-  val moduleArray = new ModuleArray(top)
-}
-
-object Metadata {
-  val javaEqualsName =
-    Global.Member(Global.Top("java.lang.Object"),
-                  "equals_java.lang.Object_bool")
-  val javaHashCodeName =
-    Global.Member(Global.Top("java.lang.Object"), "hashCode_i32")
-  val scalaEqualsName =
-    Global.Member(Global.Top("java.lang.Object"),
-                  "scala$underscore$==_java.lang.Object_bool")
-  val scalaHashCodeName =
-    Global.Member(Global.Top("java.lang.Object"), "scala$underscore$##_i32")
-
-  val depends =
-    Seq(javaEqualsName, javaHashCodeName, scalaEqualsName, scalaHashCodeName)
+  def initTraitMetadata(): Unit = {
+    traits.foreach { node =>
+      rtti(node) = new RuntimeTypeInformation(this, node)
+    }
+  }
 }

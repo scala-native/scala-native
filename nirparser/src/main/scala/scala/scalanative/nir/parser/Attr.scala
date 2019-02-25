@@ -15,20 +15,11 @@ object Attr extends Base[nir.Attr] {
   val AlwaysInline = P("alwaysinline".! map (_ => nir.Attr.AlwaysInline))
   val Dyn          = P("dyn".! map (_ => nir.Attr.Dyn))
   val Stub         = P("stub".! map (_ => nir.Attr.Stub))
-  val Align        = P(("align(" ~ int ~ ")") map (nir.Attr.Align(_)))
-  val Pure         = P("pure".! map (_ => nir.Attr.Pure))
   val Extern       = P("extern".! map (_ => nir.Attr.Extern))
-  val Override =
-    P("override(" ~ Global.parser ~ ")" map (nir.Attr.Override(_)))
-  val Link      = P("link(" ~ qualifiedId ~ ")" map (nir.Attr.Link(_)))
-  val PinAlways = P("pin(" ~ Global.parser ~ ")" map (nir.Attr.PinAlways(_)))
-  val PinIf =
-    P("pin-if(" ~ Global.parser ~ "," ~ Global.parser ~ ")" map {
-      case (name, cond) => nir.Attr.PinIf(name, cond)
-    })
-  val PinWeak = P("pin-weak(" ~ Global.parser ~ ")" map (nir.Attr.PinWeak(_)))
+  val Link         = P("link(" ~ qualifiedId ~ ")" map (nir.Attr.Link(_)))
+  val Abstract     = P("abstract".! map (_ => nir.Attr.Abstract))
 
   override val parser: P[nir.Attr] =
-    MayInline | InlineHint | NoInline | AlwaysInline | Dyn | Stub | Align | Pure | Extern | Override | Link | PinAlways | PinIf | PinWeak
+    MayInline | InlineHint | NoInline | AlwaysInline | Dyn | Stub | Extern | Link | Abstract
 
 }

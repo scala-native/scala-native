@@ -54,7 +54,4 @@ abstract class MessageDigestSpi {
     }
 
   protected def engineReset(): Unit
-
-  override def clone(): Object =
-    super.clone()
 }

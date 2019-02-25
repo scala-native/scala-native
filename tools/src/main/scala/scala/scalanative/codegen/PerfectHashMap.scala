@@ -2,7 +2,7 @@ package scala.scalanative
 package codegen
 
 import scalanative.nir._
-import scalanative.sema._
+import scalanative.linker.Method
 
 /**
  *
@@ -158,17 +158,18 @@ class PerfectHashMap[K, V](val keys: Seq[Int],
 }
 
 object DynmethodPerfectHashMap {
-  def apply(dynmethods: Seq[Method], allSignatures: Seq[String]): Val.Struct = {
+  def apply(dynmethods: Seq[Global.Member],
+            allSignatures: Seq[Sig]): Val.StructValue = {
 
     val signaturesWithIndex =
-      allSignatures.zipWithIndex.foldLeft(Map[String, Int]()) {
+      allSignatures.zipWithIndex.foldLeft(Map[Sig, Int]()) {
         case (acc, (signature, index)) => acc + (signature -> index)
       }
 
     val entries = dynmethods.foldLeft(Map[Int, (Int, Val)]()) {
       case (acc, m) =>
-        val index = signaturesWithIndex(Global.genSignature(m.name))
-        acc + (index -> (index, m.value))
+        val index = signaturesWithIndex(m.sig)
+        acc + (index -> (index, Val.Global(m, Type.Ptr)))
     }
 
     val perfectHashMap = PerfectHashMap[Int, (Int, Val)](hash, entries)
@@ -178,17 +179,17 @@ object DynmethodPerfectHashMap {
       case None         => (Val.Int(-1), Val.Null)
     }.unzip
 
-    Val.Struct(
-      Global.None,
+    Val.StructValue(
       Val.Int(perfectHashMap.size) ::
         (perfectHashMap.size match {
         case 0 =>
           List(Val.Null, Val.Null, Val.Null)
         case _ =>
           List(
-            Val.Const(Val.Array(Type.Int, perfectHashMap.keys.map(Val.Int))),
-            Val.Const(Val.Array(Type.Int, keys)),
-            Val.Const(Val.Array(Type.Ptr, values))
+            Val.Const(
+              Val.ArrayValue(Type.Int, perfectHashMap.keys.map(Val.Int))),
+            Val.Const(Val.ArrayValue(Type.Int, keys)),
+            Val.Const(Val.ArrayValue(Type.Ptr, values))
           )
       })
     )

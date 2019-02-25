@@ -1,7 +1,7 @@
 package scala.scalanative
 package native
 
-import scalanative.runtime.{divUInt, remUInt}
+import scalanative.runtime.Intrinsics.{divUInt, remUInt}
 import java.lang.{Integer => JInteger}
 
 /** `UInt`, a 32-bit unsigned integer. */

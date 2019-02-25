@@ -1,17 +1,19 @@
 package scala.scalanative
 package codegen
 
+import scala.collection.mutable
 import scalanative.nir.Type.RefKind
 import scalanative.nir.{Type, Val}
 import scalanative.util.unsupported
 import scalanative.codegen.MemoryLayout.PositionedType
 
-final case class MemoryLayout(size: Long, tys: List[PositionedType]) {
+final case class MemoryLayout(size: Long,
+                              tys: Seq[MemoryLayout.PositionedType]) {
   lazy val offsetArray: Seq[Val] = {
     val ptrOffsets =
       tys.collect {
         // offset in words without rtti
-        case MemoryLayout.Tpe(_, offset, _: RefKind) =>
+        case MemoryLayout.PositionedType(_: RefKind, offset) =>
           Val.Long(offset / MemoryLayout.WORD_SIZE - 1)
       }
 
@@ -20,80 +22,58 @@ final case class MemoryLayout(size: Long, tys: List[PositionedType]) {
 }
 
 object MemoryLayout {
+  final val WORD_SIZE = 8
 
-  val WORD_SIZE = 8
-
-  sealed abstract class PositionedType {
-    def size: Long
-    def offset: Long
-  }
-
-  final case class Tpe(size: Long, offset: Long, ty: Type)
-      extends PositionedType
-  final case class Padding(size: Long, offset: Long) extends PositionedType
+  final case class PositionedType(ty: Type, offset: Long)
 
   def sizeOf(ty: Type): Long = ty match {
-    case primitive: Type.Primitive => math.max(primitive.width / WORD_SIZE, 1)
-    case Type.Array(arrTy, n)      => sizeOf(arrTy) * n
-    case Type.Struct(_, tys)       => MemoryLayout(tys).size
-    case Type.Nothing | Type.Ptr | _: Type.Trait | _: Type.Module |
-        _: Type.Class =>
+    case primitive: Type.PrimitiveKind =>
+      math.max(primitive.width / WORD_SIZE, 1)
+    case Type.ArrayValue(ty, n) =>
+      sizeOf(ty) * n
+    case Type.StructValue(tys) =>
+      MemoryLayout(tys).size
+    case Type.Nothing | Type.Ptr | _: Type.RefKind =>
       8
-    case _ => unsupported(s"sizeOf $ty")
+    case _ =>
+      unsupported(s"sizeof $ty")
+  }
+
+  def alignmentOf(ty: Type): Long = ty match {
+    case primitive: Type.PrimitiveKind =>
+      math.max(primitive.width / WORD_SIZE, 1)
+    case Type.ArrayValue(ty, n) =>
+      alignmentOf(ty)
+    case Type.StructValue(Seq()) =>
+      1
+    case Type.StructValue(tys) =>
+      tys.map(alignmentOf).max
+    case Type.Nothing | Type.Ptr | _: Type.RefKind =>
+      8
+    case _ =>
+      unsupported(s"alignment $ty")
+  }
+
+  def align(offset: Long, alignment: Long): Long = {
+    val alignmentMask = alignment - 1L
+    val padding =
+      if ((offset & alignmentMask) == 0L) 0L
+      else alignment - (offset & alignmentMask)
+    offset + padding
   }
 
   def apply(tys: Seq[Type]): MemoryLayout = {
-    val (size, potys) = impl(tys, 0)
+    val pos    = mutable.UnrolledBuffer.empty[PositionedType]
+    var offset = 0L
 
-    MemoryLayout(size, potys.reverse)
-  }
-  private def impl(tys: Seq[Type],
-                   offset: Long): (Long, List[PositionedType]) = {
-    if (tys.isEmpty) {
-      return (0, List())
+    tys.foreach { ty =>
+      offset = align(offset, alignmentOf(ty))
+      pos += PositionedType(ty, offset)
+      offset += sizeOf(ty)
     }
 
-    val sizes = tys.map(sizeOf)
+    val alignment = if (tys.isEmpty) 1 else tys.map(alignmentOf).max
 
-    def findMax(tys: Seq[Type]): Long = tys.foldLeft(0L) {
-      case (acc, Type.Struct(_, innerTy)) => math.max(acc, findMax(innerTy))
-      case (acc, ty)                      => math.max(acc, sizeOf(ty))
-    }
-
-    val maxSize = findMax(tys)
-
-    val (size, positionedTypes) =
-      (tys zip sizes).foldLeft((offset, List[PositionedType]())) {
-        case ((index, potys), (ty, size)) if size > 0 =>
-          ty match {
-            case Type.Struct(_, stys) =>
-              val innerAlignment = findMax(stys)
-              val pad =
-                if (index                    % innerAlignment == 0) 0
-                else innerAlignment - (index % innerAlignment)
-              val (innerSize, innerTys) = impl(stys, index + pad)
-
-              (index + pad + innerSize,
-               innerTys ::: Padding(pad, index) :: potys)
-
-            case _ =>
-              val pad = if (index % size == 0) 0 else size - (index % size)
-              (index + pad + size,
-               Tpe(size, index + pad, ty) :: Padding(pad, index) :: potys)
-
-          }
-        case ((index, potys), _) => (index, potys)
-
-      }
-
-    val finalPad = if (size % maxSize == 0) 0 else maxSize - (size % maxSize)
-    val potys =
-      if (finalPad > 0) {
-        Padding(finalPad, size) :: positionedTypes
-      } else {
-        positionedTypes
-      }
-
-    (potys.foldLeft(0L) { case (acc, poty) => acc + poty.size }, potys)
+    MemoryLayout(align(offset, alignment), pos)
   }
 }

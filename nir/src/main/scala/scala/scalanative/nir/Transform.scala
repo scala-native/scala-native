@@ -14,8 +14,6 @@ trait Transform {
       defn.copy(ty = onType(ty))
     case defn @ Defn.Define(_, _, ty, insts) =>
       defn.copy(ty = onType(ty), insts = onInsts(insts))
-    case defn @ Defn.Struct(_, _, tys) =>
-      defn.copy(tys = tys.map(onType))
     case defn @ Defn.Trait(_, _, _) =>
       defn
     case defn @ Defn.Class(_, _, _, _) =>
@@ -28,18 +26,14 @@ trait Transform {
     insts.map(onInst)
 
   def onInst(inst: Inst): Inst = inst match {
-    case Inst.None =>
-      inst
     case Inst.Label(n, params) =>
       val newparams = params.map { param =>
         Val.Local(param.name, onType(param.ty))
       }
       Inst.Label(n, newparams)
-    case Inst.Let(n, op) =>
-      Inst.Let(n, onOp(op))
+    case Inst.Let(n, op, unwind) =>
+      Inst.Let(n, onOp(op), onNext(unwind))
 
-    case Inst.Unreachable =>
-      Inst.Unreachable
     case Inst.Ret(v) =>
       Inst.Ret(onVal(v))
     case Inst.Jump(next) =>
@@ -50,15 +44,17 @@ trait Transform {
       Inst.Switch(onVal(v), onNext(default), cases.map(onNext))
     case Inst.Throw(v, unwind) =>
       Inst.Throw(onVal(v), onNext(unwind))
+    case Inst.Unreachable(unwind) =>
+      Inst.Unreachable(onNext(unwind))
   }
 
   def onOp(op: Op): Op = op match {
-    case Op.Call(ty, ptrv, argvs, unwind) =>
-      Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal), onNext(unwind))
-    case Op.Load(ty, ptrv, isVolatile) =>
-      Op.Load(onType(ty), onVal(ptrv), isVolatile)
-    case Op.Store(ty, ptrv, v, isVolatile) =>
-      Op.Store(onType(ty), onVal(ptrv), onVal(v), isVolatile)
+    case Op.Call(ty, ptrv, argvs) =>
+      Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal))
+    case Op.Load(ty, ptrv) =>
+      Op.Load(onType(ty), onVal(ptrv))
+    case Op.Store(ty, ptrv, v) =>
+      Op.Store(onType(ty), onVal(ptrv), onVal(v))
     case Op.Elem(ty, ptrv, indexvs) =>
       Op.Elem(onType(ty), onVal(ptrv), indexvs.map(onVal))
     case Op.Extract(aggrv, indexvs) =>
@@ -73,19 +69,19 @@ trait Transform {
       Op.Comp(comp, onType(ty), onVal(lv), onVal(rv))
     case Op.Conv(conv, ty, v) =>
       Op.Conv(conv, onType(ty), onVal(v))
-    case Op.Select(v1, v2, v3) =>
-      Op.Select(onVal(v1), onVal(v2), onVal(v3))
 
     case Op.Classalloc(n) =>
       Op.Classalloc(n)
-    case Op.Field(v, n) =>
-      Op.Field(onVal(v), n)
+    case Op.Fieldload(ty, v, n) =>
+      Op.Fieldload(onType(ty), onVal(v), n)
+    case Op.Fieldstore(ty, v1, n, v2) =>
+      Op.Fieldstore(onType(ty), onVal(v1), n, onVal(v2))
     case Op.Method(v, n) =>
       Op.Method(onVal(v), n)
     case Op.Dynmethod(obj, signature) =>
       Op.Dynmethod(onVal(obj), signature)
-    case Op.Module(n, unwind) =>
-      Op.Module(n, onNext(unwind))
+    case Op.Module(n) =>
+      Op.Module(n)
     case Op.As(ty, v) =>
       Op.As(onType(ty), onVal(v))
     case Op.Is(ty, v) =>
@@ -94,40 +90,56 @@ trait Transform {
       Op.Copy(onVal(v))
     case Op.Sizeof(ty) =>
       Op.Sizeof(onType(ty))
-    case Op.Closure(ty, fun, captures) =>
-      Op.Closure(onType(ty), onVal(fun), captures.map(onVal))
     case Op.Box(code, obj) =>
       Op.Box(code, onVal(obj))
     case Op.Unbox(code, obj) =>
       Op.Unbox(code, onVal(obj))
+    case Op.Var(ty) =>
+      Op.Var(onType(ty))
+    case Op.Varload(elem) =>
+      Op.Varload(onVal(elem))
+    case Op.Varstore(elem, value) =>
+      Op.Varstore(onVal(elem), onVal(value))
+    case Op.Arrayalloc(ty, init) =>
+      Op.Arrayalloc(onType(ty), onVal(init))
+    case Op.Arrayload(ty, arr, idx) =>
+      Op.Arrayload(onType(ty), onVal(arr), onVal(idx))
+    case Op.Arraystore(ty, arr, idx, value) =>
+      Op.Arraystore(onType(ty), onVal(arr), onVal(idx), onVal(value))
+    case Op.Arraylength(arr) =>
+      Op.Arraylength(onVal(arr))
   }
 
   def onVal(value: Val): Val = value match {
-    case Val.Zero(ty)          => Val.Zero(onType(ty))
-    case Val.Undef(ty)         => Val.Undef(onType(ty))
-    case Val.Struct(n, values) => Val.Struct(n, values.map(onVal))
-    case Val.Array(ty, values) => Val.Array(onType(ty), values.map(onVal))
-    case Val.Local(n, ty)      => Val.Local(n, onType(ty))
-    case Val.Global(n, ty)     => Val.Global(n, onType(ty))
-    case Val.Const(v)          => Val.Const(onVal(v))
-    case _                     => value
+    case Val.Zero(ty)            => Val.Zero(onType(ty))
+    case Val.StructValue(values) => Val.StructValue(values.map(onVal))
+    case Val.ArrayValue(ty, values) =>
+      Val.ArrayValue(onType(ty), values.map(onVal))
+    case Val.Local(n, ty)  => Val.Local(n, onType(ty))
+    case Val.Global(n, ty) => Val.Global(n, onType(ty))
+    case Val.Const(v)      => Val.Const(onVal(v))
+    case _                 => value
   }
 
   def onType(ty: Type): Type = ty match {
-    case Type.Array(ty, n) =>
-      Type.Array(onType(ty), n)
+    case Type.ArrayValue(ty, n) =>
+      Type.ArrayValue(onType(ty), n)
     case Type.Function(args, ty) =>
       Type.Function(args.map(onType), onType(ty))
-    case Type.Struct(n, tys) =>
-      Type.Struct(n, tys.map(onType))
+    case Type.StructValue(tys) =>
+      Type.StructValue(tys.map(onType))
+    case Type.Var(ty) =>
+      Type.Var(onType(ty))
+    case Type.Array(ty, nullable) =>
+      Type.Array(onType(ty), nullable)
     case _ =>
       ty
   }
 
   def onNext(next: Next): Next = next match {
-    case Next.None           => Next.None
-    case unwind: Next.Unwind => unwind
-    case Next.Label(n, args) => Next.Label(n, args.map(onVal))
-    case Next.Case(v, n)     => Next.Case(onVal(v), n)
+    case Next.None            => Next.None
+    case Next.Case(v, n)      => Next.Case(onVal(v), onNext(n))
+    case Next.Unwind(n, next) => Next.Unwind(n, onNext(next))
+    case Next.Label(n, args)  => Next.Label(n, args.map(onVal))
   }
 }

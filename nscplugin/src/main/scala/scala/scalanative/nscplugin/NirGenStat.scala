@@ -6,6 +6,7 @@ import scala.reflect.internal.Flags._
 import scala.scalanative.nir._
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
+import scalanative.nir.ControlFlow.removeDeadBlocks
 
 trait NirGenStat { self: NirGenPhase =>
 
@@ -80,7 +81,6 @@ trait NirGenStat { self: NirGenPhase =>
       val fields = genStructFields(sym)
       val body   = cd.impl.body
 
-      buf += Defn.Struct(attrs, name, fields)
       genMethods(cd)
     }
 
@@ -111,23 +111,7 @@ trait NirGenStat { self: NirGenPhase =>
 
     def genClassAttrs(cd: ClassDef): Attrs = {
       val sym = cd.symbol
-      def pinned = {
-        val ctor =
-          if (!sym.isScalaModule || sym.isExternModule) {
-            Seq()
-          } else {
-            Seq(Attr.PinAlways(genMethodName(sym.asClass.primaryConstructor)))
-          }
-        val annotated = for {
-          decl <- sym.info.decls
-          if decl.hasAnnotation(PinClass)
-        } yield {
-          Attr.PinAlways(genName(decl))
-        }
-
-        annotated.toSeq ++ ctor
-      }
-      val attrs = sym.annotations.collect {
+      val annotationAttrs = sym.annotations.collect {
         case ann if ann.symbol == ExternClass =>
           Attr.Extern
         case ann if ann.symbol == LinkClass =>
@@ -136,14 +120,10 @@ trait NirGenStat { self: NirGenPhase =>
         case ann if ann.symbol == StubClass =>
           Attr.Stub
       }
-      val pure = if (PureModules.contains(sym)) Seq(Attr.Pure) else Seq()
+      val abstractAttr =
+        if (sym.isAbstract) Seq(Attr.Abstract) else Seq()
 
-      val weak = cd.impl.body.collect {
-        case dd: DefDef =>
-          Attr.PinWeak(genMethodName(dd.symbol))
-      }
-
-      Attrs.fromSeq(pinned ++ pure ++ attrs ++ weak)
+      Attrs.fromSeq(annotationAttrs ++ abstractAttr)
     }
 
     def genClassInterfaces(sym: Symbol) =
@@ -161,7 +141,7 @@ trait NirGenStat { self: NirGenPhase =>
         val ty   = genType(f.tpe, box = false)
         val name = genFieldName(f)
 
-        buf += Defn.Var(attrs, name, ty, Val.None)
+        buf += Defn.Var(attrs, name, ty, Val.Zero(ty))
       }
     }
 
@@ -182,7 +162,7 @@ trait NirGenStat { self: NirGenPhase =>
         curMethodEnv := env,
         curMethodInfo := (new CollectMethodInfo).collect(dd.rhs),
         curFresh := fresh,
-        curUnwind := Next.None
+        curUnwindHandler := None
       ) {
         val sym      = dd.symbol
         val owner    = curClassSym.get
@@ -254,7 +234,7 @@ trait NirGenStat { self: NirGenPhase =>
     }
 
     def genMethodAttrs(sym: Symbol): Attrs = {
-      val inlineAttrs = {
+      val inlineAttrs =
         if (sym.hasFlag(ACCESSOR)) {
           Seq(Attr.AlwaysInline)
         } else {
@@ -265,63 +245,8 @@ trait NirGenStat { self: NirGenPhase =>
             case ann if ann.symbol == StubClass       => Attr.Stub
           }
         }
-      }
-      val overrideAttrs: Seq[Attr] = {
-        val owner = sym.owner
-        if (owner.primaryConstructor eq sym) {
-          genConstructorOverridePins(owner)
-        } else {
-          sym.overrides.collect {
-            case ovsym if !sym.owner.asClass.isTrait =>
-              Attr.Override(genMethodName(ovsym))
-          }
-        }
-      }
-      val pureAttrs = {
-        if (PureMethods.contains(sym)) Seq(Attr.Pure) else Seq()
-      }
 
-      Attrs.fromSeq(inlineAttrs ++ overrideAttrs ++ pureAttrs)
-    }
-
-    def genConstructorOverridePins(owner: Symbol): Seq[nir.Attr] = {
-      val traits = owner.info.baseClasses.map(_.asClass).filter(_.isTrait)
-      val traitMethods =
-        mutable.Map.empty[String, mutable.UnrolledBuffer[nir.Global]]
-
-      traits.foreach { trt =>
-        trt.info.declarations.foreach { meth =>
-          val name = genName(meth)
-          val sig  = name.id
-          if (!traitMethods.contains(sig)) {
-            traitMethods(sig) = mutable.UnrolledBuffer.empty[nir.Global]
-          }
-          traitMethods(sig) += name
-        }
-      }
-
-      val pins = mutable.UnrolledBuffer.empty[nir.Attr]
-
-      owner.info.declarations.foreach { decl =>
-        decl.overrides.foreach { ovsym =>
-          if (!ovsym.owner.asClass.isTrait) {
-            pins += Attr.PinIf(genMethodName(decl), genMethodName(ovsym))
-          }
-        }
-      }
-
-      owner.info.members.foreach { decl =>
-        if (decl.isMethod && decl.owner != ObjectClass) {
-          val declname = genName(decl)
-          val sig      = declname.id
-          val methods  = traitMethods.get(sig).getOrElse(Seq.empty)
-          methods.foreach { methname =>
-            pins += Attr.PinIf(declname, methname)
-          }
-        }
-      }
-
-      pins
+      Attrs.fromSeq(inlineAttrs)
     }
 
     def genParams(dd: DefDef, isStatic: Boolean): Seq[Val.Local] =
@@ -349,9 +274,9 @@ trait NirGenStat { self: NirGenPhase =>
         val vars = curMethodInfo.mutableVars.toSeq
         buf.label(fresh(), params)
         vars.foreach { sym =>
-          val ty    = genType(sym.info, box = false)
-          val alloc = buf.stackalloc(ty, Val.None)
-          curMethodEnv.enter(sym, alloc)
+          val ty   = genType(sym.info, box = false)
+          val slot = buf.var_(ty, unwind(fresh))
+          curMethodEnv.enter(sym, slot)
         }
       }
 
@@ -389,7 +314,7 @@ trait NirGenStat { self: NirGenPhase =>
 
       genPrelude()
       buf.ret(genBody())
-      buf.toSeq
+      removeDeadBlocks(buf.toSeq)
     }
 
     def genFunctionPtrForwarder(sym: Symbol): Val = {

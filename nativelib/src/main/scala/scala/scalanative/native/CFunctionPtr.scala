@@ -2,7 +2,7 @@
 package scala.scalanative
 package native
 
-import scalanative.runtime.undefined
+import scalanative.runtime.intrinsic
 
 /** C-style function pointer. */
 sealed abstract class CFunctionPtr
@@ -11,71 +11,71 @@ object CFunctionPtr {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
-  implicit def fromFunction0[R](f: Function0[R]): CFunctionPtr0[R] = undefined
+  implicit def fromFunction0[R](f: Function0[R]): CFunctionPtr0[R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
   implicit def fromFunction1[T1, R](f: Function1[T1, R]): CFunctionPtr1[T1, R] =
-    undefined
+    intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
   implicit def fromFunction2[T1, T2, R](
-      f: Function2[T1, T2, R]): CFunctionPtr2[T1, T2, R] = undefined
+      f: Function2[T1, T2, R]): CFunctionPtr2[T1, T2, R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
   implicit def fromFunction3[T1, T2, T3, R](
-      f: Function3[T1, T2, T3, R]): CFunctionPtr3[T1, T2, T3, R] = undefined
+      f: Function3[T1, T2, T3, R]): CFunctionPtr3[T1, T2, T3, R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
   implicit def fromFunction4[T1, T2, T3, T4, R](
       f: Function4[T1, T2, T3, T4, R]): CFunctionPtr4[T1, T2, T3, T4, R] =
-    undefined
+    intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
   implicit def fromFunction5[T1, T2, T3, T4, T5, R](
       f: Function5[T1, T2, T3, T4, T5, R])
-    : CFunctionPtr5[T1, T2, T3, T4, T5, R] = undefined
+    : CFunctionPtr5[T1, T2, T3, T4, T5, R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
   implicit def fromFunction6[T1, T2, T3, T4, T5, T6, R](
       f: Function6[T1, T2, T3, T4, T5, T6, R])
-    : CFunctionPtr6[T1, T2, T3, T4, T5, T6, R] = undefined
+    : CFunctionPtr6[T1, T2, T3, T4, T5, T6, R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
   implicit def fromFunction7[T1, T2, T3, T4, T5, T6, T7, R](
       f: Function7[T1, T2, T3, T4, T5, T6, T7, R])
-    : CFunctionPtr7[T1, T2, T3, T4, T5, T6, T7, R] = undefined
+    : CFunctionPtr7[T1, T2, T3, T4, T5, T6, T7, R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
   implicit def fromFunction8[T1, T2, T3, T4, T5, T6, T7, T8, R](
       f: Function8[T1, T2, T3, T4, T5, T6, T7, T8, R])
-    : CFunctionPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] = undefined
+    : CFunctionPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
   implicit def fromFunction9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](
       f: Function9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R])
-    : CFunctionPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] = undefined
+    : CFunctionPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
   implicit def fromFunction10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R](
       f: Function10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R])
-    : CFunctionPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] = undefined
+    : CFunctionPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
   implicit def fromFunction11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R](
       f: Function11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R])
     : CFunctionPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R] =
-    undefined
+    intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -94,7 +94,7 @@ object CFunctionPtr {
                               R](
       f: Function12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R])
     : CFunctionPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R] =
-    undefined
+    intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -127,7 +127,7 @@ object CFunctionPtr {
                      T12,
                      T13,
                      R] =
-    undefined
+    intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -174,7 +174,7 @@ object CFunctionPtr {
                                         T12,
                                         T13,
                                         T14,
-                                        R] = undefined
+                                        R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -224,7 +224,7 @@ object CFunctionPtr {
                                         T13,
                                         T14,
                                         T15,
-                                        R] = undefined
+                                        R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -277,7 +277,7 @@ object CFunctionPtr {
                                         T14,
                                         T15,
                                         T16,
-                                        R] = undefined
+                                        R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -333,7 +333,7 @@ object CFunctionPtr {
                                         T15,
                                         T16,
                                         T17,
-                                        R] = undefined
+                                        R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -392,7 +392,7 @@ object CFunctionPtr {
                                         T16,
                                         T17,
                                         T18,
-                                        R] = undefined
+                                        R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -454,7 +454,7 @@ object CFunctionPtr {
                                         T17,
                                         T18,
                                         T19,
-                                        R] = undefined
+                                        R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -519,7 +519,7 @@ object CFunctionPtr {
                                         T18,
                                         T19,
                                         T20,
-                                        R] = undefined
+                                        R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -587,7 +587,7 @@ object CFunctionPtr {
                                         T19,
                                         T20,
                                         T21,
-                                        R] = undefined
+                                        R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -658,7 +658,7 @@ object CFunctionPtr {
                                         T20,
                                         T21,
                                         T22,
-                                        R] = undefined
+                                        R] = intrinsic
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 17)
 
@@ -667,13 +667,13 @@ object CFunctionPtr {
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
 
 final abstract class CFunctionPtr0[R] extends CFunctionPtr {
-  def apply()(implicit tag1: Tag[R]): R = undefined
+  def apply()(implicit tag1: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
 
 final abstract class CFunctionPtr1[T1, R] extends CFunctionPtr {
-  def apply(arg1: T1)(implicit tag1: Tag[T1], tag2: Tag[R]): R = undefined
+  def apply(arg1: T1)(implicit tag1: Tag[T1], tag2: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -681,7 +681,7 @@ final abstract class CFunctionPtr1[T1, R] extends CFunctionPtr {
 final abstract class CFunctionPtr2[T1, T2, R] extends CFunctionPtr {
   def apply(arg1: T1,
             arg2: T2)(implicit tag1: Tag[T1], tag2: Tag[T2], tag3: Tag[R]): R =
-    undefined
+    intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -690,7 +690,7 @@ final abstract class CFunctionPtr3[T1, T2, T3, R] extends CFunctionPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3)(implicit tag1: Tag[T1],
                                           tag2: Tag[T2],
                                           tag3: Tag[T3],
-                                          tag4: Tag[R]): R = undefined
+                                          tag4: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -701,7 +701,7 @@ final abstract class CFunctionPtr4[T1, T2, T3, T4, R] extends CFunctionPtr {
                                                     tag3: Tag[T3],
                                                     tag4: Tag[T4],
                                                     tag5: Tag[R]): R =
-    undefined
+    intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -713,7 +713,7 @@ final abstract class CFunctionPtr5[T1, T2, T3, T4, T5, R] extends CFunctionPtr {
       tag3: Tag[T3],
       tag4: Tag[T4],
       tag5: Tag[T5],
-      tag6: Tag[R]): R = undefined
+      tag6: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -727,7 +727,7 @@ final abstract class CFunctionPtr6[T1, T2, T3, T4, T5, T6, R]
       tag4: Tag[T4],
       tag5: Tag[T5],
       tag6: Tag[T6],
-      tag7: Tag[R]): R = undefined
+      tag7: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -747,7 +747,7 @@ final abstract class CFunctionPtr7[T1, T2, T3, T4, T5, T6, T7, R]
                       tag5: Tag[T5],
                       tag6: Tag[T6],
                       tag7: Tag[T7],
-                      tag8: Tag[R]): R = undefined
+                      tag8: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -769,7 +769,7 @@ final abstract class CFunctionPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]
                       tag6: Tag[T6],
                       tag7: Tag[T7],
                       tag8: Tag[T8],
-                      tag9: Tag[R]): R = undefined
+                      tag9: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -793,7 +793,7 @@ final abstract class CFunctionPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]
                       tag7: Tag[T7],
                       tag8: Tag[T8],
                       tag9: Tag[T9],
-                      tag10: Tag[R]): R = undefined
+                      tag10: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -819,7 +819,7 @@ final abstract class CFunctionPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]
                         tag8: Tag[T8],
                         tag9: Tag[T9],
                         tag10: Tag[T10],
-                        tag11: Tag[R]): R = undefined
+                        tag11: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -848,7 +848,7 @@ final abstract class CFunctionPtr11[
                         tag9: Tag[T9],
                         tag10: Tag[T10],
                         tag11: Tag[T11],
-                        tag12: Tag[R]): R = undefined
+                        tag12: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -879,7 +879,7 @@ final abstract class CFunctionPtr12[
                         tag10: Tag[T10],
                         tag11: Tag[T11],
                         tag12: Tag[T12],
-                        tag13: Tag[R]): R = undefined
+                        tag13: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -912,7 +912,7 @@ final abstract class CFunctionPtr13[
                         tag11: Tag[T11],
                         tag12: Tag[T12],
                         tag13: Tag[T13],
-                        tag14: Tag[R]): R = undefined
+                        tag14: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -947,7 +947,7 @@ final abstract class CFunctionPtr14[
                         tag12: Tag[T12],
                         tag13: Tag[T13],
                         tag14: Tag[T14],
-                        tag15: Tag[R]): R = undefined
+                        tag15: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -984,7 +984,7 @@ final abstract class CFunctionPtr15[
                         tag13: Tag[T13],
                         tag14: Tag[T14],
                         tag15: Tag[T15],
-                        tag16: Tag[R]): R = undefined
+                        tag16: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -1023,7 +1023,7 @@ final abstract class CFunctionPtr16[
                         tag14: Tag[T14],
                         tag15: Tag[T15],
                         tag16: Tag[T16],
-                        tag17: Tag[R]): R = undefined
+                        tag17: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -1080,7 +1080,7 @@ final abstract class CFunctionPtr17[T1,
                         tag15: Tag[T15],
                         tag16: Tag[T16],
                         tag17: Tag[T17],
-                        tag18: Tag[R]): R = undefined
+                        tag18: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -1140,7 +1140,7 @@ final abstract class CFunctionPtr18[T1,
                         tag16: Tag[T16],
                         tag17: Tag[T17],
                         tag18: Tag[T18],
-                        tag19: Tag[R]): R = undefined
+                        tag19: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -1203,7 +1203,7 @@ final abstract class CFunctionPtr19[T1,
                         tag17: Tag[T17],
                         tag18: Tag[T18],
                         tag19: Tag[T19],
-                        tag20: Tag[R]): R = undefined
+                        tag20: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -1269,7 +1269,7 @@ final abstract class CFunctionPtr20[T1,
                         tag18: Tag[T18],
                         tag19: Tag[T19],
                         tag20: Tag[T20],
-                        tag21: Tag[R]): R = undefined
+                        tag21: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -1338,7 +1338,7 @@ final abstract class CFunctionPtr21[T1,
                         tag19: Tag[T19],
                         tag20: Tag[T20],
                         tag21: Tag[T21],
-                        tag22: Tag[R]): R = undefined
+                        tag22: Tag[R]): R = intrinsic
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
@@ -1410,5 +1410,5 @@ final abstract class CFunctionPtr22[T1,
                         tag20: Tag[T20],
                         tag21: Tag[T21],
                         tag22: Tag[T22],
-                        tag23: Tag[R]): R = undefined
+                        tag23: Tag[R]): R = intrinsic
 }

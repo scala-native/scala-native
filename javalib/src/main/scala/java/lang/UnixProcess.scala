@@ -6,7 +6,8 @@ import java.util.concurrent.TimeUnit
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.scalanative.native.{errno => err, signal => sig, _}
+import scala.scalanative.native._
+import scala.scalanative.libc.{errno => err, signal => sig, _}
 import sig._
 import err.errno
 import scala.scalanative.posix.{fcntl, pthread, sys, unistd, errno => e, time}

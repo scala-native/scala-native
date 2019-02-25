@@ -7,6 +7,7 @@ import java.nio.file.attribute._
 import java.io.IOException
 
 import scalanative.native._
+import scalanative.libc._
 import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
 import scalanative.posix.sys.stat
 

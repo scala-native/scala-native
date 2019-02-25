@@ -1,7 +1,7 @@
 package java.lang
 
-import scalanative.runtime.Intrinsics._
-import scalanative.native.{math => cmath}
+import scalanative.runtime.LLVMIntrinsics._
+import scalanative.libc.{math => cmath}
 
 object Math {
   private lazy val rand = new java.util.Random
