@@ -51,21 +51,6 @@ object RyuDouble {
 
   private val DOUBLE_EXPONENT_BIAS: Int = (1 << (DOUBLE_EXPONENT_BITS - 1)) - 1
 
-  private val LOG10_2_DENOMINATOR: Long = 10000000L
-
-  private val LOG10_2_NUMERATOR: Long =
-    (LOG10_2_DENOMINATOR * Math.log10(2)).toLong
-
-  private val LOG10_5_DENOMINATOR: Long = 10000000L
-
-  private val LOG10_5_NUMERATOR: Long =
-    (LOG10_5_DENOMINATOR * Math.log10(5)).toLong
-
-  private val LOG2_5_DENOMINATOR: Long = 10000000L
-
-  private val LOG2_5_NUMERATOR: Long =
-    (LOG2_5_DENOMINATOR * (Math.log(5) / Math.log(2))).toLong
-
   private val POS_TABLE_SIZE: Int = 326
 
   private val NEG_TABLE_SIZE: Int = 291
@@ -218,10 +203,8 @@ object RyuDouble {
     var dmIsTrailingZeros: Boolean = false
     var dvIsTrailingZeros: Boolean = false
     if (e2 >= 0) {
-      val q: Int = Math.max(
-        0,
-        (e2 * LOG10_2_NUMERATOR / LOG10_2_DENOMINATOR).toInt -
-          1)
+
+      val q: Int = Math.max(0, ((e2 * 78913) >>> 18) - 1)
       // k = constant + floor(log_2(5^q))
       val k: Int = POW5_INV_BITCOUNT + pow5bits(q) - 1
       val i: Int = -e2 + q + k
@@ -255,10 +238,7 @@ object RyuDouble {
         }
       }
     } else {
-      val q: Int = Math.max(
-        0,
-        (-e2 * LOG10_5_NUMERATOR / LOG10_5_DENOMINATOR).toInt -
-          1)
+      val q: Int = Math.max(0, ((-e2 * 732923) >>> 20) - 1);
       val i: Int = -e2 - q
       val k: Int = pow5bits(i) - POW5_BITCOUNT
       val j: Int = q - k
@@ -457,11 +437,7 @@ object RyuDouble {
     }
   }
 
-  private def pow5bits(e: Int): Int =
-    if (e == 0) 1
-    else
-      ((e * LOG2_5_NUMERATOR + LOG2_5_DENOMINATOR - 1)
-        / LOG2_5_DENOMINATOR).toInt
+  private def pow5bits(e: Int): Int = ((e * 1217359) >>> 19) + 1
 
   private def decimalLength(v: Long): Int = {
     if (v >= 1000000000000000000L) return 19
