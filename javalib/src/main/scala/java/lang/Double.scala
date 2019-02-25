@@ -319,7 +319,7 @@ object Double {
   }
 
   @inline def toString(d: scala.Double): String = {
-    RyuDouble.doubleToString(d, RyuRoundingMode.ROUND_EVEN);
+    RyuDouble.doubleToString(d, RyuRoundingMode.CONSERVATIVE)
   }
 
   @inline def valueOf(d: scala.Double): Double =
