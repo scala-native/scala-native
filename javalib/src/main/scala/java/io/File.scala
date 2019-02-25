@@ -5,7 +5,8 @@ import java.nio.file.{FileSystems, Path}
 import scala.annotation.tailrec
 import scalanative.posix.{fcntl, limits, unistd, utime}
 import scalanative.posix.sys.stat
-import scalanative.native._, stdlib._, stdio._, string._
+import scalanative.native._
+import scalanative.libc._, stdlib._, stdio._, string._
 import scalanative.nio.fs.FileHelpers
 import scalanative.runtime.{DeleteOnExit, Platform}
 import unistd._

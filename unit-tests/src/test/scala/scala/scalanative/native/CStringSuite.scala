@@ -1,7 +1,7 @@
 package scala.scalanative.native
 
-import stdio._
-import string._
+import scalanative.libc.stdio._
+import scalanative.libc.string._
 
 object CStringSuite extends tests.Suite {
 

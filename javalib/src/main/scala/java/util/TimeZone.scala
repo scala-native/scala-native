@@ -10,7 +10,7 @@ class TimeZone extends Serializable with Cloneable {
 object TimeZone {
   val SHORT: Int = 0
 
-  def getAvailableIDs(): Array[String] = ???
+  def getAvailableIDs(): Array[String] = Array.empty[String]
 
   def getTimeZone(ID: String): TimeZone = ???
 

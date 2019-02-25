@@ -163,4 +163,9 @@ object CharacterSuite extends tests.Suite {
     assert(toUpperCase(toInt("110000")) equals toInt("110000"))
   }
 
+  test("UnicodeBlock.of") {
+    assert(UnicodeBlock.of('a') equals UnicodeBlock.BASIC_LATIN)
+    assert(UnicodeBlock.of('א') equals UnicodeBlock.HEBREW)
+  }
+
 }

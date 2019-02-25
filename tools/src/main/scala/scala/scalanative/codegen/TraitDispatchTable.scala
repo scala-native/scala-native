@@ -16,7 +16,7 @@ class TraitDispatchTable(meta: Metadata) {
     // Collect signatures of trait methods, excluding
     // the ones defined on java.lang.Object, those always
     // go through vtable dispatch.
-    val sigs = mutable.Set.empty[String]
+    val sigs = mutable.Set.empty[Sig]
     meta.traits.foreach { trt =>
       trt.calls.foreach { sig =>
         if (trt.targets(sig).size > 1) {
@@ -28,7 +28,7 @@ class TraitDispatchTable(meta: Metadata) {
     val Object = meta.linked.infos(Rt.Object.name).asInstanceOf[Class]
     sigs --= Object.calls
 
-    sigs.toArray.sorted.zipWithIndex.toMap
+    sigs.toArray.sortBy(_.toString).zipWithIndex.toMap
   }
 
   val traitClassIds = {
@@ -88,7 +88,7 @@ class TraitDispatchTable(meta: Metadata) {
 
     val (compressed, offsets) = compressTable(table, mins, sizes)
 
-    val value = Val.Array(Type.Ptr, compressed)
+    val value = Val.ArrayValue(Type.Ptr, compressed)
 
     dispatchOffset = offsets
     dispatchTy = Type.Ptr

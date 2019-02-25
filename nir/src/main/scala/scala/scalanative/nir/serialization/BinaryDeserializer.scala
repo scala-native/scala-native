@@ -4,9 +4,7 @@ package serialization
 
 import java.nio.ByteBuffer
 import scala.collection.mutable
-
-import nir.serialization.{Tags => T}
-import Global.Member
+import scalanative.nir.serialization.{Tags => T}
 
 final class BinaryDeserializer(buffer: ByteBuffer) {
   import buffer._
@@ -63,13 +61,11 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.NoInlineAttr     => Attr.NoInline
     case T.AlwaysInlineAttr => Attr.AlwaysInline
 
-    case T.DynAttr  => Attr.Dyn
-    case T.StubAttr => Attr.Stub
-
-    case T.PureAttr   => Attr.Pure
-    case T.ExternAttr => Attr.Extern
-
-    case T.LinkAttr => Attr.Link(getString)
+    case T.DynAttr      => Attr.Dyn
+    case T.StubAttr     => Attr.Stub
+    case T.ExternAttr   => Attr.Extern
+    case T.LinkAttr     => Attr.Link(getString)
+    case T.AbstractAttr => Attr.Abstract
   }
 
   private def getBin(): Bin = getInt match {
@@ -95,16 +91,15 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   private def getInsts(): Seq[Inst] = getSeq(getInst)
   private def getInst(): Inst = getInt match {
-    case T.NoneInst        => Inst.None
     case T.LabelInst       => Inst.Label(getLocal, getParams)
     case T.LetInst         => Inst.Let(getLocal, getOp, Next.None)
     case T.LetUnwindInst   => Inst.Let(getLocal, getOp, getNext)
-    case T.UnreachableInst => Inst.Unreachable
     case T.RetInst         => Inst.Ret(getVal)
     case T.JumpInst        => Inst.Jump(getNext)
     case T.IfInst          => Inst.If(getVal, getNext, getNext)
     case T.SwitchInst      => Inst.Switch(getVal, getNext, getNexts)
     case T.ThrowInst       => Inst.Throw(getVal, getNext)
+    case T.UnreachableInst => Inst.Unreachable(getNext)
   }
 
   private def getComp(): Comp = getInt match {
@@ -156,9 +151,6 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.DefineDefn =>
       Defn.Define(getAttrs, getGlobal, getType, getInsts)
 
-    case T.StructDefn =>
-      Defn.Struct(getAttrs, getGlobal, getTypes)
-
     case T.TraitDefn =>
       Defn.Trait(getAttrs, getGlobal, getGlobals)
 
@@ -175,28 +167,36 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.NoneGlobal =>
       Global.None
     case T.TopGlobal =>
-      Global.stripImplClassTrailingDollar(Global.Top(getString))
+      Global.Top(getString)
     case T.MemberGlobal =>
-      Global.Member(getGlobal, getString)
+      Global.Member(Global.Top(getString), getSig)
   }
 
-  private def getLocal(): Local = {
-    val scope = getString // ignored
-    Local(getInt)
+  private def getSig(): Sig = getInt match {
+    case T.FieldSig     => Sig.Field(getString)
+    case T.CtorSig      => Sig.Ctor(getTypes)
+    case T.MethodSig    => Sig.Method(getString, getTypes)
+    case T.ProxySig     => Sig.Proxy(getString, getTypes)
+    case T.ExternSig    => Sig.Extern(getString)
+    case T.GeneratedSig => Sig.Generated(getString)
+    case T.DuplicateSig => Sig.Duplicate(getSig, getTypes)
   }
+
+  private def getLocal(): Local =
+    Local(getLong)
 
   private def getNexts(): Seq[Next] = getSeq(getNext)
   private def getNext(): Next = getInt match {
     case T.NoneNext   => Next.None
-    case T.UnwindNext => Next.Unwind(getLocal)
+    case T.UnwindNext => Next.Unwind(getParam, getNext)
+    case T.CaseNext   => Next.Case(getVal, getNext)
     case T.LabelNext  => Next.Label(getLocal, getVals)
-    case T.CaseNext   => Next.Case(getVal, getLocal)
   }
 
   private def getOp(): Op = getInt match {
     case T.CallOp       => Op.Call(getType, getVal, getVals)
-    case T.LoadOp       => Op.Load(getType, getVal, isVolatile = false)
-    case T.StoreOp      => Op.Store(getType, getVal, getVal, isVolatile = false)
+    case T.LoadOp       => Op.Load(getType, getVal)
+    case T.StoreOp      => Op.Store(getType, getVal, getVal)
     case T.ElemOp       => Op.Elem(getType, getVal, getVals)
     case T.ExtractOp    => Op.Extract(getVal, getInts)
     case T.InsertOp     => Op.Insert(getVal, getVal, getInts)
@@ -204,24 +204,26 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.BinOp        => Op.Bin(getBin, getType, getVal, getVal)
     case T.CompOp       => Op.Comp(getComp, getType, getVal, getVal)
     case T.ConvOp       => Op.Conv(getConv, getType, getVal)
-    case T.SelectOp     => Op.Select(getVal, getVal, getVal)
 
-    case T.ClassallocOp => Op.Classalloc(getGlobal)
-    case T.FieldloadOp  => Op.Fieldload(getType, getVal, getGlobal)
-    case T.FieldstoreOp => Op.Fieldstore(getType, getVal, getGlobal, getVal)
-    case T.MethodOp     => Op.Method(getVal, getString)
-    case T.DynmethodOp  => Op.Dynmethod(getVal, getString)
-    case T.ModuleOp     => Op.Module(getGlobal)
-    case T.AsOp         => Op.As(getType, getVal)
-    case T.IsOp         => Op.Is(getType, getVal)
-    case T.CopyOp       => Op.Copy(getVal)
-    case T.SizeofOp     => Op.Sizeof(getType)
-    case T.ClosureOp    => Op.Closure(getType, getVal, getVals)
-    case T.BoxOp        => Op.Box(getType, getVal)
-    case T.UnboxOp      => Op.Unbox(getType, getVal)
-    case T.VarOp        => Op.Var(getType)
-    case T.VarloadOp    => Op.Varload(getVal)
-    case T.VarstoreOp   => Op.Varstore(getVal, getVal)
+    case T.ClassallocOp  => Op.Classalloc(getGlobal)
+    case T.FieldloadOp   => Op.Fieldload(getType, getVal, getGlobal)
+    case T.FieldstoreOp  => Op.Fieldstore(getType, getVal, getGlobal, getVal)
+    case T.MethodOp      => Op.Method(getVal, getSig)
+    case T.DynmethodOp   => Op.Dynmethod(getVal, getSig)
+    case T.ModuleOp      => Op.Module(getGlobal)
+    case T.AsOp          => Op.As(getType, getVal)
+    case T.IsOp          => Op.Is(getType, getVal)
+    case T.CopyOp        => Op.Copy(getVal)
+    case T.SizeofOp      => Op.Sizeof(getType)
+    case T.BoxOp         => Op.Box(getType, getVal)
+    case T.UnboxOp       => Op.Unbox(getType, getVal)
+    case T.VarOp         => Op.Var(getType)
+    case T.VarloadOp     => Op.Varload(getVal)
+    case T.VarstoreOp    => Op.Varstore(getVal, getVal)
+    case T.ArrayallocOp  => Op.Arrayalloc(getType, getVal)
+    case T.ArrayloadOp   => Op.Arrayload(getType, getVal, getVal)
+    case T.ArraystoreOp  => Op.Arraystore(getType, getVal, getVal, getVal)
+    case T.ArraylengthOp => Op.Arraylength(getVal)
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
@@ -229,62 +231,51 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   private def getTypes(): Seq[Type] = getSeq(getType)
   private def getType(): Type = getInt match {
-    case T.NoneType     => Type.None
-    case T.VoidType     => Type.Void
-    case T.VarargType   => Type.Vararg
-    case T.PtrType      => Type.Ptr
-    case T.BoolType     => Type.Bool
-    case T.CharType     => Type.Char
-    case T.ByteType     => Type.Byte
-    case T.UByteType    => Type.UByte
-    case T.ShortType    => Type.Short
-    case T.UShortType   => Type.UShort
-    case T.IntType      => Type.Int
-    case T.UIntType     => Type.UInt
-    case T.LongType     => Type.Long
-    case T.ULongType    => Type.ULong
-    case T.FloatType    => Type.Float
-    case T.DoubleType   => Type.Double
-    case T.ArrayType    => Type.Array(getType, getInt)
-    case T.FunctionType => Type.Function(getTypes, getType)
-    case T.StructType   => Type.Struct(getGlobal, getTypes)
+    case T.VarargType      => Type.Vararg
+    case T.PtrType         => Type.Ptr
+    case T.BoolType        => Type.Bool
+    case T.CharType        => Type.Char
+    case T.ByteType        => Type.Byte
+    case T.ShortType       => Type.Short
+    case T.IntType         => Type.Int
+    case T.LongType        => Type.Long
+    case T.FloatType       => Type.Float
+    case T.DoubleType      => Type.Double
+    case T.ArrayValueType  => Type.ArrayValue(getType, getInt)
+    case T.StructValueType => Type.StructValue(getTypes)
+    case T.FunctionType    => Type.Function(getTypes, getType)
 
+    case T.NullType    => Type.Null
     case T.NothingType => Type.Nothing
+    case T.VirtualType => Type.Virtual
     case T.VarType     => Type.Var(getType)
     case T.UnitType    => Type.Unit
-    case T.ClassType   => Type.Class(getGlobal)
-    case T.TraitType   => Type.Trait(getGlobal)
-    case T.ModuleType  => Type.Module(getGlobal)
+    case T.ArrayType   => Type.Array(getType, getBool)
+    case T.RefType     => Type.Ref(getGlobal, getBool, getBool)
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal)
   private def getVal(): Val = getInt match {
-    case T.NoneVal   => Val.None
-    case T.TrueVal   => Val.True
-    case T.FalseVal  => Val.False
-    case T.ZeroVal   => getZero()
-    case T.UndefVal  => Val.Undef(getType)
-    case T.ByteVal   => Val.Byte(get)
-    case T.ShortVal  => Val.Short(getShort)
-    case T.IntVal    => Val.Int(getInt)
-    case T.LongVal   => Val.Long(getLong)
-    case T.FloatVal  => Val.Float(getFloat)
-    case T.DoubleVal => Val.Double(getDouble)
-    case T.StructVal => Val.Struct(getGlobal, getVals)
-    case T.ArrayVal  => Val.Array(getType, getVals)
-    case T.CharsVal  => Val.Chars(getString)
-    case T.LocalVal  => Val.Local(getLocal, getType)
-    case T.GlobalVal => Val.Global(getGlobal, getType)
+    case T.TrueVal        => Val.True
+    case T.FalseVal       => Val.False
+    case T.NullVal        => Val.Null
+    case T.ZeroVal        => Val.Zero(getType)
+    case T.CharVal        => Val.Char(getShort.toChar)
+    case T.ByteVal        => Val.Byte(get)
+    case T.ShortVal       => Val.Short(getShort)
+    case T.IntVal         => Val.Int(getInt)
+    case T.LongVal        => Val.Long(getLong)
+    case T.FloatVal       => Val.Float(getFloat)
+    case T.DoubleVal      => Val.Double(getDouble)
+    case T.StructValueVal => Val.StructValue(getVals)
+    case T.ArrayValueVal  => Val.ArrayValue(getType, getVals)
+    case T.CharsVal       => Val.Chars(getString)
+    case T.LocalVal       => Val.Local(getLocal, getType)
+    case T.GlobalVal      => Val.Global(getGlobal, getType)
 
-    case T.UnitVal   => Val.Unit
-    case T.ConstVal  => Val.Const(getVal)
-    case T.StringVal => Val.String(getString)
-  }
-  private def getZero(): Val = {
-    val ty = getType
-    ty match {
-      case Type.Ptr | _: Type.RefKind => Val.Null
-      case _                          => Val.Zero(ty)
-    }
+    case T.UnitVal    => Val.Unit
+    case T.ConstVal   => Val.Const(getVal)
+    case T.StringVal  => Val.String(getString)
+    case T.VirtualVal => Val.Virtual(getLong)
   }
 }

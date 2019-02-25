@@ -5,15 +5,18 @@ import scalanative.nir._
 import scalanative.linker.{Class, Method}
 
 class DynamicHashMap(meta: Metadata, cls: Class, proxies: Seq[Defn]) {
-  val methods: Seq[Global] = {
-    val own  = proxies.collect { case p if p.name.top == cls.name => p.name }
-    val sigs = own.map(_.id).toSet
+  val methods: Seq[Global.Member] = {
+    val own = proxies.collect {
+      case p if p.name.top == cls.name =>
+        p.name.asInstanceOf[Global.Member]
+    }
+    val sigs = own.map(_.sig).toSet
     cls.parent
-      .fold(Seq.empty[Global])(meta.dynmap(_).methods)
-      .filterNot(m => sigs.contains(m.id)) ++ own
+      .fold(Seq.empty[Global.Member])(meta.dynmap(_).methods)
+      .filterNot(m => sigs.contains(m.sig)) ++ own
   }
   val ty: Type =
-    Type.Struct(Global.None, Seq(Type.Int, Type.Ptr, Type.Ptr, Type.Ptr))
+    Type.StructValue(Seq(Type.Int, Type.Ptr, Type.Ptr, Type.Ptr))
   val value: Val =
     DynmethodPerfectHashMap(methods, meta.linked.dynsigs)
 }

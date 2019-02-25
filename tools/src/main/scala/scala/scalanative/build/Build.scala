@@ -50,9 +50,11 @@ object Build {
    *  @return `outpath`, the path to the resulting native binary.
    */
   def build(config: Config, outpath: Path): Path = config.logger.time("Total") {
-    val driver  = optimizer.Driver.default(config.mode)
     val entries = ScalaNative.entries(config)
     val linked  = ScalaNative.link(config, entries)
+
+    nir.Show.dump(linked.defns, "linked.hnir")
+    ScalaNative.check(config, linked)
 
     if (linked.unavailable.nonEmpty) {
       linked.unavailable.map(_.show).sorted.foreach { signature =>
@@ -68,11 +70,12 @@ object Build {
     config.logger.info(
       s"Discovered ${classCount} classes and ${methodCount} methods")
 
-    val optimized =
-      ScalaNative.optimize(config, linked, driver)
+    val optimized = ScalaNative.optimize(config, linked)
+    nir.Show.dump(optimized.defns, "optimized.hnir")
+    ScalaNative.check(config, optimized)
 
     IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
-    ScalaNative.codegen(config, linked, optimized)
+    ScalaNative.codegen(config, optimized)
     val generated = IO.getAll(config.workdir, "glob:**.ll")
 
     val unpackedLib = LLVM.unpackNativelib(config.nativelib, config.workdir)

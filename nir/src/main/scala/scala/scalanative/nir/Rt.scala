@@ -4,16 +4,42 @@ package nir
 import Type._
 
 object Rt {
-  val Object = Class(Global.Top("java.lang.Object"))
-  val String = Class(Global.Top("java.lang.String"))
-  val Type   = Struct(Global.None, Seq(Int, Int, Ptr, Byte))
+  val Object = Ref(Global.Top("java.lang.Object"))
+  val Class  = Ref(Global.Top("java.lang.Class"))
+  val String = Ref(Global.Top("java.lang.String"))
+  val Type   = StructValue(Seq(Int, Int, Ptr, Byte))
 
-  val JavaEqualsSig    = "equals_java.lang.Object_bool"
-  val JavaHashCodeSig  = "hashCode_i32"
-  val ScalaEqualsSig   = "scala$underscore$==_java.lang.Object_bool"
-  val ScalaHashCodeSig = "scala$underscore$##_i32"
+  val BoxedNull       = Ref(Global.Top("scala.runtime.Null$"))
+  val BoxedUnit       = Ref(Global.Top("scala.runtime.BoxedUnit"))
+  val BoxedUnitModule = Ref(Global.Top("scala.scalanative.runtime.BoxedUnit$"))
 
-  val arrayAlloc = Seq(
+  val JavaEqualsSig       = Sig.Method("equals", Seq(Object, Bool))
+  val JavaHashCodeSig     = Sig.Method("hashCode", Seq(Int))
+  val ScalaEqualsSig      = Sig.Method("scala_==", Seq(Object, Bool))
+  val ScalaHashCodeSig    = Sig.Method("scala_##", Seq(Int))
+  val GetClassSig         = Sig.Method("getClass", Seq(Class))
+  val IsArraySig          = Sig.Method("isArray", Seq(Bool))
+  val IsAssignableFromSig = Sig.Method("isAssignableFrom", Seq(Class, Bool))
+  val GetNameSig          = Sig.Method("getName", Seq(String))
+  val BitCountSig         = Sig.Method("bitCount", Seq(Int, Int))
+  val ReverseBytesSig     = Sig.Method("reverseBytes", Seq(Int, Int))
+  val NumberOfLeadingZerosSig =
+    Sig.Method("numberOfLeadingZeros", Seq(Int, Int))
+  val CosSig  = Sig.Method("cos", Seq(Double, Double))
+  val SinSig  = Sig.Method("sin", Seq(Double, Double))
+  val PowSig  = Sig.Method("pow", Seq(Double, Double, Double))
+  val MaxSig  = Sig.Method("max", Seq(Double, Double, Double))
+  val SqrtSig = Sig.Method("sqrt", Seq(Double, Double))
+
+  val StringName               = String.name
+  val StringValueName          = StringName member Sig.Field("value")
+  val StringOffsetName         = StringName member Sig.Field("offset")
+  val StringCountName          = StringName member Sig.Field("count")
+  val StringCachedHashCodeName = StringName member Sig.Field("cachedHashCode")
+
+  val GenericArray = Ref(Global.Top("scala.scalanative.runtime.Array"))
+
+  val arrayAlloc: Map[Sig, Global] = Seq(
     "BooleanArray",
     "CharArray",
     "ByteArray",
@@ -24,10 +50,8 @@ object Rt {
     "DoubleArray",
     "ObjectArray"
   ).map { arr =>
-    val cls          = "scala.scalanative.runtime." + arr
-    val module       = "scala.scalanative.runtime." + arr + "$"
-    val from: String = "alloc_i32_" + cls
-    val to: Global   = Global.Top(cls)
-    from -> to
+    val cls = Global.Top("scala.scalanative.runtime." + arr)
+    val sig = Sig.Method("alloc", Seq(Int, Ref(cls)))
+    sig -> cls
   }.toMap
 }

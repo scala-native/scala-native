@@ -17,9 +17,9 @@ class FileSystemException(file: String, other: String, reason: String)
     val files =
       (file, other) match {
         case (null, null) => ""
-        case (null, f2)   => s":  -> $f2"
-        case (f1, null)   => s": $f1"
-        case (f1, f2)     => s": $f1 -> $f2"
+        case (null, f2)   => s" -> $f2"
+        case (f1, null)   => s"$f1"
+        case (f1, f2)     => s"$f1 -> $f2"
       }
     s"$files$message"
   }

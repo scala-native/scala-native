@@ -4,24 +4,23 @@ package codegen
 import scala.collection.mutable
 import scalanative.nir._
 import scalanative.nir.Rt.{Type => _, _}
-import scalanative.sema._
 
 class VirtualTable(meta: Metadata, cls: linker.Class) {
-  private val slots: mutable.UnrolledBuffer[String] =
+  private val slots: mutable.UnrolledBuffer[Sig] =
     cls.parent.fold {
-      mutable.UnrolledBuffer.empty[String]
+      mutable.UnrolledBuffer.empty[Sig]
     } { parent =>
       meta.vtable(parent).slots.clone
     }
-  private val impls: mutable.Map[String, Val] =
-    mutable.Map.empty[String, Val]
+  private val impls: mutable.Map[Sig, Val] =
+    mutable.Map.empty[Sig, Val]
   locally {
-    def addSlot(sig: String): Unit = {
+    def addSlot(sig: Sig): Unit = {
       assert(!slots.contains(sig))
       val index = slots.size
       slots += sig
     }
-    def addImpl(sig: String): Unit = {
+    def addImpl(sig: Sig): Unit = {
       val impl =
         cls.resolve(sig).map(Val.Global(_, Type.Ptr)).getOrElse(Val.Null)
       impls(sig) = impl
@@ -39,10 +38,10 @@ class VirtualTable(meta: Metadata, cls: linker.Class) {
     }
   }
   val value: Val =
-    Val.Array(Type.Ptr, slots.map(impls))
+    Val.ArrayValue(Type.Ptr, slots.map(impls))
   val ty =
     value.ty
-  def index(sig: String): Int =
+  def index(sig: Sig): Int =
     slots.indexOf(sig)
   def at(index: Int): Val =
     impls(slots(index))

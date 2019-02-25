@@ -15,8 +15,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val links       = mutable.Set.empty[Attr.Link]
   val infos       = mutable.Map.empty[Global, Info]
 
-  val dyncandidates = mutable.Map.empty[String, mutable.Set[Global]]
-  val dynsigs       = mutable.Set.empty[String]
+  val dyncandidates = mutable.Map.empty[Sig, mutable.Set[Global]]
+  val dynsigs       = mutable.Set.empty[Sig]
   val dynimpls      = mutable.Set.empty[Global]
 
   entries.foreach(reachEntry)
@@ -104,13 +104,11 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       case defn: Defn.Declare =>
         reachDeclare(defn)
       case defn: Defn.Define =>
-        val sig = defn.name.id
+        val Global.Member(_, sig) = defn.name
         if (Rt.arrayAlloc.contains(sig)) {
           classInfo(Rt.arrayAlloc(sig)).foreach(reachAllocation)
         }
         reachDefine(defn)
-      case defn: Defn.Struct =>
-        reachStruct(defn)
       case defn: Defn.Trait =>
         reachTrait(defn)
       case defn: Defn.Class =>
@@ -128,11 +126,13 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     reachGlobalNow(name)
     infos.get(name) match {
       case Some(cls: Class) =>
-        reachAllocation(cls)
-        if (cls.isModule) {
-          val init = cls.name member "init"
-          if (loaded(cls.name).contains(init)) {
-            reachGlobal(init)
+        if (!cls.attrs.isAbstract) {
+          reachAllocation(cls)
+          if (cls.isModule) {
+            val init = cls.name.member(Sig.Ctor(Seq()))
+            if (loaded(cls.name).contains(init)) {
+              reachGlobal(init)
+            }
           }
         }
       case _ =>
@@ -169,11 +169,18 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
           case _ =>
             ()
         }
+      case info: Trait =>
+        def loopTraits(traitInfo: Trait): Unit = {
+          traitInfo.subtraits += info
+          traitInfo.traits.foreach(loopTraits)
+        }
+        info.traits.foreach(loopTraits)
       case info: Class =>
         // Register given class as a subclass of all
         // transitive parents and as an implementation
         // of all transitive traits.
         def loopParent(parentInfo: Class): Unit = {
+          parentInfo.implementors += info
           parentInfo.subclasses += info
           parentInfo.parent.foreach(loopParent)
           parentInfo.traits.foreach(loopTraits)
@@ -195,18 +202,21 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         }
         loaded(info.name).foreach {
           case (_, defn: Defn.Define) =>
-            def update(sig: String): Unit = {
+            val Global.Member(_, sig) = defn.name
+            def update(sig: Sig): Unit = {
               info.responds(sig) = resolve(info, sig).get
             }
-            defn.name.id match {
+            sig match {
               case Rt.JavaEqualsSig =>
                 update(Rt.ScalaEqualsSig)
                 update(Rt.JavaEqualsSig)
               case Rt.JavaHashCodeSig =>
                 update(Rt.ScalaHashCodeSig)
                 update(Rt.JavaHashCodeSig)
-              case sig =>
+              case sig @ (_: Sig.Method | _: Sig.Ctor) =>
                 update(sig)
+              case _ =>
+                ()
             }
           case _ =>
             ()
@@ -224,7 +234,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       // on this class. This includes virtual calls
       // on the traits that this class implements and
       // calls on all transitive parents.
-      val calls = mutable.Set.empty[String]
+      val calls = mutable.Set.empty[Sig]
       calls ++= info.calls
       def loopParent(parentInfo: Class): Unit = {
         calls ++= parentInfo.calls
@@ -246,8 +256,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       // signature becomes reachable. The others are
       // stashed as dynamic candidates.
       info.responds.foreach {
-        case (sig, impl) =>
-          val dynsig = Global.genSignature(sig)
+        case (sig: Sig.Method, impl) =>
+          val dynsig = sig.toProxy
           if (!dynsigs.contains(dynsig)) {
             val buf =
               dyncandidates.getOrElseUpdate(dynsig, mutable.Set.empty[Global])
@@ -256,6 +266,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
             dynimpls += impl
             reachGlobal(impl)
           }
+        case _ =>
+          ()
       }
     }
 
@@ -316,12 +328,12 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   def reachUnavailable(name: Global): Unit = {
     newInfo(new Unavailable(name))
     unavailable += name
-    // Put a dummy definition to indicate that name
+    // Put a null definition to indicate that name
     // is effectively done and doesn't need to be
     // visited any more. This saves us the need to
     // check the unavailable set every time we check
     // if something is truly handled.
-    done(name) = Defn.Struct(Attrs.None, Global.None, Seq.empty)
+    done(name) = null
   }
 
   def reachVar(defn: Defn.Var): Unit = {
@@ -353,25 +365,24 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   }
 
   def reachDeclare(defn: Defn.Declare): Unit = {
-    val Defn.Declare(attrs, name, sig) = defn
-    newInfo(new Method(attrs, scopeInfoOrUnavailable(name.top), name, Seq()))
+    val Defn.Declare(attrs, name, ty) = defn
+    newInfo(
+      new Method(attrs, scopeInfoOrUnavailable(name.top), name, ty, Array()))
     reachAttrs(attrs)
-    reachType(sig)
+    reachType(ty)
   }
 
   def reachDefine(defn: Defn.Define): Unit = {
-    val Defn.Define(attrs, name, sig, insts) = defn
-    newInfo(new Method(attrs, scopeInfoOrUnavailable(name.top), name, insts))
+    val Defn.Define(attrs, name, ty, insts) = defn
+    newInfo(
+      new Method(attrs,
+                 scopeInfoOrUnavailable(name.top),
+                 name,
+                 ty,
+                 insts.toArray))
     reachAttrs(attrs)
-    reachType(sig)
+    reachType(ty)
     reachInsts(insts)
-  }
-
-  def reachStruct(defn: Defn.Struct): Unit = {
-    val Defn.Struct(attrs, name, tys) = defn
-    newInfo(new Struct(attrs, name, tys))
-    reachAttrs(attrs)
-    tys.foreach(reachType)
   }
 
   def reachTrait(defn: Defn.Trait): Unit = {
@@ -406,17 +417,18 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     links ++= attrs.links
 
   def reachType(ty: Type): Unit = ty match {
-    case Type.Array(ty, n) =>
+    case Type.ArrayValue(ty, n) =>
       reachType(ty)
+    case Type.StructValue(tys) =>
+      tys.foreach(reachType)
     case Type.Function(args, ty) =>
       args.foreach(reachType)
       reachType(ty)
-    case Type.Struct(n, tys) =>
-      reachGlobal(n)
-      tys.foreach(reachType)
-    case ty: Type.Named =>
-      reachGlobal(ty.name)
+    case Type.Ref(name, _, _) =>
+      reachGlobal(name)
     case Type.Var(ty) =>
+      reachType(ty)
+    case Type.Array(ty, _) =>
       reachType(ty)
     case _ =>
       ()
@@ -425,12 +437,9 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   def reachVal(value: Val): Unit = value match {
     case Val.Zero(ty) =>
       reachType(ty)
-    case Val.Undef(ty) =>
-      reachType(ty)
-    case Val.Struct(n, values) =>
-      reachGlobal(n)
+    case Val.StructValue(values) =>
       values.foreach(reachVal)
-    case Val.Array(ty, values) =>
+    case Val.ArrayValue(ty, values) =>
       reachType(ty)
       values.foreach(reachVal)
     case Val.Local(n, ty) =>
@@ -447,8 +456,6 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     insts.foreach(reachInst)
 
   def reachInst(inst: Inst): Unit = inst match {
-    case Inst.None | Inst.Unreachable =>
-      ()
     case Inst.Label(n, params) =>
       params.foreach(p => reachType(p.ty))
     case Inst.Let(n, op, unwind) =>
@@ -469,6 +476,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     case Inst.Throw(v, unwind) =>
       reachVal(v)
       reachNext(unwind)
+    case Inst.Unreachable(unwind) =>
+      reachNext(unwind)
   }
 
   def reachOp(op: Op): Unit = op match {
@@ -476,10 +485,10 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachType(ty)
       reachVal(ptrv)
       argvs.foreach(reachVal)
-    case Op.Load(ty, ptrv, isVolatile) =>
+    case Op.Load(ty, ptrv) =>
       reachType(ty)
       reachVal(ptrv)
-    case Op.Store(ty, ptrv, v, isVolatile) =>
+    case Op.Store(ty, ptrv, v) =>
       reachType(ty)
       reachVal(ptrv)
       reachVal(v)
@@ -506,10 +515,6 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     case Op.Conv(conv, ty, v) =>
       reachType(ty)
       reachVal(v)
-    case Op.Select(v1, v2, v3) =>
-      reachVal(v1)
-      reachVal(v2)
-      reachVal(v3)
 
     case Op.Classalloc(n) =>
       classInfo(n).foreach(reachAllocation)
@@ -530,7 +535,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachDynamicMethodTargets(dynsig)
     case Op.Module(n) =>
       classInfo(n).foreach(reachAllocation)
-      val init = n member "init"
+      val init = n.member(Sig.Ctor(Seq()))
       if (loaded(n).contains(init)) {
         reachGlobal(init)
       }
@@ -544,10 +549,6 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachVal(v)
     case Op.Sizeof(ty) =>
       reachType(ty)
-    case Op.Closure(ty, fun, captures) =>
-      reachType(ty)
-      reachVal(fun)
-      captures.foreach(reachVal)
     case Op.Box(code, obj) =>
       reachVal(obj)
     case Op.Unbox(code, obj) =>
@@ -559,6 +560,21 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     case Op.Varstore(slot, value) =>
       reachVal(slot)
       reachVal(value)
+    case Op.Arrayalloc(ty, init) =>
+      classInfo(Type.toArrayClass(ty)).foreach(reachAllocation)
+      reachType(ty)
+      reachVal(init)
+    case Op.Arrayload(ty, arr, idx) =>
+      reachType(ty)
+      reachVal(arr)
+      reachVal(idx)
+    case Op.Arraystore(ty, arr, idx, value) =>
+      reachType(ty)
+      reachVal(arr)
+      reachVal(idx)
+      reachVal(value)
+    case Op.Arraylength(arr) =>
+      reachVal(arr)
   }
 
   def reachNext(next: Next): Unit = next match {
@@ -568,9 +584,11 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       ()
   }
 
-  def reachMethodTargets(ty: Type, sig: String): Unit = ty match {
-    case ty: Type.Named =>
-      scopeInfo(ty.name).foreach { scope =>
+  def reachMethodTargets(ty: Type, sig: Sig): Unit = ty match {
+    case Type.Array(ty, _) =>
+      reachMethodTargets(Type.Ref(Type.toArrayClass(ty)), sig)
+    case Type.Ref(name, _, _) =>
+      scopeInfo(name).foreach { scope =>
         if (!scope.calls.contains(sig)) {
           scope.calls += sig
           scope.targets(sig).foreach(reachGlobal)
@@ -580,7 +598,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       ()
   }
 
-  def reachDynamicMethodTargets(dynsig: String) = {
+  def reachDynamicMethodTargets(dynsig: Sig) = {
     if (!dynsigs.contains(dynsig)) {
       dynsigs += dynsig
       if (dyncandidates.contains(dynsig)) {
@@ -593,11 +611,11 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     }
   }
 
-  def resolve(cls: Class, sig: String): Option[Global] = {
+  def resolve(cls: Class, sig: Sig): Option[Global] = {
     assert(loaded.contains(cls.name))
 
-    def lookupSig(cls: Class, sig: String): Option[Global] = {
-      val tryMember = cls.name member sig
+    def lookupSig(cls: Class, sig: Sig): Option[Global] = {
+      val tryMember = cls.name.member(sig)
       if (loaded(cls.name).contains(tryMember)) {
         Some(tryMember)
       } else {

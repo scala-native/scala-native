@@ -11,7 +11,7 @@ trait NirGenName { self: NirGenPhase =>
   import SimpleType.{fromSymbol, fromType}
 
   def genAnonName(owner: Symbol, anon: Symbol) =
-    genName(owner) member anon.fullName.toString tag "extern"
+    genName(owner).member(nir.Sig.Extern(anon.fullName.toString))
 
   def genName(sym: Symbol): nir.Global =
     if (sym.isType) {
@@ -52,20 +52,14 @@ trait NirGenName { self: NirGenPhase =>
   def genFieldName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
     val id    = nativeIdOf(sym)
-    val tag   = if (sym.owner.isExternModule) "extern" else "field"
-    owner member id tag tag
-  }
 
-  def genMethodSignature(sym: Symbol): String = {
-    val owner = genTypeName(sym.owner)
-    val id    = nativeIdOf(sym)
-    val tpe   = sym.tpe.widen
-    val mangledParams =
-      tpe.params.map(p => mangledType(p.info))
-
-    val mangledRetty = mangledType(tpe.resultType)
-    (owner member (id.replace("_", "__") +: (mangledParams :+ mangledRetty))
-      .mkString("_")).toString
+    owner.member {
+      if (sym.owner.isExternModule) {
+        nir.Sig.Extern(id)
+      } else {
+        nir.Sig.Field(id)
+      }
+    }
   }
 
   def genMethodName(sym: Symbol): nir.Global = {
@@ -73,70 +67,23 @@ trait NirGenName { self: NirGenPhase =>
     val id    = nativeIdOf(sym)
     val tpe   = sym.tpe.widen
 
-    val mangledParams = tpe.params.toSeq.map(p => mangledType(p.info))
+    val paramTypes = tpe.params.toSeq.map(p => genType(p.info, box = false))
 
     if (sym == String_+) {
       genMethodName(StringConcatMethod)
     } else if (sym.owner.isExternModule) {
-      owner member id tag "extern"
+      if (sym.isSetter) {
+        val id0 = sym.name.dropSetter.decoded.toString
+        owner.member(nir.Sig.Extern(id0))
+      } else {
+        owner.member(nir.Sig.Extern(id))
+      }
     } else if (sym.name == nme.CONSTRUCTOR) {
-      owner member ("init" +: mangledParams).mkString("_")
+      owner.member(nir.Sig.Ctor(paramTypes))
     } else {
-      val mangledRetty = mangledType(tpe.resultType)
-      val mangledId = id
-        .replace("_", "$underscore$")
-        .replace("\"", "$doublequote$")
-      owner member (mangledId +: (mangledParams :+ mangledRetty))
-        .mkString("_")
+      val retType = genType(tpe.resultType, box = false)
+      owner.member(nir.Sig.Method(id, paramTypes :+ retType))
     }
-  }
-
-  private def mangledType(tpe: Type): String =
-    mangledTypeInternal(genType(tpe, box = false))
-
-  private def mangledTypeInternal(ty: nir.Type): String = {
-    val sb = new scalanative.util.ShowBuilder
-
-    def printType(ty: nir.Type): Unit = ty match {
-      case nir.Type.None        => sb.str("")
-      case nir.Type.Void        => sb.str("void")
-      case nir.Type.Vararg      => sb.str("...")
-      case nir.Type.Ptr         => sb.str("ptr")
-      case nir.Type.Bool        => sb.str("bool")
-      case nir.Type.Char        => sb.str("char")
-      case nir.Type.I(w, false) => sb.str("u"); sb.str(w)
-      case nir.Type.I(w, true)  => sb.str("i"); sb.str(w)
-      case nir.Type.Float       => sb.str("f32")
-      case nir.Type.Double      => sb.str("f64")
-      case nir.Type.Array(ty, n) =>
-        sb.str("arr.")
-        printType(ty)
-        sb.str(".")
-        sb.str(n)
-      case nir.Type.Function(args, ret) =>
-        sb.str("fun.")
-        sb.rep(args, sep = ".")(printType)
-      case nir.Type.Struct(name, _) => printGlobal(name)
-      case nir.Type.Nothing         => sb.str("nothing")
-      case nir.Type.Unit            => sb.str("unit")
-      case nir.Type.Class(name)     => printGlobal(name)
-      case nir.Type.Trait(name)     => printGlobal(name)
-      case nir.Type.Module(name)    => printGlobal(name)
-    }
-
-    def printGlobal(global: nir.Global): Unit = global match {
-      case nir.Global.None =>
-        unreachable
-      case nir.Global.Top(id) =>
-        sb.str(id)
-      case nir.Global.Member(n, id) =>
-        sb.str(id)
-        sb.str("..")
-        sb.str(id)
-    }
-
-    printType(ty)
-    sb.toString
   }
 
   private def nativeIdOf(sym: Symbol): String = {

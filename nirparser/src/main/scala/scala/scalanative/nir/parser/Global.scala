@@ -8,8 +8,6 @@ object Global extends Base[nir.Global] {
 
   import Base._
 
-  val Top = P("@" ~ mangledId.! map (nir.Global.Top(_)))
-  val Member =
-    P(Top ~ "::" ~ qualifiedId.! map { case (t, m) => t member m })
-  override val parser: P[nir.Global] = Member | Top
+  override val parser: P[nir.Global] =
+    P("@" ~ stringLit).map(Unmangle.unmangleGlobal(_))
 }

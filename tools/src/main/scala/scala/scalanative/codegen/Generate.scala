@@ -8,19 +8,21 @@ import scala.scalanative.linker.Class
 object Generate {
   import Impl._
 
-  def apply(entry: Global)(implicit meta: Metadata): Seq[Defn] =
-    (new Impl(entry)).generate()
+  def apply(entry: Global.Top, defns: Seq[Defn])(
+      implicit meta: Metadata): Seq[Defn] =
+    (new Impl(entry, defns)).generate()
 
   implicit def linked(implicit meta: Metadata): linker.Result =
     meta.linked
 
-  private class Impl(entry: Global)(implicit meta: Metadata) {
+  private class Impl(entry: Global.Top, defns: Seq[Defn])(
+      implicit meta: Metadata) {
     val buf = mutable.UnrolledBuffer.empty[Defn]
 
     def generate(): Seq[Defn] = {
+      genDefnsExcludingGenerated()
       genInjects()
       genMain()
-      genStructMetadata()
       genClassMetadata()
       genClassHasTrait()
       genTraitMetadata()
@@ -30,8 +32,19 @@ object Generate {
       genModuleArray()
       genModuleArraySize()
       genObjectArrayId()
+      genArrayIds()
       genStackBottom()
+
       buf
+    }
+
+    def genDefnsExcludingGenerated(): Unit = {
+      defns.foreach { defn =>
+        if (defn.name != ClassHasTraitName
+            && defn.name != TraitHasTraitName) {
+          buf += defn
+        }
+      }
     }
 
     def genInjects(): Unit = {
@@ -39,20 +52,11 @@ object Generate {
       buf ++= Lower.injects
     }
 
-    def genStructMetadata(): Unit = {
-      meta.structs.foreach { struct =>
-        val rtti = meta.rtti(struct)
-
-        buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)
-      }
-    }
-
     def genClassMetadata(): Unit = {
       meta.classes.foreach { cls =>
         val struct = meta.layout(cls).struct
         val rtti   = meta.rtti(cls)
 
-        buf += Defn.Struct(Attrs.None, struct.name, struct.tys)
         buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)
       }
     }
@@ -114,20 +118,26 @@ object Generate {
     def genMain(): Unit = {
       implicit val fresh = Fresh()
       val entryMainTy =
-        Type.Function(Seq(Type.Module(entry.top), ObjectArray), Type.Void)
+        Type.Function(Seq(Type.Ref(entry.top), ObjectArray), Type.Unit)
       val entryMainName =
-        Global.Member(entry, "main_scala.scalanative.runtime.ObjectArray_unit")
+        Global.Member(
+          entry,
+          Sig.Method("main", Seq(Type.Array(nir.Rt.String), Type.Unit)))
       val entryMain = Val.Global(entryMainName, Type.Ptr)
 
       val stackBottom = Val.Local(fresh(), Type.Ptr)
 
-      val argc   = Val.Local(fresh(), Type.Int)
-      val argv   = Val.Local(fresh(), Type.Ptr)
-      val module = Val.Local(fresh(), Type.Module(entry.top))
-      val rt     = Val.Local(fresh(), Rt)
-      val arr    = Val.Local(fresh(), ObjectArray)
-      val exc    = Val.Local(fresh(), nir.Rt.Object)
-      val unwind = Next.Unwind(fresh())
+      val argc    = Val.Local(fresh(), Type.Int)
+      val argv    = Val.Local(fresh(), Type.Ptr)
+      val module  = Val.Local(fresh(), Type.Ref(entry.top))
+      val rt      = Val.Local(fresh(), Rt)
+      val arr     = Val.Local(fresh(), ObjectArray)
+      val exc     = Val.Local(fresh(), nir.Rt.Object)
+      val handler = fresh()
+      def unwind = {
+        val exc = Val.Local(fresh(), nir.Rt.Object)
+        Next.Unwind(exc, Next.Label(handler, Seq(exc)))
+      }
 
       buf += Defn.Define(
         Attrs.None,
@@ -151,7 +161,7 @@ object Generate {
           Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr)), unwind),
           Inst.Let(Op.Call(RtLoopSig, RtLoop, Seq(module)), unwind),
           Inst.Ret(Val.Int(0)),
-          Inst.Label(unwind.name, Seq(exc)),
+          Inst.Label(handler, Seq(exc)),
           Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
                    Next.None),
           Inst.Ret(Val.Int(1))
@@ -179,44 +189,57 @@ object Generate {
           val cond  = Val.Local(fresh(), Type.Bool)
           val alloc = Val.Local(fresh(), clsTy)
 
-          val initCall = if (cls.isStaticModule) {
-            Inst.None
-          } else {
-            val initSig = Type.Function(Seq(clsTy), Type.Void)
-            val init    = Val.Global(name member "init", Type.Ptr)
-
-            Inst.Let(Op.Call(initSig, init, Seq(alloc)), Next.None)
-          }
-
-          val loadName = name member "load"
-          val loadSig  = Type.Function(Seq(), clsTy)
-          val loadDefn = Defn.Define(
-            Attrs.None,
-            loadName,
-            loadSig,
-            Seq(
-              Inst.Label(entry, Seq()),
-              Inst.Let(slot.name,
-                       Op.Elem(Type.Ptr,
-                               Val.Global(Global.Top("__modules"), Type.Ptr),
-                               Seq(Val.Int(meta.moduleArray.index(cls)))),
-                       Next.None),
-              Inst.Let(self.name, Op.Load(clsTy, slot), Next.None),
-              Inst.Let(cond.name,
-                       Op.Comp(Comp.Ine, nir.Rt.Object, self, Val.Null),
-                       Next.None),
-              Inst.If(cond, Next(existing), Next(initialize)),
-              Inst.Label(existing, Seq()),
-              Inst.Ret(self),
-              Inst.Label(initialize, Seq()),
-              Inst.Let(alloc.name, Op.Classalloc(name), Next.None),
-              Inst.Let(Op.Store(clsTy, slot, alloc), Next.None),
-              initCall,
-              Inst.Ret(alloc)
+          if (cls.isConstantModule) {
+            val moduleTyName =
+              name.member(Sig.Generated("type"))
+            val moduleTyVal =
+              Val.Global(moduleTyName, Type.Ptr)
+            val instanceName =
+              name.member(Sig.Generated("instance"))
+            val instanceVal =
+              Val.StructValue(Seq(moduleTyVal))
+            val instanceDefn = Defn.Const(
+              Attrs.None,
+              instanceName,
+              Type.StructValue(Seq(Type.Ptr)),
+              instanceVal
             )
-          )
 
-          buf += loadDefn
+            buf += instanceDefn
+          } else {
+            val initSig = Type.Function(Seq(clsTy), Type.Unit)
+            val init    = Val.Global(name.member(Sig.Ctor(Seq())), Type.Ptr)
+
+            val loadName = name.member(Sig.Generated("load"))
+            val loadSig  = Type.Function(Seq(), clsTy)
+            val loadDefn = Defn.Define(
+              Attrs(inline = Attr.NoInline),
+              loadName,
+              loadSig,
+              Seq(
+                Inst.Label(entry, Seq()),
+                Inst.Let(slot.name,
+                         Op.Elem(Type.Ptr,
+                                 Val.Global(moduleArrayName, Type.Ptr),
+                                 Seq(Val.Int(meta.moduleArray.index(cls)))),
+                         Next.None),
+                Inst.Let(self.name, Op.Load(clsTy, slot), Next.None),
+                Inst.Let(cond.name,
+                         Op.Comp(Comp.Ine, nir.Rt.Object, self, Val.Null),
+                         Next.None),
+                Inst.If(cond, Next(existing), Next(initialize)),
+                Inst.Label(existing, Seq()),
+                Inst.Ret(self),
+                Inst.Label(initialize, Seq()),
+                Inst.Let(alloc.name, Op.Classalloc(name), Next.None),
+                Inst.Let(Op.Store(clsTy, slot, alloc), Next.None),
+                Inst.Let(Op.Call(initSig, init, Seq(alloc)), Next.None),
+                Inst.Ret(alloc)
+              )
+            )
+
+            buf += loadDefn
+          }
         }
       }
     }
@@ -235,19 +258,50 @@ object Generate {
                  Type.Int,
                  Val.Int(meta.moduleArray.size))
 
-    def genObjectArrayId() = {
-      val objectArray =
+    private def tpe2arrayId(tpe: String): Int = {
+      val clazz =
         linked
-          .infos(Global.Top("scala.scalanative.runtime.ObjectArray"))
+          .infos(Global.Top(s"scala.scalanative.runtime.${tpe}Array"))
           .asInstanceOf[Class]
 
+      meta.ids(clazz)
+    }
+
+    def genObjectArrayId(): Unit = {
       buf += Defn.Var(Attrs.None,
                       objectArrayIdName,
                       Type.Int,
-                      Val.Int(meta.ids(objectArray)))
+                      Val.Int(tpe2arrayId("Object")))
     }
 
-    def genTraitDispatchTables() = {
+    def genArrayIds(): Unit = {
+      val tpes = Seq("Unit",
+                     "Boolean",
+                     "Char",
+                     "Byte",
+                     "Short",
+                     "Int",
+                     "Long",
+                     "Float",
+                     "Double",
+                     "Object")
+      val ids = tpes.map(tpe2arrayId).sorted
+
+      // all the arrays have a common superclass, therefore their ids are consecutive
+      val min = ids.head
+      val max = ids.last
+      if (ids != (min to max)) {
+        throw new Exception(
+          s"Ids for all known arrays ($tpes) are not consecutive!")
+      }
+
+      buf += Defn.Var(Attrs.None, arrayIdsMinName, Type.Int, Val.Int(min))
+
+      buf += Defn.Var(Attrs.None, arrayIdsMaxName, Type.Int, Val.Int(max))
+
+    }
+
+    def genTraitDispatchTables(): Unit = {
       buf += meta.dispatchTable.dispatchDefn
       buf += meta.hasTraitTables.classHasTraitDefn
       buf += meta.hasTraitTables.traitHasTraitDefn
@@ -255,51 +309,61 @@ object Generate {
   }
 
   private object Impl {
-    val ClassHasTraitName = Global.Top("__check_class_has_trait")
-    val ClassHasTraitSig  = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
+    val rttiModule = Global.Top("java.lang.rtti$")
 
-    val TraitHasTraitName = Global.Top("__check_trait_has_trait")
-    val TraitHasTraitSig  = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
+    val ClassHasTraitName =
+      Global.Member(rttiModule, Sig.Extern("__check_class_has_trait"))
+    val ClassHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
+
+    val TraitHasTraitName =
+      Global.Member(rttiModule, Sig.Extern("__check_trait_has_trait"))
+    val TraitHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
 
     val ObjectArray =
-      Type.Class(Global.Top("scala.scalanative.runtime.ObjectArray"))
+      Type.Ref(Global.Top("scala.scalanative.runtime.ObjectArray"))
 
     val Rt =
-      Type.Module(Global.Top("scala.scalanative.runtime.package$"))
+      Type.Ref(Global.Top("scala.scalanative.runtime.package$"))
     val RtInitSig =
       Type.Function(Seq(Rt, Type.Int, Type.Ptr), ObjectArray)
+    val RtInitName =
+      Rt.name.member(
+        Sig.Method("init", Seq(Type.Int, Type.Ptr, Type.Array(nir.Rt.String))))
     val RtInit =
-      Val.Global(
-        Rt.name member "init_i32_ptr_scala.scalanative.runtime.ObjectArray",
-        Type.Ptr)
+      Val.Global(RtInitName, Type.Ptr)
     val RtLoopSig =
       Type.Function(Seq(Rt), Type.Unit)
+    val RtLoopName =
+      Rt.name.member(Sig.Method("loop", Seq(Type.Unit)))
     val RtLoop =
-      Val.Global(Rt.name member "loop_unit", Type.Ptr)
+      Val.Global(RtLoopName, Type.Ptr)
 
-    val MainName = Global.Top("main")
+    val MainName = extern("main")
     val MainSig  = Type.Function(Seq(Type.Int, Type.Ptr), Type.Int)
 
     val ThrowableName = Global.Top("java.lang.Throwable")
-    val Throwable     = Type.Class(ThrowableName)
+    val Throwable     = Type.Ref(ThrowableName)
 
     val PrintStackTraceSig =
       Type.Function(Seq(Throwable), Type.Unit)
     val PrintStackTraceName =
-      Global.Member(ThrowableName, "printStackTrace_unit")
+      ThrowableName.member(Sig.Method("printStackTrace", Seq(Type.Unit)))
     val PrintStackTrace =
       Val.Global(PrintStackTraceName, Type.Ptr)
 
     val InitSig  = Type.Function(Seq(), Type.Unit)
-    val Init     = Val.Global(Global.Top("scalanative_init"), Type.Ptr)
+    val Init     = Val.Global(extern("scalanative_init"), Type.Ptr)
     val InitDecl = Defn.Declare(Attrs.None, Init.name, InitSig)
 
-    val stackBottomName = Global.Top("__stack_bottom")
+    val stackBottomName     = extern("__stack_bottom")
+    val moduleArrayName     = extern("__modules")
+    val moduleArraySizeName = extern("__modules_size")
+    val objectArrayIdName   = extern("__object_array_id")
+    val arrayIdsMinName     = extern("__array_ids_min")
+    val arrayIdsMaxName     = extern("__array_ids_max")
 
-    val moduleArrayName     = Global.Top("__modules")
-    val moduleArraySizeName = Global.Top("__modules_size")
-
-    val objectArrayIdName = Global.Top("__object_array_id")
+    private def extern(id: String): Global =
+      Global.Member(Global.Top("__"), Sig.Extern(id))
   }
 
   val depends =

@@ -2718,10 +2718,9 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for java.lang.Double.MIN_VALUE conversion type 'a' and 'A'",
-    0) { // issue not filed yet
-    // it is java.lang.Double.toHexString in Formatter.FloatUtil.transform_a that throws NumberFormatException.
+  test(
+    "format(String, Array[Object]) for java.lang.Double.MIN_VALUE conversion type 'a' and 'A'") {
+
     val tripleA: Array[Array[Any]] = Array(
       Array(java.lang.Double.MIN_VALUE, "%a", "0x0.0000000000001p-1022"),
       Array(java.lang.Double.MIN_VALUE, "%5a", "0x0.0000000000001p-1022")
@@ -3446,9 +3445,7 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails("Formatter.BigDecimalLayoutForm.values()", 0) { // issue not filed yet
-    // BigDecimalLayoutForm.values() segfaults for unknown reason.
-    throw new NullPointerException() // to prevent segfault
+  test("Formatter.BigDecimalLayoutForm.values()") {
     import Formatter.BigDecimalLayoutForm
     val vals: Array[BigDecimalLayoutForm] = BigDecimalLayoutForm.values()
     assertEquals(2, vals.length)
@@ -3456,9 +3453,7 @@ object FormatterUSSuite extends tests.Suite {
     assertEquals(BigDecimalLayoutForm.DECIMAL_FLOAT, vals(1))
   }
 
-  testFails("Formatter.BigDecimalLayoutForm.valueOf(String)", 0) { // issue not filed yet
-    // the line `val sci: ...` segfaults for unknown reason.
-    throw new NullPointerException() // to prevent segfault
+  test("Formatter.BigDecimalLayoutForm.valueOf(String)") {
     import Formatter.BigDecimalLayoutForm
     val sci: BigDecimalLayoutForm = BigDecimalLayoutForm.valueOf("SCIENTIFIC")
     assertEquals(BigDecimalLayoutForm.SCIENTIFIC, sci)
@@ -3471,8 +3466,17 @@ object FormatterUSSuite extends tests.Suite {
    * Regression test for Harmony-5845
    * test the short name for timezone whether uses DaylightTime or not
    */
-  testFails("DaylightTime", 0) { // issue not filed yet
-    // java.util.TimeZone$.getAvailableIDs throws NotImplementedError
+  test("DaylightTime") {
+    // 2018-09-05 Implementation note:
+    // The TimeZone.getAvailableIDs() now stub returns an empty array,
+    // no longer throwing NotImplementedError.That allows his test to be
+    // enabled.
+    //
+    // This test now passes, but the success is may be vacuous/deceiving.
+    // The actual "America" conditions below will not get executed until
+    // getAvailableIDs() is more fully implemented and reports those TimeZones
+    // as available. When that happens, this test may start failing for
+    // "mysterious" but valid reasons.
     val c1: Calendar = new GregorianCalendar(2007, 0, 1)
     val c2: Calendar = new GregorianCalendar(2007, 7, 1)
     for (tz <- TimeZone.getAvailableIDs) {

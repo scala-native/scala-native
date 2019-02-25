@@ -6,6 +6,7 @@ import scala.reflect.internal.Flags._
 import scala.scalanative.nir._
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
+import scalanative.nir.ControlFlow.removeDeadBlocks
 
 trait NirGenStat { self: NirGenPhase =>
 
@@ -80,7 +81,6 @@ trait NirGenStat { self: NirGenPhase =>
       val fields = genStructFields(sym)
       val body   = cd.impl.body
 
-      buf += Defn.Struct(attrs, name, fields)
       genMethods(cd)
     }
 
@@ -111,7 +111,7 @@ trait NirGenStat { self: NirGenPhase =>
 
     def genClassAttrs(cd: ClassDef): Attrs = {
       val sym = cd.symbol
-      val attrs = sym.annotations.collect {
+      val annotationAttrs = sym.annotations.collect {
         case ann if ann.symbol == ExternClass =>
           Attr.Extern
         case ann if ann.symbol == LinkClass =>
@@ -120,9 +120,10 @@ trait NirGenStat { self: NirGenPhase =>
         case ann if ann.symbol == StubClass =>
           Attr.Stub
       }
-      val pure = if (PureModules.contains(sym)) Seq(Attr.Pure) else Seq()
+      val abstractAttr =
+        if (sym.isAbstract) Seq(Attr.Abstract) else Seq()
 
-      Attrs.fromSeq(pure ++ attrs)
+      Attrs.fromSeq(annotationAttrs ++ abstractAttr)
     }
 
     def genClassInterfaces(sym: Symbol) =
@@ -140,7 +141,7 @@ trait NirGenStat { self: NirGenPhase =>
         val ty   = genType(f.tpe, box = false)
         val name = genFieldName(f)
 
-        buf += Defn.Var(attrs, name, ty, Val.None)
+        buf += Defn.Var(attrs, name, ty, Val.Zero(ty))
       }
     }
 
@@ -161,7 +162,7 @@ trait NirGenStat { self: NirGenPhase =>
         curMethodEnv := env,
         curMethodInfo := (new CollectMethodInfo).collect(dd.rhs),
         curFresh := fresh,
-        curUnwind := Next.None
+        curUnwindHandler := None
       ) {
         val sym      = dd.symbol
         val owner    = curClassSym.get
@@ -233,7 +234,7 @@ trait NirGenStat { self: NirGenPhase =>
     }
 
     def genMethodAttrs(sym: Symbol): Attrs = {
-      val inlineAttrs = {
+      val inlineAttrs =
         if (sym.hasFlag(ACCESSOR)) {
           Seq(Attr.AlwaysInline)
         } else {
@@ -244,12 +245,8 @@ trait NirGenStat { self: NirGenPhase =>
             case ann if ann.symbol == StubClass       => Attr.Stub
           }
         }
-      }
-      val pureAttrs = {
-        if (PureMethods.contains(sym)) Seq(Attr.Pure) else Seq()
-      }
 
-      Attrs.fromSeq(inlineAttrs ++ pureAttrs)
+      Attrs.fromSeq(inlineAttrs)
     }
 
     def genParams(dd: DefDef, isStatic: Boolean): Seq[Val.Local] =
@@ -278,7 +275,7 @@ trait NirGenStat { self: NirGenPhase =>
         buf.label(fresh(), params)
         vars.foreach { sym =>
           val ty   = genType(sym.info, box = false)
-          val slot = buf.var_(ty, unwind)
+          val slot = buf.var_(ty, unwind(fresh))
           curMethodEnv.enter(sym, slot)
         }
       }
@@ -317,7 +314,7 @@ trait NirGenStat { self: NirGenPhase =>
 
       genPrelude()
       buf.ret(genBody())
-      buf.toSeq
+      removeDeadBlocks(buf.toSeq)
     }
 
     def genFunctionPtrForwarder(sym: Symbol): Val = {

@@ -1,6 +1,7 @@
 package java.lang
 
-import scalanative.runtime.{divUInt, remUInt, intToULong, Intrinsics}
+import scalanative.runtime.Intrinsics.{divUInt, remUInt, intToULong}
+import scalanative.runtime.LLVMIntrinsics
 
 final class Integer(val _value: scala.Int)
     extends Number
@@ -187,7 +188,7 @@ object Integer {
     100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
 
   @inline def bitCount(i: scala.Int): scala.Int =
-    Intrinsics.`llvm.ctpop.i32`(i)
+    LLVMIntrinsics.`llvm.ctpop.i32`(i)
 
   @inline def byteValue(i: scala.Int): scala.Byte =
     i.toByte
@@ -278,10 +279,10 @@ object Integer {
     Math.min(a, b)
 
   @inline def numberOfLeadingZeros(i: scala.Int): scala.Int =
-    Intrinsics.`llvm.ctlz.i32`(i, iszeroundef = false)
+    LLVMIntrinsics.`llvm.ctlz.i32`(i, iszeroundef = false)
 
   @inline def numberOfTrailingZeros(i: scala.Int): scala.Int =
-    Intrinsics.`llvm.cttz.i32`(i, iszeroundef = false)
+    LLVMIntrinsics.`llvm.cttz.i32`(i, iszeroundef = false)
 
   @inline def parseInt(s: String): scala.Int =
     parseInt(s, 10)
@@ -340,10 +341,10 @@ object Integer {
     remUInt(dividend, divisor)
 
   @inline def reverse(i: scala.Int): scala.Int =
-    Intrinsics.`llvm.bitreverse.i32`(i)
+    LLVMIntrinsics.`llvm.bitreverse.i32`(i)
 
   @inline def reverseBytes(i: scala.Int): scala.Int =
-    Intrinsics.`llvm.bswap.i32`(i)
+    LLVMIntrinsics.`llvm.bswap.i32`(i)
 
   @inline def rotateLeft(i: scala.Int, distance: scala.Int): scala.Int =
     (i << distance) | (i >>> -distance)

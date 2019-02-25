@@ -10,11 +10,17 @@ private[lang] object StackTrace {
 
   private def makeStackTraceElement(
       cursor: Ptr[scala.Byte]): StackTraceElement = {
-    val name   = stackalloc[CChar](256)
+    val name   = stackalloc[CChar](1024)
     val offset = stackalloc[scala.Byte](8)
 
-    unwind.get_proc_name(cursor, name, 256, offset)
-    StackTraceElement.fromSymbol(scalanative.native.fromCString(name))
+    unwind.get_proc_name(cursor, name, 1024, offset)
+
+    // Make sure the name is definitely 0-terminated.
+    // Unmangler is going to use strlen on this name and it's
+    // behavior is not defined for non-zero-terminated strings.
+    name(1023) = 0
+
+    StackTraceElement.fromSymbol(name)
   }
 
   /** Creates a stack trace element in given unwind context.
@@ -25,7 +31,7 @@ private[lang] object StackTrace {
                                       ip: CUnsignedLong): StackTraceElement =
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
-  private[lang] def currentStackTrace(): Array[StackTraceElement] = {
+  @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
     val cursor  = stackalloc[scala.Byte](2048)
     val context = stackalloc[scala.Byte](2048)
     val offset  = stackalloc[scala.Byte](8)

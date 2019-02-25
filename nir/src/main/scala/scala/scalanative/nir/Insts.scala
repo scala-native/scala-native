@@ -6,7 +6,6 @@ sealed abstract class Inst {
 }
 
 object Inst {
-  final case object None                                      extends Inst
   final case class Label(name: Local, params: Seq[Val.Local]) extends Inst
   final case class Let(name: Local, op: Op, unwind: Next)     extends Inst
   object Let {
@@ -15,11 +14,11 @@ object Inst {
   }
 
   sealed abstract class Cf                                  extends Inst
-  final case object Unreachable                             extends Cf
   final case class Ret(value: Val)                          extends Cf
   final case class Jump(next: Next)                         extends Cf
   final case class If(value: Val, thenp: Next, elsep: Next) extends Cf
   final case class Switch(value: Val, default: Next, cases: Seq[Next])
       extends Cf
   final case class Throw(value: Val, unwind: Next) extends Cf
+  final case class Unreachable(unwind: Next)       extends Cf
 }

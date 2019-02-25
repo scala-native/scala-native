@@ -1,8 +1,7 @@
 package java.util.regex
 
-import scala.scalanative._
-import native._
-import native.stdlib._
+import scalanative.native._
+import scalanative.libc.stdlib._
 
 import java.nio.charset.Charset
 
