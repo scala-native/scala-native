@@ -82,10 +82,10 @@ trait Visit { self: Interflow =>
     val argtys   = argumentTypes(name)
 
     // Wrap up the result.
-    def result(retty: Type, insts: Seq[Inst]) =
+    def result(retty: Type, rawInsts: Seq[Inst]) =
       origdefn.copy(name = name,
                     ty = Type.Function(argtys, retty),
-                    insts = eliminateDeadCode(insts))
+                    insts = ControlFlow.removeDeadBlocks(rawInsts))
 
     // Create new fresh and state for the first basic block.
     val fresh = Fresh(0)
