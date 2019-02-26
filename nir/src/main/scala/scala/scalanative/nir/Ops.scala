@@ -54,10 +54,14 @@ sealed abstract class Op {
     case _: Op.Elem | _: Op.Extract | _: Op.Insert | _: Op.Comp | _: Op.Conv |
         _: Op.Is | _: Op.Copy | _: Op.Sizeof =>
       true
-    // Division and modulo on integers are not pure as
-    // they may throw if the divisor is zero.
-    case Op.Bin(Bin.Sdiv | Bin.Udiv | Bin.Srem | Bin.Urem, _: Type.I, _, _) =>
-      false
+    // Division and modulo on integers is only pure if
+    // divisor is a canonical non-zero value.
+    case Op.Bin(Bin.Sdiv | Bin.Udiv | Bin.Srem | Bin.Urem, _: Type.I, _, div) =>
+      if (div.isCanonical && !div.isZero) {
+        true
+      } else {
+        false
+      }
     case _: Op.Bin =>
       true
     case _ =>

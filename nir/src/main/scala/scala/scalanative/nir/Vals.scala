@@ -50,9 +50,9 @@ sealed abstract class Val {
       false
   }
 
-  final def isDefault: Boolean = this match {
-    case Val.False      => true
+  final def isZero: Boolean = this match {
     case Val.Zero(_)    => true
+    case Val.False      => true
     case Val.Char('\0') => true
     case Val.Byte(0)    => true
     case Val.Short(0)   => true

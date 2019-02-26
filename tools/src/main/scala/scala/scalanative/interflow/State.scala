@@ -206,7 +206,7 @@ final class State(block: Local) {
         val canConstantInit =
           (!elemty.isInstanceOf[Type.RefKind]
             && values.forall(_.isCanonical)
-            && values.exists(v => !v.isDefault))
+            && values.exists(v => !v.isZero))
         val init =
           if (canConstantInit) {
             Val.ArrayValue(elemty, values)
@@ -242,11 +242,11 @@ final class State(block: Local) {
         val canConstantInit =
           (!elemty.isInstanceOf[Type.RefKind]
             && values.forall(_.isCanonical)
-            && values.exists(v => !v.isDefault))
+            && values.exists(v => !v.isZero))
         if (!canConstantInit) {
           values.zipWithIndex.foreach {
             case (value, idx) =>
-              if (!value.isDefault) {
+              if (!value.isZero) {
                 reachVal(value)
                 emit.arraystore(elemty,
                                 local,
@@ -264,7 +264,7 @@ final class State(block: Local) {
       case VirtualInstance(_, cls, vals) =>
         cls.fields.zip(vals).foreach {
           case (fld, value) =>
-            if (!value.isDefault) {
+            if (!value.isZero) {
               reachVal(value)
               emit.fieldstore(fld.ty,
                               local,
