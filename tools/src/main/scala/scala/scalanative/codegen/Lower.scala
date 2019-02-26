@@ -48,6 +48,7 @@ object Lower {
     private val divisionByZeroSlowPath = mutable.Map.empty[Option[Local], Local]
     private val classCastSlowPath      = mutable.Map.empty[Option[Local], Local]
     private val outOfBoundsSlowPath    = mutable.Map.empty[Option[Local], Local]
+    private val noSuchMethodSlowPath   = mutable.Map.empty[Option[Local], Local]
 
     private def unwind: Next =
       unwindHandler.get.fold[Next](Next.None) { handler =>
@@ -142,12 +143,14 @@ object Lower {
       genClassCastSlowPath(buf)
       genUnreachableSlowPath(buf)
       genOutOfBoundsSlowPath(buf)
+      genNoSuchMethodSlowPath(buf)
 
       nullPointerSlowPath.clear()
       divisionByZeroSlowPath.clear()
       classCastSlowPath.clear()
       unreachableSlowPath.clear()
       outOfBoundsSlowPath.clear()
+      noSuchMethodSlowPath.clear()
 
       buf ++= handlers
 
@@ -242,6 +245,24 @@ object Lower {
             buf.call(throwOutOfBoundsTy,
                      throwOutOfBoundsVal,
                      Seq(Val.Null, idx),
+                     unwind)
+            buf.unreachable(Next.None)
+          }
+      }
+    }
+
+    def genNoSuchMethodSlowPath(buf: Buffer): Unit = {
+      noSuchMethodSlowPath.toSeq.sortBy(_._2.id).foreach {
+        case (slowPathUnwindHandler, slowPath) =>
+          ScopedVar.scoped(
+            unwindHandler := slowPathUnwindHandler
+          ) {
+            val sig = Val.Local(fresh(), Type.Ptr)
+
+            buf.label(slowPath, Seq(sig))
+            buf.call(throwNoSuchMethodTy,
+                     throwNoSuchMethodVal,
+                     Seq(Val.Null, sig),
                      unwind)
             buf.unreachable(Next.None)
           }
@@ -385,9 +406,7 @@ object Lower {
         val methptrptr = let(
           Op.Elem(rtti(cls).struct,
                   typeptr,
-                  Seq(Val.Int(0),
-                      Val.Int(5), // index of vtable in type struct
-                      Val.Int(vindex))),
+                  Seq(Val.Int(0), meta.vtableIndex, Val.Int(vindex))),
           unwind)
 
         let(n, Op.Load(Type.Ptr, methptrptr), unwind)
@@ -443,53 +462,38 @@ object Lower {
 
       val Op.Dynmethod(obj, sig) = op
 
-      def throwInstrs(): Unit = {
-        val exc = Val.Local(fresh(), Type.Ptr)
-        genClassallocOp(buf, exc.name, Op.Classalloc(excptnGlobal))
-        let(Op.Call(excInitSig, excInit, Seq(exc, Val.String(sig.mangle))),
-            unwind)
-        genThrow(buf, exc)
+      def throwIfNull(value: Val) = {
+        val notNullL = fresh()
+        val noSuchMethodL =
+          noSuchMethodSlowPath.getOrElseUpdate(unwindHandler, fresh())
+
+        val condNull = comp(Comp.Ine, Type.Ptr, value, Val.Null, unwind)
+        branch(condNull,
+               Next(notNullL),
+               Next.Label(noSuchMethodL, Seq(Val.String(sig.mangle))))
+        label(notNullL)
       }
-
-      def throwIfCond(cond: Op.Comp): Unit = {
-        val labelIsNull, labelEndNull = Next(fresh())
-
-        val condNull = let(cond, unwind)
-        branch(condNull, labelIsNull, labelEndNull)
-        label(labelIsNull.name)
-        throwInstrs()
-        label(labelEndNull.name)
-      }
-
-      def throwIfNull(value: Val) =
-        throwIfCond(Op.Comp(Comp.Ieq, Type.Ptr, value, Val.Null))
 
       def genReflectiveLookup(): Val = {
         val methodIndex =
           meta.linked.dynsigs.zipWithIndex.find(_._1 == sig).get._2
 
         // Load the type information pointer
-        val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
-        // Load the pointer of the table size
-        val methodCountPtr = let(
-          Op.Elem(classRttiType,
-                  typeptr,
-                  Seq(Val.Int(0), Val.Int(3), Val.Int(0))),
-          unwind)
-        // Load the table size
-        val methodCount = let(Op.Load(Type.Int, methodCountPtr), unwind)
-        throwIfCond(Op.Comp(Comp.Ieq, Type.Int, methodCount, Val.Int(0)))
-        // If the size is greater than 0, call the dyndispatch runtime function
-        val dyndispatchTablePtr = let(
-          Op.Elem(classRttiType,
-                  typeptr,
-                  Seq(Val.Int(0), Val.Int(3), Val.Int(0))),
-          unwind)
-        val methptrptr = let(
-          Op.Call(dyndispatchSig,
-                  dyndispatch,
-                  Seq(dyndispatchTablePtr, Val.Int(methodIndex))),
-          unwind)
+        val typeptr = load(Type.Ptr, obj, unwind)
+        // Load the dynamic hash map for given type, make sure it's not null
+        val mapelem = elem(classRttiType,
+                           typeptr,
+                           Seq(Val.Int(0), meta.dynmapIndex),
+                           unwind)
+        val mapptr = load(Type.Ptr, mapelem, unwind)
+        // If hash map is not null, it has to contain at least one entry
+        throwIfNull(mapptr)
+        // Perform dynamic dispatch via dyndispatch helper
+        val methptrptr = call(dyndispatchSig,
+                              dyndispatch,
+                              Seq(mapptr, Val.Int(methodIndex)),
+                              unwind)
+        // Hash map lookup can still not contain given signature
         throwIfNull(methptrptr)
         let(n, Op.Load(Type.Ptr, methptrptr), unwind)
       }
@@ -1160,6 +1164,14 @@ object Lower {
   val throwOutOfBoundsVal =
     Val.Global(throwOutOfBounds, Type.Ptr)
 
+  val throwNoSuchMethodTy =
+    Type.Function(Seq(Type.Ptr, Type.Ptr), Type.Nothing)
+  val throwNoSuchMethod =
+    Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+                  Sig.Method("throwNoSuchMethod", Seq(Rt.String, Type.Nothing)))
+  val throwNoSuchMethodVal =
+    Val.Global(throwNoSuchMethod, Type.Ptr)
+
   val RuntimeNull    = Type.Ref(Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
 
@@ -1174,8 +1186,6 @@ object Lower {
 
   val depends: Seq[Global] = {
     val buf = mutable.UnrolledBuffer.empty[Global]
-    buf += excptnGlobal
-    buf += excptnInitGlobal
     buf += StringName
     buf += StringValueName
     buf += StringOffsetName
@@ -1199,6 +1209,7 @@ object Lower {
     buf += throwNullPointer
     buf += throwUndefined
     buf += throwOutOfBounds
+    buf += throwNoSuchMethod
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
     buf

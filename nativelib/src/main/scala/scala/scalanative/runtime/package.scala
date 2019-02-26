@@ -8,29 +8,23 @@ import scalanative.runtime.LLVMIntrinsics._
 package object runtime {
 
   /** Runtime Type Information. */
-  type Type = CStruct3[Int, String, Byte]
+  type Type = CStruct2[Int, String]
 
   implicit class TypeOps(val self: Ptr[Type]) extends AnyVal {
-    def id: Int      = !(self._1)
-    def name: String = !(self._2)
-    def kind: Long   = !(self._3)
+    def id: Int          = !(self._1)
+    def name: String     = !(self._2)
+    def isClass: Boolean = id >= 0
   }
 
   /** Class runtime type information. */
-  type ClassType = CStruct3[Type, Long, CStruct2[Int, Int]]
+  type ClassType = CStruct3[Type, Int, Int]
 
   implicit class ClassTypeOps(val self: Ptr[ClassType]) extends AnyVal {
-    def id: Int           = self._1.id
-    def name: String      = self._1.name
-    def kind: Long        = self._1.kind
-    def size: Long        = !(self._2)
-    def idRangeFrom: Long = !(self._3._1)
-    def idRangeTo: Long   = !(self._3._2)
+    def id: Int            = self._1.id
+    def name: String       = self._1.name
+    def size: Int          = !(self._2)
+    def idRangeUntil: Long = !(self._3)
   }
-
-  final val CLASS_KIND  = 0
-  final val TRAIT_KIND  = 1
-  final val STRUCT_KIND = 2
 
   /** Used as a stub right hand of intrinsified methods. */
   def intrinsic: Nothing = throwUndefined()
@@ -100,4 +94,8 @@ package object runtime {
   /** Called by the generated code in case of out of bounds on array access. */
   @noinline def throwOutOfBounds(i: Int): Nothing =
     throw new IndexOutOfBoundsException(i.toString)
+
+  /** Called by the generated code in case of missing method on reflective call. */
+  @noinline def throwNoSuchMethod(sig: String): Nothing =
+    throw new NoSuchMethodException(sig)
 }

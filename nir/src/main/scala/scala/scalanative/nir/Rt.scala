@@ -7,7 +7,7 @@ object Rt {
   val Object = Ref(Global.Top("java.lang.Object"))
   val Class  = Ref(Global.Top("java.lang.Class"))
   val String = Ref(Global.Top("java.lang.String"))
-  val Type   = StructValue(Seq(Int, Int, Ptr, Byte))
+  val Type   = StructValue(Seq(Int, Int, Ptr))
 
   val BoxedNull       = Ref(Global.Top("scala.runtime.Null$"))
   val BoxedUnit       = Ref(Global.Top("scala.runtime.BoxedUnit"))

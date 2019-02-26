@@ -19,6 +19,9 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
   val dispatchTable  = new TraitDispatchTable(this)
   val hasTraitTables = new HasTraitTables(this)
 
+  val dynmapIndex = Val.Int(if (linked.dynsigs.isEmpty) -1 else 4)
+  val vtableIndex = Val.Int(if (linked.dynsigs.isEmpty) 4 else 5)
+
   initClassMetadata()
   initTraitMetadata()
 
@@ -62,7 +65,9 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
     classes.foreach { node =>
       vtable(node) = new VirtualTable(this, node)
       layout(node) = new FieldLayout(this, node)
-      dynmap(node) = new DynamicHashMap(this, node, proxies)
+      if (linked.dynsigs.nonEmpty) {
+        dynmap(node) = new DynamicHashMap(this, node, proxies)
+      }
       rtti(node) = new RuntimeTypeInformation(this, node)
     }
   }
