@@ -135,6 +135,10 @@ final class MergeProcessor(insts: Array[Inst],
                   }
                   mergeHeap(addr) =
                     VirtualInstance(headKind, headCls, mergeValues)
+                case DelayedInstance(op) =>
+                  assert(
+                    states.forall(s => s.derefDelayed(addr).delayedOp == op))
+                  mergeHeap(addr) = DelayedInstance(op)
               }
             }
             out

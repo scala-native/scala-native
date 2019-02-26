@@ -9,6 +9,8 @@ sealed abstract class Instance extends Cloneable {
   def ty: Type = this match {
     case EscapedInstance(value) =>
       value.ty
+    case DelayedInstance(op) =>
+      op.resty
     case VirtualInstance(_, cls, _) =>
       Type.Ref(cls.name, exact = true, nullable = false)
   }
@@ -16,6 +18,8 @@ sealed abstract class Instance extends Cloneable {
   override def clone(): Instance = this match {
     case EscapedInstance(value) =>
       EscapedInstance(value)
+    case DelayedInstance(op) =>
+      DelayedInstance(op)
     case VirtualInstance(kind, cls, values) =>
       VirtualInstance(kind, cls, values.clone())
   }
@@ -23,12 +27,16 @@ sealed abstract class Instance extends Cloneable {
   override def toString: String = this match {
     case EscapedInstance(value) =>
       s"EscapedInstance(${value.show})"
+    case DelayedInstance(op) =>
+      s"DelayedInstance(${op.show})"
     case VirtualInstance(kind, cls, values) =>
       s"VirtualInstance($kind, ${cls.name.show}, Array(${values.map(_.show)}))"
   }
 }
 
 final case class EscapedInstance(val escapedValue: Val) extends Instance
+
+final case class DelayedInstance(val delayedOp: Op) extends Instance
 
 final case class VirtualInstance(val kind: Kind,
                                  val cls: Class,

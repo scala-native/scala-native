@@ -1,7 +1,7 @@
 package scala.scalanative
 package interflow
 
-import scalanative.nir.{Type, Val}
+import scalanative.nir.{Op, Type, Val}
 import scalanative.linker.Class
 
 object InstanceRef {
@@ -25,6 +25,22 @@ object VirtualRef {
       state.deref(addr) match {
         case VirtualInstance(kind, cls, values) =>
           Some((kind, cls, values))
+        case _ =>
+          None
+      }
+    case _ =>
+      None
+  }
+}
+
+object DelayedRef {
+  def unapply(addr: Addr)(implicit state: State): Option[Op] =
+    unapply(Val.Virtual(addr))
+  def unapply(value: Val)(implicit state: State): Option[Op] = value match {
+    case Val.Virtual(addr) =>
+      state.deref(addr) match {
+        case DelayedInstance(op) =>
+          Some(op)
         case _ =>
           None
       }

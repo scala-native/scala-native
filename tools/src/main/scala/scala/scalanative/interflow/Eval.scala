@@ -10,6 +10,8 @@ import scalanative.util.{unreachable, And}
 trait Eval { self: Interflow =>
   def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local)(
       implicit state: State): Inst.Cf = {
+    import state.{materialize, delay}
+
     var pc = offsets(from) + 1
 
     while (true) {
@@ -48,7 +50,7 @@ trait Eval { self: Interflow =>
             case Val.False =>
               return Inst.Jump(elseNext)
             case cond =>
-              return Inst.If(cond, thenNext, elseNext)
+              return Inst.If(materialize(cond), thenNext, elseNext)
           }
         case Inst.Switch(scrut,
                          Next.Label(defaultTarget, defaultArgs),
@@ -69,7 +71,7 @@ trait Eval { self: Interflow =>
                   return Inst.Jump(defaultNext)
                 }
             case scrut =>
-              return Inst.Switch(scrut, defaultNext, cases)
+              return Inst.Switch(materialize(scrut), defaultNext, cases)
           }
         case Inst.Throw(v, unwind) =>
           val excv = eval(v)
@@ -105,7 +107,7 @@ trait Eval { self: Interflow =>
 
   def eval(local: Local, op: Op, unwind: Next)(implicit state: State,
                                                linked: linker.Result): Val = {
-    import state.materialize
+    import state.{materialize, delay}
     def emit = {
       if (unwind ne Next.None) {
         throw BailOut("try-catch")
@@ -122,8 +124,10 @@ trait Eval { self: Interflow =>
           case emeth =>
             val eargs = args.map(eval)
             val argtys = eargs.map {
-              case InstanceRef(refty: Type.RefKind) =>
-                Type.Ref(refty.className)
+              case VirtualRef(_, cls, _) =>
+                cls.ty
+              case DelayedRef(op) =>
+                op.resty
               case value =>
                 value.ty
             }

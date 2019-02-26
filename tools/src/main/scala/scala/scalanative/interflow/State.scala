@@ -50,11 +50,19 @@ final class State(block: Local) {
       Val.Int(Lower.stringHashCode(value))
     alloc(StringKind, linked.StringClass, values)
   }
+  def delay(op: Op): Addr = {
+    val addr = fresh().id
+    heap(addr) = DelayedInstance(op)
+    addr
+  }
   def deref(addr: Addr): Instance = {
     heap(addr)
   }
   def derefVirtual(addr: Addr): VirtualInstance = {
     heap(addr).asInstanceOf[VirtualInstance]
+  }
+  def derefDelayed(addr: Addr): DelayedInstance = {
+    heap(addr).asInstanceOf[DelayedInstance]
   }
   def derefEscaped(addr: Addr): EscapedInstance = {
     heap(addr).asInstanceOf[EscapedInstance]
@@ -64,6 +72,13 @@ final class State(block: Local) {
   }
   def isVirtual(value: Val): Boolean = value match {
     case Val.Virtual(addr) => isVirtual(addr)
+    case _                 => false
+  }
+  def isDelayed(addr: Addr): Boolean = {
+    heap(addr).isInstanceOf[DelayedInstance]
+  }
+  def isDelayed(value: Val): Boolean = value match {
+    case Val.Virtual(addr) => isDelayed(addr)
     case _                 => false
   }
   def hasEscaped(addr: Addr): Boolean = {
@@ -110,6 +125,8 @@ final class State(block: Local) {
             vals.foreach(reachVal)
           case EscapedInstance(value) =>
             reachVal(value)
+          case DelayedInstance(op) =>
+            reachOp(op)
         }
       }
     }
@@ -119,6 +136,40 @@ final class State(block: Local) {
       case Val.ArrayValue(_, vals) => vals.foreach(reachVal)
       case Val.StructValue(vals)   => vals.foreach(reachVal)
       case _                       => ()
+    }
+
+    def reachOp(op: Op): Unit = op match {
+      case Op.Call(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
+      case Op.Load(_, v)         => reachVal(v)
+      case Op.Store(_, v1, v2)   => reachVal(v1); reachVal(v2)
+      case Op.Elem(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
+      case Op.Extract(v, _)      => reachVal(v)
+      case Op.Insert(v1, v2, _)  => reachVal(v1); reachVal(v2)
+      case Op.Stackalloc(_, v)   => reachVal(v)
+      case Op.Bin(_, _, v1, v2)  => reachVal(v1); reachVal(v2)
+      case Op.Comp(_, _, v1, v2) => reachVal(v1); reachVal(v2)
+      case Op.Conv(_, _, v)      => reachVal(v)
+
+      case _: Op.Classalloc            => ()
+      case Op.Fieldload(_, v, _)       => reachVal(v)
+      case Op.Fieldstore(_, v1, _, v2) => reachVal(v1); reachVal(v2)
+      case Op.Method(v, _)             => reachVal(v)
+      case Op.Dynmethod(v, _)          => reachVal(v)
+      case _: Op.Module                => ()
+      case Op.As(_, v)                 => reachVal(v)
+      case Op.Is(_, v)                 => reachVal(v)
+      case Op.Copy(v)                  => reachVal(v)
+      case _: Op.Sizeof                => ()
+      case Op.Box(_, v)                => reachVal(v)
+      case Op.Unbox(_, v)              => reachVal(v)
+      case _: Op.Var                   => ()
+      case Op.Varload(v)               => reachVal(v)
+      case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
+      case Op.Arrayalloc(_, v)         => reachVal(v)
+      case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
+      case Op.Arraystore(_, v1, v2, v3) =>
+        reachVal(v1); reachVal(v2); reachVal(v3)
+      case Op.Arraylength(v) => reachVal(v)
     }
 
     roots.foreach(reachVal)
@@ -177,6 +228,9 @@ final class State(block: Local) {
         Val.String(new java.lang.String(chars))
       case VirtualInstance(_, cls, values) =>
         emit.classalloc(cls.name, Next.None)
+      case DelayedInstance(op) =>
+        reachOp(op)
+        emit.let(escapedOp(op), Next.None)
       case EscapedInstance(value) =>
         reachVal(value)
         escapedVal(value)
@@ -219,6 +273,8 @@ final class State(block: Local) {
                               Next.None)
             }
         }
+      case DelayedInstance(op) =>
+        ()
       case EscapedInstance(value) =>
         ()
     }
@@ -230,11 +286,106 @@ final class State(block: Local) {
       case _                       => ()
     }
 
+    def reachOp(op: Op): Unit = op match {
+      case Op.Call(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
+      case Op.Load(_, v)         => reachVal(v)
+      case Op.Store(_, v1, v2)   => reachVal(v1); reachVal(v2)
+      case Op.Elem(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
+      case Op.Extract(v, _)      => reachVal(v)
+      case Op.Insert(v1, v2, _)  => reachVal(v1); reachVal(v2)
+      case Op.Stackalloc(_, v)   => reachVal(v)
+      case Op.Bin(_, _, v1, v2)  => reachVal(v1); reachVal(v2)
+      case Op.Comp(_, _, v1, v2) => reachVal(v1); reachVal(v2)
+      case Op.Conv(_, _, v)      => reachVal(v)
+
+      case _: Op.Classalloc            => ()
+      case Op.Fieldload(_, v, _)       => reachVal(v)
+      case Op.Fieldstore(_, v1, _, v2) => reachVal(v1); reachVal(v2)
+      case Op.Method(v, _)             => reachVal(v)
+      case Op.Dynmethod(v, _)          => reachVal(v)
+      case _: Op.Module                => ()
+      case Op.As(_, v)                 => reachVal(v)
+      case Op.Is(_, v)                 => reachVal(v)
+      case Op.Copy(v)                  => reachVal(v)
+      case _: Op.Sizeof                => ()
+      case Op.Box(_, v)                => reachVal(v)
+      case Op.Unbox(_, v)              => reachVal(v)
+      case _: Op.Var                   => ()
+      case Op.Varload(v)               => reachVal(v)
+      case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
+      case Op.Arrayalloc(_, v)         => reachVal(v)
+      case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
+      case Op.Arraystore(_, v1, v2, v3) =>
+        reachVal(v1); reachVal(v2); reachVal(v3)
+      case Op.Arraylength(v) => reachVal(v)
+    }
+
     def escapedVal(v: Val): Val = v match {
       case Val.Virtual(addr) =>
         locals(addr)
       case _ =>
         v
+    }
+
+    def escapedOp(op: Op): Op = op match {
+      case Op.Call(ty, v, vs) =>
+        Op.Call(ty, escapedVal(v), vs.map(escapedVal))
+      case Op.Load(ty, v) =>
+        Op.Load(ty, escapedVal(v))
+      case Op.Store(ty, v1, v2) =>
+        Op.Store(ty, escapedVal(v1), escapedVal(v2))
+      case Op.Elem(ty, v, vs) =>
+        Op.Elem(ty, escapedVal(v), vs.map(escapedVal))
+      case Op.Extract(v, idxs) =>
+        Op.Extract(escapedVal(v), idxs)
+      case Op.Insert(v1, v2, idxs) =>
+        Op.Insert(escapedVal(v1), escapedVal(v2), idxs)
+      case Op.Stackalloc(ty, v) =>
+        Op.Stackalloc(ty, escapedVal(v))
+      case Op.Bin(bin, ty, v1, v2) =>
+        Op.Bin(bin, ty, escapedVal(v1), escapedVal(v2))
+      case Op.Comp(comp, ty, v1, v2) =>
+        Op.Comp(comp, ty, escapedVal(v1), escapedVal(v2))
+      case Op.Conv(conv, ty, v) =>
+        Op.Conv(conv, ty, escapedVal(v))
+
+      case op: Op.Classalloc =>
+        op
+      case Op.Fieldload(ty, v, n) =>
+        Op.Fieldload(ty, escapedVal(v), n)
+      case Op.Fieldstore(ty, v1, n, v2) =>
+        Op.Fieldstore(ty, escapedVal(v1), n, escapedVal(v2))
+      case Op.Method(v, n) =>
+        Op.Method(escapedVal(v), n)
+      case Op.Dynmethod(v, n) =>
+        Op.Dynmethod(escapedVal(v), n)
+      case op: Op.Module =>
+        op
+      case Op.As(ty, v) =>
+        Op.As(ty, escapedVal(v))
+      case Op.Is(ty, v) =>
+        Op.Is(ty, escapedVal(v))
+      case Op.Copy(v) =>
+        Op.Copy(escapedVal(v))
+      case op: Op.Sizeof =>
+        op
+      case Op.Box(ty, v) =>
+        Op.Box(ty, escapedVal(v))
+      case Op.Unbox(ty, v) =>
+        Op.Unbox(ty, escapedVal(v))
+      case op: Op.Var =>
+        op
+      case Op.Varload(v) =>
+        Op.Varload(escapedVal(v))
+      case Op.Varstore(v1, v2) =>
+        Op.Varstore(escapedVal(v1), escapedVal(v2))
+      case Op.Arrayalloc(ty, v) => Op.Arrayalloc(ty, escapedVal(v))
+      case Op.Arrayload(ty, v1, v2) =>
+        Op.Arrayload(ty, escapedVal(v1), escapedVal(v2))
+      case Op.Arraystore(ty, v1, v2, v3) =>
+        Op.Arraystore(ty, escapedVal(v1), escapedVal(v2), escapedVal(v3))
+      case Op.Arraylength(v) =>
+        Op.Arraylength(escapedVal(v))
     }
 
     reachVal(rootValue)
