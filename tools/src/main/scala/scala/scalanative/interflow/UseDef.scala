@@ -55,7 +55,7 @@ object UseDef {
     collector.deps.distinct
   }
 
-  private val pureWhitelist = {
+  val pureWhitelist = {
     val out = mutable.Set.empty[Global]
     out += Global.Top("scala.Predef$")
     out += Global.Top("scala.runtime.BoxesRunTime$")

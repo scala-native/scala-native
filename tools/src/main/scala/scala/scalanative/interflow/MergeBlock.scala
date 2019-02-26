@@ -5,8 +5,8 @@ import scala.collection.mutable
 import scalanative.nir._
 
 final class MergeBlock(val label: Inst.Label, val name: Local) {
-  val incoming            = mutable.Map.empty[Local, (Seq[Val], State)]
-  val outgoing            = mutable.Map.empty[Local, MergeBlock]
+  var incoming            = mutable.Map.empty[Local, (Seq[Val], State)]
+  var outgoing            = mutable.Map.empty[Local, MergeBlock]
   var phis: Seq[MergePhi] = _
   var start: State        = _
   var end: State          = _
@@ -32,6 +32,8 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
         next
       case Next.Unwind(exc, next: Next.Label) =>
         Next.Unwind(exc, mergeNext(next))
+      case _ =>
+        util.unreachable
     }
     val params = block.phis.map(_.param)
     result.label(block.name, params)
@@ -47,6 +49,8 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
         val mergeCases = cases.map {
           case Next.Case(v, next: Next.Label) =>
             Next.Case(v, mergeNext(next))
+          case _ =>
+            util.unreachable
         }
         result.switch(scrut, mergeNext(defaultNext), mergeCases)
       case Inst.Throw(v, unwind) =>

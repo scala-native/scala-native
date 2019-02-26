@@ -51,8 +51,7 @@ trait Intrinsics { self: Interflow =>
     sig match {
       case Rt.GetClassSig =>
         args match {
-          case Seq(Val.Virtual(thisAddr)) =>
-            val cls = state.deref(thisAddr).cls
+          case Seq(VirtualRef(_, cls, _)) =>
             val addr =
               state.allocClass(
                 linked.infos(Global.Top("java.lang.Class")).asInstanceOf[Class])
@@ -64,34 +63,22 @@ trait Intrinsics { self: Interflow =>
         }
       case Rt.IsArraySig =>
         args match {
-          case Seq(Val.Virtual(addr)) =>
-            val Val.Global(clsName, _) = state.derefVirtual(addr).values(0)
+          case Seq(VirtualRef(_, _, Array(Val.Global(clsName, _)))) =>
             Val.Bool(Type.isArray(clsName))
           case _ =>
             emit
         }
       case Rt.IsAssignableFromSig =>
         args match {
-          case Seq(Val.Virtual(leftAddr), Val.Virtual(rightAddr)) =>
-            val Val.Global(leftName, _) =
-              state.derefVirtual(leftAddr).values(0)
-            val Val.Global(rightName, _) =
-              state.derefVirtual(rightAddr).values(0)
-
-            (linked.infos(leftName), linked.infos(rightName)) match {
-              case (left: ScopeInfo, right: ScopeInfo) =>
-                Val.Bool(right.is(left))
-              case _ =>
-                emit
-            }
+          case Seq(VirtualRef(_, _, Array(Val.Global(ScopeRef(linfo), _))),
+                   VirtualRef(_, _, Array(Val.Global(ScopeRef(rinfo), _)))) =>
+            Val.Bool(rinfo.is(linfo))
           case _ =>
             emit
         }
       case Rt.GetNameSig =>
         args match {
-          case Seq(Val.Virtual(addr)) =>
-            val Val.Global(name: Global.Top, _) =
-              state.derefVirtual(addr).values(0)
+          case Seq(VirtualRef(_, _, Array(Val.Global(name: Global.Top, _)))) =>
             eval(Val.String(name.id))(state)
           case _ =>
             emit

@@ -2,31 +2,41 @@ package scala.scalanative
 package interflow
 
 import java.util.Arrays
-import scalanative.nir.Val
+import scalanative.nir.{Type, Val, Op}
 import scalanative.linker.Class
 
 sealed abstract class Instance extends Cloneable {
-  def cls: Class
+  def ty: Type = this match {
+    case EscapedInstance(value) =>
+      value.ty
+    case DelayedInstance(op) =>
+      op.resty
+    case VirtualInstance(_, cls, _) =>
+      Type.Ref(cls.name, exact = true, nullable = false)
+  }
 
   override def clone(): Instance = this match {
-    case EscapedInstance(cls, escapedValue) =>
-      EscapedInstance(cls, escapedValue)
+    case EscapedInstance(value) =>
+      EscapedInstance(value)
+    case DelayedInstance(op) =>
+      DelayedInstance(op)
     case VirtualInstance(kind, cls, values) =>
       VirtualInstance(kind, cls, values.clone())
   }
 
   override def toString: String = this match {
-    case EscapedInstance(cls, escapedValue) =>
-      s"EscapedInstance(${cls.name.show}, ${escapedValue.show})"
+    case EscapedInstance(value) =>
+      s"EscapedInstance(${value.show})"
+    case DelayedInstance(op) =>
+      s"DelayedInstance(${op.show})"
     case VirtualInstance(kind, cls, values) =>
-      s"VirtualInstance($kind, $cls, ${values.map(_.show)})"
+      s"VirtualInstance($kind, ${cls.name.show}, Array(${values.map(_.show)}))"
   }
 }
 
-final case class EscapedInstance(val cls: Class, val escapedValue: Val)
-    extends Instance {
-  assert(!escapedValue.isVirtual)
-}
+final case class EscapedInstance(val escapedValue: Val) extends Instance
+
+final case class DelayedInstance(val delayedOp: Op) extends Instance
 
 final case class VirtualInstance(val kind: Kind,
                                  val cls: Class,
@@ -44,7 +54,4 @@ final case class VirtualInstance(val kind: Kind,
     case _ =>
       false
   }
-
-  override def toString: String =
-    s"VirtualInstance($kind, ${cls.name.show}, Array(${values.map(_.show).mkString(", ")}))"
 }

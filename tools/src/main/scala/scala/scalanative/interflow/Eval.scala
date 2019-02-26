@@ -10,6 +10,8 @@ import scalanative.util.{unreachable, And}
 trait Eval { self: Interflow =>
   def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local)(
       implicit state: State): Inst.Cf = {
+    import state.{materialize, delay}
+
     var pc = offsets(from) + 1
 
     while (true) {
@@ -48,7 +50,7 @@ trait Eval { self: Interflow =>
             case Val.False =>
               return Inst.Jump(elseNext)
             case cond =>
-              return Inst.If(cond, thenNext, elseNext)
+              return Inst.If(materialize(cond), thenNext, elseNext)
           }
         case Inst.Switch(scrut,
                          Next.Label(defaultTarget, defaultArgs),
@@ -69,7 +71,7 @@ trait Eval { self: Interflow =>
                   return Inst.Jump(defaultNext)
                 }
             case scrut =>
-              return Inst.Switch(scrut, defaultNext, cases)
+              return Inst.Switch(materialize(scrut), defaultNext, cases)
           }
         case Inst.Throw(v, unwind) =>
           val excv = eval(v)
@@ -105,7 +107,7 @@ trait Eval { self: Interflow =>
 
   def eval(local: Local, op: Op, unwind: Next)(implicit state: State,
                                                linked: linker.Result): Val = {
-    import state.materialize
+    import state.{materialize, delay}
     def emit = {
       if (unwind ne Next.None) {
         throw BailOut("try-catch")
@@ -122,8 +124,10 @@ trait Eval { self: Interflow =>
           case emeth =>
             val eargs = args.map(eval)
             val argtys = eargs.map {
-              case Val.Virtual(addr) =>
-                state.deref(addr).cls.ty
+              case VirtualRef(_, cls, _) =>
+                cls.ty
+              case DelayedRef(op) =>
+                op.resty
               case value =>
                 value.ty
             }
@@ -166,7 +170,7 @@ trait Eval { self: Interflow =>
                   margs.zip(sigtys).map {
                     case (marg, ty) =>
                       if (!Sub.is(marg.ty, ty)) {
-                        emit.conv(Conv.Bitcast, ty, marg, unwind)
+                        Val.Virtual(delay(Op.Conv(Conv.Bitcast, ty, marg)))
                       } else {
                         marg
                       }
@@ -188,23 +192,19 @@ trait Eval { self: Interflow =>
       case Op.Store(ty, ptr, value) =>
         emit.store(ty, materialize(eval(ptr)), materialize(eval(value)), unwind)
       case Op.Elem(ty, ptr, indexes) =>
-        emit.elem(ty,
-                  materialize(eval(ptr)),
-                  indexes.map(i => materialize(eval(i))),
-                  unwind)
+        Val.Virtual(delay(Op.Elem(ty, eval(ptr), indexes.map(eval))))
       case Op.Extract(aggr, indexes) =>
-        emit.extract(materialize(eval(aggr)), indexes, unwind)
+        Val.Virtual(delay(Op.Extract(eval(aggr), indexes)))
       case Op.Insert(aggr, value, indexes) =>
-        emit.insert(materialize(eval(aggr)),
-                    materialize(eval(value)),
-                    indexes,
-                    unwind)
+        Val.Virtual(delay(Op.Insert(eval(aggr), eval(value), indexes)))
       case Op.Stackalloc(ty, n) =>
         emit.stackalloc(ty, materialize(eval(n)), unwind)
-      case Op.Bin(bin, ty, l, r) =>
+      case op @ Op.Bin(bin, ty, l, r) =>
         (eval(l), eval(r)) match {
           case (l, r) if l.isCanonical && r.isCanonical =>
             eval(bin, ty, l, r, unwind)
+          case (l, r) if op.isPure =>
+            Val.Virtual(delay(Op.Bin(bin, ty, l, r)))
           case (l, r) =>
             emit.bin(bin, ty, materialize(l), materialize(r), unwind)
         }
@@ -215,21 +215,23 @@ trait Eval { self: Interflow =>
 
           // Two virtual allocations will compare equal if
           // and only if they have the same virtual address.
-          case (Comp.Ieq, Val.Virtual(l), Val.Virtual(r)) =>
+          case (Comp.Ieq, Val.Virtual(l), Val.Virtual(r))
+              if state.isVirtual(l) && state.isVirtual(r) =>
             Val.Bool(l == r)
-          case (Comp.Ine, Val.Virtual(l), Val.Virtual(r)) =>
+          case (Comp.Ine, Val.Virtual(l), Val.Virtual(r))
+              if state.isVirtual(l) && state.isVirtual(r) =>
             Val.Bool(l != r)
 
           // Not-yet-materialized virtual allocation will never be
           // the same as already existing allocation (be it null
           // or any other value).
-          case (Comp.Ieq, Val.Virtual(addr), r) =>
+          case (Comp.Ieq, Val.Virtual(addr), r) if state.isVirtual(addr) =>
             Val.False
-          case (Comp.Ieq, l, Val.Virtual(addr)) =>
+          case (Comp.Ieq, l, Val.Virtual(addr)) if state.isVirtual(addr) =>
             Val.False
-          case (Comp.Ine, Val.Virtual(addr), r) =>
+          case (Comp.Ine, Val.Virtual(addr), r) if state.isVirtual(addr) =>
             Val.True
-          case (Comp.Ine, l, Val.Virtual(addr)) =>
+          case (Comp.Ine, l, Val.Virtual(addr)) if state.isVirtual(addr) =>
             Val.True
 
           // Comparing non-nullable value with null will always
@@ -263,30 +265,28 @@ trait Eval { self: Interflow =>
             Val.Bool(lcls.name != rcls.name)
 
           case (_, l, r) =>
-            emit.comp(comp, ty, materialize(l), materialize(r), unwind)
+            Val.Virtual(delay(Op.Comp(comp, ty, l, r)))
         }
       case Op.Conv(conv, ty, value) =>
         eval(value) match {
           case value if value.isCanonical =>
             eval(conv, ty, value)
           case value =>
-            emit.conv(conv, ty, materialize(value), unwind)
+            Val.Virtual(delay(Op.Conv(conv, ty, value)))
         }
       case Op.Classalloc(ClassRef(cls)) =>
         Val.Virtual(state.allocClass(cls))
       case Op.Fieldload(ty, obj, name @ FieldRef(cls, fld)) =>
         eval(obj) match {
-          case Val.Virtual(addr) =>
-            val instance = state.derefVirtual(addr)
-            instance.values(fld.index)
+          case VirtualRef(_, _, values) =>
+            values(fld.index)
           case obj =>
             emit.fieldload(ty, materialize(obj), name, unwind)
         }
       case Op.Fieldstore(ty, obj, name @ FieldRef(cls, fld), value) =>
         eval(obj) match {
-          case Val.Virtual(addr) =>
-            val instance = state.derefVirtual(addr)
-            instance.values(fld.index) = eval(value)
+          case VirtualRef(_, _, values) =>
+            values(fld.index) = eval(value)
             Val.Unit
           case obj =>
             emit.fieldstore(ty,
@@ -295,32 +295,34 @@ trait Eval { self: Interflow =>
                             materialize(eval(value)),
                             unwind)
         }
-      case Op.Method(obj, sig) =>
-        eval(obj) match {
-          case Val.Virtual(addr) =>
-            val cls      = state.deref(addr).cls
-            val resolved = cls.resolve(sig).get
-            Val.Global(resolved, Type.Ptr)
-          case obj if obj.ty == Type.Null =>
-            emit.method(materialize(obj), sig, unwind)
-          case obj =>
-            val targets = obj.ty match {
-              case ExactClassRef(cls, _) =>
-                cls.resolve(sig).toSeq
-              case ScopeRef(scope) =>
-                scope.targets(sig)
-              case _ =>
-                bailOut
-            }
-            targets match {
-              case Seq() =>
-                Val.Zero(Type.Nothing)
-              case Seq(meth) =>
-                Val.Global(meth, Type.Ptr)
-              case meths =>
-                meths.foreach(visitRoot)
-                emit.method(materialize(obj), sig, unwind)
-            }
+      case Op.Method(rawObj, sig) =>
+        val obj = eval(rawObj)
+        def fallback(targets: Iterable[Global]) = {
+          targets.foreach(visitRoot)
+          emit.method(materialize(obj), sig, unwind)
+        }
+        val objty = obj match {
+          case InstanceRef(ty) =>
+            ty
+          case _ =>
+            obj.ty
+        }
+        val targets = objty match {
+          case Type.Null =>
+            Seq.empty
+          case ExactClassRef(cls, _) =>
+            cls.resolve(sig).toSeq
+          case ScopeRef(scope) =>
+            scope.targets(sig)
+          case _ =>
+            bailOut
+        }
+        targets match {
+          case Seq(meth) =>
+            Val.Global(meth, Type.Ptr)
+          case _ =>
+            val res = fallback(targets)
+            if (targets.isEmpty) Val.Zero(Type.Nothing) else res
         }
       case Op.Dynmethod(obj, dynsig) =>
         linked.dynimpls.foreach {
@@ -335,51 +337,86 @@ trait Eval { self: Interflow =>
         if (originals.contains(init)) {
           visitRoot(init)
         }
-        emit.module(clsName, unwind)
-      case Op.As(ty, obj) =>
-        val refty = ty match {
-          case ty: Type.RefKind => ty
-          case _                => bailOut
-        }
-        eval(obj) match {
-          case obj @ Val.Virtual(addr)
-              if Sub.is(state.deref(addr).cls, refty) =>
-            obj
-          case obj if obj.ty == Type.Null =>
-            obj
-          case obj =>
-            obj.ty match {
-              case ClassRef(cls) if Sub.is(cls, refty) =>
-                obj
-              case _ =>
-                emit.as(ty, materialize(obj), unwind)
+        val emptyCtor =
+          if (!shallVisit(init)) {
+            true
+          } else {
+            visitDuplicate(init, argumentTypes(init)).fold {
+              false
+            } { defn =>
+              defn.insts match {
+                case Seq(_: Inst.Label, _: Inst.Ret) =>
+                  true
+                case _ =>
+                  false
+              }
             }
+          }
+        val isWhitelisted =
+          UseDef.pureWhitelist.contains(clsName)
+        val canDelay =
+          emptyCtor || isWhitelisted
+
+        if (canDelay) {
+          Val.Virtual(delay(Op.Module(clsName)))
+        } else {
+          emit.module(clsName, unwind)
         }
-      case Op.Is(ty, obj) =>
+      case Op.As(ty, rawObj) =>
         val refty = ty match {
           case ty: Type.RefKind => ty
           case _                => bailOut
         }
-        eval(obj) match {
-          case Val.Virtual(addr) =>
-            Val.Bool(Sub.is(state.deref(addr).cls, refty))
-          case obj if obj.ty == Type.Null =>
+        val obj = eval(rawObj)
+        def fallback =
+          emit.as(ty, materialize(obj), unwind)
+        val objty = obj match {
+          case InstanceRef(ty) =>
+            ty
+          case _ =>
+            obj.ty
+        }
+        objty match {
+          case Type.Null =>
+            Val.Null
+          case ScopeRef(scope) if Sub.is(scope, refty) =>
+            obj
+          case _ =>
+            fallback
+        }
+      case Op.Is(ty, rawObj) =>
+        val refty = ty match {
+          case ty: Type.RefKind => ty
+          case _                => bailOut
+        }
+        val obj = eval(rawObj)
+        def fallback =
+          Val.Virtual(delay(Op.Is(refty, obj)))
+        def objNotNull =
+          Val.Virtual(delay(Op.Comp(Comp.Ine, Rt.Object, obj, Val.Null)))
+        val objty = obj match {
+          case InstanceRef(ty) =>
+            ty
+          case _ =>
+            obj.ty
+        }
+        objty match {
+          case Type.Null =>
             Val.False
-          case obj =>
-            obj.ty match {
-              case ExactClassRef(cls, nullable) =>
-                val isStatically = Sub.is(cls, refty)
-                val res = if (!isStatically) {
-                  Val.False
-                } else if (!nullable) {
-                  Val.True
-                } else {
-                  emit.comp(Comp.Ine, Rt.Object, obj, Val.Null, unwind)
-                }
-                res
-              case _ =>
-                emit.is(refty, materialize(obj), unwind)
+          case And(scoperef: Type.RefKind, ScopeRef(scope)) =>
+            if (Sub.is(scope, refty)) {
+              if (!scoperef.isNullable) {
+                Val.True
+              } else {
+                objNotNull
+              }
+            } else if (scoperef.isExact) {
+              Val.False
+            } else {
+              fallback
             }
+          case _ =>
+            fallback
         }
       case Op.Copy(v) =>
         eval(v)
@@ -389,13 +426,8 @@ trait Eval { self: Interflow =>
         Val.Virtual(state.allocBox(boxname, eval(value)))
       case Op.Unbox(boxty @ Type.Ref(boxname, _, _), value) =>
         eval(value) match {
-          case Val.Virtual(addr) =>
-            val instance = state.derefVirtual(addr)
-            if (boxname == instance.cls.name) {
-              instance.values(0)
-            } else {
-              Val.Zero(Type.Nothing)
-            }
+          case VirtualRef(_, cls, Array(value)) if boxname == cls.name =>
+            value
           case value =>
             emit.unbox(boxty, materialize(value), unwind)
         }
@@ -416,19 +448,17 @@ trait Eval { self: Interflow =>
         }
       case Op.Arrayload(ty, arr, idx) =>
         (eval(arr), eval(idx)) match {
-          case (Val.Virtual(addr), Val.Int(offset))
-              if state.inBounds(addr, offset) =>
-            val instance = state.derefVirtual(addr)
-            instance.values(offset)
+          case (VirtualRef(_, _, values), Val.Int(offset))
+              if inBounds(values, offset) =>
+            values(offset)
           case (arr, idx) =>
             emit.arrayload(ty, materialize(arr), materialize(idx), unwind)
         }
       case Op.Arraystore(ty, arr, idx, value) =>
         (eval(arr), eval(idx)) match {
-          case (Val.Virtual(addr), Val.Int(offset))
-              if state.inBounds(addr, offset) =>
-            val instance = state.derefVirtual(addr)
-            instance.values(offset) = eval(value)
+          case (VirtualRef(_, _, values), Val.Int(offset))
+              if inBounds(values, offset) =>
+            values(offset) = eval(value)
             Val.Unit
           case (arr, idx) =>
             emit.arraystore(ty,
@@ -439,9 +469,8 @@ trait Eval { self: Interflow =>
         }
       case Op.Arraylength(arr) =>
         eval(arr) match {
-          case Val.Virtual(addr) =>
-            val instance = state.derefVirtual(addr)
-            Val.Int(instance.values.length)
+          case VirtualRef(_, _, values) =>
+            Val.Int(values.length)
           case arr =>
             emit.arraylength(materialize(arr), unwind)
         }
@@ -881,12 +910,16 @@ trait Eval { self: Interflow =>
           case value =>
             value
         }
-      case Val.Virtual(addr) if state.escaped(addr) =>
+      case Val.Virtual(addr) if state.hasEscaped(addr) =>
         state.derefEscaped(addr).escapedValue
       case Val.String(value) =>
         Val.Virtual(state.allocString(value))
       case _ =>
         value.canonicalize
     }
+  }
+
+  private def inBounds(values: Array[Val], offset: Int): Boolean = {
+    offset >= 0 && offset < values.length
   }
 }

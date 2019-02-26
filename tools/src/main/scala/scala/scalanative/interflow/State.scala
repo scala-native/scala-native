@@ -50,28 +50,42 @@ final class State(block: Local) {
       Val.Int(Lower.stringHashCode(value))
     alloc(StringKind, linked.StringClass, values)
   }
+  def delay(op: Op): Addr = {
+    val addr = fresh().id
+    heap(addr) = DelayedInstance(op)
+    addr
+  }
   def deref(addr: Addr): Instance = {
     heap(addr)
   }
   def derefVirtual(addr: Addr): VirtualInstance = {
     heap(addr).asInstanceOf[VirtualInstance]
   }
+  def derefDelayed(addr: Addr): DelayedInstance = {
+    heap(addr).asInstanceOf[DelayedInstance]
+  }
   def derefEscaped(addr: Addr): EscapedInstance = {
     heap(addr).asInstanceOf[EscapedInstance]
   }
-  def inBounds(addr: Addr, offset: Int): Boolean = {
-    heap(addr) match {
-      case VirtualInstance(_, _, v) =>
-        offset >= 0 && offset < v.length
-      case _ =>
-        false
-    }
+  def isVirtual(addr: Addr): Boolean = {
+    heap(addr).isInstanceOf[VirtualInstance]
   }
-  def escaped(addr: Addr): Boolean = {
-    deref(addr).isInstanceOf[EscapedInstance]
+  def isVirtual(value: Val): Boolean = value match {
+    case Val.Virtual(addr) => isVirtual(addr)
+    case _                 => false
   }
-  def escaped(value: Val): Boolean = value match {
-    case Val.Virtual(addr) => escaped(addr)
+  def isDelayed(addr: Addr): Boolean = {
+    heap(addr).isInstanceOf[DelayedInstance]
+  }
+  def isDelayed(value: Val): Boolean = value match {
+    case Val.Virtual(addr) => isDelayed(addr)
+    case _                 => false
+  }
+  def hasEscaped(addr: Addr): Boolean = {
+    heap(addr).isInstanceOf[EscapedInstance]
+  }
+  def hasEscaped(value: Val): Boolean = value match {
+    case Val.Virtual(addr) => hasEscaped(addr)
     case _                 => false
   }
   def loadLocal(local: Local): Val = {
@@ -93,132 +107,6 @@ final class State(block: Local) {
     assert(local.id < 0)
     locals(local) = value
   }
-  def materialize(value: Val)(implicit linked: linker.Result): Val =
-    value match {
-      case Val.Virtual(addr) =>
-        materialize(addr)
-      case _ =>
-        value
-    }
-  def materialize(addr: Long)(implicit linked: linker.Result): Val = {
-    val reachable = mutable.Set.empty[Addr]
-    val addrs     = mutable.UnrolledBuffer.empty[Addr]
-    def markValue(v: Val): Unit = v match {
-      case Val.Virtual(addr) =>
-        markAddr(addr)
-      case _ =>
-        ()
-    }
-    def markAddr(addr: Addr): Unit = {
-      if (!reachable.contains(addr)) {
-        def markCurrentAddr() = {
-          reachable += addr
-          addrs += addr
-        }
-        deref(addr) match {
-          case VirtualInstance(BoxKind, _, _) =>
-            markCurrentAddr()
-          case VirtualInstance(StringKind, _, values) =>
-            markCurrentAddr()
-            if (escaped(values(linked.StringValueField.index))) {
-              values.foreach(markValue)
-            }
-          case VirtualInstance(_, _, values) =>
-            markCurrentAddr()
-            values.foreach(markValue)
-          case _: EscapedInstance =>
-            ()
-        }
-      }
-    }
-    markAddr(addr)
-
-    val locals = addrs.map { addr =>
-      val local = deref(addr) match {
-        case VirtualInstance(ArrayKind, cls, values) =>
-          val ArrayRef(elemty, _) = cls.ty
-          val init =
-            if (!elemty.isInstanceOf[Type.RefKind]
-                && values.forall(_.isCanonical)
-                && values.exists(v => !v.isDefault)) {
-              Val.ArrayValue(elemty, values)
-            } else {
-              Val.Int(values.length)
-            }
-          emit.arrayalloc(elemty, init, Next.None)
-        case VirtualInstance(BoxKind, cls, Array(value)) =>
-          emit.box(Type.Ref(cls.name), value, Next.None)
-        case VirtualInstance(StringKind, _, values)
-            if !escaped(values(linked.StringValueField.index)) =>
-          val Val.Virtual(charsAddr) = values(linked.StringValueField.index)
-          val chars = derefVirtual(charsAddr).values
-            .map {
-              case Val.Char(v) => v
-            }
-            .toArray[Char]
-          Val.String(new java.lang.String(chars))
-        case VirtualInstance(_, cls, _) =>
-          emit.classalloc(cls.name, Next.None)
-        case _: EscapedInstance =>
-          unreachable
-      }
-      addr -> local
-    }.toMap
-
-    def escapedValueOf(addr: Addr): Val =
-      if (locals.contains(addr)) {
-        locals(addr)
-      } else {
-        derefEscaped(addr).escapedValue
-      }
-
-    addrs.foreach { addr =>
-      val local = locals(addr)
-      deref(addr) match {
-        case VirtualInstance(ArrayKind, cls, values) =>
-          val ArrayRef(elemty, _) = cls.ty
-          if (!elemty.isInstanceOf[Type.RefKind]
-              && values.forall(_.isCanonical)
-              && values.exists(v => !v.isDefault)) {
-            ()
-          } else {
-            values.zipWithIndex.foreach {
-              case (value, idx) if value.isDefault =>
-                // fields are initialied to default value
-                ()
-              case (Val.Virtual(addr), idx) =>
-                val value = escapedValueOf(addr)
-                assert(!value.isVirtual)
-                emit.arraystore(elemty, local, Val.Int(idx), value, Next.None)
-              case (value, idx) =>
-                emit.arraystore(elemty, local, Val.Int(idx), value, Next.None)
-            }
-          }
-        case VirtualInstance(BoxKind, _, _) =>
-          ()
-        case VirtualInstance(StringKind, _, values)
-            if !escaped(values(linked.StringValueField.index)) =>
-          ()
-        case VirtualInstance(_, cls, values) =>
-          cls.fields.zip(values).foreach {
-            case (fld, value) if value.isDefault =>
-              // fields are initialied to default value
-              ()
-            case (fld, Val.Virtual(addr)) =>
-              val value = escapedValueOf(addr)
-              assert(!value.isVirtual)
-              emit.fieldstore(fld.ty, local, fld.name, value, Next.None)
-            case (fld, value) =>
-              emit.fieldstore(fld.ty, local, fld.name, value, Next.None)
-          }
-        case _: EscapedInstance =>
-          unreachable
-      }
-      heap(addr) = new EscapedInstance(heap(addr).cls, local)
-    }
-
-    escapedValueOf(addr)
-  }
   def inherit(other: State, roots: Seq[Val]): Unit = {
     val closure = heapClosure(roots) ++ other.heapClosure(roots)
 
@@ -232,11 +120,13 @@ final class State(block: Local) {
     def reachAddr(addr: Addr): Unit = {
       if (heap.contains(addr) && !reachable.contains(addr)) {
         reachable += addr
-        deref(addr) match {
+        heap(addr) match {
           case VirtualInstance(_, _, vals) =>
             vals.foreach(reachVal)
-          case EscapedInstance(_, value) =>
+          case EscapedInstance(value) =>
             reachVal(value)
+          case DelayedInstance(op) =>
+            reachOp(op)
         }
       }
     }
@@ -246,6 +136,40 @@ final class State(block: Local) {
       case Val.ArrayValue(_, vals) => vals.foreach(reachVal)
       case Val.StructValue(vals)   => vals.foreach(reachVal)
       case _                       => ()
+    }
+
+    def reachOp(op: Op): Unit = op match {
+      case Op.Call(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
+      case Op.Load(_, v)         => reachVal(v)
+      case Op.Store(_, v1, v2)   => reachVal(v1); reachVal(v2)
+      case Op.Elem(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
+      case Op.Extract(v, _)      => reachVal(v)
+      case Op.Insert(v1, v2, _)  => reachVal(v1); reachVal(v2)
+      case Op.Stackalloc(_, v)   => reachVal(v)
+      case Op.Bin(_, _, v1, v2)  => reachVal(v1); reachVal(v2)
+      case Op.Comp(_, _, v1, v2) => reachVal(v1); reachVal(v2)
+      case Op.Conv(_, _, v)      => reachVal(v)
+
+      case _: Op.Classalloc            => ()
+      case Op.Fieldload(_, v, _)       => reachVal(v)
+      case Op.Fieldstore(_, v1, _, v2) => reachVal(v1); reachVal(v2)
+      case Op.Method(v, _)             => reachVal(v)
+      case Op.Dynmethod(v, _)          => reachVal(v)
+      case _: Op.Module                => ()
+      case Op.As(_, v)                 => reachVal(v)
+      case Op.Is(_, v)                 => reachVal(v)
+      case Op.Copy(v)                  => reachVal(v)
+      case _: Op.Sizeof                => ()
+      case Op.Box(_, v)                => reachVal(v)
+      case Op.Unbox(_, v)              => reachVal(v)
+      case _: Op.Var                   => ()
+      case Op.Varload(v)               => reachVal(v)
+      case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
+      case Op.Arrayalloc(_, v)         => reachVal(v)
+      case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
+      case Op.Arraystore(_, v1, v2, v3) =>
+        reachVal(v1); reachVal(v2); reachVal(v3)
+      case Op.Arraylength(v) => reachVal(v)
     }
 
     roots.foreach(reachVal)
@@ -264,46 +188,207 @@ final class State(block: Local) {
     case _ =>
       false
   }
-  def diff(other: State): String = {
-    val builder = new StringBuilder
-    def println(msg: String): Unit = {
-      builder.append(msg)
-      builder.append("\n")
-    }
-    if (other == null) {
-      println("right is null")
-    } else {
-      heap.foreach {
-        case (addr, instance) =>
-          if (!other.heap.contains(addr)) {
-            println(s"addr $addr is only present in left")
-          } else if (other.heap(addr) != instance) {
-            println(
-              s"different value for $addr: left = $instance, right = ${other.heap(addr)}")
-          }
-      }
-      other.heap.foreach {
-        case (addr, instance) =>
-          if (!heap.contains(addr)) {
-            println(s"addr $addr is only present in right")
-          }
-      }
-      locals.foreach {
-        case (id, value) =>
-          if (!other.locals.contains(id)) {
-            println(s"local ${id.show} is only present in left")
-          } else if (other.locals(id) != value) {
-            println(
-              s"different value for local ${id.show}: left = ${value.show}, right = ${other.locals(id).show}")
-          }
-      }
-      other.locals.foreach {
-        case (id, value) =>
-          if (!locals.contains(id)) {
-            println(s"local ${id.show} is only present in right")
-          }
+  def materialize(rootValue: Val)(implicit linked: linker.Result): Val = {
+    val locals = mutable.Map.empty[Addr, Val]
+
+    def reachAddr(addr: Addr): Unit = {
+      if (!locals.contains(addr)) {
+        val local = reachAlloc(addr)
+        locals(addr) = local
+        reachInit(local, addr)
+        heap(addr) = EscapedInstance(local)
       }
     }
-    builder.toString
+
+    def reachAlloc(addr: Addr): Val = heap(addr) match {
+      case VirtualInstance(ArrayKind, cls, values) =>
+        val ArrayRef(elemty, _) = cls.ty
+        val canConstantInit =
+          (!elemty.isInstanceOf[Type.RefKind]
+            && values.forall(_.isCanonical)
+            && values.exists(v => !v.isZero))
+        val init =
+          if (canConstantInit) {
+            Val.ArrayValue(elemty, values)
+          } else {
+            Val.Int(values.length)
+          }
+        emit.arrayalloc(elemty, init, Next.None)
+      case VirtualInstance(BoxKind, cls, Array(value)) =>
+        reachVal(value)
+        emit.let(Op.Box(Type.Ref(cls.name), escapedVal(value)), Next.None)
+      case VirtualInstance(StringKind, _, values)
+          if !hasEscaped(values(linked.StringValueField.index)) =>
+        val Val.Virtual(charsAddr) = values(linked.StringValueField.index)
+        val chars = derefVirtual(charsAddr).values
+          .map {
+            case Val.Char(v) => v
+          }
+          .toArray[Char]
+        Val.String(new java.lang.String(chars))
+      case VirtualInstance(_, cls, values) =>
+        emit.classalloc(cls.name, Next.None)
+      case DelayedInstance(op) =>
+        reachOp(op)
+        emit.let(escapedOp(op), Next.None)
+      case EscapedInstance(value) =>
+        reachVal(value)
+        escapedVal(value)
+    }
+
+    def reachInit(local: Val, addr: Addr): Unit = heap(addr) match {
+      case VirtualInstance(ArrayKind, cls, values) =>
+        val ArrayRef(elemty, _) = cls.ty
+        val canConstantInit =
+          (!elemty.isInstanceOf[Type.RefKind]
+            && values.forall(_.isCanonical)
+            && values.exists(v => !v.isZero))
+        if (!canConstantInit) {
+          values.zipWithIndex.foreach {
+            case (value, idx) =>
+              if (!value.isZero) {
+                reachVal(value)
+                emit.arraystore(elemty,
+                                local,
+                                Val.Int(idx),
+                                escapedVal(value),
+                                Next.None)
+              }
+          }
+        }
+      case VirtualInstance(BoxKind, cls, Array(value)) =>
+        ()
+      case VirtualInstance(StringKind, _, values)
+          if !hasEscaped(values(linked.StringValueField.index)) =>
+        ()
+      case VirtualInstance(_, cls, vals) =>
+        cls.fields.zip(vals).foreach {
+          case (fld, value) =>
+            if (!value.isZero) {
+              reachVal(value)
+              emit.fieldstore(fld.ty,
+                              local,
+                              fld.name,
+                              escapedVal(value),
+                              Next.None)
+            }
+        }
+      case DelayedInstance(op) =>
+        ()
+      case EscapedInstance(value) =>
+        ()
+    }
+
+    def reachVal(v: Val): Unit = v match {
+      case Val.Virtual(addr)       => reachAddr(addr)
+      case Val.ArrayValue(_, vals) => vals.foreach(reachVal)
+      case Val.StructValue(vals)   => vals.foreach(reachVal)
+      case _                       => ()
+    }
+
+    def reachOp(op: Op): Unit = op match {
+      case Op.Call(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
+      case Op.Load(_, v)         => reachVal(v)
+      case Op.Store(_, v1, v2)   => reachVal(v1); reachVal(v2)
+      case Op.Elem(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
+      case Op.Extract(v, _)      => reachVal(v)
+      case Op.Insert(v1, v2, _)  => reachVal(v1); reachVal(v2)
+      case Op.Stackalloc(_, v)   => reachVal(v)
+      case Op.Bin(_, _, v1, v2)  => reachVal(v1); reachVal(v2)
+      case Op.Comp(_, _, v1, v2) => reachVal(v1); reachVal(v2)
+      case Op.Conv(_, _, v)      => reachVal(v)
+
+      case _: Op.Classalloc            => ()
+      case Op.Fieldload(_, v, _)       => reachVal(v)
+      case Op.Fieldstore(_, v1, _, v2) => reachVal(v1); reachVal(v2)
+      case Op.Method(v, _)             => reachVal(v)
+      case Op.Dynmethod(v, _)          => reachVal(v)
+      case _: Op.Module                => ()
+      case Op.As(_, v)                 => reachVal(v)
+      case Op.Is(_, v)                 => reachVal(v)
+      case Op.Copy(v)                  => reachVal(v)
+      case _: Op.Sizeof                => ()
+      case Op.Box(_, v)                => reachVal(v)
+      case Op.Unbox(_, v)              => reachVal(v)
+      case _: Op.Var                   => ()
+      case Op.Varload(v)               => reachVal(v)
+      case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
+      case Op.Arrayalloc(_, v)         => reachVal(v)
+      case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
+      case Op.Arraystore(_, v1, v2, v3) =>
+        reachVal(v1); reachVal(v2); reachVal(v3)
+      case Op.Arraylength(v) => reachVal(v)
+    }
+
+    def escapedVal(v: Val): Val = v match {
+      case Val.Virtual(addr) =>
+        locals(addr)
+      case _ =>
+        v
+    }
+
+    def escapedOp(op: Op): Op = op match {
+      case Op.Call(ty, v, vs) =>
+        Op.Call(ty, escapedVal(v), vs.map(escapedVal))
+      case Op.Load(ty, v) =>
+        Op.Load(ty, escapedVal(v))
+      case Op.Store(ty, v1, v2) =>
+        Op.Store(ty, escapedVal(v1), escapedVal(v2))
+      case Op.Elem(ty, v, vs) =>
+        Op.Elem(ty, escapedVal(v), vs.map(escapedVal))
+      case Op.Extract(v, idxs) =>
+        Op.Extract(escapedVal(v), idxs)
+      case Op.Insert(v1, v2, idxs) =>
+        Op.Insert(escapedVal(v1), escapedVal(v2), idxs)
+      case Op.Stackalloc(ty, v) =>
+        Op.Stackalloc(ty, escapedVal(v))
+      case Op.Bin(bin, ty, v1, v2) =>
+        Op.Bin(bin, ty, escapedVal(v1), escapedVal(v2))
+      case Op.Comp(comp, ty, v1, v2) =>
+        Op.Comp(comp, ty, escapedVal(v1), escapedVal(v2))
+      case Op.Conv(conv, ty, v) =>
+        Op.Conv(conv, ty, escapedVal(v))
+
+      case op: Op.Classalloc =>
+        op
+      case Op.Fieldload(ty, v, n) =>
+        Op.Fieldload(ty, escapedVal(v), n)
+      case Op.Fieldstore(ty, v1, n, v2) =>
+        Op.Fieldstore(ty, escapedVal(v1), n, escapedVal(v2))
+      case Op.Method(v, n) =>
+        Op.Method(escapedVal(v), n)
+      case Op.Dynmethod(v, n) =>
+        Op.Dynmethod(escapedVal(v), n)
+      case op: Op.Module =>
+        op
+      case Op.As(ty, v) =>
+        Op.As(ty, escapedVal(v))
+      case Op.Is(ty, v) =>
+        Op.Is(ty, escapedVal(v))
+      case Op.Copy(v) =>
+        Op.Copy(escapedVal(v))
+      case op: Op.Sizeof =>
+        op
+      case Op.Box(ty, v) =>
+        Op.Box(ty, escapedVal(v))
+      case Op.Unbox(ty, v) =>
+        Op.Unbox(ty, escapedVal(v))
+      case op: Op.Var =>
+        op
+      case Op.Varload(v) =>
+        Op.Varload(escapedVal(v))
+      case Op.Varstore(v1, v2) =>
+        Op.Varstore(escapedVal(v1), escapedVal(v2))
+      case Op.Arrayalloc(ty, v) => Op.Arrayalloc(ty, escapedVal(v))
+      case Op.Arrayload(ty, v1, v2) =>
+        Op.Arrayload(ty, escapedVal(v1), escapedVal(v2))
+      case Op.Arraystore(ty, v1, v2, v3) =>
+        Op.Arraystore(ty, escapedVal(v1), escapedVal(v2), escapedVal(v3))
+      case Op.Arraylength(v) =>
+        Op.Arraylength(escapedVal(v))
+    }
+
+    reachVal(rootValue)
+    escapedVal(rootValue)
   }
 }
