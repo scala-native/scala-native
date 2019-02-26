@@ -269,7 +269,7 @@ trait Eval { self: Interflow =>
             Val.Bool(lcls.name != rcls.name)
 
           case (_, l, r) =>
-            emit.comp(comp, ty, materialize(l), materialize(r), unwind)
+            Val.Virtual(delay(Op.Comp(comp, ty, l, r)))
         }
       case Op.Conv(conv, ty, value) =>
         eval(value) match {
@@ -391,9 +391,9 @@ trait Eval { self: Interflow =>
         }
         val obj = eval(rawObj)
         def fallback =
-          emit.is(refty, materialize(obj), unwind)
+          Val.Virtual(delay(Op.Is(refty, obj)))
         def objNotNull =
-          emit.comp(Comp.Ine, Rt.Object, materialize(obj), Val.Null, unwind)
+          Val.Virtual(delay(Op.Comp(Comp.Ine, Rt.Object, obj, Val.Null)))
         val objty = obj match {
           case InstanceRef(ty) =>
             ty
