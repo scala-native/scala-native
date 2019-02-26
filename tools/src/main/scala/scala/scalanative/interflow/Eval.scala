@@ -363,7 +363,11 @@ trait Eval { self: Interflow =>
         val canDelay =
           emptyCtor || isWhitelisted
 
-        emit.module(clsName, unwind)
+        if (canDelay) {
+          Val.Virtual(delay(Op.Module(clsName)))
+        } else {
+          emit.module(clsName, unwind)
+        }
       case Op.As(ty, rawObj) =>
         val refty = ty match {
           case ty: Type.RefKind => ty
