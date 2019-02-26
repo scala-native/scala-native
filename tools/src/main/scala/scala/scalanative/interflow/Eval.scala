@@ -205,10 +205,12 @@ trait Eval { self: Interflow =>
                     unwind)
       case Op.Stackalloc(ty, n) =>
         emit.stackalloc(ty, materialize(eval(n)), unwind)
-      case Op.Bin(bin, ty, l, r) =>
+      case op @ Op.Bin(bin, ty, l, r) =>
         (eval(l), eval(r)) match {
           case (l, r) if l.isCanonical && r.isCanonical =>
             eval(bin, ty, l, r, unwind)
+          case (l, r) if op.isPure =>
+            Val.Virtual(delay(Op.Bin(bin, ty, l, r)))
           case (l, r) =>
             emit.bin(bin, ty, materialize(l), materialize(r), unwind)
         }
