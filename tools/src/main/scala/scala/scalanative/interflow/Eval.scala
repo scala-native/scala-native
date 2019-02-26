@@ -170,7 +170,7 @@ trait Eval { self: Interflow =>
                   margs.zip(sigtys).map {
                     case (marg, ty) =>
                       if (!Sub.is(marg.ty, ty)) {
-                        emit.conv(Conv.Bitcast, ty, marg, unwind)
+                        Val.Virtual(delay(Op.Conv(Conv.Bitcast, ty, marg)))
                       } else {
                         marg
                       }
@@ -276,7 +276,7 @@ trait Eval { self: Interflow =>
           case value if value.isCanonical =>
             eval(conv, ty, value)
           case value =>
-            emit.conv(conv, ty, materialize(value), unwind)
+            Val.Virtual(delay(Op.Conv(conv, ty, value)))
         }
       case Op.Classalloc(ClassRef(cls)) =>
         Val.Virtual(state.allocClass(cls))
