@@ -73,42 +73,26 @@ final class _Class[A](val rawty: RawPtr) {
     // This replicates the logic of the compiler-generated instance check
     // that you would normally get if you do (obj: L).isInstanceOf[R],
     // where rtti for L and R are `left` and `right`.
-    left.kind match {
-      case CLASS_KIND =>
-        right.kind match {
-          case CLASS_KIND =>
-            val rightCls  = right.asInstanceOf[Ptr[ClassType]]
-            val rightFrom = rightCls.idRangeFrom
-            val rightTo   = rightCls.idRangeTo
-            val leftId    = left.id
-            leftId >= rightFrom && leftId <= rightTo
-          case TRAIT_KIND =>
-            __check_class_has_trait(left.id, right.id)
-          case STRUCT_KIND =>
-            false
-        }
-      case TRAIT_KIND =>
-        right.kind match {
-          case CLASS_KIND =>
-            false
-          case TRAIT_KIND =>
-            __check_trait_has_trait(left.id, right.id)
-          case STRUCT_KIND =>
-            false
-        }
-      case STRUCT_KIND =>
-        right.kind match {
-          case CLASS_KIND =>
-            false
-          case TRAIT_KIND =>
-            false
-          case STRUCT_KIND =>
-            left.id == right.id
-        }
+    if (left.isClass) {
+      if (right.isClass) {
+        val rightCls  = right.asInstanceOf[Ptr[ClassType]]
+        val rightFrom = rightCls.id
+        val rightTo   = rightCls.idRangeUntil
+        val leftId    = left.id
+        leftId >= rightFrom && leftId <= rightTo
+      } else {
+        __check_class_has_trait(left.id, -right.id - 1)
+      }
+    } else {
+      if (right.isClass) {
+        false
+      } else {
+        __check_trait_has_trait(-left.id - 1, -right.id - 1)
+      }
     }
 
   def isInterface(): scala.Boolean =
-    ty.kind == TRAIT_KIND
+    !ty.isClass
 
   def isPrimitive(): scala.Boolean =
     (rawty == toRawType(classOf[PrimitiveBoolean]) ||
@@ -133,12 +117,8 @@ final class _Class[A](val rawty: RawPtr) {
     Intrinsics.castRawPtrToLong(rawty).##
 
   override def toString = {
-    val name = getName
-    val prefix = ty.kind match {
-      case CLASS_KIND  => "class "
-      case TRAIT_KIND  => "interface "
-      case STRUCT_KIND => "struct "
-    }
+    val name   = getName
+    val prefix = if (ty.isClass) "class " else "interface "
     prefix + name
   }
 

@@ -158,8 +158,7 @@ class PerfectHashMap[K, V](val keys: Seq[Int],
 }
 
 object DynmethodPerfectHashMap {
-  def apply(dynmethods: Seq[Global.Member],
-            allSignatures: Seq[Sig]): Val.StructValue = {
+  def apply(dynmethods: Seq[Global.Member], allSignatures: Seq[Sig]): Val = {
 
     val signaturesWithIndex =
       allSignatures.zipWithIndex.foldLeft(Map[Sig, Int]()) {
@@ -179,20 +178,21 @@ object DynmethodPerfectHashMap {
       case None         => (Val.Int(-1), Val.Null)
     }.unzip
 
-    Val.StructValue(
-      Val.Int(perfectHashMap.size) ::
-        (perfectHashMap.size match {
-        case 0 =>
-          List(Val.Null, Val.Null, Val.Null)
-        case _ =>
+    if (perfectHashMap.size == 0) {
+      Val.Null
+    } else {
+      Val.Const(
+        Val.StructValue(
           List(
+            Val.Int(perfectHashMap.size),
             Val.Const(
               Val.ArrayValue(Type.Int, perfectHashMap.keys.map(Val.Int))),
             Val.Const(Val.ArrayValue(Type.Int, keys)),
             Val.Const(Val.ArrayValue(Type.Ptr, values))
           )
-      })
-    )
+        )
+      )
+    }
   }
 
   def hash(key: Int, salt: Int): Int = {
