@@ -62,6 +62,7 @@ object UseDef {
     out += Global.Top("scala.scalanative.runtime.Boxes$")
     out += Global.Top("scala.scalanative.runtime.package$")
     out += Global.Top("scala.scalanative.native.package$")
+    out += Global.Top("scala.collection.immutable.Range$")
     out ++= codegen.Lower.BoxTo.values
     out
   }
