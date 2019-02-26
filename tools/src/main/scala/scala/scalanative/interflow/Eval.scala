@@ -192,17 +192,11 @@ trait Eval { self: Interflow =>
       case Op.Store(ty, ptr, value) =>
         emit.store(ty, materialize(eval(ptr)), materialize(eval(value)), unwind)
       case Op.Elem(ty, ptr, indexes) =>
-        emit.elem(ty,
-                  materialize(eval(ptr)),
-                  indexes.map(i => materialize(eval(i))),
-                  unwind)
+        Val.Virtual(delay(Op.Elem(ty, eval(ptr), indexes.map(eval))))
       case Op.Extract(aggr, indexes) =>
-        emit.extract(materialize(eval(aggr)), indexes, unwind)
+        Val.Virtual(delay(Op.Extract(eval(aggr), indexes)))
       case Op.Insert(aggr, value, indexes) =>
-        emit.insert(materialize(eval(aggr)),
-                    materialize(eval(value)),
-                    indexes,
-                    unwind)
+        Val.Virtual(delay(Op.Insert(eval(aggr), eval(value), indexes)))
       case Op.Stackalloc(ty, n) =>
         emit.stackalloc(ty, materialize(eval(n)), unwind)
       case op @ Op.Bin(bin, ty, l, r) =>
