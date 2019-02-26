@@ -7,13 +7,18 @@ import scala.reflect.ClassTag
 
 final case class AssertionFailed(msg: String) extends Exception(msg)
 
-final case class Test(name: String, run: () => Boolean)
+final case class TestResult(status: Boolean, thrown: Option[Throwable])
+
+final case class Test(name: String, run: () => TestResult)
 
 abstract class Suite {
   private val tests = new mutable.UnrolledBuffer[Test]
 
   def assert(cond: Boolean): Unit =
     assertTrue(cond)
+
+  def assert(cond: Boolean, message: String): Unit =
+    if (!cond) throw AssertionFailed(message) else ()
 
   def assertTrue(cond: Boolean): Unit =
     if (!cond) {
@@ -80,9 +85,9 @@ abstract class Suite {
     tests += Test(name, { () =>
       try {
         body
-        true
+        TestResult(true, None)
       } catch {
-        case _: Throwable => false
+        case thrown: Throwable => TestResult(false, Option(thrown))
       }
     })
 
@@ -90,11 +95,22 @@ abstract class Suite {
     tests += Test(name, { () =>
       try {
         body
-        false
+        TestResult(false, None)
       } catch {
-        case _: Throwable => true
+        case thrown: Throwable => TestResult(true, None)
       }
     })
+
+  @inline private[this] def getThrownString(thrown: Option[Throwable],
+                                            color: String,
+                                            indent: Int): String = {
+    if (thrown.isEmpty) ""
+    else {
+      val indentSpaces = " " * indent
+      val info         = thrown.get.toString
+      s"\n${color}${indentSpaces}${info}"
+    }
+  }
 
   def run(eventHandler: EventHandler, loggers: Array[Logger]): Boolean = {
     val className = this.getClass.getName
@@ -102,15 +118,20 @@ abstract class Suite {
     var success = true
 
     tests.foreach { test =>
-      val testSuccess = test.run()
+      val (TestResult(testSuccess, thrown)) = test.run()
       val (status, statusStr, color) =
         if (testSuccess) (Status.Success, "  [ok] ", Console.GREEN)
         else (Status.Failure, "  [fail] ", Console.RED)
       val event = NativeEvent(className, test.name, NativeFingerprint, status)
-      loggers.foreach(_.info(color + statusStr + test.name + Console.RESET))
+
+      val outMsg = color + statusStr + test.name +
+        getThrownString(thrown, color, statusStr.length) +
+        Console.RESET
+
+      loggers.foreach(_.info(outMsg))
+
       eventHandler.handle(event)
       success = success && testSuccess
-
     }
 
     success
