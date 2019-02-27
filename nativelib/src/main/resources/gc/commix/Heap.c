@@ -241,9 +241,9 @@ bool Heap_shouldGrow(Heap *heap) {
     uint64_t timeInMark = heap->mark.currentEnd_ns - heap->mark.currentStart_ns;
     uint64_t timeTotal = heap->mark.currentEnd_ns - heap->mark.lastEnd_ns;
 
-    return timeInMark >= GROWTH_MARK_FRACTION * timeTotal ||
-           freeBlockCount * 2 < blockCount ||
-           4 * unavailableBlockCount > blockCount;
+    return timeInMark >= DEFAULT_MARK_TIME_RATIO * timeTotal ||
+           freeBlockCount < DEFAULT_FREE_RATIO * blockCount ||
+           unavailableBlockCount > blockCount * MAX_UNAVAILABLE_RATIO;
 }
 
 void Heap_GrowIfNeeded(Heap *heap) {
