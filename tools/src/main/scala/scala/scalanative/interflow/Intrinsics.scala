@@ -29,24 +29,15 @@ trait Intrinsics { self: Interflow =>
     Global.Member(Global.Top("java.lang.Math$"), Rt.SqrtSig)
   ) ++ arrayIntrinsics
 
-  def intrinsic(local: Local,
-                ty: Type,
-                name: Global,
-                rawArgs: Seq[Val],
-                unwind: Next)(implicit state: State): Val = {
+  def intrinsic(local: Local, ty: Type, name: Global, rawArgs: Seq[Val])(
+      implicit state: State): Val = {
     val Global.Member(_, sig) = name
 
     val args = rawArgs.map(eval)
 
-    def emit = {
-      if (unwind ne Next.None) {
-        throw BailOut("try-catch")
-      }
-      state.emit.call(ty,
-                      Val.Global(name, Type.Ptr),
-                      args.map(state.materialize(_)),
-                      unwind)
-    }
+    def fallback =
+      state.emit(
+        Op.Call(ty, Val.Global(name, Type.Ptr), args.map(state.materialize(_))))
 
     sig match {
       case Rt.GetClassSig =>
@@ -59,14 +50,14 @@ trait Intrinsics { self: Interflow =>
             instance.values(0) = Val.Global(cls.name, Type.Ptr)
             Val.Virtual(addr)
           case _ =>
-            emit
+            fallback
         }
       case Rt.IsArraySig =>
         args match {
           case Seq(VirtualRef(_, _, Array(Val.Global(clsName, _)))) =>
             Val.Bool(Type.isArray(clsName))
           case _ =>
-            emit
+            fallback
         }
       case Rt.IsAssignableFromSig =>
         args match {
@@ -74,82 +65,82 @@ trait Intrinsics { self: Interflow =>
                    VirtualRef(_, _, Array(Val.Global(ScopeRef(rinfo), _)))) =>
             Val.Bool(rinfo.is(linfo))
           case _ =>
-            emit
+            fallback
         }
       case Rt.GetNameSig =>
         args match {
           case Seq(VirtualRef(_, _, Array(Val.Global(name: Global.Top, _)))) =>
             eval(Val.String(name.id))(state)
           case _ =>
-            emit
+            fallback
         }
       case Rt.BitCountSig =>
         args match {
           case Seq(_, Val.Int(v)) =>
             Val.Int(java.lang.Integer.bitCount(v))
           case _ =>
-            emit
+            fallback
         }
       case Rt.ReverseBytesSig =>
         args match {
           case Seq(_, Val.Int(v)) =>
             Val.Int(java.lang.Integer.reverseBytes(v))
           case _ =>
-            emit
+            fallback
         }
       case Rt.NumberOfLeadingZerosSig =>
         args match {
           case Seq(_, Val.Int(v)) =>
             Val.Int(java.lang.Integer.numberOfLeadingZeros(v))
           case _ =>
-            emit
+            fallback
         }
       case Rt.CosSig =>
         args match {
           case Seq(_, Val.Double(v)) =>
             Val.Double(java.lang.Math.cos(v))
           case _ =>
-            emit
+            fallback
         }
       case Rt.SinSig =>
         args match {
           case Seq(_, Val.Double(v)) =>
             Val.Double(java.lang.Math.sin(v))
           case _ =>
-            emit
+            fallback
         }
       case Rt.PowSig =>
         args match {
           case Seq(_, Val.Double(v1), Val.Double(v2)) =>
             Val.Double(java.lang.Math.pow(v1, v2))
           case _ =>
-            emit
+            fallback
         }
       case Rt.SqrtSig =>
         args match {
           case Seq(_, Val.Double(v)) =>
             Val.Double(java.lang.Math.sqrt(v))
           case _ =>
-            emit
+            fallback
         }
       case Rt.MaxSig =>
         args match {
           case Seq(_, Val.Double(v1), Val.Double(v2)) =>
             Val.Double(java.lang.Math.max(v1, v2))
           case _ =>
-            emit
+            fallback
         }
       case _ if arrayApplyIntrinsics.contains(name) =>
         val Seq(arr, idx)            = rawArgs
         val Type.Function(_, elemty) = ty
-        eval(local, Op.Arrayload(elemty, arr, idx), unwind)
+        eval(local, Op.Arrayload(elemty, arr, idx))
       case _ if arrayUpdateIntrinsics.contains(name) =>
         val Seq(arr, idx, value)                = rawArgs
         val Type.Function(Seq(_, _, elemty), _) = ty
-        eval(local, Op.Arraystore(elemty, arr, idx, value), unwind)
+        eval(local, Op.Arraystore(elemty, arr, idx, value))
       case _ if name == arrayLengthIntrinsic =>
         val Seq(arr) = rawArgs
-        eval(local, Op.Arraylength(arr), unwind)
+        eval(local, Op.Arraylength(arr))
     }
   }
 }

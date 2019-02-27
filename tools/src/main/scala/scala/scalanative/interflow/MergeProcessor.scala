@@ -64,6 +64,7 @@ final class MergeProcessor(insts: Array[Inst],
         val mergeLocals = mutable.Map.empty[Local, Val]
         val mergeHeap   = mutable.Map.empty[Addr, Instance]
         val mergePhis   = mutable.UnrolledBuffer.empty[MergePhi]
+        val mergeOps    = mutable.Map.empty[Op, Val]
         val newEscapes  = mutable.Set.empty[Addr]
 
         def mergePhi(values: Seq[Val]): Val = {
@@ -154,6 +155,20 @@ final class MergeProcessor(insts: Array[Inst],
               }
               mergeLocals(param.name) = mergePhi(values)
           }
+
+          // 4. Merge ops
+
+          def includeOp(op: Op, v: Val): Boolean = {
+            states.forall { s =>
+              s.ops.contains(op) && s.ops(op) == v
+            }
+          }
+          states.head.ops.foreach {
+            case (op, v) =>
+              if (includeOp(op, v)) {
+                mergeOps(op) = v
+              }
+          }
         }
 
         def restart(): Nothing =
@@ -168,6 +183,7 @@ final class MergeProcessor(insts: Array[Inst],
           mergeLocals.clear()
           mergeHeap.clear()
           mergePhis.clear()
+          mergeOps.clear()
           newEscapes.clear()
           try {
             computeMerge()

@@ -11,6 +11,7 @@ final class State(block: Local) {
   var fresh  = Fresh(block.id)
   var heap   = mutable.Map.empty[Addr, Instance]
   var locals = mutable.Map.empty[Local, Val]
+  var ops    = mutable.Map.empty[Op, Val]
   var emit   = new nir.Buffer()(fresh)
 
   private def alloc(kind: Kind, cls: Class, values: Array[Val]): Addr = {
@@ -50,10 +51,38 @@ final class State(block: Local) {
       Val.Int(Lower.stringHashCode(value))
     alloc(StringKind, linked.StringClass, values)
   }
-  def delay(op: Op): Addr = {
-    val addr = fresh().id
-    heap(addr) = DelayedInstance(op)
-    addr
+  private def reuse(op: Op): Val = {
+    val value = ops(op)
+    value match {
+      case Val.Virtual(addr) if hasEscaped(addr) =>
+        derefEscaped(addr).escapedValue
+      case _ =>
+        value
+    }
+  }
+  def delay(op: Op): Val = {
+    if (ops.contains(op)) {
+      reuse(op)
+    } else {
+      val addr  = fresh().id
+      val value = Val.Virtual(addr)
+      heap(addr) = DelayedInstance(op)
+      ops(op) = value
+      value
+    }
+  }
+  def emit(op: Op): Val = {
+    if (op.isIdempotent) {
+      if (ops.contains(op)) {
+        reuse(op)
+      } else {
+        val value = emit.let(op, Next.None)
+        ops(op) = value
+        value
+      }
+    } else {
+      emit.let(op, Next.None)
+    }
   }
   def deref(addr: Addr): Instance = {
     heap(addr)
@@ -180,6 +209,7 @@ final class State(block: Local) {
     val newstate = new State(block)
     newstate.heap = heap.map { case (k, v) => (k, v.clone()) }
     newstate.locals = locals.clone()
+    newstate.ops = ops.clone()
     newstate
   }
   override def equals(other: Any): Boolean = other match {
@@ -216,7 +246,7 @@ final class State(block: Local) {
         emit.arrayalloc(elemty, init, Next.None)
       case VirtualInstance(BoxKind, cls, Array(value)) =>
         reachVal(value)
-        emit.let(Op.Box(Type.Ref(cls.name), escapedVal(value)), Next.None)
+        emit.box(Type.Ref(cls.name), escapedVal(value), Next.None)
       case VirtualInstance(StringKind, _, values)
           if !hasEscaped(values(linked.StringValueField.index)) =>
         val Val.Virtual(charsAddr) = values(linked.StringValueField.index)
