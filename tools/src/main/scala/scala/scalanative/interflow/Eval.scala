@@ -333,29 +333,12 @@ trait Eval { self: Interflow =>
         }
         emit.dynmethod(materialize(eval(obj)), dynsig, unwind)
       case Op.Module(clsName) =>
-        val init = clsName member Sig.Ctor(Seq.empty)
-        if (originals.contains(init)) {
-          visitRoot(init)
-        }
-        val emptyCtor =
-          if (!shallVisit(init)) {
-            true
-          } else {
-            visitDuplicate(init, argumentTypes(init)).fold {
-              false
-            } { defn =>
-              defn.insts match {
-                case Seq(_: Inst.Label, _: Inst.Ret) =>
-                  true
-                case _ =>
-                  false
-              }
-            }
-          }
+        val isPure =
+          isPureModule(clsName)
         val isWhitelisted =
           UseDef.pureWhitelist.contains(clsName)
         val canDelay =
-          emptyCtor || isWhitelisted
+          isPure || isWhitelisted
 
         if (canDelay) {
           Val.Virtual(delay(Op.Module(clsName)))
@@ -921,5 +904,85 @@ trait Eval { self: Interflow =>
 
   private def inBounds(values: Array[Val], offset: Int): Boolean = {
     offset >= 0 && offset < values.length
+  }
+
+  private def isPureModule(clsName: Global): Boolean = {
+    var visiting = List[Global]()
+
+    def isPureModule(clsName: Global): Boolean = {
+      if (modulePurity.contains(clsName)) {
+        modulePurity(clsName)
+      } else {
+        visiting = clsName :: visiting
+
+        val init = clsName member Sig.Ctor(Seq.empty)
+        val isPure =
+          if (!shallVisit(init)) {
+            true
+          } else {
+            visitDuplicate(init, argumentTypes(init)).fold {
+              false
+            } { defn =>
+              isPureModuleCtor(defn)
+            }
+          }
+        modulePurity(clsName) = isPure
+        isPure
+      }
+    }
+
+    def isPureModuleCtor(defn: Defn.Define): Boolean = {
+      val Inst.Label(_, Val.Local(self, _) +: _) = defn.insts.head
+
+      val canStoreTo = mutable.Set(self)
+
+      defn.insts.foreach {
+        case Inst.Let(n,
+                      _: Op.Classalloc | _: Op.Arrayalloc | _: Op.Box |
+                      _: Op.Module,
+                      _) =>
+          canStoreTo += n
+        case _ =>
+          ()
+      }
+
+      def canStoreValue(v: Val): Boolean = v match {
+        case _ if v.isCanonical => true
+        case Val.Local(n, _)    => canStoreTo.contains(n)
+        case _                  => false
+      }
+
+      defn.insts.forall {
+        case inst @ (_: Inst.Throw | _: Inst.Unreachable) =>
+          false
+        case _: Inst.Label =>
+          true
+        case _: Inst.Cf =>
+          true
+        case Inst.Let(_, op, _) if op.isPure =>
+          true
+        case Inst.Let(_, _: Op.Classalloc | _: Op.Arrayalloc | _: Op.Box, _) =>
+          true
+        case Inst.Let(_, Op.Module(name), _) =>
+          if (!visiting.contains(name)) {
+            isPureModule(name)
+          } else {
+            false
+          }
+        case Inst.Let(_, Op.Fieldload(_, Val.Local(to, _), _), _)
+            if canStoreTo.contains(to) =>
+          true
+        case Inst.Let(_, Op.Fieldstore(_, Val.Local(to, _), _, value), _)
+            if canStoreTo.contains(to) =>
+          canStoreValue(value)
+        case Inst.Let(_, Op.Arraylength(Val.Local(to, _)), _)
+            if canStoreTo.contains(to) =>
+          true
+        case inst =>
+          false
+      }
+    }
+
+    isPureModule(clsName)
   }
 }

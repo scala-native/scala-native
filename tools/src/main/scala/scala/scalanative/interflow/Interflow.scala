@@ -20,6 +20,7 @@ class Interflow(val mode: build.Mode, val originals: Map[Global, Defn.Define])(
 
   val mergeProcessor = new util.ScopedVar[MergeProcessor]
   val blockFresh     = new util.ScopedVar[Fresh]
+  val modulePurity   = mutable.Map.empty[Global, Boolean]
 }
 
 object Interflow {
