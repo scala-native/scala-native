@@ -62,6 +62,28 @@ size_t Settings_MaxHeapSize() {
     }
 }
 
+double Settings_MaxMarkTimeRatio() {
+    char *str = getenv("SCALANATIVE_MARK_TIME_RATIO");
+    if (str == NULL) {
+        return DEFAULT_MARK_TIME_RATIO;
+    } else {
+        double ratio;
+        sscanf(str, "%lf", &ratio);
+        return ratio;
+    }
+}
+
+double Settings_MinFreeRatio() {
+    char *str = getenv("SCALANATIVE_FREE_RATIO");
+    if (str == NULL) {
+        return DEFAULT_FREE_RATIO;
+    } else {
+        double ratio;
+        sscanf(str, "%lf", &ratio);
+        return ratio;
+    }
+}
+
 #ifdef ENABLE_GC_STATS
 char *Settings_StatsFileName() { return getenv(STATS_FILE_SETTING); }
 #endif

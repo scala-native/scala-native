@@ -8,6 +8,8 @@
 
 size_t Settings_MinHeapSize();
 size_t Settings_MaxHeapSize();
+double Settings_MaxMarkTimeRatio();
+double Settings_MinFreeRatio();
 #ifdef ENABLE_GC_STATS
 char *Settings_StatsFileName();
 #endif
