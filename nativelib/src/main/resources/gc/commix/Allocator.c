@@ -159,8 +159,8 @@ bool Allocator_newBlock(Allocator *allocator) {
     if (concurrent) {
         block = BlockList_Pop(&allocator->recycledBlocks, blockMetaStart);
     } else {
-        block = BlockList_Pop_OnlyThread(&allocator->recycledBlocks,
-                                         blockMetaStart);
+        block = BlockList_PopOnlyThread(&allocator->recycledBlocks,
+                                        blockMetaStart);
     }
     word_t *blockStart;
 

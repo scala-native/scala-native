@@ -62,11 +62,11 @@ BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int *index) {
 }
 
 inline static BlockMeta *
-BlockAllocator_pollSuperblock_OnlyThread(BlockAllocator *blockAllocator,
-                                         int *index) {
+BlockAllocator_pollSuperblockOnlyThread(BlockAllocator *blockAllocator,
+                                        int *index) {
     word_t *blockMetaStart = blockAllocator->blockMetaStart;
     for (int i = *index; i < SUPERBLOCK_LIST_SIZE; i++) {
-        BlockMeta *superblock = BlockList_Pop_OnlyThread(
+        BlockMeta *superblock = BlockList_PopOnlyThread(
             &blockAllocator->freeSuperblocks[i], blockMetaStart);
         if (superblock != NULL) {
             *index = i;
@@ -87,7 +87,7 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
         superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
     } else {
         superblock =
-            BlockAllocator_pollSuperblock_OnlyThread(blockAllocator, &index);
+            BlockAllocator_pollSuperblockOnlyThread(blockAllocator, &index);
     }
     if (superblock != NULL) {
         blockAllocator->smallestSuperblock.cursor = superblock + 1;
@@ -174,7 +174,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         if (concurrent) {
             superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
         } else {
-            superblock = BlockAllocator_pollSuperblock_OnlyThread(
+            superblock = BlockAllocator_pollSuperblockOnlyThread(
                 blockAllocator, &index);
         }
         uint32_t receivedSize = 1 << index;

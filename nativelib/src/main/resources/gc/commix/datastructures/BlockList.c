@@ -36,8 +36,8 @@ BlockMeta *BlockList_Pop(BlockList *blockList, word_t *blockMetaStart) {
     return head;
 }
 
-BlockMeta *BlockList_Pop_OnlyThread(BlockList *blockList,
-                                    word_t *blockMetaStart) {
+BlockMeta *BlockList_PopOnlyThread(BlockList *blockList,
+                                   word_t *blockMetaStart) {
     BlockMeta *head = (BlockMeta *)blockList->head;
     if (head == NULL) {
         return NULL;
