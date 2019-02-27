@@ -294,7 +294,7 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     // Checks if the end of the block overlaps with the limit
-    if (end >= allocator.limit) {
+    if (end > allocator.limit) {
         return Allocator_allocSlow(heap, size);
     }
 
