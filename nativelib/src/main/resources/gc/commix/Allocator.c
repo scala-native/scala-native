@@ -87,8 +87,6 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
         return Allocator_overflowAllocation(allocator, size);
     }
 
-    memset(start, 0, size);
-
     allocator->largeCursor = end;
 
     return start;
@@ -117,8 +115,6 @@ INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
             return NULL;
         }
     }
-
-    memset(start, 0, size);
 
     allocator->cursor = end;
 
@@ -250,6 +246,7 @@ NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
     done:
         assert(Heap_IsWordInHeap(heap, object));
         assert(object != NULL);
+        memset(object, 0, size);
         ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, object);
 #ifdef DEBUG_ASSERT
         ObjectMeta_AssertIsValidAllocation(objectMeta, size);
