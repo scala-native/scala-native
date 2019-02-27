@@ -159,7 +159,6 @@ int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
         fields + (length / ARRAY_SPLIT_BATCH) * ARRAY_SPLIT_BATCH;
 
     assert(lastBatch <= limit);
-    // first
     for (word_t **batchFields = fields; batchFields < limit;
          batchFields += ARRAY_SPLIT_BATCH) {
         GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
