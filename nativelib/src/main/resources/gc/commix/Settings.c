@@ -63,7 +63,7 @@ size_t Settings_MaxHeapSize() {
 }
 
 double Settings_MaxMarkTimeRatio() {
-    char *str = getenv("SCALANATIVE_MARK_TIME_RATIO");
+    char *str = getenv("SCALANATIVE_TIME_RATIO");
     if (str == NULL) {
         return DEFAULT_MARK_TIME_RATIO;
     } else {
