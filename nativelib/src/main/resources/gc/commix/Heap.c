@@ -134,6 +134,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->maxHeapSize = maxHeapSize;
     heap->blockCount = initialBlockCount;
     heap->maxBlockCount = maxNumberOfBlocks;
+    heap->maxMarkTimeRatio = Settings_MaxMarkTimeRatio();
+    heap->minFreeRatio = Settings_MinFreeRatio();
 
     // reserve space for block headers
     size_t blockMetaSpaceSize = maxNumberOfBlocks * sizeof(BlockMeta);
@@ -231,7 +233,9 @@ bool Heap_shouldGrow(Heap *heap) {
         blockCount - (freeBlockCount + recycledBlockCount);
 
 #ifdef DEBUG_PRINT
-    printf("\n\nBlock count: %" PRIu32 "\n", blockCount);
+    printf("\n\n Max mark time ratio: %lf \n", heap->maxMarkTimeRatio);
+    printf("Min free ratio: %lf \n", heap->minFreeRatio);
+    printf("Block count: %" PRIu32 "\n", blockCount);
     printf("Unavailable: %" PRIu32 "\n", unavailableBlockCount);
     printf("Free: %" PRIu32 "\n", freeBlockCount);
     printf("Recycled: %" PRIu32 "\n", recycledBlockCount);
@@ -241,8 +245,8 @@ bool Heap_shouldGrow(Heap *heap) {
     uint64_t timeInMark = heap->mark.currentEnd_ns - heap->mark.currentStart_ns;
     uint64_t timeTotal = heap->mark.currentEnd_ns - heap->mark.lastEnd_ns;
 
-    return timeInMark >= DEFAULT_MARK_TIME_RATIO * timeTotal ||
-           freeBlockCount < DEFAULT_FREE_RATIO * blockCount ||
+    return timeInMark >= heap->maxMarkTimeRatio * timeTotal ||
+           freeBlockCount < heap->minFreeRatio * blockCount ||
            unavailableBlockCount > blockCount * MAX_UNAVAILABLE_RATIO;
 }
 

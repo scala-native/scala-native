@@ -25,6 +25,8 @@ typedef struct {
     size_t maxHeapSize;
     uint32_t blockCount;
     uint32_t maxBlockCount;
+    double maxMarkTimeRatio;
+    double minFreeRatio;
     struct {
         sem_t startWorkers;
         sem_t startMaster;
