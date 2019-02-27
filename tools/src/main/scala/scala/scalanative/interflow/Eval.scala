@@ -903,7 +903,11 @@ trait Eval { self: Interflow =>
   }
 
   private def inBounds(values: Array[Val], offset: Int): Boolean = {
-    offset >= 0 && offset < values.length
+    inBounds(values.length, offset)
+  }
+
+  private def inBounds(length: Int, offset: Int): Boolean = {
+    offset >= 0 && offset < length
   }
 
   private def isPureModule(clsName: Global): Boolean = {
@@ -934,13 +938,21 @@ trait Eval { self: Interflow =>
     def isPureModuleCtor(defn: Defn.Define): Boolean = {
       val Inst.Label(_, Val.Local(self, _) +: _) = defn.insts.head
 
-      val canStoreTo = mutable.Set(self)
+      val canStoreTo  = mutable.Set(self)
+      val arrayLength = mutable.Map.empty[Local, Int]
 
       defn.insts.foreach {
-        case Inst.Let(n,
-                      _: Op.Classalloc | _: Op.Arrayalloc | _: Op.Box |
-                      _: Op.Module,
-                      _) =>
+        case Inst.Let(n, Op.Arrayalloc(_, init), _) =>
+          canStoreTo += n
+          init match {
+            case Val.Int(size) =>
+              arrayLength(n) = size
+            case Val.ArrayValue(_, elems) =>
+              arrayLength(n) = elems.size
+            case _ =>
+              ()
+          }
+        case Inst.Let(n, _: Op.Classalloc | _: Op.Box | _: Op.Module, _) =>
           canStoreTo += n
         case _ =>
           ()
@@ -964,7 +976,7 @@ trait Eval { self: Interflow =>
           true
         case Inst.Let(_, _: Op.Classalloc | _: Op.Arrayalloc | _: Op.Box, _) =>
           true
-        case Inst.Let(_, Op.Module(name), _) =>
+        case inst @ Inst.Let(_, Op.Module(name), _) =>
           if (!visiting.contains(name)) {
             isPureModule(name)
           } else {
@@ -973,8 +985,18 @@ trait Eval { self: Interflow =>
         case Inst.Let(_, Op.Fieldload(_, Val.Local(to, _), _), _)
             if canStoreTo.contains(to) =>
           true
-        case Inst.Let(_, Op.Fieldstore(_, Val.Local(to, _), _, value), _)
+        case inst @ Inst.Let(_, Op.Fieldstore(_, Val.Local(to, _), _, value), _)
             if canStoreTo.contains(to) =>
+          canStoreValue(value)
+        case Inst.Let(_, Op.Arrayload(_, Val.Local(to, _), Val.Int(idx)), _)
+            if canStoreTo.contains(to)
+              && inBounds(arrayLength.getOrElse(to, -1), idx) =>
+          true
+        case Inst.Let(_,
+                      Op.Arraystore(_, Val.Local(to, _), Val.Int(idx), value),
+                      _)
+            if canStoreTo.contains(to)
+              && inBounds(arrayLength.getOrElse(to, -1), idx) =>
           canStoreValue(value)
         case Inst.Let(_, Op.Arraylength(Val.Local(to, _)), _)
             if canStoreTo.contains(to) =>
