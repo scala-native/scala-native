@@ -223,7 +223,7 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
             if (toMove > 0) {
                 GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
                 assert(slice != NULL);
-                GreyPacket_Move(in, slice, toMove);
+                GreyPacket_MoveItems(in, slice, toMove);
                 Marker_giveFullPacket(heap, stats, slice);
             }
             objectsTraced = 0;
