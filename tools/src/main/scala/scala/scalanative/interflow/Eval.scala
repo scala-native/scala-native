@@ -949,6 +949,7 @@ trait Eval { self: Interflow =>
       def canStoreValue(v: Val): Boolean = v match {
         case _ if v.isCanonical => true
         case Val.Local(n, _)    => canStoreTo.contains(n)
+        case _: Val.String      => true
         case _                  => false
       }
 
