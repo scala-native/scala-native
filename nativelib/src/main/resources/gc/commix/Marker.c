@@ -196,6 +196,16 @@ int Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
     return objectsTraced;
 }
 
+static inline void Marker_splitIncomingPacket(Heap *heap, Stats *stats, GreyPacket *in) {
+    int toMove = in->size / 2;
+    if (toMove > 0) {
+        GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
+        assert(slice != NULL);
+        GreyPacket_MoveItems(in, slice, toMove);
+        Marker_giveFullPacket(heap, stats, slice);
+    }
+}
+
 void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
                        GreyPacket **outHolder) {
     Bytemap *bytemap = heap->bytemap;
@@ -219,13 +229,7 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
         }
         if (objectsTraced > MARK_MAX_WORK_PER_PACKET) {
             // the packet has a lot of work split the remainder in two
-            int toMove = in->size / 2;
-            if (toMove > 0) {
-                GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
-                assert(slice != NULL);
-                GreyPacket_MoveItems(in, slice, toMove);
-                Marker_giveFullPacket(heap, stats, slice);
-            }
+            Marker_splitIncomingPacket(heap, stats, in);
             objectsTraced = 0;
         }
     }
