@@ -45,7 +45,7 @@ size_t Settings_parseSizeStr(const char *str) {
 }
 
 size_t Settings_MinHeapSize() {
-    char *minHeapSizeStr = getenv("SCALANATIVE_MIN_HEAP_SIZE");
+    char *minHeapSizeStr = getenv("SCALANATIVE_MIN_SIZE");
     if (minHeapSizeStr != NULL) {
         return Settings_parseSizeStr(minHeapSizeStr);
     } else {
@@ -54,7 +54,7 @@ size_t Settings_MinHeapSize() {
 }
 
 size_t Settings_MaxHeapSize() {
-    char *maxHeapSizeStr = getenv("SCALANATIVE_MAX_HEAP_SIZE");
+    char *maxHeapSizeStr = getenv("SCALANATIVE_MAX_SIZE");
     if (maxHeapSizeStr != NULL) {
         return Settings_parseSizeStr(maxHeapSizeStr);
     } else {
