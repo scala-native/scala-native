@@ -3864,7 +3864,6 @@ object FormatterSuite extends tests.Suite {
     }
   }
 
-
   test("Formatter.BigDecimalLayoutForm.values()") {
     import Formatter.BigDecimalLayoutForm
     val vals: Array[BigDecimalLayoutForm] = BigDecimalLayoutForm.values()
