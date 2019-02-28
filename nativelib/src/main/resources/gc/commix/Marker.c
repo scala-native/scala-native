@@ -15,17 +15,46 @@ extern word_t **__stack_bottom;
 
 #define LAST_FIELD_OFFSET -1
 
-// Marking is done using grey packets. A grey packet is a fixes size list that
-// contains pointers to objects for marking.
+// Marking uses multiple threads in parallel. Note that there is no need to
+// synchronize on any of the mark bytes in BlockMeta, LineMeta or ObjectMeta,
+// because marking is idempotent. If we mark an object that has been already
+// marked, it stays marked. When we check if the object has been marked, it
+// could return an older state with allocated. This can cause us to re-trace
+// a single object multiple times, but it is not as bad as the overhead caused
+// by something like test-and-set or compare-and-swap. Marking uses grey packets
+// to synchronize between threads. A grey packet is a fixes size list that
+// contains pointers to objects for marking. Grey packets are kept in it own
+// separate memory region (see heap->greyPacketsStart).
 //
+// Marking starts with the application (mutator) thread tracing the roots which
+// produces the initial grey packets. See `Marker_MarkRoots`.
 // Each marker has a grey packet with references to check ("in" packet).
 // When it finds a new unmarked object the marker puts a pointer to
 // it in the "out" packet. When the "in" packet is empty it gets
 // another from the full packet list and returns the empty one to the empty
 // packet list. Similarly, when the "out" packet get full, marker gets another
 // empty packet and pushes the full one on the full packet list.
-//
 // Marking is done when all the packets are empty and in the empty packet list.
+//
+// An object can have different number of outgoing pointers. Therefore, the number
+// of objects to check per packet varies and packets take different amount of
+// time to process. Marking cannot complete until the thread with the most work
+// is done. Very large packets (in terms of work) can slow the marking down.
+// To mitigate this we count the number of objects traced. If it goes
+// over a threshold (MARK_MAX_WORK_PER_PACKET) then we transfer half of the
+// remaining items to a packet and add that packet to the full packet list.
+// We can also get object arrays larger than most packets. The object arrays are
+// split into special fixed size (ARRAY_SPLIT_THRESHOLD) range packets which
+// are added to full packets. The remainder is processed immediately.
+// See `Marker_splitIncomingPacket` and `Marker_splitObjectArray`
+//
+// Depending on the number of full packets in the list `Marker_MarkAndScale` can
+// start new threads. This is done on the master gc thread after each packet
+// processed. The mutator and GC marking for the entire marking phase
+// see `Marker_MarkUtilDone`, but other threads stop themselves when they cannot
+// find any more full packets. If we left these threads running they would
+// continuously query for new packets spending CPU resources, slowing other
+// threads and not doing any work.
 
 static inline GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
     Stats_RecordTimeSync(stats, start_ns);

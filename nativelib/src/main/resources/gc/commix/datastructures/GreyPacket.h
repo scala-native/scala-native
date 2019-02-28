@@ -15,6 +15,10 @@ typedef Object *Stack_Type;
 typedef union {
     struct __attribute__((packed)) {
         uint32_t idx : BLOCK_COUNT_BITS;
+        // Size is kept in the reference it is in sync with the grey list.
+        // Otherwise the updates can get reordered causing the number temporarily
+        // appearing larger than it is which will trigger Marker_IsMarkDone
+        // prematurely.
         uint32_t size : BLOCK_COUNT_BITS;
         uint16_t timesPoped; // used to avoid ABA problems when popping
     } sep;
