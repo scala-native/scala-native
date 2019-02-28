@@ -218,7 +218,7 @@ void Heap_Collect(Heap *heap) {
 #endif
     Phase_StartMark(heap);
     Marker_MarkRoots(heap, stats);
-    Marker_MarkUtilDone(heap, stats);
+    Marker_MarkUntilDone(heap, stats);
     Phase_MarkDone(heap);
     Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
                       heap->mark.currentEnd_ns);

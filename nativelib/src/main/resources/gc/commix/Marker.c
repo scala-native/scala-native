@@ -354,7 +354,7 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats) {
     }
 }
 
-void Marker_MarkUtilDone(Heap *heap, Stats *stats) {
+void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
     while (!Marker_IsMarkDone(heap)) {
         Marker_Mark(heap, stats);
         if (!Marker_IsMarkDone(heap)) {
