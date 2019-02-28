@@ -201,9 +201,17 @@ trait Eval { self: Interflow =>
           case (l, r) if l.isCanonical && r.isCanonical =>
             eval(bin, ty, l, r)
           case (l, r) if Op.Bin(bin, ty, l, r).isPure =>
-            delay(Op.Bin(bin, ty, l, r))
+            if (l.isCanonical && op.isCommutative) {
+              delay(Op.Bin(bin, ty, r, l))
+            } else {
+              delay(Op.Bin(bin, ty, l, r))
+            }
           case (l, r) =>
-            emit(Op.Bin(bin, ty, materialize(l), materialize(r)))
+            if (l.isCanonical && op.isCommutative) {
+              emit(Op.Bin(bin, ty, materialize(r), materialize(l)))
+            } else {
+              emit(Op.Bin(bin, ty, materialize(l), materialize(r)))
+            }
         }
       case Op.Comp(comp, ty, l, r) =>
         (comp, eval(l), eval(r)) match {
@@ -262,7 +270,11 @@ trait Eval { self: Interflow =>
             Val.Bool(lcls.name != rcls.name)
 
           case (_, l, r) =>
-            delay(Op.Comp(comp, ty, l, r))
+            if (l.isCanonical && op.isCommutative) {
+              delay(Op.Comp(comp, ty, r, l))
+            } else {
+              delay(Op.Comp(comp, ty, l, r))
+            }
         }
       case Op.Conv(conv, ty, value) =>
         eval(value) match {
