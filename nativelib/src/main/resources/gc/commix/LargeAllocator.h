@@ -28,7 +28,6 @@ void LargeAllocator_Init(LargeAllocator *allocator,
                          word_t *blockMetaStart, word_t *heapStart);
 word_t *LargeAllocator_Alloc(Heap *heap, uint32_t objectSize);
 void LargeAllocator_Clear(LargeAllocator *allocator);
-uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
-                              word_t *blockStart, BlockMeta *batchLimit);
-
+void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
+                             size_t total_block_size);
 #endif // IMMIX_LARGEALLOCATOR_H
