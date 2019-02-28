@@ -6,7 +6,7 @@ import scalanative.nir._
 import scalanative.linker._
 
 trait Inline { self: Interflow =>
-  def shallInline(name: Global, args: Seq[Val], unwind: Next)(
+  def shallInline(name: Global, args: Seq[Val])(
       implicit state: State,
       linked: linker.Result): Boolean =
     done
@@ -30,8 +30,6 @@ trait Inline { self: Interflow =>
           defn.attrs.inline == Attr.NoInline
         val hintInline =
           defn.attrs.inline == Attr.AlwaysInline || defn.attrs.inline == Attr.InlineHint
-        val hasUnwind =
-          unwind != Next.None
         val isRecursive =
           context.contains(s"inlining ${name.show}")
         val isBlacklisted =
@@ -44,13 +42,12 @@ trait Inline { self: Interflow =>
         val shall =
           isCtor || hintInline || isSmall || (mode == build.Mode.Release && hasVirtualArgs)
         val shallNot =
-          noInline || hasUnwind || isRecursive || isBlacklisted || calleeTooBig || callerTooBig
+          noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig
 
         if (shall) {
           if (shallNot) {
             log(s"not inlining ${name.show}, because:")
             if (noInline) { log("* has noinline attr") }
-            if (hasUnwind) { log("* has unwind") }
             if (isRecursive) { log("* is recursive") }
             if (isBlacklisted) { log("* is blacklisted") }
             if (callerTooBig) { log("* caller is too big") }
@@ -64,26 +61,14 @@ trait Inline { self: Interflow =>
         shall && !shallNot
       }
 
-  def inline(name: Global, args: Seq[Val], unwind: Next)(
-      implicit state: State,
-      linked: linker.Result): Val =
+  def inline(name: Global, args: Seq[Val])(implicit state: State,
+                                           linked: linker.Result): Val =
     in(s"inlining ${name.show}") {
+      val defn   = done(name)
+      val blocks = process(defn.insts.toArray, args, state, inline = true)
+
       val emit = new nir.Buffer()(state.fresh)
 
-      val defn = done(name)
-      val defnArgTys = {
-        val Type.Function(argtys, _) = defn.ty
-        argtys
-      }
-      val inlineArgs = args.zip(defnArgTys).foreach {
-        case (local @ Val.Local(_, ty), argTy) if !Sub.is(ty, argTy) =>
-          emit.conv(Conv.Bitcast, argTy, local, unwind)
-        case v =>
-          v
-      }
-      val inlineInsts = defn.insts
-      val blocks =
-        process(inlineInsts.toArray, args, state, inline = true)
       def nothing = {
         emit.label(state.fresh(), Seq.empty)
         Val.Zero(Type.Nothing)

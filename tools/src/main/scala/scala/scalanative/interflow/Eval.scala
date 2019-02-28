@@ -22,7 +22,10 @@ trait Eval { self: Interflow =>
         case _: Inst.Label =>
           unreachable
         case Inst.Let(local, op, unwind) =>
-          val value = eval(local, op, unwind)
+          if (unwind ne Next.None) {
+            throw BailOut("try-catch")
+          }
+          val value = eval(local, op)
           if (value.ty == Type.Nothing) {
             return Inst.Unreachable(unwind)
           } else {
@@ -105,22 +108,16 @@ trait Eval { self: Interflow =>
     unreachable
   }
 
-  def eval(local: Local, op: Op, unwind: Next)(implicit state: State,
-                                               linked: linker.Result): Val = {
-    import state.{materialize, delay}
-    def emit = {
-      if (unwind ne Next.None) {
-        throw BailOut("try-catch")
-      }
-      state.emit
-    }
+  def eval(local: Local, op: Op)(implicit state: State,
+                                 linked: linker.Result): Val = {
+    import state.{emit, materialize, delay}
     def bailOut =
       throw BailOut("can't eval op: " + op.show)
     op match {
       case Op.Call(sig, meth, args) =>
         eval(meth) match {
           case Val.Global(name, _) if intrinsics.contains(name) =>
-            intrinsic(local, sig, name, args, unwind)
+            intrinsic(local, sig, name, args)
           case emeth =>
             val eargs = args.map(eval)
             val argtys = eargs.map {
@@ -170,43 +167,43 @@ trait Eval { self: Interflow =>
                   margs.zip(sigtys).map {
                     case (marg, ty) =>
                       if (!Sub.is(marg.ty, ty)) {
-                        Val.Virtual(delay(Op.Conv(Conv.Bitcast, ty, marg)))
+                        delay(Op.Conv(Conv.Bitcast, ty, marg))
                       } else {
                         marg
                       }
                   }
                 }
 
-              emit.call(dsig, mtarget, cargs, unwind)
+              emit(Op.Call(dsig, mtarget, cargs))
             }
 
             dtarget match {
-              case Val.Global(name, _) if shallInline(name, eargs, unwind) =>
-                inline(name, eargs, unwind)
+              case Val.Global(name, _) if shallInline(name, eargs) =>
+                inline(name, eargs)
               case _ =>
                 fallback
             }
         }
       case Op.Load(ty, ptr) =>
-        emit.load(ty, materialize(eval(ptr)), unwind)
+        emit(Op.Load(ty, materialize(eval(ptr))))
       case Op.Store(ty, ptr, value) =>
-        emit.store(ty, materialize(eval(ptr)), materialize(eval(value)), unwind)
+        emit(Op.Store(ty, materialize(eval(ptr)), materialize(eval(value))))
       case Op.Elem(ty, ptr, indexes) =>
-        Val.Virtual(delay(Op.Elem(ty, eval(ptr), indexes.map(eval))))
+        delay(Op.Elem(ty, eval(ptr), indexes.map(eval)))
       case Op.Extract(aggr, indexes) =>
-        Val.Virtual(delay(Op.Extract(eval(aggr), indexes)))
+        delay(Op.Extract(eval(aggr), indexes))
       case Op.Insert(aggr, value, indexes) =>
-        Val.Virtual(delay(Op.Insert(eval(aggr), eval(value), indexes)))
+        delay(Op.Insert(eval(aggr), eval(value), indexes))
       case Op.Stackalloc(ty, n) =>
-        emit.stackalloc(ty, materialize(eval(n)), unwind)
+        emit(Op.Stackalloc(ty, materialize(eval(n))))
       case op @ Op.Bin(bin, ty, l, r) =>
         (eval(l), eval(r)) match {
           case (l, r) if l.isCanonical && r.isCanonical =>
-            eval(bin, ty, l, r, unwind)
-          case (l, r) if op.isPure =>
-            Val.Virtual(delay(Op.Bin(bin, ty, l, r)))
+            eval(bin, ty, l, r)
+          case (l, r) if Op.Bin(bin, ty, l, r).isPure =>
+            delay(Op.Bin(bin, ty, l, r))
           case (l, r) =>
-            emit.bin(bin, ty, materialize(l), materialize(r), unwind)
+            emit(Op.Bin(bin, ty, materialize(l), materialize(r)))
         }
       case Op.Comp(comp, ty, l, r) =>
         (comp, eval(l), eval(r)) match {
@@ -265,14 +262,14 @@ trait Eval { self: Interflow =>
             Val.Bool(lcls.name != rcls.name)
 
           case (_, l, r) =>
-            Val.Virtual(delay(Op.Comp(comp, ty, l, r)))
+            delay(Op.Comp(comp, ty, l, r))
         }
       case Op.Conv(conv, ty, value) =>
         eval(value) match {
           case value if value.isCanonical =>
             eval(conv, ty, value)
           case value =>
-            Val.Virtual(delay(Op.Conv(conv, ty, value)))
+            delay(Op.Conv(conv, ty, value))
         }
       case Op.Classalloc(ClassRef(cls)) =>
         Val.Virtual(state.allocClass(cls))
@@ -281,7 +278,7 @@ trait Eval { self: Interflow =>
           case VirtualRef(_, _, values) =>
             values(fld.index)
           case obj =>
-            emit.fieldload(ty, materialize(obj), name, unwind)
+            emit(Op.Fieldload(ty, materialize(obj), name))
         }
       case Op.Fieldstore(ty, obj, name @ FieldRef(cls, fld), value) =>
         eval(obj) match {
@@ -289,17 +286,14 @@ trait Eval { self: Interflow =>
             values(fld.index) = eval(value)
             Val.Unit
           case obj =>
-            emit.fieldstore(ty,
-                            materialize(obj),
-                            name,
-                            materialize(eval(value)),
-                            unwind)
+            emit(Op
+              .Fieldstore(ty, materialize(obj), name, materialize(eval(value))))
         }
       case Op.Method(rawObj, sig) =>
         val obj = eval(rawObj)
         def fallback(targets: Iterable[Global]) = {
           targets.foreach(visitRoot)
-          emit.method(materialize(obj), sig, unwind)
+          emit(Op.Method(materialize(obj), sig))
         }
         val objty = obj match {
           case InstanceRef(ty) =>
@@ -331,7 +325,7 @@ trait Eval { self: Interflow =>
           case _ =>
             ()
         }
-        emit.dynmethod(materialize(eval(obj)), dynsig, unwind)
+        emit(Op.Dynmethod(materialize(eval(obj)), dynsig))
       case Op.Module(clsName) =>
         val isPure =
           isPureModule(clsName)
@@ -341,9 +335,9 @@ trait Eval { self: Interflow =>
           isPure || isWhitelisted
 
         if (canDelay) {
-          Val.Virtual(delay(Op.Module(clsName)))
+          delay(Op.Module(clsName))
         } else {
-          emit.module(clsName, unwind)
+          emit(Op.Module(clsName))
         }
       case Op.As(ty, rawObj) =>
         val refty = ty match {
@@ -352,7 +346,7 @@ trait Eval { self: Interflow =>
         }
         val obj = eval(rawObj)
         def fallback =
-          emit.as(ty, materialize(obj), unwind)
+          emit(Op.As(ty, materialize(obj)))
         val objty = obj match {
           case InstanceRef(ty) =>
             ty
@@ -374,9 +368,9 @@ trait Eval { self: Interflow =>
         }
         val obj = eval(rawObj)
         def fallback =
-          Val.Virtual(delay(Op.Is(refty, obj)))
+          delay(Op.Is(refty, obj))
         def objNotNull =
-          Val.Virtual(delay(Op.Comp(Comp.Ine, Rt.Object, obj, Val.Null)))
+          delay(Op.Comp(Comp.Ine, Rt.Object, obj, Val.Null))
         val objty = obj match {
           case InstanceRef(ty) =>
             ty
@@ -412,7 +406,7 @@ trait Eval { self: Interflow =>
           case VirtualRef(_, cls, Array(value)) if boxname == cls.name =>
             value
           case value =>
-            emit.unbox(boxty, materialize(value), unwind)
+            emit(Op.Unbox(boxty, materialize(value)))
         }
       case Op.Arrayalloc(ty, init) =>
         eval(init) match {
@@ -427,7 +421,7 @@ trait Eval { self: Interflow =>
             }
             Val.Virtual(addr)
           case init =>
-            emit.arrayalloc(ty, materialize(init), unwind)
+            emit(Op.Arrayalloc(ty, materialize(init)))
         }
       case Op.Arrayload(ty, arr, idx) =>
         (eval(arr), eval(idx)) match {
@@ -435,7 +429,7 @@ trait Eval { self: Interflow =>
               if inBounds(values, offset) =>
             values(offset)
           case (arr, idx) =>
-            emit.arrayload(ty, materialize(arr), materialize(idx), unwind)
+            emit(Op.Arrayload(ty, materialize(arr), materialize(idx)))
         }
       case Op.Arraystore(ty, arr, idx, value) =>
         (eval(arr), eval(idx)) match {
@@ -444,18 +438,18 @@ trait Eval { self: Interflow =>
             values(offset) = eval(value)
             Val.Unit
           case (arr, idx) =>
-            emit.arraystore(ty,
+            emit(
+              Op.Arraystore(ty,
                             materialize(arr),
                             materialize(idx),
-                            materialize(eval(value)),
-                            unwind)
+                            materialize(eval(value))))
         }
       case Op.Arraylength(arr) =>
         eval(arr) match {
           case VirtualRef(_, _, values) =>
             Val.Int(values.length)
           case arr =>
-            emit.arraylength(materialize(arr), unwind)
+            emit(Op.Arraylength(materialize(arr)))
         }
       case Op.Var(ty) =>
         Val.Local(state.newVar(ty), Type.Var(ty))
@@ -469,15 +463,10 @@ trait Eval { self: Interflow =>
     }
   }
 
-  def eval(bin: Bin, ty: Type, l: Val, r: Val, unwind: Next)(
-      implicit state: State): Val = {
-    import state.materialize
-    def emit = {
-      if (unwind ne Next.None) {
-        throw BailOut("try-catch")
-      }
-      state.emit.bin(bin, ty, materialize(l), materialize(r), unwind)
-    }
+  def eval(bin: Bin, ty: Type, l: Val, r: Val)(implicit state: State): Val = {
+    import state.{emit, materialize}
+    def fallback =
+      emit(Op.Bin(bin, ty, materialize(l), materialize(r)))
     def bailOut =
       throw BailOut(s"can't eval bin op: $bin[${ty.show}] ${l.show}, ${r.show}")
     bin match {
@@ -523,13 +512,13 @@ trait Eval { self: Interflow =>
             if (r != 0) {
               Val.Int(l / r)
             } else {
-              emit
+              fallback
             }
           case (Val.Long(l), Val.Long(r)) =>
             if (r != 0L) {
               Val.Long(l / r)
             } else {
-              emit
+              fallback
             }
           case _ =>
             bailOut
@@ -540,13 +529,13 @@ trait Eval { self: Interflow =>
             if (r != 0) {
               Val.Int(java.lang.Integer.divideUnsigned(l, r))
             } else {
-              emit
+              fallback
             }
           case (Val.Long(l), Val.Long(r)) =>
             if (r != 0) {
               Val.Long(java.lang.Long.divideUnsigned(l, r))
             } else {
-              emit
+              fallback
             }
           case _ =>
             bailOut
@@ -563,13 +552,13 @@ trait Eval { self: Interflow =>
             if (r != 0) {
               Val.Int(l % r)
             } else {
-              emit
+              fallback
             }
           case (Val.Long(l), Val.Long(r)) =>
             if (r != 0L) {
               Val.Long(l % r)
             } else {
-              emit
+              fallback
             }
           case _ =>
             bailOut
@@ -580,13 +569,13 @@ trait Eval { self: Interflow =>
             if (r != 0) {
               Val.Int(java.lang.Integer.remainderUnsigned(l, r))
             } else {
-              emit
+              fallback
             }
           case (Val.Long(l), Val.Long(r)) =>
             if (r != 0L) {
               Val.Long(java.lang.Long.remainderUnsigned(l, r))
             } else {
-              emit
+              fallback
             }
           case _ =>
             bailOut
