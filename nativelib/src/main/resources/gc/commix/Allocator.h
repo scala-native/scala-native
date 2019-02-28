@@ -8,7 +8,6 @@
 #include "metadata/BlockMeta.h"
 #include "metadata/ObjectMeta.h"
 #include "BlockAllocator.h"
-#include "SweepResult.h"
 #include "Heap.h"
 
 typedef struct {
@@ -45,8 +44,5 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
 bool Allocator_CanInitCursors(Allocator *allocator);
 void Allocator_Clear(Allocator *allocator);
 word_t *Allocator_Alloc(Heap *heap, uint32_t objectSize);
-uint32_t Allocator_Sweep(Allocator *allocator, BlockMeta *block,
-                         word_t *blockStart, LineMeta *lineMetas,
-                         SweepResult *result);
 
 #endif // IMMIX_ALLOCATOR_H

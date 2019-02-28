@@ -83,7 +83,7 @@ void LargeAllocator_Clear(LargeAllocator *allocator) {
     }
 }
 
-void LargeAllocator_addChunk(LargeAllocator *allocator, Chunk *chunk,
+void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size) {
     assert(total_block_size >= MIN_BLOCK_SIZE);
     assert(total_block_size < BLOCK_TOTAL_SIZE);
@@ -167,7 +167,7 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
             LargeAllocator_chunkAddOffset(chunk, actualBlockSize);
 
         size_t remainingChunkSize = chunkSize - actualBlockSize;
-        LargeAllocator_addChunk(allocator, remainingChunk, remainingChunkSize);
+        LargeAllocator_AddChunk(allocator, remainingChunk, remainingChunkSize);
     }
 
     ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, (word_t *)chunk);
@@ -251,125 +251,4 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
     object = LargeAllocator_tryAlloc(&largeAllocator, size);
 
     goto done;
-}
-
-uint32_t LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
-                              word_t *blockStart, BlockMeta *batchLimit) {
-    // Objects that are larger than a block
-    // are always allocated at the begining the smallest possible superblock.
-    // Any gaps at the end can be filled with large objects, that are smaller
-    // than a block. This means that objects can ONLY start at the begining at
-    // the first block or anywhere at the last block, except the begining.
-    // Therefore we only need to look at a few locations.
-    uint32_t superblockSize = BlockMeta_SuperblockSize(blockMeta);
-    word_t *blockEnd = blockStart + WORDS_IN_BLOCK * superblockSize;
-
-#ifdef DEBUG_ASSERT
-    for (BlockMeta *block = blockMeta; block < blockMeta + superblockSize;
-         block++) {
-        assert(block->debugFlag == dbg_must_sweep);
-    }
-#endif
-
-    ObjectMeta *firstObject = Bytemap_Get(allocator->bytemap, blockStart);
-    assert(!ObjectMeta_IsFree(firstObject));
-    BlockMeta *lastBlock = blockMeta + superblockSize - 1;
-    int freeCount = 0;
-    if (superblockSize > 1 && !ObjectMeta_IsMarked(firstObject)) {
-        // release free superblock starting from the first object
-        freeCount = superblockSize - 1;
-#ifdef DEBUG_ASSERT
-        for (BlockMeta *block = blockMeta; block < blockMeta + freeCount;
-             block++) {
-            block->debugFlag = dbg_free;
-        }
-#endif
-    } else {
-#ifdef DEBUG_ASSERT
-        for (BlockMeta *block = blockMeta;
-             block < blockMeta + superblockSize - 1; block++) {
-            block->debugFlag = dbg_not_free;
-        }
-#endif
-    }
-
-    word_t *lastBlockStart = blockEnd - WORDS_IN_BLOCK;
-    word_t *chunkStart = NULL;
-
-    // the tail end of the first object
-    if (!ObjectMeta_IsMarked(firstObject)) {
-        chunkStart = lastBlockStart;
-    }
-    ObjectMeta_Sweep(firstObject);
-
-    word_t *current = lastBlockStart + (MIN_BLOCK_SIZE / WORD_SIZE);
-    ObjectMeta *currentMeta = Bytemap_Get(allocator->bytemap, current);
-    while (current < blockEnd) {
-        if (chunkStart == NULL) {
-            // if (ObjectMeta_IsAllocated(currentMeta)||
-            // ObjectMeta_IsPlaceholder(currentMeta)) {
-            if (*currentMeta & 0x3) {
-                chunkStart = current;
-            }
-        } else {
-            if (ObjectMeta_IsMarked(currentMeta)) {
-                size_t currentSize = (current - chunkStart) * WORD_SIZE;
-                LargeAllocator_addChunk(allocator, (Chunk *)chunkStart,
-                                        currentSize);
-                chunkStart = NULL;
-            }
-        }
-        ObjectMeta_Sweep(currentMeta);
-
-        current += MIN_BLOCK_SIZE / WORD_SIZE;
-        currentMeta += MIN_BLOCK_SIZE / ALLOCATION_ALIGNMENT;
-    }
-    if (chunkStart == lastBlockStart) {
-        // free chunk covers the entire last block, released it
-        freeCount += 1;
-#ifdef DEBUG_ASSERT
-        lastBlock->debugFlag = dbg_free;
-#endif
-    } else {
-#ifdef DEBUG_ASSERT
-        lastBlock->debugFlag = dbg_not_free;
-#endif
-        if (ObjectMeta_IsFree(firstObject)) {
-            // the first object was free
-            // the end of first object becomes a placeholder
-            ObjectMeta_SetPlaceholder(
-                Bytemap_Get(allocator->bytemap, lastBlockStart));
-        }
-        if (freeCount > 0) {
-            // the last block is its own superblock
-            if (lastBlock < batchLimit) {
-                // The block is within current batch, just create the superblock
-                // yourself
-                BlockMeta_SetFlagAndSuperblockSize(lastBlock,
-                                                   block_superblock_start, 1);
-            } else {
-                // If we cross the current batch, then it is not to mark a
-                // block_superblock_tail to block_superblock_start. The other
-                // sweeper threads could be in the middle of skipping
-                // block_superblock_tail s. Then creating the superblock will
-                // be done by Heap_lazyCoalesce
-                BlockMeta_SetFlag(lastBlock, block_superblock_start_me);
-            }
-        }
-        // handle the last chunk if any
-        if (chunkStart != NULL) {
-            size_t currentSize = (current - chunkStart) * WORD_SIZE;
-            LargeAllocator_addChunk(allocator, (Chunk *)chunkStart,
-                                    currentSize);
-        }
-    }
-#ifdef DEBUG_PRINT
-    printf("LargeAllocator_Sweep %p %" PRIu32 " => FREE %" PRIu32 "/ %" PRIu32
-           "\n",
-           blockMeta,
-           BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta),
-           freeCount, superblockSize);
-    fflush(stdout);
-#endif
-    return freeCount;
 }
