@@ -306,6 +306,9 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
 #endif
     ObjectMeta_SetAllocated(objectMeta);
 
+    // prefetch starting from 36 words away from the object start
+    // rw = 0 => prefetch for reading
+    // locality = 3 => data has high locality, leave the values in as many caches as possible
     __builtin_prefetch(object + 36, 0, 3);
 
     assert(Heap_IsWordInHeap(heap, object));
