@@ -89,10 +89,10 @@ sealed abstract class Op {
     case Op.Bin(bin, _, _, _) =>
       import Bin._
       bin match {
-        case Iadd | Imul | And | Or | Xor =>
+        case Iadd | Imul | And | Or | Xor | Fadd | Fmul =>
           true
-        case Fadd | Isub | Fsub | Fmul | Sdiv | Udiv | Fdiv | Srem | Urem | Frem |
-            Shl | Lshr | Ashr =>
+        case Isub | Fsub | Sdiv | Udiv | Fdiv | Srem | Urem | Frem | Shl |
+            Lshr | Ashr =>
           false
       }
     case Op.Comp(comp, _, _, _) =>
