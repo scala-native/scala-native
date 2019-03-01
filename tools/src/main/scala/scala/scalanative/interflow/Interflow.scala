@@ -9,6 +9,7 @@ class Interflow(val mode: build.Mode, val originals: Map[Global, Defn.Define])(
     implicit val linked: linker.Result)
     extends Visit
     with Eval
+    with Combine
     with Inline
     with Intrinsics
     with Log {

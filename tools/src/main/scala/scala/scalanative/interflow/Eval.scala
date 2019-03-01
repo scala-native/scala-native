@@ -167,7 +167,7 @@ trait Eval { self: Interflow =>
                   margs.zip(sigtys).map {
                     case (marg, ty) =>
                       if (!Sub.is(marg.ty, ty)) {
-                        delay(Op.Conv(Conv.Bitcast, ty, marg))
+                        combine(Conv.Bitcast, ty, marg)
                       } else {
                         marg
                       }
@@ -200,80 +200,22 @@ trait Eval { self: Interflow =>
         (eval(l), eval(r)) match {
           case (l, r) if l.isCanonical && r.isCanonical =>
             eval(bin, ty, l, r)
-          case (l, r) if Op.Bin(bin, ty, l, r).isPure =>
-            if (l.isCanonical && op.isCommutative) {
-              delay(Op.Bin(bin, ty, r, l))
-            } else {
-              delay(Op.Bin(bin, ty, l, r))
-            }
           case (l, r) =>
             if (l.isCanonical && op.isCommutative) {
-              emit(Op.Bin(bin, ty, materialize(r), materialize(l)))
+              combine(bin, ty, r, l)
             } else {
-              emit(Op.Bin(bin, ty, materialize(l), materialize(r)))
+              combine(bin, ty, l, r)
             }
         }
       case Op.Comp(comp, ty, l, r) =>
         (comp, eval(l), eval(r)) match {
           case (_, l, r) if l.isCanonical && r.isCanonical =>
             eval(comp, ty, l, r)
-
-          // Two virtual allocations will compare equal if
-          // and only if they have the same virtual address.
-          case (Comp.Ieq, Val.Virtual(l), Val.Virtual(r))
-              if state.isVirtual(l) && state.isVirtual(r) =>
-            Val.Bool(l == r)
-          case (Comp.Ine, Val.Virtual(l), Val.Virtual(r))
-              if state.isVirtual(l) && state.isVirtual(r) =>
-            Val.Bool(l != r)
-
-          // Not-yet-materialized virtual allocation will never be
-          // the same as already existing allocation (be it null
-          // or any other value).
-          case (Comp.Ieq, Val.Virtual(addr), r) if state.isVirtual(addr) =>
-            Val.False
-          case (Comp.Ieq, l, Val.Virtual(addr)) if state.isVirtual(addr) =>
-            Val.False
-          case (Comp.Ine, Val.Virtual(addr), r) if state.isVirtual(addr) =>
-            Val.True
-          case (Comp.Ine, l, Val.Virtual(addr)) if state.isVirtual(addr) =>
-            Val.True
-
-          // Comparing non-nullable value with null will always
-          // yield the same result.
-          case (Comp.Ieq, v @ Of(ty: Type.RefKind), Val.Null)
-              if !ty.isNullable =>
-            Val.False
-          case (Comp.Ieq, Val.Null, v @ Of(ty: Type.RefKind))
-              if !ty.isNullable =>
-            Val.False
-          case (Comp.Ine, v @ Of(ty: Type.RefKind), Val.Null)
-              if !ty.isNullable =>
-            Val.True
-          case (Comp.Ine, Val.Null, v @ Of(ty: Type.RefKind))
-              if !ty.isNullable =>
-            Val.True
-
-          // Comparing two non-null module references will
-          // yield true only if it's the same module.
-          case (Comp.Ieq,
-                l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
-                r @ Of(And(rty: Type.RefKind, ClassRef(rcls))))
-              if !lty.isNullable && lty.isExact && lcls.isModule
-                && !rty.isNullable && rty.isExact && rcls.isModule =>
-            Val.Bool(lcls.name == rcls.name)
-          case (Comp.Ine,
-                l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
-                r @ Of(And(rty: Type.RefKind, ClassRef(rcls))))
-              if !lty.isNullable && lty.isExact && lcls.isModule
-                && !rty.isNullable && rty.isExact && rcls.isModule =>
-            Val.Bool(lcls.name != rcls.name)
-
           case (_, l, r) =>
             if (l.isCanonical && op.isCommutative) {
-              delay(Op.Comp(comp, ty, r, l))
+              combine(comp, ty, l, r)
             } else {
-              delay(Op.Comp(comp, ty, l, r))
+              combine(comp, ty, r, l)
             }
         }
       case Op.Conv(conv, ty, value) =>
@@ -281,7 +223,7 @@ trait Eval { self: Interflow =>
           case value if value.isCanonical =>
             eval(conv, ty, value)
           case value =>
-            delay(Op.Conv(conv, ty, value))
+            combine(conv, ty, value)
         }
       case Op.Classalloc(ClassRef(cls)) =>
         Val.Virtual(state.allocClass(cls))
