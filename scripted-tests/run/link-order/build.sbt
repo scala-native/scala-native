@@ -18,7 +18,7 @@ compile in Compile := {
 
   def run(command: Seq[String]): Int = {
     log.info("Running " + command.mkString(" "))
-    Process(command, cwd) ! log
+    scala.sys.process.Process(command, cwd) ! log
   }
 
   val opaths = cpaths.map { cpath =>
