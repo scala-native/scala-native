@@ -84,6 +84,26 @@ sealed abstract class Op {
     case _ =>
       false
   }
+
+  final def isCommutative: Boolean = this match {
+    case Op.Bin(bin, _, _, _) =>
+      import Bin._
+      bin match {
+        case Iadd | Imul | And | Or | Xor | Fadd | Fmul =>
+          true
+        case Isub | Fsub | Sdiv | Udiv | Fdiv | Srem | Urem | Frem | Shl |
+            Lshr | Ashr =>
+          false
+      }
+    case Op.Comp(comp, _, _, _) =>
+      import Comp._
+      comp match {
+        case Ieq | Ine => true
+        case _         => false
+      }
+    case _ =>
+      false
+  }
 }
 object Op {
   // low-level
