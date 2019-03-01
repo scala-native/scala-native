@@ -1,6 +1,31 @@
 package java.lang
 
 object StringSuite extends tests.Suite {
+
+  test("String(Array[Byte], Int, Int, String) with null encoding") {
+    assertThrows[java.lang.NullPointerException] {
+      new String("I don't like nulls".getBytes, 0, 3, null: String)
+    }
+  }
+
+  test("String(Array[Byte], Int, Int, String) with unsupported encoding") {
+    assertThrows[java.io.UnsupportedEncodingException] {
+      new String("Pacem in terris".getBytes, 0, 3, "unsupported encoding")
+    }
+  }
+
+  test("String(Array[Byte], String) with null encoding") {
+    assertThrows[java.lang.NullPointerException] {
+      new String("Nulls are just as bad".getBytes, null: String)
+    }
+  }
+
+  test("String(Array[Byte], String) with unsupported encoding") {
+    assertThrows[java.io.UnsupportedEncodingException] {
+      new String("to people of goodwill.".getBytes, "unsupported encoding")
+    }
+  }
+
   test("+") {
     assert("big 5" == "big " + 5.toByte)
     assert("big 5" == "big " + 5.toShort)

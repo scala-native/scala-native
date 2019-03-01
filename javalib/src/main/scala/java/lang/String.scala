@@ -8,6 +8,7 @@ import java.util._
 import java.util.regex._
 import java.nio._
 import java.nio.charset._
+import java.util.Objects
 
 final class _String()
     extends Serializable
@@ -50,8 +51,19 @@ final class _String()
   def this(data: Array[scala.Byte],
            start: Int,
            length: Int,
-           encoding: _String) =
-    this(data, start, length, Charset.forName(encoding))
+           encoding: _String) = {
+    this(
+      data,
+      start,
+      length,
+      try {
+        Charset.forName(Objects.requireNonNull(encoding))
+      } catch {
+        case e: UnsupportedCharsetException =>
+          throw new java.io.UnsupportedEncodingException(encoding)
+      }
+    )
+  }
 
   def this(data: Array[scala.Byte], start: Int, length: Int) =
     this(data, start, length, Charset.defaultCharset())

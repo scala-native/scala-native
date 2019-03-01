@@ -9,6 +9,7 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
 
   def this(out: OutputStream, autoFlush: Boolean) =
     this(new OutputStreamWriter(out), autoFlush)
+
   def this(out: OutputStream) =
     this(out, false)
 
@@ -17,14 +18,25 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
    * They're here just in case a third-party library on the classpath
    * implements those.
    */
+
+  /* Cravenly pass the possibly null, possibly unsupported charSet String
+   * through to whatever third-party software satisfies the link.
+   * Let it deal with converting UnsupportedCharsetException to
+   * UnsupportedEncodingException. Since the code will not link, there
+   * is no good way to test that conversion for these two items.
+   */
+
   def this(file: File) =
     this(new BufferedOutputStream(new FileOutputStream(file)))
+
   def this(file: File, csn: String) =
     this(
       new OutputStreamWriter(
         new BufferedOutputStream(new FileOutputStream(file)),
         csn))
+
   def this(fileName: String) = this(new File(fileName))
+
   def this(fileName: String, csn: String) = this(new File(fileName), csn)
 
   private var closed: Boolean    = false

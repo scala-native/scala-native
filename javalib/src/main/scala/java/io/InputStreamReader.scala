@@ -50,7 +50,15 @@ class InputStreamReader(private[this] var in: InputStream,
     this(in, Charset.defaultCharset)
 
   def this(in: InputStream, charsetName: String) =
-    this(in, Charset.forName(Objects.requireNonNull(charsetName)))
+    this(
+      in,
+      try {
+        Charset.forName(Objects.requireNonNull(charsetName))
+      } catch {
+        case e: UnsupportedCharsetException =>
+          throw new java.io.UnsupportedEncodingException(charsetName)
+      }
+    )
 
   def close(): Unit = if (!closed) {
     in.close()
