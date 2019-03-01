@@ -17,8 +17,9 @@ compile in Compile := {
     path.getAbsolutePath
 
   def run(command: Seq[String]): Int = {
+    import scala.sys.process._
     log.info("Running " + command.mkString(" "))
-    scala.sys.process.Process(command, cwd) ! log
+    Process(command, cwd) ! log
   }
 
   val opaths = cpaths.map { cpath =>
