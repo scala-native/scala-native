@@ -45,7 +45,7 @@ object RyuDouble {
 
   final val DOUBLE_MANTISSA_BITS = 52
 
-  final val DOUBLE_MANTISSA_MASK: Long = (1L << DOUBLE_MANTISSA_BITS) - 1
+  final val DOUBLE_MANTISSA_MASK = (1L << DOUBLE_MANTISSA_BITS) - 1
 
   final val DOUBLE_EXPONENT_BITS = 11
 
@@ -57,35 +57,32 @@ object RyuDouble {
 
   final val NEG_TABLE_SIZE = 291
 
-  val POW5_INV: scala.Array[BigInteger] =
-    new scala.Array[BigInteger](NEG_TABLE_SIZE)
+  val POW5_INV = new scala.Array[BigInteger](NEG_TABLE_SIZE)
 
   final val POW5_BITCOUNT = 121 // max 3*31 = 124
 
   final val POW5_QUARTER_BITCOUNT = 31
 
-  val POW5_SPLIT: scala.Array[scala.Array[Int]] =
-    scala.Array.ofDim[Int](POS_TABLE_SIZE, 4)
+  val POW5_SPLIT = scala.Array.ofDim[Int](POS_TABLE_SIZE, 4)
 
   final val POW5_INV_BITCOUNT = 122 // max 3*31 = 124
 
   final val POW5_INV_QUARTER_BITCOUNT = 31
 
-  val POW5_INV_SPLIT: scala.Array[scala.Array[Int]] =
-    scala.Array.ofDim[Int](NEG_TABLE_SIZE, 4)
+  val POW5_INV_SPLIT = scala.Array.ofDim[Int](NEG_TABLE_SIZE, 4)
 
-  val mask: BigInteger = BigInteger
+  val mask = BigInteger
     .valueOf(1)
     .shiftLeft(POW5_QUARTER_BITCOUNT)
     .subtract(BigInteger.ONE)
 
-  val invMask: BigInteger = BigInteger
+  val invMask = BigInteger
     .valueOf(1)
     .shiftLeft(POW5_INV_QUARTER_BITCOUNT)
     .subtract(BigInteger.ONE)
 
   for (i <- 0 until Math.max(POS_TABLE_SIZE, NEG_TABLE_SIZE)) {
-    val pow: BigInteger  = BigInteger.valueOf(5).pow(i)
+    val pow              = BigInteger.valueOf(5).pow(i)
     val pow5len          = pow.bitLength()
     val expectedPow5Bits = pow5bits(i)
     if (expectedPow5Bits != pow5len) {
@@ -104,7 +101,7 @@ object RyuDouble {
     if (i < POW5_INV_SPLIT.length) {
       // We want floor(log_2 5^q) here, which is pow5len - 1.
       val j = pow5len - 1 + POW5_INV_BITCOUNT
-      val inv: BigInteger =
+      val inv =
         BigInteger.ONE.shiftLeft(j).divide(pow).add(BigInteger.ONE)
       POW5_INV(i) = inv
       for (k <- 0 until 4) {
@@ -127,7 +124,7 @@ object RyuDouble {
     if (java.lang.Double.isNaN(value)) return "NaN"
     if (value == java.lang.Double.POSITIVE_INFINITY) return "Infinity"
     if (value == java.lang.Double.NEGATIVE_INFINITY) return "-Infinity"
-    val bits: Long = java.lang.Double.doubleToLongBits(value)
+    val bits = java.lang.Double.doubleToLongBits(value)
     if (bits == 0) return "0.0"
     if (bits == 0x8000000000000000L) return "-0.0"
 
@@ -135,9 +132,9 @@ object RyuDouble {
     // algorithm.
     val ieeeExponent =
       ((bits >>> DOUBLE_MANTISSA_BITS) & DOUBLE_EXPONENT_MASK).toInt
-    val ieeeMantissa: Long = bits & DOUBLE_MANTISSA_MASK
-    var e2                 = 0
-    var m2: Long           = 0l
+    val ieeeMantissa = bits & DOUBLE_MANTISSA_MASK
+    var e2           = 0
+    var m2           = 0l
     if (ieeeExponent == 0) {
       // Denormal number - no implicit leading 1, and the exponent is 1, not 0.
       e2 = 1 - DOUBLE_EXPONENT_BIAS - DOUBLE_MANTISSA_BITS
@@ -147,7 +144,7 @@ object RyuDouble {
       e2 = ieeeExponent - DOUBLE_EXPONENT_BIAS - DOUBLE_MANTISSA_BITS
       m2 = ieeeMantissa | (1L << DOUBLE_MANTISSA_BITS)
     }
-    val sign: Boolean = bits < 0
+    val sign = bits < 0
     if (DEBUG) {
       println("IN=" + java.lang.Long.toBinaryString(bits))
       println(
@@ -155,26 +152,26 @@ object RyuDouble {
           m2)
     }
     // Step 2: Determine the interval of legal decimal representations.
-    val even: Boolean = (m2 & 1) == 0
-    val mv: Long      = 4 * m2
-    val mp: Long      = 4 * m2 + 2
+    val even = (m2 & 1) == 0
+    val mv   = 4 * m2
+    val mp   = 4 * m2 + 2
     val mmShift =
       if (((m2 != (1L << DOUBLE_MANTISSA_BITS)) || (ieeeExponent <= 1))) 1
       else 0
-    val mm: Long = 4 * m2 - 1 - mmShift
+    val mm = 4 * m2 - 1 - mmShift
     e2 -= 2
     if (DEBUG) {
-      var sv: String = null
-      var sp: String = null
-      var sm: String = null
-      var e10        = 0
+      var sv  = ""
+      var sp  = ""
+      var sm  = ""
+      var e10 = 0
       if (e2 >= 0) {
         sv = BigInteger.valueOf(mv).shiftLeft(e2).toString
         sp = BigInteger.valueOf(mp).shiftLeft(e2).toString
         sm = BigInteger.valueOf(mm).shiftLeft(e2).toString
         e10 = 0
       } else {
-        val factor: BigInteger = BigInteger.valueOf(5).pow(-e2)
+        val factor = BigInteger.valueOf(5).pow(-e2)
         sv = BigInteger.valueOf(mv).multiply(factor).toString
         sp = BigInteger.valueOf(mp).multiply(factor).toString
         sm = BigInteger.valueOf(mm).multiply(factor).toString
@@ -189,9 +186,9 @@ object RyuDouble {
     }
     // Step 3: Convert to a decimal power base using 128-bit arithmetic.
     // -1077 = 1 - 1023 - 53 - 2 <= e_2 - 2 <= 2046 - 1023 - 53 - 2 = 968
-    var dv: Long          = 0l
-    var dp: Long          = 0l
-    var dm: Long          = 0l
+    var dv                = 0l
+    var dp                = 0l
+    var dm                = 0l
     var e10               = 0
     var dmIsTrailingZeros = false
     var dvIsTrailingZeros = false
@@ -212,7 +209,7 @@ object RyuDouble {
         println("V-=" + dm)
       }
       if (DEBUG) {
-        val exact: Long = POW5_INV(q)
+        val exact = POW5_INV(q)
           .multiply(BigInteger.valueOf(mv))
           .shiftRight(-e2 + q + k)
           .longValue()
@@ -279,10 +276,10 @@ object RyuDouble {
     var exp      = e10 + vplength - 1
     // Double.toString semantics requires using scientific notation if and
     // only if outside this range.
-    val scientificNotation: Boolean = !((exp >= -3) && (exp < 7))
-    var removed                     = 0
-    var lastRemovedDigit            = 0
-    var output: Long                = 0l
+    val scientificNotation = !((exp >= -3) && (exp < 7))
+    var removed            = 0
+    var lastRemovedDigit   = 0
+    var output             = 0l
     if (dmIsTrailingZeros || dvIsTrailingZeros) {
       var done = false // workaround break in .java source
       while ((dp / 10 > dm / 10) && !done) {
@@ -355,8 +352,8 @@ object RyuDouble {
 
     // Step 5: Print the decimal representation.
     // We follow Double.toString semantics here.
-    val result: scala.Array[Char] = scala.Array.ofDim[Char](24)
-    var index                     = 0
+    val result = scala.Array.ofDim[Char](24)
+    var index  = 0
     if (sign) {
       result(index) = '-'
       index += 1
@@ -502,19 +499,19 @@ object RyuDouble {
    * such that m * 5^i / 2^j has sufficiently many decimal digits to
    * represent the original floating point number.
    */
-  def mulPow5divPow2(m: Long, i: Int, j: Int): Long = {
+  def mulPow5divPow2(m: Long, i: Int, j: Int) = {
     // m has at most 55 bits.
-    val mHigh: Long  = m >>> 31
-    val mLow: Long   = m & 0x7fffffff // 124
-    val bits13: Long = mHigh * POW5_SPLIT(i)(0) // 93
-    val bits03: Long = mLow * POW5_SPLIT(i)(0) // 93
-    val bits12: Long = mHigh * POW5_SPLIT(i)(1) // 62
-    val bits02: Long = mLow * POW5_SPLIT(i)(1) // 62
-    val bits11: Long = mHigh * POW5_SPLIT(i)(2) // 31
-    val bits01: Long = mLow * POW5_SPLIT(i)(2) // 31
-    val bits10: Long = mHigh * POW5_SPLIT(i)(3) // 0
-    val bits00: Long = mLow * POW5_SPLIT(i)(3)
-    val actualShift  = j - 3 * 31 - 21
+    val mHigh       = m >>> 31
+    val mLow        = m & 0x7fffffff // 124
+    val bits13      = mHigh * POW5_SPLIT(i)(0) // 93
+    val bits03      = mLow * POW5_SPLIT(i)(0) // 93
+    val bits12      = mHigh * POW5_SPLIT(i)(1) // 62
+    val bits02      = mLow * POW5_SPLIT(i)(1) // 62
+    val bits11      = mHigh * POW5_SPLIT(i)(2) // 31
+    val bits01      = mLow * POW5_SPLIT(i)(2) // 31
+    val bits10      = mHigh * POW5_SPLIT(i)(3) // 0
+    val bits00      = mLow * POW5_SPLIT(i)(3)
+    val actualShift = j - 3 * 31 - 21
     if (actualShift < 0) {
       throw new IllegalArgumentException("" + actualShift)
     }
@@ -533,19 +530,19 @@ object RyuDouble {
    * m / 5^i / 2^j such that the result is accurate to at least 9
    * decimal digits. i and j are already chosen appropriately.
    */
-  def mulPow5InvDivPow2(m: Long, i: Int, j: Int): Long = {
+  def mulPow5InvDivPow2(m: Long, i: Int, j: Int) = {
     // m has at most 55 bits.
-    val mHigh: Long  = m >>> 31
-    val mLow: Long   = m & 0x7fffffff
-    val bits13: Long = mHigh * POW5_INV_SPLIT(i)(0)
-    val bits03: Long = mLow * POW5_INV_SPLIT(i)(0)
-    val bits12: Long = mHigh * POW5_INV_SPLIT(i)(1)
-    val bits02: Long = mLow * POW5_INV_SPLIT(i)(1)
-    val bits11: Long = mHigh * POW5_INV_SPLIT(i)(2)
-    val bits01: Long = mLow * POW5_INV_SPLIT(i)(2)
-    val bits10: Long = mHigh * POW5_INV_SPLIT(i)(3)
-    val bits00: Long = mLow * POW5_INV_SPLIT(i)(3)
-    val actualShift  = j - 3 * 31 - 21
+    val mHigh       = m >>> 31
+    val mLow        = m & 0x7fffffff
+    val bits13      = mHigh * POW5_INV_SPLIT(i)(0)
+    val bits03      = mLow * POW5_INV_SPLIT(i)(0)
+    val bits12      = mHigh * POW5_INV_SPLIT(i)(1)
+    val bits02      = mLow * POW5_INV_SPLIT(i)(1)
+    val bits11      = mHigh * POW5_INV_SPLIT(i)(2)
+    val bits01      = mLow * POW5_INV_SPLIT(i)(2)
+    val bits10      = mHigh * POW5_INV_SPLIT(i)(3)
+    val bits00      = mLow * POW5_INV_SPLIT(i)(3)
+    val actualShift = j - 3 * 31 - 21
     if (actualShift < 0) {
       throw new IllegalArgumentException("" + actualShift)
     }

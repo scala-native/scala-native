@@ -41,77 +41,66 @@ import RyuRoundingMode._
 
 object RyuFloat {
 
-  var DEBUG: Boolean = false
+  var DEBUG = false
 
-  private val FLOAT_MANTISSA_BITS: Int = 23
+  val FLOAT_MANTISSA_BITS = 23
 
-  private val FLOAT_MANTISSA_MASK: Int = (1 << FLOAT_MANTISSA_BITS) - 1
+  val FLOAT_MANTISSA_MASK = (1 << FLOAT_MANTISSA_BITS) - 1
 
-  private val FLOAT_EXPONENT_BITS: Int = 8
+  val FLOAT_EXPONENT_BITS = 8
 
-  private val FLOAT_EXPONENT_MASK: Int = (1 << FLOAT_EXPONENT_BITS) - 1
+  val FLOAT_EXPONENT_MASK = (1 << FLOAT_EXPONENT_BITS) - 1
 
-  private val FLOAT_EXPONENT_BIAS: Int = (1 << (FLOAT_EXPONENT_BITS - 1)) - 1
+  val FLOAT_EXPONENT_BIAS = (1 << (FLOAT_EXPONENT_BITS - 1)) - 1
 
-  private val LOG10_2_DENOMINATOR: Long = 10000000L
+  val LOG10_2_DENOMINATOR = 10000000L
 
-  private val LOG10_2_NUMERATOR: Long =
-    (LOG10_2_DENOMINATOR * Math.log10(2)).toLong
+  val LOG10_2_NUMERATOR = (LOG10_2_DENOMINATOR * Math.log10(2)).toLong
 
-  private val LOG10_5_DENOMINATOR: Long = 10000000L
+  val LOG10_5_DENOMINATOR = 10000000L
 
-  private val LOG10_5_NUMERATOR: Long =
+  val LOG10_5_NUMERATOR =
     (LOG10_5_DENOMINATOR * Math.log10(5)).toLong
 
-  private val LOG2_5_DENOMINATOR: Long = 10000000L
+  val LOG2_5_DENOMINATOR = 10000000L
 
-  private val LOG2_5_NUMERATOR: Long =
+  val LOG2_5_NUMERATOR =
     (LOG2_5_DENOMINATOR * (Math.log(5) / Math.log(2))).toLong
 
-  private val POS_TABLE_SIZE: Int = 47
+  val POS_TABLE_SIZE = 47
 
-  private val INV_TABLE_SIZE: Int = 31
+  val INV_TABLE_SIZE = 31
 
-  // Only for debugging.
-  private val POW5: scala.Array[BigInteger] =
-    new scala.Array[BigInteger](POS_TABLE_SIZE)
+  val POW5_INV = new scala.Array[BigInteger](INV_TABLE_SIZE)
 
-  private val POW5_INV: scala.Array[BigInteger] =
-    new scala.Array[BigInteger](INV_TABLE_SIZE)
+  val POW5_BITCOUNT = 61
 
-  private val POW5_BITCOUNT: Int = 61
+  val POW5_HALF_BITCOUNT = 31
 
-  private val POW5_HALF_BITCOUNT: Int = 31
+  val POW5_SPLIT = scala.Array.ofDim[Int](POS_TABLE_SIZE, 2)
 
-  private val POW5_SPLIT: scala.Array[scala.Array[Int]] =
-    scala.Array.ofDim[Int](POS_TABLE_SIZE, 2)
+  val POW5_INV_BITCOUNT = 59
 
-  private val POW5_INV_BITCOUNT: Int = 59
+  val POW5_INV_HALF_BITCOUNT = 31
 
-  private val POW5_INV_HALF_BITCOUNT: Int = 31
+  val POW5_INV_SPLIT = scala.Array.ofDim[Int](INV_TABLE_SIZE, 2)
 
-  private val POW5_INV_SPLIT: scala.Array[scala.Array[Int]] =
-    scala.Array.ofDim[Int](INV_TABLE_SIZE, 2)
-
-  val mask: BigInteger = BigInteger
+  val mask = BigInteger
     .valueOf(1)
     .shiftLeft(POW5_HALF_BITCOUNT)
     .subtract(BigInteger.ONE)
 
-  val maskInv: BigInteger = BigInteger
+  val maskInv = BigInteger
     .valueOf(1)
     .shiftLeft(POW5_INV_HALF_BITCOUNT)
     .subtract(BigInteger.ONE)
 
-  for (i <- 0 until Math.max(POW5.length, POW5_INV.length)) {
-    val pow: BigInteger       = BigInteger.valueOf(5).pow(i)
-    val pow5len: Int          = pow.bitLength()
-    val expectedPow5Bits: Int = pow5bits(i)
+  for (i <- 0 until Math.max(POS_TABLE_SIZE, INV_TABLE_SIZE)) {
+    val pow              = BigInteger.valueOf(5).pow(i)
+    val pow5len          = pow.bitLength()
+    val expectedPow5Bits = pow5bits(i)
     if (expectedPow5Bits != pow5len) {
       throw new IllegalStateException(pow5len + " != " + expectedPow5Bits)
-    }
-    if (i < POW5.length) {
-      POW5(i) = pow
     }
     if (i < POW5_SPLIT.length) {
       POW5_SPLIT(i)(0) = pow
@@ -121,8 +110,8 @@ object RyuFloat {
         pow.shiftRight(pow5len - POW5_BITCOUNT).and(mask).intValue()
     }
     if (i < POW5_INV.length) {
-      val j: Int = pow5len - 1 + POW5_INV_BITCOUNT
-      val inv: BigInteger =
+      val j = pow5len - 1 + POW5_INV_BITCOUNT
+      val inv =
         BigInteger.ONE.shiftLeft(j).divide(pow).add(BigInteger.ONE)
       POW5_INV(i) = inv
       POW5_INV_SPLIT(i)(0) = inv.shiftRight(POW5_INV_HALF_BITCOUNT).intValue()
@@ -137,17 +126,17 @@ object RyuFloat {
     if (java.lang.Float.isNaN(value)) return "NaN"
     if (value == java.lang.Float.POSITIVE_INFINITY) return "Infinity"
     if (value == java.lang.Float.NEGATIVE_INFINITY) return "-Infinity"
-    val bits: Int = java.lang.Float.floatToIntBits(value)
+    val bits = java.lang.Float.floatToIntBits(value)
     if (bits == 0) return "0.0"
     if (bits == 0x80000000) return "-0.0"
     // Otherwise extract the mantissa and exponent bits and run the full
     // algorithm.
-    val ieeeExponent: Int = (bits >> FLOAT_MANTISSA_BITS) & FLOAT_EXPONENT_MASK
-    val ieeeMantissa: Int = bits & FLOAT_MANTISSA_MASK
+    val ieeeExponent = (bits >> FLOAT_MANTISSA_BITS) & FLOAT_EXPONENT_MASK
+    val ieeeMantissa = bits & FLOAT_MANTISSA_MASK
     // By default, the correct mantissa starts with a 1, except for
     // denormal numbers.
-    var e2: Int = 0
-    var m2: Int = 0
+    var e2 = 0
+    var m2 = 0
     if (ieeeExponent == 0) {
       e2 = 1 - FLOAT_EXPONENT_BIAS - FLOAT_MANTISSA_BITS
       m2 = ieeeMantissa
@@ -155,7 +144,7 @@ object RyuFloat {
       e2 = ieeeExponent - FLOAT_EXPONENT_BIAS - FLOAT_MANTISSA_BITS
       m2 = ieeeMantissa | (1 << FLOAT_MANTISSA_BITS)
     }
-    val sign: Boolean = bits < 0
+    val sign = bits < 0
     if (DEBUG) {
       println("IN=" + java.lang.Long.toBinaryString(bits))
       println(
@@ -163,25 +152,25 @@ object RyuFloat {
           m2)
     }
     // Step 2: Determine the interval of legal decimal representations.
-    val even: Boolean = (m2 & 1) == 0
-    val mv: Int       = 4 * m2
-    val mp: Int       = 4 * m2 + 2
-    val mm: Int = 4 * m2 -
+    val even = (m2 & 1) == 0
+    val mv   = 4 * m2
+    val mp   = 4 * m2 + 2
+    val mm = 4 * m2 -
       (if ((m2 != (1L << FLOAT_MANTISSA_BITS)) || (ieeeExponent <= 1)) 2
        else 1)
     e2 -= 2
     if (DEBUG) {
-      var sv: String = null
-      var sp: String = null
-      var sm: String = null
-      var e10: Int   = 0
+      var sv  = ""
+      var sp  = ""
+      var sm  = ""
+      var e10 = 0
       if (e2 >= 0) {
         sv = BigInteger.valueOf(mv).shiftLeft(e2).toString
         sp = BigInteger.valueOf(mp).shiftLeft(e2).toString
         sm = BigInteger.valueOf(mm).shiftLeft(e2).toString
         e10 = 0
       } else {
-        val factor: BigInteger = BigInteger.valueOf(5).pow(-e2)
+        val factor = BigInteger.valueOf(5).pow(-e2)
         sv = BigInteger.valueOf(mv).multiply(factor).toString
         sp = BigInteger.valueOf(mp).multiply(factor).toString
         sm = BigInteger.valueOf(mm).multiply(factor).toString
@@ -199,25 +188,25 @@ object RyuFloat {
 
     // Step 3: Convert to a decimal power base using 128-bit arithmetic.
     // -151 = 1 - 127 - 23 - 2 <= e_2 - 2 <= 254 - 127 - 23 - 2 = 102
-    var dp: Int                    = 0
-    var dv: Int                    = 0
-    var dm: Int                    = 0
-    var e10: Int                   = 0
-    var dpIsTrailingZeros: Boolean = false
-    var dvIsTrailingZeros: Boolean = false
-    var dmIsTrailingZeros: Boolean = false
-    var lastRemovedDigit: Int      = 0
+    var dp                = 0
+    var dv                = 0
+    var dm                = 0
+    var e10               = 0
+    var dpIsTrailingZeros = false
+    var dvIsTrailingZeros = false
+    var dmIsTrailingZeros = false
+    var lastRemovedDigit  = 0
     if (e2 >= 0) {
       // Compute m * 2^e_2 / 10^q = m * 2^(e_2 - q) / 5^q
-      val q: Int = (e2 * LOG10_2_NUMERATOR / LOG10_2_DENOMINATOR).toInt
-      val k: Int = POW5_INV_BITCOUNT + pow5bits(q) - 1
-      val i: Int = -e2 + q + k
+      val q = (e2 * LOG10_2_NUMERATOR / LOG10_2_DENOMINATOR).toInt
+      val k = POW5_INV_BITCOUNT + pow5bits(q) - 1
+      val i = -e2 + q + k
       dv = mulPow5InvDivPow2(mv, q, i).toInt
       dp = mulPow5InvDivPow2(mp, q, i).toInt
       dm = mulPow5InvDivPow2(mm, q, i).toInt
       if (q != 0 && ((dp - 1) / 10 <= dm / 10)) {
         // 32-bit arithmetic is faster even on 64-bit machines.
-        val l: Int = POW5_INV_BITCOUNT + pow5bits(q - 1) - 1
+        val l = POW5_INV_BITCOUNT + pow5bits(q - 1) - 1
         lastRemovedDigit =
           (mulPow5InvDivPow2(mv, q - 1, -e2 + q - 1 + l) % 10).toInt
       }
@@ -235,10 +224,10 @@ object RyuFloat {
       dmIsTrailingZeros = pow5Factor(mm) >= q
     } else {
       // Compute m * 5^(-e_2) / 10^q = m * 5^(-e_2 - q) / 2^q
-      val q: Int = (-e2 * LOG10_5_NUMERATOR / LOG10_5_DENOMINATOR).toInt
-      val i: Int = -e2 - q
-      val k: Int = pow5bits(i) - POW5_BITCOUNT
-      var j: Int = q - k
+      val q = (-e2 * LOG10_5_NUMERATOR / LOG10_5_DENOMINATOR).toInt
+      val i = -e2 - q
+      val k = pow5bits(i) - POW5_BITCOUNT
+      var j = q - k
       dv = mulPow5divPow2(mv, i, j).toInt
       dp = mulPow5divPow2(mp, i, j).toInt
       dm = mulPow5divPow2(mm, i, j).toInt
@@ -281,13 +270,12 @@ object RyuFloat {
     // Above, we moved the decimal dot all the way to the right, so now we
     // need to count digits to
     // figure out the correct exponent for scientific notation.
-
-    val dplength: Int = decimalLength(dp)
-    var exp: Int      = e10 + dplength - 1
+    val dplength = decimalLength(dp)
+    var exp      = e10 + dplength - 1
     // Float.toString semantics requires using scientific notation if and
     // only if outside this range.
-    val scientificNotation: Boolean = !((exp >= -3) && (exp < 7))
-    var removed: Int                = 0
+    val scientificNotation = !((exp >= -3) && (exp < 7))
+    var removed            = 0
     if (dpIsTrailingZeros && !roundingMode.acceptUpperBound(even)) {
       dp -= 1
     }
@@ -324,12 +312,12 @@ object RyuFloat {
       // Round down not up if the number ends in X50000 and the number is even.
       lastRemovedDigit = 4
     }
-    var output: Int = dv +
+    var output = dv +
       (if ((dv == dm &&
            !(dmIsTrailingZeros && roundingMode.acceptLowerBound(even))) ||
            (lastRemovedDigit >= 5)) 1
        else 0)
-    val olength: Int = dplength - removed
+    val olength = dplength - removed
     if (DEBUG) {
       println("Actual values after loop")
       println("  d+=" + dp)
@@ -346,15 +334,14 @@ object RyuFloat {
 
     // Step 5: Print the decimal representation.
     // We follow Float.toString semantics here.
-
-    val result: scala.Array[Char] = scala.Array.ofDim[Char](15)
-    var index: Int                = 0
+    val result = scala.Array.ofDim[Char](15)
+    var index  = 0
     if (sign) {
       result({ index += 1; index - 1 }) = '-'
     }
     if (scientificNotation) {
       for (i <- 0 until olength - 1) {
-        val c: Int = output % 10
+        val c = output % 10
         output /= 10
         result(index + olength - i) = ('0' + c).toChar
       }
@@ -381,11 +368,11 @@ object RyuFloat {
         // Decimal dot is before any of the digits.
         result({ index += 1; index - 1 }) = '0'
         result({ index += 1; index - 1 }) = '.'
-        var i: Int = -1
+        var i = -1
         while (i > exp) {
           result({ index += 1; index - 1 }) = '0'; i -= 1
         }
-        val current: Int = index
+        val current = index
         for (i <- 0 until olength) {
           result(current + olength - i - 1) = ('0' + output % 10).toChar
           output /= 10; index += 1
@@ -403,7 +390,7 @@ object RyuFloat {
         result({ index += 1; index - 1 }) = '0'
       } else {
         // Decimal dot is somewhere between the digits.
-        var current: Int = index + 1
+        var current = index + 1
         for (i <- 0 until olength) {
           if (olength - i - 1 == exp) {
             result(current + olength - i - 1) = '.';
@@ -420,7 +407,7 @@ object RyuFloat {
     new String(result, 0, index)
   }
 
-  private def pow5bits(e: Int): Int =
+  def pow5bits(e: Int): Int =
     if (e == 0) 1
     else
       ((e * LOG2_5_NUMERATOR + LOG2_5_DENOMINATOR - 1)
@@ -430,9 +417,9 @@ object RyuFloat {
    * Returns the exponent of the largest power of 5 that divides the given
    * value, i.e., returns i such that value = 5^i * x, where x is an integer.
    */
-  private def pow5Factor(_value: Int): Int = {
-    var value      = _value
-    var count: Int = 0
+  def pow5Factor(_value: Int): Int = {
+    var value = _value
+    var count = 0
     while (value > 0) {
       if (value % 5 != 0) {
         return count
@@ -447,12 +434,12 @@ object RyuFloat {
    *   [m * 5^(-e_2) / 10^q] = [m * 5^(-e_2 - q) / 2^q]
    *   = [m * [5^(p - q)/2^k] / 2^(q - k)] = [m * POW5[i] / 2^j].
    */
-  private def mulPow5divPow2(m: Int, i: Int, j: Int): Long = {
+  def mulPow5divPow2(m: Int, i: Int, j: Int): Long = {
     if (j - POW5_HALF_BITCOUNT < 0) {
       throw new IllegalArgumentException()
     }
-    val bits0: Long = m * POW5_SPLIT(i)(0).toLong
-    val bits1: Long = m * POW5_SPLIT(i)(1).toLong
+    val bits0 = m * POW5_SPLIT(i)(0).toLong
+    val bits1 = m * POW5_SPLIT(i)(1).toLong
     (bits0 + (bits1 >> POW5_HALF_BITCOUNT)) >> (j - POW5_HALF_BITCOUNT)
   }
 
@@ -461,19 +448,19 @@ object RyuFloat {
    *   [m * 2^p / 10^q] = [m * 2^(p - q) / 5 ^ q]
    *   = [m * [2^k / 5^q] / 2^-(p - q - k)] = [m * POW5_INV[q] / 2^j].
    */
-  private def mulPow5InvDivPow2(m: Int, q: Int, j: Int): Long = {
+  def mulPow5InvDivPow2(m: Int, q: Int, j: Int): Long = {
     if (j - POW5_INV_HALF_BITCOUNT < 0) {
       throw new IllegalArgumentException()
     }
-    val bits0: Long = m * POW5_INV_SPLIT(q)(0).toLong
-    val bits1: Long = m * POW5_INV_SPLIT(q)(1).toLong
+    val bits0 = m * POW5_INV_SPLIT(q)(0).toLong
+    val bits1 = m * POW5_INV_SPLIT(q)(1).toLong
     (bits0 + (bits1 >> POW5_INV_HALF_BITCOUNT)) >> (j - POW5_INV_HALF_BITCOUNT)
   }
 
-  private def decimalLength(v: Int): Int = {
-    var length: Int = 10
-    var factor: Int = 1000000000
-    var done        = false
+  def decimalLength(v: Int): Int = {
+    var length = 10
+    var factor = 1000000000
+    var done   = false
 
     while ((length > 0) && !done) {
       if (v >= factor) {
