@@ -24,7 +24,7 @@ object StringBufferSuite extends tests.Suite {
     assertEquals("100000", newBuf.append(100000).toString)
   }
 
-  testFails("append float", issue = 481) {
+  test("append float") {
     assertEquals("2.5", newBuf.append(2.5f).toString)
     assertEquals("3.5", newBuf.append(3.5).toString)
   }
@@ -57,7 +57,7 @@ object StringBufferSuite extends tests.Suite {
                  initBuf("abcd").insert(5, "whatever"))
   }
 
-  testFails("insert float", issue = 481) {
+  test("insert float") {
     assertEquals("2.5", newBuf.insert(0, 2.5f).toString)
     assertEquals("3.5", newBuf.insert(0, 3.5).toString)
   }

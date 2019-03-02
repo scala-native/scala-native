@@ -892,12 +892,7 @@ object FormatterSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for general conversion type 's' and 'S'",
-    481) {
-    // 1.1.toString = "1.1" on Scala JVM, "1.100000" on Scala Native
-    // Formatter$.Transformer.padding trims to `precision` number of chars, and then pads up to `width`.
-    // The excess '0's lead to test failure.
+  test("format(String, Array[Object]) for general conversion type 's' and 'S'") {
     val triple = Array(
       Array(Boolean.box(false), "%2.3s", "fal"),
       Array(Boolean.box(false), "%-6.4s", "fals  "),
@@ -918,11 +913,11 @@ object FormatterSuite extends tests.Suite {
       Array(Int.box(1), "%-6.4s", "1     "),
       Array(Int.box(1), "%.5s", "1"),
       Array(Float.box(1.1f), "%2.3s", "1.1"),
-      Array(Float.box(1.1f), "%-6.4s", "1.1   "), // fails #481
-      Array(Float.box(1.1f), "%.5s", "1.1"), // fails #481
+      Array(Float.box(1.1f), "%-6.4s", "1.1   "),
+      Array(Float.box(1.1f), "%.5s", "1.1"),
       Array(Double.box(1.1d), "%2.3s", "1.1"),
-      Array(Double.box(1.1d), "%-6.4s", "1.1   "), // fails #481
-      Array(Double.box(1.1d), "%.5s", "1.1"), // fails #481
+      Array(Double.box(1.1d), "%-6.4s", "1.1   "),
+      Array(Double.box(1.1d), "%.5s", "1.1"),
       Array("", "%2.3s", "  "),
       Array("", "%-6.4s", "      "),
       Array("", "%.5s", ""),
@@ -1180,7 +1175,7 @@ object FormatterSuite extends tests.Suite {
 
   testFails(
     "format(String, Array[Object]) for legal Byte/Short/Integer/Long conversion type 'd'",
-    0) { // issue not filed yet
+    1443) {
     val triple = Array(
       Array(0, "%d", "0"),
       Array(0, "%10d", "         0"),
@@ -2174,7 +2169,7 @@ object FormatterSuite extends tests.Suite {
 
   testFails(
     "format(String, Array[Object]) for legal BigInteger conversion type 'd'",
-    0) { // issue not filed yet
+    1443) {
     val tripleD = Array(
       Array(new BigInteger("123456789012345678901234567890"),
             "%d",
@@ -2346,7 +2341,7 @@ object FormatterSuite extends tests.Suite {
 
   testFails(
     "format(String, Array[Object]) for padding of BigInteger conversion",
-    0) { // issue not filed yet
+    1443) {
     val bigInt = new BigInteger("123456789012345678901234567890")
     locally {
       val f = new Formatter(Locale.GERMAN)
@@ -2485,7 +2480,8 @@ object FormatterSuite extends tests.Suite {
 
   testFails(
     "format(String, Array[Object]) for Float/Double conversion type 'e' and 'E'",
-    0) { // issue not filed yet
+    1443) { // Fails because No Locale support. See LOCALE.German below.
+    // Number conversions pass after PR #1296, see FormatterUSSuite.scala.
     val tripleE = Array(
       Array(0f, "%e", "0.000000e+00"),
       Array(0f, "%#.0e", "0.e+00"),
@@ -2686,7 +2682,7 @@ object FormatterSuite extends tests.Suite {
 
   testFails(
     "format(String, Array[Object]) for Float/Double conversion type 'g' and 'G'",
-    0) { // issue not filed yet
+    1443) {
     val tripleG = Array(
       Array(1001f, "%g", "1001.00"),
       Array(1001f, "%- (,9.8g", " 1,001.0000"),
@@ -2919,7 +2915,7 @@ object FormatterSuite extends tests.Suite {
 
   testFails(
     "format(String, Array[Object]) for Float/Double conversion type 'f'",
-    0) { // issue not filed yet
+    1443) {
     val tripleF: Array[Array[Any]] = Array(
       Array(0f, "%f", "0,000000"),
       Array(0f, "%#.3f", "0,000"),
@@ -3382,7 +3378,7 @@ object FormatterSuite extends tests.Suite {
 
   testFails(
     "format(String, Array[Object]) for BigDecimal conversion type 'g' and 'G'",
-    0) { // issue not filed yet
+    1443) {
     val tripleG: Array[Array[Any]] = Array(
       Array(BigDecimal.ZERO, "%g", "0.00000"),
       Array(BigDecimal.ZERO, "%.5g", "0.0000"),

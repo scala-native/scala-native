@@ -196,13 +196,42 @@ object FloatSuite extends tests.Suite {
     assertThrows[NumberFormatException](Float.parseFloat("0.potato"))
   }
 
+  // scala.Float passes -0.0F without change. j.l.Double forced to +0.0.
+  private def assertF2sEquals(expected: String, f: scala.Float): Unit = {
+    val result = f.toString
+    assert(expected == result, s"result: $result != expected: $expected")
+  }
+
   test("toString") {
-    assert(Float.toString(1.0f).equals("1.000000"))
-    assert(Float.toString(-1.0f).equals("-1.000000"))
-    assert(Float.toString(0.0f).equals("0.000000"))
-    assert(Float.toString(-0.0f).equals("-0.000000"))
-    assert(Float.toString(Float.POSITIVE_INFINITY).equals("Infinity"))
-    assert(Float.toString(Float.NEGATIVE_INFINITY).equals("-Infinity"))
-    assert(Float.toString(Float.NaN).equals("NaN"))
+
+    // Test non-finite values.
+    assertF2sEquals("Infinity", Float.POSITIVE_INFINITY)
+    assertF2sEquals("-Infinity", Float.NEGATIVE_INFINITY)
+    assertF2sEquals("NaN", Float.NaN)
+
+    // Test simple values around zero.
+    assertF2sEquals("0.0", 0.0F)
+    assertF2sEquals("-0.0", -0.0F)
+    assertF2sEquals("1.0", 1.0F)
+    assertF2sEquals("-1.0", -1.0F)
+    assertF2sEquals("2.0", 2.0F)
+    assertF2sEquals("-2.0", -2.0F)
+
+    // Test maximum & minima.
+    assertF2sEquals("3.4028235E38", scala.Float.MaxValue)
+    assertF2sEquals("-3.4028235E38", scala.Float.MinValue)
+    assertF2sEquals("1.4E-45", scala.Float.MinPositiveValue)
+
+    // Test correctness least significant digits  & number of digits after the
+    // decimal point of values with 'infinite' number of fraction digits.
+    assertF2sEquals("3.1415927", (math.Pi * 1.0E+0).toFloat)
+    assertF2sEquals("31.415926", (math.Pi * 1.0E+1).toFloat)
+    assertF2sEquals("0.31415927", (math.Pi * 1.0E-1).toFloat)
+
+    // Test transitions to scientific notation.
+    assertF2sEquals("3141592.8", (math.Pi * 1.0E+6).toFloat)
+    assertF2sEquals("3.1415926E7", (math.Pi * 1.0E+7).toFloat)
+    assertF2sEquals("0.0031415927", (math.Pi * 1.0E-3).toFloat)
+    assertF2sEquals("3.1415926E-4", (math.Pi * 1.0E-4).toFloat)
   }
 }
