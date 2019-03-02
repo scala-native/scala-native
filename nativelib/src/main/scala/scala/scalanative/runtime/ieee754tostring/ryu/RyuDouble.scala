@@ -57,21 +57,21 @@ object RyuDouble {
 
   final val NEG_TABLE_SIZE = 291
 
-   val POW5_INV: scala.Array[BigInteger] =
+  val POW5_INV: scala.Array[BigInteger] =
     new scala.Array[BigInteger](NEG_TABLE_SIZE)
 
   final val POW5_BITCOUNT = 121 // max 3*31 = 124
 
   final val POW5_QUARTER_BITCOUNT = 31
 
-   val POW5_SPLIT: scala.Array[scala.Array[Int]] =
+  val POW5_SPLIT: scala.Array[scala.Array[Int]] =
     scala.Array.ofDim[Int](POS_TABLE_SIZE, 4)
 
   final val POW5_INV_BITCOUNT = 122 // max 3*31 = 124
 
   final val POW5_INV_QUARTER_BITCOUNT = 31
 
-   val POW5_INV_SPLIT: scala.Array[scala.Array[Int]] =
+  val POW5_INV_SPLIT: scala.Array[scala.Array[Int]] =
     scala.Array.ofDim[Int](NEG_TABLE_SIZE, 4)
 
   val mask: BigInteger = BigInteger
@@ -356,7 +356,7 @@ object RyuDouble {
     // Step 5: Print the decimal representation.
     // We follow Double.toString semantics here.
     val result: scala.Array[Char] = scala.Array.ofDim[Char](24)
-    var index               = 0
+    var index                     = 0
     if (sign) {
       result(index) = '-'
       index += 1
@@ -450,9 +450,9 @@ object RyuDouble {
     }
   }
 
-   def pow5bits(e: Int): Int = ((e * 1217359) >>> 19) + 1
+  def pow5bits(e: Int): Int = ((e * 1217359) >>> 19) + 1
 
-   def decimalLength(v: Long): Int = {
+  def decimalLength(v: Long): Int = {
     if (v >= 1000000000000000000L) return 19
     if (v >= 100000000000000000L) return 18
     if (v >= 10000000000000000L) return 17
@@ -474,10 +474,10 @@ object RyuDouble {
     1
   }
 
-   def multipleOfPowerOf5(value: Long, q: Int): Boolean =
+  def multipleOfPowerOf5(value: Long, q: Int): Boolean =
     pow5Factor(value) >= q
 
-   def pow5Factor(_value: Long): Int = {
+  def pow5Factor(_value: Long): Int = {
     var value = _value
     // We want to find the largest power of 5 that divides value.
     if ((value % 5) != 0) return 0
@@ -502,7 +502,7 @@ object RyuDouble {
    * such that m * 5^i / 2^j has sufficiently many decimal digits to
    * represent the original floating point number.
    */
-   def mulPow5divPow2(m: Long, i: Int, j: Int): Long = {
+  def mulPow5divPow2(m: Long, i: Int, j: Int): Long = {
     // m has at most 55 bits.
     val mHigh: Long  = m >>> 31
     val mLow: Long   = m & 0x7fffffff // 124
@@ -533,7 +533,7 @@ object RyuDouble {
    * m / 5^i / 2^j such that the result is accurate to at least 9
    * decimal digits. i and j are already chosen appropriately.
    */
-   def mulPow5InvDivPow2(m: Long, i: Int, j: Int): Long = {
+  def mulPow5InvDivPow2(m: Long, i: Int, j: Int): Long = {
     // m has at most 55 bits.
     val mHigh: Long  = m >>> 31
     val mLow: Long   = m & 0x7fffffff

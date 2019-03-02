@@ -63,7 +63,7 @@ object FloatRyuSuite extends tests.Suite {
     assertF2sEquals("1.0", 1.0f)
     assertF2sEquals("-1.0", -1.0f)
     assertF2sEquals("NaN", Float.NaN)
-    assertF2sEquals("Infinity", Float. PositiveInfinity)
+    assertF2sEquals("Infinity", Float.PositiveInfinity)
     assertF2sEquals("-Infinity", Float.NegativeInfinity)
   }
 
@@ -87,7 +87,7 @@ object FloatRyuSuite extends tests.Suite {
 
   test("Min and Max") {
     assertF2sEquals("3.4028235E38", java.lang.Float.intBitsToFloat(0x7f7fffff))
-    assertF2sEquals("1.4E-45",  java.lang.Float.intBitsToFloat(0x00000001))
+    assertF2sEquals("1.4E-45", java.lang.Float.intBitsToFloat(0x00000001))
   }
 
   test("roundingMode CONSERVATIVE") {
