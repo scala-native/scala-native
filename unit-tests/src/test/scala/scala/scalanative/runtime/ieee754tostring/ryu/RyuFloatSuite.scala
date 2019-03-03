@@ -44,13 +44,14 @@
 // The alternative would be to add cases to the S-N FloatSuite.scala
 // original & simplify redundant cases. That would lead to the confusion of
 // two sets of testing conventions being used in the same file.
-// Speak French, not Franglish, whilst in Quebec and English in Maine.
+// Speak French, not Franglish, whilst in Quebec and English three feet
+// away in Maine.
 
 package scala.scalanative
 package runtime
 package ieee754tostring.ryu
 
-object FloatRyuSuite extends tests.Suite {
+object RyuFloatSuite extends tests.Suite {
 
   private def assertF2sEquals(expected: String, f: scala.Float): Unit = {
     val result = f.toString
