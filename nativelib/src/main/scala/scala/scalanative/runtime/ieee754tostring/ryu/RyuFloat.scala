@@ -43,54 +43,53 @@ object RyuFloat {
 
   var DEBUG = false
 
-  val FLOAT_MANTISSA_BITS = 23
+  final val FLOAT_MANTISSA_BITS = 23
 
-  val FLOAT_MANTISSA_MASK = (1 << FLOAT_MANTISSA_BITS) - 1
+  final val FLOAT_MANTISSA_MASK = (1 << FLOAT_MANTISSA_BITS) - 1
 
-  val FLOAT_EXPONENT_BITS = 8
+  final val FLOAT_EXPONENT_BITS = 8
 
-  val FLOAT_EXPONENT_MASK = (1 << FLOAT_EXPONENT_BITS) - 1
+  final val FLOAT_EXPONENT_MASK = (1 << FLOAT_EXPONENT_BITS) - 1
 
-  val FLOAT_EXPONENT_BIAS = (1 << (FLOAT_EXPONENT_BITS - 1)) - 1
+  final val FLOAT_EXPONENT_BIAS = (1 << (FLOAT_EXPONENT_BITS - 1)) - 1
 
-  val LOG10_2_DENOMINATOR = 10000000L
+  final val LOG10_2_DENOMINATOR = 10000000L
 
-  val LOG10_2_NUMERATOR = (LOG10_2_DENOMINATOR * Math.log10(2)).toLong
+  final val LOG10_2_NUMERATOR = (LOG10_2_DENOMINATOR * Math.log10(2)).toLong
 
-  val LOG10_5_DENOMINATOR = 10000000L
+  final val LOG10_5_DENOMINATOR = 10000000L
 
-  val LOG10_5_NUMERATOR =
-    (LOG10_5_DENOMINATOR * Math.log10(5)).toLong
+  final val LOG10_5_NUMERATOR = (LOG10_5_DENOMINATOR * Math.log10(5)).toLong
 
-  val LOG2_5_DENOMINATOR = 10000000L
+  final val LOG2_5_DENOMINATOR = 10000000L
 
-  val LOG2_5_NUMERATOR =
+  final val LOG2_5_NUMERATOR =
     (LOG2_5_DENOMINATOR * (Math.log(5) / Math.log(2))).toLong
 
-  val POS_TABLE_SIZE = 47
+  final val POS_TABLE_SIZE = 47
 
-  val INV_TABLE_SIZE = 31
+  final val INV_TABLE_SIZE = 31
 
   val POW5_INV = new scala.Array[BigInteger](INV_TABLE_SIZE)
 
-  val POW5_BITCOUNT = 61
+  final val POW5_BITCOUNT = 61
 
-  val POW5_HALF_BITCOUNT = 31
+  final val POW5_HALF_BITCOUNT = 31
 
-  val POW5_SPLIT = scala.Array.ofDim[Int](POS_TABLE_SIZE, 2)
+  final val POW5_SPLIT = scala.Array.ofDim[Int](POS_TABLE_SIZE, 2)
 
-  val POW5_INV_BITCOUNT = 59
+  final val POW5_INV_BITCOUNT = 59
 
-  val POW5_INV_HALF_BITCOUNT = 31
+  final val POW5_INV_HALF_BITCOUNT = 31
 
   val POW5_INV_SPLIT = scala.Array.ofDim[Int](INV_TABLE_SIZE, 2)
 
-  val mask = BigInteger
+  final val mask = BigInteger
     .valueOf(1)
     .shiftLeft(POW5_HALF_BITCOUNT)
     .subtract(BigInteger.ONE)
 
-  val maskInv = BigInteger
+  final val maskInv = BigInteger
     .valueOf(1)
     .shiftLeft(POW5_INV_HALF_BITCOUNT)
     .subtract(BigInteger.ONE)
@@ -407,7 +406,7 @@ object RyuFloat {
     new String(result, 0, index)
   }
 
-  def pow5bits(e: Int): Int =
+  private def pow5bits(e: Int): Int =
     if (e == 0) 1
     else
       ((e * LOG2_5_NUMERATOR + LOG2_5_DENOMINATOR - 1)
@@ -417,7 +416,7 @@ object RyuFloat {
    * Returns the exponent of the largest power of 5 that divides the given
    * value, i.e., returns i such that value = 5^i * x, where x is an integer.
    */
-  def pow5Factor(_value: Int): Int = {
+  private def pow5Factor(_value: Int): Int = {
     var value = _value
     var count = 0
     while (value > 0) {
@@ -434,7 +433,7 @@ object RyuFloat {
    *   [m * 5^(-e_2) / 10^q] = [m * 5^(-e_2 - q) / 2^q]
    *   = [m * [5^(p - q)/2^k] / 2^(q - k)] = [m * POW5[i] / 2^j].
    */
-  def mulPow5divPow2(m: Int, i: Int, j: Int): Long = {
+  private def mulPow5divPow2(m: Int, i: Int, j: Int): Long = {
     if (j - POW5_HALF_BITCOUNT < 0) {
       throw new IllegalArgumentException()
     }
@@ -448,7 +447,7 @@ object RyuFloat {
    *   [m * 2^p / 10^q] = [m * 2^(p - q) / 5 ^ q]
    *   = [m * [2^k / 5^q] / 2^-(p - q - k)] = [m * POW5_INV[q] / 2^j].
    */
-  def mulPow5InvDivPow2(m: Int, q: Int, j: Int): Long = {
+  private def mulPow5InvDivPow2(m: Int, q: Int, j: Int): Long = {
     if (j - POW5_INV_HALF_BITCOUNT < 0) {
       throw new IllegalArgumentException()
     }
@@ -457,7 +456,7 @@ object RyuFloat {
     (bits0 + (bits1 >> POW5_INV_HALF_BITCOUNT)) >> (j - POW5_INV_HALF_BITCOUNT)
   }
 
-  def decimalLength(v: Int): Int = {
+  private def decimalLength(v: Int): Int = {
     var length = 10
     var factor = 1000000000
     var done   = false
