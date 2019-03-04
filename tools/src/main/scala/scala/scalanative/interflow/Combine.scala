@@ -88,6 +88,10 @@ trait Combine { self: Interflow =>
           case (BinRef(Iadd, x, y1), y2) if y1 == y2 =>
             x
 
+          // (x + y) - x ==> y
+          case (BinRef(Iadd, x1, y), x2) if x1 == x2 =>
+            y
+
           case _ =>
             fallback
         }
@@ -105,6 +109,12 @@ trait Combine { self: Interflow =>
           // x * -1 ==> -x
           case (lhs, v) if v.isMinusOne =>
             combine(Isub, ty, zero(ty), lhs)
+
+          // x * 2^n ==> x << n
+          case (lhs, Val.Int(v)) if isPowerOfTwoOrMinValue(v) =>
+            combine(Shl, ty, lhs, Val.Int(jl.Integer.numberOfTrailingZeros(v)))
+          case (lhs, Val.Long(v)) if isPowerOfTwoOrMinValue(v) =>
+            combine(Shl, ty, lhs, Val.Long(jl.Long.numberOfTrailingZeros(v)))
 
           // (x * b) * a ==> x * (a * b)
           case (BinRef(Imul, x, Val.Int(b)), Val.Int(a)) =>
@@ -137,8 +147,10 @@ trait Combine { self: Interflow =>
             lhs
 
           // x unsigned_/ 2^n ==> x >> n
-          case (lhs, PowerOf2(shift)) =>
-            combine(Lshr, ty, lhs, shift)
+          case (lhs, Val.Int(v)) if isPowerOfTwoOrMinValue(v) =>
+            combine(Lshr, ty, lhs, Val.Int(jl.Integer.numberOfTrailingZeros(v)))
+          case (lhs, Val.Long(v)) if isPowerOfTwoOrMinValue(v) =>
+            combine(Lshr, ty, lhs, Val.Long(jl.Long.numberOfTrailingZeros(v)))
 
           case _ =>
             fallback
@@ -170,11 +182,9 @@ trait Combine { self: Interflow =>
 
       case Shl =>
         (l, r) match {
-          // x: Int << v: Int ==> 0 if v & 31 == 0
+          // x << v ==> x if v & bitsize(x) - 1 == 0
           case (lhs, Val.Int(v)) if (v & 31) == 0 =>
             lhs
-
-          // x: Long << v: Long ==> 0 if a & 63 == 0
           case (lhs, Val.Long(v)) if (v & 63) == 0 =>
             lhs
 
@@ -204,11 +214,9 @@ trait Combine { self: Interflow =>
 
       case Lshr =>
         (l, r) match {
-          // x: Int >>> v: Int ==> x if v & 31 == 0
+          // x >>> v ==> x if v & bitsize(x) - 1 == 0
           case (lhs, Val.Int(v)) if (v & 31) == 0 =>
             lhs
-
-          // x: Long >>> v: Long ==> x if v & 63 == 0
           case (lhs, Val.Long(v)) if (v & 63) == 0 =>
             lhs
 
@@ -238,11 +246,9 @@ trait Combine { self: Interflow =>
 
       case Ashr =>
         (l, r) match {
-          // x: Int >> v: Int ==> x if v & 31 == 0
+          // x >> v ==> x if v & bitsize(x) - 1 == 0
           case (lhs, Val.Int(a)) if (a & 31) == 0 =>
             lhs
-
-          // x: Long >> v: Long ==> x if v & 63 == 0
           case (lhs, Val.Long(v)) if (v & 63) == 0 =>
             lhs
 
@@ -286,6 +292,14 @@ trait Combine { self: Interflow =>
           case (BinRef(Iand, x, Val.Long(a)), Val.Long(b)) =>
             combine(Iand, ty, x, Val.Long(a & b))
 
+          // (x >= y) & (x <= y) ==> (x == y)
+          case (CompRef(Sge, ty1, x1, y1), CompRef(Sle, _, x2, y2))
+              if x1 == x2 && y1 == y2 =>
+            combine(Ieq, ty1, x1, y1)
+          case (CompRef(Uge, ty1, x1, y1), CompRef(Ule, _, x2, y2))
+              if x1 == x2 && y1 == y2 =>
+            combine(Ieq, ty1, x1, y1)
+
           case _ =>
             fallback
         }
@@ -309,6 +323,38 @@ trait Combine { self: Interflow =>
             combine(Or, ty, x, Val.Int(a | b))
           case (BinRef(Or, x, Val.Long(a)), Val.Long(b)) =>
             combine(Or, ty, x, Val.Long(a | b))
+
+          // (x > y) | (x == y) ==> (x >= y)
+          case (CompRef(Sgt, ty1, x1, y1), CompRef(Ieq, _, x2, y2))
+              if x1 == x2 && y1 == y2 =>
+            combine(Sge, ty1, x1, y1)
+          case (CompRef(Ugt, ty1, x1, y1), CompRef(Ieq, _, x2, y2))
+              if x1 == x2 && y1 == y2 =>
+            combine(Uge, ty1, x1, y1)
+
+          // (x > y) | (y == x) ==> (x >= y)
+          case (CompRef(Sgt, ty1, x1, y1), CompRef(Ieq, _, y2, x2))
+              if x1 == x2 && y1 == y2 =>
+            combine(Sge, ty1, x1, y1)
+          case (CompRef(Ugt, ty1, x1, y1), CompRef(Ieq, _, y2, x2))
+              if x1 == x2 && y1 == y2 =>
+            combine(Uge, ty1, x1, y1)
+
+          // (x < y) | (x == y) ==> (x <= y)
+          case (CompRef(Slt, ty1, x1, y1), CompRef(Ieq, _, x2, y2))
+              if x1 == x2 && y1 == y2 =>
+            combine(Sle, ty1, x1, y1)
+          case (CompRef(Ult, ty1, x1, y1), CompRef(Ieq, _, x2, y2))
+              if x1 == x2 && y1 == y2 =>
+            combine(Ule, ty1, x1, y1)
+
+          // (x < y) | (y == x) ==> (x <= y)
+          case (CompRef(Slt, ty1, x1, y1), CompRef(Ieq, _, y2, x2))
+              if x1 == x2 && y1 == y2 =>
+            combine(Sle, ty1, x1, y1)
+          case (CompRef(Ult, ty1, x1, y1), CompRef(Ieq, _, y2, x2))
+              if x1 == x2 && y1 == y2 =>
+            combine(Ule, ty1, x1, y1)
 
           case _ =>
             fallback
@@ -514,9 +560,13 @@ trait Combine { self: Interflow =>
       case (Inttoptr, Type.Long, ConvRef(Ptrtoint, Type.Long, x)) =>
         x
 
-      // bitcast[ty1] (bitcast(ty2) x) ==> bitcast[ty1] x
+      // bitcast[ty1] (bitcast[ty2] x) ==> bitcast[ty1] x
       case (Bitcast, _, ConvRef(Bitcast, _, x)) =>
         combine(Bitcast, ty, x)
+
+      // bitcast[ty] x ==> x if typeof(x) == ty
+      case (Bitcast, ty, x) if x.ty == ty =>
+        x
 
       case _ =>
         delay(Op.Conv(conv, ty, value))
@@ -536,19 +586,9 @@ trait Combine { self: Interflow =>
     case _           => unreachable
   }
 
-  object PowerOf2 {
-    def unapply(v: Val): Option[Val] = {
-      v match {
-        case Val.Int(v) if isPowerOfTwo(v) =>
-          Some(Val.Int(jl.Integer.numberOfTrailingZeros(v)))
-        case Val.Long(v) if isPowerOfTwo(v) =>
-          Some(Val.Long(jl.Long.numberOfTrailingZeros(v)))
-        case _ =>
-          None
-      }
-    }
+  private def isPowerOfTwoOrMinValue(x: Int): Boolean =
+    (x & (x - 1)) == 0
 
-    def isPowerOfTwo(x: Long): Boolean =
-      (x & (x - 1)) == 0
-  }
+  private def isPowerOfTwoOrMinValue(x: Long): Boolean =
+    (x & (x - 1)) == 0
 }

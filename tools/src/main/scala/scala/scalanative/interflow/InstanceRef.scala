@@ -83,6 +83,25 @@ object ConvRef {
     }
 }
 
+object CompRef {
+  def unapply(addr: Addr)(
+      implicit state: State): Option[(Comp, Type, Val, Val)] =
+    unapply(Val.Virtual(addr))
+  def unapply(value: Val)(
+      implicit state: State): Option[(Comp, Type, Val, Val)] =
+    value match {
+      case Val.Virtual(addr) =>
+        state.deref(addr) match {
+          case DelayedInstance(Op.Comp(comp, ty, v1, v2)) =>
+            Some((comp, ty, v1, v2))
+          case _ =>
+            None
+        }
+      case _ =>
+        None
+    }
+}
+
 object EscapedRef {
   def unapply(addr: Addr)(implicit state: State): Option[Val] =
     unapply(Val.Virtual(addr))
