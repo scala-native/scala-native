@@ -35,13 +35,9 @@ package scala.scalanative
 package runtime
 package ieee754tostring.ryu
 
-import java.math.BigInteger
-
 import RyuRoundingMode._
 
 object RyuFloat {
-
-  var DEBUG = false
 
   final val FLOAT_MANTISSA_BITS = 23
 
@@ -66,65 +62,121 @@ object RyuFloat {
   final val LOG2_5_NUMERATOR =
     (LOG2_5_DENOMINATOR * (Math.log(5) / Math.log(2))).toLong
 
-  final val POS_TABLE_SIZE = 47
-
-  final val INV_TABLE_SIZE = 31
-
-  val POW5_INV = new scala.Array[BigInteger](INV_TABLE_SIZE)
-
   final val POW5_BITCOUNT = 61
 
   final val POW5_HALF_BITCOUNT = 31
 
-  final val POW5_SPLIT = scala.Array.ofDim[Int](POS_TABLE_SIZE, 2)
+// Tell scalafmt to retain POW5_ARRAY_NCOL column format for human readability.
+// format: off
+
+  final val POW5_ARRAY_NCOL = 2
+
+  // For origin of these magic values,
+  // see ""Porting Note for POW5_SPLIT & POW5_INV_SPIT arrays" at top of
+  // RyuDouble.scala.
+
+  final val POW5_SPLIT = scala.Array(
+      536870912, 0,
+      671088640, 0,
+      838860800, 0,
+      1048576000, 0,
+      655360000, 0,
+      819200000, 0,
+      1024000000, 0,
+      640000000, 0,
+      800000000, 0,
+      1000000000, 0,
+      625000000, 0,
+      781250000, 0,
+      976562500, 0,
+      610351562, 1073741824,
+      762939453, 268435456,
+      953674316, 872415232,
+      596046447, 1619001344,
+      745058059, 1486880768,
+      931322574, 1321730048,
+      582076609, 289210368,
+      727595761, 898383872,
+      909494701, 1659850752,
+      568434188, 1305842176,
+      710542735, 1632302720,
+      888178419, 1503507488,
+      555111512, 671256724,
+      693889390, 839070905,
+      867361737, 2122580455,
+      542101086, 521306416,
+      677626357, 1725374844,
+      847032947, 546105819,
+      1058791184, 145761362,
+      661744490, 91100851,
+      827180612, 1187617888,
+      1033975765, 1484522360,
+      646234853, 1196261931,
+      807793566, 2032198326,
+      1009741958, 1466506084,
+      631088724, 379695390,
+      788860905, 474619238,
+      986076131, 1130144959,
+      616297582, 437905143,
+      770371977, 1621123253,
+      962964972, 415791331,
+      601853107, 1333611405,
+      752316384, 1130143345,
+      940395480, 1412679181
+    )
 
   final val POW5_INV_BITCOUNT = 59
 
   final val POW5_INV_HALF_BITCOUNT = 31
 
-  val POW5_INV_SPLIT = scala.Array.ofDim[Int](INV_TABLE_SIZE, 2)
+  // For origin of these magic values,
+  // see ""Porting Note for POW5_SPLIT & POW5_INV_SPIT arrays" at top of
+  // RyuDouble.scala.
 
-  final val mask = BigInteger
-    .valueOf(1)
-    .shiftLeft(POW5_HALF_BITCOUNT)
-    .subtract(BigInteger.ONE)
+  final val POW5_INV_SPLIT = scala.Array(
+      268435456, 1,
+      214748364, 1717986919,
+      171798691, 1803886265,
+      137438953, 1013612282,
+      219902325, 1192282922,
+      175921860, 953826338,
+      140737488, 763061070,
+      225179981, 791400982,
+      180143985, 203624056,
+      144115188, 162899245,
+      230584300, 1978625710,
+      184467440, 1582900568,
+      147573952, 1266320455,
+      236118324, 308125809,
+      188894659, 675997377,
+      151115727, 970294631,
+      241785163, 1981968139,
+      193428131, 297084323,
+      154742504, 1955654377,
+      247588007, 1840556814,
+      198070406, 613451992,
+      158456325, 61264864,
+      253530120, 98023782,
+      202824096, 78419026,
+      162259276, 1780722139,
+      259614842, 1990161963,
+      207691874, 733136111,
+      166153499, 1016005619,
+      265845599, 337118801,
+      212676479, 699191770,
+      170141183, 988850146
+    )
 
-  final val maskInv = BigInteger
-    .valueOf(1)
-    .shiftLeft(POW5_INV_HALF_BITCOUNT)
-    .subtract(BigInteger.ONE)
-
-  for (i <- 0 until Math.max(POS_TABLE_SIZE, INV_TABLE_SIZE)) {
-    val pow              = BigInteger.valueOf(5).pow(i)
-    val pow5len          = pow.bitLength()
-    val expectedPow5Bits = pow5bits(i)
-    if (expectedPow5Bits != pow5len) {
-      throw new IllegalStateException(pow5len + " != " + expectedPow5Bits)
-    }
-    if (i < POW5_SPLIT.length) {
-      POW5_SPLIT(i)(0) = pow
-        .shiftRight(pow5len - POW5_BITCOUNT + POW5_HALF_BITCOUNT)
-        .intValue()
-      POW5_SPLIT(i)(1) =
-        pow.shiftRight(pow5len - POW5_BITCOUNT).and(mask).intValue()
-    }
-    if (i < POW5_INV.length) {
-      val j = pow5len - 1 + POW5_INV_BITCOUNT
-      val inv =
-        BigInteger.ONE.shiftLeft(j).divide(pow).add(BigInteger.ONE)
-      POW5_INV(i) = inv
-      POW5_INV_SPLIT(i)(0) = inv.shiftRight(POW5_INV_HALF_BITCOUNT).intValue()
-      POW5_INV_SPLIT(i)(1) = inv.and(maskInv).intValue()
-    }
-  }
+// format: on
 
   def floatToString(value: Float, roundingMode: RyuRoundingMode): String = {
+
     // Step 1: Decode the floating point number, and unify normalized and
     // subnormal cases.
     // First, handle all the trivial cases.
-    if (java.lang.Float.isNaN(value)) return "NaN"
-    if (value == java.lang.Float.POSITIVE_INFINITY) return "Infinity"
-    if (value == java.lang.Float.NEGATIVE_INFINITY) return "-Infinity"
+    if (value.isNaN) return "NaN"
+    if (value == Float.PositiveInfinity) return "Infinity"
+    if (value == Float.NegativeInfinity) return "-Infinity"
     val bits = java.lang.Float.floatToIntBits(value)
     if (bits == 0) return "0.0"
     if (bits == 0x80000000) return "-0.0"
@@ -144,12 +196,7 @@ object RyuFloat {
       m2 = ieeeMantissa | (1 << FLOAT_MANTISSA_BITS)
     }
     val sign = bits < 0
-    if (DEBUG) {
-      println("IN=" + java.lang.Long.toBinaryString(bits))
-      println(
-        "   S=" + (if (sign) "-" else "+") + " E=" + e2 + " M=" +
-          m2)
-    }
+
     // Step 2: Determine the interval of legal decimal representations.
     val even = (m2 & 1) == 0
     val mv   = 4 * m2
@@ -158,32 +205,6 @@ object RyuFloat {
       (if ((m2 != (1L << FLOAT_MANTISSA_BITS)) || (ieeeExponent <= 1)) 2
        else 1)
     e2 -= 2
-    if (DEBUG) {
-      var sv  = ""
-      var sp  = ""
-      var sm  = ""
-      var e10 = 0
-      if (e2 >= 0) {
-        sv = BigInteger.valueOf(mv).shiftLeft(e2).toString
-        sp = BigInteger.valueOf(mp).shiftLeft(e2).toString
-        sm = BigInteger.valueOf(mm).shiftLeft(e2).toString
-        e10 = 0
-      } else {
-        val factor = BigInteger.valueOf(5).pow(-e2)
-        sv = BigInteger.valueOf(mv).multiply(factor).toString
-        sp = BigInteger.valueOf(mp).multiply(factor).toString
-        sm = BigInteger.valueOf(mm).multiply(factor).toString
-        e10 = e2
-      }
-      e10 += sp.length - 1
-      println("Exact values")
-      println("  m =" + mv)
-      println("  E =" + e10)
-      println("  d+=" + sp)
-      println("  d =" + sv)
-      println("  d-=" + sm)
-      println("  e2=" + e2)
-    }
 
     // Step 3: Convert to a decimal power base using 128-bit arithmetic.
     // -151 = 1 - 127 - 23 - 2 <= e_2 - 2 <= 254 - 127 - 23 - 2 = 102
@@ -215,9 +236,6 @@ object RyuFloat {
       // and we've found that
       // 32-bit arithmetic is faster even on 64-bit machines
       e10 = q
-      if (DEBUG) {
-        println(mv + " * 2^" + e2 + " / 10^" + q)
-      }
       dpIsTrailingZeros = pow5Factor(mp) >= q
       dvIsTrailingZeros = pow5Factor(mv) >= q
       dmIsTrailingZeros = pow5Factor(mm) >= q
@@ -235,27 +253,10 @@ object RyuFloat {
         lastRemovedDigit = (mulPow5divPow2(mv, i + 1, j) % 10).toInt
       }
       e10 = q + e2 // Note: e2 and e10 are both negative here.
-      if (DEBUG) {
-        println(
-          mv + " * 5^" + (-e2) + " / 10^" + q + " = " + mv + " * 5^" +
-            (-e2 - q) +
-            " / 2^" +
-            q)
-      }
       dpIsTrailingZeros = 1 >= q
-      dvIsTrailingZeros = (q < FLOAT_MANTISSA_BITS) && (mv & ((1 << (q - 1)) - 1)) == 0
+      dvIsTrailingZeros = (q < FLOAT_MANTISSA_BITS) &&
+        (mv & ((1 << (q - 1)) - 1)) == 0
       dmIsTrailingZeros = (if (mm % 2 == 1) 0 else 1) >= q
-    }
-    if (DEBUG) {
-      println("Actual values")
-      println("  d+=" + dp)
-      println("  d =" + dv)
-      println("  d-=" + dm)
-      println("  last removed=" + lastRemovedDigit)
-      println("  e10=" + e10)
-      println("  d+10=" + dpIsTrailingZeros)
-      println("  d   =" + dvIsTrailingZeros)
-      println("  d-10=" + dmIsTrailingZeros)
     }
 
     // Step 4: Find the shortest decimal representation in the interval of
@@ -290,7 +291,8 @@ object RyuFloat {
         dp /= 10
         lastRemovedDigit = dv % 10
         dv /= 10
-        dm /= 10; removed += 1
+        dm /= 10
+        removed += 1
       }
     }
     if (dmIsTrailingZeros && roundingMode.acceptLowerBound(even)) {
@@ -303,7 +305,8 @@ object RyuFloat {
           dp /= 10
           lastRemovedDigit = dv % 10
           dv /= 10
-          dm /= 10; removed += 1
+          dm /= 10
+          removed += 1
         }
       }
     }
@@ -317,26 +320,14 @@ object RyuFloat {
            (lastRemovedDigit >= 5)) 1
        else 0)
     val olength = dplength - removed
-    if (DEBUG) {
-      println("Actual values after loop")
-      println("  d+=" + dp)
-      println("  d =" + dv)
-      println("  d-=" + dm)
-      println("  last removed=" + lastRemovedDigit)
-      println("  e10=" + e10)
-      println("  d+10=" + dpIsTrailingZeros)
-      println("  d-10=" + dmIsTrailingZeros)
-      println("  output=" + output)
-      println("  output_length=" + olength)
-      println("  output_exponent=" + exp)
-    }
 
     // Step 5: Print the decimal representation.
     // We follow Float.toString semantics here.
     val result = scala.Array.ofDim[Char](15)
     var index  = 0
     if (sign) {
-      result({ index += 1; index - 1 }) = '-'
+      result(index) = '-'
+      index += 1
     }
     if (scientificNotation) {
       for (i <- 0 until olength - 1) {
@@ -348,33 +339,43 @@ object RyuFloat {
       result(index + 1) = '.'
       index += olength + 1
       if (olength == 1) {
-        result({ index += 1; index - 1 }) = '0'
+        result(index) = '0'
+        index += 1
       }
       // Print 'E', the exponent sign, and the exponent, which has at most
       // two digits.
-      result({ index += 1; index - 1 }) = 'E'
+      result(index) = 'E'
+      index += 1
       if (exp < 0) {
-        result({ index += 1; index - 1 }) = '-'
+        result(index) = '-'
+        index += 1
         exp = -exp
       }
       if (exp >= 10) {
-        result({ index += 1; index - 1 }) = ('0' + exp / 10).toChar
+        result(index) = ('0' + exp / 10).toChar
+        index += 1
       }
-      result({ index += 1; index - 1 }) = ('0' + exp % 10).toChar
+      result(index) = ('0' + exp % 10).toChar
+      index += 1
     } else {
       // Otherwise follow the Java spec for values in the interval [1E-3, 1E7).
       if (exp < 0) {
         // Decimal dot is before any of the digits.
-        result({ index += 1; index - 1 }) = '0'
-        result({ index += 1; index - 1 }) = '.'
+        result(index) = '0'
+        index += 1
+        result(index) = '.'
+        index += 1
         var i = -1
         while (i > exp) {
-          result({ index += 1; index - 1 }) = '0'; i -= 1
+          result(index) = '0'
+          index += 1
+          i -= 1
         }
         val current = index
         for (i <- 0 until olength) {
           result(current + olength - i - 1) = ('0' + output % 10).toChar
-          output /= 10; index += 1
+          output /= 10
+          index += 1
         }
       } else if (exp + 1 >= olength) {
         for (i <- 0 until olength) {
@@ -383,19 +384,20 @@ object RyuFloat {
         }
         index += olength
         for (i <- olength until exp + 1) {
-          result({ index += 1; index - 1 }) = '0'
+          result(index) = '0'
+          index += 1
         }
-        result({ index += 1; index - 1 }) = '.'
-        result({ index += 1; index - 1 }) = '0'
+        result(index) = '.'
+        index += 1
+        result(index) = '0'
+        index += 1
       } else {
         // Decimal dot is somewhere between the digits.
         var current = index + 1
         for (i <- 0 until olength) {
           if (olength - i - 1 == exp) {
-            result(current + olength - i - 1) = '.';
-            {
-              current -= 1; current + 1
-            }
+            result(current + olength - i - 1) = '.'
+            current -= 1
           }
           result(current + olength - i - 1) = ('0' + output % 10).toChar
           output /= 10
@@ -423,7 +425,8 @@ object RyuFloat {
       if (value % 5 != 0) {
         return count
       }
-      value /= 5; count += 1
+      value /= 5
+      count += 1
     }
     throw new IllegalArgumentException("" + value)
   }
@@ -437,8 +440,8 @@ object RyuFloat {
     if (j - POW5_HALF_BITCOUNT < 0) {
       throw new IllegalArgumentException()
     }
-    val bits0 = m * POW5_SPLIT(i)(0).toLong
-    val bits1 = m * POW5_SPLIT(i)(1).toLong
+    val bits0 = m * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 0).toLong
+    val bits1 = m * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 1).toLong
     (bits0 + (bits1 >> POW5_HALF_BITCOUNT)) >> (j - POW5_HALF_BITCOUNT)
   }
 
@@ -451,8 +454,8 @@ object RyuFloat {
     if (j - POW5_INV_HALF_BITCOUNT < 0) {
       throw new IllegalArgumentException()
     }
-    val bits0 = m * POW5_INV_SPLIT(q)(0).toLong
-    val bits1 = m * POW5_INV_SPLIT(q)(1).toLong
+    val bits0 = m * POW5_INV_SPLIT((q * POW5_ARRAY_NCOL) + 0).toLong
+    val bits1 = m * POW5_INV_SPLIT((q * POW5_ARRAY_NCOL) + 1).toLong
     (bits0 + (bits1 >> POW5_INV_HALF_BITCOUNT)) >> (j - POW5_INV_HALF_BITCOUNT)
   }
 
