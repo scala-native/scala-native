@@ -59,10 +59,57 @@ sealed abstract class Val {
     case Val.Int(0)     => true
     case Val.Long(0L)   => true
     case Val.Float(0F)  => true
-    case Val.Double(0F) => true
+    case Val.Double(0D) => true
     case Val.Null       => true
     case _              => false
   }
+
+  final def isOne: Boolean = this match {
+    case Val.True                    => true
+    case Val.Char(c) if c.toInt == 1 => true
+    case Val.Byte(1)                 => true
+    case Val.Short(1)                => true
+    case Val.Int(1)                  => true
+    case Val.Long(1L)                => true
+    case Val.Float(1F)               => true
+    case Val.Double(1D)              => true
+    case _                           => false
+  }
+
+  final def isMinusOne: Boolean = this match {
+    case Val.Byte(-1)    => true
+    case Val.Short(-1)   => true
+    case Val.Int(-1)     => true
+    case Val.Long(-1L)   => true
+    case Val.Float(-1F)  => true
+    case Val.Double(-1D) => true
+    case _               => false
+  }
+
+  final def isSignedMinValue: Boolean = this match {
+    case Val.Byte(v)  => v == Byte.MinValue
+    case Val.Short(v) => v == Short.MinValue
+    case Val.Int(v)   => v == Int.MinValue
+    case Val.Long(v)  => v == Long.MinValue
+    case _            => false
+  }
+
+  final def isSignedMaxValue: Boolean = this match {
+    case Val.Byte(v)  => v == Byte.MaxValue
+    case Val.Short(v) => v == Short.MaxValue
+    case Val.Int(v)   => v == Int.MaxValue
+    case Val.Long(v)  => v == Long.MaxValue
+    case _            => false
+  }
+
+  final def isUnsignedMinValue: Boolean =
+    isZero
+
+  final def isUnsignedMaxValue: Boolean =
+    isMinusOne || (this match {
+      case Val.Char(c) => c == Char.MaxValue
+      case _           => false
+    })
 
   final def canonicalize: Val = this match {
     case Val.Zero(Type.Bool) =>

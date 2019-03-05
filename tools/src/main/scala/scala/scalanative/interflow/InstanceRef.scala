@@ -1,8 +1,8 @@
 package scala.scalanative
 package interflow
 
-import scalanative.nir.{Op, Type, Val}
-import scalanative.linker.Class
+import scalanative.nir._
+import scalanative.linker._
 
 object InstanceRef {
   def unapply(addr: Addr)(implicit state: State): Option[Type] =
@@ -47,6 +47,59 @@ object DelayedRef {
     case _ =>
       None
   }
+}
+
+object BinRef {
+  def unapply(addr: Addr)(implicit state: State): Option[(Bin, Val, Val)] =
+    unapply(Val.Virtual(addr))
+  def unapply(value: Val)(implicit state: State): Option[(Bin, Val, Val)] =
+    value match {
+      case Val.Virtual(addr) =>
+        state.deref(addr) match {
+          case DelayedInstance(Op.Bin(bin, _, l, r)) =>
+            Some((bin, l, r))
+          case _ =>
+            None
+        }
+      case _ =>
+        None
+    }
+}
+
+object ConvRef {
+  def unapply(addr: Addr)(implicit state: State): Option[(Conv, Type, Val)] =
+    unapply(Val.Virtual(addr))
+  def unapply(value: Val)(implicit state: State): Option[(Conv, Type, Val)] =
+    value match {
+      case Val.Virtual(addr) =>
+        state.deref(addr) match {
+          case DelayedInstance(Op.Conv(conv, ty, v)) =>
+            Some((conv, ty, v))
+          case _ =>
+            None
+        }
+      case _ =>
+        None
+    }
+}
+
+object CompRef {
+  def unapply(addr: Addr)(
+      implicit state: State): Option[(Comp, Type, Val, Val)] =
+    unapply(Val.Virtual(addr))
+  def unapply(value: Val)(
+      implicit state: State): Option[(Comp, Type, Val, Val)] =
+    value match {
+      case Val.Virtual(addr) =>
+        state.deref(addr) match {
+          case DelayedInstance(Op.Comp(comp, ty, v1, v2)) =>
+            Some((comp, ty, v1, v2))
+          case _ =>
+            None
+        }
+      case _ =>
+        None
+    }
 }
 
 object EscapedRef {
