@@ -29,7 +29,7 @@ trait Intrinsics { self: Interflow =>
     Global.Member(Global.Top("java.lang.Math$"), Rt.SqrtSig)
   ) ++ arrayIntrinsics
 
-  def intrinsic(local: Local, ty: Type, name: Global, rawArgs: Seq[Val])(
+  def intrinsic(ty: Type, name: Global, rawArgs: Seq[Val])(
       implicit state: State): Val = {
     val Global.Member(_, sig) = name
 
@@ -133,14 +133,14 @@ trait Intrinsics { self: Interflow =>
       case _ if arrayApplyIntrinsics.contains(name) =>
         val Seq(arr, idx)            = rawArgs
         val Type.Function(_, elemty) = ty
-        eval(local, Op.Arrayload(elemty, arr, idx))
+        eval(Op.Arrayload(elemty, arr, idx))
       case _ if arrayUpdateIntrinsics.contains(name) =>
         val Seq(arr, idx, value)                = rawArgs
         val Type.Function(Seq(_, _, elemty), _) = ty
-        eval(local, Op.Arraystore(elemty, arr, idx, value))
+        eval(Op.Arraystore(elemty, arr, idx, value))
       case _ if name == arrayLengthIntrinsic =>
         val Seq(arr) = rawArgs
-        eval(local, Op.Arraylength(arr))
+        eval(Op.Arraylength(arr))
     }
   }
 }
