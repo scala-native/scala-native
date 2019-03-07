@@ -232,6 +232,13 @@ trait Visit { self: Interflow =>
       argtys
   }
 
+  def originalFunctionType(name: Global): Type = name match {
+    case Global.Member(owner, Sig.Duplicate(sig, _)) =>
+      originalFunctionType(Global.Member(owner, sig))
+    case _ =>
+      linked.infos(name).asInstanceOf[Method].ty
+  }
+
   def process(insts: Array[Inst],
               args: Seq[Val],
               state: State,
