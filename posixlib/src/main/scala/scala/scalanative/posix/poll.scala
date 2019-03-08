@@ -3,39 +3,12 @@ package posix
 
 import scalanative.native._
 
-object pollNfds {
-
-  type nfds_t = CUnsignedLongInt
-
-  // Keep the breakage in the nfds_t abstraction confined to here.
-  // The following code will work on both 64 and 32 bit machines.
-  //
-  // posix FOPEN_MAX is currently defined in scalanative wrap.c
-  // as an unsigned int. So any scala Long with bits greater than #31
-  // set are going to fail anyway. Some/most systems will probably
-  // exceed FOPEN_MAX earlier than that.
-  //
-  // Revisit & simplify when better 32/64 bit support arrives.
-
-  @inline
-  def toNfsd_t(in: Int): nfds_t = in.toUInt
-
-  def toNfsd_t(in: ULong): nfds_t = {
-    val uIntMax = UInt.MaxValue
-    if (in > uIntMax) {
-      throw new Exception(s"pollNfds: too many nfds: ${in}  > ${uIntMax}")
-    } else {
-      // may still fail later if greater than FOPEN_MAX. Let code
-      // more closely concerned test for that.
-      // On 64 bit machines UInt will get silently promoted match the
-      // ULong nfsd_t on that machine, so types work out.
-      in.toUInt // truncation is now harmless.
-    }
-  }
-}
-
 @extern
 object poll {
+
+  // See Usage note below. Valid values capped by FOPEN_MAX in underlying OS.
+
+  type nfds_t = CUnsignedLongInt
 
   type pollEvent_t = CShort
 
@@ -43,9 +16,49 @@ object poll {
                                 pollEvent_t, // requested events
                                 pollEvent_t] // returned events
 
-  import pollNfds.nfds_t
-
   def poll(fds: Ptr[struct_pollfd], nfds: nfds_t, timeout: CInt): CInt = extern
+
+  // TL;DR
+  //
+  //   Use as: poll(fds, fds.size.toUInt, timeout)
+  //   and do not worry about the UInt to nfsd_t conversion. Act as though
+  //   there is an implicit conversion.
+  //
+  // Usage note, bridging the C and ScalaNative universes:
+  //
+  //   Long comments are anathema but someone trying to trace the
+  //   interacting constraints may appreciate this information.
+  //
+  //   A common use case, which ought to be easy to use, is to declare
+  //   the first argument of the poll method as an array, fds, and the
+  //   second argument as fds.size.
+  //
+  //   OpenGroup (posix) defines nfsd_t as an unsigned integral type but
+  //   neither defines nor constrains the type before that.  Linux
+  //   nfsd_t is defined on some systems as "unsigned long int". Other
+  //   systems define it with fewer bytes.  SN nfsd_t above is defined
+  //   to allow the maximum with seen in the wild.
+  //
+  //   Although nfsd_t appears to allow very large numbers of nfsd elements,
+  //   it is capped to a much lower value. Posix FOPEN_MAX is currently
+  //   defined in nativelib/src/main/resources scalanative wrap.c
+  //   as an 'unsigned int'. Operating system implementations almost always
+  //   cap the value to a much lower value the maximum unsigned int.
+  //
+  //   Array.size returns a signed int. The convention in SN is that all
+  //   signed to unsigned conversions must be explicit The .toUInt method
+  //   makes the most sense, since any bits above #31 in a ULong will
+  //   almost certainly be beyond FOPEN_MAX on curent & foreseeable systems.
+  //
+  //   The end programmer almost certainly wants to use the fds.size.toUInt
+  //   idiom.
+  //
+  //   Behind the curtain the type abstraction works because a UInt can be
+  //   promoted, when necessary, to a ULong, which is also a CUnsignedLongInt,
+  //   which is an nfds_t. In effect, one has an implicit conversion from
+  //   UInt to nfsd_t.
+  //
+  //   The C and SN world are in harmony:
 
 }
 
