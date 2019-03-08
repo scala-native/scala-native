@@ -863,8 +863,8 @@ object Lower {
                   Op.Call(sig, Val.Global(func, Type.Ptr), Seq(Val.Null, len)),
                   unwind)
         case arrval: Val.ArrayValue =>
-          val sig  = arraySnapshotSig.getOrElse(ty, arrayAllocSig(Rt.Object))
-          val func = arraySnapshot.getOrElse(ty, arrayAlloc(Rt.Object))
+          val sig  = arraySnapshotSig.getOrElse(ty, arraySnapshotSig(Rt.Object))
+          val func = arraySnapshot.getOrElse(ty, arraySnapshot(Rt.Object))
           val len  = Val.Int(arrval.values.length)
           val init = Val.Const(arrval)
           buf.let(
