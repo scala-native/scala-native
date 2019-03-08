@@ -1,7 +1,8 @@
 package java.util
 
 // Ported from Harmony
-// Modified to test Locale.US only. Please see FormatterSuite.scala for the original port
+// Modified to test Locale.US only. Please see FormatterSuite.scala for
+// the original port.
 
 import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream
