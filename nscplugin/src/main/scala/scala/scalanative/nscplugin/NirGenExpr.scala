@@ -460,17 +460,20 @@ trait NirGenExpr { self: NirGenPhase =>
       val ArrayValue(tpt, elems) = av
 
       val elemty = genType(tpt.tpe, box = false)
-      val alloc  = buf.arrayalloc(elemty, Val.Int(elems.length), unwind)
+      val values = genSimpleArgs(elems)
 
-      if (elems.nonEmpty) {
-        val values = genSimpleArgs(elems)
+      if (values.forall(_.isCanonical) && values.exists(v => !v.isZero)) {
+        buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), unwind)
+      } else {
+        val alloc = buf.arrayalloc(elemty, Val.Int(elems.length), unwind)
         values.zipWithIndex.foreach {
           case (v, i) =>
-            buf.arraystore(elemty, alloc, Val.Int(i), v, unwind)
+            if (!v.isZero) {
+              buf.arraystore(elemty, alloc, Val.Int(i), v, unwind)
+            }
         }
+        alloc
       }
-
-      alloc
     }
 
     def genThis(tree: This): Val =

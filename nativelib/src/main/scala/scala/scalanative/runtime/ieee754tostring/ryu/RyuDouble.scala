@@ -694,7 +694,8 @@ object RyuDouble {
 
   // format: on
 
-  def doubleToString(value: Double, roundingMode: RyuRoundingMode): String = {
+  @noinline def doubleToString(value: Double,
+                               roundingMode: RyuRoundingMode): String = {
 
     // Step 1: Decode the floating point number, and unify normalized and
     // subnormal cases.
@@ -865,7 +866,7 @@ object RyuDouble {
 
     // Step 5: Print the decimal representation.
     // We follow Double.toString semantics here.
-    val result = scala.Array.ofDim[Char](24)
+    val result = new scala.Array[Char](24)
     var index  = 0
     if (sign) {
       result(index) = '-'
