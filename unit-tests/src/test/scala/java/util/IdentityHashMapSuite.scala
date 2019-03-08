@@ -80,18 +80,18 @@ object IdentityHashMapSuite extends MapSuite {
   }
 
   test("Regression for HARMONY-37") {
-    // problem with size
     // cannot link: @java.util.IdentityHashMap::field.size
+    // requires size()
     val map = factory.empty[String, String]
     map.remove("absent")
-    //assertEquals(0, map.size) // Size is incorrect
+    assertEquals(0, map.size()) // Size is incorrect
     map.put("key", "value")
     map.remove("key")
-    //assertEquals(0, map.size) // After removing non-null element size is incorrect
+    assertEquals(0, map.size()) // After removing non-null element size is incorrect
     map.put(null, null)
-    //assertEquals(1, map.size) // adding literal null failed
+    assertEquals(1, map.size()) // adding literal null failed
     map.remove(null)
-    //assertEquals(0, map.size) // After removing null element size is incorrect
+    assertEquals(0, map.size()) // After removing null element size is incorrect
   }
   // other Harmony tests available
 }
