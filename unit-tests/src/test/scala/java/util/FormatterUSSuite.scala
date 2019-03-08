@@ -1,7 +1,8 @@
 package java.util
 
 // Ported from Harmony
-// Modified to test Locale.US only. Please see FormatterSuite.scala for the original port
+// Modified to test Locale.US only. Please see FormatterSuite.scala for
+// the original port.
 
 import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream
@@ -2446,10 +2447,11 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for java.lang.Float/Double.MAX_VALUE conversion type 'f'",
-    0) { // issue not filed yet
-    // These need a way to reproduce the same decimal representation of extreme values as JVM.
+  test(
+    "format(String, Array[Object]) for java.lang.Float/Double.MAX_VALUE " +
+      "conversion type 'f'") {
+    // These need a way to reproduce the same decimal representation of
+    // extreme values as JVM.
     val tripleF = Array(
       Array(-1234567890.012345678d, "% 0#(9.8f", "(1234567890.01234580)"),
       Array(
