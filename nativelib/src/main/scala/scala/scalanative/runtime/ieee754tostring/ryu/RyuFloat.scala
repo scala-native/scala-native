@@ -172,7 +172,8 @@ object RyuFloat {
 
 // format: on
 
-  def floatToString(value: Float, roundingMode: RyuRoundingMode): String = {
+  @noinline def floatToString(value: Float,
+                              roundingMode: RyuRoundingMode): String = {
 
     // Step 1: Decode the floating point number, and unify normalized and
     // subnormal cases.

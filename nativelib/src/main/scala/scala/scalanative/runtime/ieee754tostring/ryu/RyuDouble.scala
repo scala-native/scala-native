@@ -694,7 +694,8 @@ object RyuDouble {
 
   // format: on
 
-  def doubleToString(value: Double, roundingMode: RyuRoundingMode): String = {
+  @noinline def doubleToString(value: Double,
+                               roundingMode: RyuRoundingMode): String = {
 
     // Step 1: Decode the floating point number, and unify normalized and
     // subnormal cases.
