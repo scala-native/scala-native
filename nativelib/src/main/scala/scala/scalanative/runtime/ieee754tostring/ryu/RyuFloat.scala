@@ -326,7 +326,7 @@ object RyuFloat {
 
     // Step 5: Print the decimal representation.
     // We follow Float.toString semantics here.
-    val result = scala.Array.ofDim[Char](15)
+    val result = new scala.Array[Char](15)
     var index  = 0
     if (sign) {
       result(index) = '-'

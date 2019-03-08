@@ -865,7 +865,7 @@ object RyuDouble {
 
     // Step 5: Print the decimal representation.
     // We follow Double.toString semantics here.
-    val result = scala.Array.ofDim[Char](24)
+    val result = new scala.Array[Char](24)
     var index  = 0
     if (sign) {
       result(index) = '-'
