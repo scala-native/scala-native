@@ -104,11 +104,16 @@ object UseDef {
         ndef.deps += ddef
       }
     }
-    def alive(ndef: Def): Unit =
-      if (!ndef.alive) {
-        ndef.alive = true
-        ndef.deps.foreach(alive)
+    def traceAlive(ndef: Def): Unit = {
+      val todo = mutable.Queue(ndef)
+      while (todo.nonEmpty) {
+        val ndef = todo.dequeue()
+        if (!ndef.alive) {
+          ndef.alive = true
+          todo ++= ndef.deps
+        }
       }
+    }
 
     // enter definitions
     blocks.foreach { block =>
@@ -146,8 +151,7 @@ object UseDef {
       }
     }
 
-    // trace live code
-    alive(defs(cfg.entry.name))
+    traceAlive(defs(cfg.entry.name))
 
     defs.toMap
   }
