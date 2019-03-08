@@ -321,7 +321,7 @@ object Float {
     }
 
   def toString(f: scala.Float): String = {
-    RyuFloat.floatToString(f, RyuRoundingMode.CONSERVATIVE)
+    RyuFloat.floatToString(f, RyuRoundingMode.Conservative)
   }
 
   @inline def valueOf(s: String): Float =

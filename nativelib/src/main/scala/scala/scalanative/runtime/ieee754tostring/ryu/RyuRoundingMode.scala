@@ -35,34 +35,19 @@ package scala.scalanative
 package runtime
 package ieee754tostring.ryu
 
-object RyuRoundingMode extends Enumeration {
+abstract class RyuRoundingMode {
+  def acceptUpperBound(even: Boolean): Boolean
+  def acceptLowerBound(even: Boolean): Boolean
+}
 
-  val CONSERVATIVE: RyuRoundingMode = new conservativeRM()
-
-  val ROUND_EVEN: RyuRoundingMode = new roundEvenRM()
-
-  abstract class RyuRoundingMode {
-
-    def acceptUpperBound(even: Boolean): Boolean
-
-    def acceptLowerBound(even: Boolean): Boolean
-
-  }
-
-  private[this] class conservativeRM extends RyuRoundingMode {
-
+object RyuRoundingMode {
+  object Conservative extends RyuRoundingMode {
     def acceptUpperBound(even: Boolean): Boolean = false
-
     def acceptLowerBound(even: Boolean): Boolean = false
-
   }
 
-  private[this] class roundEvenRM extends RyuRoundingMode {
-
+  object RoundEven extends RyuRoundingMode {
     def acceptUpperBound(even: Boolean): Boolean = even
-
     def acceptLowerBound(even: Boolean): Boolean = even
-
   }
-
 }
