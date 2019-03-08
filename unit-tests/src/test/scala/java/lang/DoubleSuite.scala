@@ -201,15 +201,43 @@ object DoubleSuite extends tests.Suite {
     assertThrows[NumberFormatException](Double.parseDouble("0.potato"))
   }
 
-  // Not fully JVM compliant yet
+  // scala.Double passes -0.0d without change. j.l.Double gets forced to +0.0.
+  private def assertD2sEquals(expected: String, f: scala.Double): Unit = {
+    val result = f.toString
+    assert(expected == result, s"result: $result != expected: $expected")
+  }
+
   test("toString") {
-    assert(Double.toString(1.0).equals("1.000000"))
-    assert(Double.toString(-1.0).equals("-1.000000"))
-    assert(Double.toString(0.0).equals("0.000000"))
-    assert(Double.toString(-0.0).equals("-0.000000"))
-    assert(Double.toString(Double.POSITIVE_INFINITY).equals("Infinity"))
-    assert(Double.toString(Double.NEGATIVE_INFINITY).equals("-Infinity"))
-    assert(Double.toString(Double.NaN).equals("NaN"))
+
+    // Test non-finite values.
+    assertD2sEquals("Infinity", Double.POSITIVE_INFINITY)
+    assertD2sEquals("-Infinity", Double.NEGATIVE_INFINITY)
+    assertD2sEquals("NaN", Double.NaN)
+
+    // Test simple values around zero.
+    assertD2sEquals("0.0", 0.0d)
+    assertD2sEquals("-0.0", -0.0d)
+    assertD2sEquals("1.0", 1.0d)
+    assertD2sEquals("-1.0", -1.0d)
+    assertD2sEquals("2.0", 2.0d)
+    assertD2sEquals("-2.0", -2.0d)
+
+    // Test maximum & minima.
+    assertD2sEquals("1.7976931348623157E308", scala.Double.MaxValue)
+    assertD2sEquals("-1.7976931348623157E308", scala.Double.MinValue)
+    assertD2sEquals("4.9E-324", scala.Double.MinPositiveValue)
+
+    // Test correctness least significant digits  & number of digits after the
+    // decimal point of values with 'infinite' number of fraction digits.
+    assertD2sEquals("3.141592653589793", (math.Pi * 1.0E+0))
+    assertD2sEquals("31.41592653589793", (math.Pi * 1.0E+1))
+    assertD2sEquals("0.3141592653589793", (math.Pi * 1.0E-1))
+
+    // Test transitions to scientific notation.
+    assertD2sEquals("3141592.653589793", (math.Pi * 1.0E+6))
+    assertD2sEquals("3.1415926535897933E7", (math.Pi * 1.0E+7))
+    assertD2sEquals("0.0031415926535897933", (math.Pi * 1.0E-3))
+    assertD2sEquals("3.141592653589793E-4", (math.Pi * 1.0E-4))
   }
 
   test("toHexString - MIN_VALUE, Issue #1341") {
