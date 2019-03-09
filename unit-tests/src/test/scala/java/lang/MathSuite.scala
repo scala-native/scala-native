@@ -2,12 +2,6 @@ package java.lang
 
 object MathSuite extends tests.Suite {
 
-  // This method can/will be removed when/if pull request #1305 is merged.
-  // Until then, this allows tests to be written as though #1305 were
-  // effective yet still pass Travis CI until then.
-  private def assert(cond: Boolean, message: String): Unit =
-    assert(cond)
-
   test("max") {
     val a = 123.123d
     val b = 456.456d
