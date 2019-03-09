@@ -132,7 +132,8 @@ object Discover {
 
   /** Versions of clang which are known to work with Scala Native. */
   private[scalanative] val clangVersions =
-    Seq(("7", ""),
+    Seq(("8", ""),
+        ("7", ""),
         ("6", "0"),
         ("5", "0"),
         ("4", "0"),
