@@ -333,6 +333,13 @@ class BigInteger extends Number with Comparable[BigInteger] {
 
   def bitLength(): Int = BitLevel.bitLength(this)
 
+  def byteValueExact(): Byte = {
+    if ((numberLength > 1) || (bitLength() >= java.lang.Byte.SIZE)) {
+      throw new ArithmeticException("BigInteger out of byte range")
+    }
+    byteValue()
+  }
+
   def clearBit(n: Int): BigInteger = {
     if (testBit(n)) BitLevel.flipBit(this, n)
     else this
@@ -514,6 +521,13 @@ class BigInteger extends Number with Comparable[BigInteger] {
 
   override def intValue(): Int = sign * digits(0)
 
+  def intValueExact(): Int = {
+    if ((numberLength > 1) || (bitLength() >= java.lang.Integer.SIZE)) {
+      throw new ArithmeticException("BigInteger out of int range")
+    }
+    intValue()
+  }
+
   def isProbablePrime(certainty: Int): Boolean =
     Primality.isProbablePrime(abs(), certainty)
 
@@ -523,6 +537,13 @@ class BigInteger extends Number with Comparable[BigInteger] {
         (digits(1).toLong << 32) | (digits(0) & 0xFFFFFFFFL)
       else digits(0) & 0xFFFFFFFFL
     sign * value
+  }
+
+  def longValueExact(): Long = {
+    if ((numberLength > 2) || (bitLength() >= java.lang.Long.SIZE)) {
+      throw new ArithmeticException("BigInteger out of long range")
+    }
+    longValue()
   }
 
   def max(bi: BigInteger): BigInteger = {
@@ -677,6 +698,13 @@ class BigInteger extends Number with Comparable[BigInteger] {
     if (n == 0 || sign == 0) this
     else if (n > 0) BitLevel.shiftRight(this, n)
     else BitLevel.shiftLeft(this, -n)
+  }
+
+  def shortValueExact(): Short = {
+    if ((numberLength > 1) || (bitLength() >= java.lang.Short.SIZE)) {
+      throw new ArithmeticException("BigInteger out of short range")
+    }
+    shortValue()
   }
 
   def signum(): Int = sign
