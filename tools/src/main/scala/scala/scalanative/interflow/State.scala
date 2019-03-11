@@ -246,7 +246,7 @@ final class State(block: Local) {
         emit.arrayalloc(elemty, init, Next.None)
       case VirtualInstance(BoxKind, cls, Array(value)) =>
         reachVal(value)
-        emit.box(Type.Ref(cls.name), escapedVal(value), Next.None)
+        emit(Op.Box(Type.Ref(cls.name), escapedVal(value)))
       case VirtualInstance(StringKind, _, values)
           if !hasEscaped(values(linked.StringValueField.index)) =>
         val Val.Virtual(charsAddr) = values(linked.StringValueField.index)
