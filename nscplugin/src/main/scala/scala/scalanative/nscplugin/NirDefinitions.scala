@@ -159,6 +159,14 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getMember(IntrinsicsModule, TermName("shortToULong"))
     lazy val IntToULongMethod =
       getMember(IntrinsicsModule, TermName("intToULong"))
+    lazy val UIntToFloatMethod =
+      getMember(IntrinsicsModule, TermName("uintToFloat"))
+    lazy val ULongToFloatMethod =
+      getMember(IntrinsicsModule, TermName("ulongToFloat"))
+    lazy val UIntToDoubleMethod =
+      getMember(IntrinsicsModule, TermName("uintToDouble"))
+    lazy val ULongToDoubleMethod =
+      getMember(IntrinsicsModule, TermName("ulongToDouble"))
     lazy val LoadBoolMethod =
       getMember(IntrinsicsModule, TermName("loadBoolean"))
     lazy val LoadCharMethod = getMember(IntrinsicsModule, TermName("loadChar"))

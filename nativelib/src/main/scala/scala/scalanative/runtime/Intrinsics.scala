@@ -30,6 +30,18 @@ object Intrinsics {
   /** Intrinsified int to unsigned long conversion. */
   def intToULong(v: Int): Long = intrinsic
 
+  /** Intrinsified unsigned int to float conversion. */
+  def uintToFloat(v: Int): Float = intrinsic
+
+  /** Intrinsified unsigned long to float conversion. */
+  def ulongToFloat(v: Long): Float = intrinsic
+
+  /** Intrinsified unsigned int to double conversion. */
+  def uintToDouble(v: Int): Double = intrinsic
+
+  /** Intrinsified unsigned long to double conversion. */
+  def ulongToDouble(v: Long): Double = intrinsic
+
   /** Intrinsified raw memory load of boolean. */
   def loadBoolean(rawptr: RawPtr): Boolean = intrinsic
 

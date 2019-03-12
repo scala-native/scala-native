@@ -1,7 +1,6 @@
 package scala.scalanative
 
-import native.{CFunctionPtr1, CFunctionPtr0}
-import native.{CInt, CFloat, CDouble}
+import scalanative.native._
 
 object IssuesSuite extends tests.Suite {
 
@@ -367,6 +366,11 @@ object IssuesSuite extends tests.Suite {
     val ys = new Array[issue1090.Y](20)
     assert(issue1090.A.foo(xs) == "X array")
     assert(issue1090.A.foo(ys) == "Y array")
+  }
+
+  test("#1239") {
+    val ulong = java.lang.Long.parseUnsignedLong("9223372036854775808").toULong
+    assert(ulong.toDouble == 9223372036854775808.0D)
   }
 }
 

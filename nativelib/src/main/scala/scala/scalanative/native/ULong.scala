@@ -1,7 +1,12 @@
 package scala.scalanative
 package native
 
-import scalanative.runtime.Intrinsics.{divULong, remULong}
+import scalanative.runtime.Intrinsics.{
+  divULong,
+  remULong,
+  ulongToFloat,
+  ulongToDouble
+}
 import java.lang.{Long => JLong}
 
 /** `ULong`, a 64-bit unsigned integer. */
@@ -10,15 +15,13 @@ final class ULong private[scala] (private val underlying: Long)
     with java.io.Serializable
     with Comparable[ULong] {
 
-  @inline final def toByte: Byte   = underlying.toByte
-  @inline final def toShort: Short = underlying.toShort
-  @inline final def toChar: Char   = underlying.toChar
-  @inline final def toInt: Int     = underlying.toInt
-  @inline final def toLong: Long   = underlying
-  @inline final def toFloat: Float = toDouble.toFloat
-  @inline final def toDouble: Double =
-    if (underlying >= 0) underlying.toDouble
-    else 18446744073709551616.0 - underlying.toDouble // TODO Verify precision
+  @inline final def toByte: Byte     = underlying.toByte
+  @inline final def toShort: Short   = underlying.toShort
+  @inline final def toChar: Char     = underlying.toChar
+  @inline final def toInt: Int       = underlying.toInt
+  @inline final def toLong: Long     = underlying
+  @inline final def toFloat: Float   = ulongToFloat(underlying)
+  @inline final def toDouble: Double = ulongToDouble(underlying)
 
   @inline final def toUByte: UByte   = new UByte(toByte)
   @inline final def toUShort: UShort = new UShort(toShort)

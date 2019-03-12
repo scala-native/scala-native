@@ -497,7 +497,7 @@ final class Check(implicit linked: linker.Result) {
       }
     case Conv.Fptoui =>
       (value.ty, ty) match {
-        case (Type.Float | Type.Double, ity: Type.I) if !ity.signed =>
+        case (Type.Float | Type.Double, ity: Type.I) =>
           ok
         case _ =>
           error(s"can't fptoui from ${value.ty.show} to ${ty.show}")
@@ -511,7 +511,7 @@ final class Check(implicit linked: linker.Result) {
       }
     case Conv.Uitofp =>
       (value.ty, ty) match {
-        case (ity: Type.I, Type.Float | Type.Double) if !ity.signed =>
+        case (ity: Type.I, Type.Float | Type.Double) =>
           ok
         case _ =>
           error(s"can't uitofp from ${value.ty.show} to ${ty.show}")
