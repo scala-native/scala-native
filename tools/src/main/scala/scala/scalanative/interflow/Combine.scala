@@ -402,13 +402,17 @@ trait Combine { self: Interflow =>
       // Not-yet-materialized virtual allocation will never be
       // the same as already existing allocation (be it null
       // or any other value).
-      case (Ieq, Val.Virtual(addr), r) if state.isVirtual(addr) =>
+      //
+      // This is not true however for boxes and strings as
+      // they may be interned and the virtual allocation may
+      // alias pre-existing materialized allocation.
+      case (Ieq, VirtualRef(ClassKind | ArrayKind, _, _), r) =>
         Val.False
-      case (Ieq, l, Val.Virtual(addr)) if state.isVirtual(addr) =>
+      case (Ieq, l, VirtualRef(ClassKind | ArrayKind, _, _)) =>
         Val.False
-      case (Ine, Val.Virtual(addr), r) if state.isVirtual(addr) =>
+      case (Ine, VirtualRef(ClassKind | ArrayKind, _, _), r) =>
         Val.True
-      case (Ine, l, Val.Virtual(addr)) if state.isVirtual(addr) =>
+      case (Ine, l, VirtualRef(ClassKind | ArrayKind, _, _)) =>
         Val.True
 
       // Comparing non-nullable value with null will always

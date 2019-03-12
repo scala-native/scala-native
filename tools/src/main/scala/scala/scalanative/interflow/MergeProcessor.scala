@@ -357,14 +357,16 @@ final class MergeProcessor(insts: Array[Inst],
   }
 
   def toSeq(): Seq[MergeBlock] = {
-    val retMergeBlocks = blocks.values.collect {
+    val sortedBlocks = blocks.values.toSeq
+      .sortBy { block =>
+        offsets(block.label.name)
+      }
+      .filter(_.cf != null)
+
+    val retMergeBlocks = sortedBlocks.collect {
       case block if block.cf.isInstanceOf[Inst.Ret] =>
         block
     }.toSeq
-
-    val sortedBlocks = blocks.values.toSeq.sortBy { block =>
-      offsets(block.label.name)
-    }
 
     def isExceptional(block: MergeBlock): Boolean = {
       val cf = block.cf
