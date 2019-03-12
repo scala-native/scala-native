@@ -132,7 +132,16 @@ object Discover {
 
   /** Versions of clang which are known to work with Scala Native. */
   private[scalanative] val clangVersions =
-    Seq(("6", "0"), ("5", "0"), ("4", "0"), ("3", "9"), ("3", "8"), ("3", "7"))
+    Seq(("8", ""),
+        ("8", "0"),
+        ("7", ""),
+        ("7", "0"), // LLVM changed version numbering scheme, try both.
+        ("6", "0"),
+        ("5", "0"),
+        ("4", "0"),
+        ("3", "9"),
+        ("3", "8"),
+        ("3", "7"))
 
   /** Discover concrete binary path using command name and
    *  a sequence of potential supported versions.
@@ -153,7 +162,8 @@ object Discover {
       case None => {
         val binaryNames = binaryVersions.flatMap {
           case (major, minor) =>
-            Seq(s"$binaryName$major$minor", s"$binaryName-$major.$minor")
+            val sep = if (minor == "") "" else "."
+            Seq(s"$binaryName$major$minor", s"$binaryName-$major${sep}$minor")
         } :+ binaryName
 
         Process("which" +: binaryNames)
