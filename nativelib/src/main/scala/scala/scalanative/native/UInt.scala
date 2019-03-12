@@ -1,7 +1,12 @@
 package scala.scalanative
 package native
 
-import scalanative.runtime.Intrinsics.{divUInt, remUInt}
+import scalanative.runtime.Intrinsics.{
+  divUInt,
+  remUInt,
+  uintToFloat,
+  uintToDouble
+}
 import java.lang.{Integer => JInteger}
 
 /** `UInt`, a 32-bit unsigned integer. */
@@ -15,8 +20,8 @@ final class UInt private[scala] (private val underlying: Int)
   @inline final def toChar: Char     = underlying.toChar
   @inline final def toInt: Int       = underlying
   @inline final def toLong: Long     = JInteger.toUnsignedLong(underlying)
-  @inline final def toFloat: Float   = toLong.toFloat
-  @inline final def toDouble: Double = toLong.toDouble
+  @inline final def toFloat: Float   = uintToFloat(underlying)
+  @inline final def toDouble: Double = uintToDouble(underlying)
 
   @inline final def toUByte: UByte   = new UByte(toByte)
   @inline final def toUShort: UShort = new UShort(toShort)

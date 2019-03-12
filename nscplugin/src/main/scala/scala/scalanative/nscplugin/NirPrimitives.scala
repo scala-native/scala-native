@@ -23,17 +23,23 @@ object NirPrimitives {
   final val CCAST      = 1 + CQUOTE
   final val STACKALLOC = 1 + CCAST
 
-  final val DIV_UINT       = 1 + STACKALLOC
-  final val DIV_ULONG      = 1 + DIV_UINT
-  final val REM_UINT       = 1 + DIV_ULONG
-  final val REM_ULONG      = 1 + REM_UINT
+  final val DIV_UINT  = 1 + STACKALLOC
+  final val DIV_ULONG = 1 + DIV_UINT
+  final val REM_UINT  = 1 + DIV_ULONG
+  final val REM_ULONG = 1 + REM_UINT
+
   final val BYTE_TO_UINT   = 1 + REM_ULONG
   final val BYTE_TO_ULONG  = 1 + BYTE_TO_UINT
   final val SHORT_TO_UINT  = 1 + BYTE_TO_ULONG
   final val SHORT_TO_ULONG = 1 + SHORT_TO_UINT
   final val INT_TO_ULONG   = 1 + SHORT_TO_ULONG
 
-  final val LOAD_BOOL    = 1 + INT_TO_ULONG
+  final val UINT_TO_FLOAT   = 1 + INT_TO_ULONG
+  final val ULONG_TO_FLOAT  = 1 + UINT_TO_FLOAT
+  final val UINT_TO_DOUBLE  = 1 + ULONG_TO_FLOAT
+  final val ULONG_TO_DOUBLE = 1 + UINT_TO_DOUBLE
+
+  final val LOAD_BOOL    = 1 + ULONG_TO_DOUBLE
   final val LOAD_CHAR    = 1 + LOAD_BOOL
   final val LOAD_BYTE    = 1 + LOAD_CHAR
   final val LOAD_SHORT   = 1 + LOAD_BYTE
@@ -144,6 +150,10 @@ abstract class NirPrimitives {
     addPrimitive(ShortToUIntMethod, SHORT_TO_UINT)
     addPrimitive(ShortToULongMethod, SHORT_TO_ULONG)
     addPrimitive(IntToULongMethod, INT_TO_ULONG)
+    addPrimitive(UIntToFloatMethod, UINT_TO_FLOAT)
+    addPrimitive(ULongToFloatMethod, ULONG_TO_FLOAT)
+    addPrimitive(UIntToDoubleMethod, UINT_TO_DOUBLE)
+    addPrimitive(ULongToDoubleMethod, ULONG_TO_DOUBLE)
     HashMethods.foreach(addPrimitive(_, HASH))
     addPrimitive(LoadBoolMethod, LOAD_BOOL)
     addPrimitive(LoadCharMethod, LOAD_CHAR)
@@ -176,5 +186,6 @@ abstract class NirPrimitives {
     addPrimitive(CastRawPtrToLongMethod, CAST_RAWPTR_TO_LONG)
     addPrimitive(CastIntToRawPtrMethod, CAST_INT_TO_RAWPTR)
     addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
+
   }
 }

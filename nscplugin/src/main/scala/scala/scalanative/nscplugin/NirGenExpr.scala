@@ -745,7 +745,7 @@ trait NirGenExpr { self: NirGenPhase =>
         genCQuoteOp(app)
       } else if (code == BOXED_UNIT) {
         Val.Unit
-      } else if (code >= DIV_UINT && code <= INT_TO_ULONG) {
+      } else if (code >= DIV_UINT && code <= ULONG_TO_DOUBLE) {
         genUnsignedOp(app, code)
       } else {
         abort(
@@ -1395,13 +1395,17 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genUnsignedOp(app: Tree, code: Int): Val = app match {
-      case Apply(_, Seq(argp)) =>
-        assert(code >= BYTE_TO_UINT && code <= INT_TO_ULONG)
-
+      case Apply(_, Seq(argp)) if code >= BYTE_TO_UINT && code <= INT_TO_ULONG =>
         val ty  = genType(app.tpe, box = false)
         val arg = genExpr(argp)
 
         buf.conv(Conv.Zext, ty, arg, unwind)
+
+      case Apply(_, Seq(argp)) if code >= UINT_TO_FLOAT && code <= ULONG_TO_DOUBLE =>
+        val ty  = genType(app.tpe, box = false)
+        val arg = genExpr(argp)
+
+        buf.conv(Conv.Uitofp, ty, arg, unwind)
 
       case Apply(_, Seq(leftp, rightp)) =>
         val bin = code match {
