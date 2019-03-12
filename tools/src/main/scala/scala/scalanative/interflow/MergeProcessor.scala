@@ -357,9 +357,11 @@ final class MergeProcessor(insts: Array[Inst],
   }
 
   def toSeq(): Seq[MergeBlock] = {
-    val sortedBlocks = blocks.values.toSeq.sortBy { block =>
-      offsets(block.label.name)
-    }.filter(_.cf != null)
+    val sortedBlocks = blocks.values.toSeq
+      .sortBy { block =>
+        offsets(block.label.name)
+      }
+      .filter(_.cf != null)
 
     val retMergeBlocks = sortedBlocks.collect {
       case block if block.cf.isInstanceOf[Inst.Ret] =>
