@@ -19,6 +19,14 @@ trait Visit { self: Interflow =>
         notExtern && hasInsts && hasSema
       }
 
+  def shallDuplicate(name: Global, argtys: Seq[Type]): Boolean =
+    mode match {
+      case build.Mode.Debug =>
+        false
+      case build.Mode.Release =>
+        argumentTypes(name) != argtys
+    }
+
   def visitEntry(name: Global): Unit = {
     if (!name.isTop) {
       visitEntry(name.top)
@@ -171,7 +179,7 @@ trait Visit { self: Interflow =>
 
   def duplicateName(name: Global, argtys: Seq[Type]): Global = {
     val orig = originalName(name)
-    if (argumentTypes(orig) == argtys) {
+    if (!shallDuplicate(orig, argtys)) {
       orig
     } else {
       val Global.Member(top, sig) = orig

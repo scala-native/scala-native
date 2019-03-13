@@ -284,7 +284,7 @@ trait Eval { self: Interflow =>
         val isPure =
           isPureModule(clsName)
         val isWhitelisted =
-          UseDef.pureWhitelist.contains(clsName)
+          Whitelist.pure.contains(clsName)
         val canDelay =
           isPure || isWhitelisted
 
