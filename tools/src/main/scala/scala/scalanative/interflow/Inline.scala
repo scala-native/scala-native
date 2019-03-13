@@ -12,8 +12,7 @@ trait Inline { self: Interflow =>
     case build.Mode.Debug =>
       false
     case build.Mode.Release =>
-      done
-        .get(name)
+      maybeDone(name)
         .fold[Boolean] {
           false
         } { defn =>
@@ -36,7 +35,7 @@ trait Inline { self: Interflow =>
           val isRecursive =
             context.contains(s"inlining ${name.show}")
           val isBlacklisted =
-            blacklist.contains(name)
+            this.isBlacklisted(name)
           val calleeTooBig =
             defn.insts.size > 8192
           val callerTooBig =
@@ -68,7 +67,7 @@ trait Inline { self: Interflow =>
   def inline(name: Global, args: Seq[Val])(implicit state: State,
                                            linked: linker.Result): Val =
     in(s"inlining ${name.show}") {
-      val defn   = done(name)
+      val defn   = getDone(name)
       val blocks = process(defn.insts.toArray, args, state, inline = true)
 
       val emit = new nir.Buffer()(state.fresh)

@@ -33,4 +33,14 @@ object Global {
     override def member(sig: Sig): Global.Member =
       throw new Exception("Global.Member can't have any members.")
   }
+
+  implicit val globalOrdering: Ordering[Global] =
+    Ordering.by[Global, (String, String)] {
+      case Global.Member(Global.Top(id), sig) =>
+        (id, sig.mangle)
+      case Global.Top(id) =>
+        (id, "")
+      case _ =>
+        ("", "")
+    }
 }
