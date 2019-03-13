@@ -1,11 +1,13 @@
 enablePlugins(ScalaNativePlugin)
 
+import scala.sys.process._
+
 scalaVersion := "2.11.12"
 
 nativeLinkingOptions in Compile += s"-L${target.value.getAbsoluteFile}"
 
 compile in Compile := {
-  val log            = streams.value.log
+
   val cwd            = target.value
   val compileOptions = nativeCompileOptions.value
   val cpaths         = (baseDirectory.value.getAbsoluteFile * "*.c").get
@@ -17,9 +19,14 @@ compile in Compile := {
     path.getAbsolutePath
 
   def run(command: Seq[String]): Int = {
-    import scala.sys.process._
+    val log = streams.value.log
     log.info("Running " + command.mkString(" "))
-    Process(command, cwd) ! log
+
+    // Use a Process() idiom that works with both sbt 0.13.n & 1.n.
+    val processLog =
+      ProcessLogger(line => log.info(line), line => log.error(line))
+
+    scala.sys.process.Process(command, cwd) ! processLog
   }
 
   val opaths = cpaths.map { cpath =>
