@@ -7,7 +7,7 @@ scalaVersion := "2.11.12"
 nativeLinkingOptions in Compile += s"-L${target.value.getAbsoluteFile}"
 
 compile in Compile := {
-
+  val log            = streams.value.log
   val cwd            = target.value
   val compileOptions = nativeCompileOptions.value
   val cpaths         = (baseDirectory.value.getAbsoluteFile * "*.c").get
@@ -19,7 +19,6 @@ compile in Compile := {
     path.getAbsolutePath
 
   def run(command: Seq[String]): Int = {
-    val log = streams.value.log
     log.info("Running " + command.mkString(" "))
 
     // Use a Process() idiom that works with both sbt 0.13.n & 1.n.
