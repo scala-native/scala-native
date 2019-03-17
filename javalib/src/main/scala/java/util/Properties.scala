@@ -1,5 +1,6 @@
 package java.util
 
+import java.io.{PrintStream, PrintWriter}
 import java.{util => ju}
 
 import scala.collection.JavaConverters._
@@ -49,6 +50,29 @@ class Properties(protected val defaults: Properties)
     if (defaults != null)
       set.addAll(defaults.stringPropertyNames())
     set
+  }
+
+  private def format(entry: ju.Map.Entry[AnyRef, AnyRef]): String = {
+    val key: String   = entry.getKey.asInstanceOf[String]
+    val value: String = entry.getValue.asInstanceOf[String]
+    if (key.length > 40)
+      s"${key.substring(0, 37)}...=$value"
+    else
+      s"$key=$value"
+  }
+
+  def list(out: PrintStream): Unit = {
+    out.println("-- listing properties --")
+    entrySet().asScala.foreach { entry =>
+      out.println(format(entry))
+    }
+  }
+
+  def list(out: PrintWriter): Unit = {
+    out.println("-- listing properties --")
+    entrySet().asScala.foreach { entry =>
+      out.println(format(entry))
+    }
   }
 
   // TODO:
