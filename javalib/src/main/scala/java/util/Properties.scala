@@ -83,6 +83,4 @@ class Properties(protected val defaults: Properties)
   // def loadFromXML(in: InputStream): Unit
   // def storeToXML(os: OutputStream, comment: String): Unit
   // def storeToXML(os: OutputStream, comment: String, encoding: String): Unit
-  // def list(out: PrintStream): Unit
-  // def list(out: PrintWriter): Unit
 }
