@@ -328,6 +328,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
   @stub
   def toURL(): java.net.URL = ???
 
+  // Ported from Apache Harmony
   def toURI(): URI = {
     import java.net.URISyntaxException
     val path = getAbsolutePath()
@@ -586,5 +587,6 @@ object File {
     else if (uri.getRawAuthority != null) throwExc(compMsg("authority"))
     else if (uri.getRawQuery != null) throwExc(compMsg("query"))
     else if (uri.getRawFragment != null) throwExc(compMsg("fragment"))
+    // else URI is ok
   }
 }
