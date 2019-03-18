@@ -55,23 +55,11 @@ object UseDef {
     collector.deps.distinct
   }
 
-  val pureWhitelist = {
-    val out = mutable.Set.empty[Global]
-    out += Global.Top("scala.Predef$")
-    out += Global.Top("scala.runtime.BoxesRunTime$")
-    out += Global.Top("scala.scalanative.runtime.Boxes$")
-    out += Global.Top("scala.scalanative.runtime.package$")
-    out += Global.Top("scala.scalanative.native.package$")
-    out += Global.Top("scala.collection.immutable.Range$")
-    out ++= codegen.Lower.BoxTo.values
-    out
-  }
-
   private def isPure(inst: Inst) = inst match {
     case Inst.Let(_, Op.Call(_, Val.Global(name, _), _), _) =>
-      pureWhitelist.contains(name)
+      Whitelist.pure.contains(name)
     case Inst.Let(_, Op.Module(name), _) =>
-      pureWhitelist.contains(name)
+      Whitelist.pure.contains(name)
     case Inst.Let(_, op, _) if op.isPure =>
       true
     case _ =>

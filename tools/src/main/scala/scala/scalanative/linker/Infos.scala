@@ -137,8 +137,10 @@ final class Class(val attrs: Attrs,
             false
         }
     }
+    val isWhitelisted =
+      interflow.Whitelist.constantModules.contains(name)
 
-    isModule && (attrs.isExtern || (hasEmptyOrNoCtor && hasNoFields))
+    isModule && (isWhitelisted || attrs.isExtern || (hasEmptyOrNoCtor && hasNoFields))
   }
   def resolve(sig: Sig): Option[Global] = {
     responds.get(sig)
