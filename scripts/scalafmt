@@ -8,7 +8,7 @@ COURSIER="$HERE/.coursier"
 SCALAFMT="$HERE/.scalafmt-$VERSION"
 
 if [ ! -f $COURSIER ]; then
-  curl -L -o $COURSIER https://git.io/vgvpD
+  curl -L -o $COURSIER https://git.io/coursier-cli
   chmod +x $COURSIER
 fi
 
