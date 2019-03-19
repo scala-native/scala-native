@@ -58,13 +58,18 @@ trait MapSuite extends tests.Suite {
 
   test("should store custom objects") {
     case class TestObj(num: Int)
-
     val mp = factory.empty[TestObj, TestObj]
 
-    mp.put(TestObj(100), TestObj(12345))
+    val testKey = TestObj(100)
+    mp.put(testKey, TestObj(12345))
     assertEquals(1, mp.size())
-    val one = mp.get(TestObj(100))
-    assertEquals(12345, one.num)
+    if (factory.allowsIdentityBasedKeys) {
+      val one = mp.get(testKey)
+      assertEquals(12345, one.num)
+    } else {
+      val one = mp.get(TestObj(100))
+      assertEquals(12345, one.num)
+    }
   }
 
   test("should remove stored elements") {
@@ -553,4 +558,6 @@ trait MapFactory {
   def allowsNullKeysQueries: Boolean = true
 
   def allowsNullValuesQueries: Boolean = true
+
+  def allowsIdentityBasedKeys: Boolean = false
 }
