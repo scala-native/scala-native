@@ -11,7 +11,8 @@ import scala.scalanative.posix.sys.select._
 import scala.scalanative.posix.unistd.close
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.sys.time.timeval
-import scala.scalanative.posix.sys.selectOps._
+import scala.scalanative.posix.sys.timeOps._
+
 import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
 object SocketHelpers {
@@ -41,12 +42,12 @@ object SocketHelpers {
         if (sock < 0) {
           return false
         }
+
         fcntl(sock, F_SETFL, O_NONBLOCK)
 
-        val fdset = stackalloc[fd_set]
-        !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
-        FD_ZERO(fdset)
-        FD_SET(sock, fdset)
+        val fdsetPtr = stackalloc[fd_set].asInstanceOf[Ptr[fd_set]]
+        FD_ZERO(fdsetPtr)
+        FD_SET(sock, fdsetPtr)
 
         val time = stackalloc[timeval]
         time.tv_sec = timeout / 1000
@@ -54,7 +55,7 @@ object SocketHelpers {
 
         connect(sock, res.ai_addr, res.ai_addrlen)
 
-        if (select(sock + 1, null, fdset, null, time) == 1) {
+        if (select(sock + 1, null, fdsetPtr, null, time) == 1) {
           val so_error = stackalloc[CInt].cast[Ptr[Byte]]
           val len      = stackalloc[socklen_t]
           !len = sizeof[CInt].toUInt
@@ -71,7 +72,7 @@ object SocketHelpers {
           return false
         }
 
-        if (select(sock + 1, fdset, null, null, time) != 1) {
+        if (select(sock + 1, fdsetPtr, null, null, time) != 1) {
           return false
         } else {
           val buf      = stackalloc[CChar](5)
