@@ -30,15 +30,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// see the license file for more information about java.time
 package java.time
 
 import java.time.temporal.TemporalAmount
 
-@SerialVersionUID(3078945930695997490L)
 final class Duration private (private val seconds: Long, private val nanos: Int)
     extends TemporalAmount
-    with Ordered[Duration]
-    with Serializable {
+    with Comparable[Duration]
+    with java.io.Serializable {
 
   def toMillis: Long = {
     val result: Long = Math.multiplyExact(seconds, Duration.MILLIS_PER_SEC)
@@ -63,17 +63,16 @@ final class Duration private (private val seconds: Long, private val nanos: Int)
   override def hashCode: Int = (seconds ^ (seconds >>> 32)).toInt + (51 * nanos)
 }
 
-@SerialVersionUID(3078945930695997490L)
 object Duration {
-  private val NANOS_PER_MILLI: Int = 1000000
-  private val MILLIS_PER_SEC: Int  = 1000
-  private val NANOS_PER_SEC: Int   = NANOS_PER_MILLI * MILLIS_PER_SEC
+  private final val NANOS_PER_MILLI: Int = 1000000
+  private final val MILLIS_PER_SEC: Int  = 1000
+  private final val NANOS_PER_SEC: Int   = NANOS_PER_MILLI * MILLIS_PER_SEC
 
   private def create(seconds: Long, nanoAdjustment: Int): Duration =
     if ((seconds | nanoAdjustment) == 0) ZERO
     else new Duration(seconds, nanoAdjustment)
 
-  val ZERO: Duration = new Duration(0, 0)
+  final val ZERO: Duration = new Duration(0, 0)
 
   def ofMillis(millis: Long): Duration = {
     var secs: Long = millis / MILLIS_PER_SEC
@@ -91,5 +90,4 @@ object Duration {
     val nos: Int = Math.floorMod(nanoAdjustment, NANOS_PER_SEC).toInt
     create(secs, nos)
   }
-
 }

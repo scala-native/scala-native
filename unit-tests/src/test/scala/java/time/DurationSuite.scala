@@ -2,23 +2,24 @@ package java.time
 
 object DurationSuite extends tests.Suite {
 
-  val one   = Duration.ofSeconds(350070L, 112233L)
-  val two   = Duration.ofSeconds(350070L, 112233L)
-  val three = Duration.ofSeconds(350070L, 0L)
+  val v1 = Duration.ofSeconds(350070L, 112233L)
+  val v2 = Duration.ofSeconds(350070L, 112233L)
+  val v3 = Duration.ofSeconds(350070L, 0L)
 
   test("equals") {
-    assert(one.equals(one))
-    assert(one.equals(two))
-    assert(two.equals(one))
-    assert(one != null)
-    assertNot(one.equals(new Object()))
+    assert(v1.equals(v1))
+    assert(v1.equals(v2))
+    assert(v2.equals(v1))
+    assert(v1 != null)
+    assertNot(v1.equals(new Object()))
   }
 
   test("compareTo") {
-    assert(one.compareTo(one) == 0)
-    assert(one.compareTo(two) == 0)
-    assert(two.compareTo(three) > 0)
-    assert(three.compareTo(one) < 0)
+    assert(v1.compareTo(v1) == 0)
+    assert(v1.compareTo(v2) == 0)
+    assert(v2.compareTo(v1) == 0)
+    assert(v2.compareTo(v3) > 0)
+    assert(v3.compareTo(v1) < 0)
   }
 
 }
