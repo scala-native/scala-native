@@ -35,30 +35,31 @@ package java.time
 
 import java.time.temporal.TemporalAmount
 
-final class Duration private (private val seconds: Long, private val nanos: Int)
+final class Duration private (seconds: Long, nanos: Int)
     extends TemporalAmount
     with Comparable[Duration]
     with java.io.Serializable {
+
+  def getSeconds(): Long = seconds
+
+  def getNano(): Int = nanos
 
   def toMillis: Long = {
     val result: Long = Math.multiplyExact(seconds, Duration.MILLIS_PER_SEC)
     Math.addExact(result, nanos / Duration.NANOS_PER_MILLI)
   }
 
-  def compare(otherDuration: Duration): Int = {
-    val cmp: Int = java.lang.Long.compare(seconds, otherDuration.seconds)
-    if (cmp != 0) cmp
-    else nanos - otherDuration.nanos
+  def compareTo(that: Duration): Int = {
+    val secCmp = seconds.compareTo(that.getSeconds)
+    if (secCmp == 0) nanos.compareTo(that.getNano)
+    else secCmp
   }
 
-  override def compareTo(other: Duration): Int = compare(other)
-
-  override def equals(other: Any): Boolean =
-    other match {
-      case otherDuration: Duration =>
-        (this eq otherDuration) || (this.seconds == otherDuration.seconds && this.nanos == otherDuration.nanos)
-      case _ => false
-    }
+  override def equals(that: Any): Boolean = that match {
+    case that: Duration =>
+      seconds == that.getSeconds && nanos == that.getNano
+    case _ => false
+  }
 
   override def hashCode: Int = (seconds ^ (seconds >>> 32)).toInt + (51 * nanos)
 }
