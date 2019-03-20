@@ -14,6 +14,8 @@ class Properties(protected val defaults: Properties)
 
   def load(inStream: java.io.InputStream): Unit = ???
 
+  def load(reader: java.io.Reader): Unit = ???
+
   def getProperty(key: String): String =
     getProperty(key, defaultValue = null)
 
@@ -52,7 +54,6 @@ class Properties(protected val defaults: Properties)
   }
 
   // TODO:
-  // def load(reader: Reader): Unit
   // @deprecated("", "") def save(out: OutputStream, comments: String): Unit
   // def store(writer: Writer, comments: String): Unit
   // def store(out: OutputStream, comments: String): Unit
