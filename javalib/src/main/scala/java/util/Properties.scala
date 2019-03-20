@@ -3,6 +3,7 @@ package java.util
 import java.{util => ju}
 
 import scala.collection.JavaConverters._
+import scala.scalanative.native.stub
 
 class Properties(protected val defaults: Properties)
     extends ju.Hashtable[AnyRef, AnyRef] {
@@ -12,8 +13,10 @@ class Properties(protected val defaults: Properties)
   def setProperty(key: String, value: String): AnyRef =
     put(key, value)
 
+  @stub
   def load(inStream: java.io.InputStream): Unit = ???
 
+  @stub
   def load(reader: java.io.Reader): Unit = ???
 
   def getProperty(key: String): String =
