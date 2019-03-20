@@ -7,17 +7,16 @@ import scalanative.interflow.UseDef.eliminateDeadCode
 
 trait Visit { self: Interflow =>
   def shallVisit(name: Global): Boolean =
-    originals
-      .get(originalName(name))
-      .fold {
-        false
-      } { defn =>
-        val notExtern = !defn.attrs.isExtern
-        val hasInsts  = defn.insts.size > 0
-        val hasSema   = linked.infos.contains(defn.name)
+    if (!hasOriginal(name)) {
+      false
+    } else {
+      val defn      = getOriginal(name)
+      val notExtern = !defn.attrs.isExtern
+      val hasInsts  = defn.insts.size > 0
+      val hasSema   = linked.infos.contains(defn.name)
 
-        notExtern && hasInsts && hasSema
-      }
+      notExtern && hasInsts && hasSema
+    }
 
   def shallDuplicate(name: Global, argtys: Seq[Type]): Boolean =
     mode match {
@@ -25,6 +24,14 @@ trait Visit { self: Interflow =>
         false
       case build.Mode.Release =>
         argumentTypes(name) != argtys
+    }
+
+  def visitEntries(): Unit =
+    mode match {
+      case build.Mode.Debug =>
+        linked.defns.foreach(defn => visitEntry(defn.name))
+      case build.Mode.Release =>
+        linked.entries.foreach(visitEntry)
     }
 
   def visitEntry(name: Global): Unit = {
@@ -36,7 +43,7 @@ trait Visit { self: Interflow =>
         visitRoot(name)
       case cls: Class if cls.isModule =>
         val init = cls.name member Sig.Ctor(Seq.empty)
-        if (originals.contains(init)) {
+        if (hasOriginal(init)) {
           visitRoot(init)
         }
       case _ =>
@@ -46,47 +53,67 @@ trait Visit { self: Interflow =>
 
   def visitRoot(name: Global): Unit =
     if (shallVisit(name)) {
-      todo.enqueue(name)
+      pushTodo(name)
     }
 
   def visitDuplicate(name: Global, argtys: Seq[Type]): Option[Defn.Define] = {
-    val dup = duplicateName(name, argtys)
-    if (shallVisit(dup)) {
-      if (!done.contains(dup)) {
-        visitMethod(dup)
-      }
-      done.get(dup)
-    } else {
-      None
+    mode match {
+      case build.Mode.Debug =>
+        None
+      case build.Mode.Release =>
+        val dup = duplicateName(name, argtys)
+        if (shallVisit(dup)) {
+          if (!isDone(dup)) {
+            visitMethod(dup)
+          }
+          maybeDone(dup)
+        } else {
+          None
+        }
     }
   }
 
   def visitLoop(): Unit = {
-    while (todo.nonEmpty) {
-      val name = todo.dequeue()
-      if (!done.contains(name)) {
+    def visit(name: Global): Unit = {
+      if (!isDone(name)) {
+        context = Nil
         visitMethod(name)
       }
+    }
+
+    def loop(): Unit = {
+      var name = popTodo()
+      while (name ne Global.None) {
+        visit(name)
+        name = popTodo()
+      }
+    }
+
+    mode match {
+      case build.Mode.Debug =>
+        allTodo().par.foreach(visit)
+      case build.Mode.Release =>
+        loop()
     }
   }
 
   def visitMethod(name: Global): Unit =
-    if (!started.contains(name)) {
-      started += name
+    if (!hasStarted(name)) {
+      markStarted(name)
       try {
-        done(name) = visitInsts(name)
+        setDone(name, visitInsts(name))
       } catch {
         case exc: BailOut =>
-          blacklist += name
+          markBlacklisted(name)
           log(s"failed to expand ${name.show}: ${exc.toString}")
-          done(name) = originals(originalName(name))
+          setDone(name, getOriginal(originalName(name)))
       }
     }
 
   def visitInsts(name: Global): Defn.Define = in(s"visit ${name.show}") {
     val orig     = originalName(name)
     val origtys  = argumentTypes(orig)
-    val origdefn = originals(orig)
+    val origdefn = getOriginal(orig)
     val argtys   = argumentTypes(name)
 
     // Wrap up the result.
@@ -123,11 +150,8 @@ trait Visit { self: Interflow =>
     }
 
     // Run a merge processor starting from the entry basic block.
-    val blocks = util.ScopedVar.scoped(
-      blockFresh := fresh
-    ) {
-      process(origdefn.insts.toArray, args, state, inline = false)
-    }
+    blockFresh = fresh
+    val blocks = process(origdefn.insts.toArray, args, state, inline = false)
 
     // Collect instructions, materialize all returned values
     // and compute the result type.
@@ -200,16 +224,14 @@ trait Visit { self: Interflow =>
               state: State,
               inline: Boolean): Seq[MergeBlock] = {
     val processor =
-      MergeProcessor.fromEntry(insts, args, state, inline, blockFresh.get, this)
+      MergeProcessor.fromEntry(insts, args, state, inline, blockFresh, this)
 
-    util.ScopedVar.scoped(
-      mergeProcessor := processor
-    ) {
-      while (!processor.done()) {
-        processor.advance()
-      }
+    mergeProcessor = processor
 
-      processor.toSeq()
+    while (!processor.done()) {
+      processor.advance()
     }
+
+    processor.toSeq()
   }
 }

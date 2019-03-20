@@ -38,7 +38,7 @@ private[scalanative] object ScalaNative {
   def optimize(config: Config, linked: linker.Result): linker.Result =
     config.logger.time(s"Optimizing (${config.mode} mode)") {
       val optimized =
-        interflow.Interflow(config, linked, linked.defns)
+        interflow.Interflow(config, linked)
 
       linker.Link(config, linked.entries, optimized)
     }

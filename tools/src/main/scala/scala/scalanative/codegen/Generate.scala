@@ -275,7 +275,7 @@ object Generate {
     }
 
     def genArrayIds(): Unit = {
-      val tpes = Seq("Unit",
+      val tpes = Seq("BoxedUnit",
                      "Boolean",
                      "Char",
                      "Byte",

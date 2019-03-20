@@ -857,8 +857,8 @@ trait Eval { self: Interflow =>
     var visiting = List[Global]()
 
     def isPureModule(clsName: Global): Boolean = {
-      if (modulePurity.contains(clsName)) {
-        modulePurity(clsName)
+      if (hasModulePurity(clsName)) {
+        getModulePurity(clsName)
       } else {
         visiting = clsName :: visiting
 
@@ -873,7 +873,7 @@ trait Eval { self: Interflow =>
               isPureModuleCtor(defn)
             }
           }
-        modulePurity(clsName) = isPure
+        setModulePurity(clsName, isPure)
         isPure
       }
     }
