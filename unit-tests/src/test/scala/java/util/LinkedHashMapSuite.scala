@@ -7,7 +7,7 @@ import scala.collection.JavaConversions._
 import scala.collection.{immutable => im}
 import scala.reflect.ClassTag
 
-class LinkedHashMapInsertionOrderSuite extends LinkedHashMapSuite
+object LinkedHashMapInsertionOrderSuite extends LinkedHashMapSuite
 
 object LinkedHashMapInsertionOrderLimitedSuite extends LinkedHashMapSuite {
   override def factory: LinkedHashMapSuiteFactory =
