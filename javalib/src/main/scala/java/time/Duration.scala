@@ -33,26 +33,62 @@
 // see the license file for more information about java.time
 package java.time
 
-final class Instant(private val epochMilli: Long)
-    extends Comparable[Instant]
+import java.time.temporal.TemporalAmount
+
+final class Duration private (seconds: Long, nanos: Int)
+    extends TemporalAmount
+    with Comparable[Duration]
     with java.io.Serializable {
 
-  override def equals(other: Any): Boolean =
-    other match {
-      case that: Instant => epochMilli == that.epochMilli
-      case _             => false
-    }
+  def getSeconds(): Long = seconds
 
-  def toEpochMilli(): Long = epochMilli
+  def getNano(): Int = nanos
 
-  override def compareTo(other: Instant) =
-    epochMilli.compareTo(other.epochMilli)
+  def toMillis: Long = {
+    val result: Long = Math.multiplyExact(seconds, Duration.MILLIS_PER_SEC)
+    Math.addExact(result, nanos / Duration.NANOS_PER_MILLI)
+  }
+
+  def compareTo(that: Duration): Int = {
+    val secCmp = seconds.compareTo(that.getSeconds)
+    if (secCmp == 0) nanos.compareTo(that.getNano)
+    else secCmp
+  }
+
+  override def equals(that: Any): Boolean = that match {
+    case that: Duration =>
+      seconds == that.getSeconds && nanos == that.getNano
+    case _ => false
+  }
+
+  override def hashCode: Int = (seconds ^ (seconds >>> 32)).toInt + (51 * nanos)
 }
 
-object Instant {
-  def ofEpochMilli(epochMilli: Long): Instant =
-    new Instant(epochMilli)
+object Duration {
+  private final val NANOS_PER_MILLI: Int = 1000000
+  private final val MILLIS_PER_SEC: Int  = 1000
+  private final val NANOS_PER_SEC: Int   = NANOS_PER_MILLI * MILLIS_PER_SEC
 
-  def now(): Instant =
-    new Instant(System.currentTimeMillis())
+  private def create(seconds: Long, nanoAdjustment: Int): Duration =
+    if ((seconds | nanoAdjustment) == 0) ZERO
+    else new Duration(seconds, nanoAdjustment)
+
+  final val ZERO: Duration = new Duration(0, 0)
+
+  def ofMillis(millis: Long): Duration = {
+    var secs: Long = millis / MILLIS_PER_SEC
+    var mos: Int   = (millis % MILLIS_PER_SEC).toInt
+    if (mos < 0) {
+      mos += MILLIS_PER_SEC
+      secs -= 1
+    }
+    create(secs, mos * NANOS_PER_MILLI)
+  }
+
+  def ofSeconds(seconds: Long, nanoAdjustment: Long): Duration = {
+    val secs: Long =
+      Math.addExact(seconds, Math.floorDiv(nanoAdjustment, NANOS_PER_SEC))
+    val nos: Int = Math.floorMod(nanoAdjustment, NANOS_PER_SEC).toInt
+    create(secs, nos)
+  }
 }

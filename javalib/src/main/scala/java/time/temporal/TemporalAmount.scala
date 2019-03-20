@@ -31,28 +31,12 @@
  */
 
 // see the license file for more information about java.time
-package java.time
+package java.time.temporal
 
-final class Instant(private val epochMilli: Long)
-    extends Comparable[Instant]
-    with java.io.Serializable {
-
-  override def equals(other: Any): Boolean =
-    other match {
-      case that: Instant => epochMilli == that.epochMilli
-      case _             => false
-    }
-
-  def toEpochMilli(): Long = epochMilli
-
-  override def compareTo(other: Instant) =
-    epochMilli.compareTo(other.epochMilli)
-}
-
-object Instant {
-  def ofEpochMilli(epochMilli: Long): Instant =
-    new Instant(epochMilli)
-
-  def now(): Instant =
-    new Instant(System.currentTimeMillis())
+trait TemporalAmount {
+  // TODO:
+  // def get(unit: TemporalUnit): Long
+  // def getUnits(): java.util.List[TemporalUnit]
+  // def addTo(temporal: Temporal): Temporal
+  // def subtractFrom(temporal: Temporal): Temporal
 }
