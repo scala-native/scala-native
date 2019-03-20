@@ -1,6 +1,7 @@
 package java.io
 
 import java.nio.file.{FileSystems, Path}
+import java.net.URI
 
 import scala.annotation.tailrec
 import scalanative.posix.{fcntl, limits, unistd, utime}
@@ -26,7 +27,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
   def this(parent: File, child: String) =
     this(Option(parent).map(_.path).orNull, child)
 
-  // def this(uri: URI)
+  def this(uri: URI) = {
+    this(uri.getPath)
+    checkURI(uri)
+  }
 
   def compareTo(file: File): Int = {
     if (caseSensitive) getPath().compareTo(file.getPath())
@@ -322,8 +326,25 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   @stub
   def toURL(): java.net.URL = ???
-  @stub
-  def toURI(): java.net.URI = ???
+
+  // Ported from Apache Harmony
+  def toURI(): URI = {
+    val path = getAbsolutePath()
+    if (!path.startsWith("/")) {
+      // start with sep.
+      new URI(
+        "file",
+        null,
+        new StringBuilder(path.length + 1).append('/').append(path).toString,
+        null,
+        null)
+    } else if (path.startsWith("//")) {
+      // UNC path
+      new URI("file", "", path, null)
+    } else {
+      new URI("file", null, path, null, null)
+    }
+  }
 }
 
 object File {
@@ -540,4 +561,28 @@ object File {
                                minLength = true,
                                throwOnError = true)
 
+  // Ported from Apache Harmony
+  private def checkURI(uri: URI): Unit = {
+    def throwExc(msg: String): Unit =
+      throw new IllegalArgumentException(s"$msg: $uri")
+    def compMsg(comp: String): String =
+      s"Found $comp component in URI"
+
+    if (!uri.isAbsolute) {
+      throwExc("URI is not absolute")
+    } else if (!uri.getRawSchemeSpecificPart.startsWith("/")) {
+      throwExc("URI is not hierarchical")
+    } else if (uri.getScheme == null || !(uri.getScheme == "file")) {
+      throwExc("Expected file scheme in URI")
+    } else if (uri.getRawPath == null || uri.getRawPath.length == 0) {
+      throwExc("Expected non-empty path in URI")
+    } else if (uri.getRawAuthority != null) {
+      throwExc(compMsg("authority"))
+    } else if (uri.getRawQuery != null) {
+      throwExc(compMsg("query"))
+    } else if (uri.getRawFragment != null) {
+      throwExc(compMsg("fragment"))
+    }
+    // else URI is ok
+  }
 }
