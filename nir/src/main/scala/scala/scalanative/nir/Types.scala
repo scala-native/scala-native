@@ -67,7 +67,7 @@ object Type {
     }
     final def isNullable: Boolean = this match {
       case Type.Null         => true
-      case Type.Unit         => true
+      case Type.Unit         => false
       case Type.Array(_, n)  => n
       case Type.Ref(_, _, n) => n
     }
@@ -102,16 +102,16 @@ object Type {
   val box = unbox.map { case (k, v) => (v, k) }
 
   val typeToArray = Map[Type, Global](
-    Type.Bool   -> Global.Top("scala.scalanative.runtime.BooleanArray"),
-    Type.Char   -> Global.Top("scala.scalanative.runtime.CharArray"),
-    Type.Byte   -> Global.Top("scala.scalanative.runtime.ByteArray"),
-    Type.Short  -> Global.Top("scala.scalanative.runtime.ShortArray"),
-    Type.Int    -> Global.Top("scala.scalanative.runtime.IntArray"),
-    Type.Long   -> Global.Top("scala.scalanative.runtime.LongArray"),
-    Type.Float  -> Global.Top("scala.scalanative.runtime.FloatArray"),
-    Type.Double -> Global.Top("scala.scalanative.runtime.DoubleArray"),
-    Type.Unit   -> Global.Top("scala.scalanative.runtime.UnitArray"),
-    Rt.Object   -> Global.Top("scala.scalanative.runtime.ObjectArray")
+    Type.Bool    -> Global.Top("scala.scalanative.runtime.BooleanArray"),
+    Type.Char    -> Global.Top("scala.scalanative.runtime.CharArray"),
+    Type.Byte    -> Global.Top("scala.scalanative.runtime.ByteArray"),
+    Type.Short   -> Global.Top("scala.scalanative.runtime.ShortArray"),
+    Type.Int     -> Global.Top("scala.scalanative.runtime.IntArray"),
+    Type.Long    -> Global.Top("scala.scalanative.runtime.LongArray"),
+    Type.Float   -> Global.Top("scala.scalanative.runtime.FloatArray"),
+    Type.Double  -> Global.Top("scala.scalanative.runtime.DoubleArray"),
+    Rt.BoxedUnit -> Global.Top("scala.scalanative.runtime.BoxedUnitArray"),
+    Rt.Object    -> Global.Top("scala.scalanative.runtime.ObjectArray")
   )
   val arrayToType =
     typeToArray.map { case (k, v) => (v, k) }
@@ -119,7 +119,7 @@ object Type {
     case _ if typeToArray.contains(ty) =>
       typeToArray(ty)
     case Type.Ref(name, _, _) if name == Rt.BoxedUnit =>
-      typeToArray(Type.Unit)
+      typeToArray(Rt.BoxedUnit)
     case _ =>
       typeToArray(Rt.Object)
   }

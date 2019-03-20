@@ -112,12 +112,13 @@ trait NirGenType { self: NirGenPhase =>
   }
 
   def genRefType(st: SimpleType): nir.Type = st.sym match {
-    case ObjectClass                => nir.Rt.Object
-    case UnitClass | BoxedUnitClass => nir.Type.Unit
-    case NullClass                  => genRefType(RuntimeNullClass)
-    case ArrayClass                 => nir.Type.Array(genType(st.targs.head, box = false))
-    case _ if st.isStruct           => genStruct(st)
-    case _                          => nir.Type.Ref(genTypeName(st.sym))
+    case ObjectClass      => nir.Rt.Object
+    case UnitClass        => nir.Type.Unit
+    case BoxedUnitClass   => nir.Rt.BoxedUnit
+    case NullClass        => genRefType(RuntimeNullClass)
+    case ArrayClass       => nir.Type.Array(genType(st.targs.head, box = false))
+    case _ if st.isStruct => genStruct(st)
+    case _                => nir.Type.Ref(genTypeName(st.sym))
   }
 
   def genTypeValue(st: SimpleType): nir.Val =

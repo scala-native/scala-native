@@ -1,6 +1,7 @@
 package scala.scalanative
 package runtime
 
+import scala.runtime.BoxedUnit
 import scalanative.native._
 import scalanative.runtime.Intrinsics._
 import scalanative.runtime.LLVMIntrinsics._
@@ -130,14 +131,14 @@ object Array {
 }
 
 %{
-   types = {'Unit': sizePtr, 'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
+   types = {'BoxedUnit': sizePtr, 'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
             'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': sizePtr}
 }%
 
 % for T, sizeT in types.iteritems():
 
 %{
-   alloc = 'GC.alloc_atomic' if T != 'Object' and T != 'Unit' else 'GC.alloc'
+   alloc = 'GC.alloc_atomic' if T != 'Object' and T != 'BoxedUnit' else 'GC.alloc'
 }%
 
 final class ${T}Array private () extends Array[${T}] {
@@ -160,10 +161,10 @@ final class ${T}Array private () extends Array[${T}] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
-      % if T != 'Unit':
+      % if T != 'BoxedUnit':
       load${T}(ith)
       % else:
-      loadObject(ith).asInstanceOf[Unit]
+      loadObject(ith).asInstanceOf[BoxedUnit]
       % end
     }
 
@@ -173,7 +174,7 @@ final class ${T}Array private () extends Array[${T}] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
-      % if T != 'Unit':
+      % if T != 'BoxedUnit':
       store${T}(ith, value)
       % else:
       storeObject(ith, value.asInstanceOf[Object])
