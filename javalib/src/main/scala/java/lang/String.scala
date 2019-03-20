@@ -88,7 +88,7 @@ final class _String()
       count = length
       System.arraycopy(data, start, value, 0, count)
     } else {
-      throw new IndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     }
   }
 
@@ -119,7 +119,7 @@ final class _String()
   def this(codePoints: Array[Int], offset: Int, count: Int) {
     this()
     if (offset < 0 || count < 0 || offset > codePoints.length - count) {
-      throw new IndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     } else {
       this.offset = 0
       this.value = new Array[Char](count * 2)
@@ -808,21 +808,21 @@ final class _String()
 
   def codePointAt(index: Int): Int =
     if (index < 0 || index >= count) {
-      throw new IndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     } else {
       Character.codePointAt(value, index + offset, offset + count)
     }
 
   def codePointBefore(index: Int): Int =
     if (index < 1 || index > count) {
-      throw new IndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     } else {
       Character.codePointBefore(value, index + offset)
     }
 
   def codePointCount(beginIndex: Int, endIndex: Int): Int =
     if (beginIndex < 0 || endIndex > count || beginIndex > endIndex) {
-      throw new IndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     } else {
       Character
         .codePointCount(value, beginIndex + offset, endIndex - beginIndex)
