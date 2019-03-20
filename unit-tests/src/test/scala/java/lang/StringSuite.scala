@@ -26,6 +26,30 @@ object StringSuite extends tests.Suite {
     }
   }
 
+  test("String(Array[Byte], start, length) with invalid start or length") {
+    val chars: Array[Char] = Array('a', 'b', 'c')
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      new String(chars, -1, chars.length) // invalid start
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      new String(chars, 0, chars.length + 1) // invalid length
+    }
+  }
+
+  test("String(Array[Int], offset, count) with invalid offset or count") {
+    val codePoints = Array[Int](235, 872, 700, 298)
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      new String(codePoints, -1, codePoints.length) // invalid offset
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      new String(codePoints, 0, codePoints.length + 1) // invalid length
+    }
+  }
+
   test("+") {
     assert("big 5" == "big " + 5.toByte)
     assert("big 5" == "big " + 5.toShort)
@@ -39,6 +63,43 @@ object StringSuite extends tests.Suite {
     assert("foo" == "" + "foo")
     assert("foobar" == "foo" + "bar")
     assert("foobarbaz" == "foo" + "bar" + "baz")
+  }
+
+  test("codePointAt(index) with invalid index") {
+    val data = "When in the Course"
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      data.codePointAt(-1)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      data.codePointAt(data.length + 1)
+    }
+  }
+
+  test("codePointBefore(index) with invalid index") {
+    val data = "of human events"
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      data.codePointBefore(-1)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      // Careful here, +1 is valid +2 is not
+      data.codePointBefore(data.length + 2)
+    }
+  }
+
+  test("codePointCount(beginIndex, endIndex) with invalid begin | end index") {
+    val data = "it becomes necessary"
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      data.codePointCount(-1, data.length)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      data.codePointCount(0, data.length + 1)
+    }
   }
 
   test("compareTo") {
