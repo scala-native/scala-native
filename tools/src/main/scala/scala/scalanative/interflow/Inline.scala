@@ -33,7 +33,7 @@ trait Inline { self: Interflow =>
           val hintInline =
             defn.attrs.inline == Attr.AlwaysInline || defn.attrs.inline == Attr.InlineHint
           val isRecursive =
-            context.contains(s"inlining ${name.show}")
+            hasContext(s"inlining ${name.show}")
           val isBlacklisted =
             this.isBlacklisted(name)
           val calleeTooBig =
