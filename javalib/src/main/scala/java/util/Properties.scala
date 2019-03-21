@@ -12,8 +12,7 @@ class Properties(protected val defaults: Properties)
 
   def setProperty(key: String, value: String): AnyRef =
     put(key, value)
-
-  @stub
+  
   def load(inStream: java.io.InputStream): Unit = ???
 
   @stub
