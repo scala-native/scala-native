@@ -6,17 +6,20 @@ import scalanative.linker._
 import scalanative.interflow.UseDef.eliminateDeadCode
 
 trait Visit { self: Interflow =>
-  def shallVisit(name: Global): Boolean =
-    if (!hasOriginal(name)) {
+  def shallVisit(name: Global): Boolean = {
+    val orig = originalName(name)
+
+    if (!hasOriginal(orig)) {
       false
     } else {
-      val defn      = getOriginal(name)
+      val defn      = getOriginal(orig)
       val notExtern = !defn.attrs.isExtern
       val hasInsts  = defn.insts.size > 0
       val hasSema   = linked.infos.contains(defn.name)
 
       notExtern && hasInsts && hasSema
     }
+  }
 
   def shallDuplicate(name: Global, argtys: Seq[Type]): Boolean =
     mode match {
