@@ -144,6 +144,26 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
         true
     }
 
+  override def removeRange(fromIndex: Int, toIndex: Int): Unit = {
+
+    // JVM documents fromIndex == toIndex as having 'no effect'
+    if (fromIndex != toIndex) {
+      if ((fromIndex < 0) || (fromIndex >= _size) || (toIndex > size)
+          || (toIndex < fromIndex)) {
+        // N.B.: JVM docs specify IndexOutOfBounds but use de facto.
+        throw new ArrayIndexOutOfBoundsException()
+      } else {
+        val srcIndex = toIndex
+        val dstIndex = fromIndex
+        val tailSize = _size - toIndex
+
+        System.arraycopy(inner, srcIndex, inner, dstIndex, tailSize)
+
+        _size -= (toIndex - fromIndex)
+      }
+    }
+  }
+
   override def clear(): Unit = {
     // fill the content of inner by null so that the elements can be garbage collected
     for (i <- (0 until _size)) {
