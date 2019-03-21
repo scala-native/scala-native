@@ -76,7 +76,6 @@ trait Visit { self: Interflow =>
   def visitLoop(): Unit = {
     def visit(name: Global): Unit = {
       if (!isDone(name)) {
-        context = Nil
         visitMethod(name)
       }
     }
@@ -150,8 +149,12 @@ trait Visit { self: Interflow =>
     }
 
     // Run a merge processor starting from the entry basic block.
-    blockFresh = fresh
-    val blocks = process(origdefn.insts.toArray, args, state, inline = false)
+    val blocks = try {
+      pushBlockFresh(fresh)
+      process(origdefn.insts.toArray, args, state, inline = false)
+    } finally {
+      popBlockFresh()
+    }
 
     // Collect instructions, materialize all returned values
     // and compute the result type.
@@ -226,10 +229,14 @@ trait Visit { self: Interflow =>
     val processor =
       MergeProcessor.fromEntry(insts, args, state, inline, blockFresh, this)
 
-    mergeProcessor = processor
+    try {
+      pushMergeProcessor(processor)
 
-    while (!processor.done()) {
-      processor.advance()
+      while (!processor.done()) {
+        processor.advance()
+      }
+    } finally {
+      popMergeProcessor()
     }
 
     processor.toSeq()

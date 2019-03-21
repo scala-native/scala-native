@@ -4,6 +4,8 @@ package interflow
 import scala.collection.mutable
 import scalanative.nir._
 import scalanative.linker._
+import scalanative.util.ScopedVar
+import java.util.function.Supplier
 
 class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
     extends Visit
@@ -26,9 +28,16 @@ class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
   private val blacklist    = mutable.Set.empty[Global]
   private val modulePurity = mutable.Map.empty[Global, Boolean]
 
-  private var contextTl        = new ThreadLocal[List[String]]
-  private val mergeProcessorTl = new ThreadLocal[MergeProcessor]
-  private val blockFreshTl     = new ThreadLocal[Fresh]
+  private var contextTl = ThreadLocal.withInitial(new Supplier[List[String]] {
+    def get() = Nil
+  })
+  private val mergeProcessorTl =
+    ThreadLocal.withInitial(new Supplier[List[MergeProcessor]] {
+      def get() = Nil
+    })
+  private val blockFreshTl = ThreadLocal.withInitial(new Supplier[List[Fresh]] {
+    def get() = Nil
+  })
 
   def hasOriginal(name: Global): Boolean =
     originals.contains(name) && originals(name).isInstanceOf[Defn.Define]
@@ -101,20 +110,28 @@ class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
       modulePurity(name)
     }
 
-  def context: List[String] =
-    contextTl.get
-  def context_=(value: List[String]) =
-    contextTl.set(value)
+  def contextDepth(): Int =
+    contextTl.get.size
+  def hasContext(value: String): Boolean =
+    contextTl.get.contains(value)
+  def pushContext(value: String): Unit =
+    contextTl.set(value :: contextTl.get)
+  def popContext(): Unit =
+    contextTl.set(contextTl.get.tail)
 
   def mergeProcessor: MergeProcessor =
-    mergeProcessorTl.get
-  def mergeProcessor_=(value: MergeProcessor) =
-    mergeProcessorTl.set(value)
+    mergeProcessorTl.get.head
+  def pushMergeProcessor(value: MergeProcessor): Unit =
+    mergeProcessorTl.set(value :: mergeProcessorTl.get)
+  def popMergeProcessor(): Unit =
+    mergeProcessorTl.set(mergeProcessorTl.get.tail)
 
   def blockFresh: Fresh =
-    blockFreshTl.get
-  def blockFresh_=(value: Fresh) =
-    blockFreshTl.set(value)
+    blockFreshTl.get.head
+  def pushBlockFresh(value: Fresh): Unit =
+    blockFreshTl.set(value :: blockFreshTl.get)
+  def popBlockFresh(): Unit =
+    blockFreshTl.set(blockFreshTl.get.tail)
 
   def result(): Seq[Defn] = {
     val optimized = originals.clone()
