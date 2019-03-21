@@ -1552,7 +1552,7 @@ trait NirGenExpr { self: NirGenPhase =>
                       statically: Boolean,
                       selfp: Tree,
                       argsp: Seq[Tree]): Val = {
-      if (sym.owner.isExternModule && sym.hasFlag(ACCESSOR)) {
+      if (sym.owner.isExternModule && sym.isAccessor) {
         genApplyExternAccessor(sym, argsp)
       } else {
         val self = genExpr(selfp)
@@ -1568,8 +1568,10 @@ trait NirGenExpr { self: NirGenPhase =>
           val elem = Val.Global(name, Type.Ptr)
           buf.load(ty, elem)
 
-        case Seq(value) =>
-          unsupported(argsp)
+        case Seq(valuep) =>
+          val name  = genMethodName(sym)
+          val value = genExpr(valuep)
+          buf.store(value.ty, Val.Global(name, Type.Ptr), value)
       }
     }
 
