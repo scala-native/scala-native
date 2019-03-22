@@ -142,38 +142,8 @@ trait Eval { self: Interflow =>
             }
 
             def fallback = {
-              val Type.Function(sigtys, _) = dsig
-
-              // Varargs signature might appear to have less
-              // argument types than arguments at the call site.
-              val expected = sigtys match {
-                case tys :+ Type.Vararg =>
-                  val nonvarargs = eargs.take(tys.size).zip(tys)
-                  val varargs = eargs.drop(tys.size).map { arg =>
-                    (arg, Type.Vararg)
-                  }
-                  nonvarargs ++ varargs
-                case tys =>
-                  eargs.zip(tys)
-              }
-
-              // Method target might have a more precise signature
-              // than what's known currently available at the call site.
-              // This is a side effect of a method target selection taking
-              // into account which classes are allocated across whole program.
               val mtarget = materialize(dtarget)
-              val margs = expected.map {
-                case (value, argty) =>
-                  val ty = value match {
-                    case InstanceRef(ty) => ty
-                    case _               => value.ty
-                  }
-                  if (!Sub.is(ty, argty) && argty != Type.Vararg) {
-                    materialize(combine(Conv.Bitcast, argty, value))
-                  } else {
-                    materialize(value)
-                  }
-              }
+              val margs   = adapt(eargs, dsig).map(materialize)
 
               emit(Op.Call(dsig, mtarget, margs))
             }
@@ -181,6 +151,8 @@ trait Eval { self: Interflow =>
             dtarget match {
               case Val.Global(name, _) if shallInline(name, eargs) =>
                 inline(name, eargs)
+              case DelayedRef(op: Op.Method) if shallPolyInline(op, eargs) =>
+                polyInline(op, eargs)
               case _ =>
                 fallback
             }
@@ -262,16 +234,15 @@ trait Eval { self: Interflow =>
           case _ =>
             bailOut
         }
-        def fallback =
-          emit(Op.Method(materialize(obj), sig))
+
         if (targets.size == 0) {
-          fallback
+          emit(Op.Method(materialize(obj), sig))
           Val.Zero(Type.Nothing)
         } else if (targets.size == 1) {
           Val.Global(targets.head, Type.Ptr)
         } else {
           targets.foreach(visitRoot)
-          fallback
+          delay(Op.Method(materialize(obj), sig))
         }
       case Op.Dynmethod(obj, dynsig) =>
         linked.dynimpls.foreach {

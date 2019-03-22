@@ -63,24 +63,47 @@ trait Inline { self: Interflow =>
         }
   }
 
+  def adapt(value: Val, ty: Type)(implicit state: State): Val = {
+    val valuety = value match {
+      case InstanceRef(ty) => ty
+      case _               => value.ty
+    }
+    if (!Sub.is(valuety, ty)) {
+      combine(Conv.Bitcast, ty, value)
+    } else {
+      value
+    }
+  }
+
+  def adapt(args: Seq[Val], sig: Type)(implicit state: State): Seq[Val] = {
+    val Type.Function(argtys, _) = sig
+
+    // Varargs signature might appear to have less
+    // argument types than arguments at the call site.
+    val expected = argtys match {
+      case inittys :+ Type.Vararg =>
+        val nonvarargs = args.take(inittys.size).zip(inittys)
+        val varargs = args.drop(inittys.size).map { arg =>
+          (arg, Type.Vararg)
+        }
+        nonvarargs ++ varargs
+      case _ =>
+        args.zip(argtys)
+    }
+
+    expected.map {
+      case (value, Type.Vararg) =>
+        value
+      case (value, argty) =>
+        adapt(value, argty)
+    }
+  }
+
   def inline(name: Global, args: Seq[Val])(implicit state: State,
                                            linked: linker.Result): Val =
     in(s"inlining ${name.show}") {
-      val defn = getDone(name)
-
-      val Type.Function(inlineArgTys, _) = defn.ty
-      val inlineArgs = args.zip(inlineArgTys).map {
-        case (value, argty) =>
-          val ty = value match {
-            case InstanceRef(ty) => ty
-            case _               => value.ty
-          }
-          if (!Sub.is(ty, argty)) {
-            combine(Conv.Bitcast, argty, value)
-          } else {
-            value
-          }
-      }
+      val defn        = getDone(name)
+      val inlineArgs  = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
       val blocks      = process(inlineInsts, inlineArgs, state, inline = true)
 
@@ -141,6 +164,8 @@ trait Inline { self: Interflow =>
 
       state.emit ++= emit
       state.inherit(endState, res +: args)
-      res
+
+      val Type.Function(_, retty) = defn.ty
+      adapt(res, retty)
     }
 }
