@@ -247,7 +247,6 @@ object ParserSuite extends tests.Suite {
 //    Array("(?:xx|yy)c|(?:xx|yy)d", "cat{alt{str{xx}str{yy}}cc{0x63-0x64}}"),
 //    Array("x{2}|x{2}[0-9]", "cat{rep{2,2 lit{x}}alt{emp{}cc{0x30-0x39}}}"),
 //    Array("x{2}y|x{2}[0-9]y", "cat{rep{2,2 lit{x}}alt{lit{y}cat{cc{0x30-0x39}lit{y}}}}")
-
   )
 
   // TODO(adonovan): add some tests for:
