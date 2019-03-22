@@ -13,4 +13,8 @@ class URL(from: String) {
   def openStream(): java.io.InputStream = ???
   @stub
   override def hashCode: Int = ???
+  @stub
+  def toURI(): java.net.URI = ???
+  @stub
+  def toExternalForm(): java.lang.String = ???
 }
