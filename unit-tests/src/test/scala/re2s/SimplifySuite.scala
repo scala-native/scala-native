@@ -1,6 +1,5 @@
 package scala.re2s
 
-
 object SimplifySuite extends tests.Suite {
 
   private val SIMPLIFY_TESTS = Array(

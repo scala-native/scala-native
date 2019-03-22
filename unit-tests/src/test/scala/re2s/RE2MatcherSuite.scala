@@ -5,11 +5,10 @@ import ApiTestUtils._
 object RE2MatcherSuite extends tests.Suite {
 
   // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String) = assert(false, msg)
-  private def fail() = assert(false, "Who knows why? No message")
-  private def ignore(msg: String)(block: => Unit): Unit = {  }
+  private def fail(msg: String)                         = assert(false, msg)
+  private def fail()                                    = assert(false, "Who knows why? No message")
+  private def ignore(msg: String)(block: => Unit): Unit = {}
   // LeeT FIX ME -- Rough & rude - End
-
 
   test("LookingAt") {
     ApiTestUtils.verifyLookingAt("abcdef", "abc", true)
