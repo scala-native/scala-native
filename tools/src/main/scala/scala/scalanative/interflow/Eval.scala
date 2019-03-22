@@ -25,7 +25,7 @@ trait Eval { self: Interflow =>
           if (unwind ne Next.None) {
             throw BailOut("try-catch")
           }
-          val value = eval(local, op)
+          val value = eval(op)
           if (value.ty == Type.Nothing) {
             return Inst.Unreachable(unwind)
           } else {
@@ -108,8 +108,7 @@ trait Eval { self: Interflow =>
     unreachable
   }
 
-  def eval(local: Local, op: Op)(implicit state: State,
-                                 linked: linker.Result): Val = {
+  def eval(op: Op)(implicit state: State, linked: linker.Result): Val = {
     import state.{emit, materialize, delay}
     def bailOut =
       throw BailOut("can't eval op: " + op.show)
@@ -117,7 +116,7 @@ trait Eval { self: Interflow =>
       case Op.Call(sig, meth, args) =>
         eval(meth) match {
           case Val.Global(name, _) if intrinsics.contains(name) =>
-            intrinsic(local, sig, name, args)
+            intrinsic(sig, name, args)
           case emeth =>
             val eargs = args.map(eval)
             val argtys = eargs.map {
@@ -143,38 +142,40 @@ trait Eval { self: Interflow =>
             }
 
             def fallback = {
-              val mtarget = materialize(dtarget)
-              val margs   = eargs.map(materialize)
+              val Type.Function(sigtys, _) = dsig
 
-              val isDuplicate =
-                mtarget match {
-                  case Val.Global(Global.Member(_, _: Sig.Duplicate), _) =>
-                    true
-                  case _ =>
-                    false
-                }
-
-              val cargs =
-                if (!isDuplicate) {
-                  margs
-                } else {
-                  val Type.Function(sigtys, _) = dsig
-
-                  // Method target might have a more precise signature
-                  // than what's known currently available at the call site.
-                  // This is a side effect of a method target selection taking
-                  // into account which classes are allocated across whole program.
-                  margs.zip(sigtys).map {
-                    case (marg, ty) =>
-                      if (!Sub.is(marg.ty, ty)) {
-                        combine(Conv.Bitcast, ty, marg)
-                      } else {
-                        marg
-                      }
+              // Varargs signature might appear to have less
+              // argument types than arguments at the call site.
+              val expected = sigtys match {
+                case tys :+ Type.Vararg =>
+                  val nonvarargs = eargs.take(tys.size).zip(tys)
+                  val varargs = eargs.drop(tys.size).map { arg =>
+                    (arg, Type.Vararg)
                   }
-                }
+                  nonvarargs ++ varargs
+                case tys =>
+                  eargs.zip(tys)
+              }
 
-              emit(Op.Call(dsig, mtarget, cargs))
+              // Method target might have a more precise signature
+              // than what's known currently available at the call site.
+              // This is a side effect of a method target selection taking
+              // into account which classes are allocated across whole program.
+              val mtarget = materialize(dtarget)
+              val margs = expected.map {
+                case (value, argty) =>
+                  val ty = value match {
+                    case InstanceRef(ty) => ty
+                    case _               => value.ty
+                  }
+                  if (!Sub.is(ty, argty) && argty != Type.Vararg) {
+                    materialize(combine(Conv.Bitcast, argty, value))
+                  } else {
+                    materialize(value)
+                  }
+              }
+
+              emit(Op.Call(dsig, mtarget, margs))
             }
 
             dtarget match {
@@ -245,10 +246,6 @@ trait Eval { self: Interflow =>
         }
       case Op.Method(rawObj, sig) =>
         val obj = eval(rawObj)
-        def fallback(targets: Iterable[Global]) = {
-          targets.foreach(visitRoot)
-          emit(Op.Method(materialize(obj), sig))
-        }
         val objty = obj match {
           case InstanceRef(ty) =>
             ty
@@ -265,12 +262,16 @@ trait Eval { self: Interflow =>
           case _ =>
             bailOut
         }
-        targets match {
-          case Seq(meth) =>
-            Val.Global(meth, Type.Ptr)
-          case _ =>
-            val res = fallback(targets)
-            if (targets.isEmpty) Val.Zero(Type.Nothing) else res
+        def fallback =
+          emit(Op.Method(materialize(obj), sig))
+        if (targets.size == 0) {
+          fallback
+          Val.Zero(Type.Nothing)
+        } else if (targets.size == 1) {
+          Val.Global(targets.head, Type.Ptr)
+        } else {
+          targets.foreach(visitRoot)
+          fallback
         }
       case Op.Dynmethod(obj, dynsig) =>
         linked.dynimpls.foreach {

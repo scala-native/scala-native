@@ -212,8 +212,15 @@ trait Visit { self: Interflow =>
     if (!shallDuplicate(orig, argtys)) {
       orig
     } else {
+      val origargtys = argumentTypes(name)
+      val dupargtys = argtys.zip(origargtys).map {
+        case (argty, origty) =>
+          // Duplicate argument type should not be
+          // less specific than the original declare type.
+          if (!Sub.is(argty, origty)) origty else argty
+      }
       val Global.Member(top, sig) = orig
-      Global.Member(top, Sig.Duplicate(sig, argtys))
+      Global.Member(top, Sig.Duplicate(sig, dupargtys))
     }
   }
 

@@ -1,7 +1,6 @@
 package scala.scalanative
 package interflow
 
-import scala.util.{Try, Success, Failure}
 import scalanative.nir._
 import scalanative.linker._
 
@@ -67,8 +66,23 @@ trait Inline { self: Interflow =>
   def inline(name: Global, args: Seq[Val])(implicit state: State,
                                            linked: linker.Result): Val =
     in(s"inlining ${name.show}") {
-      val defn   = getDone(name)
-      val blocks = process(defn.insts.toArray, args, state, inline = true)
+      val defn = getDone(name)
+
+      val Type.Function(inlineArgTys, _) = defn.ty
+      val inlineArgs = args.zip(inlineArgTys).map {
+        case (value, argty) =>
+          val ty = value match {
+            case InstanceRef(ty) => ty
+            case _               => value.ty
+          }
+          if (!Sub.is(ty, argty)) {
+            combine(Conv.Bitcast, argty, value)
+          } else {
+            value
+          }
+      }
+      val inlineInsts = defn.insts.toArray
+      val blocks      = process(inlineInsts, inlineArgs, state, inline = true)
 
       val emit = new nir.Buffer()(state.fresh)
 
