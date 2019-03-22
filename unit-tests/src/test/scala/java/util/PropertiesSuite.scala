@@ -24,7 +24,7 @@ object PropertiesSuite extends tests.Suite {
 
     def assertResult(result: String): Unit = {
       val buffer4stream = new ByteArrayOutputStream
-      val stream = new PrintStream(buffer4stream)
+      val stream        = new PrintStream(buffer4stream)
       properties.list(stream)
       assertEquals(buffer4stream.toString.trim, result.trim)
       stream.flush()
