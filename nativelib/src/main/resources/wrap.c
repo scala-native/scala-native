@@ -4,6 +4,7 @@
 #include <math.h>
 #include <errno.h>
 #include <float.h>
+#include <stdbool.h>
 
 // This file contains functions that wrap libc
 // built-in macros. We need this because Scala Native
@@ -131,3 +132,7 @@ int scalanative_float_dbl_max_exp() { return DBL_MAX_EXP; }
 int scalanative_float_flt_max_10_exp() { return FLT_MAX_10_EXP; }
 
 int scalanative_float_dbl_max_10_exp() { return DBL_MAX_10_EXP; }
+
+bool scalanative_bool_true() { return true; }
+
+bool scalanative_bool_false() { return false; }
