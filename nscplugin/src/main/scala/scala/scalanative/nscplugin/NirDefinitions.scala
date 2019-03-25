@@ -38,6 +38,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val InlineHintClass = getRequiredClass(
       "scala.scalanative.native.inlinehint")
+    lazy val AlwaysInlineClass = getRequiredClass(
+      "scala.scalanative.native.alwaysinline")
 
     lazy val NativeModule = getRequiredModule(
       "scala.scalanative.native.package")
