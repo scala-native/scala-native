@@ -2,16 +2,10 @@ package scala.re2s
 
 import java.util
 
-// Porting note:
-// Use an unconventional object name here to avoid disrupting the
-// rest of the re2s test ecosystem, which expects object FindSuite
-// to be the one declared at the bottom of this file.
+import ScalaTestCompat.fail
 
 object FindSuite extends tests.Suite {
   import FindSuiteHelper._
-
-  // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String) = assert(false, msg)
 
   // First the simple cases.
 
@@ -294,7 +288,7 @@ object FindSuite extends tests.Suite {
         continue = true
       }
       if (!continue) {
-        System.err.println(testName + "  " + test + " " + n + " " + k + " ")
+//        System.err.println(testName + "  " + test + " " + n + " " + k + " ")
         val expect: String = test.submatchString(n, k / 2)
         if (!(expect == result(k / 2))) {
           fail(

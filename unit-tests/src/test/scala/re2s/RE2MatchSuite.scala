@@ -1,10 +1,9 @@
 package scala.re2s
 
+import ScalaTestCompat.fail
+
 object RE2MatchSuite extends tests.Suite {
   import FindSuiteHelper._
-
-  // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String) = assert(false, msg)
 
   test("Match") {
     for (test <- FIND_TESTS) {

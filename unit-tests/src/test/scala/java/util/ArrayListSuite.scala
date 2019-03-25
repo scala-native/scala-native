@@ -159,6 +159,27 @@ object ArrayListSuite extends tests.Suite {
         (al1.toArray()))
   }
 
+  test("toArray() - default initial capacity, then add elements") {
+    // Issue #1500 discovered by re2s ExecTestSuite.
+
+    val al1          = new ArrayList[String]()
+    val data         = Array("alpha", "omega")
+    val expectedSize = data.size
+
+    for (d <- data) al1.add(d)
+
+    val arr1     = al1.toArray
+    val arr1Size = arr1.size
+
+    assert(arr1Size == expectedSize,
+           s"toArray.size: $arr1Size != expected: $expectedSize")
+
+    // Discovering code in re2s ExecTestSuite used .deep not sameElements.
+    // Should have same result as sameElements, but via different path.
+
+    assert(arr1.deep == data.deep, "a1.toArray.deep != data.deep")
+  }
+
   test("toArray[T](arr: Array[T]) when arr is shorter") {
     val al1  = new ArrayList[String](Seq("apple", "banana", "cherry").asJava)
     val ain  = Array.empty[String]

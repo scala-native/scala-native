@@ -1,12 +1,14 @@
 package scala.re2s
 
-import scala.re2s._
+import ScalaTestCompat._
+import TestUtils._
 
 // Tests are inspired by those projects under Apache2 License:
 // j2objc: https://github.com/google/j2objc/blob/master/jre_emul/Tests/java/util/regex/MatcherTest.java#L1
 // re2: https://github.com/google/re2/blob/master/re2/testing/re2_test.cc
 
 object MatcherSuite extends tests.Suite {
+
   test("quoteReplacement") {
     assert(Matcher.quoteReplacement("") == "")
   }

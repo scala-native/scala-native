@@ -1,9 +1,8 @@
 package scala.re2s
 
-object RE2CompileSuite extends tests.Suite {
+import ScalaTestCompat.fail
 
-  // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String) = assert(false, msg)
+object RE2CompileSuite extends tests.Suite {
 
   // A list of regexp and expected error when calling RE2.compile. null implies that compile should
   // succeed.

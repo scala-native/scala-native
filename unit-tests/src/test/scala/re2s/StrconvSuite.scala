@@ -1,11 +1,8 @@
 package scala.re2s
 
-// WTF ??? StrconvSuie.scala exists but I can find nothing in scala.re2s
-//        which either declares or uses it.  What happend on Scala JVM.
+import ScalaTestCompat.fail
 
 object StrconvSuite extends tests.Suite {
-  // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String) = assert(false, msg)
 
   private def rune(r: Int) = new StringBuffer().appendCodePoint(r).toString
 

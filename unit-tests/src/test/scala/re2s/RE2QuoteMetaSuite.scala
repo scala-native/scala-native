@@ -1,9 +1,8 @@
 package scala.re2s
 
-object RE2QuoteMetaSuite extends tests.Suite {
+import ScalaTestCompat.fail
 
-  // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String) = assert(false, msg)
+object RE2QuoteMetaSuite extends tests.Suite {
 
   // (pattern, output, literal, isLiteral)
   private val META_TESTS = Array(

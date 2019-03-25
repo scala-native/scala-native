@@ -1,9 +1,8 @@
 package scala.re2s
 
-object RE2ReplaceAllFunctionSuite extends tests.Suite {
+import ScalaTestCompat.fail
 
-  // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String) = assert(false, msg)
+object RE2ReplaceAllFunctionSuite extends tests.Suite {
 
   def REPLACE_XSY = new RE2.ReplaceFunc() {
     override def replace(s: String): String = "x" + s + "y"

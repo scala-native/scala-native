@@ -2,6 +2,8 @@ package scala.re2s
 
 import java.util
 
+import ScalaTestCompat.fail
+
 import RE2.{
   FOLD_CASE,
   LITERAL,
@@ -17,9 +19,6 @@ import RE2.{
 import Regexp.Op._
 
 object ParserSuite extends tests.Suite {
-
-  // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String) = assert(false, msg)
 
   private trait RunePredicate {
     def applies(rune: Int): Boolean

@@ -1,9 +1,8 @@
 package scala.re2s
 
-object RE2ReplaceSuite extends tests.Suite {
+import ScalaTestCompat.fail
 
-  // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String) = assert(false, msg)
+object RE2ReplaceSuite extends tests.Suite {
 
   private val REPLACE_TESTS = Array( // Test empty input and/or replacement,
     // with pattern that matches the empty string.

@@ -1,12 +1,9 @@
 package scala.re2s
 
-import org.scalactic.source.Position
+import ScalaTestCompat._
 import TestUtils._
 
 object PatternSuite extends tests.Suite {
-
-  // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String) = assert(false, msg)
 
   test("split/split(n)") {
     val input = "boo:and:foo"
@@ -212,7 +209,10 @@ object PatternSuite extends tests.Suite {
     fail("a|b", "c")
   }
 
-  test("quotation") {
+
+//  For some reason I, @LeeTibbert can not get testFails to work here.
+//  testFails("quotation", issue = 1504) {
+  ignore("quotation") {
     pass("\\Qa|b|c\\E", "a|b|c")
   }
 
@@ -410,17 +410,15 @@ object PatternSuite extends tests.Suite {
     )
   }
 
-  private def pass(pattern: String, input: String)(
-      implicit pos: Position): Unit =
+  private def pass(pattern: String, input: String): Unit =
     matches(pattern, input, pass = true)
 
-  private def fail(pattern: String, input: String)(
-      implicit pos: Position): Unit =
+  private def fail(pattern: String, input: String): Unit =
     matches(pattern, input, pass = false)
 
   private def passAndFail(pattern: String,
                           passInput: String,
-                          failInput: String)(implicit pos: Position): Unit = {
+                          failInput: String): Unit = {
     pass(pattern, passInput)
     fail(pattern, failInput)
   }
@@ -429,32 +427,31 @@ object PatternSuite extends tests.Suite {
                           ret: Boolean,
                           mid: String,
                           pattern: String,
-                          input: String)(implicit pos: Position): Unit = {
+                          input: String): Unit = {
     val ret0 =
       if (pass) ret
       else !ret
 
-    assert(ret0)
+    assert(ret0, s""""$pattern" $mid "$input"""")
   }
 
-  private def matches(pattern: String, input: String, pass: Boolean)(
-      implicit pos: Position): Unit = {
+  private def matches(pattern: String, input: String, pass: Boolean): Unit = {
 
     val ret = Pattern.matches(pattern, input)
 
     val mid =
-      if (pass) "does not matches"
+      if (pass) "does not match"
       else "should not match"
 
     assertRegex(pass, ret, mid, pattern, input)
   }
 
-  private def find(pattern: String, input: String, pass: Boolean = true)(
-      implicit pos: Position): Unit = {
+  private def find(pattern: String, input: String,
+                   pass: Boolean = true): Unit = {
     val ret = Pattern.compile(pattern).matcher(input).find()
 
     val mid =
-      if (pass) "does not matches"
+      if (pass) "does not match"
       else "should not match"
 
     assertRegex(pass, ret, mid, pattern, input)

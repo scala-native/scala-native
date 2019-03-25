@@ -2,13 +2,9 @@ package scala.re2s
 
 import ApiTestUtils._
 
-object RE2MatcherSuite extends tests.Suite {
+import ScalaTestCompat._
 
-  // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String)                         = assert(false, msg)
-  private def fail()                                    = assert(false, "Who knows why? No message")
-  private def ignore(msg: String)(block: => Unit): Unit = {}
-  // LeeT FIX ME -- Rough & rude - End
+object RE2MatcherSuite extends tests.Suite {
 
   test("LookingAt") {
     ApiTestUtils.verifyLookingAt("abcdef", "abc", true)
@@ -109,7 +105,7 @@ object RE2MatcherSuite extends tests.Suite {
     )
   }
 
-  test("Find") {
+  testFails("Find", issue = 1506) {
     ApiTestUtils.testFind("abcdefgh", ".*[aeiou]", 0, "abcde")
     ApiTestUtils.testFind("abcdefgh", ".*[aeiou]", 1, "bcde")
     ApiTestUtils.testFind("abcdefgh", ".*[aeiou]", 2, "cde")

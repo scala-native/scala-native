@@ -2,10 +2,9 @@ package scala.re2s
 
 import java.util
 
-object ApiTestUtils extends tests.Suite {
+import ScalaTestCompat.fail
 
-  // LeeT FIX ME -- Rough & rude
-  private def fail(msg: String) = assert(false, msg)
+object ApiTestUtils extends tests.Suite {
 
   def assertArrayEquals[A](arr1: Array[A], arr2: Array[A]) =
     assert(arr1.deep == arr2.deep)
