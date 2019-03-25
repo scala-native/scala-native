@@ -120,9 +120,8 @@ object Generate {
       val entryMainTy =
         Type.Function(Seq(Type.Ref(entry.top), ObjectArray), Type.Unit)
       val entryMainName =
-        Global.Member(
-          entry,
-          Sig.Method("main", Seq(Type.Array(nir.Rt.String), Type.Unit)))
+        Global.Member(entry,
+                      Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
       val entryMain = Val.Global(entryMainName, Type.Ptr)
 
       val stackBottom = Val.Local(fresh(), Type.Ptr)
@@ -130,7 +129,7 @@ object Generate {
       val argc    = Val.Local(fresh(), Type.Int)
       val argv    = Val.Local(fresh(), Type.Ptr)
       val module  = Val.Local(fresh(), Type.Ref(entry.top))
-      val rt      = Val.Local(fresh(), Rt)
+      val rt      = Val.Local(fresh(), Runtime)
       val arr     = Val.Local(fresh(), ObjectArray)
       val exc     = Val.Local(fresh(), nir.Rt.Object)
       val handler = fresh()
@@ -153,13 +152,13 @@ object Generate {
                             stackBottom),
                    unwind),
           Inst.Let(Op.Call(InitSig, Init, Seq()), unwind),
-          Inst.Let(rt.name, Op.Module(Rt.name), unwind),
+          Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
           Inst.Let(arr.name,
-                   Op.Call(RtInitSig, RtInit, Seq(rt, argc, argv)),
+                   Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
                    unwind),
           Inst.Let(module.name, Op.Module(entry.top), unwind),
           Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr)), unwind),
-          Inst.Let(Op.Call(RtLoopSig, RtLoop, Seq(module)), unwind),
+          Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(module)), unwind),
           Inst.Ret(Val.Int(0)),
           Inst.Label(handler, Seq(exc)),
           Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
@@ -322,21 +321,21 @@ object Generate {
     val ObjectArray =
       Type.Ref(Global.Top("scala.scalanative.runtime.ObjectArray"))
 
-    val Rt =
-      Type.Ref(Global.Top("scala.scalanative.runtime.package$"))
-    val RtInitSig =
-      Type.Function(Seq(Rt, Type.Int, Type.Ptr), ObjectArray)
-    val RtInitName =
-      Rt.name.member(
-        Sig.Method("init", Seq(Type.Int, Type.Ptr, Type.Array(nir.Rt.String))))
-    val RtInit =
-      Val.Global(RtInitName, Type.Ptr)
-    val RtLoopSig =
-      Type.Function(Seq(Rt), Type.Unit)
-    val RtLoopName =
-      Rt.name.member(Sig.Method("loop", Seq(Type.Unit)))
-    val RtLoop =
-      Val.Global(RtLoopName, Type.Ptr)
+    val Runtime =
+      Rt.Runtime
+    val RuntimeInitSig =
+      Type.Function(Seq(Runtime, Type.Int, Type.Ptr), ObjectArray)
+    val RuntimeInitName =
+      Runtime.name.member(
+        Sig.Method("init", Seq(Type.Int, Type.Ptr, Type.Array(Rt.String))))
+    val RuntimeInit =
+      Val.Global(RuntimeInitName, Type.Ptr)
+    val RuntimeLoopSig =
+      Type.Function(Seq(Runtime), Type.Unit)
+    val RuntimeLoopName =
+      Runtime.name.member(Sig.Method("loop", Seq(Type.Unit)))
+    val RuntimeLoop =
+      Val.Global(RuntimeLoopName, Type.Ptr)
 
     val MainName = extern("main")
     val MainSig  = Type.Function(Seq(Type.Int, Type.Ptr), Type.Int)
@@ -368,8 +367,8 @@ object Generate {
 
   val depends =
     Seq(ObjectArray.name,
-        Rt.name,
-        RtInit.name,
-        RtLoop.name,
+        Runtime.name,
+        RuntimeInit.name,
+        RuntimeLoop.name,
         PrintStackTraceName)
 }
