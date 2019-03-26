@@ -67,8 +67,8 @@ trait PolyInline { self: Interflow =>
       (0 until targets.size).map(i => impls.indexOf(targets(i)._2))
     val mergeLabel = fresh()
 
-    val objptr = emit.conv(Conv.Bitcast, Type.Ptr, obj, Next.None)
-    val objty  = emit.load(Type.Ptr, objptr, Next.None)
+    val objty =
+      emit.call(Rt.GetRawTypeTy, Rt.GetRawType, Seq(Val.Null, obj), Next.None)
 
     checkLabels.zipWithIndex.foreach {
       case (checkLabel, idx) =>

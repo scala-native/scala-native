@@ -15,7 +15,7 @@ trait Intrinsics { self: Interflow =>
     arrayApplyIntrinsics ++ arrayUpdateIntrinsics + arrayLengthIntrinsic
 
   val intrinsics = Set[Global](
-    Global.Member(Global.Top("java.lang.Object"), Rt.GetClassSig),
+    Rt.GetRawTypeName,
     Global.Member(Global.Top("java.lang.Class"), Rt.IsArraySig),
     Global.Member(Global.Top("java.lang.Class"), Rt.IsAssignableFromSig),
     Global.Member(Global.Top("java.lang.Class"), Rt.GetNameSig),
@@ -40,15 +40,21 @@ trait Intrinsics { self: Interflow =>
         Op.Call(ty, Val.Global(name, Type.Ptr), args.map(state.materialize(_))))
 
     sig match {
-      case Rt.GetClassSig =>
+      case Rt.GetRawTypeSig =>
         args match {
-          case Seq(VirtualRef(_, cls, _)) =>
-            val addr =
-              state.allocClass(
-                linked.infos(Global.Top("java.lang.Class")).asInstanceOf[Class])
-            val instance = state.derefVirtual(addr)
-            instance.values(0) = Val.Global(cls.name, Type.Ptr)
-            Val.Virtual(addr)
+          case Seq(_, VirtualRef(_, cls, _)) =>
+            Val.Global(cls.name, Type.Ptr)
+          case Seq(_, value) =>
+            val ty = value match {
+              case InstanceRef(ty) => ty
+              case _               => value.ty
+            }
+            ty match {
+              case refty: Type.RefKind if refty.isExact && !refty.isNullable =>
+                Val.Global(refty.className, Type.Ptr)
+              case _ =>
+                fallback
+            }
           case _ =>
             fallback
         }
