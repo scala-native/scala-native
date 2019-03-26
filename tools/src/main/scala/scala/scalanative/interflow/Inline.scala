@@ -29,6 +29,8 @@ trait Inline { self: Interflow =>
         }
         val isSmall =
           defn.insts.size <= 8
+        val isExtern =
+          defn.attrs.isExtern
         val hasVirtualArgs =
           args.exists(_.isInstanceOf[Val.Virtual])
         val noInline =
@@ -53,7 +55,7 @@ trait Inline { self: Interflow =>
             isCtor || alwaysInline || hintInline || isSmall || hasVirtualArgs
         }
         val shallNot =
-          noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig
+          noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern
 
         if (shall) {
           if (shallNot) {

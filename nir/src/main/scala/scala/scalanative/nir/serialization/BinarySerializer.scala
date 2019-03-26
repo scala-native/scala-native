@@ -70,6 +70,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.Extern   => putInt(T.ExternAttr)
     case Attr.Link(s)  => putInt(T.LinkAttr); putString(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
+
+    case Attr.UnOpt        => putInt(T.UnOptAttr)
+    case Attr.DidOpt       => putInt(T.DidOptAttr)
+    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putString(msg)
   }
 
   private def putBin(bin: Bin) = bin match {

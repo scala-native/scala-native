@@ -12,12 +12,11 @@ trait Visit { self: Interflow =>
     if (!hasOriginal(orig)) {
       false
     } else {
-      val defn      = getOriginal(orig)
-      val notExtern = !defn.attrs.isExtern
-      val hasInsts  = defn.insts.size > 0
-      val hasSema   = linked.infos.contains(defn.name)
+      val defn     = getOriginal(orig)
+      val hasInsts = defn.insts.size > 0
+      val hasSema  = linked.infos.contains(defn.name)
 
-      notExtern && hasInsts && hasSema
+      hasInsts && hasSema
     }
   }
 
@@ -25,8 +24,18 @@ trait Visit { self: Interflow =>
     mode match {
       case build.Mode.Debug =>
         false
+
       case build.Mode.Release =>
-        argumentTypes(name) != argtys
+        if (!shallVisit(name)) {
+          false
+        } else {
+          val nonExtern =
+            !getOriginal(name).attrs.isExtern
+          val differentArgumentTypes =
+            argumentTypes(name) != argtys
+
+          nonExtern && differentArgumentTypes
+        }
     }
 
   def visitEntries(): Unit =
@@ -105,12 +114,44 @@ trait Visit { self: Interflow =>
       try {
         setDone(name, visitInsts(name))
       } catch {
-        case exc: BailOut =>
+        case BailOut(msg) =>
+          log(s"failed to expand ${name.show}: $msg")
+          val origname = originalName(name)
+          val origdefn = getOriginal(origname)
+          val baildefn =
+            origdefn.copy(attrs = origdefn.attrs.copy(opt = Attr.BailOpt(msg)))
+          visitNoOpt(origdefn)
+          setDone(name, baildefn)
+          setDone(origname, baildefn)
           markBlacklisted(name)
-          log(s"failed to expand ${name.show}: ${exc.toString}")
-          setDone(name, getOriginal(originalName(name)))
+          markBlacklisted(origname)
       }
     }
+
+  def visitNoOpt(defn: Defn.Define): Unit = defn.insts.foreach {
+    case Inst.Let(_, Op.Method(obj, sig), _) =>
+      obj.ty match {
+        case refty: Type.RefKind =>
+          val name  = refty.className
+          val scope = linked.infos(name).asInstanceOf[ScopeInfo]
+          scope.targets(sig).foreach(visitEntry)
+        case _ =>
+          ()
+      }
+    case Inst.Let(_, Op.Dynmethod(_, dynsig), _) =>
+      linked.dynimpls.foreach {
+        case impl @ Global.Member(_, sig) if sig.toProxy == dynsig =>
+          visitEntry(impl)
+        case _ =>
+          ()
+      }
+    case Inst.Let(_, Op.Module(name), _) =>
+      visitEntry(name)
+    case Inst.Let(_, Op.Call(_, Val.Global(meth, _), _), _) =>
+      visitEntry(meth)
+    case _ =>
+      ()
+  }
 
   def visitInsts(name: Global): Defn.Define = in(s"visit ${name.show}") {
     val orig     = originalName(name)
@@ -121,6 +162,7 @@ trait Visit { self: Interflow =>
     // Wrap up the result.
     def result(retty: Type, rawInsts: Seq[Inst]) =
       origdefn.copy(name = name,
+                    attrs = origdefn.attrs.copy(opt = Attr.DidOpt),
                     ty = Type.Function(argtys, retty),
                     insts = ControlFlow.removeDeadBlocks(rawInsts))
 

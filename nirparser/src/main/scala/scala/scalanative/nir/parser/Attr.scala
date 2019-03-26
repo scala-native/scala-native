@@ -16,10 +16,13 @@ object Attr extends Base[nir.Attr] {
   val Dyn          = P("dyn".! map (_ => nir.Attr.Dyn))
   val Stub         = P("stub".! map (_ => nir.Attr.Stub))
   val Extern       = P("extern".! map (_ => nir.Attr.Extern))
-  val Link         = P("link(" ~ qualifiedId ~ ")" map (nir.Attr.Link(_)))
+  val Link         = P("link(" ~ stringLit ~ ")" map (nir.Attr.Link(_)))
   val Abstract     = P("abstract".! map (_ => nir.Attr.Abstract))
+  val UnOpt        = P("unopt".! map (_ => nir.Attr.UnOpt))
+  val DidOpt       = P("didopt".! map (_ => nir.Attr.DidOpt))
+  val BailOpt      = P("bailopt(" ~ stringLit ~ ")" map (nir.Attr.BailOpt(_)))
 
   override val parser: P[nir.Attr] =
-    MayInline | InlineHint | NoInline | AlwaysInline | Dyn | Stub | Extern | Link | Abstract
+    MayInline | InlineHint | NoInline | AlwaysInline | Dyn | Stub | Extern | Link | Abstract | UnOpt | DidOpt | BailOpt
 
 }

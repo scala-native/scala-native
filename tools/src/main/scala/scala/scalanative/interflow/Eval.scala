@@ -114,48 +114,57 @@ trait Eval { self: Interflow =>
       throw BailOut("can't eval op: " + op.show)
     op match {
       case Op.Call(sig, meth, args) =>
-        eval(meth) match {
+        val emeth = eval(meth)
+
+        def nonIntrinsic = {
+          val eargs = args.map(eval)
+          val argtys = eargs.map {
+            case VirtualRef(_, cls, _) =>
+              cls.ty
+            case DelayedRef(op) =>
+              op.resty
+            case value =>
+              value.ty
+          }
+
+          val (dsig, dtarget) = emeth match {
+            case Val.Global(name, _) =>
+              visitDuplicate(name, argtys)
+                .map { defn =>
+                  (defn.ty, Val.Global(defn.name, Type.Ptr))
+                }
+                .getOrElse {
+                  visitRoot(name)
+                  (sig, emeth)
+                }
+            case _ =>
+              (sig, emeth)
+          }
+
+          def fallback = {
+            val mtarget = materialize(dtarget)
+            val margs   = adapt(eargs, dsig).map(materialize)
+
+            emit(Op.Call(dsig, mtarget, margs))
+          }
+
+          dtarget match {
+            case Val.Global(name, _) if shallInline(name, eargs) =>
+              inline(name, eargs)
+            case DelayedRef(op: Op.Method) if shallPolyInline(op, eargs) =>
+              polyInline(op, eargs)
+            case _ =>
+              fallback
+          }
+        }
+
+        emeth match {
           case Val.Global(name, _) if intrinsics.contains(name) =>
-            intrinsic(sig, name, args)
-          case emeth =>
-            val eargs = args.map(eval)
-            val argtys = eargs.map {
-              case VirtualRef(_, cls, _) =>
-                cls.ty
-              case DelayedRef(op) =>
-                op.resty
-              case value =>
-                value.ty
+            intrinsic(sig, name, args).getOrElse {
+              nonIntrinsic
             }
-
-            val (dsig, dtarget) = emeth match {
-              case Val.Global(name, _) =>
-                visitDuplicate(name, argtys)
-                  .map { defn =>
-                    (defn.ty, Val.Global(defn.name, Type.Ptr))
-                  }
-                  .getOrElse {
-                    (sig, emeth)
-                  }
-              case _ =>
-                (sig, emeth)
-            }
-
-            def fallback = {
-              val mtarget = materialize(dtarget)
-              val margs   = adapt(eargs, dsig).map(materialize)
-
-              emit(Op.Call(dsig, mtarget, margs))
-            }
-
-            dtarget match {
-              case Val.Global(name, _) if shallInline(name, eargs) =>
-                inline(name, eargs)
-              case DelayedRef(op: Op.Method) if shallPolyInline(op, eargs) =>
-                polyInline(op, eargs)
-              case _ =>
-                fallback
-            }
+          case _ =>
+            nonIntrinsic
         }
       case Op.Load(ty, ptr) =>
         emit(Op.Load(ty, materialize(eval(ptr))))
@@ -812,6 +821,14 @@ trait Eval { self: Interflow =>
         state.derefEscaped(addr).escapedValue
       case Val.String(value) =>
         Val.Virtual(state.allocString(value))
+      case Val.Global(name, _) =>
+        maybeOriginal(name).foreach {
+          case defn if defn.attrs.isExtern =>
+            visitRoot(defn.name)
+          case _ =>
+            ()
+        }
+        value
       case _ =>
         value.canonicalize
     }

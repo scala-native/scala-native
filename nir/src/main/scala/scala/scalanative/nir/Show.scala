@@ -77,11 +77,19 @@ object Show {
       case Attr.Extern =>
         str("extern")
       case Attr.Link(name) =>
-        str("link(")
-        str(name)
-        str(")")
+        str("link(\"")
+        str(escapeQuotes(name))
+        str("\")")
       case Attr.Abstract =>
         str("abstract")
+      case Attr.UnOpt =>
+        str("unopt")
+      case Attr.DidOpt =>
+        str("didopt")
+      case Attr.BailOpt(msg) =>
+        str("bailopt(\"")
+        str(escapeQuotes(msg))
+        str("\")")
     }
 
     def next_(next: Next): Unit = next match {
