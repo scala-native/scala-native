@@ -196,4 +196,9 @@ final class StringBuilder
   }
 
   override def toString() = super.toString()
+
+  override def lastIndexOf(s: String): Int =
+    super.lastIndexOf(s)
+  override def lastIndexOf(s: String, i: Int): Int =
+    super.lastIndexOf(s, i)
 }
