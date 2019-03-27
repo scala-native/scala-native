@@ -33,6 +33,8 @@ trait Inline { self: Interflow =>
           defn.attrs.isExtern
         val hasVirtualArgs =
           args.exists(_.isInstanceOf[Val.Virtual])
+        val noOpt =
+          defn.attrs.opt == Attr.NoOpt
         val noInline =
           defn.attrs.inline == Attr.NoInline
         val alwaysInline =
@@ -55,7 +57,7 @@ trait Inline { self: Interflow =>
             isCtor || alwaysInline || hintInline || isSmall || hasVirtualArgs
         }
         val shallNot =
-          noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern
+          noOpt || noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern
 
         if (shall) {
           if (shallNot) {

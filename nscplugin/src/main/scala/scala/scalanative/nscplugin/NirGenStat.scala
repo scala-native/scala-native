@@ -250,8 +250,13 @@ trait NirGenStat { self: NirGenPhase =>
         sym.annotations.collect {
           case ann if ann.symbol == StubClass => Attr.Stub
         }
+      val optAttrs =
+        sym.annotations.collect {
+          case ann if ann.symbol == NoOptimizeClass   => Attr.NoOpt
+          case ann if ann.symbol == NoSpecializeClass => Attr.NoSpecialize
+        }
 
-      Attrs.fromSeq(inlineAttrs ++ stubAttrs)
+      Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs)
     }
 
     def genParams(dd: DefDef, isStatic: Boolean): Seq[Val.Local] =

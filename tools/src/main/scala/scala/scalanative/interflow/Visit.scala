@@ -29,12 +29,18 @@ trait Visit { self: Interflow =>
         if (!shallVisit(name)) {
           false
         } else {
+          val defn =
+            getOriginal(name)
           val nonExtern =
-            !getOriginal(name).attrs.isExtern
+            !defn.attrs.isExtern
+          val canOptimize =
+            defn.attrs.opt != Attr.NoOpt
+          val canSpecialize =
+            defn.attrs.specialize != Attr.NoSpecialize
           val differentArgumentTypes =
             argumentTypes(name) != argtys
 
-          nonExtern && differentArgumentTypes
+          canOptimize && canSpecialize && nonExtern && differentArgumentTypes
         }
     }
 
@@ -111,16 +117,22 @@ trait Visit { self: Interflow =>
   def visitMethod(name: Global): Unit =
     if (!hasStarted(name)) {
       markStarted(name)
+      val origname = originalName(name)
+      val origdefn = getOriginal(origname)
       try {
-        setDone(name, visitInsts(name))
+        if (origdefn.attrs.opt == Attr.NoOpt) {
+          visitInstsNoOpt(origdefn)
+          setDone(name, origdefn)
+          setDone(origname, origdefn)
+        } else {
+          setDone(name, visitInstsOpt(name))
+        }
       } catch {
         case BailOut(msg) =>
           log(s"failed to expand ${name.show}: $msg")
-          val origname = originalName(name)
-          val origdefn = getOriginal(origname)
           val baildefn =
             origdefn.copy(attrs = origdefn.attrs.copy(opt = Attr.BailOpt(msg)))
-          visitNoOpt(origdefn)
+          visitInstsNoOpt(origdefn)
           setDone(name, baildefn)
           setDone(origname, baildefn)
           markBlacklisted(name)
@@ -128,7 +140,7 @@ trait Visit { self: Interflow =>
       }
     }
 
-  def visitNoOpt(defn: Defn.Define): Unit = defn.insts.foreach {
+  def visitInstsNoOpt(defn: Defn.Define): Unit = defn.insts.foreach {
     case Inst.Let(_, Op.Method(obj, sig), _) =>
       obj.ty match {
         case refty: Type.RefKind =>
@@ -153,7 +165,7 @@ trait Visit { self: Interflow =>
       ()
   }
 
-  def visitInsts(name: Global): Defn.Define = in(s"visit ${name.show}") {
+  def visitInstsOpt(name: Global): Defn.Define = in(s"visit ${name.show}") {
     val orig     = originalName(name)
     val origtys  = argumentTypes(orig)
     val origdefn = getOriginal(orig)
