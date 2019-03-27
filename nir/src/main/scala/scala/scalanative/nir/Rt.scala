@@ -14,11 +14,11 @@ object Rt {
   val BoxedUnit       = Ref(Global.Top("scala.runtime.BoxedUnit"))
   val BoxedUnitModule = Ref(Global.Top("scala.scalanative.runtime.BoxedUnit$"))
 
+  val GetRawTypeSig       = Sig.Method("getRawType", Seq(Rt.Object, Ptr))
   val JavaEqualsSig       = Sig.Method("equals", Seq(Object, Bool))
   val JavaHashCodeSig     = Sig.Method("hashCode", Seq(Int))
   val ScalaEqualsSig      = Sig.Method("scala_==", Seq(Object, Bool))
   val ScalaHashCodeSig    = Sig.Method("scala_##", Seq(Int))
-  val GetClassSig         = Sig.Method("getClass", Seq(Class))
   val IsArraySig          = Sig.Method("isArray", Seq(Bool))
   val IsAssignableFromSig = Sig.Method("isAssignableFrom", Seq(Class, Bool))
   val GetNameSig          = Sig.Method("getName", Seq(String))
@@ -31,6 +31,10 @@ object Rt {
   val PowSig  = Sig.Method("pow", Seq(Double, Double, Double))
   val MaxSig  = Sig.Method("max", Seq(Double, Double, Double))
   val SqrtSig = Sig.Method("sqrt", Seq(Double, Double))
+
+  val GetRawTypeTy   = Function(Seq(Runtime, Object), Ptr)
+  val GetRawTypeName = Global.Member(Runtime.name, GetRawTypeSig)
+  val GetRawType     = Val.Global(GetRawTypeName, Ptr)
 
   val StringName               = String.name
   val StringValueName          = StringName member Sig.Field("value")
