@@ -8,11 +8,12 @@ import scalanative.linker._
 import scalanative.codegen.Lower
 
 final class State(block: Local) {
-  var fresh  = Fresh(block.id)
-  var heap   = mutable.Map.empty[Addr, Instance]
-  var locals = mutable.Map.empty[Local, Val]
-  var ops    = mutable.Map.empty[Op, Val]
-  var emit   = new nir.Buffer()(fresh)
+  var fresh   = Fresh(block.id)
+  var heap    = mutable.Map.empty[Addr, Instance]
+  var locals  = mutable.Map.empty[Local, Val]
+  var delayed = mutable.Map.empty[Op, Val]
+  var emitted = mutable.Map.empty[Op, Val]
+  var emit    = new nir.Buffer()(fresh)
 
   private def alloc(kind: Kind, cls: Class, values: Array[Val]): Addr = {
     val addr = fresh().id
@@ -51,33 +52,24 @@ final class State(block: Local) {
       Val.Int(Lower.stringHashCode(value))
     alloc(StringKind, linked.StringClass, values)
   }
-  private def reuse(op: Op): Val = {
-    val value = ops(op)
-    value match {
-      case Val.Virtual(addr) if hasEscaped(addr) =>
-        derefEscaped(addr).escapedValue
-      case _ =>
-        value
-    }
-  }
   def delay(op: Op): Val = {
-    if (ops.contains(op)) {
-      reuse(op)
+    if (delayed.contains(op)) {
+      delayed(op)
     } else {
       val addr  = fresh().id
       val value = Val.Virtual(addr)
       heap(addr) = DelayedInstance(op)
-      ops(op) = value
+      delayed(op) = value
       value
     }
   }
-  def emit(op: Op): Val = {
-    if (op.isIdempotent) {
-      if (ops.contains(op)) {
-        reuse(op)
+  def emit(op: Op, idempotent: Boolean = false): Val = {
+    if (op.isIdempotent || idempotent) {
+      if (emitted.contains(op)) {
+        emitted(op)
       } else {
         val value = emit.let(op, Next.None)
-        ops(op) = value
+        emitted(op) = value
         value
       }
     } else {
@@ -140,8 +132,17 @@ final class State(block: Local) {
     val closure = heapClosure(roots) ++ other.heapClosure(roots)
 
     closure.foreach { addr =>
-      heap(addr) = other.heap(addr).clone()
+      val clone = other.heap(addr).clone()
+      clone match {
+        case DelayedInstance(op) =>
+          delayed(op) = Val.Virtual(addr)
+        case _ =>
+          ()
+      }
+      heap(addr) = clone
     }
+
+    emitted ++= other.emitted
   }
   def heapClosure(roots: Seq[Val]): mutable.Set[Addr] = {
     val reachable = mutable.Set.empty[Addr]
@@ -209,7 +210,8 @@ final class State(block: Local) {
     val newstate = new State(block)
     newstate.heap = heap.map { case (k, v) => (k, v.clone()) }
     newstate.locals = locals.clone()
-    newstate.ops = ops.clone()
+    newstate.delayed = delayed.clone()
+    newstate.emitted = emitted.clone()
     newstate
   }
   override def equals(other: Any): Boolean = other match {
@@ -260,7 +262,7 @@ final class State(block: Local) {
         emit.classalloc(cls.name, Next.None)
       case DelayedInstance(op) =>
         reachOp(op)
-        emit.let(escapedOp(op), Next.None)
+        emit(escapedOp(op), idempotent = true)
       case EscapedInstance(value) =>
         reachVal(value)
         escapedVal(value)

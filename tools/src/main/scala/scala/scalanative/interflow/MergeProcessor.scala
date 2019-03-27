@@ -64,12 +64,13 @@ final class MergeProcessor(insts: Array[Inst],
       case _ =>
         val headState = states.head
 
-        var mergeFresh  = Fresh(merge.id)
-        val mergeLocals = mutable.Map.empty[Local, Val]
-        val mergeHeap   = mutable.Map.empty[Addr, Instance]
-        val mergePhis   = mutable.UnrolledBuffer.empty[MergePhi]
-        val mergeOps    = mutable.Map.empty[Op, Val]
-        val newEscapes  = mutable.Set.empty[Addr]
+        var mergeFresh   = Fresh(merge.id)
+        val mergeLocals  = mutable.Map.empty[Local, Val]
+        val mergeHeap    = mutable.Map.empty[Addr, Instance]
+        val mergePhis    = mutable.UnrolledBuffer.empty[MergePhi]
+        val mergeDelayed = mutable.Map.empty[Op, Val]
+        val mergeEmitted = mutable.Map.empty[Op, Val]
+        val newEscapes   = mutable.Set.empty[Addr]
 
         def mergePhi(values: Seq[Val]): Val = {
           if (values.distinct.size == 1) {
@@ -160,17 +161,31 @@ final class MergeProcessor(insts: Array[Inst],
               mergeLocals(param.name) = mergePhi(values)
           }
 
-          // 4. Merge ops
+          // 4. Merge delayed ops
 
-          def includeOp(op: Op, v: Val): Boolean = {
+          def includeDelayedOp(op: Op, v: Val): Boolean = {
             states.forall { s =>
-              s.ops.contains(op) && s.ops(op) == v
+              s.delayed.contains(op) && s.delayed(op) == v
             }
           }
-          states.head.ops.foreach {
+          states.head.delayed.foreach {
             case (op, v) =>
-              if (includeOp(op, v)) {
-                mergeOps(op) = v
+              if (includeDelayedOp(op, v)) {
+                mergeDelayed(op) = v
+              }
+          }
+
+          // 4. Merge emitted ops
+
+          def includeEmittedOp(op: Op, v: Val): Boolean = {
+            states.forall { s =>
+              s.emitted.contains(op) && s.emitted(op) == v
+            }
+          }
+          states.head.emitted.foreach {
+            case (op, v) =>
+              if (includeEmittedOp(op, v)) {
+                mergeEmitted(op) = v
               }
           }
         }
@@ -187,7 +202,8 @@ final class MergeProcessor(insts: Array[Inst],
           mergeLocals.clear()
           mergeHeap.clear()
           mergePhis.clear()
-          mergeOps.clear()
+          mergeDelayed.clear()
+          mergeEmitted.clear()
           newEscapes.clear()
           try {
             computeMerge()
@@ -207,6 +223,8 @@ final class MergeProcessor(insts: Array[Inst],
         mergeState.fresh = mergeFresh
         mergeState.locals = mergeLocals
         mergeState.heap = mergeHeap
+        mergeState.delayed = mergeDelayed
+        mergeState.emitted = mergeEmitted
 
         (mergePhis, mergeState)
     }
