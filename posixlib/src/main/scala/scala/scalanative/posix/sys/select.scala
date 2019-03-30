@@ -13,17 +13,38 @@ object select {
   type suseconds_t = types.suseconds_t
 
   // The declaration of type fd_set closely follows the Linux C declaration.
+  // glibc circa March 2019 and many years prior is documented as using a
+  // fixed buffer of 1024 bits.
+  //
+  // Since ""extern object may only contain extern fields and methods"
+  // a runtime check can not be done here. Instead, a compile time check
+  // is done in posix/sys/select.c. That detects mismatches on the
+  // compilation system, but may miss mismatches on the executing system.
+  //
+  // The more recent posix poll() avoids issues with FD_SETSIZE and offers
+  // performance advantages. However, sometimes ya just gotta select().
 
+  // Linux specifies an array of 64 bit longs.
   // 16 * 64 == 1024 == FD_SETSIZE.
-  // Assured by assertion() in nativelib select.c. See comments there.
-
   private[this] type _16 = Digit[_1, _6]
 
   type fd_set = CStruct1[CArray[CLongInt, _16]]
 
   // Allocation & usage example:
-  //     val fdsetPtr = stackalloc[fd_set].asInstanceOf[Ptr[fd_set]]
-  //     FD_ZERO(fdsetPtr)
+  //
+  // A fd_set is arguably too large to allocate on the stack, so use a Zone.
+  //
+  //    import scala.scalanative.posix.sys.selectFdSet
+  //
+  //    Zone { // selectFdSet.createZeroed must be used within a Zone.
+  //        val fdsetPtr = selectFdSet.createZeroed // no need to FD_ZERO
+  //        FD_SET(sock, fdsetPtr)
+  //
+  //        val result = select(nfds, fdsetPtr, writefds, exceptfds)
+  //        // check result.
+  //        // do work implied by result.
+  //
+  //    } // fdsetPtr and memory it points to are not valid outsize Zone.
 
   @name("scalanative_select")
   def select(nfds: CInt,
@@ -47,4 +68,19 @@ object select {
   @name("scalanative_FD_ZERO")
   def FD_ZERO(set: Ptr[fd_set]): Unit = extern
 
+}
+
+object selectFdSet {
+  import select.fd_set
+
+  // createZeroed method _must_ be used within a Zone
+
+  def createZeroed()(implicit z: Zone): Ptr[fd_set] = {
+    // Be type pure and return pointer to fixed size buffer fd_set.
+    // One _could_ detect FD_SETSIZE at runtime and adapt allocated size,
+    // but the method would then be lying about the return type.
+
+    // Zone.alloc is documented as returning zeroed memory.
+    z.alloc(sizeof[fd_set]).cast[Ptr[fd_set]]
+  }
 }
