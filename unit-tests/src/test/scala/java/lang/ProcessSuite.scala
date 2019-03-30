@@ -8,34 +8,48 @@ import scala.scalanative.native.{Zone, toCString}
 import scala.scalanative.posix.{fcntl, unistd}
 import scala.io.Source
 
-// Design Note:
-//     In a number of places waitFor() is called to prevent zombie
-//     processes. These calls have been converted to a timed waitfor.
-//     A timed waitfor means the test will eventually complete, even
-//     if there is a problem with the underlying process.
-//
-//     One minute is an order of magnitude guess for a "reasonable"
-//     completion time.  If a process expected to exit in milliseconds
-//     takes over a minute, it should be reported.
-//
-//     In the expected normal case, the process will exit within seconds
-//     or less, so the 1 minute timeout will not increase the expected
-//     execution time of the test.
-
 object ProcessSuite extends tests.Suite {
+
+  private def blockTestOnConditions(process: Process): Unit = {
+    // Suspend execution of the test until either the specified
+    // process has exited or a reasonable wait period has timed out.
+    //
+    // A waitFor() prevents zombie processes and makes the exit value
+    // available. A timed waitfor means the test will eventually complete,
+    // even if there is a problem with the underlying process.
+    //
+    // In the normal case, the process will exit within milliseconds or less.
+    // The timeout will not increase the expected execution time of the test.
+    //
+    // Five seconds is an order of magnitude guess for a "reasonable"
+    // completion time.  If a process expected to exit in milliseconds
+    // takes that three orders of magnitude longer, it must be reported.
+
+    val tmo    = 5
+    val tmUnit = TimeUnit.SECONDS
+
+    assert(process.waitFor(tmo, tmUnit),
+           s"Process took more than $tmo ${tmUnit.name} to exit.")
+  }
+
   def readInputStream(s: InputStream) = Source.fromInputStream(s).mkString
+
   val resourceDir =
     s"${System.getProperty("user.dir")}/unit-tests/src/test/resources/process"
+
   // This makes it easy to decorate the test for debugging
   def addTest[R](name: String)(f: => R): Unit = test(name) {
     f
   }
+
   val scripts = Set("echo.sh", "err.sh", "ls", "hello.sh")
+
   addTest("ls") {
     val proc = new ProcessBuilder("ls", resourceDir).start()
     val out  = readInputStream(proc.getInputStream)
-    assert(proc.waitFor(1, TimeUnit.MINUTES),
-           s"Process took more than 1 minute to exit.")
+
+    blockTestOnConditions(proc)
+
     assert(out.split("\n").toSet == scripts)
   }
 
@@ -63,8 +77,8 @@ object ProcessSuite extends tests.Suite {
     val proc = pb.start()
     val out  = readInputStream(proc.getInputStream)
 
-    assert(proc.waitFor(1, TimeUnit.MINUTES),
-           s"Process took more than 1 minute to exit.")
+    blockTestOnConditions(proc)
+
     assert(out == "1")
   }
 
@@ -85,8 +99,9 @@ object ProcessSuite extends tests.Suite {
     val cwd = System.getProperty("user.dir")
     pb.environment.put("PATH", s"$cwd/unit-tests/src/test/resources/process")
     val proc = pb.start()
-    assert(proc.waitFor(1, TimeUnit.MINUTES),
-           s"Process took more than 1 minute to exit.")
+
+    blockTestOnConditions(proc)
+
     assert(readInputStream(proc.getErrorStream) == "foo")
     assert(readInputStream(proc.getInputStream) == "bar")
   }
@@ -101,8 +116,9 @@ object ProcessSuite extends tests.Suite {
       proc.getOutputStream.write("hello\n".getBytes)
       proc.getOutputStream.write("quit\n".getBytes)
       proc.getOutputStream.flush()
-      assert(proc.waitFor(1, TimeUnit.MINUTES),
-             s"Process took more than 1 minute to exit.")
+
+      blockTestOnConditions(proc)
+
       val out = Source.fromFile(file.toString).getLines mkString "\n"
       assert(out == "hello")
     } finally {
@@ -120,8 +136,9 @@ object ProcessSuite extends tests.Suite {
       val os   = new FileOutputStream(file)
       os.write("hello\n".getBytes)
       os.write("quit\n".getBytes)
-      assert(proc.waitFor(1, TimeUnit.MINUTES),
-             s"Process took more than 1 minute to exit.")
+
+      blockTestOnConditions(proc)
+
       val out = readInputStream(proc.getInputStream)
       assert(out == "hello")
     } finally {
@@ -135,8 +152,9 @@ object ProcessSuite extends tests.Suite {
     pb.environment.put("PATH", s"$cwd/unit-tests/src/test/resources/process")
     pb.redirectErrorStream(true)
     val proc = pb.start()
-    assert(proc.waitFor(1, TimeUnit.MINUTES),
-           s"Process took more than 1 minute to exit.")
+
+    blockTestOnConditions(proc)
+
     val out = readInputStream(proc.getInputStream)
     val err = readInputStream(proc.getErrorStream)
     assert(out == "foobar")
@@ -156,7 +174,7 @@ object ProcessSuite extends tests.Suite {
   //  process has not lived its lifetime by the time the assert()
   //  executes, a race condition.  Just because two instructions are
   //  right next to each other, does not mean they execute without
-  //  intervening interruption.
+  //  intervening interruption or significant elapsed time.
   //
   //  The normal solution would be to increase the expected lifetime
   //  of process. The short 5 millisecond delay has already caught
@@ -190,8 +208,9 @@ object ProcessSuite extends tests.Suite {
     val pb = new ProcessBuilder("hello.sh")
     pb.environment.put("PATH", resourceDir)
     val proc = pb.start()
-    assert(proc.waitFor(1, TimeUnit.MINUTES),
-           s"Process took more than 1 minute to exit.")
+
+    blockTestOnConditions(proc)
+
     val out = readInputStream(proc.getInputStream)
     assert(out == "hello\n")
   }
