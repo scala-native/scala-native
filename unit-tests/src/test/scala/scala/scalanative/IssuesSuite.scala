@@ -372,6 +372,33 @@ object IssuesSuite extends tests.Suite {
     val ulong = java.lang.Long.parseUnsignedLong("9223372036854775808").toULong
     assert(ulong.toDouble == 9223372036854775808.0D)
   }
+
+  test("#1516") {
+    locally {
+      val data = new Array[UByte](6)
+      data(0) = 64.toUByte
+      assert(data(0).getClass == classOf[UByte])
+      assert(data(0).toString == "64")
+    }
+    locally {
+      val data = new Array[UShort](6)
+      data(0) = 64.toUShort
+      assert(data(0).getClass == classOf[UShort])
+      assert(data(0).toString == "64")
+    }
+    locally {
+      val data = new Array[UInt](6)
+      data(0) = 64.toUInt
+      assert(data(0).getClass == classOf[UInt])
+      assert(data(0).toString == "64")
+    }
+    locally {
+      val data = new Array[ULong](6)
+      data(0) = 64.toULong
+      assert(data(0).getClass == classOf[ULong])
+      assert(data(0).toString == "64")
+    }
+  }
 }
 
 package issue1090 {

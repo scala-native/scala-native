@@ -63,11 +63,6 @@ trait NirGenType { self: NirGenPhase =>
     case DoubleClass  => if (!box) nir.Type.Double  else genRefType(BoxedDoubleClass)
     // format: on
 
-    case UByteClass if !box  => nir.Type.Byte
-    case UShortClass if !box => nir.Type.Short
-    case UIntClass if !box   => nir.Type.Int
-    case ULongClass if !box  => nir.Type.Long
-
     case NullClass    => nir.Type.Null
     case NothingClass => nir.Type.Nothing
     case PtrClass     => nir.Type.Ptr
