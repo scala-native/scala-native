@@ -346,7 +346,7 @@ final class MergeProcessor(insts: Array[Inst],
   def visit(block: MergeBlock,
             newPhis: Seq[MergePhi],
             newState: State): Unit = {
-    if (block.invalidations > 8) {
+    if (block.invalidations > 128) {
       throw BailOut("too many block invalidations")
     } else {
       if (block.invalidations > 0) {

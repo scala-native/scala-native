@@ -61,6 +61,14 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.NoInlineAttr     => Attr.NoInline
     case T.AlwaysInlineAttr => Attr.AlwaysInline
 
+    case T.MaySpecialize => Attr.MaySpecialize
+    case T.NoSpecialize  => Attr.NoSpecialize
+
+    case T.UnOptAttr   => Attr.UnOpt
+    case T.NoOptAttr   => Attr.NoOpt
+    case T.DidOptAttr  => Attr.DidOpt
+    case T.BailOptAttr => Attr.BailOpt(getString)
+
     case T.DynAttr      => Attr.Dyn
     case T.StubAttr     => Attr.Stub
     case T.ExternAttr   => Attr.Extern

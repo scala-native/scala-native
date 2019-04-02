@@ -19,7 +19,7 @@ import java.math.BigInteger
 import java.math.MathContext
 import java.nio.charset.Charset
 
-object FormatterSuite extends tests.Suite {
+object DefaultFormatterSuite extends tests.Suite {
   private var root: Boolean             = false
   private var notExist: File            = _
   private var fileWithContent: File     = _

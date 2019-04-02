@@ -29,7 +29,9 @@ class ValParserTest extends FunSuite {
     Val.Global(global, Type.Ptr),
     Val.Unit,
     Val.Const(Val.Int(0)),
-    Val.String("foobar")
+    Val.String("foobar"),
+    Val.String("foo bar"),
+    Val.String("foo \"bar\" baz")
   ).foreach { ty =>
     test(s"parse value `${ty.show}`") {
       val Parsed.Success(result, _) = parser.Val.parser.parse(ty.show)

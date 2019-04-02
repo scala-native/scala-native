@@ -247,9 +247,13 @@ object CodeGen {
         }
       }
       str(")")
-      if (attrs.inline ne Attr.MayInline) {
-        str(" ")
-        genAttr(attrs.inline)
+      if (attrs.opt eq Attr.NoOpt) {
+        str(" optnone noinline")
+      } else {
+        if (attrs.inline ne Attr.MayInline) {
+          str(" ")
+          genAttr(attrs.inline)
+        }
       }
       if (!attrs.isExtern && !isDecl) {
         str(" ")

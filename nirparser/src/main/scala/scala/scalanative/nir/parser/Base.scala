@@ -76,7 +76,9 @@ object Base {
     : P[Float] = neg(Infinity | Literals.Literals.Float.!) map (_.toFloat)
   val Double
     : P[Double] = neg(Infinity | Literals.Literals.Float.!) map (_.toDouble)
-  val stringLit: P[String] = P(Literals.Literals.NoInterp.String.! map {
-    _.init.tail
+  val stringLit: P[String] = P(Literals.Literals.NoInterp.String.! map { x =>
+    unquote(x.init.tail)
   })
+
+  private def unquote(s: String): String = s.replace("\\\"", "\"")
 }
