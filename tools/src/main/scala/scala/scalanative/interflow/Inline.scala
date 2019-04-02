@@ -49,6 +49,12 @@ trait Inline { self: Interflow =>
           defn.insts.size > 8192
         val callerTooBig =
           mergeProcessor.currentSize() > 8192
+        val hasUnwind = defn.insts.exists {
+          case Inst.Let(_, _, unwind)   => unwind ne Next.None
+          case Inst.Throw(_, unwind)    => unwind ne Next.None
+          case Inst.Unreachable(unwind) => unwind ne Next.None
+          case _                        => false
+        }
 
         val shall = mode match {
           case build.Mode.Debug =>
@@ -57,7 +63,7 @@ trait Inline { self: Interflow =>
             isCtor || alwaysInline || hintInline || isSmall || hasVirtualArgs
         }
         val shallNot =
-          noOpt || noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern
+          noOpt || noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern || hasUnwind
 
         if (shall) {
           if (shallNot) {

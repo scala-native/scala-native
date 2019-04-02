@@ -44,6 +44,19 @@ trait Visit { self: Interflow =>
         }
     }
 
+  def shallOpt(name: Global): Boolean = {
+    val defn =
+      getOriginal(originalName(name))
+    val noUnwind = defn.insts.forall {
+      case Inst.Let(_, _, unwind)   => unwind == Next.None
+      case Inst.Throw(_, unwind)    => unwind == Next.None
+      case Inst.Unreachable(unwind) => unwind == Next.None
+      case _                        => true
+    }
+
+    defn.attrs.opt != Attr.NoOpt && noUnwind
+  }
+
   def visitEntries(): Unit =
     mode match {
       case build.Mode.Debug =>
@@ -120,12 +133,12 @@ trait Visit { self: Interflow =>
       val origname = originalName(name)
       val origdefn = getOriginal(origname)
       try {
-        if (origdefn.attrs.opt == Attr.NoOpt) {
+        if (shallOpt(name)) {
+          setDone(name, visitInstsOpt(name))
+        } else {
           visitInstsNoOpt(origdefn)
           setDone(name, origdefn)
           setDone(origname, origdefn)
-        } else {
-          setDone(name, visitInstsOpt(name))
         }
       } catch {
         case BailOut(msg) =>

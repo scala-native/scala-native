@@ -77,31 +77,15 @@ trait Eval { self: Interflow =>
               return Inst.Switch(materialize(scrut), defaultNext, cases)
           }
         case Inst.Throw(v, unwind) =>
-          val excv = eval(v)
-          unwind match {
-            case Next.None =>
-              return Inst.Throw(excv, Next.None)
-            case Next.Unwind(Val.Local(exc, _), Next.Label(name, args)) =>
-              state.storeLocal(exc, excv)
-              val eargs = args.map(eval)
-              val next  = Next.Label(name, eargs)
-              return Inst.Jump(next)
-            case _ =>
-              unreachable
+          if (unwind ne Next.None) {
+            throw BailOut("try-catch")
           }
+          return Inst.Throw(eval(v), Next.None)
         case Inst.Unreachable(unwind) =>
-          unwind match {
-            case Next.None =>
-              return Inst.Unreachable(unwind)
-            case Next.Unwind(Val.Local(exc, _), Next.Label(name, args)) =>
-              val eexc = Val.Local(state.fresh(), Rt.Object)
-              state.storeLocal(exc, eexc)
-              val eargs = args.map(eval)
-              return Inst.Unreachable(
-                Next.Unwind(eexc, Next.Label(name, eargs)))
-            case _ =>
-              unreachable
+          if (unwind ne Next.None) {
+            throw BailOut("try-catch")
           }
+          return Inst.Unreachable(Next.None)
       }
     }
 
