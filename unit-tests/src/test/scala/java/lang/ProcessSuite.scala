@@ -10,7 +10,7 @@ import scala.io.Source
 
 object ProcessSuite extends tests.Suite {
 
-  private def blockTestOnConditions(process: Process): Unit = {
+  private def assertProcessExitOrTimeout(process: Process): Unit = {
     // Suspend execution of the test until either the specified
     // process has exited or a reasonable wait period has timed out.
     //
@@ -48,7 +48,7 @@ object ProcessSuite extends tests.Suite {
     val proc = new ProcessBuilder("ls", resourceDir).start()
     val out  = readInputStream(proc.getInputStream)
 
-    blockTestOnConditions(proc)
+    assertProcessExitOrTimeout(proc)
 
     assert(out.split("\n").toSet == scripts)
   }
@@ -77,7 +77,7 @@ object ProcessSuite extends tests.Suite {
     val proc = pb.start()
     val out  = readInputStream(proc.getInputStream)
 
-    blockTestOnConditions(proc)
+    assertProcessExitOrTimeout(proc)
 
     assert(out == "1")
   }
@@ -100,7 +100,7 @@ object ProcessSuite extends tests.Suite {
     pb.environment.put("PATH", s"$cwd/unit-tests/src/test/resources/process")
     val proc = pb.start()
 
-    blockTestOnConditions(proc)
+    assertProcessExitOrTimeout(proc)
 
     assert(readInputStream(proc.getErrorStream) == "foo")
     assert(readInputStream(proc.getInputStream) == "bar")
@@ -117,7 +117,7 @@ object ProcessSuite extends tests.Suite {
       proc.getOutputStream.write("quit\n".getBytes)
       proc.getOutputStream.flush()
 
-      blockTestOnConditions(proc)
+      assertProcessExitOrTimeout(proc)
 
       val out = Source.fromFile(file.toString).getLines mkString "\n"
       assert(out == "hello")
@@ -137,7 +137,7 @@ object ProcessSuite extends tests.Suite {
       os.write("hello\n".getBytes)
       os.write("quit\n".getBytes)
 
-      blockTestOnConditions(proc)
+      assertProcessExitOrTimeout(proc)
 
       val out = readInputStream(proc.getInputStream)
       assert(out == "hello")
@@ -153,7 +153,7 @@ object ProcessSuite extends tests.Suite {
     pb.redirectErrorStream(true)
     val proc = pb.start()
 
-    blockTestOnConditions(proc)
+    assertProcessExitOrTimeout(proc)
 
     val out = readInputStream(proc.getInputStream)
     val err = readInputStream(proc.getErrorStream)
@@ -209,7 +209,7 @@ object ProcessSuite extends tests.Suite {
     pb.environment.put("PATH", resourceDir)
     val proc = pb.start()
 
-    blockTestOnConditions(proc)
+    assertProcessExitOrTimeout(proc)
 
     val out = readInputStream(proc.getInputStream)
     assert(out == "hello\n")
