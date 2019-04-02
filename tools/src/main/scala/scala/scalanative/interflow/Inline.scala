@@ -3,6 +3,7 @@ package interflow
 
 import scalanative.nir._
 import scalanative.linker._
+import scalanative.util.unreachable
 
 trait Inline { self: Interflow =>
   def shallInline(name: Global, args: Seq[Val])(
@@ -158,6 +159,8 @@ trait Inline { self: Interflow =>
               emit ++= block.end.emit
               emit.unreachable(unwind)
               (nothing, block.end)
+            case _ =>
+              unreachable
           }
 
         case first +: rest =>

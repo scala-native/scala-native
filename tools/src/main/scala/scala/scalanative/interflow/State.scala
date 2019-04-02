@@ -254,7 +254,10 @@ final class State(block: Local) {
         val Val.Virtual(charsAddr) = values(linked.StringValueField.index)
         val chars = derefVirtual(charsAddr).values
           .map {
-            case Val.Char(v) => v
+            case Val.Char(v) =>
+              v
+            case _ =>
+              unreachable
           }
           .toArray[Char]
         Val.String(new java.lang.String(chars))

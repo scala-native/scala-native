@@ -56,6 +56,8 @@ final class MergeProcessor(insts: Array[Inst],
             values.zipWithIndex.map {
               case (param: Val.Local, i) =>
                 MergePhi(param, Seq.empty[(Local, Val)])
+              case _ =>
+                unreachable
             }
           } else {
             Seq.empty
@@ -275,6 +277,8 @@ final class MergeProcessor(insts: Array[Inst],
           cases.foreach {
             case Next.Case(_, caseNext: Next.Label) =>
               visitLabel(from, caseNext)
+            case _ =>
+              unreachable
           }
         case Inst.Throw(_, next) =>
           visitUnwind(from, next)
@@ -333,6 +337,8 @@ final class MergeProcessor(insts: Array[Inst],
         cases.foreach {
           case Next.Case(_, caseNext: Next.Label) =>
             nextLabel(caseNext)
+          case _ =>
+            unreachable
         }
       case Inst.Throw(_, next) =>
         nextUnwind(next)
