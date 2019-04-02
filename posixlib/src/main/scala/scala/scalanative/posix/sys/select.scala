@@ -33,19 +33,22 @@ object select {
   // Allocation & usage example:
   //
   // An fd_set is arguably too large to allocate on the stack, so use a Zone.
-  // Zone.alloc is documented as returning zeroed memory. No need to FD_ZERO.
   //
   //    import scalanative.native.{Zone, alloc}
   //
   //    Zone {
-  //        val fdsetPtr = alloc[fd_set].cast[Ptr[fd_set]]
+  //
+  //        // Zone.alloc is documented as returning zeroed memory.
+  //        val fdsetPtr = alloc[fd_set] //  No need to FD_ZERO.
   //        FD_SET(sock, fdsetPtr)
+  //
+  //        // If used, allocate writefds and/or exceptfds the same way.
   //
   //        val result = select(nfds, fdsetPtr, writefds, exceptfds)
   //        // check result.
   //        // do work implied by result.
   //
-  //    } // fdsetPtr and memory it points to are not valid outsize Zone.
+  //    } // fdsetPtr and memory it points to are not valid outsize of Zone.
 
   @name("scalanative_select")
   def select(nfds: CInt,

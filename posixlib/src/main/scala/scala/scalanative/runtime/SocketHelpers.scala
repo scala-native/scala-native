@@ -46,7 +46,7 @@ object SocketHelpers {
         fcntl(sock, F_SETFL, O_NONBLOCK)
 
         // Zone.alloc is documented as returning zeroed memory.
-        val fdsetPtr = alloc[fd_set].cast[Ptr[fd_set]]
+        val fdsetPtr = alloc[fd_set] //  No need to FD_ZERO
         FD_SET(sock, fdsetPtr)
 
         val time = alloc[timeval]
