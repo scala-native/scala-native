@@ -8,7 +8,6 @@ import scala.scalanative.posix.arpa.inet._
 import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.sys.select._
-import scala.scalanative.posix.sys.selectFdSet
 import scala.scalanative.posix.unistd.close
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.sys.time.timeval
@@ -46,7 +45,8 @@ object SocketHelpers {
 
         fcntl(sock, F_SETFL, O_NONBLOCK)
 
-        val fdsetPtr = selectFdSet.createZeroed
+        // Zone.alloc is documented as returning zeroed memory.
+        val fdsetPtr = alloc[fd_set].cast[Ptr[fd_set]]
         FD_SET(sock, fdsetPtr)
 
         val time = alloc[timeval]

@@ -16,7 +16,7 @@ object select {
   // glibc circa March 2019 and many years prior is documented as using a
   // fixed buffer of 1024 bits.
   //
-  // Since ""extern object may only contain extern fields and methods"
+  // Since "extern object may only contain extern fields and methods"
   // a runtime check can not be done here. Instead, a compile time check
   // is done in posix/sys/select.c. That detects mismatches on the
   // compilation system, but may miss mismatches on the executing system.
@@ -32,12 +32,13 @@ object select {
 
   // Allocation & usage example:
   //
-  // A fd_set is arguably too large to allocate on the stack, so use a Zone.
+  // An fd_set is arguably too large to allocate on the stack, so use a Zone.
+  // Zone.alloc is documented as returning zeroed memory. No need to FD_ZERO.
   //
-  //    import scala.scalanative.posix.sys.selectFdSet
+  //    import scalanative.native.{Zone, alloc}
   //
-  //    Zone { // selectFdSet.createZeroed must be used within a Zone.
-  //        val fdsetPtr = selectFdSet.createZeroed // no need to FD_ZERO
+  //    Zone {
+  //        val fdsetPtr = alloc[fd_set].cast[Ptr[fd_set]]
   //        FD_SET(sock, fdsetPtr)
   //
   //        val result = select(nfds, fdsetPtr, writefds, exceptfds)
@@ -68,19 +69,4 @@ object select {
   @name("scalanative_FD_ZERO")
   def FD_ZERO(set: Ptr[fd_set]): Unit = extern
 
-}
-
-object selectFdSet {
-  import select.fd_set
-
-  // createZeroed method _must_ be used within a Zone
-
-  def createZeroed()(implicit z: Zone): Ptr[fd_set] = {
-    // Be type pure and return pointer to fixed size buffer fd_set.
-    // One _could_ detect FD_SETSIZE at runtime and adapt allocated size,
-    // but the method would then be lying about the return type.
-
-    // Zone.alloc is documented as returning zeroed memory.
-    z.alloc(sizeof[fd_set]).cast[Ptr[fd_set]]
-  }
 }
