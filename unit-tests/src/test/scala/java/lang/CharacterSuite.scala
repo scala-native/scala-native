@@ -13,6 +13,15 @@ package java.lang
 object CharacterSuite extends tests.Suite {
   import java.lang.Character._
 
+  test("codePointCount") {
+    val data     = "Mt. Whitney".toArray[scala.Char]
+    val offset   = 1
+    val expected = data.size - offset
+    val result   = Character.codePointCount(data, offset, expected)
+
+    assert(result == expected, s"result: $result != expected: $expected")
+  }
+
   // Ported, with gratitude & possibly modifications
   // from ScalaJs CharacterTest.scala
   // https://github.com/scala-js/scala-js/blob/master/
