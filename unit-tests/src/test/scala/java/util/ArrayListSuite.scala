@@ -159,6 +159,27 @@ object ArrayListSuite extends tests.Suite {
         (al1.toArray()))
   }
 
+  test("toArray() - default initial capacity, then add elements") {
+    // Issue #1500 discovered by re2s ExecTestSuite.
+
+    val al1          = new ArrayList[String]()
+    val data         = Array("alpha", "omega")
+    val expectedSize = data.size
+
+    for (d <- data) al1.add(d)
+
+    val arr1     = al1.toArray
+    val arr1Size = arr1.size
+
+    assert(arr1Size == expectedSize,
+           s"toArray.size: $arr1Size != expected: $expectedSize")
+
+    // Discovering code in re2s ExecTestSuite used .deep not sameElements.
+    // Should have same result as sameElements, but via different path.
+
+    assert(arr1.deep == data.deep, "a1.toArray.deep != data.deep")
+  }
+
   test("toArray[T](arr: Array[T]) when arr is shorter") {
     val al1  = new ArrayList[String](Seq("apple", "banana", "cherry").asJava)
     val ain  = Array.empty[String]
@@ -240,6 +261,18 @@ object ArrayListSuite extends tests.Suite {
     assert(al1.asScala == Seq(2, 1))
   }
 
+  test("addAll") {
+    val l = new java.util.ArrayList[String]()
+    l.add("First")
+    l.add("Second")
+    val l2 = new java.util.ArrayList[String]()
+    l2.addAll(0, l)
+    val iter = l2.iterator()
+    assert(iter.next() == "First")
+    assert(iter.next() == "Second")
+    assert(!iter.hasNext())
+  }
+
   test("remove(Int)") {
     val al1 = new ArrayList[Int](Seq(1, 2, 3, 2, 3).asJava)
     // remove last
@@ -260,16 +293,85 @@ object ArrayListSuite extends tests.Suite {
     assert(Seq(1, 3, 2) == al1.asScala)
   }
 
-  test("addAll") {
-    val l = new java.util.ArrayList[String]()
-    l.add("First")
-    l.add("Second")
-    val l2 = new java.util.ArrayList[String]()
-    l2.addAll(0, l)
-    val iter = l2.iterator()
-    assert(iter.next() == "First")
-    assert(iter.next() == "Second")
-    assert(!iter.hasNext())
+  test("removeRange(from, to) - indentical invalid indices") {
+    val aList    = new ArrayList[Int](Seq(-175, 24, 7, 44).asJava)
+    val expected = new ArrayList[Int](Seq(-175, 24, 7, 44).asJava) // ibid.
+
+    // Yes, the indices are invalid but no exception is expected because
+    // they are identical, which is tested first. That is called a 'quirk'
+    // or 'implementation dependent detail' of the documented specification.
+
+    aList.removeRange(-1, -1)
+
+    assert(aList == expected, s"result: $aList != expected: $expected")
+  }
+
+  test("removeRange(from, to) - Invalid indices") {
+    val aList = new ArrayList[Int](Seq(175, -24, -7, -44).asJava)
+
+    assertThrows[java.lang.ArrayIndexOutOfBoundsException] {
+      aList.removeRange(-1, 2) // fromIndex < 0
+    }
+
+    assertThrows[java.lang.ArrayIndexOutOfBoundsException] {
+      // Beware that from != too in this test.
+      // See 'from == to' quirk tested above.
+      aList.removeRange(aList.size, aList.size + 2) // fromIndex >= _size
+    }
+
+    assertThrows[java.lang.ArrayIndexOutOfBoundsException] {
+      aList.removeRange(0, aList.size + 1) // toIndex > size
+    }
+
+    assertThrows[java.lang.ArrayIndexOutOfBoundsException] {
+      aList.removeRange(2, -1) // toIndex < fromIndex
+    }
+
+  }
+
+  test("removeRange(from, to) - first two elements ") {
+    val aList    = new ArrayList[Int](Seq(284, -27, 995, 500, 267, 904).asJava)
+    val expected = new ArrayList[Int](Seq(995, 500, 267, 904).asJava)
+
+    aList.removeRange(0, 2)
+
+    assert(aList == expected, s"result: $aList != expected: $expected")
+  }
+
+  test("removeRange(from, to) - first two elements at head") {
+    val aList    = new ArrayList[Int](Seq(284, -27, 995, 500, 267, 904).asJava)
+    val expected = new ArrayList[Int](Seq(995, 500, 267, 904).asJava)
+
+    aList.removeRange(0, 2)
+
+    assert(aList == expected, s"result: $aList != expected: $expected")
+  }
+
+  test("removeRange(from, to) - two elements from middle") {
+    val aList    = new ArrayList[Int](Seq(7, 9, -1, 20).asJava)
+    val expected = new ArrayList[Int](Seq(7, 20).asJava)
+
+    aList.removeRange(1, 3)
+
+    assert(aList == expected, s"result: $aList != expected: $expected")
+  }
+
+  test("removeRange(from, to) - last two elements at tail") {
+    val aList    = new ArrayList[Int](Seq(50, 72, 650, 12, 7, 28, 3).asJava)
+    val expected = new ArrayList[Int](Seq(50, 72, 650, 12, 7).asJava)
+
+    aList.removeRange(aList.size - 2, aList.size)
+
+    assert(aList == expected, s"result: $aList != expected: $expected")
+  }
+
+  test("removeRange(from, to) - entire list, all elements") {
+    val aList    = new ArrayList[Int](Seq(50, 72, 650, 12, 7, 28, 3).asJava)
+    val expected = new ArrayList[Int](Seq().asJava)
+
+    aList.removeRange(0, aList.size)
+
+    assert(aList == expected, s"result: $aList != expected: $expected")
   }
 
   test("clear()") {

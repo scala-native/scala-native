@@ -105,7 +105,7 @@ final class _Class[A](val rawty: RawPtr) {
       rawty == toRawType(classOf[PrimitiveDouble]) ||
       rawty == toRawType(classOf[PrimitiveUnit]))
 
-  override def equals(other: Any): scala.Boolean =
+  @inline override def equals(other: Any): scala.Boolean =
     other match {
       case other: _Class[_] =>
         rawty == other.rawty
@@ -113,7 +113,7 @@ final class _Class[A](val rawty: RawPtr) {
         false
     }
 
-  override def hashCode: Int =
+  @inline override def hashCode: Int =
     Intrinsics.castRawPtrToLong(rawty).##
 
   override def toString = {

@@ -309,7 +309,7 @@ object Character {
 
     var result = 0
     var i      = offset
-    while (i <= endIndex) {
+    while (i < endIndex) {
       var c = seq(i)
       if (isHighSurrogate(c)) {
         i += 1

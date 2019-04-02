@@ -399,20 +399,23 @@ final class Check(implicit linked: linker.Result) {
                    obj: Val,
                    name: Global,
                    value: Option[Val]): Unit = {
+
     obj.ty match {
-      case ClassRef(cls) =>
-        cls.fields.collectFirst {
-          case fld: Field if fld.name == name =>
-            in("field declared type") {
-              expect(ty, fld.ty)
-            }
-            value.foreach { v =>
-              in("stored value") {
-                expect(fld.ty, v)
+      case ScopeRef(scope) =>
+        scope.implementors.foreach { cls =>
+          cls.fields.collectFirst {
+            case fld: Field if fld.name == name =>
+              in("field declared type") {
+                expect(ty, fld.ty)
               }
-            }
+              value.foreach { v =>
+                in("stored value") {
+                  expect(fld.ty, v)
+                }
+              }
+          }
         }
-      case _ =>
+      case ty =>
         error(s"can't access fields of a non-class type ${ty.show}")
     }
   }

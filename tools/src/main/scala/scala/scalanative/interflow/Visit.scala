@@ -212,8 +212,15 @@ trait Visit { self: Interflow =>
     if (!shallDuplicate(orig, argtys)) {
       orig
     } else {
+      val origargtys = argumentTypes(name)
+      val dupargtys = argtys.zip(origargtys).map {
+        case (argty, origty) =>
+          // Duplicate argument type should not be
+          // less specific than the original declare type.
+          if (!Sub.is(argty, origty)) origty else argty
+      }
       val Global.Member(top, sig) = orig
-      Global.Member(top, Sig.Duplicate(sig, argtys))
+      Global.Member(top, Sig.Duplicate(sig, dupargtys))
     }
   }
 
@@ -223,6 +230,13 @@ trait Visit { self: Interflow =>
     case _ =>
       val Type.Function(argtys, _) = linked.infos(name).asInstanceOf[Method].ty
       argtys
+  }
+
+  def originalFunctionType(name: Global): Type = name match {
+    case Global.Member(owner, Sig.Duplicate(sig, _)) =>
+      originalFunctionType(Global.Member(owner, sig))
+    case _ =>
+      linked.infos(name).asInstanceOf[Method].ty
   }
 
   def process(insts: Array[Inst],
