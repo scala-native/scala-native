@@ -209,7 +209,6 @@ object PatternSuite extends tests.Suite {
     fail("a|b", "c")
   }
 
-
 //  For some reason I, @LeeTibbert can not get testFails to work here.
 //  testFails("quotation", issue = 1504) {
   ignore("quotation") {
@@ -446,7 +445,8 @@ object PatternSuite extends tests.Suite {
     assertRegex(pass, ret, mid, pattern, input)
   }
 
-  private def find(pattern: String, input: String,
+  private def find(pattern: String,
+                   input: String,
                    pass: Boolean = true): Unit = {
     val ret = Pattern.compile(pattern).matcher(input).find()
 

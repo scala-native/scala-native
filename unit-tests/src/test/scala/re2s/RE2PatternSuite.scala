@@ -177,7 +177,7 @@ object RE2PatternSuite extends tests.Suite {
     // Leave original code commented out so that it has a sporting
     // chance of being ported in the future.
 
-/* 
+    /*
     val bytes = new ByteArrayOutputStream
     try {
       val out = new ObjectOutputStream(bytes)
@@ -192,7 +192,7 @@ object RE2PatternSuite extends tests.Suite {
       case e: ClassNotFoundException =>
         throw new RuntimeException(e)
     }
- */
+   */
   }
 
   private def assertSerializes(p: Pattern): Unit = {
