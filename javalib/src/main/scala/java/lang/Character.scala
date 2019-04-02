@@ -236,20 +236,25 @@ object Character {
   @inline def charCount(codePoint: Int): Int =
     if (codePoint >= MIN_SUPPLEMENTARY_CODE_POINT) 2 else 1
 
+  def codePointAt(seq: Array[scala.Char], _index: scala.Int): scala.Int = {
+    codePointAt(seq, _index, seq.length)
+  }
+
   def codePointAt(seq: Array[scala.Char],
-                  _index: scala.Int,
+                  index: scala.Int,
                   limit: scala.Int): scala.Int = {
-    var index = _index
+
     if (index < 0 || index >= limit || limit < 0 || limit > seq.length) {
-      throw new ArrayIndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     }
 
-    val high = seq(index)
-    index += 1
-    if (index >= limit) {
+    val high      = seq(index)
+    val nextIndex = index + 1
+
+    if (nextIndex >= limit) {
       high
     } else {
-      val low = seq(index)
+      val low = seq(nextIndex)
       if (isSurrogatePair(high, low))
         toCodePoint(high, low)
       else
@@ -257,25 +262,40 @@ object Character {
     }
   }
 
-  def codePointBefore(seq: Array[scala.Char], _index: scala.Int): scala.Int = {
-    var index = _index
-    val len   = seq.length
+  def codePointAt(seq: CharSequence, _index: scala.Int): scala.Int = {
+    codePointAt(seq.toString.toArray[scala.Char], _index)
+  }
+
+  def codePointBefore(seq: Array[scala.Char], index: scala.Int): scala.Int = {
+    codePointBefore(seq, index, seq.length)
+  }
+
+  def codePointBefore(seq: Array[scala.Char],
+                      index: scala.Int,
+                      limit: scala.Int): scala.Int = {
+    val len = limit
     if (index < 1 || index > len) {
-      throw new ArrayIndexOutOfBoundsException(index)
+      throw new StringIndexOutOfBoundsException(index)
     }
 
-    index -= 1
-    val low = seq.charAt(index)
-    index -= 1
-    if (index < 0) {
+    val indexMinus1 = index - 1
+    val indexMinus2 = index - 2
+
+    val low = seq.charAt(indexMinus1)
+
+    if (indexMinus2 < 0) {
       low
     } else {
-      val high = seq(index)
+      val high = seq(indexMinus2)
       if (isSurrogatePair(high, low))
         toCodePoint(high, low)
       else
         low
     }
+  }
+
+  def codePointBefore(seq: CharSequence, index: scala.Int): scala.Int = {
+    codePointBefore(seq.toString.toArray[scala.Char], index)
   }
 
   def codePointCount(seq: Array[scala.Char],
