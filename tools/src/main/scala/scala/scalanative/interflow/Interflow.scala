@@ -9,6 +9,8 @@ import java.util.function.Supplier
 
 class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
     extends Visit
+    with Opt
+    with NoOpt
     with Eval
     with Combine
     with Inline
