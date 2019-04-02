@@ -44,6 +44,7 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   def containsKey(key: Any): Boolean =
     inner.contains(Box(key))
 
+  @throws[NullPointerException]
   def get(key: Any): V = {
     if (key == null)
       throw new NullPointerException
@@ -53,11 +54,16 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   // Not implemented
   // protected def rehash(): Unit
 
-  def put(key: K, value: V): V =
+  @throws[NullPointerException]
+  def put(key: K, value: V): V = {
+    if (key == null || value == null)
+      throw new NullPointerException
     inner
       .put(Box(key.asInstanceOf[AnyRef]), value)
       .getOrElse(null.asInstanceOf[V])
+  }
 
+  @throws[NullPointerException]
   def remove(key: Any): V = {
     if (key == null)
       throw new NullPointerException
