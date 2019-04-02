@@ -275,7 +275,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
   //            make sense to make major changes now.
 
   def region(start: Int, end: Int): Matcher = {
-    this 
+    this
   }
 
   private[regex] def appendReplacement2(sb: StringBuffer,
