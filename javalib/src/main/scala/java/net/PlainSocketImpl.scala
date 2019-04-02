@@ -18,8 +18,8 @@ import scala.scalanative.posix.pollOps._
 import scala.scalanative.posix.sys.ioctl._
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.sys.select._
-import scala.scalanative.posix.sys.selectOps._
 import scala.scalanative.posix.sys.time._
+import scala.scalanative.posix.sys.timeOps._
 import scala.scalanative.posix.unistd.{close => cClose}
 import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
 
