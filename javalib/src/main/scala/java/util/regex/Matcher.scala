@@ -265,7 +265,18 @@ final class Matcher private[regex] (var _pattern: Pattern,
     this
   }
 
-  def region(start: Int, end: Int): Matcher = ???
+  // ATTENTION: This is a sub-minimal stub implementation in order
+  //            to get ScalaNative unit and scripted tests to link.
+  //            A full implementation would have required re-working
+  //            gen Match() to have an end parameter and its callers,
+  //            in particular find(start) to specify proper start and end.
+  //
+  //            This code may be replaced soon by re2s so it does not
+  //            make sense to make major changes now.
+
+  def region(start: Int, end: Int): Matcher = {
+    this 
+  }
 
   private[regex] def appendReplacement2(sb: StringBuffer,
                                         replacement: String,
