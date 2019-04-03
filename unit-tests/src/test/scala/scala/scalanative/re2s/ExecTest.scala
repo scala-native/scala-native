@@ -62,8 +62,8 @@ object ExecTestSuite extends tests.Suite {
   test("ExamplesInDocumentation") {
     val re = RE2.compile("(?i:co(.)a)")
     assert(
-      Array(
-        "Copa", "coba").deep == re.findAll("Copacobana", 10).toArray.deep, "assertion #1")
+      Array("Copa", "coba").deep == re.findAll("Copacobana", 10).toArray.deep,
+      "assertion #1")
     val x = re.findAllSubmatch("Copacobana", 100)
     assert(Array("Copa", "p").deep == x.get(0).deep, "Assertion #2")
     assert(Array("coba", "b").deep == x.get(1).deep, "Assertion #3")
@@ -79,7 +79,7 @@ object ExecTestSuite extends tests.Suite {
 
   def testRE2(_file: String) = {
     var file = _file
-    var in : java.io.InputStream =
+    var in: java.io.InputStream =
       new FileInputStream(new File("unit-tests/src/test/resources/" + file))
     // TODO(adonovan): call in.close() on all paths.
     if (file.endsWith(".gz")) {
@@ -337,7 +337,7 @@ object ExecTestSuite extends tests.Suite {
 
   def testFowler(file: String): Unit = {
 
-    var in : java.io.InputStream =
+    var in: java.io.InputStream =
       new FileInputStream(new File("unit-tests/src/test/resources/" + file))
 
     val r            = new UNIXBufferedReader(new InputStreamReader(in, "UTF-8"))
