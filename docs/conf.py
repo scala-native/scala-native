@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Scala Native'
-copyright = u'2016-2018, EPFL'
+copyright = u'2016-2019, EPFL'
 author = u'Denys Shabalin'
 
 # The version info for the project you're documenting, acts as replacement for
