@@ -144,21 +144,13 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->blockMetaEnd =
         blockMetaStart + initialBlockCount * sizeof(BlockMeta) / WORD_SIZE;
 
-    // reserve space for line headers
-    size_t lineMetaSpaceSize =
-        (size_t)maxNumberOfBlocks * LINE_COUNT * LINE_METADATA_SIZE;
-    word_t *lineMetaStart = Heap_mapAndAlign(lineMetaSpaceSize, WORD_SIZE);
-    heap->lineMetaStart = lineMetaStart;
-    assert(LINE_COUNT * LINE_SIZE == BLOCK_TOTAL_SIZE);
-    assert(LINE_COUNT * LINE_METADATA_SIZE % WORD_SIZE == 0);
-    heap->lineMetaEnd = lineMetaStart + initialBlockCount * LINE_COUNT *
-                                            LINE_METADATA_SIZE / WORD_SIZE;
-
     word_t *heapStart = Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
 
     BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
     GreyList_Init(&heap->mark.empty);
     GreyList_Init(&heap->mark.full);
+    GreyList_Init(&heap->mark.rememberedOld);
+    GreyList_Init(&heap->mark.rememberedYoung);
     uint32_t greyPacketCount =
         (uint32_t)(maxHeapSize * GREY_PACKET_RATIO / GREY_PACKET_SIZE);
     heap->mark.total = greyPacketCount;
@@ -167,6 +159,17 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->greyPacketsStart = greyPacketsStart;
     GreyList_PushAll(&heap->mark.empty, greyPacketsStart,
                      (GreyPacket *)greyPacketsStart, greyPacketCount);
+
+    heap->mark.oldRoots = GreyList_Pop(&heap->mark.empty, heap->greyPacketsStart);
+    assert(heap->mark.oldRoots != NULL);
+    heap->mark.oldRoots->size = 0;
+    heap->mark.oldRoots->type = grey_packet_reflist;
+
+    heap->mark.youngRoots = GreyList_Pop(&heap->mark.empty, heap->greyPacketsStart);
+    assert(heap->mark.youngRoots != NULL);
+    heap->mark.youngRoots->size = 0;
+    heap->mark.youngRoots->type = grey_packet_reflist;
+
 
     // reserve space for bytemap
     Bytemap *bytemap = (Bytemap *)Heap_mapAndAlign(
@@ -208,7 +211,9 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     pthread_mutex_init(&heap->sweep.growMutex, NULL);
 }
 
-void Heap_Collect(Heap *heap) {
+void Heap_Collect(Heap *heap, bool collectingOld) {
+    printf("Collecting heap %d\n", collectingOld);
+    fflush(stdout);
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
     assert(Sweeper_IsSweepDone(heap));
@@ -216,29 +221,28 @@ void Heap_Collect(Heap *heap) {
     Sweeper_ClearIsSwept(heap);
     Sweeper_AssertIsConsistent(heap);
 #endif
-    Phase_StartMark(heap);
-    Marker_MarkRoots(heap, stats);
-    Marker_MarkUtilDone(heap, stats);
-    Phase_MarkDone(heap);
+    Phase_StartMark(heap, collectingOld);
+    Marker_MarkRoots(heap, stats, collectingOld);
+    Marker_MarkUtilDone(heap, stats, collectingOld);
+    Phase_MarkDone(heap, collectingOld);
     Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
                       heap->mark.currentEnd_ns);
-    Phase_StartSweep(heap);
+    Phase_StartSweep(heap, collectingOld);
 }
 
 bool Heap_shouldGrow(Heap *heap) {
     uint32_t freeBlockCount = (uint32_t)blockAllocator.freeBlockCount;
     uint32_t blockCount = heap->blockCount;
-    uint32_t recycledBlockCount = (uint32_t)allocator.recycledBlockCount;
-    uint32_t unavailableBlockCount =
-        blockCount - (freeBlockCount + recycledBlockCount);
+    uint32_t unavailableBlockCount = blockCount - freeBlockCount;
 
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_PRINTT
     printf("\n\n Max mark time ratio: %lf \n", heap->maxMarkTimeRatio);
     printf("Min free ratio: %lf \n", heap->minFreeRatio);
     printf("Block count: %" PRIu32 "\n", blockCount);
-    printf("Unavailable: %" PRIu32 "\n", unavailableBlockCount);
+    printf("Unavailable: %" PRIu32 "\n", unavailableBlockCount);    
+    printf("Young: %" PRIu32 "\n", (uint32_t)blockAllocator.youngBlockCount);
+    printf("Old: %" PRIu32" \n", unavailableBlockCount - (uint32_t)blockAllocator.youngBlockCount);
     printf("Free: %" PRIu32 "\n", freeBlockCount);
-    printf("Recycled: %" PRIu32 "\n", recycledBlockCount);
     fflush(stdout);
 #endif
 
@@ -294,8 +298,6 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     word_t *blockMetaEnd = heap->blockMetaEnd;
     heap->blockMetaEnd =
         (word_t *)(((BlockMeta *)heap->blockMetaEnd) + incrementInBlocks);
-    heap->lineMetaEnd +=
-        incrementInBlocks * LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
 
 #ifdef DEBUG_ASSERT
     BlockMeta *end = (BlockMeta *)blockMetaEnd;

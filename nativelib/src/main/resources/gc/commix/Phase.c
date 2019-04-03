@@ -3,6 +3,7 @@
 #include "State.h"
 #include "Allocator.h"
 #include "BlockAllocator.h"
+#include "Sweeper.h"
 
 void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     sem_init(&heap->gcThreads.startWorkers, 0, 0);
@@ -10,26 +11,62 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
 
     heap->sweep.cursor = initialBlockCount;
     heap->lazySweep.cursorDone = initialBlockCount;
+    heap->lazySweep.nextSweepOld = false;
     heap->sweep.limit = initialBlockCount;
     heap->sweep.coalesceDone = initialBlockCount;
     heap->sweep.postSweepDone = true;
 }
 
-void Phase_StartMark(Heap *heap) {
+void Phase_StartMark(Heap *heap, bool collectingOld) {
+    if (collectingOld) {
+        // Before collecting the old generation, a full young collection has been done.
+        // We add the pointer from young to old in the full set to be processed
+        heap->mark.full.head = heap->mark.rememberedYoung.head;
+        // If the current packet for young roots is not empty, the objects need to be pushed
+        if (heap->mark.youngRoots->size > 0) {
+            GreyList_Push(&heap->mark.full, heap->greyPacketsStart, heap->mark.youngRoots);
+            heap->mark.youngRoots = GreyList_Pop(&heap->mark.empty, heap->greyPacketsStart);
+            heap->mark.youngRoots->size = 0;
+            heap->mark.youngRoots->type = grey_packet_reflist;
+        }
+        // Then we can reset this set
+        GreyList_Init(&heap->mark.rememberedYoung);
+        Phase_Set(heap, gc_mark_old);
+    } else {
+        // Before a young collection, we reset all the young->old inter-generational pointers
+        while (GreyList_Size(&heap->mark.rememberedYoung) > 0) {
+            GreyPacket *packet = GreyList_Pop(&heap->mark.rememberedYoung, heap->greyPacketsStart);
+            packet->size = 0;
+            GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, packet);
+        }
+        // If there is packet from the last young collection in the set of old objects remembered,
+        // we need to add the list of packet to be processed
+        while (GreyList_Size(&heap->mark.rememberedOld) > 0) {
+            GreyPacket *packet = GreyList_Pop(&heap->mark.rememberedOld, heap->greyPacketsStart);
+            GreyList_Push(&heap->mark.full, heap->greyPacketsStart, packet);
+        }
+        // If the current packet for old roots contains some objects, we need to push them aswell
+        if (heap->mark.oldRoots->size > 0) {
+            GreyList_Push(&heap->mark.full, heap->greyPacketsStart, heap->mark.oldRoots);
+            heap->mark.oldRoots = GreyList_Pop(&heap->mark.empty, heap->greyPacketsStart);
+            heap->mark.oldRoots->size = 0;
+            heap->mark.oldRoots->type = grey_packet_reflist;
+        }
+        Phase_Set(heap, gc_mark_young);
+    }
     heap->mark.lastEnd_ns = heap->mark.currentEnd_ns;
     heap->mark.currentStart_ns = scalanative_nano_time();
-    Phase_Set(heap, gc_mark);
     // make sure the gc phase is propagated
     atomic_thread_fence(memory_order_release);
     GCThread_WakeMaster(heap);
 }
 
-void Phase_MarkDone(Heap *heap) {
+void Phase_MarkDone(Heap *heap, bool collectingOld) {
     Phase_Set(heap, gc_idle);
     heap->mark.currentEnd_ns = scalanative_nano_time();
 }
 
-void Phase_StartSweep(Heap *heap) {
+void Phase_StartSweep(Heap *heap, bool collectingOld) {
     Allocator_Clear(&allocator);
     LargeAllocator_Clear(&largeAllocator);
     BlockAllocator_Clear(&blockAllocator);
@@ -44,6 +81,7 @@ void Phase_StartSweep(Heap *heap) {
     heap->sweep.cursor = 0;
     uint32_t blockCount = heap->blockCount;
     heap->sweep.limit = blockCount;
+    heap->lazySweep.nextSweepOld = collectingOld;
     heap->lazySweep.cursorDone = 0;
     // mark as unitialized
     heap->lazySweep.lastActivity = BlockRange_Pack(2, 0);
@@ -53,7 +91,11 @@ void Phase_StartSweep(Heap *heap) {
 
     // make sure all running parameters are propagated before phase change
     atomic_thread_fence(memory_order_release);
-    Phase_Set(heap, gc_sweep);
+    if (collectingOld) {
+        Phase_Set(heap, gc_sweep_old);
+    } else {
+        Phase_Set(heap, gc_sweep_young);
+    }
     // make sure all threads see the phase change
     atomic_thread_fence(memory_order_release);
     // determine how many threads need to start
@@ -81,5 +123,6 @@ void Phase_SweepDone(Heap *heap, Stats *stats) {
                           heap->stats->collection_start_ns, end_ns);
 
         heap->sweep.postSweepDone = true;
+        printf("Sweep done\n");fflush(stdout);
     }
 }

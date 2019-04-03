@@ -174,7 +174,7 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
 #ifdef DEBUG_ASSERT
     ObjectMeta_AssertIsValidAllocation(objectMeta, actualBlockSize);
 #endif
-    ObjectMeta_SetAllocated(objectMeta);
+    ObjectMeta_SetAllocatedNew(objectMeta);
     word_t *object = (word_t *)chunk;
     memset(object, 0, actualBlockSize);
     return object;
@@ -197,7 +197,7 @@ word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
     heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
     while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
         Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
-                      LAZY_SWEEP_MIN_BATCH);
+                      LAZY_SWEEP_MIN_BATCH, heap->lazySweep.nextSweepOld);
         object = LargeAllocator_tryAlloc(&largeAllocator, size);
     }
     // mark as inactive
@@ -232,7 +232,19 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
             goto done;
     }
 
-    Heap_Collect(heap);
+    Heap_Collect(heap, false);
+
+    object = LargeAllocator_tryAlloc(&largeAllocator, size);
+    if (object != NULL)
+        goto done;
+
+    if (!Sweeper_IsSweepDone(heap)) {
+        object = LargeAllocator_lazySweep(heap, size);
+        if (object != NULL)
+            goto done;
+    }
+
+    Heap_Collect(heap, true);
 
     object = LargeAllocator_tryAlloc(&largeAllocator, size);
     if (object != NULL)

@@ -5,12 +5,12 @@
 #include "Phase.h"
 #include <semaphore.h>
 
-static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
+static inline void GCThread_markMaster(Heap *heap, Stats *stats, bool collectingOld) {
     Stats_RecordTime(stats, start_ns);
     Stats_MarkStarted(stats);
 
     while (!Marker_IsMarkDone(heap)) {
-        Marker_MarkAndScale(heap, stats);
+        Marker_MarkAndScale(heap, stats, collectingOld);
         if (!Marker_IsMarkDone(heap)) {
             sched_yield();
         }
@@ -22,11 +22,11 @@ static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
                           stats->mark_waiting_end_ns);
 }
 
-static inline void GCThread_mark(Heap *heap, Stats *stats) {
+static inline void GCThread_mark(Heap *heap, Stats *stats, bool collectingOld) {
     Stats_RecordTime(stats, start_ns);
     Stats_MarkStarted(stats);
 
-    Marker_Mark(heap, stats);
+    Marker_Mark(heap, stats, collectingOld);
     // Marker on the worker thread stops after failing to get a full packet.
 
     Stats_RecordTime(stats, end_ns);
@@ -35,12 +35,12 @@ static inline void GCThread_mark(Heap *heap, Stats *stats) {
                       stats->mark_waiting_end_ns);
 }
 
-static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
+static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats, bool collectingOld) {
     thread->sweep.cursorDone = 0;
     Stats_RecordTime(stats, start_ns);
 
     while (heap->sweep.cursor < heap->sweep.limit) {
-        Sweeper_Sweep(heap, stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE);
+        Sweeper_Sweep(heap, stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE, collectingOld);
     }
     thread->sweep.cursorDone = heap->sweep.limit;
 
@@ -49,12 +49,12 @@ static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
 }
 
 static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap,
-                                        Stats *stats) {
+                                        Stats *stats, bool collectingOld) {
     thread->sweep.cursorDone = 0;
     Stats_RecordTime(stats, start_ns);
 
     while (heap->sweep.cursor < heap->sweep.limit) {
-        Sweeper_Sweep(heap, stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE);
+        Sweeper_Sweep(heap, stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE, collectingOld);
         Sweeper_LazyCoalesce(heap, stats);
     }
     thread->sweep.cursorDone = heap->sweep.limit;
@@ -85,11 +85,18 @@ void *GCThread_loop(void *arg) {
         switch (phase) {
         case gc_idle:
             break;
-        case gc_mark:
-            GCThread_mark(heap, stats);
+        case gc_mark_young:
+            GCThread_mark(heap, stats, false);
             break;
-        case gc_sweep:
-            GCThread_sweep(thread, heap, stats);
+        case gc_mark_old:
+            GCThread_mark(heap, stats, true);
+            break;
+        case gc_sweep_young:
+            GCThread_sweep(thread, heap, stats, false);
+            Stats_WriteToFile(stats);
+            break;
+        case gc_sweep_old:
+            GCThread_sweep(thread, heap, stats, true);
             Stats_WriteToFile(stats);
             break;
         }
@@ -115,11 +122,18 @@ void *GCThread_loopMaster(void *arg) {
         switch (phase) {
         case gc_idle:
             break;
-        case gc_mark:
-            GCThread_markMaster(heap, stats);
+        case gc_mark_young:
+            GCThread_markMaster(heap, stats, false);
             break;
-        case gc_sweep:
-            GCThread_sweepMaster(thread, heap, stats);
+        case gc_mark_old:
+            GCThread_markMaster(heap, stats, true);
+            break;
+        case gc_sweep_young:
+            GCThread_sweepMaster(thread, heap, stats, false);
+            Stats_WriteToFile(stats);
+            break;
+        case gc_sweep_old:
+            GCThread_sweepMaster(thread, heap, stats, true);
             Stats_WriteToFile(stats);
             break;
         }

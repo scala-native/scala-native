@@ -16,7 +16,7 @@
 //
 // Sweeper calls sweepSimpleBlock and sweepSuperblock they update the
 // corresponding internal structures that relate to partially free blocks
-//(recycledBlocks in Allocator and freeLists in LargeAllocator).
+//(freeLists in LargeAllocator).
 // If there is a superblock that crosses the batch boundary,
 // it is handled in the batch where it starts.
 // Sweeper finds free superblocks (i.e. range of free blocks) within its batch.
@@ -79,118 +79,71 @@
 //        See also `block_superblock_start_me` and `Sweeper_sweepSuperblock`.
 
 uint32_t Sweeper_sweepSimpleBlock(Allocator *allocator, BlockMeta *blockMeta,
-                                  word_t *blockStart, LineMeta *lineMetas,
-                                  SweepResult *result) {
-
-    // If the block is not marked, it means that it's completely free
+                                  word_t *blockStart, SweepResult *result, bool collectingOld) {
     assert(blockMeta->debugFlag == dbg_must_sweep);
+    // If the block is not marked, it means that it's completely free
     if (!BlockMeta_IsMarked(blockMeta)) {
+
+#ifdef DEBUG_ASSERT
+    ObjectMeta *currentBlockStart = Bytemap_Get(heap.bytemap, blockStart);
+    ObjectMeta *nextBlockStart = currentBlockStart + (WORDS_IN_BLOCK / ALLOCATION_ALIGNMENT_WORDS);
+
+    for (ObjectMeta *object = currentBlockStart; object < nextBlockStart; object++) {
+        if (collectingOld) {
+            assert(!ObjectMeta_IsAllocated(object));
+        } else {
+            assert(!ObjectMeta_IsMarked(object));
+        }
+    }
+    printf("Block reclaimed : %" PRIu32"\t", BlockMeta_GetBlockIndex(heap.blockMetaStart, blockMeta));fflush(stdout);
+
+#endif
         memset(blockMeta, 0, sizeof(BlockMeta));
-        // does not unmark in LineMetas because those are ignored by the
-        // allocator
         ObjectMeta_ClearBlockAt(Bytemap_Get(allocator->bytemap, blockStart));
 #ifdef DEBUG_ASSERT
         blockMeta->debugFlag = dbg_free;
 #endif
         return 1;
     } else {
-        // If the block is marked, we need to recycle line by line
-        assert(BlockMeta_IsMarked(blockMeta));
-        BlockMeta_Unmark(blockMeta);
         Bytemap *bytemap = allocator->bytemap;
 
-        // start at line zero, keep separate pointers into all affected data
-        // structures
-        int lineIndex = 0;
-        LineMeta *lineMeta = lineMetas;
-        word_t *lineStart = blockStart;
-        ObjectMeta *bytemapCursor = Bytemap_Get(bytemap, lineStart);
-
-        FreeLineMeta *lastRecyclable = NULL;
-        while (lineIndex < LINE_COUNT) {
-            // If the line is marked, we need to unmark all objects in the line
-            if (Line_IsMarked(lineMeta)) {
-                // Unmark line
-                Line_Unmark(lineMeta);
-                ObjectMeta_SweepLineAt(bytemapCursor);
-
-                // next line
-                lineIndex++;
-                lineMeta++;
-                lineStart += WORDS_IN_LINE;
-                bytemapCursor = Bytemap_NextLine(bytemapCursor);
+        if (!collectingOld) {
+            BlockMeta_IncrementAge(blockMeta);
+            if (!BlockMeta_IsOld(blockMeta)) {
+                atomic_fetch_add_explicit(&allocator->blockAllocator->youngBlockCount, 1, memory_order_relaxed);
             } else {
-                // If the line is not marked, we need to merge all continuous
-                // unmarked lines.
-
-                // If it's the first free line, update the block header to point
-                // to it.
-                if (lastRecyclable == NULL) {
-                    BlockMeta_SetFirstFreeLine(blockMeta, lineIndex);
-                } else {
-                    // Update the last recyclable line to point to the current
-                    // one
-                    lastRecyclable->next = lineIndex;
-                }
-                ObjectMeta_ClearLineAt(bytemapCursor);
-                lastRecyclable = (FreeLineMeta *)lineStart;
-
-                // next line
-                lineIndex++;
-                lineMeta++;
-                lineStart += WORDS_IN_LINE;
-                bytemapCursor = Bytemap_NextLine(bytemapCursor);
-
-                uint8_t size = 1;
-                while (lineIndex < LINE_COUNT && !Line_IsMarked(lineMeta)) {
-                    ObjectMeta_ClearLineAt(bytemapCursor);
-                    size++;
-
-                    // next line
-                    lineIndex++;
-                    lineMeta++;
-                    lineStart += WORDS_IN_LINE;
-                    bytemapCursor = Bytemap_NextLine(bytemapCursor);
-                }
-                lastRecyclable->size = size;
+#ifdef DEBUG_PRINT
+                printf("Sweeper_sweepSimpleBlock promoting block %p %" PRIu32 " to old generation\n", blockMeta, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta));
+                fflush(stdout);
+#endif
             }
         }
-        // If there is no recyclable line, the block is unavailable
-        if (lastRecyclable != NULL) {
-            lastRecyclable->next = LAST_HOLE;
+        BlockMeta_Unmark(blockMeta);
 
-            assert(BlockMeta_FirstFreeLine(blockMeta) >= 0);
-            assert(BlockMeta_FirstFreeLine(blockMeta) < LINE_COUNT);
-            // allocator->recycledBlockCount++;
-            atomic_fetch_add_explicit(&allocator->recycledBlockCount, 1,
-                                      memory_order_relaxed);
-
-#ifdef DEBUG_ASSERT
-            blockMeta->debugFlag = dbg_partial_free;
-#endif
-            // the allocator thread must see the sweeping changes in recycled
-            // blocks
-            atomic_thread_fence(memory_order_release);
-            LocalBlockList_Push(&result->recycledBlocks,
-                                allocator->blockMetaStart, blockMeta);
-#ifdef DEBUG_PRINT
-            printf(
-                "sweepSimpleBlock %p %" PRIu32 " => RECYCLED\n", blockMeta,
-                BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta));
-            fflush(stdout);
-#endif
+        ObjectMeta *bytemapCursor = Bytemap_Get(bytemap, (word_t *)blockStart);
+        ObjectMeta *lastCursor = bytemapCursor + (WORDS_IN_LINE/ALLOCATION_ALIGNMENT_WORDS)*LINE_COUNT;
+        if (collectingOld) {
+            while (bytemapCursor < lastCursor) {
+                ObjectMeta_SweepOldLineAt(bytemapCursor);
+                bytemapCursor = Bytemap_NextLine(bytemapCursor);
+            }
+        } else if (BlockMeta_IsOld(blockMeta)) {
+            while (bytemapCursor < lastCursor) {
+                ObjectMeta_SweepNewOldLineAt(bytemapCursor);
+                bytemapCursor = Bytemap_NextLine(bytemapCursor);
+            }
         } else {
-#ifdef DEBUG_ASSERT
-            atomic_thread_fence(memory_order_release);
-            blockMeta->debugFlag = dbg_not_free;
-#endif
+            while (bytemapCursor < lastCursor) {
+                ObjectMeta_SweepLineAt(bytemapCursor);
+                bytemapCursor = Bytemap_NextLine(bytemapCursor);
+            }
         }
         return 0;
     }
 }
 
 uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta,
-                                 word_t *blockStart, BlockMeta *batchLimit) {
+                                 word_t *blockStart, BlockMeta *batchLimit, bool collectingOld) {
     // Objects that are larger than a block
     // are always allocated at the beginning the smallest possible superblock.
     // Any gaps at the end can be filled with large objects, that are smaller
@@ -205,13 +158,39 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
          block++) {
         assert(block->debugFlag == dbg_must_sweep);
     }
+
+    if (collectingOld) {
+        assert(BlockMeta_IsOld(blockMeta));
+    } else {
+        assert(!BlockMeta_IsOld(blockMeta));
+    }
 #endif
 
     ObjectMeta *firstObject = Bytemap_Get(allocator->bytemap, blockStart);
-    assert(!ObjectMeta_IsFree(firstObject));
+    // It is ok to have free objects at the begining of the block since
+    // we do not release chunk by chunk but block by block
+    //assert(!ObjectMeta_IsFree(firstObject));
     BlockMeta *lastBlock = blockMeta + superblockSize - 1;
+
+    if (!collectingOld) {
+        BlockMeta_IncrementAge(blockMeta);
+        // If the super block is larger than 1 block, then all blocks except the last
+        // one contains the first object. Thus we only need to mark the last block
+        if (superblockSize > 1) {
+            BlockMeta_IncrementAge(lastBlock);
+        }
+#ifdef DEBUG_PRINT
+                printf("Sweeper_sweepSuper promoting block (%p,%p) (%" PRIu32 ",%" PRIu32") to old generation\n", blockMeta, lastBlock, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta), BlockMeta_GetBlockIndex(allocator->blockMetaStart, lastBlock));
+                fflush(stdout);
+#endif
+        assert(BlockMeta_GetAge(blockMeta) == BlockMeta_GetAge(lastBlock));
+    }
+    BlockMeta_UnmarkSuperblock(blockMeta);
+
     int freeCount = 0;
-    if (superblockSize > 1 && !ObjectMeta_IsMarked(firstObject)) {
+    bool firstObjectAlive = ObjectMeta_IsAliveSweep(firstObject, collectingOld);
+
+    if (superblockSize > 1 && !firstObjectAlive) {
         // release free superblock starting from the first object
         freeCount = superblockSize - 1;
 #ifdef DEBUG_ASSERT
@@ -230,61 +209,58 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
     }
 
     word_t *lastBlockStart = blockEnd - WORDS_IN_BLOCK;
-    word_t *chunkStart = NULL;
 
-    // the tail end of the first object
-    if (!ObjectMeta_IsMarked(firstObject)) {
-        chunkStart = lastBlockStart;
+    if (collectingOld) {
+        ObjectMeta_SweepOld(firstObject);
+    } else if (BlockMeta_IsOld(blockMeta)) {
+        ObjectMeta_SweepNewOld(firstObject);
+    } else {
+        ObjectMeta_Sweep(firstObject);
     }
-    ObjectMeta_Sweep(firstObject);
 
     word_t *current = lastBlockStart + (MIN_BLOCK_SIZE / WORD_SIZE);
     ObjectMeta *currentMeta = Bytemap_Get(allocator->bytemap, current);
-    while (current < blockEnd) {
-        if (chunkStart == NULL) {
-            // if (ObjectMeta_IsAllocated(currentMeta)||
-            // ObjectMeta_IsPlaceholder(currentMeta)) {
-            if (*currentMeta & 0x3) {
-                chunkStart = current;
-            }
-        } else {
-            if (ObjectMeta_IsMarked(currentMeta)) {
-                size_t currentSize = (current - chunkStart) * WORD_SIZE;
-                LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart,
-                                        currentSize);
-                chunkStart = NULL;
-            }
-        }
-        ObjectMeta_Sweep(currentMeta);
+    bool lastblockContainsLiveObjects = false;
 
-        current += MIN_BLOCK_SIZE / WORD_SIZE;
-        currentMeta += MIN_BLOCK_SIZE / ALLOCATION_ALIGNMENT;
-    }
-    if (chunkStart == lastBlockStart) {
-        // free chunk covers the entire last block, released it
-        freeCount += 1;
-#ifdef DEBUG_ASSERT
-        lastBlock->debugFlag = dbg_free;
-#endif
-    } else {
-#ifdef DEBUG_ASSERT
-        lastBlock->debugFlag = dbg_not_free;
-#endif
-        if (ObjectMeta_IsFree(firstObject)) {
-            // the first object was free
-            // the end of first object becomes a placeholder
-            ObjectMeta_SetPlaceholder(
-                Bytemap_Get(allocator->bytemap, lastBlockStart));
+    if (collectingOld) {
+        while(current < blockEnd) {
+            lastblockContainsLiveObjects |= ((*currentMeta & 0x2) == 0x2);
+            ObjectMeta_SweepOld(currentMeta);
+            current += MIN_BLOCK_SIZE / WORD_SIZE;
+            currentMeta += MIN_BLOCK_SIZE / ALLOCATION_ALIGNMENT;
         }
+    } else if (BlockMeta_IsOld(lastBlock)) {
+        while(current < blockEnd) {
+            lastblockContainsLiveObjects |= ((*currentMeta & 0x4) == 0x4);
+            ObjectMeta_SweepNewOld(currentMeta);
+            current += MIN_BLOCK_SIZE / WORD_SIZE;
+            currentMeta += MIN_BLOCK_SIZE / ALLOCATION_ALIGNMENT;
+        }
+    } else {
+        while(current < blockEnd) {
+            lastblockContainsLiveObjects |= ((*currentMeta & 0x4) == 0x4);
+            ObjectMeta_Sweep(currentMeta);
+            current += MIN_BLOCK_SIZE / WORD_SIZE;
+            currentMeta += MIN_BLOCK_SIZE / ALLOCATION_ALIGNMENT;
+        }
+    }
+
+    if (!lastblockContainsLiveObjects) {
+        if (!firstObjectAlive) {
+#ifdef DEBUG_ASSERT
+            lastBlock->debugFlag = dbg_free;
+#endif
+            freeCount += 1;
+        }
+    } else {
         if (freeCount > 0) {
             // the last block is its own superblock
             if (lastBlock < batchLimit) {
-                // The block is within current batch, just create the superblock
+                // The block is within current btch, just create the superblock
                 // yourself
-                BlockMeta_SetFlagAndSuperblockSize(lastBlock,
-                                                   block_superblock_start, 1);
+                BlockMeta_SetFlagAndSuperblockSize(lastBlock, block_superblock_start, 1);
             } else {
-                // If we cross the current batch, then it is not to mark a
+                // if we cross the current batch, then it is not to mark a
                 // block_superblock_tail to block_superblock_start. The other
                 // sweeper threads could be in the middle of skipping
                 // block_superblock_tail s. Then creating the superblock will
@@ -292,13 +268,8 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
                 BlockMeta_SetFlag(lastBlock, block_superblock_start_me);
             }
         }
-        // handle the last chunk if any
-        if (chunkStart != NULL) {
-            size_t currentSize = (current - chunkStart) * WORD_SIZE;
-            LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart,
-                                    currentSize);
-        }
     }
+
 #ifdef DEBUG_PRINT
     printf("sweepSuperblock %p %" PRIu32 " => FREE %" PRIu32 "/ %" PRIu32
            "\n",
@@ -313,14 +284,6 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
 
 void Sweep_applyResult(SweepResult *result, Allocator *allocator,
                        BlockAllocator *blockAllocator) {
-    {
-        BlockMeta *first = result->recycledBlocks.first;
-        if (first != NULL) {
-            BlockList_PushAll(&allocator->recycledBlocks,
-                              allocator->blockMetaStart, first,
-                              result->recycledBlocks.last);
-        }
-    }
 
     for (int i = 0; i < SUPERBLOCK_LOCAL_LIST_SIZE; i++) {
         LocalBlockList item = result->freeSuperblocks[i];
@@ -334,7 +297,7 @@ void Sweep_applyResult(SweepResult *result, Allocator *allocator,
 }
 
 void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
-                   uint32_t maxCount) {
+                   uint32_t maxCount, bool collectingOld) {
     Stats_RecordTimeBatch(stats, start_ns);
     SweepResult sweepResult;
     SweepResult_Init(&sweepResult);
@@ -388,11 +351,11 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
     BlockMeta *current = first;
     word_t *currentBlockStart =
         Block_GetStartFromIndex(heap->heapStart, startIdx);
-    LineMeta *lineMetas = Line_getFromBlockIndex(heap->lineMetaStart, startIdx);
     while (current < limit) {
         int size = 1;
         uint32_t freeCount = 0;
         assert(!BlockMeta_IsCoalesceMe(current));
+
         assert(current >= reserveFirst && current < reserveLimit ||
                !BlockMeta_IsSuperblockTail(current));
         assert(!BlockMeta_IsSuperblockStartMe(current));
@@ -401,24 +364,31 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
             assert(reserveFirst != NULL);
             // size = 1, freeCount = 0
         } else if (BlockMeta_IsSimpleBlock(current)) {
-            freeCount = Sweeper_sweepSimpleBlock(&allocator, current, currentBlockStart,
-                                                 lineMetas, &sweepResult);
+            if (BlockMeta_ShouldBeSwept(current, collectingOld)) {
+                freeCount = Sweeper_sweepSimpleBlock(&allocator, current, currentBlockStart,
+                                                 &sweepResult, collectingOld);
 #ifdef DEBUG_PRINT
             printf("Sweeper_Sweep SimpleBlock %p %" PRIu32 "\n", current,
                    BlockMeta_GetBlockIndex(heap->blockMetaStart, current));
             fflush(stdout);
 #endif
+            } else if (!BlockMeta_IsOld(current)) {
+                atomic_fetch_add_explicit(&allocator.blockAllocator->youngBlockCount, 1, memory_order_relaxed);
+            }
+
         } else if (BlockMeta_IsSuperblockStart(current)) {
             size = BlockMeta_SuperblockSize(current);
             assert(size > 0);
-            freeCount = Sweeper_sweepSuperblock(&largeAllocator, current,
-                                                currentBlockStart, limit);
+            if (BlockMeta_ShouldBeSwept(current, collectingOld)) {
+                freeCount = Sweeper_sweepSuperblock(&largeAllocator, current,
+                                                    currentBlockStart, limit, collectingOld);
 #ifdef DEBUG_PRINT
-            printf("Sweeper_Sweep Superblock(%" PRIu32 ") %p %" PRIu32 "\n",
-                   size, current,
-                   BlockMeta_GetBlockIndex(heap->blockMetaStart, current));
-            fflush(stdout);
+                printf("Sweeper_Sweep Superblock(%" PRIu32 ") %p %" PRIu32 "\n",
+                       size, current,
+                       BlockMeta_GetBlockIndex(heap->blockMetaStart, current));
+                fflush(stdout);
 #endif
+            }
         } else {
             assert(BlockMeta_IsFree(current));
             freeCount = 1;
@@ -441,6 +411,7 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
                 lastFreeBlockStart = current;
             }
         }
+
         if (lastFreeBlockStart != NULL && freeCount < size) {
             BlockMeta *freeLimit = current + freeCount;
             uint32_t totalSize = (uint32_t)(freeLimit - lastFreeBlockStart);
@@ -467,7 +438,6 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
 
         current += size;
         currentBlockStart += WORDS_IN_BLOCK * size;
-        lineMetas += LINE_COUNT * size;
     }
     BlockMeta *doneUntil = current;
     if (lastFreeBlockStart != NULL) {
@@ -628,7 +598,6 @@ void Sweeper_ClearIsSwept(Heap *heap) {
 
 void Sweeper_AssertIsConsistent(Heap *heap) {
     BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
-    LineMeta *lineMetas = (LineMeta *)heap->lineMetaStart;
     BlockMeta *limit = (BlockMeta *)heap->blockMetaEnd;
     ObjectMeta *currentBlockStart = Bytemap_Get(heap->bytemap, heap->heapStart);
     while (current < limit) {
@@ -642,21 +611,20 @@ void Sweeper_AssertIsConsistent(Heap *heap) {
             size = BlockMeta_SuperblockSize(current);
         }
         BlockMeta *next = current + size;
-        LineMeta *nextLineMetas = lineMetas + LINE_COUNT * size;
         ObjectMeta *nextBlockStart =
             currentBlockStart +
             (WORDS_IN_BLOCK / ALLOCATION_ALIGNMENT_WORDS) * size;
 
-        for (LineMeta *line = lineMetas; line < nextLineMetas; line++) {
-            assert(!Line_IsMarked(line));
-        }
         for (ObjectMeta *object = currentBlockStart; object < nextBlockStart;
              object++) {
-            assert(!ObjectMeta_IsMarked(object));
-        }
+            if (!BlockMeta_IsOld(current)) {
+                assert(!ObjectMeta_IsMarked(object));
+            } else {
+                assert(!ObjectMeta_IsAllocated(object));
+            }
 
+        }
         current = next;
-        lineMetas = nextLineMetas;
         currentBlockStart = nextBlockStart;
     }
     assert(current == limit);

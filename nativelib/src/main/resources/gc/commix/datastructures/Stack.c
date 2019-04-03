@@ -30,6 +30,9 @@ Stack_Type Stack_Pop(Stack *stack) {
 INLINE
 bool Stack_IsEmpty(Stack *stack) { return stack->current == 0; }
 
+INLINE
+void Stack_Clear(Stack *stack) { stack->current = 0; }
+
 NOINLINE
 void Stack_doubleSize(Stack *stack) {
     size_t nb_words = stack->nb_words * 2;

@@ -138,24 +138,27 @@ object Array {
 % for T, sizeT in types.iteritems():
 
 %{
-   alloc = 'GC.alloc_atomic' if T != 'Object' and T != 'BoxedUnit' else 'GC.alloc'
+   alloc   = 'GC.alloc_atomic' if T != 'Object' and T != 'Unit' else 'GC.alloc'
+   barrier = '' if T != 'Object' and T != 'Unit' else 'GC.write_barrier(this)'
 }%
 
 final class ${T}Array private () extends Array[${T}] {
   import Array._
 
-  @inline def stride: CSize =
+  @inline def stride: CSize = {
     ${sizeT}
+  }
 
-  @inline def atRaw(i: Int): RawPtr =
+  @inline def atRaw(i: Int): RawPtr = {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
       elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
     }
+  }
 
-  @inline def apply(i: Int): ${T} =
+  @inline def apply(i: Int): ${T} = {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
@@ -167,8 +170,9 @@ final class ${T}Array private () extends Array[${T}] {
       loadObject(ith).asInstanceOf[BoxedUnit]
       % end
     }
+  }
 
-  @inline def update(i: Int, value: ${T}): Unit =
+  @inline def update(i: Int, value: ${T}): Unit = {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
@@ -179,7 +183,9 @@ final class ${T}Array private () extends Array[${T}] {
       % else:
       storeObject(ith, value.asInstanceOf[Object])
       % end
+      ${barrier}
     }
+  }
 
   @inline override def clone(): ${T}Array = {
     val arrty   = toRawType(classOf[${T}Array])

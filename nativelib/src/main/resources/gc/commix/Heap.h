@@ -5,7 +5,7 @@
 #include "datastructures/Bytemap.h"
 #include "datastructures/BlockRange.h"
 #include "datastructures/GreyPacket.h"
-#include "metadata/LineMeta.h"
+#include "datastructures/Stack.h"
 #include "Stats.h"
 #include <stdio.h>
 #include <stdatomic.h>
@@ -16,8 +16,6 @@
 typedef struct {
     word_t *blockMetaStart;
     word_t *blockMetaEnd;
-    word_t *lineMetaStart;
-    word_t *lineMetaEnd;
     word_t *heapStart;
     word_t *heapEnd;
     word_t *greyPacketsStart;
@@ -51,6 +49,7 @@ typedef struct {
         BlockRange lastActivity;
         // _First = 1 if active, _Limit = last cursor observed
         BlockRangeVal lastActivityObserved;
+        bool nextSweepOld;
     } lazySweep;
     struct {
         uint64_t lastEnd_ns;
@@ -59,6 +58,10 @@ typedef struct {
         atomic_uint_fast32_t total;
         GreyList empty;
         GreyList full;
+        GreyList rememberedOld;
+        GreyPacket *oldRoots;
+        GreyList rememberedYoung;
+        GreyPacket *youngRoots;
     } mark;
     Bytemap *bytemap;
     Stats *stats;
@@ -70,21 +73,9 @@ static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {
     return word >= heap->heapStart && word < heap->heapEnd;
 }
 
-static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
-    // assumes there are no gaps between lines
-    assert(LINE_COUNT * LINE_SIZE == BLOCK_TOTAL_SIZE);
-    assert(Heap_IsWordInHeap(heap, word));
-    word_t lineGlobalIndex =
-        ((word_t)word - (word_t)heap->heapStart) >> LINE_SIZE_BITS;
-    assert(lineGlobalIndex >= 0);
-    LineMeta *lineMeta = (LineMeta *)heap->lineMetaStart + lineGlobalIndex;
-    assert(lineMeta < (LineMeta *)heap->lineMetaEnd);
-    return lineMeta;
-}
-
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 
-void Heap_Collect(Heap *heap);
+void Heap_Collect(Heap *heap, bool collectingOld);
 void Heap_GrowIfNeeded(Heap *heap);
 void Heap_Grow(Heap *heap, uint32_t increment);
 

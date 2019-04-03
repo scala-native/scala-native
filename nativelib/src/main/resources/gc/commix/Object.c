@@ -13,7 +13,7 @@ word_t *Object_LastWord(Object *object) {
 }
 
 Object *Object_getInnerPointer(Heap *heap, BlockMeta *blockMeta, word_t *word,
-                               ObjectMeta *wordMeta) {
+                               ObjectMeta *wordMeta, bool collectingOld) {
     int stride;
     word_t *blockStart;
     if (BlockMeta_ContainsLargeObjects(blockMeta)) {
@@ -34,7 +34,7 @@ Object *Object_getInnerPointer(Heap *heap, BlockMeta *blockMeta, word_t *word,
         currentMeta -= stride;
     }
     Object *object = (Object *)current;
-    if (ObjectMeta_IsAllocated(currentMeta) &&
+    if (ObjectMeta_IsAlive(currentMeta, collectingOld) &&
         word < current + Object_Size(object) / WORD_SIZE) {
         return object;
     } else {
@@ -42,7 +42,7 @@ Object *Object_getInnerPointer(Heap *heap, BlockMeta *blockMeta, word_t *word,
     }
 }
 
-Object *Object_GetUnmarkedObject(Heap *heap, word_t *word) {
+Object *Object_GetUnmarkedObject(Heap *heap, word_t *word, bool collectingOld) {
     BlockMeta *blockMeta =
         Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, word);
 
@@ -53,37 +53,29 @@ Object *Object_GetUnmarkedObject(Heap *heap, word_t *word) {
     }
 
     ObjectMeta *wordMeta = Bytemap_Get(heap->bytemap, word);
-    if (ObjectMeta_IsPlaceholder(wordMeta) || ObjectMeta_IsMarked(wordMeta)) {
+    if (ObjectMeta_IsPlaceholder(wordMeta) || !ObjectMeta_IsAlive(wordMeta, collectingOld)) {
         return NULL;
-    } else if (ObjectMeta_IsAllocated(wordMeta)) {
+    } else if (ObjectMeta_IsAlive(wordMeta, collectingOld)) {
         return (Object *)word;
     } else {
-        return Object_getInnerPointer(heap, blockMeta, word, wordMeta);
+        return Object_getInnerPointer(heap, blockMeta, word, wordMeta, collectingOld);
     }
 }
 
-void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta) {
+void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta, bool collectingOld) {
     // Mark the object itself
-    ObjectMeta_SetMarked(objectMeta);
+    if (collectingOld) {
+        ObjectMeta_SetAllocated(objectMeta);
+    } else {
+        ObjectMeta_SetMarked(objectMeta);
+    }
 
     BlockMeta *blockMeta = Block_GetBlockMeta(
         heap->blockMetaStart, heap->heapStart, (word_t *)object);
     if (!BlockMeta_ContainsLargeObjects(blockMeta)) {
-        // Mark the block
-        word_t *blockStart = Block_GetBlockStartForWord((word_t *)object);
         BlockMeta_Mark(blockMeta);
-
-        // Mark all Lines
-        word_t *lastWord = Object_LastWord(object);
-
-        assert(blockMeta == Block_GetBlockMeta(heap->blockMetaStart,
-                                               heap->heapStart, lastWord));
-        LineMeta *firstLineMeta = Heap_LineMetaForWord(heap, (word_t *)object);
-        LineMeta *lastLineMeta = Heap_LineMetaForWord(heap, lastWord);
-        assert(firstLineMeta <= lastLineMeta);
-        for (LineMeta *lineMeta = firstLineMeta; lineMeta <= lastLineMeta;
-             lineMeta++) {
-            Line_Mark(lineMeta);
-        }
+    } else {
+        blockMeta = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockMeta);
+        BlockMeta_MarkSuperblock(blockMeta);
     }
 }

@@ -9,6 +9,7 @@
 #include "metadata/ObjectMeta.h"
 #include "BlockAllocator.h"
 #include "Heap.h"
+#include "datastructures/Stack.h"
 
 typedef struct {
     // The fields here are sorted by how often it is accessed.
@@ -18,24 +19,24 @@ typedef struct {
     Bytemap *bytemap;
     word_t *cursor;
     word_t *limit;
+    word_t *pretenureCursor;
+    word_t *pretenureLimit;
 
     // additional things used for Allocator_getNextLine
     BlockMeta *block;
     word_t *blockStart;
+    BlockMeta *pretenureBlock;
+    word_t *pretenureBlockStart;
     // additional things used for Allocator_overflowAllocation
     word_t *largeCursor;
     word_t *largeLimit;
     // additional things used for Allocator_newBlock
-    BlockList recycledBlocks;
     word_t *blockMetaStart;
     word_t *heapStart;
     BlockAllocator *blockAllocator;
     // additional things used for
     BlockMeta *largeBlock;
     word_t *largeBlockStart;
-    // This gets concurrently updated by other threads, keep if it as far away
-    // as possible from fast path.
-    atomic_uint_fast32_t recycledBlockCount;
 } Allocator;
 
 void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
@@ -44,5 +45,6 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
 bool Allocator_CanInitCursors(Allocator *allocator);
 void Allocator_Clear(Allocator *allocator);
 word_t *Allocator_Alloc(Heap *heap, uint32_t objectSize);
+word_t *Allocator_AllocPretenure(Heap *heap, uint32_t objectSize);
 
 #endif // IMMIX_ALLOCATOR_H
