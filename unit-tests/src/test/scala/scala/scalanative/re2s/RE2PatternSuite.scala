@@ -1,8 +1,6 @@
 package scala.scalanative
 package re2s
 
-import java.io._
-
 object RE2PatternSuite extends tests.Suite {
   test("compile") {
     val p = Pattern.compile("abc")
@@ -164,48 +162,4 @@ object RE2PatternSuite extends tests.Suite {
     ApiTestUtils.testMatchesRE2(Pattern.quote("ab+c"), 0, "ab+c", "abc")
   }
 
-  private def reserialize(obj: Pattern) = {
-
-    obj // Remove when Object*Stream methods are implemented
-
-    // SN Porting Note:
-    // The two Object*Stream methods are not currently implemented
-    // in ScalaNative and cause this Suite to fail linking.
-    //
-    // Dummy this reserialize() method to get the benefit of the tests
-    // that do link.
-    //
-    // Leave original code commented out so that it has a sporting
-    // chance of being ported in the future.
-
-    /*
-    val bytes = new ByteArrayOutputStream
-    try {
-      val out = new ObjectOutputStream(bytes)
-      out.writeObject(obj)
-      val byteArray        = bytes.toByteArray
-      val arrayInputStream = new ByteArrayInputStream(byteArray)
-      val in               = new ObjectInputStream(arrayInputStream)
-      in.readObject.asInstanceOf[Pattern]
-    } catch {
-      case e: IOException =>
-        throw new RuntimeException(e)
-      case e: ClassNotFoundException =>
-        throw new RuntimeException(e)
-    }
-   */
-  }
-
-  private def assertSerializes(p: Pattern): Unit = {
-    val reserialized = reserialize(p)
-    assert(p.pattern == reserialized.pattern)
-    assert(p.flags == reserialized.flags)
-  }
-
-  test("Serialize") {
-    assertSerializes(Pattern.compile("ab+c"))
-    assertSerializes(
-      Pattern.compile("^ab.*c$", Pattern.DOTALL | Pattern.MULTILINE))
-    assert(!reserialize(Pattern.compile("abc")).matcher("def").find)
-  }
 }
