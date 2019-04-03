@@ -1,15 +1,21 @@
 package java.util
 
+import scalanative.native.stub
+
 import java.io.Serializable
 
 abstract class Calendar
     extends Serializable
     with Cloneable
     with Comparable[Calendar] {
+
+  @stub
   def get(field: Int): Int = ???
 
+  @stub
   def set(field: Int, value: Int): Unit = ???
 
+  @stub
   def set(year: Int,
           month: Int,
           date: Int,
@@ -17,20 +23,28 @@ abstract class Calendar
           minute: Int,
           second: Int): Unit = ???
 
+  @stub
   def compareTo(anotherCalendar: Calendar): Int = ???
 
+  @stub
   def getFirstDayOfWeek(): Int = ???
 
+  @stub
   def getMinimalDaysInFirstWeek(): Int = ???
 
+  @stub
   def getTime(): Date = ???
 
+  @stub
   def getTimeInMillis(): Long = ???
 
+  @stub
   def getTimeZone(): TimeZone = ???
 
+  @stub
   def setTime(date: Date): Unit = ???
 
+  @stub
   def setTimeZone(timezone: TimeZone): Unit = ???
 }
 

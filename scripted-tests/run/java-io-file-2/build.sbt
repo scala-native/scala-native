@@ -5,6 +5,8 @@ enablePlugins(ScalaNativePlugin)
 
 scalaVersion := "2.11.12"
 
+nativeLinkStubs := true // DateFormatSymbols
+
 lazy val setupTests = taskKey[Unit]("")
 
 setupTests := {

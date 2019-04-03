@@ -1,5 +1,7 @@
 package java.text
 
+import scalanative.native.stub
+
 import java.util.Locale
 
 class DateFormatSymbols(locale: Locale)
@@ -10,16 +12,22 @@ class DateFormatSymbols(locale: Locale)
     Locale.getDefault()
   }
 
+  @stub
   def getAmPmStrings(): Array[String] = ???
 
+  @stub
   def getEras(): Array[String] = ???
 
+  @stub
   def getMonths(): Array[String] = ???
 
+  @stub
   def getShortMonths(): Array[String] = ???
 
+  @stub
   def getShortWeekdays(): Array[String] = ???
 
+  @stub
   def getWeekdays(): Array[String] = ???
 }
 
