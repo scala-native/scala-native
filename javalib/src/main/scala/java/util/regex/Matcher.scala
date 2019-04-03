@@ -265,6 +265,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
     this
   }
 
+  @stub
   def region(start: Int, end: Int): Matcher = ???
 
   private[regex] def appendReplacement2(sb: StringBuffer,
