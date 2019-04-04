@@ -38,7 +38,9 @@ object SocketHelpers {
       val res = !ret
 
       val sock = socket(res.ai_family, SOCK_STREAM, res.ai_protocol)
+
       try {
+
         if (sock < 0) {
           return false
         }
@@ -49,11 +51,17 @@ object SocketHelpers {
         val fdsetPtr = alloc[fd_set] //  No need to FD_ZERO
         FD_SET(sock, fdsetPtr)
 
-        val time = alloc[timeval]
-        time.tv_sec = timeout / 1000
-        time.tv_usec = (timeout % 1000) * 1000
+        // calculate once and use a second time below.
+        val tv_sec  = timeout / 1000
+        val tv_usec = (timeout % 1000) * 1000
 
-        connect(sock, res.ai_addr, res.ai_addrlen)
+        val time = alloc[timeval]
+        time.tv_sec = tv_sec
+        time.tv_usec = tv_usec
+
+        if (connect(sock, res.ai_addr, res.ai_addrlen) != 0) {
+          return false
+        }
 
         if (select(sock + 1, null, fdsetPtr, null, time) == 1) {
           val so_error = alloc[CInt].cast[Ptr[Byte]]
@@ -71,6 +79,12 @@ object SocketHelpers {
         if (sentBytes < 4) {
           return false
         }
+
+        // Reset timeout before using it again.
+        // Linux 'man select' recommends that the value of timeout argument
+        // be considered as undefined for OS interoperability.
+        time.tv_sec = tv_sec
+        time.tv_usec = tv_usec
 
         if (select(sock + 1, fdsetPtr, null, null, time) != 1) {
           return false
