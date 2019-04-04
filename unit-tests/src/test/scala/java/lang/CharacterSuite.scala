@@ -283,6 +283,40 @@ object CharacterSuite extends tests.Suite {
     }
   }
 
+  test("offsetByCodePoints - invalid values") {
+    val str1 = "<bad args>"
+    val arr1 = str1.toArray
+
+    assertThrows[java.lang.NullPointerException] {
+      Character.offsetByCodePoints(null.asInstanceOf[Array[Char]],
+                                   1,
+                                   arr1.length,
+                                   0,
+                                   0)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.offsetByCodePoints(arr1, -1, arr1.length, 0, 0)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.offsetByCodePoints(arr1, 0, -1, 0, 0)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.offsetByCodePoints(arr1, 1, arr1.length, 2, 0)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.offsetByCodePoints(arr1, 2, arr1.length, 1, 0)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.offsetByCodePoints(arr1, 2, arr1.length, arr1.length + 1, 0)
+    }
+
+  }
+
   def toInt(hex: String): Int = Integer.parseInt(hex, 16)
 
   /** toUpperCase/toLowerCase based on Unicode 7 case folding.

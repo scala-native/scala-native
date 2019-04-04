@@ -304,7 +304,7 @@ object Character {
     val len      = seq.length
     val endIndex = offset + count
     if (offset < 0 || count < 0 || endIndex > len) {
-      throw new IndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     }
 
     var result = 0
@@ -334,8 +334,9 @@ object Character {
                          index: scala.Int,
                          codePointOffset: scala.Int): scala.Int = {
     val end = start + count
-    if (start < 0 || count < 0 || end > seq.length || index < start || index > end) {
-      throw new IndexOutOfBoundsException()
+    if (start < 0 || count < 0 || end > seq.length || index < start
+        || index > end) {
+      throw new StringIndexOutOfBoundsException()
     }
 
     if (codePointOffset == 0) {
@@ -346,7 +347,7 @@ object Character {
       while (codePoints > 0) {
         codePoints -= 1
         if (i >= end) {
-          throw new IndexOutOfBoundsException()
+          throw new StringIndexOutOfBoundsException()
         }
         if (isHighSurrogate(seq(i))) {
           val next = i + 1
@@ -364,7 +365,7 @@ object Character {
         codePoints -= 1
         i -= 1
         if (i < start) {
-          throw new IndexOutOfBoundsException()
+          throw new StringIndexOutOfBoundsException()
         }
         if (isLowSurrogate(seq(i))) {
           val prev = i - 1
