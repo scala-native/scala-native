@@ -604,6 +604,7 @@ object Files {
                  visitor)
 
   private case object TerminateTraversalException extends Exception
+
   def walkFileTree(start: Path,
                    options: Set[FileVisitOption],
                    maxDepth: Int,
@@ -627,36 +628,56 @@ object Files {
 
       if (dirsToSkip.contains(parent)) ()
       else {
-        val attributes = getFileAttributeView(p,
-                                              classOf[BasicFileAttributeView],
-                                              Array.empty).readAttributes()
-        while (openDirs.nonEmpty && !parent.startsWith(openDirs.head)) {
-          visitor.postVisitDirectory(openDirs.pop(), null)
-        }
+        try {
 
-        val result =
-          if (attributes.isRegularFile) {
-            visitor.visitFile(p, attributes)
-          } else if (attributes.isDirectory) {
-            openDirs.push(p)
-            visitor.preVisitDirectory(p, attributes) match {
-              case FileVisitResult.SKIP_SUBTREE =>
-                openDirs.pop; FileVisitResult.SKIP_SUBTREE
-              case other => other
-            }
-          } else {
-            FileVisitResult.CONTINUE
+          // The sense of how LinkOption follows links or not is somewhat
+          // inverted because of a double negative.  The absense of
+          // LinkOption.NOFOLLOW_LINKS means follow links, the default.
+          // There is no explicit LinkOption.FOLLOW_LINKS.
+
+          val linkOpts =
+            if (options.contains(FileVisitOption.FOLLOW_LINKS))
+              Array.empty[LinkOption]
+            else
+              Array(LinkOption.NOFOLLOW_LINKS)
+
+          val attributes =
+            getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
+              .readAttributes()
+
+          while (openDirs.nonEmpty && !parent.startsWith(openDirs.head)) {
+            visitor.postVisitDirectory(openDirs.pop(), null)
           }
 
-        result match {
-          case FileVisitResult.TERMINATE     => throw TerminateTraversalException
-          case FileVisitResult.SKIP_SUBTREE  => dirsToSkip += p
-          case FileVisitResult.SKIP_SIBLINGS => dirsToSkip += parent
-          case FileVisitResult.CONTINUE      => ()
+          val result =
+            if (attributes.isRegularFile) {
+              visitor.visitFile(p, attributes)
+            } else if (attributes.isDirectory) {
+              openDirs.push(p)
+              visitor.preVisitDirectory(p, attributes) match {
+                case FileVisitResult.SKIP_SUBTREE =>
+                  openDirs.pop; FileVisitResult.SKIP_SUBTREE
+                case other => other
+              }
+            } else {
+              FileVisitResult.CONTINUE
+            }
+
+          result match {
+            case FileVisitResult.TERMINATE =>
+              throw TerminateTraversalException
+            case FileVisitResult.SKIP_SUBTREE  => dirsToSkip += p
+            case FileVisitResult.SKIP_SIBLINGS => dirsToSkip += parent
+            case FileVisitResult.CONTINUE      => ()
+          }
+
+        } catch {
+          // Give the visitor a last chance to fix things up.
+          case e: IOException => visitor.visitFileFailed(p, e)
         }
       }
-
     }
+
     while (openDirs.nonEmpty) {
       visitor.postVisitDirectory(openDirs.pop(), null)
     }

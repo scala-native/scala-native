@@ -11,6 +11,7 @@ import java.io.{
   IOException,
   OutputStreamWriter
 }
+
 import java.nio.file.attribute.{
   BasicFileAttributes,
   FileTime,
@@ -20,6 +21,8 @@ import java.nio.file.attribute.{
 }
 
 import java.util.function.BiPredicate
+import java.util.HashSet
+
 import scala.collection.JavaConverters._
 import PosixFilePermission._
 import StandardCopyOption._
@@ -891,6 +894,64 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  // This test was inspired by Issue #1354
+  // "NIO File Walker fails on broken links."
+  test("Files.walkFileTree respects FileVisitOption.FOLLOW_LINKS") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val f1  = dir.resolve("f1")
+
+      val brokenLink    = dir.resolve("brokenlink")
+      val missingTarget = dir.resolve("missingtarget")
+
+      Files.createFile(f0)
+      Files.createFile(f1)
+
+      assert(Files.exists(f0) && Files.isRegularFile(f0))
+      assert(Files.exists(f1) && Files.isRegularFile(f1))
+
+      Files.createFile(missingTarget)
+
+      assert(
+        Files.exists(missingTarget) &&
+          Files.isRegularFile(missingTarget))
+
+      // Create valid symbolic link from brokenLink to missingTarget,
+      // then remove missingTarget to break link.
+
+      Files.createSymbolicLink(brokenLink, missingTarget)
+
+      assert(Files.exists(brokenLink) && Files.isSymbolicLink(brokenLink),
+             "File brokenLink does not exist or is not a symbolic link.")
+
+      Files.delete(missingTarget)
+
+      assert(!Files.exists(missingTarget),
+             "File missingTarget should not exist.")
+
+      val visitor = new QueueingVisitor()
+
+      // will not follow links, so broken link does not throw exception.
+      Files.walkFileTree(dir, visitor)
+
+      val result   = visitor.length
+      val expected = 4
+
+      assert(result == expected, s"result: $result != expected: $expected")
+
+      // Now follow the broken link and throw exception.
+      val visitor_2 = new QueueingVisitor()
+
+      val fvoSet = new HashSet[FileVisitOption]()
+      fvoSet.add(FileVisitOption.FOLLOW_LINKS)
+
+      assertThrows[NoSuchFileException] {
+        Files.walkFileTree(dir, fvoSet, Int.MaxValue, visitor_2)
+      }
+    }
+  }
+
   test("Files.find finds files") {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
@@ -1365,6 +1426,7 @@ class QueueingVisitor extends SimpleFileVisitor[Path] {
   private val visited    = scala.collection.mutable.Queue.empty[Path]
   def isEmpty(): Boolean = visited.isEmpty
   def dequeue(): Path    = visited.dequeue()
+  def length()           = visited.length
 
   override def visitFileFailed(file: Path,
                                error: IOException): FileVisitResult =
