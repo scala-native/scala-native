@@ -141,7 +141,10 @@ int Marker_markRange(Heap *heap, Stats *stats, Object *object, GreyPacket **outH
     // if the object has pointer to young object and is old after collection we
     // need to store it in allocator->rememberedYoungObject
     ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, (word_t *)object);
-    ObjectMeta_SetUnremembered(objectMeta);
+    assert(!ObjectMeta_IsAllocatedRem(objectMeta));
+    if (ObjectMeta_IsMarkedRem(objectMeta)) {
+        ObjectMeta_SetMarked(objectMeta);
+    }
 
     BlockMeta *blockMeta = Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, (word_t *)object);
     if (BlockMeta_ContainsLargeObjects(blockMeta)) {
@@ -178,11 +181,25 @@ int Marker_markRange(Heap *heap, Stats *stats, Object *object, GreyPacket **outH
         }
     }
 
-    if (willBeOld && hasPointerToYoung && !ObjectMeta_IsRemembered(objectMeta)) {
-        ObjectMeta_SetRemembered(objectMeta);
-        Marker_rememberOldObject(heap, stats, object);
-    } else if (!willBeOld && hasPointerToOld && !ObjectMeta_IsRemembered(objectMeta)) {
-        ObjectMeta_SetRemembered(objectMeta);
+    if (willBeOld && hasPointerToYoung) {
+        if (collectingOld) {
+            // Currently collecting the old generation. If the object is young, then we do not
+            // need to add him, will be done by the next young generation
+            if (BlockMeta_GetAge(blockMeta) == MAX_AGE_YOUNG_BLOCK) {
+                // If it is indeed an old objects, it will be swept in the next phase. Thus it
+                // need to keep its status of `Allocated` while being remembered.
+                ObjectMeta_SetAllocatedRem(objectMeta);
+                Marker_rememberOldObject(heap, stats, object);
+            }
+        } else {
+            // Collecting the young generation. Only already old objects, or young to-be promoted
+            // will enter this condition. Both of them need to be `Marked` and remembered.
+            ObjectMeta_SetMarkedRem(objectMeta);
+            Marker_rememberOldObject(heap, stats, object);
+        }
+    } else if (!willBeOld && hasPointerToOld) {
+        // We do not mark as remembered young objects. They will be use directly if a old collection
+        // is needed, or they will be reset at the next young collection
         Marker_rememberYoungObject(heap, stats, object);
     }
     return objectsTraced;
@@ -196,7 +213,10 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
     // if the object has pointer to young object and is old after collection we
     // need to store it in heap->rememberedOldObject
     ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
-    ObjectMeta_SetUnremembered(objectMeta);
+    assert(!ObjectMeta_IsAllocatedRem(objectMeta));
+    if (ObjectMeta_IsMarkedRem(objectMeta)) {
+        ObjectMeta_SetMarked(objectMeta);
+    }
 
     BlockMeta *blockMeta = Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, (word_t *)object);
     if (BlockMeta_ContainsLargeObjects(blockMeta)) {
@@ -237,12 +257,24 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
     }
 
     if (willBeOld && hasPointerToYoung) {
-        assert(!ObjectMeta_IsRemembered(objectMeta));
-        ObjectMeta_SetRemembered(objectMeta);
-        Marker_rememberOldObject(heap, stats, object);
+        if (collectingOld) {
+            // Currently collecting the old generation. If the object is young, then we do not
+            // need to add him, will be done by the next young generation
+            if (BlockMeta_GetAge(blockMeta) == MAX_AGE_YOUNG_BLOCK) {
+                // If it is indeed an old objects, it will be swept in the next phase. Thus it
+                // need to keep its status of `Allocated` while being remembered.
+                ObjectMeta_SetAllocatedRem(objectMeta);
+                Marker_rememberOldObject(heap, stats, object);
+            }
+        } else {
+            // Collecting the young generation. Only already old objects, or young to-be promoted
+            // will enter this condition. Both of them need to be `Marked` and remembered.
+            ObjectMeta_SetMarkedRem(objectMeta);
+            Marker_rememberOldObject(heap, stats, object);
+        }
     } else if (!willBeOld && hasPointerToOld) {
-        assert(!ObjectMeta_IsRemembered(objectMeta));
-        ObjectMeta_SetRemembered(objectMeta);
+        // We do not mark as remembered young objects. They will be use directly if a old collection
+        // is needed, or they will be reset at the next young collection
         Marker_rememberYoungObject(heap, stats, object);
     }
     return objectsTraced;

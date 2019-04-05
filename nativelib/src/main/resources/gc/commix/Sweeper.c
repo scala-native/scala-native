@@ -95,7 +95,6 @@ uint32_t Sweeper_sweepSimpleBlock(Allocator *allocator, BlockMeta *blockMeta,
             assert(!ObjectMeta_IsMarked(object));
         }
     }
-    printf("Block reclaimed : %" PRIu32"\t", BlockMeta_GetBlockIndex(heap.blockMetaStart, blockMeta));fflush(stdout);
 
 #endif
         memset(blockMeta, 0, sizeof(BlockMeta));
@@ -108,6 +107,7 @@ uint32_t Sweeper_sweepSimpleBlock(Allocator *allocator, BlockMeta *blockMeta,
         Bytemap *bytemap = allocator->bytemap;
 
         if (!collectingOld) {
+            assert(!BlockMeta_IsOld(blockMeta));
             BlockMeta_IncrementAge(blockMeta);
             if (!BlockMeta_IsOld(blockMeta)) {
                 atomic_fetch_add_explicit(&allocator->blockAllocator->youngBlockCount, 1, memory_order_relaxed);

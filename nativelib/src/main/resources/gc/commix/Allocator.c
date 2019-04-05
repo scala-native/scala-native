@@ -134,7 +134,6 @@ INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
  * Allocation of pretenure object, fast path
  */
 INLINE word_t *Allocator_tryAllocPretenure(Allocator *allocator, size_t size) {
-    assert(false);
     word_t *start = allocator->pretenureCursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
 
@@ -264,7 +263,7 @@ NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
 #ifdef DEBUG_ASSERT
         ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif
-        ObjectMeta_SetAllocatedNew(objectMeta);
+        ObjectMeta_SetAllocated(objectMeta);
         return object;
     }
 
@@ -321,7 +320,7 @@ NOINLINE word_t *Allocator_allocPretenureSlow(Heap *heap, uint32_t size) {
 #ifdef DEBUG_ASSERT
         ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif
-        ObjectMeta_SetMarkedNew(objectMeta);
+        ObjectMeta_SetMarked(objectMeta);
         return object;
     }
 
@@ -387,7 +386,7 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
 #ifdef DEBUG_ASSERT
     ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif
-    ObjectMeta_SetAllocatedNew(objectMeta);
+    ObjectMeta_SetAllocated(objectMeta);
 
     // prefetch starting from 36 words away from the object start
     // rw = 0 => prefetch for reading
@@ -419,7 +418,7 @@ INLINE word_t *Allocator_AllocPretenure(Heap *heap, uint32_t size) {
 #ifdef DEBUG_ASSERT
     ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif
-    ObjectMeta_SetMarkedNew(objectMeta);
+    ObjectMeta_SetMarked(objectMeta);
 
     __builtin_prefetch(object + 36, 0, 3);
 

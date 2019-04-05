@@ -81,8 +81,8 @@ INLINE void scalanative_collect() {
 NOINLINE void write_barrier_push_object(Object *object) {
     if (!GreyPacket_Push(heap.mark.oldRoots, object)) {
         atomic_thread_fence(memory_order_acquire);
-        //GreyList_Push(&heap.mark.full, heap.greyPacketsStart, heap.mark.oldRoots);
-        GreyList_Push(&heap.mark.rememberedOld, heap.greyPacketsStart, heap.mark.oldRoots);
+        GreyList_Push(&heap.mark.full, heap.greyPacketsStart, heap.mark.oldRoots);
+        //GreyList_Push(&heap.mark.rememberedOld, heap.greyPacketsStart, heap.mark.oldRoots);
         heap.mark.oldRoots = GreyList_Pop(&heap.mark.empty, heap.greyPacketsStart);
         assert(heap.mark.oldRoots != NULL);
         heap.mark.oldRoots->size = 0;
@@ -94,7 +94,7 @@ NOINLINE void write_barrier_push_object(Object *object) {
 INLINE void write_barrier_no_sweep(Object *object) {
     ObjectMeta *objectMeta = Bytemap_Get(heap.bytemap, (word_t *)object);
     if (!ObjectMeta_IsRemembered(objectMeta)) {
-        ObjectMeta_SetRemembered(objectMeta);
+        ObjectMeta_SetMarkedRem(objectMeta);
         write_barrier_push_object(object);
     }
 }
