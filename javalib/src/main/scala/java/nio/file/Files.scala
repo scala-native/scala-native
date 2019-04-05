@@ -248,9 +248,18 @@ object Files {
            matcher: BiPredicate[Path, BasicFileAttributes],
            options: Array[FileVisitOption]): Stream[Path] = {
     val stream = walk(start, maxDepth, 0, options, SSet.empty).filter { p =>
-      val attributes = getFileAttributeView(p,
-                                            classOf[BasicFileAttributeView],
-                                            Array.empty).readAttributes()
+      //
+      // See comments for FileVisitOption & linkOpts in _walkFileTree
+      val linkOpts =
+        if (options.contains(FileVisitOption.FOLLOW_LINKS))
+          Array.empty[LinkOption]
+        else
+          Array(LinkOption.NOFOLLOW_LINKS)
+
+      val attributes =
+        getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
+          .readAttributes()
+
       matcher.test(p, attributes)
     }
     new WrappedScalaStream(stream.toStream, None)
