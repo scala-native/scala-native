@@ -76,104 +76,186 @@ class Machine(re2: RE2) {
   // RE2 Anchor |anchor|.
   // It reports whether a match was found.
   // If so, matchcap holds the submatch information.
-  def match_(in: MachineInput, _pos: Int, anchor: Int): Boolean = {
-    var pos       = _pos
+
+  // Scala Native porting Note:
+  // The original re2.java code used "break" statements liberally to leave
+  // a while(true) loop. The Scala JVM port translated that code directly
+  // into Scala "breakable" statements.  In Scala Native, exceptions as
+  // control structures are currently (April 2019) _hideously_ expensive.
+  //
+  // To gain better performance for RE2, this section transforms the
+  // java/scalaJVM use of "break" into return statements from the
+  // method matchImpl().
+  //
+  // Using simple return statements rather than "return x", also known as
+  // a non-local return, also gives better performance. To this end, the
+  // variable nextqByRef is a hack to allow the necessary modification
+  // of nextq in matchImpl() to be passed back and used by the caller,
+  // match_() without using the usually expected "return x".
+  // Agreed ugly and not fit for tutorial code, but not coyote ugly given
+  // the circumstances & constraints.
+  //
+  // The two case classes are an attempt to group the 11 individual arguments
+  // and reduce the number to 3.  The first two are read-only input arguments
+  // while the first  element of the third argument is a read/write output
+  // argument.
+
+  private case class MatchOriginalArgs(
+      in: MachineInput,
+      pos: Int,
+      anchor: Int
+  )
+
+  private case class MatchImplArgs(
+      runq: Queue,
+      r: Int,
+      rune: Int,
+      width: Int,
+      rune1: Int,
+      width1: Int,
+      flag: Int
+  )
+
+  private def matchImpl(originalArgs: MatchOriginalArgs,
+                        implArgs: MatchImplArgs,
+                        nextqByRef: Array[Queue]): Unit = {
+
+    val in     = originalArgs.in
+    var pos    = originalArgs.pos
+    val anchor = originalArgs.anchor
+
+    var runq   = implArgs.runq
+    var r      = implArgs.r
+    var rune   = implArgs.rune
+    var width  = implArgs.width
+    var rune1  = implArgs.rune1
+    var width1 = implArgs.width1
+    var flag   = implArgs.flag
+
+    val startCond = re2.cond
+
+    while (true) {
+      if (runq.isEmpty()) {
+        if ((startCond & Utils.EMPTY_BEGIN_TEXT) != 0 && pos != 0) {
+          // Anchored match, past beginning of text.
+          return
+        }
+
+        if (matched) {
+          // Have match finished exploring alternatives.
+          return
+        }
+
+        if (!re2.prefix.isEmpty() &&
+            rune1 != re2.prefixRune &&
+            in.canCheckPrefix()) {
+          // Match requires literal prefix fast search for it.
+          val advance = in.index(re2, pos)
+          if (advance < 0) {
+            return
+          }
+          pos += advance
+          r = in.step(pos)
+          rune = r >> 3
+          width = r & 7
+          r = in.step(pos + width)
+          rune1 = r >> 3
+          width1 = r & 7
+        }
+      }
+
+      if (!matched && (pos == 0 || anchor == RE2.UNANCHORED)) {
+        // If we are anchoring at begin then only add threads that begin
+        // at |pos| = 0.
+        if (matchcap.length > 0) {
+          matchcap(0) = pos
+        }
+        this.add(runq, prog.start, pos, matchcap, flag, null)
+      }
+
+      flag = Utils.emptyOpContext(rune, rune1)
+
+      step(runq,
+           nextqByRef(0),
+           pos,
+           pos + width,
+           rune,
+           flag,
+           anchor,
+           pos == in.endPos())
+
+      if (width == 0) { // EOF
+        return
+      }
+
+      if (matchcap.length == 0 && matched) {
+        // Found a match and not paying attention
+        // to where it is, so any match will do.
+        return
+      }
+
+      pos += width
+      rune = rune1
+      width = width1
+
+      if (rune != -1) {
+        r = in.step(pos + width)
+        rune1 = r >> 3
+        width1 = r & 7
+      }
+
+      val tmpq = runq
+      runq = nextqByRef(0)
+      nextqByRef(0) = tmpq
+    }
+  }
+
+  def match_(in: MachineInput, pos: Int, anchor: Int): Boolean = {
+
     val startCond = re2.cond
     if (startCond == Utils.EMPTY_ALL) { // impossible
       return false
     }
+
     if ((anchor == RE2.ANCHOR_START || anchor == RE2.ANCHOR_BOTH) &&
         pos != 0) {
       return false
     }
+
     matched = false
     Arrays.fill(matchcap, -1)
-    var runq   = q0
-    var nextq  = q1
+
+    val runq   = q0
+    val nextq  = q1
     var r      = in.step(pos)
-    var rune   = r >> 3
-    var width  = r & 7
+    val rune   = r >> 3
+    val width  = r & 7
     var rune1  = -1
     var width1 = 0
+
     if (r != MachineInput.EOF) {
       r = in.step(pos + width)
       rune1 = r >> 3
       width1 = r & 7
     }
-    var flag = 0 // bitmask of EMPTY_* flags
-    if (pos == 0) {
-      flag = Utils.emptyOpContext(-1, rune)
-    } else {
-      flag = in.context(pos)
-    }
 
-    breakable {
-      while (true) {
-        if (runq.isEmpty()) {
-          if ((startCond & Utils.EMPTY_BEGIN_TEXT) != 0 && pos != 0) {
-            // Anchored match, past beginning of text.
-            break
-          }
-          if (matched) {
-            // Have match finished exploring alternatives.
-            break
-          }
-          if (!re2.prefix.isEmpty() &&
-              rune1 != re2.prefixRune &&
-              in.canCheckPrefix()) {
-            // Match requires literal prefix fast search for it.
-            val advance = in.index(re2, pos)
-            if (advance < 0) {
-              break
-            }
-            pos += advance
-            r = in.step(pos)
-            rune = r >> 3
-            width = r & 7
-            r = in.step(pos + width)
-            rune1 = r >> 3
-            width1 = r & 7
-          }
-        }
-        if (!matched && (pos == 0 || anchor == RE2.UNANCHORED)) {
-          // If we are anchoring at begin then only add threads that begin
-          // at |pos| = 0.
-          if (matchcap.length > 0) {
-            matchcap(0) = pos
-          }
-          this.add(runq, prog.start, pos, matchcap, flag, null)
-        }
-        flag = Utils.emptyOpContext(rune, rune1)
-        step(runq,
-             nextq,
-             pos,
-             pos + width,
-             rune,
-             flag,
-             anchor,
-             pos == in.endPos())
-        if (width == 0) { // EOF
-          break
-        }
-        if (matchcap.length == 0 && matched) {
-          // Found a match and not paying attention
-          // to where it is, so any match will do.
-          break
-        }
-        pos += width
-        rune = rune1
-        width = width1
-        if (rune != -1) {
-          r = in.step(pos + width)
-          rune1 = r >> 3
-          width1 = r & 7
-        }
-        val tmpq = runq
-        runq = nextq
-        nextq = tmpq
-      }
-    }
-    nextq.clear(pool)
+    val nextqByRef = Array(nextq)
+
+    // bitmask of EMPTY_* flags
+    val flag =
+      if (pos == 0)
+        Utils.emptyOpContext(-1, rune)
+      else
+        in.context(pos)
+
+    matchImpl(
+      MatchOriginalArgs(in, pos, anchor),
+      MatchImplArgs(runq, r, rune, width, rune1, width1, flag),
+      nextqByRef
+    )
+
+    nextqByRef(0).clear(pool)
+
     matched
   }
 
