@@ -85,12 +85,12 @@ class Machine(re2: RE2) {
   //
   // To gain better performance for RE2, this section transforms the
   // java/scalaJVM use of "break" into return statements from the
-  // method matchImpl().
+  // method matchEngine().
   //
   // Using simple return statements rather than "return x", also known as
   // a non-local return, also gives better performance. To this end, the
   // variable nextqByRef is a hack to allow the necessary modification
-  // of nextq in matchImpl() to be passed back and used by the caller,
+  // of nextq in matchEngine() to be passed back and used by the caller,
   // match_() without using the usually expected "return x".
   // Agreed ugly and not fit for tutorial code, but not coyote ugly given
   // the circumstances & constraints.
@@ -116,9 +116,9 @@ class Machine(re2: RE2) {
       flag: Int
   )
 
-  private def matchImpl(originalArgs: MatchOriginalArgs,
-                        implArgs: MatchImplArgs,
-                        nextqByRef: Array[Queue]): Unit = {
+  private def matchEngine(originalArgs: MatchOriginalArgs,
+                          implArgs: MatchImplArgs,
+                          nextqByRef: Array[Queue]): Unit = {
 
     val in     = originalArgs.in
     var pos    = originalArgs.pos
@@ -248,11 +248,9 @@ class Machine(re2: RE2) {
       else
         in.context(pos)
 
-    matchImpl(
-      MatchOriginalArgs(in, pos, anchor),
-      MatchImplArgs(runq, r, rune, width, rune1, width1, flag),
-      nextqByRef
-    )
+    matchEngine(MatchOriginalArgs(in, pos, anchor),
+                MatchImplArgs(runq, r, rune, width, rune1, width1, flag),
+                nextqByRef)
 
     nextqByRef(0).clear(pool)
 
