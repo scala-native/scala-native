@@ -210,9 +210,7 @@ object PatternSuite extends tests.Suite {
     fail("a|b", "c")
   }
 
-//  For some reason I, @LeeTibbert can not get testFails to work here.
-//  testFails("quotation", issue = 1504) {
-  ignore("quotation") {
+  test("quotation") {
     pass("\\Qa|b|c\\E", "a|b|c")
   }
 
