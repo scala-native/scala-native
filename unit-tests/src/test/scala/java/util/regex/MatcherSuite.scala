@@ -27,6 +27,94 @@ object MatcherSuite extends tests.Suite {
     assert(!m.matches())
   }
 
+  test("find()") {
+    val prefix  = "0123"
+    val pattern = "abc"
+    val noise   = "def"
+    val sample  = prefix + pattern + noise + pattern + noise
+
+    val m = Pattern.compile(pattern).matcher(sample)
+
+    val expectedStart1 = prefix.length
+    val expectedEnd1   = prefix.length + pattern.length
+    assert(m.find(), s"initial find() failed.")
+    assert(m.start == expectedStart1,
+           s"first start: ${m.start} != expected: $expectedStart1")
+    assert(m.end == expectedEnd1,
+           s"first end: ${m.end} != expected: $expectedEnd1")
+
+    val expectedStart2 = expectedEnd1 + noise.length
+    val expectedEnd2   = expectedStart2 + pattern.length
+
+    assert(m.find(), s"second find() failed.")
+    assert(m.start == expectedStart2,
+           s"second start: ${m.start} != expected: $expectedStart2")
+    assert(m.end == expectedEnd2,
+           s"second end: ${m.start} != expected: $expectedEnd2")
+  }
+
+  test("find(start) - invalid start values") {
+    val pattern = "Isaac"
+    val sample  = "Asimov"
+
+    val m = Pattern.compile(pattern).matcher(sample)
+
+    assertThrows[IndexOutOfBoundsException] {
+      m.find(-1)
+    }
+
+    assertThrows[IndexOutOfBoundsException] {
+      m.find(sample.length + 1)
+    }
+  }
+
+  test("find(start)") {
+    val prefix  = "0"
+    val pattern = "abc"
+    val noise   = "def"
+    val sample1 = prefix + pattern + noise
+    val sample2 = sample1 + pattern + pattern
+
+    val index = 2 // start at leftmost 'b' in sample.
+
+    val m1 = Pattern.compile(pattern).matcher(sample1)
+
+    val m1f1Result = m1.find(index)
+
+    // Evaluate m1.start and m1.end only in the unexpected case of a match
+    // having being found. Calling either if no match was found throws
+    // an exception.
+    if (m1f1Result) {
+      assert(false,
+             s"find(${index}) wrongly found start: ${m1.start} end: ${m1.end}")
+    }
+
+    val m2 = Pattern.compile(pattern).matcher(sample2)
+
+    assert(m2.find(index),
+           s"find(${index}) did not find ${pattern} in ${sample2}")
+
+    val m2ExpectedStart1 = prefix.length + pattern.length + noise.length
+    val m2ExpectedEnd1   = m2ExpectedStart1 + pattern.length
+
+    assert(m2.start == m2ExpectedStart1,
+           s"first start: ${m2.start} != expected: $m2ExpectedStart1")
+    assert(m2.end == m2ExpectedEnd1,
+           s"first end: ${m2.end} != expected: $m2ExpectedEnd1")
+
+    // Simple find() after a find(index) should succeed.
+
+    assert(m2.find(), s"second find() did not find ${pattern} in ${sample2}")
+
+    val m2ExpectedStart2 = m2ExpectedEnd1
+    val m2ExpectedEnd2   = m2ExpectedStart2 + pattern.length
+
+    assert(m2.start == m2ExpectedStart2,
+           s"first start: ${m2.start} != expected: $m2ExpectedStart2")
+    assert(m2.end == m2ExpectedEnd2,
+           s"first end: ${m2.end} != expected: $m2ExpectedEnd2")
+  }
+
   test("replaceAll") {
     assertEquals(
       matcher("abc", "abcabcabc").replaceAll("z"),
@@ -249,7 +337,7 @@ object MatcherSuite extends tests.Suite {
   // we don't support lookahead
   testFails("(not supported) hasTransparentBounds/useTransparentBounds", 640) {
 
-    // ?=  <==>  zero-width positive look-ahead
+    // ?=  <==>	 zero-width positive look-ahead
     val m1 = Pattern.compile("foo(?=buzz)").matcher("foobuzz")
     m1.region(0, 3)
     m1.useTransparentBounds(false)
@@ -258,7 +346,7 @@ object MatcherSuite extends tests.Suite {
     m1.useTransparentBounds(true)
     assert(m1.matches()) // transparent
 
-    // ?!  <==>  zero-width negative look-ahead
+    // ?!  <==>	 zero-width negative look-ahead
     val m2 = Pattern.compile("foo(?!buzz)").matcher("foobuzz")
     m2.region(0, 3)
     m2.useTransparentBounds(false)
