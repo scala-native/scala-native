@@ -63,11 +63,16 @@ Object *Object_GetUnmarkedObject(Heap *heap, word_t *word, bool collectingOld) {
 }
 
 void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta, bool collectingOld) {
-    // Mark the object itself
+    // Mark the object itself. The double check is necessary to not overwrite
+    // the remembered state
     if (collectingOld) {
-        ObjectMeta_SetAllocated(objectMeta);
+        if (ObjectMeta_IsMarked(objectMeta)) {
+            ObjectMeta_SetAllocated(objectMeta);
+        }
     } else {
-        ObjectMeta_SetMarked(objectMeta);
+        if (ObjectMeta_IsAllocated(objectMeta)) {
+            ObjectMeta_SetMarked(objectMeta);
+        }
     }
 
     BlockMeta *blockMeta = Block_GetBlockMeta(
