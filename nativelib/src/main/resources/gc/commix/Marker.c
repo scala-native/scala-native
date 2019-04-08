@@ -57,6 +57,10 @@ static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
     } else {
         Stats_MarkerGotFullPacket(stats, end_ns);
     }
+    if (packet != NULL && packet->type == grey_packet_reflist && packet->size == 0) {
+        printf("Taking packet %p with type %d and size %d\n", packet, packet->type, packet->size);
+        fflush(stdout);
+    }
     assert(packet == NULL || packet->type == grey_packet_refrange ||
            packet->size > 0);
     return packet;
@@ -84,21 +88,23 @@ static inline void Marker_giveFullPacket(Heap *heap, Stats *stats,
     Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
 }
 
-static inline void Marker_rememberOldObject(Heap *heap, Stats *stats, Object *object) {
-    if (!GreyPacket_Push(heap->mark.oldRoots, object)) {
+static inline void Marker_rememberOldObject(Heap *heap, Stats *stats, GreyPacket **oldRootsHolder, Object *object) {
+    GreyPacket *oldRoots = *oldRootsHolder;
+    if (!GreyPacket_Push(oldRoots, object)) {
         atomic_thread_fence(memory_order_acquire);
-        GreyList_Push(&heap->mark.rememberedOld, heap->greyPacketsStart, heap->mark.oldRoots);
-        heap->mark.oldRoots = Marker_takeEmptyPacket(heap, stats);
-        GreyPacket_Push(heap->mark.oldRoots, object);
+        GreyList_Push(&heap->mark.rememberedOld, heap->greyPacketsStart, oldRoots);
+        *oldRootsHolder = oldRoots = Marker_takeEmptyPacket(heap, stats);
+        GreyPacket_Push(oldRoots, object);
     }
 }
 
-static inline void Marker_rememberYoungObject(Heap *heap, Stats *stats, Object *object) {
+static inline void Marker_rememberYoungObject(Heap *heap, Stats *stats, GreyPacket **youngRootsHolder, Object *object) {
+    GreyPacket *youngRoots = *youngRootsHolder;
     if (!GreyPacket_Push(heap->mark.youngRoots, object)) {
         atomic_thread_fence(memory_order_acquire);
-        GreyList_Push(&heap->mark.rememberedYoung, heap->greyPacketsStart, heap->mark.youngRoots);
-        heap->mark.youngRoots = Marker_takeEmptyPacket(heap, stats);
-        GreyPacket_Push(heap->mark.youngRoots, object);
+        GreyList_Push(&heap->mark.rememberedYoung, heap->greyPacketsStart, youngRoots);
+        *youngRootsHolder = youngRoots = Marker_takeEmptyPacket(heap, stats);
+        GreyPacket_Push(youngRoots, object);
     }
 }
 
@@ -134,21 +140,21 @@ void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
 }
 
 int Marker_markRange(Heap *heap, Stats *stats, Object *object, GreyPacket **outHolder,
-                     Bytemap *bytemap, word_t **fields, size_t length, bool collectingOld) {
+                     GreyPacket **oldRootsHolder, GreyPacket **youngRootsHolder, Bytemap *bytemap, word_t **fields, size_t length, bool collectingOld) {
     // if the object has pointer to old object and is young after collection we
     // need to store it in allocator->rememberedYoungObject
     //
     // if the object has pointer to young object and is old after collection we
     // need to store it in allocator->rememberedYoungObject
     ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, (word_t *)object);
-    assert(!ObjectMeta_IsAllocatedRem(objectMeta));
-    if (ObjectMeta_IsMarkedRem(objectMeta)) {
-        ObjectMeta_SetMarked(objectMeta);
-    }
 
     BlockMeta *blockMeta = Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, (word_t *)object);
     if (BlockMeta_ContainsLargeObjects(blockMeta)) {
         blockMeta = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockMeta);
+    }
+
+    if (ObjectMeta_IsMarkedRem(objectMeta)) {
+        ObjectMeta_SetMarked(objectMeta);
     }
 
     bool hasPointerToOld = false;
@@ -189,38 +195,39 @@ int Marker_markRange(Heap *heap, Stats *stats, Object *object, GreyPacket **outH
                 // If it is indeed an old objects, it will be swept in the next phase. Thus it
                 // need to keep its status of `Allocated` while being remembered.
                 ObjectMeta_SetAllocatedRem(objectMeta);
-                Marker_rememberOldObject(heap, stats, object);
+                Marker_rememberOldObject(heap, stats, oldRootsHolder, object);
             }
         } else {
             // Collecting the young generation. Only already old objects, or young to-be promoted
             // will enter this condition. Both of them need to be `Marked` and remembered.
             ObjectMeta_SetMarkedRem(objectMeta);
-            Marker_rememberOldObject(heap, stats, object);
+            Marker_rememberOldObject(heap, stats, oldRootsHolder, object);
         }
     } else if (!willBeOld && hasPointerToOld) {
         // We do not mark as remembered young objects. They will be use directly if a old collection
         // is needed, or they will be reset at the next young collection
-        Marker_rememberYoungObject(heap, stats, object);
+        Marker_rememberYoungObject(heap, stats, youngRootsHolder, object);
     }
     return objectsTraced;
 }
 
 int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
-                             GreyPacket **outHolder, Bytemap *bytemap, bool collectingOld) {
+                             GreyPacket **outHolder, GreyPacket **oldRootsHolder,
+                             GreyPacket **youngRootsHolder, Bytemap *bytemap, bool collectingOld) {
     // if the object has pointer to old object and is young after collection we
     // need to store it in heap->rememberedYoungObject
     //
     // if the object has pointer to young object and is old after collection we
     // need to store it in heap->rememberedOldObject
     ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
-    assert(!ObjectMeta_IsAllocatedRem(objectMeta));
-    if (ObjectMeta_IsMarkedRem(objectMeta)) {
-        ObjectMeta_SetMarked(objectMeta);
-    }
 
     BlockMeta *blockMeta = Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, (word_t *)object);
     if (BlockMeta_ContainsLargeObjects(blockMeta)) {
         blockMeta = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockMeta);
+    }
+
+    if (ObjectMeta_IsMarkedRem(objectMeta)) {
+        ObjectMeta_SetMarked(objectMeta);
     }
 
     bool hasPointerToOld = false;
@@ -264,24 +271,24 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                 // If it is indeed an old objects, it will be swept in the next phase. Thus it
                 // need to keep its status of `Allocated` while being remembered.
                 ObjectMeta_SetAllocatedRem(objectMeta);
-                Marker_rememberOldObject(heap, stats, object);
+                Marker_rememberOldObject(heap, stats, oldRootsHolder, object);
             }
         } else {
             // Collecting the young generation. Only already old objects, or young to-be promoted
             // will enter this condition. Both of them need to be `Marked` and remembered.
             ObjectMeta_SetMarkedRem(objectMeta);
-            Marker_rememberOldObject(heap, stats, object);
+            Marker_rememberOldObject(heap, stats, oldRootsHolder, object);
         }
     } else if (!willBeOld && hasPointerToOld) {
         // We do not mark as remembered young objects. They will be use directly if a old collection
         // is needed, or they will be reset at the next young collection
-        Marker_rememberYoungObject(heap, stats, object);
+        Marker_rememberYoungObject(heap, stats, oldRootsHolder, object);
     }
     return objectsTraced;
 }
 
 int Marker_splitObjectArray(Heap *heap, Stats *stats, Object *object, GreyPacket **outHolder,
-                            Bytemap *bytemap, word_t **fields, size_t length, bool collectingOld) {
+                            GreyPacket **oldRootsHolder, GreyPacket **youngRootsHolder, Bytemap *bytemap, word_t **fields, size_t length, bool collectingOld) {
     word_t **limit = fields + length;
     word_t **lastBatch =
         fields + (length / ARRAY_SPLIT_BATCH) * ARRAY_SPLIT_BATCH;
@@ -301,25 +308,26 @@ int Marker_splitObjectArray(Heap *heap, Stats *stats, Object *object, GreyPacket
     size_t lastBatchSize = limit - lastBatch;
     int objectsTraced = 0;
     if (lastBatchSize > 0) {
-        objectsTraced = Marker_markRange(heap, stats, object, outHolder, bytemap,
+        objectsTraced = Marker_markRange(heap, stats, object, outHolder, oldRootsHolder, youngRootsHolder, bytemap,
                                          lastBatch, lastBatchSize, collectingOld);
     }
     return objectsTraced;
 }
 
 int Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
-                            GreyPacket **outHolder, Bytemap *bytemap, bool collectingOld) {
+                            GreyPacket **outHolder, GreyPacket **oldRootsHolder,
+                            GreyPacket **youngRootsHolder, Bytemap *bytemap, bool collectingOld) {
     ArrayHeader *arrayHeader = (ArrayHeader *)object;
     size_t length = arrayHeader->length;
     word_t **fields = (word_t **)(arrayHeader + 1);
     int objectsTraced;
     if (length <= ARRAY_SPLIT_THRESHOLD) {
         objectsTraced =
-            Marker_markRange(heap, stats, object, outHolder, bytemap, fields, length, collectingOld);
+            Marker_markRange(heap, stats, object, outHolder, oldRootsHolder, youngRootsHolder, bytemap, fields, length, collectingOld);
     } else {
         // object array is two large, split it into pieces for multiple threads
         // to handle
-        objectsTraced = Marker_splitObjectArray(heap, stats, object, outHolder, bytemap,
+        objectsTraced = Marker_splitObjectArray(heap, stats, object, outHolder, oldRootsHolder, youngRootsHolder, bytemap,
                                                 fields, length, collectingOld);
     }
     return objectsTraced;
@@ -336,13 +344,24 @@ static inline void Marker_splitIncomingPacket(Heap *heap, Stats *stats, GreyPack
 }
 
 void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
-                       GreyPacket **outHolder, bool collectingOld) {
+                       GreyPacket **outHolder, GreyPacket **oldRootsHolder,
+                       GreyPacket **youngRootsHolder, bool collectingOld) {
     Bytemap *bytemap = heap->bytemap;
     int objectsTraced = 0;
     if (*outHolder == NULL) {
         GreyPacket *fresh = Marker_takeEmptyPacket(heap, stats);
         assert(fresh != NULL);
         *outHolder = fresh;
+    }
+    if (*oldRootsHolder == NULL) {
+        GreyPacket *fresh = Marker_takeEmptyPacket(heap, stats);
+        assert(fresh != NULL);
+        *oldRootsHolder = fresh;
+    }
+    if (*youngRootsHolder == NULL) {
+        GreyPacket *fresh = Marker_takeEmptyPacket(heap, stats);
+        assert(fresh != NULL);
+        *youngRootsHolder = fresh;
     }
     while (!GreyPacket_IsEmpty(in)) {
         Object *object = GreyPacket_Pop(in);
@@ -352,12 +371,14 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
             if (Object_IsArray(object)) {
                 if (object->rtti->rt.id == __object_array_id) {
                     objectsTraced += Marker_markObjectArray(heap, stats, object,
-                                                            outHolder, bytemap, collectingOld);
+                                                            outHolder, oldRootsHolder,
+                                                            youngRootsHolder, bytemap, collectingOld);
                 }
                 // non-object arrays do not contain pointers
             } else {
                 objectsTraced += Marker_markRegularObject(heap, stats, object,
-                                                          outHolder, bytemap, collectingOld);
+                                                          outHolder, oldRootsHolder,
+                                                          youngRootsHolder, bytemap, collectingOld);
             }
             if (objectsTraced > MARK_MAX_WORK_PER_PACKET) {
                 // the packet has a lot of work split the remainder in two
@@ -369,30 +390,44 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
 }
 
 void Marker_markRangePacket(Heap *heap, Stats *stats, GreyPacket *in,
-                            GreyPacket **outHolder, bool collectingOld) {
+                            GreyPacket **outHolder, GreyPacket **oldRootsHolder,
+                            GreyPacket **youngRootsHolder, bool collectingOld) {
     Bytemap *bytemap = heap->bytemap;
     if (*outHolder == NULL) {
         GreyPacket *fresh = Marker_takeEmptyPacket(heap, stats);
         assert(fresh != NULL);
         *outHolder = fresh;
     }
+    if (*oldRootsHolder == NULL) {
+        GreyPacket *fresh = Marker_takeEmptyPacket(heap, stats);
+        assert(fresh != NULL);
+        *oldRootsHolder = fresh;
+    }
+    if (*youngRootsHolder == NULL) {
+        GreyPacket *fresh = Marker_takeEmptyPacket(heap, stats);
+        assert(fresh != NULL);
+        *youngRootsHolder = fresh;
+    }
     word_t **fields = (word_t **)in->items[0];
     Object *object = (Object *)in->items[1];
-    Marker_markRange(heap, stats, object, outHolder, bytemap, fields,
+    Marker_markRange(heap, stats, object, outHolder, oldRootsHolder, youngRootsHolder, bytemap, fields,
+                     ARRAY_SPLIT_BATCH, collectingOld);
+    Marker_markRange(heap, stats, object, outHolder, oldRootsHolder, youngRootsHolder, bytemap, fields,
                      ARRAY_SPLIT_BATCH, collectingOld);
     in->type = grey_packet_reflist;
     in->size = 0;
 }
 
 static inline void Marker_markBatch(Heap *heap, Stats *stats, GreyPacket *in,
-                                    GreyPacket **outHolder,bool collectingOld) {
+                                    GreyPacket **outHolder, GreyPacket **oldRootsHolder,
+                                    GreyPacket **youngRootsHolder, bool collectingOld) {
     Stats_RecordTimeBatch(stats, start_ns);
     switch (in->type) {
     case grey_packet_reflist:
-        Marker_markPacket(heap, stats, in, outHolder, collectingOld);
+        Marker_markPacket(heap, stats, in, outHolder, oldRootsHolder, youngRootsHolder, collectingOld);
         break;
     case grey_packet_refrange:
-        Marker_markRangePacket(heap, stats, in, outHolder, collectingOld);
+        Marker_markRangePacket(heap, stats, in, outHolder, oldRootsHolder, youngRootsHolder, collectingOld);
         break;
     }
     Stats_RecordTimeBatch(stats, end_ns);
@@ -402,8 +437,10 @@ static inline void Marker_markBatch(Heap *heap, Stats *stats, GreyPacket *in,
 void Marker_Mark(Heap *heap, Stats *stats, bool collectingOld) {
     GreyPacket *in = Marker_takeFullPacket(heap, stats);
     GreyPacket *out = NULL;
+    GreyPacket *oldRoots = NULL;
+    GreyPacket *youngRoots = NULL;
     while (in != NULL) {
-        Marker_markBatch(heap, stats, in, &out, collectingOld);
+        Marker_markBatch(heap, stats, in, &out, &oldRoots, &youngRoots, collectingOld);
 
         assert(out != NULL);
         assert(GreyPacket_IsEmpty(in));
@@ -423,13 +460,25 @@ void Marker_Mark(Heap *heap, Stats *stats, bool collectingOld) {
         }
         in = next;
     }
+    if (oldRoots != NULL && oldRoots->size > 0) {
+        GreyList_Push(&heap->mark.rememberedOld, heap->greyPacketsStart, oldRoots);
+    } else if (oldRoots != NULL) {
+        GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, oldRoots);
+    }
+    if (youngRoots != NULL && youngRoots->size > 0) {
+        GreyList_Push(&heap->mark.rememberedYoung, heap->greyPacketsStart, youngRoots);
+    } else if (youngRoots != NULL) {
+        GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, youngRoots);
+    }
 }
 
 void Marker_MarkAndScale(Heap *heap, Stats *stats, bool collectingOld) {
     GreyPacket *in = Marker_takeFullPacket(heap, stats);
     GreyPacket *out = NULL;
+    GreyPacket *oldRoots = NULL;
+    GreyPacket *youngRoots = NULL;
     while (in != NULL) {
-        Marker_markBatch(heap, stats, in, &out, collectingOld);
+        Marker_markBatch(heap, stats, in, &out, &oldRoots, &youngRoots, collectingOld);
 
         assert(out != NULL);
         assert(GreyPacket_IsEmpty(in));
@@ -456,6 +505,16 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats, bool collectingOld) {
             }
         }
         in = next;
+    }
+    if (oldRoots != NULL && oldRoots->size > 0) {
+        GreyList_Push(&heap->mark.rememberedOld, heap->greyPacketsStart, oldRoots);
+    } else if (oldRoots != NULL) {
+        GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, oldRoots);
+    }
+    if (youngRoots != NULL && youngRoots->size > 0) {
+        GreyList_Push(&heap->mark.rememberedYoung, heap->greyPacketsStart, youngRoots);
+    } else if (youngRoots != NULL) {
+        GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, youngRoots);
     }
 }
 
