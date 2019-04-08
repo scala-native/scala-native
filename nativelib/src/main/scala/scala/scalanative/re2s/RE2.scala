@@ -753,6 +753,9 @@ object RE2 {
   final val POSIX = 0
 
   //// Anchors
+
+  type anchor_t = Int
+
   final val UNANCHORED   = 0
   final val ANCHOR_START = 1
   final val ANCHOR_BOTH  = 2
@@ -832,6 +835,7 @@ object RE2 {
 
   // This is visible for testing.
   trait ReplaceFunc {
+    @scalanative.native.stub
     def replace(orig: String): String = ???
   }
 

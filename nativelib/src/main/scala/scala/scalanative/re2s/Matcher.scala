@@ -151,6 +151,7 @@ final class Matcher private (private val _pattern: Pattern) {
     pos
   }
 
+  @scalanative.native.stub
   def region(start: Int, end: Int): Matcher = ???
 
   /**
