@@ -175,8 +175,9 @@ trait Visit { self: Interflow =>
   }
 
   def originalFunctionType(name: Global): Type = name match {
-    case Global.Member(owner, Sig.Duplicate(sig, _)) =>
-      originalFunctionType(Global.Member(owner, sig))
+    case Global.Member(owner, sig) if sig.isDuplicate =>
+      val Sig.Duplicate(base, _) = sig.unmangled
+      originalFunctionType(Global.Member(owner, base))
     case _ =>
       linked.infos(name).asInstanceOf[Method].ty
   }
