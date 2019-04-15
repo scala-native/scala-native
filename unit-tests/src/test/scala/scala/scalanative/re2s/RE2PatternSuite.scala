@@ -1,6 +1,8 @@
 package scala.scalanative
 package re2s
 
+import java.util.regex.PatternSyntaxException
+
 object RE2PatternSuite extends tests.Suite {
   test("compile") {
     val p = Pattern.compile("abc")

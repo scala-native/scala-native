@@ -38,7 +38,7 @@ import java.util.List
  * API, and the <a href='package.html'>package-level
  * documentation</a> for an overview of how to use this API.
  */
-class RE2 private extends Serializable {
+class RE2 private {
   import RE2._
 
   var expr: String = _ // as passed to Compile
@@ -835,8 +835,8 @@ object RE2 {
 
   // This is visible for testing.
   trait ReplaceFunc {
-    @scalanative.native.stub
-    def replace(orig: String): String = ???
+    def replace(orig: String): String =
+      throw new UnsupportedOperationException
   }
 
   /**

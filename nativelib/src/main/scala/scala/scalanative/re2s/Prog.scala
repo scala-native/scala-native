@@ -16,7 +16,7 @@ import Inst.{Op => IOP}
 /**
  * A Prog is a compiled regular expression program.
  */
-class Prog extends Serializable {
+class Prog {
 
   private val inst = new ArrayList[Inst]()
   var start        = 0 // index of start instruction

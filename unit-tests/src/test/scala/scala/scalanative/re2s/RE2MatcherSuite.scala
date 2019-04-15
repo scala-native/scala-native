@@ -94,6 +94,7 @@ object RE2MatcherSuite extends tests.Suite {
                            Array[String]("ab", "a", null, "b"))
     ApiTestUtils.testGroup("abc", "(^b)?(b)?c", Array[String]("bc", null, "b"))
     ApiTestUtils.testGroup(" a b", "\\b(.).\\b", Array[String]("a ", "a"))
+
     // Not allowed to use UTF-8 except in comments, per Java style guide.
     // ("αβξδεφγ", "(.)(..)(...)", new String[] {"αβξδεφ", "α", "βξ", "δεφ"});
     ApiTestUtils.testGroup(
@@ -106,7 +107,7 @@ object RE2MatcherSuite extends tests.Suite {
     )
   }
 
-  testFails("Find", issue = 1506) {
+  test("Find") {
     ApiTestUtils.testFind("abcdefgh", ".*[aeiou]", 0, "abcde")
     ApiTestUtils.testFind("abcdefgh", ".*[aeiou]", 1, "bcde")
     ApiTestUtils.testFind("abcdefgh", ".*[aeiou]", 2, "cde")

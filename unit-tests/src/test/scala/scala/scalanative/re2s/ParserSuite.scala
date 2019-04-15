@@ -2,6 +2,7 @@ package scala.scalanative
 package re2s
 
 import java.util
+import java.util.regex.PatternSyntaxException
 
 import ScalaTestCompat.fail
 

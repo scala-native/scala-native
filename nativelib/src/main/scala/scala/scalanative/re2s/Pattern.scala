@@ -3,8 +3,6 @@
 package scala.scalanative
 package re2s
 
-import java.io.Serializable
-
 /**
  * A compiled representation of an RE2 regular expression, mimicking the
  * {@code java.util.regex.Pattern} API.
@@ -18,8 +16,7 @@ import java.io.Serializable
  *
  * @author rsc@google.com (Russ Cox)
  */
-final class Pattern(val pattern: String, val flags: Int, val re2: RE2)
-    extends Serializable {
+final class Pattern(val pattern: String, val flags: Int, val re2: RE2) {
   if (pattern == null) {
     throw new NullPointerException("pattern is null")
   }

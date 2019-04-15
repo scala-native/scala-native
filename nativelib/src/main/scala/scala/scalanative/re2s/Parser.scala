@@ -12,6 +12,8 @@ import java.util.ArrayList
 import java.util.Arrays
 import java.util.List
 
+import java.util.regex.PatternSyntaxException
+
 import Regexp.{Op => ROP}
 
 /**
@@ -175,7 +177,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
   // op, min, max.  beforePos is the start position of the repetition operator.
   // Pre: t is positioned after the initial repetition operator.
   // Post: t advances past an optional perl-mode '?', or stays put.
-  //       Or, it fails with PatternSyntaxException.
+  //	   Or, it fails with PatternSyntaxException.
   private def repeat(op: ROP,
                      min: Int,
                      max: Int,
@@ -193,18 +195,21 @@ class Parser(wholeRegexp: String, _flags: Int) {
         // a** is a syntax error, not a doubled star, and a++ means
         // something else entirely, which we don't support!
         throw new PatternSyntaxException(ERR_INVALID_REPEAT_OP,
-                                         t.from(lastRepeatPos))
+                                         t.from(lastRepeatPos),
+                                         0)
       }
     }
     val n = stack.size()
     if (n == 0) {
       throw new PatternSyntaxException(ERR_MISSING_REPEAT_ARGUMENT,
-                                       t.from(beforePos))
+                                       t.from(beforePos),
+                                       0)
     }
     val sub = stack.get(n - 1)
     if (ROP.isPseudo(sub.op)) {
       throw new PatternSyntaxException(ERR_MISSING_REPEAT_ARGUMENT,
-                                       t.from(beforePos))
+                                       t.from(beforePos),
+                                       0)
     }
     val re = newRegexp(op)
     re.min = min
@@ -328,11 +333,11 @@ class Parser(wholeRegexp: String, _flags: Int) {
   // (passes to p.reuse) any removed *Regexps.
   //
   // For example,
-  //     ABC|ABD|AEF|BCX|BCY
+  //	 ABC|ABD|AEF|BCX|BCY
   // simplifies by literal prefix extraction to
-  //     A(B(C|D)|EF)|BC(X|Y)
+  //	 A(B(C|D)|EF)|BC(X|Y)
   // which simplifies by character class introduction to
-  //     A(B[CD]|EF)|BC[XY]
+  //	 A(B[CD]|EF)|BC[XY]
   //
   private def factor(array: Array[Regexp], flags: Int): Array[Regexp] = {
     if (array.length < 2) {
@@ -348,7 +353,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
     //
     // Go    Java
     // sub   (array, s, lensub)
-    // out   (array, 0, lenout)   // (always a prefix of |array|)
+    // out   (array, 0, lenout)	  // (always a prefix of |array|)
     //
     // In the comments we'll use the logical notation of go slices, e.g. sub[i]
     // even though the Java code will read array[s + i].
@@ -453,7 +458,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
 
     // Round 2: Factor out common complex prefixes,
     // just the first piece of each concatenation,
-    // whatever it is.  This is good enough a lot of the time.
+    // whatever it is.	This is good enough a lot of the time.
     start = 0
     lenout = 0
     var first: Regexp = null
@@ -607,7 +612,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
   }
 
   // removeLeadingString removes the first n leading runes
-  // from the beginning of re.  It returns the replacement for re.
+  // from the beginning of re.	It returns the replacement for re.
   private def removeLeadingString(_re: Regexp, n: Int): Regexp = {
     var re = _re
     if (re.op == ROP.CONCAT && re.subs.length > 0) {
@@ -773,7 +778,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
                 breakBigswitch = true
               case 'C' =>
                 // any byte not supported
-                throw new PatternSyntaxException(ERR_INVALID_ESCAPE, "\\C")
+                throw new PatternSyntaxException(ERR_INVALID_ESCAPE, "\\C", 0)
               case 'Q' =>
                 // \Q ... \E: the ... is always literals
                 var lit = t.rest()
@@ -857,14 +862,15 @@ class Parser(wholeRegexp: String, _flags: Int) {
       // Pull out name.
       val end = s.indexOf('>')
       if (end < 0) {
-        throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE, s)
+        throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE, s, 0)
       }
       val name = s.substring(3, end) // "name"
       t.skipString(name)
       t.skip(4) // "(?<>"
       if (!isValidCaptureName(name)) {
         throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE,
-                                         s.substring(0, end)) // "(?P<name>"
+                                         s.substring(0, end),
+                                         0) // "(?P<name>"
       }
       // Like ordinary capture, but named.
       val re = op(ROP.LEFT_PAREN)
@@ -934,7 +940,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
       }
     }
 
-    throw new PatternSyntaxException(ERR_INVALID_PERL_OP, t.from(startPos))
+    throw new PatternSyntaxException(ERR_INVALID_PERL_OP, t.from(startPos), 0)
   }
 
   // parseVerticalBar handles a | in the input.
@@ -1025,7 +1031,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
   }
 
   // parsePerlClassEscape parses a leading Perl character class escape like \d
-  // from the beginning of |t|.  If one is present, it appends the characters
+  // from the beginning of |t|.	 If one is present, it appends the characters
   // to cc and returns true.  The iterator is advanced past the escape
   // on success, undefined on failure, in which case false is returned.
   private def parsePerlClassEscape(t: StringIterator,
@@ -1088,7 +1094,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
     }
 
     // Group can have leading negation too.
-    //  \p{^Han} == \P{Han}, \P{^Han} == \p{Han}.
+    //	\p{^Han} == \P{Han}, \P{^Han} == \p{Han}.
     if (!name.isEmpty() && name.charAt(0) == '^') {
       sign = -sign
       name = name.substring(1)
@@ -1151,7 +1157,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
   //
   // NOTES:
   // Pre: at '[' Post: after ']'.
-  // Mutates stack.  Advances iterator.  May throw.
+  // Mutates stack.  Advances iterator.	 May throw.
   private def parseClass(t: StringIterator): Unit = {
     var startPos = t.pos()
     t.skip(1) // '['
@@ -1242,33 +1248,46 @@ class Parser(wholeRegexp: String, _flags: Int) {
 
 object Parser {
 
+  // SN re2s porting note.  The goal is for the text here
+  // to be identical with the JVM.
+
   // Unexpected error
   private final val ERR_INTERNAL_ERROR =
     "regexp/syntax: internal error"
 
   // Parse errors
   private final val ERR_INVALID_CHAR_CLASS =
-    "Unclosed character class"
+    "Illegal/unsupported character class"
+
   private final val ERR_INVALID_CHAR_RANGE =
     "Illegal character range"
+
   private final val ERR_INVALID_ESCAPE =
     "Illegal/unsupported escape sequence"
+
   private final val ERR_INVALID_NAMED_CAPTURE =
-    "invalid named capture"
+    "Bad named capture group"
+
   private final val ERR_INVALID_PERL_OP =
-    "invalid or unsupported Perl syntax"
+    "Bad perl operator"
+
   private final val ERR_INVALID_REPEAT_OP =
     "invalid nested repetition operator"
+
   private final val ERR_INVALID_REPEAT_SIZE =
-    "invalid repeat count"
+    "Bad repetition argument"
+
   private final val ERR_MISSING_BRACKET =
-    "Unmatched closing ')'"
+    "Unclosed character class"
+
   private final val ERR_MISSING_PAREN =
-    "Unclosed group"
+    "Missing parenthesis"
+
   private final val ERR_MISSING_REPEAT_ARGUMENT =
-    "missing argument to repetition operator"
+    "Bad repetition operator"
+
   private final val ERR_TRAILING_BACKSLASH =
-    "Unexpected internal error"
+    "Trailing Backslash"
 
   // Hack to expose ArrayList.removeRange().
   private class Stack extends ArrayList[Regexp] {
@@ -1318,7 +1337,7 @@ object Parser {
   }
 
   // StringIterator: a stream of runes with an opaque cursor, permitting
-  // rewinding.  The units of the cursor are not specified beyond the
+  // rewinding.	 The units of the cursor are not specified beyond the
   // fact that ASCII characters are single width.  (Cursor positions
   // could be UTF-8 byte indices, UTF-16 code indices or rune indices.)
   //
@@ -1356,7 +1375,7 @@ object Parser {
     def skipString(s: String): Unit = _pos += s.length()
 
     // Returns the rune at the cursor position, and advances the cursor
-    // past it.  Precondition: |more()|.
+    // past it.	 Precondition: |more()|.
     def pop(): Int = {
       val r = str.codePointAt(_pos)
       _pos += Character.charCount(r)
@@ -1431,7 +1450,9 @@ object Parser {
     if (min < 0 || min > 1000 ||
         max == -2 || max > 1000 || max >= 0 && min > max) {
       // Numbers were negative or too big, or max is present and min > max.
-      throw new PatternSyntaxException(ERR_INVALID_REPEAT_SIZE, t.from(start))
+      throw new PatternSyntaxException(ERR_INVALID_REPEAT_SIZE,
+                                       t.from(start),
+                                       0)
     }
     return (min << 16) | (max & 0xffff) // success
   }
@@ -1457,7 +1478,7 @@ object Parser {
   }
 
   // parseInt parses a nonnegative decimal integer.
-  // -1 => bad format.  -2 => format ok, but integer overflow.
+  // -1 => bad format.	-2 => format ok, but integer overflow.
   private def parseInt(t: StringIterator): Int = {
     var start = t.pos()
     var c     = 0
@@ -1667,7 +1688,7 @@ object Parser {
         if (!Utils.isalnum(c)) {
           // Escaped non-word characters are always themselves.
           // PCRE is not quite so rigorous: it accepts things like
-          // \q, but we don't.  We once rejected \_, but too many
+          // \q, but we don't.	We once rejected \_, but too many
           // programs and people insist on using it, so allow \_.
           c
         } else {

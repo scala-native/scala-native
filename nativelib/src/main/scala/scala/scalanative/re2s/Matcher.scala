@@ -43,7 +43,7 @@ final class Matcher private (private val _pattern: Pattern) {
   // The group indexes, in [start, end) pairs.  Zeroth pair is overall match.
   private val _groups: Array[Int] = new Array[Int](2 + 2 * _groupCount)
 
-  private var _inputSequence: CharSequence = _
+  private var _inputSequence: CharSequence = ""
 
   // The input length in UTF16 codes.
   private var _inputLength: Int = _
@@ -60,6 +60,9 @@ final class Matcher private (private val _pattern: Pattern) {
 
   // The anchor flag to use when repeating the match to find subgroups.
   private var _anchorFlag: Int = _
+
+  private var _regionEnd   = 0
+  private var _regionStart = 0
 
   /** Creates a new {@code Matcher} with the given pattern and input. */
   def this(pattern: Pattern, input: CharSequence) = {
@@ -80,6 +83,8 @@ final class Matcher private (private val _pattern: Pattern) {
     _appendPos = 0
     _hasMatch = false
     _hasGroups = false
+    _regionStart = 0
+    _regionEnd = _inputSequence.length
     this
   }
 
@@ -151,8 +156,14 @@ final class Matcher private (private val _pattern: Pattern) {
     pos
   }
 
-  @scalanative.native.stub
-  def region(start: Int, end: Int): Matcher = ???
+  def region(start: Int, end: Int): Matcher = {
+    throw new UnsupportedOperationException
+    this
+  }
+
+  def regionEnd(): Int = _regionEnd
+
+  def regionStart(): Int = _regionStart
 
   /**
    * Returns the most recent match.

@@ -173,46 +173,50 @@ object ApiTestUtils extends tests.Suite {
   def testGroupCount(pattern: String, count: Int): Unit = { // RE2
     val p = Pattern.compile(pattern)
     val m = p.matcher("x")
-    assert(count == p.groupCount)
-    assert(count == m.groupCount)
-//    // JDK
-//    val pj = java.util.regex.Pattern.compile(pattern)
-//    val mj = pj.matcher("x")
-//    // java.util.regex.Pattern doesn't have group count in JDK.
-//    assert(count == mj.groupCount)
+    assert(count == p.groupCount,
+           s"pattern: ${pattern} p.groupCount: ${} != expected: ${count}")
+    assert(count == m.groupCount,
+           s"pattern: ${pattern} m.groupCount: ${} != expected: ${count}")
+
+    // JDK -- SN j.u.regex calls into re2s, so somethin rotten on false.
+    val pj = java.util.regex.Pattern.compile(pattern)
+    val mj = pj.matcher("x")
+    assert(count == mj.groupCount,
+           s"pattern: ${pattern} mj.groupCount: ${} != expected: ${count}")
   }
 
   def testGroup(text: String, regexp: String, output: Array[String]): Unit = {
+
     val p           = Pattern.compile(regexp)
     val matchString = p.matcher(text)
-    assert(matchString.find)
-    assert(output(0) == matchString.group)
-    var i = 0
-    while (i < output.length) {
-      assert(output(i) == matchString.group(i))
+    assert(matchString.find, s"re2s find failed")
 
-      {
-        i += 1; i - 1
-      }
+    // This tests ms.group code path, for loop tests the ms.group(0) path.
+    assert(output(0) == matchString.group,
+           s"output(0): ${output(0)} != expected: ${matchString.group}")
+
+    for (i <- 0 until output.length) {
+      assert(output(i) == matchString.group(i),
+             s"output(${i}): ${output(i)} != expected:" +
+               s" ${matchString.group(i)}")
     }
-    assert(output.length - 1 == matchString.groupCount)
+
+    assert(output.length - 1 == matchString.groupCount,
+           s"length - 1: ${output.length - 1} != expected: " +
+             s"${matchString.groupCount}")
+
     val pj           = java.util.regex.Pattern.compile(regexp)
     val matchStringj = pj.matcher(text)
-    // java.util.regex.Matcher matchBytes =
-    //   p.matcher(text.getBytes(Charsets.UTF_8));
-    assert(matchStringj.find)
-    // assert(matchBytes.find());
-    assert(output(0) == matchStringj.group)
-    // assert(output[0] == matchBytes.group());
+    assert(matchStringj.find, s"j.u.regex find failed")
 
-    i = 0
-    while (i < output.length) {
-      assert(output(i) == matchStringj.group(i))
-      // assert(output[i] == matchBytes.group(i));
+    assert(output(0) == matchStringj.group,
+           s"j.u.regex output(0): ${output(0)} != " +
+             s"expected: ${matchStringj.group}")
 
-      {
-        i += 1; i - 1
-      }
+    for (i <- 0 until output.length) {
+      assert(matchString.group(i) == matchStringj.group(i),
+             s"matchString(${i}): ${matchString.group(i)} != " +
+               s"java: ${matchStringj.group(i)}")
     }
   }
 

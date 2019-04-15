@@ -1,6 +1,8 @@
 package scala.scalanative
 package re2s
 
+import java.util.regex.PatternSyntaxException
+
 import ScalaTestCompat.fail
 
 object RE2ReplaceAllFunctionSuite extends tests.Suite {

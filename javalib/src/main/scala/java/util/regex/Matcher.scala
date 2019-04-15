@@ -1,13 +1,12 @@
 package java.util
 package regex
 
-import cre2h._
-import scalanative.native._
-import scalanative.libc._, stdlib._, stdio._, string._
-
 import scala.annotation.tailrec
 
-// Inspired by: https://github.com/google/re2j/blob/master/java/com/google/re2j/Matcher.java
+import scalanative.re2s.RE2
+
+// Inspired & informed by:
+// https://github.com/google/re2j/blob/master/java/com/google/re2j/Matcher.java
 
 object Matcher {
 
@@ -46,235 +45,72 @@ object Matcher {
       qrLoop(s, idx, sb).toString
     }
   }
+
 }
 
 final class Matcher private[regex] (var _pattern: Pattern,
-                                    var inputSequence: CharSequence)
+                                    var _inputSequence: CharSequence)
     extends MatchResult {
 
-  private def withRE2Regex[A](f: RE2RegExpOps => A): A =
-    _pattern.withRE2Regex(f)
+  private var currentPattern = _pattern
 
   private var hasMatch  = false
   private var hasGroups = false
   private var appendPos = 0
 
-  private var groups = withRE2Regex { re2op =>
-    val regex = re2op.ptr
-    Array.ofDim[(Int, Int)](cre2.numCapturingGroups(regex) + 1)
+  private var _regionStart = 0
+  private var _regionEnd   = _inputSequence.length
+
+  private var _groupCount = currentPattern.compiled.groupCount()
+
+  // This default differs from JVM but describes actual SN behavior.
+  // That behavior is a bug, awaiting a fix.
+  private var anchoringBoundsInUse = false
+
+  private def clearGroup0(g: Array[Int]) = {
+    g(0) = -1
+    g(1) = -1
   }
 
-  private var lastAnchor: Option[cre2.anchor_t] = None
+  private def createGroups(nGroups: Int): Array[Int] = {
 
-  private[regex] def inputLength = inputSequence.length
+    // +1 is for groups(0). It holds full match, but is not part of groupCount.
+    // "groups" is an old-style 2-D row-major array, where Array(index) holds
+    // start for group number index and Array(index + 1) holds the
+    // corresponding end. In SN, 1-D arrays are much more efficient, albeit
+    // much less elegant.
 
-  def matches(): Boolean = genMatch(0, ANCHOR_BOTH)
+    val result = new Array[Int](2 * (nGroups + 1))
 
-  def lookingAt(): Boolean = genMatch(0, ANCHOR_START)
+    // No lastmatch at creation, that is group(0) is coded as null,
+    // not null string.
+    // groups n > 0 have undefined values until after a loadGroup() executes.
+    clearGroup0(result)
 
-  def find(start: Int): Boolean = genMatch(0, UNANCHORED)
-
-  def find(): Boolean = {
-    var startIndex = 0
-    if (hasMatch) {
-      startIndex = end
-      if (start == end) {
-        startIndex += 1
-      }
-    }
-
-    genMatch(startIndex, UNANCHORED)
+    result
   }
 
-  private def doMatch(start: Int,
-                      end: Int,
-                      nMatches: Int,
-                      anchor: cre2.anchor_t): Boolean =
-    Zone { implicit z =>
-      val n       = nMatches
-      val matches = alloc[cre2.string_t](n)
-      val instr   = inputSequence.toString
-      val inre2   = alloc[cre2.string_t]
-      toRE2String(instr, inre2)
-      // calculate byte-array indices from string indices
-      val startpos = instr.take(start).getBytes().length
-      val endpos   = instr.take(end).getBytes().length
-
-      val ok = withRE2Regex { re2 =>
-        val regex = re2.ptr
-        cre2.matches(
-          regex = regex,
-          text = inre2.data,
-          textlen = inre2.length,
-          startpos = startpos,
-          endpos = endpos,
-          anchor = anchor,
-          matches = matches,
-          nMatches = nMatches
-        ) == 1
-      }
-
-      if (ok) {
-        var i = 0
-        while (i < nMatches) {
-          val m = matches + i
-          groups(i) = if (m.data == null) {
-            (-1, -1)
-          } else if (m.length == 0) {
-            (0, 0)
-          } else {
-            // Takes from inre2 until m...
-            val before = alloc[cre2.string_t]
-            before.data = inre2.data
-            before.length = (m.data - inre2.data).toInt
-            // ...to calculate `start` in String's index.
-            val start = fromRE2String(before).length
-            val end   = start + fromRE2String(m).length
-            (start, end)
-          }
-
-          i += 1
-        }
-      }
-
-      ok
-    }
-
-  private def genMatch(start: Int, anchor: cre2.anchor_t): Boolean = {
-    val ok = doMatch(start, inputLength, 1, anchor)
-
-    if (ok) {
-      hasMatch = true
-      hasGroups = false
-      lastAnchor = Some(anchor)
-    }
-
-    ok
+  private def clearGroups(g: Array[Int]) = {
+    Arrays.fill(groups, 0, g.length, -1) // Now, all groups return null.
   }
 
-  def replaceFirst(replacement: String): String =
-    replace(replacement, global = false)
+  // The group indexes, in [start, end) pairs.  Zeroth pair is overall match.
+  private var groups = createGroups(_groupCount)
 
-  def replaceAll(replacement: String): String =
-    replace(replacement, global = true)
+  private def groupStartIndex(groupNum: Int) = groups(groupNum * 2)
+  private def groupEndIndex(groupNum: Int)   = groups((groupNum * 2) + 1)
 
-  private def replace(replacement: String, global: Boolean): String =
-    Zone { implicit z =>
-      val textAndTarget, rewrite = stackalloc[cre2.string_t]
+  private var lastAnchor: Option[RE2.anchor_t] = None
 
-      toRE2String(inputSequence.toString, textAndTarget)
-      toRE2String(replacement, rewrite)
-
-      withRE2Regex { re2 =>
-        val regex = re2.ptr
-        if (global) cre2.globalReplace(regex, textAndTarget, rewrite)
-        else cre2.replace(regex, textAndTarget, rewrite)
-      }
-
-      val res = fromRE2String(textAndTarget)
-
-      res
-    }
-
-  def group(): String = group(0)
-
-  def group(group: Int): String = {
-    val startIndex = start(group)
-    val endIndex   = end(group)
-
-    if (startIndex < 0 && endIndex < 0) {
-      null
-    } else if (startIndex == 0 && endIndex == 0) {
-      ""
-    } else {
-      inputSequence.subSequence(startIndex, endIndex).toString
-    }
-  }
-
-  def group(name: String): String = group(groupIndex(name))
-
-  private def groupIndex(name: String): Int =
-    Zone { implicit z =>
-      val pos = withRE2Regex { re2 =>
-        val regex = re2.ptr
-        cre2.findNamedCapturingGroups(regex, toCString(name))
-      }
-      if (pos == -1) {
-        throw new IllegalArgumentException(s"No group with name <$name>")
-      }
-      pos
-    }
-
-  def groupCount: Int = groups.length - 1
-
-  def start: Int = start(0)
-
-  def start(group: Int): Int = {
-    loadGroup(group)
-    groups(group)._1
-  }
-
-  def start(name: String): Int = start(groupIndex(name))
-
-  def end: Int = end(0)
-
-  def end(group: Int): Int = {
-    loadGroup(group)
-    groups(group)._2
-  }
-
-  def end(name: String): Int = end(groupIndex(name))
-
-  private def loadGroup(group: Int): Unit = {
-    if (group < 0 || group > groupCount) {
-      throw new IndexOutOfBoundsException(s"No group $group")
-    }
-
-    if (!hasMatch) {
-      throw new IllegalStateException("No match found")
-    }
-
-    if (!(group == 0 || hasGroups)) {
-      val ok = doMatch(
-        start = groups(0)._1,
-        end = groups(0)._2,
-        nMatches = groups.length,
-        anchor = lastAnchor.get
-      )
-
-      if (!ok) {
-        throw new IllegalStateException("Cannot load groups")
-      }
-
-      hasGroups = true
-    }
-  }
-
-  def pattern(): Pattern = this._pattern
-
-  def reset(input: CharSequence): Matcher = {
-    reset()
-    inputSequence = input
-    this
-  }
-
-  def reset(): Matcher = {
-    appendPos = 0
-    hasMatch = false
-    hasGroups = false
-    this
-  }
-
-  def region(start: Int, end: Int): Matcher = ???
+  private[regex] def inputLength = _inputSequence.length
 
   private[regex] def appendReplacement2(sb: StringBuffer,
                                         replacement: String,
                                         doGroups: Boolean): Matcher = {
-
     val s = start
     val e = end
     if (appendPos < s) {
-      sb.append(inputSequence, appendPos, s)
+      sb.append(_inputSequence, appendPos, s)
     }
     appendPos = e
 
@@ -302,22 +138,317 @@ final class Matcher private[regex] (var _pattern: Pattern,
     this
   }
 
+  private def doMatch(start: Int,
+                      end: Int,
+                      nMatches: Int,
+                      anchor: RE2.anchor_t): Boolean = {
+
+    currentPattern.compiled.re2
+      .match_(_inputSequence, start, end, anchor, groups, nMatches)
+  }
+
+  private def genMatch(start: Int, end: Int, anchor: RE2.anchor_t): Boolean = {
+
+    val ok = doMatch(start, end, 1, anchor)
+
+    // On error, group(0) will have been set to -1, -1
+    // meaning null (not null string). toString() must be able to
+    // convert null to null String.
+    //
+    // On success group(0) holds the indices for the match.
+
+    hasGroups = false // drop groups on both  happy or sad paths.
+
+    if (ok) {
+      hasMatch = true
+      lastAnchor = Some(anchor)
+      // Do not touch  appendPos. It is handled elsewhere.
+    }
+
+    ok
+  }
+
+  private def groupIndex(name: String): Int = {
+    currentPattern.compiled.re2.findNamedCapturingGroups(name)
+  }
+
+  private def lastMatchString(s: Int, e: Int): String = {
+    // s & e are start and end indices of groups indexed data structure.
+    if (s < 0 && e < 0) {
+      null
+    } else if (s == 0 && e == 0) {
+      ""
+    } else {
+      substring(s, e).toString
+    }
+  }
+
+  private def loadGroup(group: Int): Unit = {
+
+    if (group < 0 || group > groupCount) {
+      throw new IndexOutOfBoundsException(s"No group $group")
+    }
+
+    if (!hasMatch) {
+      throw new IllegalStateException("No match found")
+    }
+
+    // See comments in re2s.Matcher.scala method loadGroups
+    // about the particularly tricky handling needed here
+    // so that pattern "(a)(b$)?(b)?" will succeed.
+
+    if (!(group == 0 || hasGroups)) {
+
+      var end = groups(1) + 1
+
+      if (end > inputLength) {
+        end = inputLength
+      }
+
+      val ok = doMatch(
+        start = groups(0),
+        end = end,
+        nMatches = _groupCount + 1,
+        anchor = lastAnchor.get
+      )
+
+      if (!ok) {
+        throw new IllegalStateException("Can not load groups")
+      }
+
+      hasGroups = true
+    }
+  }
+
+  private def noLookAhead(methodName: String): Nothing =
+    throw new UnsupportedOperationException(
+      s"$methodName is not supported due to unsupported lookaheads.")
+
+  private[regex] def substring(start: Int, end: Int): String =
+    _inputSequence.subSequence(start, end).toString
+
+// Public interface
+
   def appendReplacement(sb: StringBuffer, replacement: String): Matcher = {
     appendReplacement2(sb, replacement, doGroups = true)
   }
 
   def appendTail(sb: StringBuffer): StringBuffer = {
-    sb.append(inputSequence, appendPos, inputLength)
+    sb.append(_inputSequence, appendPos, inputLength)
   }
 
-  private[regex] def substring(start: Int, end: Int): String =
-    inputSequence.subSequence(start, end).toString
+  def end(): Int = end(0)
 
-  private def noLookAhead(methodName: String): Nothing =
-    throw new Exception(
-      s"$methodName is not defined since we don't support lookaheads")
+  def end(group: Int): Int = {
+    loadGroup(group)
+    groupEndIndex(group)
+  }
+
+  def end(name: String): Int = end(groupIndex(name))
+
+  def find(): Boolean = {
+
+    var startIndex = _regionStart
+
+    if (hasMatch) {
+      startIndex = end
+      if (start == end) {
+        startIndex += 1
+      }
+    }
+
+    genMatch(startIndex, _regionEnd, RE2.UNANCHORED)
+  }
+
+  def find(start: Int): Boolean = {
+
+    if ((start < 0) || (start > inputLength)) {
+      throw new IndexOutOfBoundsException("Illegal start index")
+    }
+
+    reset()
+
+    // If start < _regionStart it is known at this point that match will fail.
+    // Do the match anyway to properly set Matcher data structures as failed.
+
+    genMatch(start, _regionEnd, RE2.UNANCHORED)
+  }
+
+  def group(): String = group(0)
+
+  def group(group: Int): String = {
+    lastMatchString(start(group), end(group))
+  }
+
+  def group(name: String): String = group(groupIndex(name))
+
+  def groupCount: Int = _groupCount
+
+  def hasAnchoringBounds(): Boolean = anchoringBoundsInUse
+
+  def hasTransparentBounds(): Boolean = noLookAhead("hasTransparentBounds")
+
+  def hitEnd(): Boolean =
+    throw new UnsupportedOperationException("hitEnd is not supported.")
+
+  def lookingAt(): Boolean =
+    genMatch(_regionStart, _regionEnd, RE2.ANCHOR_START)
+
+  def matches(): Boolean = {
+
+    def getAnchor(): RE2.anchor_t = {
+
+      val startAnchor = if (_regionStart == 0) {
+        RE2.ANCHOR_START
+      } else {
+        RE2.UNANCHORED
+      }
+
+      val anchor =
+        if ((startAnchor == RE2.ANCHOR_START)
+            && (_regionEnd == _inputSequence.length)) {
+          RE2.ANCHOR_BOTH
+        } else {
+          RE2.UNANCHORED
+        }
+
+      anchor
+    }
+
+    def checkMatch(anchor: RE2.anchor_t): Boolean = {
+      ((anchor == RE2.ANCHOR_BOTH) ||
+      ((groups(0) == _regionStart) && (groups(1) == _regionEnd)))
+    }
+
+    val anchor = getAnchor()
+
+    val ok = genMatch(_regionStart, _regionEnd, anchor)
+
+    ok && checkMatch(anchor)
+  }
+
+  def pattern(): Pattern = this.currentPattern
+
+  def region(start: Int, end: Int): Matcher = {
+
+    val inLength = inputLength
+
+    if ((start < 0) || (start > inLength)) {
+      throw new IndexOutOfBoundsException("start")
+    }
+
+    if ((end < 0) || (end > inLength)) {
+      throw new IndexOutOfBoundsException("end")
+    }
+
+    if (start > end) {
+      throw new IndexOutOfBoundsException("start > end")
+    }
+
+    _regionStart = start
+    _regionEnd = end
+
+    this
+  }
+
+  def regionEnd(): Int = _regionEnd
+
+  def regionStart(): Int = _regionStart
+
+  def replaceAll(replacement: String): String = {
+    currentPattern.compiled
+      .matcher(_inputSequence)
+      .replaceAll(replacement)
+  }
+
+  def replaceFirst(replacement: String): String = {
+    currentPattern.compiled
+      .matcher(_inputSequence)
+      .replaceFirst(replacement)
+  }
+
+  def requireEnd(): Boolean =
+    throw new UnsupportedOperationException("requireEnd is not supported.")
+
+  def reset(): Matcher = {
+
+    // does not change re behavior, resets its memory
+    currentPattern.compiled.reset()
+
+    appendPos = 0
+    hasMatch = false
+    hasGroups = false
+
+    _regionStart = 0
+    _regionEnd = _inputSequence.length
+
+    this
+  }
+
+  def reset(input: CharSequence): Matcher = {
+    reset()
+    _inputSequence = input
+    this
+  }
+
+  def start(): Int = start(0)
+
+  def start(group: Int): Int = {
+    loadGroup(group)
+    groupStartIndex(group)
+  }
+
+  def start(name: String): Int = start(groupIndex(name))
+
+  def toMatchResult(): MatchResult =
+    throw new UnsupportedOperationException("toMatchResult is not supported.")
+
+  override def toString = {
+
+    val lastmatch = {
+      val lm = lastMatchString(groups(0), groups(1))
+      if (lm == null) "" else lm
+    }
+
+    // The hideous string interpolation results in JVM look-alike:
+    // Pattern.compile("needle").matcher("haystack").toString
+    // java.util.regex.Matcher[pattern=needle region=0,8 lastmatch=]
+
+    s"java.util.regex.Matcher[pattern=${currentPattern}" +
+      s" region=${regionStart},${regionEnd}" +
+      s" lastmatch=${lastmatch}]"
+  }
+
+  def useAnchoringBounds(b: Boolean): Matcher =
+    throw new UnsupportedOperationException(
+      "useAnchoringBounds is not supported.")
+
+  def usePattern(newPattern: Pattern): Matcher = {
+
+    if (newPattern == null) {
+      throw new IllegalArgumentException()
+    }
+
+    // Per JVM documentation, current position, last append position, &
+    // do not change. region behavior is not mentioned, but JVM preserves
+    // the region.
+    //
+    // Info on groups from lastmatch is lost.
+
+    currentPattern = newPattern
+
+    val oldGroupCount = _groupCount
+    _groupCount = currentPattern.compiled.groupCount()
+
+    // Need new "groups" data structure if size changed. Else reuse current.
+    if (_groupCount != oldGroupCount) {
+      groups = createGroups(_groupCount)
+      clearGroups(groups)
+    }
+
+    this
+  }
 
   def useTransparentBounds(b: Boolean): Matcher =
     noLookAhead("useTransparentBounds")
-  def hasTransparentBounds(): Boolean = noLookAhead("hasTransparentBounds")
 }
