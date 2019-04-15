@@ -156,18 +156,14 @@ private[scalanative] object LLVM {
            nativelib: Path,
            outpath: Path): Path = {
     val links = {
-      val os   = Option(sys props "os.name").getOrElse("")
-      val arch = config.targetTriple.split("-").head
-      // we need re2 to link the re2 c wrapper (cre2.h)
-      val librt = os match {
-        case "Linux" => Seq("rt")
-        case _       => Seq.empty
-      }
-      linkerResult.links.map(_.name) ++ librt ++ config.gc.links
+      val srclinks = linkerResult.links.map(_.name)
+      val gclinks  = config.gc.links
+      // We need extra linking dependencies for:
+      // * libdl for our vendored libunwind implementation.
+      // * libpthread for process APIs and parallel garbage collection.
+      "pthread" +: "dl" +: srclinks ++: gclinks
     }
-    val linkopts = config.linkingOptions ++ links.map("-l" + _) ++ Seq(
-      "-ldl",
-      "-lpthread")
+    val linkopts  = config.linkingOptions ++ links.map("-l" + _)
     val targetopt = Seq("-target", config.targetTriple)
     val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
