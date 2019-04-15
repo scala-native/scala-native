@@ -429,7 +429,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
       throw new IllegalArgumentException()
     }
 
-    // Per JVM documentation, current position, last append position, &
+    // Per JVM documentation, current position & last append position
     // do not change. region behavior is not mentioned, but JVM preserves
     // the region.
     //
