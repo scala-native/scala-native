@@ -195,7 +195,7 @@ final class Check(implicit linked: linker.Result) {
     case Op.Method(obj, sig) =>
       expect(Rt.Object, obj)
       sig match {
-        case _: Sig.Method | _: Sig.Ctor =>
+        case sig if sig.isMethod || sig.isCtor =>
           ok
         case _ =>
           error(s"method must take a method signature, not ${sig.show}")
@@ -217,7 +217,7 @@ final class Check(implicit linked: linker.Result) {
     case Op.Dynmethod(obj, sig) =>
       expect(Rt.Object, obj)
       sig match {
-        case _: Sig.Proxy =>
+        case sig if sig.isProxy =>
           ok
         case _ =>
           error(s"dynmethod must take a proxy signature, not ${sig.show}")

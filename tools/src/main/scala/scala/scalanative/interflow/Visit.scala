@@ -141,7 +141,8 @@ trait Visit { self: Interflow =>
     }
 
   def originalName(name: Global): Global = name match {
-    case Global.Member(owner, Sig.Duplicate(origSig, argtys)) =>
+    case Global.Member(owner, sig) if sig.isDuplicate =>
+      val Sig.Duplicate(origSig, argtys) = sig.unmangled
       originalName(Global.Member(owner, origSig))
     case _ =>
       name
@@ -165,7 +166,8 @@ trait Visit { self: Interflow =>
   }
 
   def argumentTypes(name: Global): Seq[Type] = name match {
-    case Global.Member(_, Sig.Duplicate(_, argtys)) =>
+    case Global.Member(_, sig) if sig.isDuplicate =>
+      val Sig.Duplicate(_, argtys) = sig.unmangled
       argtys
     case _ =>
       val Type.Function(argtys, _) = linked.infos(name).asInstanceOf[Method].ty
@@ -173,8 +175,9 @@ trait Visit { self: Interflow =>
   }
 
   def originalFunctionType(name: Global): Type = name match {
-    case Global.Member(owner, Sig.Duplicate(sig, _)) =>
-      originalFunctionType(Global.Member(owner, sig))
+    case Global.Member(owner, sig) if sig.isDuplicate =>
+      val Sig.Duplicate(base, _) = sig.unmangled
+      originalFunctionType(Global.Member(owner, base))
     case _ =>
       linked.infos(name).asInstanceOf[Method].ty
   }

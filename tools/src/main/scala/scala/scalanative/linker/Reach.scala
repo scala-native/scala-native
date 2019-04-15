@@ -216,7 +216,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
               case Rt.JavaHashCodeSig =>
                 update(Rt.ScalaHashCodeSig)
                 update(Rt.JavaHashCodeSig)
-              case sig @ (_: Sig.Method | _: Sig.Ctor) =>
+              case sig if sig.isMethod || sig.isCtor =>
                 update(sig)
               case _ =>
                 ()
@@ -259,7 +259,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       // signature becomes reachable. The others are
       // stashed as dynamic candidates.
       info.responds.foreach {
-        case (sig: Sig.Method, impl) =>
+        case (sig, impl) if sig.isMethod =>
           val dynsig = sig.toProxy
           if (!dynsigs.contains(dynsig)) {
             val buf =

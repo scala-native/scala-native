@@ -21,9 +21,7 @@ trait Inline { self: Interflow =>
         false
       } { defn =>
         val isCtor = originalName(name) match {
-          case Global.Member(_, _: Sig.Ctor) =>
-            true
-          case Global.Member(_, Sig.Method("$init$", _)) =>
+          case Global.Member(_, sig) if sig.isCtor || sig.isImplCtor =>
             true
           case _ =>
             false

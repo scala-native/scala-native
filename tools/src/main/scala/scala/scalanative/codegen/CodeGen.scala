@@ -615,7 +615,8 @@ object CodeGen {
     def mangled(g: Global): String = g match {
       case Global.None =>
         unsupported(g)
-      case Global.Member(_, Sig.Extern(id)) =>
+      case Global.Member(_, sig) if sig.isExtern =>
+        val Sig.Extern(id) = sig.unmangled
         id
       case _ =>
         "_S" + g.mangle

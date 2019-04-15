@@ -2,9 +2,9 @@ package scala.scalanative
 package nir
 
 object Unmangle {
-  def unmangleGlobal(s: String): Global = (new Impl(s)).readGlobal()
-  def unmangleType(s: String): Type     = (new Impl(s)).readType()
-  def unmangleSig(s: String): Sig       = (new Impl(s)).readSig()
+  def unmangleGlobal(s: String): Global     = (new Impl(s)).readGlobal()
+  def unmangleType(s: String): Type         = (new Impl(s)).readType()
+  def unmangleSig(s: String): Sig.Unmangled = (new Impl(s)).readUnmangledSig()
 
   private class Impl(s: String) {
     val chars = s.toArray
@@ -14,12 +14,12 @@ object Unmangle {
       case 'T' =>
         Global.Top(readIdent())
       case 'M' =>
-        Global.Member(Global.Top(readIdent()), readSig())
+        Global.Member(Global.Top(readIdent()), readUnmangledSig().mangled)
       case ch =>
         error(s"expected global, but got $ch")
     }
 
-    def readSig(): Sig = read() match {
+    def readUnmangledSig(): Sig.Unmangled = read() match {
       case 'F' =>
         Sig.Field(readIdent())
       case 'R' =>
@@ -33,7 +33,7 @@ object Unmangle {
       case 'G' =>
         Sig.Generated(readIdent())
       case 'K' =>
-        Sig.Duplicate(readSig(), readTypes())
+        Sig.Duplicate(readUnmangledSig(), readTypes())
       case ch =>
         error(s"expected sig, but got $ch")
     }
