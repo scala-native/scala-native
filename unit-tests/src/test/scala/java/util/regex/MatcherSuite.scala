@@ -17,21 +17,6 @@ object MatcherSuite extends tests.Suite {
     true
   }
 
-  private def extractRegion(patternToString: String): String = {
-
-    val needle = "region=(\\d+,\\d+)"
-    val m      = matcher(needle, patternToString)
-
-    assert(m.find(), s"should have found '${needle}' in '${patternToString}'")
-
-    val expectedGroupCount = 1
-
-    assert(m.groupCount() == expectedGroupCount,
-           s"groupCount: ${m.groupCount} != expected: ${expectedGroupCount}")
-
-    m.group(1)
-  }
-
   test("region - invalid values") {
     val needle         = "needle"
     val haystack       = "haystack"
@@ -89,6 +74,7 @@ object MatcherSuite extends tests.Suite {
     val expectedStart1 = prefix.length
     val expectedEnd1   = prefix.length + pattern.length
     assert(m.find(), s"initial find() failed.")
+
     assert(m.start == expectedStart1,
            s"first start: ${m.start} != expected: $expectedStart1")
     assert(m.end == expectedEnd1,
@@ -288,7 +274,7 @@ object MatcherSuite extends tests.Suite {
            s"end index: ${foundEnd} != expected: ${expectedEnd}")
   }
 
-  test("find region - needle before region") {
+  testFails("find region - needle before region", 0) {
     val needle   = "a"
     val haystack = "haystack"
 
@@ -320,7 +306,7 @@ object MatcherSuite extends tests.Suite {
            s"should have found '${needle}' in region '${regionString}'")
   }
 
-  test("find region - needle after region") {
+  testFails("find region - needle after region", 0) {
     val needle   = "ck"
     val haystack = "haystack"
 
@@ -546,7 +532,7 @@ object MatcherSuite extends tests.Suite {
     }
   }
 
-  test("lookingAt - region") {
+  testFails("lookingAt - region", 0) {
     val needle   = "Boston"
     val haystack = "Boston Boston"
 
@@ -577,7 +563,7 @@ object MatcherSuite extends tests.Suite {
     }
   }
 
-  test("matches - region") {
+  testFails("matches - region", 0) {
     locally {
       val needle   = "Peace"
       val haystack = "War & Peace by Leo Tolstoy"
@@ -641,9 +627,23 @@ object MatcherSuite extends tests.Suite {
     assertEquals(Matcher.quoteReplacement(""), "")
   }
 
-  test("quoteReplacement should quote backslash and only it, issue #1070") {
+  test("quoteReplacement should quote backslash and $") {
+    // SN Issue #1070 described a condition where String.replaceAllLiterally()
+    // would fail with the cre2 based j.u.regex. The resolution
+    // of that issue led to an SN idiosyncratic implementation of
+    // quoteReplacement.
+    //
+    // That implementation has now been replaced. The re2s based
+    // implementation of quoteReplacement now returns the same result
+    // as the JVM.
+    //
+    // The test case for String.replaceAllLiterally() in the StringSuite
+    // shows that things changed for re2s in parallel so that Issue #1070
+    // did not regress. Check & cross check.
+
     val replacement = "\\fin$\\du.$$monde\\"
-    val expected    = "\\\\fin$\\\\du.$$monde\\\\"
+    val expected    = "\\\\fin\\$\\\\du.\\$\\$monde\\\\"
+
     assertEquals(
       Matcher.quoteReplacement(replacement),
       expected
@@ -868,17 +868,6 @@ object MatcherSuite extends tests.Suite {
            s"toString result: ${result} != expected: ${expected}")
   }
 
-  test("toMatchResult") {
-    val needle   = "needle"
-    val haystack = "haystack"
-
-    val m = matcher(needle, haystack)
-
-    assertThrows[UnsupportedOperationException] {
-      m.toMatchResult()
-    }
-  }
-
   test("useAnchoringBounds") {
     val needle   = "needle"
     val haystack = "haystack"
@@ -893,7 +882,7 @@ object MatcherSuite extends tests.Suite {
   test("usePattern") {
 
     val oldNeedle = "(h)(.*)(y)"
-    val newNeedle = "t.+(c+)k"
+    val newNeedle = "t.+(c+)k" // group count decreases
     val haystack  = "haystack"
 
     val m = matcher(oldNeedle, haystack)
@@ -923,18 +912,24 @@ object MatcherSuite extends tests.Suite {
 
     val oldNeedle = "for "
     val newNeedle = "man"
-    val original  = "That's one small step for man,"
-    val expected  = "That's one small step for [a] man,"
+
+    val original = "That's one small step for man,"
+    val expected = "That's one small step for [a] man,"
 
     val m = matcher(oldNeedle, original)
 
     assert(m.find(), s"should have found '${oldNeedle}' in '${original}'")
 
-    m.usePattern(Pattern.compile(newNeedle))
+    val found = m.group
 
     val sb = new StringBuffer()
-    m.appendReplacement(sb, s"${m.group}[a] ")
-    val result = m.appendTail(sb).toString
+
+    m.usePattern(Pattern.compile(newNeedle))
+
+    val result = m
+      .appendReplacement(sb, s"${found}[a] ")
+      .appendTail(sb)
+      .toString
 
     assert(result == expected,
            s"append position changed; result: ${result} != " +
@@ -949,18 +944,168 @@ object MatcherSuite extends tests.Suite {
 
     val m = matcher(needle, haystack)
 
-    // Establish a region shorter than full haystack to see if former changes.
-    m.region(4, 8) // 4 & 8 are arbitrary valid values, nothing special here.
+    // Establish a region shorter than full haystack to see if the
+    // region changes.
 
-    val regionBefore = extractRegion(m.toString)
+    // 4 & 8 are arbitrary valid values, nothing special here.
+    val startBefore = 4
+    val endBefore   = 8
+    m.region(startBefore, endBefore)
 
     m.usePattern(Pattern.compile(newNeedle))
 
-    val regionAfter = extractRegion(m.toString)
+    val startAfter = m.regionStart
+    val endAfter   = m.regionEnd
 
-    assert(regionAfter == regionBefore,
-           s"region changed; after: ${regionAfter} != " +
-             s"before: ${regionBefore}'")
+    assert(startAfter == startBefore,
+           s"region start changed; after: ${startAfter} != " +
+             s"before: ${startBefore}'")
+
+    assert(endAfter == endBefore,
+           s"region end changed; after: ${endAfter} != " +
+             s"before: ${endBefore}'")
+  }
+
+  test("toMatchResult") {
+    // Out of alphabetical order because of critical dependence on usePattern.
+    // Test usePattern before using it here.
+
+    case class MatcherCyst(
+        group: String,
+        start: Int,
+        end: Int,
+        groupCount: Int,
+        groupG1: String,
+        startG1: Int,
+        endG1: Int,
+        groupG2: String,
+        startG2: Int,
+        endG2: Int
+    )
+
+    def encystMatcherState(m: Matcher): MatcherCyst = {
+      MatcherCyst(m.group,
+                  m.start,
+                  m.end,
+                  m.groupCount,
+                  m.group(1),
+                  m.start(1),
+                  m.end(1),
+                  m.group(2),
+                  m.start(2),
+                  m.end(2))
+    }
+
+    def encystMatchResultState(m: MatchResult): MatcherCyst = {
+      MatcherCyst(m.group,
+                  m.start,
+                  m.end,
+                  m.groupCount,
+                  m.group(1),
+                  m.start(1),
+                  m.end(1),
+                  m.group(2),
+                  m.start(2),
+                  m.end(2))
+    }
+
+    // Did we find what we expect?
+    def validateNewMatchState(m: Matcher): Unit = {
+
+      val newGroupCount         = m.groupCount
+      val expectedNewGroupCount = 3
+      assert(newGroupCount == expectedNewGroupCount,
+             s"groupCount: ${newGroupCount} != " +
+               "expected: ${expectedNewGroupCount}")
+
+      val newGroup1         = m.group(1)
+      val expectedNewGroup1 = "hold"
+      assert(newGroup1 == expectedNewGroup1,
+             s"group(1): '${newGroup1} != " +
+               "expected: '${expectedNewGroup1}'")
+
+      val newGroup1Start         = m.start(1)
+      val expectedNewGroup1Start = 3
+      assert(newGroup1Start == expectedNewGroup1Start,
+             s"group(1).start: '${newGroup1Start} != " +
+               "expected: '${expectedNewGroup1Start}'")
+
+      val newGroup1End         = m.end(1)
+      val expectedNewGroup1End = 7
+      assert(newGroup1End == expectedNewGroup1End,
+             s"group(1).end: '${newGroup1End} != " +
+               "expected: '${expectedNewGroup1End}'")
+
+      val newGroup2         = m.group(2)
+      val expectedNewGroup2 = "truths"
+      assert(newGroup2 == expectedNewGroup2,
+             s"group(2): '${newGroup2}' != " +
+               s"expected: '${expectedNewGroup2}'")
+
+      val newGroup2Start         = m.start(2)
+      val expectedNewGroup2Start = 14
+      assert(newGroup2Start == expectedNewGroup2Start,
+             s"group(2).start: '${newGroup2Start} != " +
+               "expected: '${expectedNewGroup2Start}'")
+
+      val newGroup2End         = m.end(2)
+      val expectedNewGroup2End = 20
+      assert(newGroup2End == expectedNewGroup2End,
+             s"group(2).end: '${newGroup2End} != " +
+               "expected: '${expectedNewGroup2End}'")
+    }
+
+    // group count increases. Force re2s Matcher.scala to
+    // allocate a new, larger data structure.
+    val oldNeedle = "\\w+ (\\w+) \\w+ \\w+ \\w+ \\w+ (\\w+-\\w+)"
+    val newNeedle = "\\w+ (\\w+) \\w+ (\\w+) (\\w+) \\w+ \\w+-\\w+"
+
+    val haystack = "We hold these truths to be self-evident"
+
+    val m = matcher(oldNeedle, haystack)
+
+    assert(m.find(), s"should have found '${oldNeedle}' in '${haystack}'")
+
+    val match1Cyst = encystMatcherState(m)
+
+// format: off
+    val expectedMatch1Cyst = MatcherCyst(
+        "We hold these truths to be self-evident", 0, 39,
+         2,
+        "hold",3, 7,
+        "self-evident",27,39)
+// format: on
+
+    assert(match1Cyst == expectedMatch1Cyst,
+           s"initial matcher state: ${match1Cyst} != " +
+             s"expected: ${expectedMatch1Cyst}")
+
+    val mr     = m.toMatchResult
+    val mrCyst = encystMatchResultState(mr)
+
+    assert(mrCyst == match1Cyst,
+           s"MatchResult state: ${mrCyst} != " +
+             s"expected: ${match1Cyst}")
+
+    m.usePattern(Pattern.compile(newNeedle))
+
+    // find(0) does a reset and starts searching again at the start of input.
+    assert(m.find(0), s"should have found '${newNeedle}' in '${haystack}'")
+
+    val match2Cyst = encystMatcherState(m)
+
+    // First a course grain examination.
+    assert(match2Cyst != match1Cyst,
+           s"matchState did not change when should have.")
+
+    // Now a fine grain examination.
+    // group, start, & end should not have changed, but others should.
+    validateNewMatchState(m)
+
+    // Matcher state changed to expected but MatchResult's should not have.
+    assert(mrCyst == match1Cyst,
+           s"MatchResult state: ${mrCyst} != " +
+             s"expected: ${match1Cyst}")
   }
 
 }

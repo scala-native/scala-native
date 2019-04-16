@@ -268,6 +268,42 @@ object PatternSuite extends tests.Suite {
     pass("\\R", "\u000D\u000A")
   }
 
+  testFails("boundary matchers - region", 0) {
+
+    locally {
+      val needle   = "^a"
+      val haystack = "01234abcabc"
+
+      val m = Pattern.compile(needle).matcher(haystack)
+
+      val regionBegin  = 5
+      val regionEnd    = 9
+      val regionString = haystack.slice(regionBegin, regionEnd)
+
+      m.region(5, 9)
+
+      assert(m.find(), s"should have found ${needle} in ${regionString}")
+
+      val foundPos    = m.start
+      val expectedPos = 5
+
+      assert(foundPos == expectedPos,
+             s"found position: ${foundPos} != expected: ${expectedPos}")
+    }
+
+    locally {
+      val needle   = "^a"
+      val haystack = "01234abcabc"
+      val m        = Pattern.compile(needle).matcher(haystack)
+
+      m.region(4, 9)
+
+      assert(!m.find(),
+             s"should not have found ${needle} at " +
+               s"position: ${m.start} in ${haystack}")
+    }
+  }
+
   test("greedy quantifiers") {
     // once or zero
     pass("X?", "")

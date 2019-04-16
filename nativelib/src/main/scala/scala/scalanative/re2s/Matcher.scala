@@ -32,16 +32,32 @@ package re2s
  *
  * @author rsc@google.com (Russ Cox)
  */
-final class Matcher private (private val _pattern: Pattern) {
+final class Matcher private (private var _pattern: Pattern) {
   if (_pattern == null) {
     throw new NullPointerException("pattern is null")
   }
 
   // The number of submatches (groups) in the pattern.
-  private val _groupCount: Int = _pattern.re2.numberOfCapturingGroups()
+  private var _groupCount: Int = _pattern.re2.numberOfCapturingGroups()
 
-  // The group indexes, in [start, end) pairs.  Zeroth pair is overall match.
-  private val _groups: Array[Int] = new Array[Int](2 + 2 * _groupCount)
+  private def clearAllGroups() = {
+    // All groups will be set to indicate no or null match.
+    //
+    // Amortized _groupCount is likely to be small, say 1, 2, or n < 5, so
+    // calling out to memset() is unlikely to be worth the overhead.
+
+    for (i <- 0 until _groups.length) {
+      _groups(i) = -1
+    }
+  }
+
+  private def createGroups(nGroups: Int): Array[Int] = {
+    Array.fill(2 * (nGroups + 1))(-1) // All groups now return null.
+  }
+
+  // The group indexes, in [start, end) pairs.	Zeroth pair is overall match.
+  // By convention a pair (-1, -1) indicates no or null match.
+  private var _groups: Array[Int] = createGroups(_groupCount)
 
   private var _inputSequence: CharSequence = ""
 
@@ -61,13 +77,18 @@ final class Matcher private (private val _pattern: Pattern) {
   // The anchor flag to use when repeating the match to find subgroups.
   private var _anchorFlag: Int = _
 
-  private var _regionEnd   = 0
+  private var _lastMatchStart = 0
+  private var _lastMatchEnd   = 0
+
   private var _regionStart = 0
+  private var _regionEnd   = 0
 
   /** Creates a new {@code Matcher} with the given pattern and input. */
   def this(pattern: Pattern, input: CharSequence) = {
     this(pattern)
-    reset(input)
+    _inputSequence = input
+    _inputLength = input.length()
+    _regionEnd = _inputSequence.length
   }
 
   /** Returns the {@code Pattern} associated with this {@code Matcher}. */
@@ -83,6 +104,8 @@ final class Matcher private (private val _pattern: Pattern) {
     _appendPos = 0
     _hasMatch = false
     _hasGroups = false
+    _lastMatchStart = 0
+    _lastMatchEnd = 0
     _regionStart = 0
     _regionEnd = _inputSequence.length
     this
@@ -98,9 +121,10 @@ final class Matcher private (private val _pattern: Pattern) {
     if (input == null) {
       throw new NullPointerException("input is null")
     }
-    reset()
+
     _inputSequence = input
     _inputLength = input.length()
+    reset()
     this
   }
 
@@ -126,8 +150,8 @@ final class Matcher private (private val _pattern: Pattern) {
    * @throws IndexOutOfBoundsException
    *   if {@code group < 0} or {@code group > groupCount()}
    */
-  def start(group: Int, notGroup: Boolean = true): Int = {
-    loadGroup(group, notGroup)
+  def start(group: Int): Int = {
+    loadGroup(group)
     _groups(2 * group)
   }
 
@@ -139,8 +163,8 @@ final class Matcher private (private val _pattern: Pattern) {
    * @throws IndexOutOfBoundsException
    *   if {@code group < 0} or {@code group > groupCount()}
    */
-  def end(group: Int, notGroup: Boolean = true): Int = {
-    loadGroup(group, notGroup)
+  def end(group: Int): Int = {
+    loadGroup(group)
     _groups(2 * group + 1)
   }
 
@@ -157,7 +181,23 @@ final class Matcher private (private val _pattern: Pattern) {
   }
 
   def region(start: Int, end: Int): Matcher = {
-    throw new UnsupportedOperationException
+
+    val inLength = _inputSequence.length
+
+    if ((start < 0) || (start > inLength)) {
+      throw new IndexOutOfBoundsException("start")
+    }
+
+    if ((end < 0) || (end > inLength)) {
+      throw new IndexOutOfBoundsException("end")
+    }
+
+    if (start > end) {
+      throw new IndexOutOfBoundsException("start > end")
+    }
+
+    _regionStart = start
+    _regionEnd = end
     this
   }
 
@@ -180,8 +220,13 @@ final class Matcher private (private val _pattern: Pattern) {
    *   or {@code group > groupCount()}
    */
   def group(group: Int): String = {
-    val start = this.start(group, false)
-    val end   = this.end(group, false)
+
+    if ((group > groupCount()) || (group < 0)) {
+      throw new IndexOutOfBoundsException(s"No group ${group}")
+    }
+
+    val start = this.start(group)
+    val end   = this.end(group)
     if (start < 0 && end < 0) {
       // Means the subpattern didn't get matched at all.
       return null
@@ -197,13 +242,16 @@ final class Matcher private (private val _pattern: Pattern) {
   def groupCount(): Int = _groupCount
 
   /** Helper: finds subgroup information if needed for group. */
-  private def loadGroup(group: Int, notGroup: Boolean): Unit = {
-    if (group < 0 || group > _groupCount || !_hasMatch) {
-      if (notGroup)
-        throw new IllegalStateException("No match available")
-      else
-        throw new IllegalStateException("No match found")
+  private def loadGroup(group: Int): Unit = {
+
+    if (!_hasMatch) {
+      throw new IllegalStateException("No match found")
     }
+
+    if ((group < 0) || (group > _groupCount)) {
+      throw new IndexOutOfBoundsException(s"No group ${group}")
+    }
+
     if (group == 0 || _hasGroups) {
       return
     }
@@ -301,6 +349,8 @@ final class Matcher private (private val _pattern: Pattern) {
       _hasMatch = true
       _hasGroups = false
       _anchorFlag = anchor
+      _lastMatchStart = start()
+      _lastMatchEnd = end()
       true
     }
   }
@@ -318,11 +368,11 @@ final class Matcher private (private val _pattern: Pattern) {
    * Appends to {@code sb} two strings: the text from the append position up
    * to the beginning of the most recent match, and then the replacement with
    * submatch groups substituted for references of the form {@code $n}, where
-   * {@code n} is the group number in decimal.  It advances the append position
+   * {@code n} is the group number in decimal.	It advances the append position
    * to the position where the most recent match ended.
    *
    * <p>To embed a literal {@code $}, use \$ (actually {@code "\\$"} with string
-   * escapes).  The escape is only necessary when {@code $} is followed by a
+   * escapes).	The escape is only necessary when {@code $} is followed by a
    * digit, but it is always allowed.  Only {@code $} and {@code \} need
    * escaping, but any character can be escaped.
    *
@@ -339,8 +389,9 @@ final class Matcher private (private val _pattern: Pattern) {
    * @throws IllegalArgumentException if replacement has unclosed named group
    */
   def appendReplacement(sb: StringBuffer, replacement: String): Matcher = {
-    val s = start()
-    val e = end()
+    val s = _lastMatchStart
+    val e = _lastMatchEnd
+
     if (_appendPos < s) {
       sb.append(substring(_appendPos, s))
     }
@@ -466,6 +517,35 @@ final class Matcher private (private val _pattern: Pattern) {
     appendTail(sb)
     sb.toString()
   }
+
+  def usePattern(newPattern: Pattern): Matcher = {
+    // Per JVM documentation, current search position & last append position
+    // do not change. region behavior is not mentioned, but JVM preserves
+    // the region.
+    //
+    // Info on groups from lastmatch is lost.
+
+    if (newPattern == null) {
+      throw new IllegalArgumentException()
+    }
+
+    _pattern = newPattern
+
+    val oldGroupCount = _groupCount
+    _groupCount = _pattern.re2.numberOfCapturingGroups()
+
+    // Reuse existing _groups if _groupCount stayed the same
+    // or decreased. Otherwise, a larger _groups is required.
+
+    if (_groupCount <= oldGroupCount) {
+      clearAllGroups()
+    } else {
+      _groups = createGroups(_groupCount)
+    }
+
+    this
+  }
+
 }
 
 object Matcher {
