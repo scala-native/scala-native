@@ -42,8 +42,8 @@ object MatcherSuite extends tests.Suite {
     assert(group(0) == "a12z")
     assert(group(1) == "1")
     assert(group(2) == "2")
-    assertThrowsAnd[IllegalStateException](group(42))(
-      _.getMessage == "No match found"
+    assertThrowsAnd[IndexOutOfBoundsException](group(42))(
+      _.getMessage == "No group 42"
     )
 
     assert(find())
@@ -60,11 +60,11 @@ object MatcherSuite extends tests.Suite {
     import m._
 
     assertThrowsAnd[IllegalStateException](start)(
-      _.getMessage == "No match available"
+      _.getMessage == "No match found"
     )
 
     assertThrowsAnd[IllegalStateException](end)(
-      _.getMessage == "No match available"
+      _.getMessage == "No match found"
     )
 
     assert(find())
@@ -81,13 +81,14 @@ object MatcherSuite extends tests.Suite {
     assert(start(2) == 9)
     assert(end(2) == 10)
 
-    assertThrowsAnd[IllegalStateException](start(42))(
-      _.getMessage == "No match available"
+    assertThrowsAnd[IndexOutOfBoundsException](start(42))(
+      _.getMessage == "No group 42"
     )
 
-    assertThrowsAnd[IllegalStateException](end(42))(
-      _.getMessage == "No match available"
+    assertThrowsAnd[IndexOutOfBoundsException](end(42))(
+      _.getMessage == "No group 42"
     )
+
   }
 
   test("start/end") {
@@ -153,7 +154,7 @@ object MatcherSuite extends tests.Suite {
   // we don't support lookahead
   ignore("(Not supported) hasTransparentBounds/useTransparentBounds") {
 
-    // ?=  <==>  zero-width positive look-ahead
+    // ?=  <==>	 zero-width positive look-ahead
     val m1 = Pattern.compile("foo(?=buzz)").matcher("foobuzz")
     m1.region(0, 3)
     m1.useTransparentBounds(false)
@@ -162,7 +163,7 @@ object MatcherSuite extends tests.Suite {
     m1.useTransparentBounds(true)
     assert(m1.matches()) // transparent
 
-    // ?!  <==>  zero-width negative look-ahead
+    // ?!  <==>	 zero-width negative look-ahead
     val m2 = Pattern.compile("foo(?!buzz)").matcher("foobuzz")
     m2.region(0, 3)
     m2.useTransparentBounds(false)
