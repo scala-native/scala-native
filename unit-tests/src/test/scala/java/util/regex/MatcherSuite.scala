@@ -496,7 +496,7 @@ object MatcherSuite extends tests.Suite {
 
     val m = matcher(needle, haystack)
 
-    assert(!m.hasAnchoringBounds()) // SN Bug: differs from JVM default
+    assert(m.hasAnchoringBounds()) // Expect true, same as JVM default.
   }
 
   // we don't support lookahead
