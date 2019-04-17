@@ -10,7 +10,7 @@ import scalanative.util.{Scope, ShowBuilder, unsupported, partitionBy, procs}
 import scalanative.io.{VirtualDirectory, withScratchBuffer}
 import scalanative.nir._
 import scalanative.nir.ControlFlow.{Graph => CFG, Block, Edge}
-import scalanative.util.Stats
+import scalanative.util.unreachable
 
 object CodeGen {
 
@@ -122,6 +122,8 @@ object CodeGen {
               defn.copy(attrs.copy(isExtern = true))
             case defn @ Defn.Define(attrs, name, ty, _) =>
               Defn.Declare(attrs, name, ty)
+            case _ =>
+              unreachable
           }
         }
         generated += mn
@@ -141,6 +143,7 @@ object CodeGen {
           case Defn.Const(_, _, ty, _)   => ty
           case Defn.Declare(_, _, sig)   => sig
           case Defn.Define(_, _, sig, _) => sig
+          case _                         => unreachable
         }
     }
 
@@ -244,12 +247,18 @@ object CodeGen {
         insts.head match {
           case Inst.Label(_, params) =>
             rep(params, sep = ", ")(genVal)
+          case _ =>
+            unreachable
         }
       }
       str(")")
-      if (attrs.inline ne Attr.MayInline) {
-        str(" ")
-        genAttr(attrs.inline)
+      if (attrs.opt eq Attr.NoOpt) {
+        str(" optnone noinline")
+      } else {
+        if (attrs.inline ne Attr.MayInline) {
+          str(" ")
+          genAttr(attrs.inline)
+        }
       }
       if (!attrs.isExtern && !isDecl) {
         str(" ")
@@ -318,6 +327,8 @@ object CodeGen {
           meta.layout(meta.linked.ObjectClass).size
         case info: linker.Class =>
           meta.layout(info).size
+        case _ =>
+          unreachable
       }
 
       if (!refty.isNullable) {
@@ -390,6 +401,8 @@ object CodeGen {
                   genRegularEdge(n)
                 case n: Next.Unwind =>
                   genUnwindEdge(n)
+                case _ =>
+                  unreachable
               }
               str("]")
             }
@@ -602,7 +615,8 @@ object CodeGen {
     def mangled(g: Global): String = g match {
       case Global.None =>
         unsupported(g)
-      case Global.Member(_, Sig.Extern(id)) =>
+      case Global.Member(_, sig) if sig.isExtern =>
+        val Sig.Extern(id) = sig.unmangled
         id
       case _ =>
         "_S" + g.mangle
@@ -907,6 +921,8 @@ object CodeGen {
         } else {
           genFunctionReturnType(retty)
         }
+      case _ =>
+        unreachable
     }
 
     def genCallArgument(v: Val): Unit = v match {

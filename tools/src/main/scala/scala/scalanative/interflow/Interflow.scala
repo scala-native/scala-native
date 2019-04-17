@@ -9,6 +9,8 @@ import java.util.function.Supplier
 
 class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
     extends Visit
+    with Opt
+    with NoOpt
     with Eval
     with Combine
     with Inline
@@ -44,6 +46,8 @@ class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
     originals.contains(name) && originals(name).isInstanceOf[Defn.Define]
   def getOriginal(name: Global): Defn.Define =
     originals(name).asInstanceOf[Defn.Define]
+  def maybeOriginal(name: Global): Option[Defn.Define] =
+    originals.get(name).collect { case defn: Defn.Define => defn }
 
   def popTodo(): Global =
     todo.synchronized {

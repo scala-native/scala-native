@@ -15,7 +15,7 @@ trait Intrinsics { self: Interflow =>
     arrayApplyIntrinsics ++ arrayUpdateIntrinsics + arrayLengthIntrinsic
 
   val intrinsics = Set[Global](
-    Global.Member(Global.Top("java.lang.Object"), Rt.GetClassSig),
+    Rt.GetRawTypeName,
     Global.Member(Global.Top("java.lang.Class"), Rt.IsArraySig),
     Global.Member(Global.Top("java.lang.Class"), Rt.IsAssignableFromSig),
     Global.Member(Global.Top("java.lang.Class"), Rt.GetNameSig),
@@ -30,117 +30,123 @@ trait Intrinsics { self: Interflow =>
   ) ++ arrayIntrinsics
 
   def intrinsic(ty: Type, name: Global, rawArgs: Seq[Val])(
-      implicit state: State): Val = {
+      implicit state: State): Option[Val] = {
     val Global.Member(_, sig) = name
 
     val args = rawArgs.map(eval)
 
-    def fallback =
+    def emit =
       state.emit(
         Op.Call(ty, Val.Global(name, Type.Ptr), args.map(state.materialize(_))))
 
     sig match {
-      case Rt.GetClassSig =>
+      case Rt.GetRawTypeSig =>
         args match {
-          case Seq(VirtualRef(_, cls, _)) =>
-            val addr =
-              state.allocClass(
-                linked.infos(Global.Top("java.lang.Class")).asInstanceOf[Class])
-            val instance = state.derefVirtual(addr)
-            instance.values(0) = Val.Global(cls.name, Type.Ptr)
-            Val.Virtual(addr)
+          case Seq(_, VirtualRef(_, cls, _)) =>
+            Some(Val.Global(cls.name, Type.Ptr))
+          case Seq(_, value) =>
+            val ty = value match {
+              case InstanceRef(ty) => ty
+              case _               => value.ty
+            }
+            ty match {
+              case refty: Type.RefKind if refty.isExact && !refty.isNullable =>
+                Some(Val.Global(refty.className, Type.Ptr))
+              case _ =>
+                Some(emit)
+            }
           case _ =>
-            fallback
+            Some(emit)
         }
       case Rt.IsArraySig =>
         args match {
           case Seq(VirtualRef(_, _, Array(Val.Global(clsName, _)))) =>
-            Val.Bool(Type.isArray(clsName))
+            Some(Val.Bool(Type.isArray(clsName)))
           case _ =>
-            fallback
+            None
         }
       case Rt.IsAssignableFromSig =>
         args match {
           case Seq(VirtualRef(_, _, Array(Val.Global(ScopeRef(linfo), _))),
                    VirtualRef(_, _, Array(Val.Global(ScopeRef(rinfo), _)))) =>
-            Val.Bool(rinfo.is(linfo))
+            Some(Val.Bool(rinfo.is(linfo)))
           case _ =>
-            fallback
+            None
         }
       case Rt.GetNameSig =>
         args match {
           case Seq(VirtualRef(_, _, Array(Val.Global(name: Global.Top, _)))) =>
-            eval(Val.String(name.id))(state)
+            Some(eval(Val.String(name.id))(state))
           case _ =>
-            fallback
+            None
         }
       case Rt.BitCountSig =>
         args match {
           case Seq(_, Val.Int(v)) =>
-            Val.Int(java.lang.Integer.bitCount(v))
+            Some(Val.Int(java.lang.Integer.bitCount(v)))
           case _ =>
-            fallback
+            None
         }
       case Rt.ReverseBytesSig =>
         args match {
           case Seq(_, Val.Int(v)) =>
-            Val.Int(java.lang.Integer.reverseBytes(v))
+            Some(Val.Int(java.lang.Integer.reverseBytes(v)))
           case _ =>
-            fallback
+            None
         }
       case Rt.NumberOfLeadingZerosSig =>
         args match {
           case Seq(_, Val.Int(v)) =>
-            Val.Int(java.lang.Integer.numberOfLeadingZeros(v))
+            Some(Val.Int(java.lang.Integer.numberOfLeadingZeros(v)))
           case _ =>
-            fallback
+            None
         }
       case Rt.CosSig =>
         args match {
           case Seq(_, Val.Double(v)) =>
-            Val.Double(java.lang.Math.cos(v))
+            Some(Val.Double(java.lang.Math.cos(v)))
           case _ =>
-            fallback
+            None
         }
       case Rt.SinSig =>
         args match {
           case Seq(_, Val.Double(v)) =>
-            Val.Double(java.lang.Math.sin(v))
+            Some(Val.Double(java.lang.Math.sin(v)))
           case _ =>
-            fallback
+            None
         }
       case Rt.PowSig =>
         args match {
           case Seq(_, Val.Double(v1), Val.Double(v2)) =>
-            Val.Double(java.lang.Math.pow(v1, v2))
+            Some(Val.Double(java.lang.Math.pow(v1, v2)))
           case _ =>
-            fallback
+            None
         }
       case Rt.SqrtSig =>
         args match {
           case Seq(_, Val.Double(v)) =>
-            Val.Double(java.lang.Math.sqrt(v))
+            Some(Val.Double(java.lang.Math.sqrt(v)))
           case _ =>
-            fallback
+            None
         }
       case Rt.MaxSig =>
         args match {
           case Seq(_, Val.Double(v1), Val.Double(v2)) =>
-            Val.Double(java.lang.Math.max(v1, v2))
+            Some(Val.Double(java.lang.Math.max(v1, v2)))
           case _ =>
-            fallback
+            None
         }
       case _ if arrayApplyIntrinsics.contains(name) =>
         val Seq(arr, idx)            = rawArgs
         val Type.Function(_, elemty) = ty
-        eval(Op.Arrayload(elemty, arr, idx))
+        Some(eval(Op.Arrayload(elemty, arr, idx)))
       case _ if arrayUpdateIntrinsics.contains(name) =>
         val Seq(arr, idx, value)                = rawArgs
         val Type.Function(Seq(_, _, elemty), _) = ty
-        eval(Op.Arraystore(elemty, arr, idx, value))
+        Some(eval(Op.Arraystore(elemty, arr, idx, value)))
       case _ if name == arrayLengthIntrinsic =>
         val Seq(arr) = rawArgs
-        eval(Op.Arraylength(arr))
+        Some(eval(Op.Arraylength(arr)))
     }
   }
 }

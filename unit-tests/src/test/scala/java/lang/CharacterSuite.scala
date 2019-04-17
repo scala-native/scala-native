@@ -13,6 +13,191 @@ package java.lang
 object CharacterSuite extends tests.Suite {
   import java.lang.Character._
 
+  // codePointAt tests
+  test("codePointAt - invalid values") {
+    val str1 = "<invalid values>"
+    val arr1 = str1.toArray
+
+    assertThrows[java.lang.NullPointerException] {
+      Character.codePointAt(null.asInstanceOf[Array[Char]], 1, arr1.length)
+    }
+
+    assertThrows[java.lang.NullPointerException] {
+      Character.codePointAt(null.asInstanceOf[Array[Char]], 1, arr1.length)
+    }
+
+    assertThrows[java.lang.NullPointerException] {
+      Character.codePointAt(null.asInstanceOf[Array[Char]], 2)
+    }
+
+    assertThrows[java.lang.NullPointerException] {
+      Character.codePointAt(null.asInstanceOf[CharSequence], 2)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.codePointAt(arr1, -1)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.codePointAt(str1, -1)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.codePointAt(arr1, 2, arr1.length + 1)
+    }
+  }
+
+  test("codePointAt - Array[Char]") {
+    val arr1 = "abcdEfghIjklMnoPqrsTuvwXyz".toArray
+
+    val result   = Character.codePointAt(arr1, 3, arr1.length)
+    val expected = 100 // 'd'
+    assert(result == expected, s"result: $result != expected: $expected")
+  }
+
+  test("codePointAt - CharSeq") {
+    val charSeq1: CharSequence = "abcdEfghIjklMnoPqrsTuvwXyz"
+
+    val result   = Character.codePointAt(charSeq1, 8)
+    val expected = 73 // 'I'
+    assert(result == expected, s"result: $result != expected: $expected")
+  }
+
+  test("codePointAt - Array[Char],CharSeq return same non-ASCII value") {
+    val str1  = "30\u20ac" // 'euro-character'
+    val index = str1.length - 1
+
+    val resultCA = Character.codePointAt(str1.toArray, index, str1.length)
+    val resultCS = Character.codePointAt(str1, index)
+    val expected = 0x20AC // 'euro-character'
+
+    assert(resultCA == resultCS, s"resultCA: $resultCA != resultCS: $resultCS")
+    assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
+  }
+
+  testFails("codePointAt - high surrogate at end of line", issue = 1496) {
+    val str1  = "eol\uDBFF" // Character.MAX_HIGH_SURROGATE
+    val index = str1.length - 1
+
+    val resultCA = Character.codePointAt(str1.toArray, index, str1.length)
+    val resultCS = Character.codePointAt(str1, index)
+    val expected = 0xDBFF // Character.MAX_HIGH_SURROGATE, 56319 decimal
+
+    assert(resultCA == resultCS, s"resultCA: $resultCA != resultCS: $resultCS")
+    assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
+  }
+
+  test("codePointAt - surrogate pair") {
+    // Character.MIN_HIGH_SURROGATE followed by Character.MAX_LOW_SURROGATE
+    val str1  = "before \uD800\uDFFF after"
+    val index = 7
+
+    val resultCA = Character.codePointAt(str1.toArray, index, str1.length)
+    val resultCS = Character.codePointAt(str1, index)
+    val expected = 0x103FF // surrogate pair, decimal 66559
+
+    assert(resultCA == resultCS, s"resultCA: $resultCA != resultCS: $resultCS")
+    assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
+  }
+
+  // codePointBefore tests
+
+  test("codePointBefore - invalid values") {
+    val str1 = "<invalid values>"
+    val arr1 = str1.toArray
+
+    assertThrows[java.lang.NullPointerException] {
+      Character.codePointBefore(null.asInstanceOf[Array[Char]], 1)
+    }
+
+    assertThrows[java.lang.NullPointerException] {
+      Character.codePointBefore(null.asInstanceOf[CharSequence], 1)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.codePointBefore(arr1, -1)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.codePointBefore(str1, -1)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.codePointBefore(arr1, 0)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.codePointBefore(str1, 0)
+    }
+
+  }
+
+  test("codePointBefore - Array[Char]") {
+    val arr1  = "abcdEfghIjklMnopQrstUvwxYz".toArray
+    val index = 10
+
+    val result   = Character.codePointBefore(arr1, index)
+    val expected = 106 // 'j'
+
+    assert(result == expected, s"result: $result != expected: $expected")
+  }
+
+  test("codePointBefore - CharSeq") {
+    val str1  = "abcdEfghIjklMnoPqrsTuvwXyz"
+    val index = str1.length - 1
+
+    val result   = Character.codePointBefore(str1, index)
+    val expected = 121 // 'y'
+
+    assert(result == expected, s"result: $result != expected: $expected")
+  }
+
+  test("codePointBefore - Array[Char], CharSeq return same non-ASCII value") {
+    val str1  = "bugsabound\u03bb" // Greek small letter lambda
+    val index = str1.length
+
+    val resultCA = Character.codePointBefore(str1.toArray, index)
+    val resultCS = Character.codePointBefore(str1, index)
+    val expected = 955 // Greek snall letter lambda
+
+    assert(resultCA == resultCS, s"resultCA: $resultCA != resultCS: $resultCS")
+    assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
+  }
+
+  testFails("codePointBefore - high surrogate at end of line", issue = 1496) {
+    val str1  = "eol\uDBFF" // Character.MAX_HIGH_SURROGATE
+    val index = str1.length
+
+    val resultCA = Character.codePointAt(str1.toArray, index, str1.length)
+    val resultCS = Character.codePointAt(str1, index)
+    val expected = 0xDBFF // Character.MAX_HIGH_SURROGATE, 56319 decimal
+
+    assert(resultCA == resultCS, s"resultCA: $resultCA != resultCS: $resultCS")
+    assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
+  }
+
+  test("codePointBefore - surrogate pair") {
+    // Character.MIN_HIGH_SURROGATE followed by Character.MAX_LOW_SURROGATE
+    val str1  = "Denali\uD800\uDFFF"
+    val index = str1.length
+
+    val resultCA = Character.codePointBefore(str1.toArray, index, str1.length)
+    val resultCS = Character.codePointBefore(str1, index)
+    val expected = 0x103FF // surrogate pair, decimal 66559
+
+    assert(resultCA == resultCS, s"resultCA: $resultCA != resultCS: $resultCS")
+    assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
+  }
+
+  test("codePointCount") {
+    val data     = "Mt. Whitney".toArray[scala.Char]
+    val offset   = 1
+    val expected = data.size - offset
+    val result   = Character.codePointCount(data, offset, expected)
+
+    assert(result == expected, s"result: $result != expected: $expected")
+  }
+
   // Ported, with gratitude & possibly modifications
   // from ScalaJs CharacterTest.scala
   // https://github.com/scala-js/scala-js/blob/master/
@@ -96,6 +281,40 @@ object CharacterSuite extends tests.Suite {
     } {
       assay(10 + offset, a + offset)
     }
+  }
+
+  test("offsetByCodePoints - invalid values") {
+    val str1 = "<bad args>"
+    val arr1 = str1.toArray
+
+    assertThrows[java.lang.NullPointerException] {
+      Character.offsetByCodePoints(null.asInstanceOf[Array[Char]],
+                                   1,
+                                   arr1.length,
+                                   0,
+                                   0)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.offsetByCodePoints(arr1, -1, arr1.length, 0, 0)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.offsetByCodePoints(arr1, 0, -1, 0, 0)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.offsetByCodePoints(arr1, 1, arr1.length, 2, 0)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.offsetByCodePoints(arr1, 2, arr1.length, 1, 0)
+    }
+
+    assertThrows[java.lang.StringIndexOutOfBoundsException] {
+      Character.offsetByCodePoints(arr1, 2, arr1.length, arr1.length + 1, 0)
+    }
+
   }
 
   def toInt(hex: String): Int = Integer.parseInt(hex, 16)

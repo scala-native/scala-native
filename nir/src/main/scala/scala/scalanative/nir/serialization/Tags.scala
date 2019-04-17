@@ -17,7 +17,13 @@ object Tags {
   final val InlineHintAttr   = 1 + MayInlineAttr
   final val NoInlineAttr     = 1 + InlineHintAttr
   final val AlwaysInlineAttr = 1 + NoInlineAttr
-  final val ExternAttr       = 1 + AlwaysInlineAttr
+  final val MaySpecialize    = 1 + AlwaysInlineAttr
+  final val NoSpecialize     = 1 + MaySpecialize
+  final val UnOptAttr        = 1 + NoSpecialize
+  final val NoOptAttr        = 1 + UnOptAttr
+  final val DidOptAttr       = 1 + NoOptAttr
+  final val BailOptAttr      = 1 + DidOptAttr
+  final val ExternAttr       = 1 + BailOptAttr
   final val LinkAttr         = 1 + ExternAttr
   final val DynAttr          = 1 + LinkAttr
   final val StubAttr         = 1 + DynAttr

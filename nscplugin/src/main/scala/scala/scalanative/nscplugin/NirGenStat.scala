@@ -236,18 +236,27 @@ trait NirGenStat { self: NirGenPhase =>
 
     def genMethodAttrs(sym: Symbol): Attrs = {
       val inlineAttrs =
-        if (sym.hasFlag(ACCESSOR)) {
+        if (sym.isBridge || sym.hasFlag(ACCESSOR)) {
           Seq(Attr.AlwaysInline)
         } else {
           sym.annotations.collect {
-            case ann if ann.symbol == NoInlineClass   => Attr.NoInline
-            case ann if ann.symbol == InlineHintClass => Attr.InlineHint
-            case ann if ann.symbol == InlineClass     => Attr.AlwaysInline
-            case ann if ann.symbol == StubClass       => Attr.Stub
+            case ann if ann.symbol == NoInlineClass     => Attr.NoInline
+            case ann if ann.symbol == AlwaysInlineClass => Attr.AlwaysInline
+            case ann if ann.symbol == InlineHintClass   => Attr.InlineHint
+            case ann if ann.symbol == InlineClass       => Attr.InlineHint
           }
         }
+      val stubAttrs =
+        sym.annotations.collect {
+          case ann if ann.symbol == StubClass => Attr.Stub
+        }
+      val optAttrs =
+        sym.annotations.collect {
+          case ann if ann.symbol == NoOptimizeClass   => Attr.NoOpt
+          case ann if ann.symbol == NoSpecializeClass => Attr.NoSpecialize
+        }
 
-      Attrs.fromSeq(inlineAttrs)
+      Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs)
     }
 
     def genParams(dd: DefDef, isStatic: Boolean): Seq[Val.Local] =

@@ -3,64 +3,83 @@ package interflow
 
 import scalanative.nir._
 import scalanative.linker._
+import scalanative.util.unreachable
 
 trait Inline { self: Interflow =>
   def shallInline(name: Global, args: Seq[Val])(
       implicit state: State,
-      linked: linker.Result): Boolean = mode match {
-    case build.Mode.Debug =>
-      false
-    case build.Mode.Release =>
-      maybeDone(name)
-        .fold[Boolean] {
-          false
-        } { defn =>
-          val isCtor = originalName(name) match {
-            case Global.Member(_, _: Sig.Ctor) =>
-              true
-            case Global.Member(_, Sig.Method("$init$", _)) =>
-              true
-            case _ =>
-              false
-          }
-          val isSmall =
-            defn.insts.size <= 8
-          val hasVirtualArgs =
-            args.exists(_.isInstanceOf[Val.Virtual])
-          val noInline =
-            defn.attrs.inline == Attr.NoInline
-          val hintInline =
-            defn.attrs.inline == Attr.AlwaysInline || defn.attrs.inline == Attr.InlineHint
-          val isRecursive =
-            hasContext(s"inlining ${name.show}")
-          val isBlacklisted =
-            this.isBlacklisted(name)
-          val calleeTooBig =
-            defn.insts.size > 8192
-          val callerTooBig =
-            mergeProcessor.currentSize() > 8192
+      linked: linker.Result): Boolean = {
+    val maybeDefn = mode match {
+      case build.Mode.Debug =>
+        maybeOriginal(name)
+      case build.Mode.Release =>
+        maybeDone(name)
+    }
 
-          val shall =
-            isCtor || hintInline || isSmall || hasVirtualArgs
-          val shallNot =
-            noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig
-
-          if (shall) {
-            if (shallNot) {
-              log(s"not inlining ${name.show}, because:")
-              if (noInline) { log("* has noinline attr") }
-              if (isRecursive) { log("* is recursive") }
-              if (isBlacklisted) { log("* is blacklisted") }
-              if (callerTooBig) { log("* caller is too big") }
-              if (calleeTooBig) { log("* callee is too big") }
-            }
-          } else {
-            log(
-              s"no reason to inline ${name.show}(${args.map(_.show).mkString(",")})")
-          }
-
-          shall && !shallNot
+    maybeDefn
+      .fold[Boolean] {
+        false
+      } { defn =>
+        val isCtor = originalName(name) match {
+          case Global.Member(_, sig) if sig.isCtor || sig.isImplCtor =>
+            true
+          case _ =>
+            false
         }
+        val isSmall =
+          defn.insts.size <= 8
+        val isExtern =
+          defn.attrs.isExtern
+        val hasVirtualArgs =
+          args.exists(_.isInstanceOf[Val.Virtual])
+        val noOpt =
+          defn.attrs.opt == Attr.NoOpt
+        val noInline =
+          defn.attrs.inline == Attr.NoInline
+        val alwaysInline =
+          defn.attrs.inline == Attr.AlwaysInline
+        val hintInline =
+          defn.attrs.inline == Attr.InlineHint
+        val isRecursive =
+          hasContext(s"inlining ${name.show}")
+        val isBlacklisted =
+          this.isBlacklisted(name)
+        val calleeTooBig =
+          defn.insts.size > 8192
+        val callerTooBig =
+          mergeProcessor.currentSize() > 8192
+        val hasUnwind = defn.insts.exists {
+          case Inst.Let(_, _, unwind)   => unwind ne Next.None
+          case Inst.Throw(_, unwind)    => unwind ne Next.None
+          case Inst.Unreachable(unwind) => unwind ne Next.None
+          case _                        => false
+        }
+
+        val shall = mode match {
+          case build.Mode.Debug =>
+            isCtor || alwaysInline
+          case build.Mode.Release =>
+            isCtor || alwaysInline || hintInline || isSmall || hasVirtualArgs
+        }
+        val shallNot =
+          noOpt || noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern || hasUnwind
+
+        if (shall) {
+          if (shallNot) {
+            log(s"not inlining ${name.show}, because:")
+            if (noInline) { log("* has noinline attr") }
+            if (isRecursive) { log("* is recursive") }
+            if (isBlacklisted) { log("* is blacklisted") }
+            if (callerTooBig) { log("* caller is too big") }
+            if (calleeTooBig) { log("* callee is too big") }
+          }
+        } else {
+          log(
+            s"no reason to inline ${name.show}(${args.map(_.show).mkString(",")})")
+        }
+
+        shall && !shallNot
+      }
   }
 
   def adapt(value: Val, ty: Type)(implicit state: State): Val = {
@@ -102,7 +121,13 @@ trait Inline { self: Interflow =>
   def inline(name: Global, args: Seq[Val])(implicit state: State,
                                            linked: linker.Result): Val =
     in(s"inlining ${name.show}") {
-      val defn        = getDone(name)
+      val defn = mode match {
+        case build.Mode.Debug =>
+          getOriginal(name)
+        case build.Mode.Release =>
+          getDone(name)
+      }
+
       val inlineArgs  = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
       val blocks      = process(inlineInsts, inlineArgs, state, inline = true)
@@ -132,6 +157,8 @@ trait Inline { self: Interflow =>
               emit ++= block.end.emit
               emit.unreachable(unwind)
               (nothing, block.end)
+            case _ =>
+              unreachable
           }
 
         case first +: rest =>

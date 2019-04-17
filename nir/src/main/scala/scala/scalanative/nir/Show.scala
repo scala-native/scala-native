@@ -1,9 +1,8 @@
 package scala.scalanative
 package nir
 
-import scala.util.matching.Regex
-
-import util.{unreachable, ShowBuilder}
+import scala.collection.mutable
+import scalanative.util.{unreachable, ShowBuilder}
 
 object Show {
   def newBuilder: NirShowBuilder = new NirShowBuilder(new ShowBuilder)
@@ -70,6 +69,20 @@ object Show {
         str("noinline")
       case Attr.AlwaysInline =>
         str("alwaysinline")
+      case Attr.MaySpecialize =>
+        str("mayspecialize")
+      case Attr.NoSpecialize =>
+        str("nospecialize")
+      case Attr.UnOpt =>
+        str("unopt")
+      case Attr.NoOpt =>
+        str("noopt")
+      case Attr.DidOpt =>
+        str("didopt")
+      case Attr.BailOpt(msg) =>
+        str("bailopt(\"")
+        str(escapeQuotes(msg))
+        str("\")")
       case Attr.Dyn =>
         str("dyn")
       case Attr.Stub =>
@@ -77,9 +90,9 @@ object Show {
       case Attr.Extern =>
         str("extern")
       case Attr.Link(name) =>
-        str("link(")
-        str(name)
-        str(")")
+        str("link(\"")
+        str(escapeQuotes(name))
+        str("\")")
       case Attr.Abstract =>
         str("abstract")
     }
@@ -601,11 +614,25 @@ object Show {
         case Seq(fst, snd) => s"""${fst}\\\\n"""
       })
 
-    private def escapeQuotes(s: String): String =
-      """([^\\]|^)"""".r.replaceAllIn(s, _.matched.toSeq match {
-        case Seq(sngl)     => s"\\\\$sngl"
-        case Seq(fst, snd) => s"$fst\\\\$snd"
-      })
+    private def escapeQuotes(s: String): String = {
+      val chars   = s.toArray
+      val out     = mutable.UnrolledBuffer.empty[Char]
+      var i       = 0
+      var escaped = false
+      while (i < chars.length) {
+        val char = chars(i)
+        char match {
+          case '"' =>
+            if (!escaped) out += '\\'
+            out += char
+          case _ =>
+            out += char
+        }
+        escaped = char == '\\'
+        i += 1
+      }
+      new String(out.toArray)
+    }
 
     override def toString: String = builder.toString
   }

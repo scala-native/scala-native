@@ -93,6 +93,7 @@ private[lang] object PipeIO {
                (p, fd) => new BufferedOutputStream(new FileOutputStream(fd)))
 
   private final object NullInput extends Stream {
+    @stub
     override def process: UnixProcess                                = ???
     override def available(): Int                                    = 0
     override def close(): Unit                                       = {}

@@ -4,32 +4,38 @@ package nir
 import Type._
 
 object Rt {
-  val Object = Ref(Global.Top("java.lang.Object"))
-  val Class  = Ref(Global.Top("java.lang.Class"))
-  val String = Ref(Global.Top("java.lang.String"))
-  val Type   = StructValue(Seq(Int, Int, Ptr))
+  val Object  = Ref(Global.Top("java.lang.Object"))
+  val Class   = Ref(Global.Top("java.lang.Class"))
+  val String  = Ref(Global.Top("java.lang.String"))
+  val Type    = StructValue(Seq(Int, Int, Ptr))
+  val Runtime = Ref(Global.Top("scala.scalanative.runtime.package$"))
 
   val BoxedNull       = Ref(Global.Top("scala.runtime.Null$"))
   val BoxedUnit       = Ref(Global.Top("scala.runtime.BoxedUnit"))
   val BoxedUnitModule = Ref(Global.Top("scala.scalanative.runtime.BoxedUnit$"))
 
-  val JavaEqualsSig       = Sig.Method("equals", Seq(Object, Bool))
-  val JavaHashCodeSig     = Sig.Method("hashCode", Seq(Int))
-  val ScalaEqualsSig      = Sig.Method("scala_==", Seq(Object, Bool))
-  val ScalaHashCodeSig    = Sig.Method("scala_##", Seq(Int))
-  val GetClassSig         = Sig.Method("getClass", Seq(Class))
-  val IsArraySig          = Sig.Method("isArray", Seq(Bool))
-  val IsAssignableFromSig = Sig.Method("isAssignableFrom", Seq(Class, Bool))
-  val GetNameSig          = Sig.Method("getName", Seq(String))
-  val BitCountSig         = Sig.Method("bitCount", Seq(Int, Int))
-  val ReverseBytesSig     = Sig.Method("reverseBytes", Seq(Int, Int))
+  val GetRawTypeSig    = Sig.Method("getRawType", Seq(Rt.Object, Ptr)).mangled
+  val JavaEqualsSig    = Sig.Method("equals", Seq(Object, Bool)).mangled
+  val JavaHashCodeSig  = Sig.Method("hashCode", Seq(Int)).mangled
+  val ScalaEqualsSig   = Sig.Method("scala_==", Seq(Object, Bool)).mangled
+  val ScalaHashCodeSig = Sig.Method("scala_##", Seq(Int)).mangled
+  val IsArraySig       = Sig.Method("isArray", Seq(Bool)).mangled
+  val IsAssignableFromSig =
+    Sig.Method("isAssignableFrom", Seq(Class, Bool)).mangled
+  val GetNameSig      = Sig.Method("getName", Seq(String)).mangled
+  val BitCountSig     = Sig.Method("bitCount", Seq(Int, Int)).mangled
+  val ReverseBytesSig = Sig.Method("reverseBytes", Seq(Int, Int)).mangled
   val NumberOfLeadingZerosSig =
-    Sig.Method("numberOfLeadingZeros", Seq(Int, Int))
-  val CosSig  = Sig.Method("cos", Seq(Double, Double))
-  val SinSig  = Sig.Method("sin", Seq(Double, Double))
-  val PowSig  = Sig.Method("pow", Seq(Double, Double, Double))
-  val MaxSig  = Sig.Method("max", Seq(Double, Double, Double))
-  val SqrtSig = Sig.Method("sqrt", Seq(Double, Double))
+    Sig.Method("numberOfLeadingZeros", Seq(Int, Int)).mangled
+  val CosSig  = Sig.Method("cos", Seq(Double, Double)).mangled
+  val SinSig  = Sig.Method("sin", Seq(Double, Double)).mangled
+  val PowSig  = Sig.Method("pow", Seq(Double, Double, Double)).mangled
+  val MaxSig  = Sig.Method("max", Seq(Double, Double, Double)).mangled
+  val SqrtSig = Sig.Method("sqrt", Seq(Double, Double)).mangled
+
+  val GetRawTypeTy   = Function(Seq(Runtime, Object), Ptr)
+  val GetRawTypeName = Global.Member(Runtime.name, GetRawTypeSig)
+  val GetRawType     = Val.Global(GetRawTypeName, Ptr)
 
   val StringName               = String.name
   val StringValueName          = StringName member Sig.Field("value")
@@ -51,7 +57,7 @@ object Rt {
     "ObjectArray"
   ).map { arr =>
     val cls = Global.Top("scala.scalanative.runtime." + arr)
-    val sig = Sig.Method("alloc", Seq(Int, Ref(cls)))
+    val sig = Sig.Method("alloc", Seq(Int, Ref(cls))).mangled
     sig -> cls
   }.toMap
 }

@@ -65,6 +65,14 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.NoInline     => putInt(T.NoInlineAttr)
     case Attr.AlwaysInline => putInt(T.AlwaysInlineAttr)
 
+    case Attr.MaySpecialize => putInt(T.MaySpecialize)
+    case Attr.NoSpecialize  => putInt(T.NoSpecialize)
+
+    case Attr.UnOpt        => putInt(T.UnOptAttr)
+    case Attr.NoOpt        => putInt(T.NoOptAttr)
+    case Attr.DidOpt       => putInt(T.DidOptAttr)
+    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putString(msg)
+
     case Attr.Dyn      => putInt(T.DynAttr)
     case Attr.Stub     => putInt(T.StubAttr)
     case Attr.Extern   => putInt(T.ExternAttr)
@@ -243,32 +251,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
       util.unreachable
   }
 
-  private def putSig(sig: Sig): Unit = sig match {
-    case Sig.Field(id) =>
-      putInt(T.FieldSig)
-      putString(id)
-    case Sig.Ctor(types) =>
-      putInt(T.CtorSig)
-      putTypes(types)
-    case Sig.Method(id, types) =>
-      putInt(T.MethodSig)
-      putString(id)
-      putTypes(types)
-    case Sig.Proxy(id, types) =>
-      putInt(T.ProxySig)
-      putString(id)
-      putTypes(types)
-    case Sig.Extern(id) =>
-      putInt(T.ExternSig)
-      putString(id)
-    case Sig.Generated(id) =>
-      putInt(T.GeneratedSig)
-      putString(id)
-    case Sig.Duplicate(sig, types) =>
-      putInt(T.DuplicateSig)
-      putSig(sig)
-      putTypes(types)
-  }
+  private def putSig(sig: Sig): Unit =
+    putString(sig.mangle)
 
   private def putLocal(local: Local): Unit =
     putLong(local.id)

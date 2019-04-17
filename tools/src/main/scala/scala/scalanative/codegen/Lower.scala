@@ -1116,34 +1116,26 @@ object Lower {
                   Type.Int)
 
   val throwDivisionByZeroTy =
-    Type.Function(
-      Seq(Type.Ref(Global.Top("scala.scalanative.runtime.package$"))),
-      Type.Nothing)
+    Type.Function(Seq(Rt.Runtime), Type.Nothing)
   val throwDivisionByZero =
-    Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+    Global.Member(Rt.Runtime.name,
                   Sig.Method("throwDivisionByZero", Seq(Type.Nothing)))
   val throwDivisionByZeroVal =
     Val.Global(throwDivisionByZero, Type.Ptr)
 
   val throwClassCastTy =
-    Type.Function(
-      Seq(Type.Ref(Global.Top("scala.scalanative.runtime.package$")),
-          Type.Ptr,
-          Type.Ptr),
-      Type.Nothing)
+    Type.Function(Seq(Rt.Runtime, Type.Ptr, Type.Ptr), Type.Nothing)
   val throwClassCast =
     Global.Member(
-      Global.Top("scala.scalanative.runtime.package$"),
+      Rt.Runtime.name,
       Sig.Method("throwClassCast", Seq(Type.Ptr, Type.Ptr, Type.Nothing)))
   val throwClassCastVal =
     Val.Global(throwClassCast, Type.Ptr)
 
   val throwNullPointerTy =
-    Type.Function(
-      Seq(Type.Ref(Global.Top("scala.scalanative.runtime.package$"))),
-      Type.Nothing)
+    Type.Function(Seq(Rt.Runtime), Type.Nothing)
   val throwNullPointer =
-    Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+    Global.Member(Rt.Runtime.name,
                   Sig.Method("throwNullPointer", Seq(Type.Nothing)))
   val throwNullPointerVal =
     Val.Global(throwNullPointer, Type.Ptr)
@@ -1151,7 +1143,7 @@ object Lower {
   val throwUndefinedTy =
     Type.Function(Seq(Type.Ptr), Type.Nothing)
   val throwUndefined =
-    Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+    Global.Member(Rt.Runtime.name,
                   Sig.Method("throwUndefined", Seq(Type.Nothing)))
   val throwUndefinedVal =
     Val.Global(throwUndefined, Type.Ptr)
@@ -1159,7 +1151,7 @@ object Lower {
   val throwOutOfBoundsTy =
     Type.Function(Seq(Type.Ptr, Type.Int), Type.Nothing)
   val throwOutOfBounds =
-    Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+    Global.Member(Rt.Runtime.name,
                   Sig.Method("throwOutOfBounds", Seq(Type.Int, Type.Nothing)))
   val throwOutOfBoundsVal =
     Val.Global(throwOutOfBounds, Type.Ptr)
@@ -1167,7 +1159,7 @@ object Lower {
   val throwNoSuchMethodTy =
     Type.Function(Seq(Type.Ptr, Type.Ptr), Type.Nothing)
   val throwNoSuchMethod =
-    Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+    Global.Member(Rt.Runtime.name,
                   Sig.Method("throwNoSuchMethod", Seq(Rt.String, Type.Nothing)))
   val throwNoSuchMethodVal =
     Val.Global(throwNoSuchMethod, Type.Ptr)

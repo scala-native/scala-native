@@ -76,7 +76,7 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
   override def clone(): AnyRef = new ArrayList(inner, _size)
 
   override def toArray(): Array[AnyRef] =
-    inner.map(_.asInstanceOf[AnyRef])
+    inner.slice(0, _size).map(_.asInstanceOf[AnyRef])
 
   override def toArray[T](a: Array[T]): Array[T] =
     if (a == null)
@@ -143,6 +143,26 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
         remove(idx)
         true
     }
+
+  override def removeRange(fromIndex: Int, toIndex: Int): Unit = {
+
+    // JVM documents fromIndex == toIndex as having 'no effect'
+    if (fromIndex != toIndex) {
+      if ((fromIndex < 0) || (fromIndex >= _size) || (toIndex > size)
+          || (toIndex < fromIndex)) {
+        // N.B.: JVM docs specify IndexOutOfBounds but use de facto.
+        throw new ArrayIndexOutOfBoundsException()
+      } else {
+        val srcIndex = toIndex
+        val dstIndex = fromIndex
+        val tailSize = _size - toIndex
+
+        System.arraycopy(inner, srcIndex, inner, dstIndex, tailSize)
+
+        _size -= (toIndex - fromIndex)
+      }
+    }
+  }
 
   override def clear(): Unit = {
     // fill the content of inner by null so that the elements can be garbage collected

@@ -22,7 +22,10 @@ import scala.scalanative.native.{
   Zone,
   alloc
 }
+
 import scala.scalanative.posix.sys.statvfs
+
+import scalanative.native.stub
 
 class UnixFileSystem(override val provider: FileSystemProvider,
                      val root: String,
@@ -33,8 +36,8 @@ class UnixFileSystem(override val provider: FileSystemProvider,
   override def close(): Unit =
     closed = true
 
-  override def getFileStores(): Iterable[FileStore] =
-    ???
+  @stub
+  override def getFileStores(): Iterable[FileStore] = ???
 
   override def getPath(first: String, more: Array[String]): Path =
     new UnixPath(this, (first +: more).mkString("/"))

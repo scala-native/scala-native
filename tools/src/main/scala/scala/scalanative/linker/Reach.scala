@@ -14,6 +14,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val stack       = mutable.Stack.empty[Global]
   val links       = mutable.Set.empty[Attr.Link]
   val infos       = mutable.Map.empty[Global, Info]
+  val from        = mutable.Map.empty[Global, Global]
 
   val dyncandidates = mutable.Map.empty[Sig, mutable.Set[Global]]
   val dynsigs       = mutable.Set.empty[Sig]
@@ -123,6 +124,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     if (!name.isTop) {
       reachEntry(name.top)
     }
+    from(name) = Global.None
     reachGlobalNow(name)
     infos.get(name) match {
       case Some(cls: Class) =>
@@ -143,6 +145,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   def reachGlobal(name: Global): Unit =
     if (!enqueued.contains(name) && name.ne(Global.None)) {
       enqueued += name
+      from(name) = if (stack.isEmpty) Global.None else stack.head
       todo.push(name)
     }
 
@@ -213,7 +216,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
               case Rt.JavaHashCodeSig =>
                 update(Rt.ScalaHashCodeSig)
                 update(Rt.JavaHashCodeSig)
-              case sig @ (_: Sig.Method | _: Sig.Ctor) =>
+              case sig if sig.isMethod || sig.isCtor =>
                 update(sig)
               case _ =>
                 ()
@@ -256,7 +259,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       // signature becomes reachable. The others are
       // stashed as dynamic candidates.
       info.responds.foreach {
-        case (sig: Sig.Method, impl) =>
+        case (sig, impl) if sig.isMethod =>
           val dynsig = sig.toProxy
           if (!dynsigs.contains(dynsig)) {
             val buf =
