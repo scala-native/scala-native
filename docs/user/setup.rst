@@ -9,14 +9,12 @@ Scala Native has the following build dependencies:
 * sbt 0.13.13 or newer
 * LLVM/Clang 3.7 or newer
 
-And following runtime library dependencies:
+And following completely optional runtime library dependencies:
 
-* libunwind 0.99 or newer (built-in on macOS)
 * Boehm GC 7.6.0 (optional)
 * zlib 1.2.8 or newer (optional)
 
-Most of the runtime dependencies are completely optional and are
-only required if you use the corresponding feature.
+These are only required if you use the corresponding feature.
 
 Installing sbt
 --------------
@@ -32,13 +30,13 @@ recommended LLVM version is 3.7 or newer, however, the Scala Native sbt
 plugin uses feature detection to discover the installed version of Clang
 so older versions may also work.
 
-Scala Native uses Boehm garbage collector by default. Both the native
-library and header files must be provided at build time. One may use opt-in
-to use new experimental garbage collector called Immix to avoid this
-dependency.
+Scala Native uses the immix garbage collector by default.
+You can use the Boehm__ garbage collector instead, as described here.
+If you chose to use the Boehm garbage collector both the native library
+and header files must be provided at build time.
 
 If you use classes from the `java.util.zip` for compression
-zlib needs to be installed. 
+zlib needs to be installed.
 
 .. note::
 
@@ -62,7 +60,7 @@ installation of macOS.
 
 .. code-block:: shell
 
-    $ sudo apt install clang libunwind-dev
+    $ sudo apt install clang
     $ sudo apt install libgc-dev # optional
 
 **Arch Linux**
@@ -80,13 +78,13 @@ installation of Arch Linux.
 .. code-block:: shell
 
     $ sudo dnf install llvm clang
-    $ sudo dnf install libunwind-devel gc-devel zlib-devel # optional
+    $ sudo dnf install gc-devel zlib-devel # both optional
 
 **FreeBSD**
 
 .. code-block:: shell
 
-    $ pkg install llvm38 libunwind
+    $ pkg install llvm38
     $ pkg install boehm-gc # optional
 
 *Note:* A version of zlib that is sufficiently recent comes with the
@@ -101,5 +99,9 @@ installation of FreeBSD.
 
 Continue to :ref:`sbt`.
 
+
 .. _Boehm GC: http://www.hboehm.info/gc/
+__ 'Boehm GC'_
+.. _immix: http://www.cs.utexas.edu/users/speedway/DaCapo/papers/immix-pldi-2008.pdf
 .. _LLVM: http://llvm.org
+.. _here: :ref:`Sbt settings and tasks`

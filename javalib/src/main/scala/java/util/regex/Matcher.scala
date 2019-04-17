@@ -20,9 +20,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
 
   private var _groupCount = _pattern.compiled.groupCount()
 
-  // This default differs from JVM but describes actual SN behavior.
-  // That behavior is a bug, awaiting a fix. Issue #1541.
-  private var anchoringBoundsInUse = false
+  private var anchoringBoundsInUse = true
 
   private def groupIndex(name: String): Int = {
 
