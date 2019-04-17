@@ -607,14 +607,7 @@ Here is the list of currently available classes:
 * ``java.util.regex.MatchResult``
 * ``java.util.regex.Matcher``
 * ``java.util.regex.Pattern``
-* ``java.util.regex.Pattern$CompiledPatternStore``
-* ``java.util.regex.Pattern$CompiledPatternStore$Key``
-* ``java.util.regex.Pattern$CompiledPatternStore$Node``
 * ``java.util.regex.PatternSyntaxException``
-* ``java.util.regex.cre2``
-* ``java.util.regex.cre2h``
-* ``java.util.regex.cre2h$RE2RegExpOps``
-* ``java.util.regex.cre2h$RE2StringOps``
 * ``java.util.stream.BaseStream``
 * ``java.util.stream.CompositeStream``
 * ``java.util.stream.EmptyIterator``
@@ -656,7 +649,8 @@ Regular expressions (java.util.regex)
 
 Scala Native implements `java.util.regex`-compatible API using
 `Google's RE2 library <https://github.com/google/re2>`_.
-There is some differences in terms of the support of the regular
+
+There are some differences in terms of the support of the regular
 expression language.
 
 Some expressions are not supported:
