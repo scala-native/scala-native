@@ -12,7 +12,7 @@ trait Inline { self: Interflow =>
     val maybeDefn = mode match {
       case build.Mode.Debug =>
         maybeOriginal(name)
-      case build.Mode.Release =>
+      case _: build.Mode.Release =>
         maybeDone(name)
     }
 
@@ -58,7 +58,9 @@ trait Inline { self: Interflow =>
         val shall = mode match {
           case build.Mode.Debug =>
             isCtor || alwaysInline
-          case build.Mode.Release =>
+          case build.Mode.ReleaseFast =>
+            isCtor || alwaysInline || hintInline || isSmall
+          case build.Mode.ReleaseFull =>
             isCtor || alwaysInline || hintInline || isSmall || hasVirtualArgs
         }
         val shallNot =
@@ -124,7 +126,7 @@ trait Inline { self: Interflow =>
       val defn = mode match {
         case build.Mode.Debug =>
           getOriginal(name)
-        case build.Mode.Release =>
+        case _: build.Mode.Release =>
           getDone(name)
       }
 
