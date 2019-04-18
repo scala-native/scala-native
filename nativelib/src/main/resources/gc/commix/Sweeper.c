@@ -92,7 +92,7 @@ uint32_t Sweeper_sweepSimpleBlock(Allocator *allocator, BlockMeta *blockMeta,
         if (collectingOld) {
             assert(!ObjectMeta_IsAllocated(object));
         } else {
-            assert(!ObjectMeta_IsMarked(object));
+            assert(!(ObjectMeta_IsMarked(object) || ObjectMeta_IsMarkedRem(object)));
         }
     }
 
@@ -119,7 +119,6 @@ uint32_t Sweeper_sweepSimpleBlock(Allocator *allocator, BlockMeta *blockMeta,
             }
         }
         BlockMeta_Unmark(blockMeta);
-
         ObjectMeta *bytemapCursor = Bytemap_Get(bytemap, (word_t *)blockStart);
         ObjectMeta *lastCursor = bytemapCursor + (WORDS_IN_LINE/ALLOCATION_ALIGNMENT_WORDS)*LINE_COUNT;
         if (collectingOld) {
@@ -138,6 +137,10 @@ uint32_t Sweeper_sweepSimpleBlock(Allocator *allocator, BlockMeta *blockMeta,
                 bytemapCursor = Bytemap_NextLine(bytemapCursor);
             }
         }
+#ifdef DEBUG_ASSERT
+        atomic_thread_fence(memory_order_release);
+        blockMeta->debugFlag = dbg_not_free;
+#endif
         return 0;
     }
 }
@@ -165,7 +168,6 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
         assert(!BlockMeta_IsOld(blockMeta));
     }
 #endif
-
     ObjectMeta *firstObject = Bytemap_Get(allocator->bytemap, blockStart);
     // It is ok to have free objects at the begining of the block since
     // we do not release chunk by chunk but block by block
@@ -251,8 +253,15 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
             lastBlock->debugFlag = dbg_free;
 #endif
             freeCount += 1;
+        } else {
+#ifdef DEBUG_ASSERT
+            lastBlock->debugFlag = dbg_not_free;
+#endif
         }
     } else {
+#ifdef DEBUG_ASSERT
+        lastBlock->debugFlag = dbg_not_free;
+#endif
         if (freeCount > 0) {
             // the last block is its own superblock
             if (lastBlock < batchLimit) {
@@ -375,7 +384,7 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
             } else if (!BlockMeta_IsOld(current)) {
                 atomic_fetch_add_explicit(&allocator.blockAllocator->youngBlockCount, 1, memory_order_relaxed);
             }
-
+            assert(!BlockMeta_IsMarked(current));
         } else if (BlockMeta_IsSuperblockStart(current)) {
             size = BlockMeta_SuperblockSize(current);
             assert(size > 0);
@@ -580,6 +589,22 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
     }
 }
 
+void Sweeper_LazySweepUntilDone(Heap *heap) {
+    Stats_DefineOrNothing(stats, heap->stats);
+    Stats_RecordTime(stats, start_ns);
+    heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
+    while (heap->sweep.cursor < heap->sweep.limit) {
+        Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
+                      LAZY_SWEEP_MIN_BATCH, heap->lazySweep.nextSweepOld);
+    }
+    heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
+    while (!Sweeper_IsSweepDone(heap)) {
+        sched_yield();
+    }
+    Stats_RecordTime(stats, end_ns);
+    Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
+}
+
 #ifdef DEBUG_ASSERT
 void Sweeper_ClearIsSwept(Heap *heap) {
     BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
@@ -618,7 +643,7 @@ void Sweeper_AssertIsConsistent(Heap *heap) {
         for (ObjectMeta *object = currentBlockStart; object < nextBlockStart;
              object++) {
             if (!BlockMeta_IsOld(current)) {
-                assert(!ObjectMeta_IsMarked(object));
+                assert(!ObjectMeta_IsOld(object));
             } else {
                 assert(!ObjectMeta_IsAllocated(object));
             }

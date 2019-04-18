@@ -10,6 +10,7 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
                    uint32_t maxCount, bool collectingOld);
 uint_fast32_t Sweeper_minSweepCursor(Heap *heap);
 void Sweeper_LazyCoalesce(Heap *heap, Stats *stats);
+void Sweeper_LazySweepUntilDone(Heap *heap);
 
 static inline bool Sweeper_IsCoalescingDone(Heap *heap) {
     return heap->sweep.coalesceDone >= heap->sweep.limit;

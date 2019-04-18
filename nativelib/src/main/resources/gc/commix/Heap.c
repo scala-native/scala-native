@@ -212,8 +212,6 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 }
 
 void Heap_Collect(Heap *heap, bool collectingOld) {
-    printf("Collecting heap %d\n", collectingOld);
-    fflush(stdout);
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
     assert(Sweeper_IsSweepDone(heap));
@@ -293,7 +291,7 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
 #endif
 
     word_t *heapEnd = heap->heapEnd;
-    heap->heapEnd = heapEnd + incrementInBlocks * BLOCK_TOTAL_SIZE;
+    heap->heapEnd = heapEnd + incrementInBlocks * WORDS_IN_BLOCK;
     heap->heapSize += incrementInBlocks * SPACE_USED_PER_BLOCK;
     word_t *blockMetaEnd = heap->blockMetaEnd;
     heap->blockMetaEnd =

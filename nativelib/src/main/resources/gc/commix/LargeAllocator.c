@@ -232,6 +232,27 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
             goto done;
     }
 
+    if (heap->sweep.shouldDoFullCollection) {
+        // After the previous young collection, the heap needed to grow.
+        // We should do a full collection before doing so
+        Heap_Collect(heap, false);
+        Sweeper_LazySweepUntilDone(heap);
+        Heap_Collect(heap, true);
+        if (!Sweeper_IsSweepDone(heap)) {
+            object = LargeAllocator_tryAlloc(&largeAllocator, size);
+            if (object != NULL) {
+                goto done;
+            } else {
+                size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
+                uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
+                Heap_Grow(heap, pow2increment);
+                object = LargeAllocator_tryAlloc(&largeAllocator, size);
+
+                goto done;
+            }
+        }
+    }
+
     Heap_Collect(heap, false);
 
     object = LargeAllocator_tryAlloc(&largeAllocator, size);

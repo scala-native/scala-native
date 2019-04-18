@@ -93,7 +93,7 @@ NOINLINE void write_barrier_push_object(Object *object) {
 
 INLINE void write_barrier_no_sweep(Object *object) {
     ObjectMeta *objectMeta = Bytemap_Get(heap.bytemap, (word_t *)object);
-    if (!ObjectMeta_IsRemembered(objectMeta)) {
+    if (ObjectMeta_IsMarked(objectMeta)) {
         ObjectMeta_SetMarkedRem(objectMeta);
         write_barrier_push_object(object);
     }
@@ -124,5 +124,4 @@ INLINE void scalanative_write_barrier(void *object) {
     if (BlockMeta_IsOldSweep(blockMeta)) {
         write_barrier_slow(object, blockMeta);
     }
-
 }

@@ -2,6 +2,7 @@
 #include "../Constants.h"
 #include "../Log.h"
 #include "../utils/MathUtils.h"
+#include "../State.h"
 #include <stdio.h>
 
 void Bytemap_Init(Bytemap *bytemap, word_t *firstAddress, size_t size) {

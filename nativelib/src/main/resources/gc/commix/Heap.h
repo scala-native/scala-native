@@ -37,6 +37,7 @@ typedef struct {
         atomic_uint_fast32_t limit;
         atomic_uint_fast32_t coalesceDone;
         atomic_bool postSweepDone;
+        bool shouldDoFullCollection;
         pthread_mutex_t growMutex;
     } sweep;
     struct {
@@ -76,6 +77,7 @@ static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 
 void Heap_Collect(Heap *heap, bool collectingOld);
+bool Heap_shouldGrow(Heap *heap);
 void Heap_GrowIfNeeded(Heap *heap);
 void Heap_Grow(Heap *heap, uint32_t increment);
 

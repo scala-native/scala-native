@@ -21,6 +21,6 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount);
 void Phase_StartMark(Heap *heap, bool collectingOld);
 void Phase_MarkDone(Heap *heap, bool collectingOld);
 void Phase_StartSweep(Heap *heap, bool collectingOld);
-void Phase_SweepDone(Heap *heap, Stats *stats);
+void Phase_SweepDone(Heap *heap, Stats *stats, bool collectingOld);
 
 #endif // IMMIX_PHASE_H

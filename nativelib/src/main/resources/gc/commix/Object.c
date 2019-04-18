@@ -68,6 +68,8 @@ void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta, bool collec
     if (collectingOld) {
         if (ObjectMeta_IsMarked(objectMeta)) {
             ObjectMeta_SetAllocated(objectMeta);
+        } else if (ObjectMeta_IsMarkedRem(objectMeta))  {
+            ObjectMeta_SetAllocatedRem(objectMeta);
         }
     } else {
         if (ObjectMeta_IsAllocated(objectMeta)) {
@@ -77,6 +79,7 @@ void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta, bool collec
 
     BlockMeta *blockMeta = Block_GetBlockMeta(
         heap->blockMetaStart, heap->heapStart, (word_t *)object);
+    assert((collectingOld && BlockMeta_IsOld(blockMeta)) || (!collectingOld && !BlockMeta_IsOld(blockMeta)));
     if (!BlockMeta_ContainsLargeObjects(blockMeta)) {
         BlockMeta_Mark(blockMeta);
     } else {

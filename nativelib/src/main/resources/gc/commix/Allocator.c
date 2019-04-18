@@ -218,8 +218,6 @@ word_t *Allocator_lazySweep(Heap *heap, uint32_t size, bool pretenureObject) {
     Stats_DefineOrNothing(stats, heap->stats);
     Stats_RecordTime(stats, start_ns);
     // mark as active
-    printf("Lazy sweeping %d\n", heap->lazySweep.nextSweepOld);
-    fflush(stdout);
     heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
     while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
         Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
@@ -252,10 +250,6 @@ NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
 
     if (object != NULL) {
     done:
-        if (!Heap_IsWordInHeap(heap, object)) {
-            printf("Object %p allocated outstide the heap\n", object);
-            fflush(stdout);
-        }
         assert(Heap_IsWordInHeap(heap, object));
         assert(object != NULL);
         memset(object, 0, size);
@@ -272,6 +266,25 @@ NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
 
         if (object != NULL)
             goto done;
+    }
+
+    if (heap->sweep.shouldDoFullCollection) {
+        // After the previous young collection, the heap needed to grow.
+        // We should do a full collection before doing so
+        Heap_Collect(heap, false);
+        Sweeper_LazySweepUntilDone(heap);
+        Heap_Collect(heap, true);
+        if (!Sweeper_IsSweepDone(heap)) {
+            object = Allocator_lazySweep(heap, size, false);
+            if (object != NULL) {
+                goto done;
+            } else {
+                Heap_Grow(heap, 1);
+                object = Allocator_tryAlloc(&allocator, size);
+
+                goto done;
+            }
+        }
     }
 
     Heap_Collect(heap, false);
@@ -329,6 +342,25 @@ NOINLINE word_t *Allocator_allocPretenureSlow(Heap *heap, uint32_t size) {
 
         if (object != NULL)
             goto done;
+    }
+
+    if (heap->sweep.shouldDoFullCollection) {
+        // After the previous young collection, the heap needed to grow.
+        // We should do a full collection before doing so
+        Heap_Collect(heap, false);
+        Sweeper_LazySweepUntilDone(heap);
+        Heap_Collect(heap, true);
+        if (!Sweeper_IsSweepDone(heap)) {
+            object = Allocator_lazySweep(heap, size, true);
+            if (object != NULL) {
+                goto done;
+            } else {
+                Heap_Grow(heap, 1);
+                object = Allocator_tryAlloc(&allocator, size);
+
+                goto done;
+            }
+        }
     }
 
     Heap_Collect(heap, false);
@@ -393,7 +425,6 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
     // locality = 3 => data has high locality, leave the values in as many caches as possible
     __builtin_prefetch(object + 36, 0, 3);
 
-    assert(Heap_IsWordInHeap(heap, object));
     return object;
 }
 
@@ -414,6 +445,7 @@ INLINE word_t *Allocator_AllocPretenure(Heap *heap, uint32_t size) {
     memset(start, 0, size);
 
     word_t *object = start;
+    assert(Heap_IsWordInHeap(heap, object));
     ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, object);
 #ifdef DEBUG_ASSERT
     ObjectMeta_AssertIsValidAllocation(objectMeta, size);

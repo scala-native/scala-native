@@ -26,7 +26,7 @@ object GC {
   private[scalanative] final case object Boehm
       extends GC("boehm", Seq("gc"), false)
   private[scalanative] final case object Immix extends GC("immix", Seq(), true)
-  private[scalanative] final case object Commix extends GC("Commix", Seq(), true)
+  private[scalanative] final case object Commix extends GC("commix", Seq(), true)
 
   /** Non-freeing garbage collector.*/
   def none: GC = None
@@ -38,7 +38,7 @@ object GC {
   def immix: GC = Immix
 
   /** Mostly-precise mark-region garbage collector running concurrently. */
-  def commix: GC = Immix
+  def commix: GC = Commix
 
   /** The default garbage collector. */
   def default: GC = Commix

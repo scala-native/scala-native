@@ -57,10 +57,6 @@ static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
     } else {
         Stats_MarkerGotFullPacket(stats, end_ns);
     }
-    if (packet != NULL && packet->type == grey_packet_reflist && packet->size == 0) {
-        printf("Taking packet %p with type %d and size %d\n", packet, packet->type, packet->size);
-        fflush(stdout);
-    }
     assert(packet == NULL || packet->type == grey_packet_refrange ||
            packet->size > 0);
     return packet;
@@ -100,7 +96,7 @@ static inline void Marker_rememberOldObject(Heap *heap, Stats *stats, GreyPacket
 
 static inline void Marker_rememberYoungObject(Heap *heap, Stats *stats, GreyPacket **youngRootsHolder, Object *object) {
     GreyPacket *youngRoots = *youngRootsHolder;
-    if (!GreyPacket_Push(heap->mark.youngRoots, object)) {
+    if (!GreyPacket_Push(youngRoots, object)) {
         atomic_thread_fence(memory_order_acquire);
         GreyList_Push(&heap->mark.rememberedYoung, heap->greyPacketsStart, youngRoots);
         *youngRootsHolder = youngRoots = Marker_takeEmptyPacket(heap, stats);
@@ -112,7 +108,7 @@ void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
                        Bytemap *bytemap, Object *object,
                        ObjectMeta *objectMeta, bool collectingOld) {
     assert(ObjectMeta_IsAllocated(objectMeta) ||
-           ObjectMeta_IsMarked(objectMeta));
+           ObjectMeta_IsOld(objectMeta));
 
     assert(Object_Size(object) != 0);
     Object_Mark(heap, object, objectMeta, collectingOld);
@@ -153,7 +149,7 @@ int Marker_markRange(Heap *heap, Stats *stats, Object *object, GreyPacket **outH
         blockMeta = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockMeta);
     }
 
-    if (ObjectMeta_IsMarkedRem(objectMeta)) {
+    if (ObjectMeta_IsMarkedRem(objectMeta) && BlockMeta_IsOld(blockMeta)) {
         ObjectMeta_SetMarked(objectMeta);
     }
 
@@ -226,7 +222,7 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
         blockMeta = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockMeta);
     }
 
-    if (ObjectMeta_IsMarkedRem(objectMeta)) {
+    if (ObjectMeta_IsMarkedRem(objectMeta) && BlockMeta_IsOld(blockMeta)) {
         ObjectMeta_SetMarked(objectMeta);
     }
 
@@ -571,7 +567,11 @@ void Marker_MarkRoots(Heap *heap, Stats *stats, bool collectingOld) {
     GreyPacket *out = Marker_takeEmptyPacket(heap, stats);
     Marker_markProgramStack(heap, stats, &out, collectingOld);
     Marker_markModules(heap, stats, &out, collectingOld);
-    Marker_giveFullPacket(heap, stats, out);
+    if (out->size > 0) {
+        Marker_giveFullPacket(heap, stats, out);
+    } else {
+        Marker_giveEmptyPacket(heap, stats, out);
+    }
 }
 
 

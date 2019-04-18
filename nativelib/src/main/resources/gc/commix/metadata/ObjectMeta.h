@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 // Only OLD objects are remembered. This means that om_allocated_remembered represent
 // old objects. This flag is used during the marking phase of an old collection if 
@@ -20,7 +21,7 @@ typedef enum {
 typedef ubyte_t ObjectMeta;
 
 static inline bool ObjectMeta_IsFree(ObjectMeta *metadata) {
-    // free garbage from old collection. See `ObjectMeta_SweepOld`
+    // 0x8 = free garbage from old collection. See `ObjectMeta_SweepOld`
     return *metadata == om_free || *metadata == 0x8;
 }
 
@@ -44,13 +45,10 @@ static inline bool ObjectMeta_IsMarkedRem(ObjectMeta *metadata) {
     return *metadata == om_marked_rem;
 }
 
-static inline bool ObjectMeta_IsRemembered(ObjectMeta *metadata) {
-    return (*metadata & 0x8) == 0x8;
-}
-
 static inline bool ObjectMeta_IsOld(ObjectMeta *metadata) {
     // (om_marked || om_marked_rem) || om_allocated_rem
-    return ((*metadata & 0x4) == 0x4) || *metadata == om_allocated_rem;
+    ubyte_t data = *metadata;
+    return ((data & 0x4) == 0x4) || data == om_allocated_rem;
 }
 
 static inline bool ObjectMeta_IsAlive(ObjectMeta *metadata, bool oldObject) {
@@ -58,7 +56,11 @@ static inline bool ObjectMeta_IsAlive(ObjectMeta *metadata, bool oldObject) {
 }
 
 static inline bool ObjectMeta_IsAliveSweep(ObjectMeta *metadata, bool collectingOld) {
-    return (collectingOld && ObjectMeta_IsAllocated(metadata)) || (!collectingOld && ObjectMeta_IsMarked(metadata));
+    if (collectingOld) {
+        return ObjectMeta_IsAllocated(metadata) || ObjectMeta_IsAllocatedRem(metadata);
+    } else {
+        return ObjectMeta_IsMarked(metadata) || ObjectMeta_IsMarkedRem(metadata);
+    }
 }
 
 static inline void ObjectMeta_SetFree(ObjectMeta *metadata) {
@@ -151,7 +153,7 @@ static inline void ObjectMeta_SweepOldLineAt(ObjectMeta *start) {
     assert(WORDS_IN_LINE / ALLOCATION_ALIGNMENT_WORDS / 8 == 2);
     uint64_t *first = (uint64_t *)start;
     first[0] = ((first[0] & SWEEP_MASK_OLD) + SWEEP_MASK_OLD_ADD) & SWEEP_MASK_NEW_OLD;
-    first[0] = ((first[1] & SWEEP_MASK_OLD) + SWEEP_MASK_OLD_ADD) & SWEEP_MASK_NEW_OLD;
+    first[1] = ((first[1] & SWEEP_MASK_OLD) + SWEEP_MASK_OLD_ADD) & SWEEP_MASK_NEW_OLD;
 }
 
 
@@ -189,6 +191,7 @@ static inline void ObjectMeta_SweepOld(ObjectMeta *cursor) {
     //        ObjectMeta_SetFree(cursor);
     //    }
     //  We want to apply the following transformation
+    //      - om_free           0000 -> 0000        om_free
     //      - om_allocated      0010 -> 0100        om_marked
     //      - om_marked         0100 -> 0000        om_free
     //      - om_allocated_rem  1010 -> 1100        om_marked_rem

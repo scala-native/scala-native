@@ -15,13 +15,17 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     heap->sweep.limit = initialBlockCount;
     heap->sweep.coalesceDone = initialBlockCount;
     heap->sweep.postSweepDone = true;
+    heap->sweep.shouldDoFullCollection = false;
 }
 
 void Phase_StartMark(Heap *heap, bool collectingOld) {
     if (collectingOld) {
         // Before collecting the old generation, a full young collection has been done.
         // We add the pointer from young to old in the full set to be processed
-        heap->mark.full.head = heap->mark.rememberedYoung.head;
+        while(GreyList_Size(&heap->mark.rememberedYoung) > 0) {
+            GreyPacket *packet = GreyList_Pop(&heap->mark.rememberedYoung, heap->greyPacketsStart);
+            GreyList_Push(&heap->mark.full, heap->greyPacketsStart, packet);
+        }
         // If the current packet for young roots is not empty, the objects need to be pushed
         if (heap->mark.youngRoots->size > 0) {
             GreyList_Push(&heap->mark.full, heap->greyPacketsStart, heap->mark.youngRoots);
@@ -29,8 +33,6 @@ void Phase_StartMark(Heap *heap, bool collectingOld) {
             heap->mark.youngRoots->size = 0;
             heap->mark.youngRoots->type = grey_packet_reflist;
         }
-        // Then we can reset this set
-        GreyList_Init(&heap->mark.rememberedYoung);
         Phase_Set(heap, gc_mark_old);
     } else {
         // Before a young collection, we reset all the young->old inter-generational pointers
@@ -111,9 +113,14 @@ void Phase_StartSweep(Heap *heap, bool collectingOld) {
     GCThread_Wake(heap, threadsToStart);
 }
 
-void Phase_SweepDone(Heap *heap, Stats *stats) {
+void Phase_SweepDone(Heap *heap, Stats *stats, bool collectingOld) {
     if (!heap->sweep.postSweepDone) {
-        Heap_GrowIfNeeded(heap);
+        heap->sweep.shouldDoFullCollection = false;
+        if (!collectingOld) {
+            heap->sweep.shouldDoFullCollection = Heap_shouldGrow(heap);
+        } else {
+            Heap_GrowIfNeeded(heap);
+        }
         BlockAllocator_ReserveBlocks(&blockAllocator);
         BlockAllocator_FinishCoalescing(&blockAllocator);
         Phase_Set(heap, gc_idle);
@@ -123,6 +130,5 @@ void Phase_SweepDone(Heap *heap, Stats *stats) {
                           heap->stats->collection_start_ns, end_ns);
 
         heap->sweep.postSweepDone = true;
-        printf("Sweep done\n");fflush(stdout);
     }
 }

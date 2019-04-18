@@ -99,20 +99,21 @@ static inline bool BlockMeta_IsOld(BlockMeta *blockMeta) {
 
 static inline bool BlockMeta_IsOldSweep(BlockMeta *blockMeta) {
     uint8_t flags = blockMeta->block.simple.flags;
+    uint8_t state = flags & FLAG_MASK;
     int age = flags >> 5;
     // Two cases :
     //  - The block is not marked. Then it is old if its age is the limit.
     //  - The block is marked, then it is old if its age is at least limit - 1. Since we unmark the block AFTER
     //    incrementing its age, it might be marked but have an age equal to the limit
 
-    if ((flags & FLAG_MASK) == block_marked || (flags & FLAG_MASK) == block_superblock_start_marked || (flags & FLAG_MASK) == block_superblock_tail_marked) {
+    if (state == block_marked || state == block_superblock_start_marked || state == block_superblock_tail_marked) {
         // age == MAX_AGE_YOUNG_BLOCK || age == (MAX_AGE_YOUNG_BLOCK - 1);
         return age >= MAX_AGE_YOUNG_BLOCK - 1;
     } else {
+        assert(state == block_simple || state == block_superblock_start || state == block_superblock_start_me || state == block_superblock_tail);
         return age == MAX_AGE_YOUNG_BLOCK;
     }
 }
-
 
 static inline void BlockMeta_IncrementAge(BlockMeta *blockMeta) {
     blockMeta->block.simple.flags += INCREMENT_AGE;
@@ -130,9 +131,7 @@ static inline uint32_t BlockMeta_SuperblockSize(BlockMeta *blockMeta) {
 
 static inline bool BlockMeta_ContainsLargeObjects(BlockMeta *blockMeta) {
     return BlockMeta_IsSuperblockStart(blockMeta) ||
-           BlockMeta_IsSuperblockTail(blockMeta) ||
-           BlockMeta_GetFlags(blockMeta) == block_superblock_start_marked ||
-           BlockMeta_GetFlags(blockMeta) == block_superblock_tail_marked;
+           BlockMeta_IsSuperblockTail(blockMeta);
 }
 
 static inline void BlockMeta_SetFlagAndSuperblockSize(BlockMeta *blockMeta,
