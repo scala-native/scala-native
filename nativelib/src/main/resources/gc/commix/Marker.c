@@ -521,9 +521,7 @@ void Marker_MarkUtilDone(Heap *heap, Stats *stats, bool collectingOld) {
             sched_yield();
         }
     }
-#ifdef DEBUG_ASSERT
     assert(GreyList_Size(&heap->mark.full) == 0);
-#endif
 }
 
 void Marker_markProgramStack(Heap *heap, Stats *stats, GreyPacket **outHolder, bool collectingOld) {
