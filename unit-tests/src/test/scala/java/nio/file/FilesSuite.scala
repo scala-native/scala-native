@@ -975,11 +975,8 @@ object FilesSuite extends tests.Suite {
       assert(itFollowGood.hasNext,
              s"Should have found a Path when following symlinks")
 
-      // We want soughtName _exactly_ so do not use endsWith(),
-      // which would report true for, say, Foo${soughtName}.
       val foundPath      = itFollowGood.next
-      val foundNameCount = foundPath.getNameCount
-      val foundName      = foundPath.getName(foundNameCount - 1).toString
+      val foundName      = foundPath.getFileName.toString
 
       assert(foundName == soughtName,
              s"found: |$foundName| != expected: |$soughtName|")
