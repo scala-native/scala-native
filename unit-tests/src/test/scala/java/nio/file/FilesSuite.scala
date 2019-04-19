@@ -975,8 +975,8 @@ object FilesSuite extends tests.Suite {
       assert(itFollowGood.hasNext,
              s"Should have found a Path when following symlinks")
 
-      val foundPath      = itFollowGood.next
-      val foundName      = foundPath.getFileName.toString
+      val foundPath = itFollowGood.next
+      val foundName = foundPath.getFileName.toString
 
       assert(foundName == soughtName,
              s"found: |$foundName| != expected: |$soughtName|")
