@@ -11,7 +11,6 @@ import java.io.{
   IOException,
   OutputStreamWriter
 }
-
 import java.nio.file.attribute.{
   BasicFileAttributes,
   FileTime,
@@ -21,8 +20,6 @@ import java.nio.file.attribute.{
 }
 
 import java.util.function.BiPredicate
-import java.util.HashSet
-
 import scala.collection.JavaConverters._
 import PosixFilePermission._
 import StandardCopyOption._
@@ -894,60 +891,43 @@ object FilesSuite extends tests.Suite {
     }
   }
 
-  // This test was inspired by Issue #1354
+  // The next two tests were inspired by Issue #1354
   // "NIO File Walker fails on broken links."
-  test("Files.walkFileTree respects FileVisitOption.FOLLOW_LINKS") {
-    withTemporaryDirectory { dirFile =>
-      val dir = dirFile.toPath()
-      val f0  = dir.resolve("f0")
-      val f1  = dir.resolve("f1")
 
-      val brokenLink    = dir.resolve("brokenlink")
-      val missingTarget = dir.resolve("missingtarget")
-
-      Files.createFile(f0)
-      Files.createFile(f1)
-
-      assert(Files.exists(f0) && Files.isRegularFile(f0))
-      assert(Files.exists(f1) && Files.isRegularFile(f1))
-
-      Files.createFile(missingTarget)
-
-      assert(
-        Files.exists(missingTarget) &&
-          Files.isRegularFile(missingTarget))
-
-      // Create valid symbolic link from brokenLink to missingTarget,
-      // then remove missingTarget to break link.
-
-      Files.createSymbolicLink(brokenLink, missingTarget)
-
-      assert(Files.exists(brokenLink) && Files.isSymbolicLink(brokenLink),
-             "File brokenLink does not exist or is not a symbolic link.")
-
-      Files.delete(missingTarget)
-
-      assert(!Files.exists(missingTarget),
-             "File missingTarget should not exist.")
+  test("Files.walkFileTree respects FileVisitOption.FOLLOW_LINKS == no") {
+    withTemporaryDirectoryPath { dirPath =>
+      val context = new FollowLinksTestsContext(dirPath)
 
       val visitor = new QueueingVisitor()
 
-      // will not follow links, so broken link does not throw exception.
-      Files.walkFileTree(dir, visitor)
+      // Will not follow links, so broken link does not throw exception.
+      Files.walkFileTree(dirPath, visitor)
 
-      val result   = visitor.length
-      val expected = 4
+      val resultSet    = visitorToFileNamesSet(visitor)
+      val resultLength = resultSet.size
 
-      assert(result == expected, s"result: $result != expected: $expected")
+      val expectedFileNamesSet = context.expectedFollowFilesSet()
+      val expectedLength       = expectedFileNamesSet.size
 
-      // Now follow the broken link and throw exception.
-      val visitor_2 = new QueueingVisitor()
+      assert(resultLength == expectedLength,
+             s"result length: $resultLength != expected: $expectedLength")
 
-      val fvoSet = new HashSet[FileVisitOption]()
-      fvoSet.add(FileVisitOption.FOLLOW_LINKS)
+      assert(resultSet == expectedFileNamesSet,
+             s"result: ${resultSet} != expected: ${expectedFileNamesSet}")
+    }
+  }
+
+  test("Files.walkFileTree respects FileVisitOption.FOLLOW_LINKS == yes") {
+    withTemporaryDirectoryPath { dirPath =>
+      val context = new FollowLinksTestsContext(dirPath)
+
+      val visitor = new QueueingVisitor()
+
+      // Follow the broken link; expect a NoSuchFileException to be thrown.
 
       assertThrows[NoSuchFileException] {
-        Files.walkFileTree(dir, fvoSet, Int.MaxValue, visitor_2)
+        val fvoSet = Set(FileVisitOption.FOLLOW_LINKS).asJava
+        Files.walkFileTree(dirPath, fvoSet, Int.MaxValue, visitor)
       }
     }
   }
@@ -1398,13 +1378,74 @@ object FilesSuite extends tests.Suite {
     }
   }
 
-  def withTemporaryDirectory(fn: File => Unit) {
+  private class FollowLinksTestsContext(dirPath: Path) {
+
+// format: off
+
+    final val fNames = Array(
+                          "missingtarget",
+                          "A0", // sort before "b" in "brokenlink"
+                          "z99" // sort after "m" in "missingtarget"
+    )
+
+// format: on
+
+    def expectedFollowFilesSet(): Set[String] = fNames.drop(1).toSet
+
+    for (i <- 0 until fNames.length) {
+      val f = dirPath.resolve(fNames(i))
+      Files.createFile(f)
+      assert(Files.exists(f) && Files.isRegularFile(f))
+    }
+
+    val brokenLink    = dirPath.resolve("brokenlink")
+    val missingTarget = dirPath.resolve(fNames(0))
+
+    // Create valid symbolic link from brokenLink to missingTarget,
+    // then remove missingTarget to break link.
+    // This could probably be done in one step, but use two to avoid
+    // filesystem optimizations and to more closely emulate what happens
+    // in the real world.
+
+    Files.createSymbolicLink(brokenLink, missingTarget)
+
+    assert(Files.exists(brokenLink) && Files.isSymbolicLink(brokenLink),
+           s"File '${brokenLink}' does not exist or is not a symbolic link.")
+
+    Files.delete(missingTarget)
+
+    assert(!Files.exists(missingTarget),
+           s"File '${missingTarget}' should not exist.")
+  }
+
+  private def visitorToFileNamesSet(v: QueueingVisitor): Set[String] = {
+    v.dequeue() // skip temp directory pre-visit.
+
+    // -1 to skip temp directory post-visit
+    val nStrings = v.length - 1
+    val strings  = new Array[String](nStrings)
+
+    for (i <- 0 until nStrings) {
+      strings(i) = v.dequeue().getFileName.toString
+    }
+
+    strings.toSet
+  }
+
+  def makeTemporaryDir(): File = {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
     assert(file.mkdir())
-    fn(file)
+    file
   }
 
+  def withTemporaryDirectory(fn: File => Unit) {
+    fn(makeTemporaryDir())
+  }
+
+  def withTemporaryDirectoryPath(fn: Path => Unit) {
+    fn(makeTemporaryDir().toPath)
+  }
 }
 
 class Iterable[T](elems: Array[T]) extends java.lang.Iterable[T] {
