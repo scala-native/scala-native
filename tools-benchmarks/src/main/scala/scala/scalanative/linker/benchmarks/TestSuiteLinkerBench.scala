@@ -24,6 +24,7 @@ abstract class TestSuiteLinkerBench
     val classpath = TestSuiteBuildInfo.fullTestSuiteClasspath.map(_.toPath)
     val config = build.Config.empty
       .withWorkdir(workdir)
+      .withLinkStubs(true)
       .withClassPath(classpath)
       .withMainClass("scala.scalanative.testinterface.TestMain$")
       .withNativelib(classpath.find(_.toString.contains("nativelib")).head)
