@@ -8,8 +8,9 @@ import scalanative.nir.serialization.{Tags => T}
 
 import scala.scalanative.util.Scope
 
-final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
+final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope, caches: SerializationCaches) {
   import buffer._
+  import caches._
 
   private val header: List[(Global, Int)] = {
     buffer.position(0)
@@ -33,8 +34,6 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
     }
     seq
   }
-
-  //final def globals: Set[Global] = header.keySet
 
   final def deserialize(): Seq[Defn] = {
     var allDefns = List.empty[Defn]
@@ -84,22 +83,20 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
   }
 
   private def getString(): String = {
-    import scala.scalanative.io.internedStrings
-
     val length = getInt
     val arr = {
       if (length <= 128) {
-        buffer.get(BinaryDeserializer.sharedArr128, 0, length)
-        BinaryDeserializer.sharedArr128
+        buffer.get(sharedArr128, 0, length)
+        sharedArr128
       } else if (length <= 256) {
-        buffer.get(BinaryDeserializer.sharedArr256, 0, length)
-        BinaryDeserializer.sharedArr256
+        buffer.get(sharedArr256, 0, length)
+        sharedArr256
       } else if (length <= 512) {
-        buffer.get(BinaryDeserializer.sharedArr512, 0, length)
-        BinaryDeserializer.sharedArr512
+        buffer.get(sharedArr512, 0, length)
+        sharedArr512
       } else {
-        buffer.get(BinaryDeserializer.sharedArr4096, 0, length)
-        BinaryDeserializer.sharedArr4096
+        buffer.get(sharedArr4096, 0, length)
+        sharedArr4096
       }
     }
 
@@ -388,11 +385,4 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
         }
     }
   }
-}
-
-object BinaryDeserializer {
-  private[serialization] val sharedArr128  = new Array[Byte](128)
-  private[serialization] val sharedArr256  = new Array[Byte](256)
-  private[serialization] val sharedArr512  = new Array[Byte](512)
-  private[serialization] val sharedArr4096 = new Array[Byte](4096)
 }

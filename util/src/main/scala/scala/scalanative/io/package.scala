@@ -17,7 +17,12 @@ package object io {
     finally pool.reclaim(buffer)
   }
 
-  def packageNameFromPath(path: Path): String = {
+  import java.{util => ju}
+  import java.lang.ref.WeakReference
+  def packageNameFromPath(
+    path: Path,
+    internedStrings: ju.WeakHashMap[String, WeakReference[String]]
+  ): String = {
     @scala.annotation.tailrec
     def replace(
         b: StringBuilder,
@@ -56,10 +61,4 @@ package object io {
       ref.get()
     }
   }
-
-  import java.util.WeakHashMap
-  import java.lang.ref.WeakReference
-  private[scalanative] val internedStrings
-      : WeakHashMap[String, WeakReference[String]] =
-    new WeakHashMap[String, WeakReference[String]]()
 }
