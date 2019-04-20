@@ -121,6 +121,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
     // Inlined because overhead of creating sequence + using `Attrs.fromSeq` is high
     import scala.scalanative.nir.Attr._
     var inline     = Attrs.None.inline
+    var specialize = Attrs.None.specialize
+    var opt        = Attrs.None.opt
     var isExtern   = false
     var isDyn      = false
     var isStub     = false
@@ -132,17 +134,19 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope) {
     var seq: List[Attr] = Nil
     while (i <= end) {
       getAttr match {
-        case attr: Inline    => inline = attr
-        case Extern          => isExtern = true
-        case Dyn             => isDyn = true
-        case Stub            => isStub = true
-        case link: Attr.Link => links ::= link
-        case Abstract        => isAbstract = true
+        case attr: Inline     => inline = attr
+        case attr: Specialize => specialize = attr
+        case attr: Opt        => opt = attr
+        case Extern           => isExtern = true
+        case Dyn              => isDyn = true
+        case Stub             => isStub = true
+        case link: Attr.Link  => links ::= link
+        case Abstract         => isAbstract = true
       }
       i += 1
     }
 
-    new Attrs(inline, isExtern, isDyn, isStub, isAbstract, links)
+    new Attrs(inline, specialize, opt, isExtern, isDyn, isStub, isAbstract, links)
   }
 
   private def getAttr(): Attr = getInt match {

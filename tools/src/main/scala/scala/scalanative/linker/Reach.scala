@@ -127,7 +127,7 @@ final class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoade
     if (!name.isTop) {
       reachEntry(name.top)
     }
-    from(name) = Global.None
+    from.put(name, Global.None)
     reachGlobalNow(name)
     val info = infos.get(name)
     if (info != null) {
@@ -632,8 +632,7 @@ final class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoade
   }
 
   def resolve(cls: Class, sig: Sig): Option[Global] = {
-    //TODO(jvican): Re-enable this assert method
-    //assert(loaded.containsKey(cls.name))
+    assert(loaded.containsKey(cls.name))
 
     def lookupSig(cls: Class, sig: Sig): Option[Global] = {
       val tryMember = cls.name.member(sig)
