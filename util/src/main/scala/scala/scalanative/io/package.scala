@@ -20,8 +20,8 @@ package object io {
   import java.{util => ju}
   import java.lang.ref.WeakReference
   def packageNameFromPath(
-    path: Path,
-    internedStrings: ju.WeakHashMap[String, WeakReference[String]]
+      path: Path,
+      internedStrings: ju.WeakHashMap[String, WeakReference[String]]
   ): String = {
     @scala.annotation.tailrec
     def replace(

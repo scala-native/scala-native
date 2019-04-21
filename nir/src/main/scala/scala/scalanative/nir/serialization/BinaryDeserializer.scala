@@ -8,7 +8,9 @@ import scalanative.nir.serialization.{Tags => T}
 
 import scala.scalanative.util.Scope
 
-final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope, caches: SerializationCaches) {
+final class BinaryDeserializer(buffer: ByteBuffer,
+                               scope: Scope,
+                               caches: SerializationCaches) {
   import buffer._
   import caches._
 
@@ -143,7 +145,14 @@ final class BinaryDeserializer(buffer: ByteBuffer, scope: Scope, caches: Seriali
       i += 1
     }
 
-    new Attrs(inline, specialize, opt, isExtern, isDyn, isStub, isAbstract, links)
+    new Attrs(inline,
+              specialize,
+              opt,
+              isExtern,
+              isDyn,
+              isStub,
+              isAbstract,
+              links)
   }
 
   private def getAttr(): Attr = getInt match {

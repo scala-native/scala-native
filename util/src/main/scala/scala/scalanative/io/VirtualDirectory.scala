@@ -70,7 +70,8 @@ object VirtualDirectory {
 
     override def read(path: Path)(implicit scope: Scope): ByteBuffer = {
       import java.nio.channels.FileChannel
-      val channel = acquire(FileChannel.open(resolve(path), StandardOpenOption.READ))
+      val channel = acquire(
+        FileChannel.open(resolve(path), StandardOpenOption.READ))
       channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())
     }
 
@@ -105,7 +106,9 @@ object VirtualDirectory {
       acquire {
         val uri = URI.create(s"jar:${path.toUri}")
         try {
-          FileSystems.newFileSystem(uri, Map("create" -> "false", "useTempFile" -> "true").asJava)
+          FileSystems.newFileSystem(
+            uri,
+            Map("create" -> "false", "useTempFile" -> "true").asJava)
         } catch {
           case e: FileSystemAlreadyExistsException =>
             FileSystems.getFileSystem(uri)

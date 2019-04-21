@@ -5,7 +5,9 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.codegen.Metadata
 
-final class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
+final class Reach(config: build.Config,
+                  entries: Seq[Global],
+                  loader: ClassLoader) {
   import java.{util => ju}
   val unavailable = new ju.HashSet[Global]
   val loaded      = new ju.HashMap[Global, mutable.Map[Global, Defn]]
@@ -136,7 +138,7 @@ final class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoade
           if (!cls.attrs.isAbstract) {
             reachAllocation(cls)
             if (cls.isModule) {
-              val init = cls.name.member(Sig.Ctor(Seq()))
+              val init  = cls.name.member(Sig.Ctor(Seq()))
               val defns = loaded.get(cls.name)
               if (defns != null && defns.contains(init)) {
                 reachGlobal(init)
@@ -297,7 +299,7 @@ final class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoade
     reachGlobalNow(name)
     infos.get(name) match {
       case info: ScopeInfo => Some(info)
-      case _ => None
+      case _               => None
     }
   }
 
@@ -551,7 +553,7 @@ final class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoade
       reachDynamicMethodTargets(dynsig)
     case Op.Module(n) =>
       classInfo(n).foreach(reachAllocation)
-      val init = n.member(Sig.Ctor(Seq()))
+      val init  = n.member(Sig.Ctor(Seq()))
       val defns = loaded.get(n)
       if (defns != null) {
         if (defns.contains(init)) {

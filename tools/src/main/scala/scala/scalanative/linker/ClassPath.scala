@@ -24,14 +24,17 @@ object ClassPath {
     new Impl(VirtualDirectory.local(directory), config)
 
   /** Create classpath based on the virtual directory. */
-  private[scalanative] def apply(directory: VirtualDirectory, config: build.Config): ClassPath =
+  private[scalanative] def apply(directory: VirtualDirectory,
+                                 config: build.Config): ClassPath =
     new Impl(directory, config)
 
-  private final class Impl(directory: VirtualDirectory, config: build.Config) extends ClassPath {
+  private final class Impl(directory: VirtualDirectory, config: build.Config)
+      extends ClassPath {
     private val files = {
       directory.files.foldLeft(Map.empty[Global.Top, Path]) {
         case (acc, file) =>
-          val name = Global.Top(io.packageNameFromPath(file, config.runCaches.internedStrings))
+          val name = Global.Top(
+            io.packageNameFromPath(file, config.runCaches.internedStrings))
           acc + (name -> file)
       }
     }
@@ -46,7 +49,8 @@ object ClassPath {
       cache.getOrElseUpdate(name, {
         files.get(name.top).map { file =>
           Scope { implicit scope =>
-            deserializeBinary(directory.read(file), config.runCaches.serializationCaches)
+            deserializeBinary(directory.read(file),
+                              config.runCaches.serializationCaches)
           }
         }
       })

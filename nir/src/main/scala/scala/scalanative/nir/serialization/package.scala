@@ -18,8 +18,8 @@ package object serialization {
     (new BinarySerializer(buffer)).serialize(defns)
 
   def deserializeBinary(
-    buffer: ByteBuffer,
-    caches: SerializationCaches
+      buffer: ByteBuffer,
+      caches: SerializationCaches
   )(implicit scope: Scope): Seq[Defn] =
     (new BinaryDeserializer(buffer, scope, caches)).deserialize()
 }
