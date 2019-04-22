@@ -22,6 +22,9 @@ addSbtPlugin("com.eed3si9n"       % "sbt-dirty-money"   % "0.2.0")
 addSbtPlugin("org.foundweekends"  % "sbt-bintray"       % "0.5.4")
 addSbtPlugin("com.jsuereth"       % "sbt-pgp"           % "1.0.0")
 addSbtPlugin("com.typesafe"       % "sbt-mima-plugin"   % "0.3.0")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh"           % "0.3.5")
+addSbtPlugin("io.get-coursier"    % "sbt-coursier"      % "1.1.0-M7")
+addSbtPlugin("com.eed3si9n"       % "sbt-buildinfo"     % "0.7.0")
 
 scalacOptions ++= Seq(
   "-deprecation",

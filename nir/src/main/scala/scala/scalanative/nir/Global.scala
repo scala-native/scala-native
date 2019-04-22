@@ -13,6 +13,7 @@ sealed abstract class Global {
   final def mangle: String =
     Mangle(this)
 }
+
 object Global {
   final case object None extends Global {
     override def top: Global.Top =

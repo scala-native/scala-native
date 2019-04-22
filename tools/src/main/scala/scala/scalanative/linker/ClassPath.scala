@@ -33,7 +33,6 @@ object ClassPath {
         .filter(_.toString.endsWith(".nir"))
         .map { file =>
           val name = Global.Top(io.packageNameFromPath(file))
-
           name -> file
         }
         .toMap
