@@ -289,7 +289,7 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
 #endif
 
     word_t *heapEnd = heap->heapEnd;
-    heap->heapEnd = heapEnd + incrementInBlocks * BLOCK_TOTAL_SIZE;
+    heap->heapEnd = heapEnd + incrementInBlocks * WORDS_IN_BLOCK;
     heap->heapSize += incrementInBlocks * SPACE_USED_PER_BLOCK;
     word_t *blockMetaEnd = heap->blockMetaEnd;
     heap->blockMetaEnd =
