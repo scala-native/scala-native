@@ -6,7 +6,7 @@ import scalanative.io.packageNameFromPath
 val sbt13Version          = "0.13.17"
 val sbt13ScalaVersion     = "2.10.7"
 val sbt10Version          = "1.2.6"
-val sbt10ScalaVersion     = "2.12.7"
+val sbt10ScalaVersion     = "2.12.8"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
@@ -304,6 +304,32 @@ lazy val tools =
     )
     .dependsOn(nir, util, testingCompilerInterface % Test)
 
+// To benchmark, it's recommended to run `^^1.2.6` to switch to Scala 2.12 first
+lazy val toolsBenchmarks = project
+  .in(file("tools-benchmarks"))
+  .enablePlugins(JmhPlugin)
+  .enablePlugins(BuildInfoPlugin)
+  .dependsOn(tools % "compile->test")
+  .settings(toolSettings)
+  .settings(
+    sourceDirectory in Jmh := (sourceDirectory in Compile).value,
+    classDirectory in Jmh := (classDirectory in Compile).value,
+    dependencyClasspath in Jmh := (dependencyClasspath in Compile).value,
+    compile in Jmh := (compile in Jmh).dependsOn(compile in Compile).value,
+    run in Jmh := (run in Jmh).dependsOn(Keys.compile in Jmh).evaluated,
+    // Only generate build info for test configuration
+    buildInfoObject in Compile := "TestSuiteBuildInfo",
+    buildInfoPackage in Compile := "scala.scalanative.internal.build",
+    buildInfoKeys in Compile := List(
+      BuildInfoKey.map(Keys.fullClasspath.in(NativeTest).in(tests)) {
+        case (key, value) =>
+          ("fullTestSuiteClasspath", value.toList.map(_.data))
+      }
+    )
+    // Set up java options to profile with async-profiler and flight recorder
+    //javaOptions in Jmh ++= List("-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder", "-XX:+UnlockDiagnosticVMOptions", "-XX:+DebugNonSafepoints")
+  )
+
 lazy val nscplugin =
   project
     .in(file("nscplugin"))
@@ -514,6 +540,7 @@ lazy val scalalib =
 lazy val tests =
   project
     .in(file("unit-tests"))
+    .enablePlugins(ScalaNativePlugin)
     .settings(projectSettings)
     .settings(noPublishSettings)
     .settings(
@@ -533,7 +560,6 @@ lazy val tests =
       ),
       nativeLinkStubs := true
     )
-    .enablePlugins(ScalaNativePlugin)
 
 lazy val sandbox =
   project

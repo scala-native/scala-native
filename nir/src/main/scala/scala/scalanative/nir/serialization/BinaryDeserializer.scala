@@ -6,10 +6,15 @@ import java.nio.ByteBuffer
 import scala.collection.mutable
 import scalanative.nir.serialization.{Tags => T}
 
-final class BinaryDeserializer(buffer: ByteBuffer) {
-  import buffer._
+import scala.scalanative.util.Scope
 
-  private val header: Map[Global, Int] = {
+final class BinaryDeserializer(buffer: ByteBuffer,
+                               scope: Scope,
+                               caches: SerializationCaches) {
+  import buffer._
+  import caches._
+
+  private val header: List[(Global, Int)] = {
     buffer.position(0)
 
     val magic    = getInt
@@ -17,44 +22,139 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     val revision = getInt
 
     assert(magic == Versions.magic, "Can't read non-NIR file.")
-    assert(compat == Versions.compat && revision <= Versions.revision,
-           "Can't read binary-incompatible version of NIR.")
+    assert(
+      compat == Versions.compat && revision <= Versions.revision,
+      "Can't read binary-incompatible version of NIR."
+    )
 
-    val pairs = getSeq((getGlobal, getInt))
-    val map   = pairs.toMap
-    map
+    var i: Int                   = 1
+    val end                      = getInt
+    var seq: List[(Global, Int)] = Nil
+    while (i <= end) {
+      seq = (getGlobal, getInt) :: seq
+      i += 1
+    }
+    seq
   }
 
-  final def globals: Set[Global] = header.keySet
-
   final def deserialize(): Seq[Defn] = {
-    val allDefns = mutable.UnrolledBuffer.empty[Defn]
-    header.map {
+    var allDefns = List.empty[Defn]
+    header.foreach {
       case (g, offset) =>
         buffer.position(offset)
-        allDefns += getDefn
+        allDefns ::= getDefn
     }
+    scope.close()
     allDefns
   }
 
-  private def getSeq[T](getT: => T): Seq[T] =
-    (1 to getInt).map(_ => getT).toSeq
+  private def getSeq[T](getT: => T): Seq[T] = {
+    var i: Int       = 1
+    val end          = getInt
+    var seq: List[T] = Nil
+    while (i <= end) {
+      seq = getT :: seq
+      i += 1
+    }
+    seq.reverse
+  }
 
   private def getOpt[T](getT: => T): Option[T] =
     if (get == 0) None else Some(getT)
 
-  private def getInts(): Seq[Int] = getSeq(getInt)
+  private def getInts(): Seq[Int] = {
+    var i: Int         = 1
+    val end            = getInt
+    var seq: List[Int] = Nil
+    while (i <= end) {
+      seq = getInt :: seq
+      i += 1
+    }
+    seq.reverse
+  }
 
-  private def getStrings(): Seq[String] = getSeq(getString)
+  private def getStrings(): Seq[String] = {
+    var i: Int            = 1
+    val end               = getInt
+    var seq: List[String] = Nil
+    while (i <= end) {
+      seq = getString :: seq
+      i += 1
+    }
+    seq.reverse
+  }
+
   private def getString(): String = {
-    val arr = new Array[Byte](getInt)
-    get(arr)
-    new String(arr, "UTF-8")
+    val length = getInt
+    val arr = {
+      if (length <= 128) {
+        buffer.get(sharedArr128, 0, length)
+        sharedArr128
+      } else if (length <= 256) {
+        buffer.get(sharedArr256, 0, length)
+        sharedArr256
+      } else if (length <= 512) {
+        buffer.get(sharedArr512, 0, length)
+        sharedArr512
+      } else {
+        buffer.get(sharedArr4096, 0, length)
+        sharedArr4096
+      }
+    }
+
+    val string = new String(arr, 0, length, "UTF-8")
+
+    val ref = internedStrings.get(string)
+    if (ref == null) {
+      val ref = new java.lang.ref.WeakReference(string)
+      internedStrings.put(string, ref)
+      string
+    } else {
+      ref.get()
+    }
   }
 
   private def getBool(): Boolean = get != 0
 
-  private def getAttrs(): Attrs = Attrs.fromSeq(getSeq(getAttr))
+  private def getAttrs(): Attrs = {
+    // Inlined because overhead of creating sequence + using `Attrs.fromSeq` is high
+    import scala.scalanative.nir.Attr._
+    var inline     = Attrs.None.inline
+    var specialize = Attrs.None.specialize
+    var opt        = Attrs.None.opt
+    var isExtern   = false
+    var isDyn      = false
+    var isStub     = false
+    var isAbstract = false
+    var links      = List.empty[Attr.Link]
+
+    var i: Int          = 1
+    val end             = getInt
+    var seq: List[Attr] = Nil
+    while (i <= end) {
+      getAttr match {
+        case attr: Inline     => inline = attr
+        case attr: Specialize => specialize = attr
+        case attr: Opt        => opt = attr
+        case Extern           => isExtern = true
+        case Dyn              => isDyn = true
+        case Stub             => isStub = true
+        case link: Attr.Link  => links ::= link
+        case Abstract         => isAbstract = true
+      }
+      i += 1
+    }
+
+    new Attrs(inline,
+              specialize,
+              opt,
+              isExtern,
+              isDyn,
+              isStub,
+              isAbstract,
+              links)
+  }
+
   private def getAttr(): Attr = getInt match {
     case T.MayInlineAttr    => Attr.MayInline
     case T.InlineHintAttr   => Attr.InlineHint
@@ -171,13 +271,16 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   private def getGlobals(): Seq[Global]      = getSeq(getGlobal)
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
-  private def getGlobal(): Global = getInt match {
-    case T.NoneGlobal =>
-      Global.None
-    case T.TopGlobal =>
-      Global.Top(getString)
-    case T.MemberGlobal =>
-      Global.Member(Global.Top(getString), getSig)
+  private def getGlobal(): Global = {
+    getInt match {
+      case T.NoneGlobal => Global.None
+      case g =>
+        val top = Global.Top(getString)
+        g match {
+          case T.TopGlobal    => top
+          case T.MemberGlobal => Global.Member(top, getSig)
+        }
+    }
   }
 
   private def getSig(): Sig =
@@ -231,52 +334,64 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   private def getParam(): Val.Local       = Val.Local(getLocal, getType)
 
   private def getTypes(): Seq[Type] = getSeq(getType)
-  private def getType(): Type = getInt match {
-    case T.VarargType      => Type.Vararg
-    case T.PtrType         => Type.Ptr
-    case T.BoolType        => Type.Bool
-    case T.CharType        => Type.Char
-    case T.ByteType        => Type.Byte
-    case T.ShortType       => Type.Short
-    case T.IntType         => Type.Int
-    case T.LongType        => Type.Long
-    case T.FloatType       => Type.Float
-    case T.DoubleType      => Type.Double
-    case T.ArrayValueType  => Type.ArrayValue(getType, getInt)
-    case T.StructValueType => Type.StructValue(getTypes)
-    case T.FunctionType    => Type.Function(getTypes, getType)
+  private def getType(): Type = {
+    val kind = getInt
+    kind match {
+      case T.RefType => Type.Ref(getGlobal, getBool, getBool)
+      case otherKind =>
+        otherKind match {
+          case T.VarargType      => Type.Vararg
+          case T.PtrType         => Type.Ptr
+          case T.BoolType        => Type.Bool
+          case T.CharType        => Type.Char
+          case T.ByteType        => Type.Byte
+          case T.ShortType       => Type.Short
+          case T.IntType         => Type.Int
+          case T.LongType        => Type.Long
+          case T.FloatType       => Type.Float
+          case T.DoubleType      => Type.Double
+          case T.ArrayValueType  => Type.ArrayValue(getType, getInt)
+          case T.StructValueType => Type.StructValue(getTypes)
+          case T.FunctionType    => Type.Function(getTypes, getType)
 
-    case T.NullType    => Type.Null
-    case T.NothingType => Type.Nothing
-    case T.VirtualType => Type.Virtual
-    case T.VarType     => Type.Var(getType)
-    case T.UnitType    => Type.Unit
-    case T.ArrayType   => Type.Array(getType, getBool)
-    case T.RefType     => Type.Ref(getGlobal, getBool, getBool)
+          case T.NullType    => Type.Null
+          case T.NothingType => Type.Nothing
+          case T.VirtualType => Type.Virtual
+          case T.VarType     => Type.Var(getType)
+          case T.UnitType    => Type.Unit
+          case T.ArrayType   => Type.Array(getType, getBool)
+        }
+    }
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal)
-  private def getVal(): Val = getInt match {
-    case T.TrueVal        => Val.True
-    case T.FalseVal       => Val.False
-    case T.NullVal        => Val.Null
-    case T.ZeroVal        => Val.Zero(getType)
-    case T.CharVal        => Val.Char(getShort.toChar)
-    case T.ByteVal        => Val.Byte(get)
-    case T.ShortVal       => Val.Short(getShort)
-    case T.IntVal         => Val.Int(getInt)
-    case T.LongVal        => Val.Long(getLong)
-    case T.FloatVal       => Val.Float(getFloat)
-    case T.DoubleVal      => Val.Double(getDouble)
-    case T.StructValueVal => Val.StructValue(getVals)
-    case T.ArrayValueVal  => Val.ArrayValue(getType, getVals)
-    case T.CharsVal       => Val.Chars(getString)
-    case T.LocalVal       => Val.Local(getLocal, getType)
-    case T.GlobalVal      => Val.Global(getGlobal, getType)
+  private def getVal(): Val = {
+    val kind = getInt
+    kind match {
+      case T.LocalVal => Val.Local(getLocal, getType)
+      case otherKind =>
+        otherKind match {
+          case T.TrueVal        => Val.True
+          case T.FalseVal       => Val.False
+          case T.NullVal        => Val.Null
+          case T.ZeroVal        => Val.Zero(getType)
+          case T.CharVal        => Val.Char(getShort.toChar)
+          case T.ByteVal        => Val.Byte(get)
+          case T.ShortVal       => Val.Short(getShort)
+          case T.IntVal         => Val.Int(getInt)
+          case T.LongVal        => Val.Long(getLong)
+          case T.FloatVal       => Val.Float(getFloat)
+          case T.DoubleVal      => Val.Double(getDouble)
+          case T.StructValueVal => Val.StructValue(getVals)
+          case T.ArrayValueVal  => Val.ArrayValue(getType, getVals)
+          case T.CharsVal       => Val.Chars(getString)
+          case T.GlobalVal      => Val.Global(getGlobal, getType)
 
-    case T.UnitVal    => Val.Unit
-    case T.ConstVal   => Val.Const(getVal)
-    case T.StringVal  => Val.String(getString)
-    case T.VirtualVal => Val.Virtual(getLong)
+          case T.UnitVal    => Val.Unit
+          case T.ConstVal   => Val.Const(getVal)
+          case T.StringVal  => Val.String(getString)
+          case T.VirtualVal => Val.Virtual(getLong)
+        }
+    }
   }
 }

@@ -50,6 +50,9 @@ sealed trait Config {
   /** The LTO mode to use used during a release build. */
   def LTO: String
 
+  /** A private caches instance to use during a linker run. */
+  private[scalanative] def runCaches: RunCaches
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): Config
 
@@ -111,7 +114,8 @@ object Config {
       mode = Mode.default,
       linkStubs = false,
       logger = Logger.default,
-      LTO = "none"
+      LTO = "none",
+      runCaches = RunCaches.empty
     )
 
   private final case class Impl(nativelib: Path,
@@ -127,7 +131,8 @@ object Config {
                                 mode: Mode,
                                 linkStubs: Boolean,
                                 logger: Logger,
-                                LTO: String)
+                                LTO: String,
+                                runCaches: RunCaches)
       extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)

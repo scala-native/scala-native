@@ -16,7 +16,7 @@ sealed trait VirtualDirectory {
     files.contains(path)
 
   /** Reads a contents of file with given path. */
-  def read(path: Path): ByteBuffer
+  def read(path: Path)(implicit scope: Scope): ByteBuffer
 
   /** Replaces contents of file with given value. */
   def write(path: Path, buffer: ByteBuffer): Unit
@@ -37,7 +37,7 @@ object VirtualDirectory {
   }
 
   /** Virtual directory that represents contents of the jar file. */
-  def jar(file: Path)(implicit in: Scope): VirtualDirectory = {
+  def jar(file: Path)(implicit scope: Scope): VirtualDirectory = {
     val absolute = file.toAbsolutePath
     assert(Files.exists(file), s"Jar doesn't exist: $absolute")
     assert(absolute.toString.endsWith(".jar"), s"Not a jar: $absolute")
@@ -68,10 +68,11 @@ object VirtualDirectory {
                        StandardOpenOption.WRITE,
                        StandardOpenOption.TRUNCATE_EXISTING)
 
-    override def read(path: Path): ByteBuffer = {
-      val bytes  = Files.readAllBytes(resolve(path))
-      val buffer = ByteBuffer.wrap(bytes)
-      buffer
+    override def read(path: Path)(implicit scope: Scope): ByteBuffer = {
+      import java.nio.channels.FileChannel
+      val channel = acquire(
+        FileChannel.open(resolve(path), StandardOpenOption.READ))
+      channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())
     }
 
     override def write(path: Path, buffer: ByteBuffer): Unit = {
@@ -90,17 +91,24 @@ object VirtualDirectory {
         .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
         .iterator()
         .asScala
+        .filter(_.toString.endsWith(".nir"))
         .map(fp => path.relativize(fp))
-        .toSeq
+        .toList
   }
 
-  private final class JarDirectory(path: Path)(implicit in: Scope)
+  private final class JarDirectory(path: Path)(implicit scope: Scope)
       extends NioDirectory {
+    override def read(path: Path)(implicit scope: Scope): ByteBuffer = {
+      ByteBuffer.wrap(Files.readAllBytes(resolve(path)))
+    }
+
     private val fileSystem: FileSystem =
       acquire {
         val uri = URI.create(s"jar:${path.toUri}")
         try {
-          FileSystems.newFileSystem(uri, Map("create" -> "false").asJava)
+          FileSystems.newFileSystem(
+            uri,
+            Map("create" -> "false", "useTempFile" -> "true").asJava)
         } catch {
           case e: FileSystemAlreadyExistsException =>
             FileSystems.getFileSystem(uri)
@@ -116,6 +124,8 @@ object VirtualDirectory {
             .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
             .iterator()
             .asScala
+            .filter(_.toString.endsWith(".nir"))
+            .toList
         }
     }
   }
@@ -123,7 +133,7 @@ object VirtualDirectory {
   private final object EmptyDirectory extends VirtualDirectory {
     override def files = Seq.empty
 
-    override def read(path: Path): ByteBuffer =
+    override def read(path: Path)(implicit scope: Scope): ByteBuffer =
       throw new UnsupportedOperationException(
         "Can't read from empty directory.")
 
