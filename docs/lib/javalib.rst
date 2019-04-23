@@ -415,7 +415,9 @@ Here is the list of currently available classes:
 * ``java.text.Format$Field``
 * ``java.text.NumberFormat``
 * ``java.text.ParseException``
+* ``java.time.Duration``
 * ``java.time.Instant``
+* ``java.time.temporal.TemporalAmount``
 * ``java.util.AbstractCollection``
 * ``java.util.AbstractList``
 * ``java.util.AbstractListView``
@@ -509,6 +511,7 @@ Here is the list of currently available classes:
 * ``java.util.HashSet``
 * ``java.util.Hashtable``
 * ``java.util.Hashtable$UnboxedEntry$1``
+* ``java.util.IdentityHashMap``
 * ``java.util.IllegalFormatCodePointException``
 * ``java.util.IllegalFormatConversionException``
 * ``java.util.IllegalFormatException``
@@ -604,6 +607,7 @@ Here is the list of currently available classes:
 * ``java.util.package``
 * ``java.util.package$Box``
 * ``java.util.package$CompareNullablesOps``
+* ``java.util.package$IdentityBox``
 * ``java.util.regex.MatchResult``
 * ``java.util.regex.Matcher``
 * ``java.util.regex.Pattern``
