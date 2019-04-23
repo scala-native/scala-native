@@ -52,7 +52,12 @@ static inline bool ObjectMeta_IsOld(ObjectMeta *metadata) {
 }
 
 static inline bool ObjectMeta_IsAlive(ObjectMeta *metadata, bool oldObject) {
-    return (oldObject && ObjectMeta_IsOld(metadata)) || (!oldObject && ObjectMeta_IsAllocated(metadata));
+    ubyte_t data = *metadata;
+    if (oldObject) {
+        return  (data & 0x4) == 0x4;
+    } else {
+        return data == om_allocated;
+    }
 }
 
 static inline bool ObjectMeta_IsAliveSweep(ObjectMeta *metadata, bool collectingOld) {
@@ -112,8 +117,6 @@ static inline void ObjectMeta_SweepLineAt(ObjectMeta *start) {
     //    }
     assert(WORDS_IN_LINE / ALLOCATION_ALIGNMENT_WORDS / 8 == 2);
     uint64_t *first = (uint64_t *)start;
-    // We do not need to apply the SWEEP_MASK_REMEMBERED because young
-    // objects are never remembered.
     first[0] = (first[0] & SWEEP_MASK) >> 1;
     first[1] = (first[1] & SWEEP_MASK) >> 1;
 }
@@ -129,9 +132,6 @@ static inline void ObjectMeta_SweepNewOldLineAt(ObjectMeta *start) {
     //      }
     assert(WORDS_IN_LINE / ALLOCATION_ALIGNMENT_WORDS / 8 == 2);
     uint64_t *first = (uint64_t *)start;
-    // It is important to apply the SWEEP_MASK_REMEMBERED_MASK because new old
-    // object might have been marked as remembered during the marking phase if they
-    // have pointer to object still young after the collection
     first[0] = first[0] & SWEEP_MASK_NEW_OLD;
     first[1] = first[1] & SWEEP_MASK_NEW_OLD;
 }
