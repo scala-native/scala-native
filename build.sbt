@@ -28,8 +28,13 @@ lazy val startupTransition: State => State = { s: State =>
 }
 
 onLoad in Global := {
+  val sbtCrossVersion = (sbtVersion in pluginCrossBuild).value
   val old = (onLoad in Global).value
-  startupTransition compose old
+  if (sbtCrossVersion != sbt10Version) {
+    startupTransition compose old
+  } else {
+    old
+  }
 }
 
 // Provide consistent project name pattern.
