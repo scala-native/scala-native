@@ -160,6 +160,8 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
     }
 
     size_t chunkSize = chunk->size;
+    int nb_block_used = chunk->size / BLOCK_TOTAL_SIZE;
+    atomic_fetch_add_explicit(&allocator->blockAllocator->youngBlockCount, nb_block_used, memory_order_relaxed);
     assert(chunkSize >= MIN_BLOCK_SIZE);
 
     if (chunkSize - MIN_BLOCK_SIZE >= actualBlockSize) {

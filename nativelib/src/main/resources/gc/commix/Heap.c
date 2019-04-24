@@ -212,6 +212,16 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 }
 
 void Heap_Collect(Heap *heap, bool collectingOld) {
+#ifdef DEBUG_PRINT
+    if (collectingOld) {
+        printf("Collecting Old generation\n");
+    } else {
+        printf("Collecting young generation\n");
+    }
+    printf("Number of young block %zu\n", blockAllocator.youngBlockCount);
+    printf("Number of old block %zu\n", blockAllocator.oldBlockCount);
+    fflush(stdout);
+#endif
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
     assert(Sweeper_IsSweepDone(heap));
@@ -230,16 +240,18 @@ void Heap_Collect(Heap *heap, bool collectingOld) {
 
 bool Heap_shouldGrow(Heap *heap) {
     uint32_t freeBlockCount = (uint32_t)blockAllocator.freeBlockCount;
+    uint32_t youngBlockCount = (uint32_t)blockAllocator.youngBlockCount;
+    uint32_t oldBlockCount = (uint32_t)blockAllocator.oldBlockCount;
     uint32_t blockCount = heap->blockCount;
-    uint32_t unavailableBlockCount = blockCount - freeBlockCount;
+    uint32_t unavailableBlockCount = youngBlockCount + oldBlockCount;
 
-#ifdef DEBUG_PRINTT
+#ifdef DEBUG_PRINT
     printf("\n\n Max mark time ratio: %lf \n", heap->maxMarkTimeRatio);
     printf("Min free ratio: %lf \n", heap->minFreeRatio);
     printf("Block count: %" PRIu32 "\n", blockCount);
     printf("Unavailable: %" PRIu32 "\n", unavailableBlockCount);    
-    printf("Young: %" PRIu32 "\n", (uint32_t)blockAllocator.youngBlockCount);
-    printf("Old: %" PRIu32" \n", unavailableBlockCount - (uint32_t)blockAllocator.youngBlockCount);
+    printf("Young: %" PRIu32 "\n", youngBlockCount);
+    printf("Old: %" PRIu32" \n", oldBlockCount);
     printf("Free: %" PRIu32 "\n", freeBlockCount);
     fflush(stdout);
 #endif

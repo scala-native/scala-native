@@ -72,6 +72,11 @@ void Phase_StartSweep(Heap *heap, bool collectingOld) {
     Allocator_Clear(&allocator);
     LargeAllocator_Clear(&largeAllocator);
     BlockAllocator_Clear(&blockAllocator);
+    if (collectingOld) {
+        blockAllocator.oldBlockCount = 0;
+    } else {
+        blockAllocator.youngBlockCount = 0;
+    }
 
     // use the reserved block so mutator can does not have to lazy sweep
     // but can allocate imminently
@@ -130,5 +135,9 @@ void Phase_SweepDone(Heap *heap, Stats *stats, bool collectingOld) {
                           heap->stats->collection_start_ns, end_ns);
 
         heap->sweep.postSweepDone = true;
+#ifdef DEBUG_PRINT
+        printf("Sweep done\n");
+        fflush(stdout);
+#endif
     }
 }

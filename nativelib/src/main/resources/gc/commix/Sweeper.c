@@ -110,13 +110,21 @@ uint32_t Sweeper_sweepSimpleBlock(Allocator *allocator, BlockMeta *blockMeta,
             assert(!BlockMeta_IsOld(blockMeta));
             BlockMeta_IncrementAge(blockMeta);
             if (!BlockMeta_IsOld(blockMeta)) {
+#ifdef DEBUG_PRINT
+                printf("Sweeper_sweepSimpleBlock %p %" PRIu32 " has age %d/%d\n", blockMeta, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta),
+                        BlockMeta_GetAge(blockMeta), MAX_AGE_YOUNG_BLOCK);
+                fflush(stdout);
+#endif
                 atomic_fetch_add_explicit(&allocator->blockAllocator->youngBlockCount, 1, memory_order_relaxed);
             } else {
+                atomic_fetch_add_explicit(&allocator->blockAllocator->oldBlockCount, 1, memory_order_relaxed);
 #ifdef DEBUG_PRINT
                 printf("Sweeper_sweepSimpleBlock promoting block %p %" PRIu32 " to old generation\n", blockMeta, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta));
                 fflush(stdout);
 #endif
             }
+        } else {
+            atomic_fetch_add_explicit(&allocator->blockAllocator->oldBlockCount, 1, memory_order_relaxed);
         }
         BlockMeta_Unmark(blockMeta);
         ObjectMeta *bytemapCursor = Bytemap_Get(bytemap, (word_t *)blockStart);
@@ -222,7 +230,8 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
 
     word_t *current = lastBlockStart + (MIN_BLOCK_SIZE / WORD_SIZE);
     ObjectMeta *currentMeta = Bytemap_Get(allocator->bytemap, current);
-    bool lastblockContainsLiveObjects = false;
+    // The first object must be in the last block
+    bool lastblockContainsLiveObjects = firstObjectAlive;
 
     if (collectingOld) {
         while(current < blockEnd) {
@@ -239,6 +248,7 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
             currentMeta += MIN_BLOCK_SIZE / ALLOCATION_ALIGNMENT;
         }
     } else {
+        assert(!collectingOld && !BlockMeta_IsOld(lastBlock));
         while(current < blockEnd) {
             lastblockContainsLiveObjects |= ((*currentMeta & 0x4) == 0x4);
             ObjectMeta_Sweep(currentMeta);
@@ -248,22 +258,24 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
     }
 
     if (!lastblockContainsLiveObjects) {
-        if (!firstObjectAlive) {
+        // The whole super block is free
 #ifdef DEBUG_ASSERT
-            lastBlock->debugFlag = dbg_free;
+        lastBlock->debugFlag = dbg_free;
 #endif
-            freeCount += 1;
-        } else {
-#ifdef DEBUG_ASSERT
-            lastBlock->debugFlag = dbg_not_free;
-#endif
-        }
+        freeCount += 1;
     } else {
+        // The last block contains some live objects
 #ifdef DEBUG_ASSERT
         lastBlock->debugFlag = dbg_not_free;
 #endif
         if (freeCount > 0) {
-            // the last block is its own superblock
+            assert(!firstObjectAlive);
+            // The last block is its own superblock
+            if (BlockMeta_IsOld(lastBlock)) {
+                atomic_fetch_add_explicit(&blockAllocator.oldBlockCount, 1, memory_order_relaxed);
+            } else  {
+                atomic_fetch_add_explicit(&blockAllocator.youngBlockCount, 1, memory_order_relaxed);
+            }
             if (lastBlock < batchLimit) {
                 // The block is within current btch, just create the superblock
                 // yourself
@@ -276,8 +288,19 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
                 // be done by Heap_lazyCoalesce
                 BlockMeta_SetFlag(lastBlock, block_superblock_start_me);
             }
+        } else {
+            assert(firstObjectAlive);
+            // The whole superblock is still alive
+            if (BlockMeta_IsOld(lastBlock)) {
+                atomic_fetch_add_explicit(&blockAllocator.oldBlockCount, superblockSize, memory_order_relaxed);
+            } else  {
+                atomic_fetch_add_explicit(&blockAllocator.youngBlockCount, superblockSize, memory_order_relaxed);
+            }
         }
     }
+
+    assert((blockMeta->block.simple.flags != block_superblock_start_marked) && 
+            (lastBlock->block.simple.flags != block_superblock_tail_marked));
 
 #ifdef DEBUG_PRINT
     printf("sweepSuperblock %p %" PRIu32 " => FREE %" PRIu32 "/ %" PRIu32
@@ -381,8 +404,6 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
                    BlockMeta_GetBlockIndex(heap->blockMetaStart, current));
             fflush(stdout);
 #endif
-            } else if (!BlockMeta_IsOld(current)) {
-                atomic_fetch_add_explicit(&allocator.blockAllocator->youngBlockCount, 1, memory_order_relaxed);
             }
             assert(!BlockMeta_IsMarked(current));
         } else if (BlockMeta_IsSuperblockStart(current)) {

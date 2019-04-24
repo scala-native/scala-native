@@ -19,6 +19,7 @@ typedef struct {
     } smallestSuperblock;
     atomic_uint_fast32_t freeBlockCount;
     atomic_uint_fast32_t youngBlockCount;
+    atomic_uint_fast32_t oldBlockCount;
     BlockRange coalescingSuperblock;
     word_t *blockMetaStart;
     atomic_bool concurrent;

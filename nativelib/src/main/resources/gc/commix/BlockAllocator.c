@@ -17,6 +17,8 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
         BlockList_Init(&blockAllocator->freeSuperblocks[i]);
     }
     BlockAllocator_Clear(blockAllocator);
+    blockAllocator->youngBlockCount = 0;
+    blockAllocator->oldBlockCount = 0;
 
     blockAllocator->blockMetaStart = blockMetaStart;
     BlockMeta *sCursor = (BlockMeta *)blockMetaStart;
@@ -29,9 +31,6 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
     blockAllocator->reservedSuperblock = (word_t)sLimit;
 
     blockAllocator->concurrent = false;
-
-    blockAllocator->youngBlockCount = 0;
-
 #ifdef DEBUG_ASSERT
     BlockMeta *limit = sCursor + blockCount;
     for (BlockMeta *current = sCursor; current < limit; current++) {
@@ -373,7 +372,6 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
     // sweeping is about to start, use concurrent data structures
     blockAllocator->concurrent = true;
     blockAllocator->freeBlockCount = 0;
-    blockAllocator->youngBlockCount = 0;
     blockAllocator->smallestSuperblock.cursor = NULL;
     blockAllocator->smallestSuperblock.limit = NULL;
     BlockRange_Clear(&blockAllocator->coalescingSuperblock);
