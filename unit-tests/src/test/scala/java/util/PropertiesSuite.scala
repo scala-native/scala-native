@@ -11,12 +11,14 @@ object PropertiesSuite extends tests.Suite {
 
   test("non-string values") {
     val properties = new Properties
-
-    properties.put("age", Int.box(18))
+    // use the HashTable put method to backdoor an integer in
+    properties.put("age", new Integer(18))
     assertNull(properties.getProperty("age"))
-    assertThrows[ClassCastException] {
-      properties.list(new PrintWriter(new ByteArrayOutputStream))
-    }
+
+    val buffer4stream = new ByteArrayOutputStream
+    properties.list(new PrintStream(buffer4stream))
+    // can still list it but it is null above
+    assert(buffer4stream.toString().contains("age=18"))
   }
 
   test("list") {
