@@ -3,10 +3,10 @@ import scala.util.Try
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 
-val sbt13Version          = "0.13.17"
+val sbt13Version          = "0.13.18"
 val sbt13ScalaVersion     = "2.10.7"
-val sbt10Version          = "1.2.6"
-val sbt10ScalaVersion     = "2.12.7"
+val sbt10Version          = "1.2.8"
+val sbt10ScalaVersion     = "2.12.8"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
@@ -29,7 +29,7 @@ lazy val startupTransition: State => State = { s: State =>
 
 onLoad in Global := {
   val sbtCrossVersion = (sbtVersion in pluginCrossBuild).value
-  val old = (onLoad in Global).value
+  val old             = (onLoad in Global).value
   if (sbtCrossVersion != sbt10Version) {
     startupTransition compose old
   } else {
