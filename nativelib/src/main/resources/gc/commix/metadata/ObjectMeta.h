@@ -54,7 +54,8 @@ static inline bool ObjectMeta_IsOld(ObjectMeta *metadata) {
 static inline bool ObjectMeta_IsAlive(ObjectMeta *metadata, bool oldObject) {
     ubyte_t data = *metadata;
     if (oldObject) {
-        return  (data & 0x4) == 0x4;
+        return data == om_marked || data == om_marked_rem;
+        //return  (data & 0x4) == 0x4;
     } else {
         return data == om_allocated;
     }

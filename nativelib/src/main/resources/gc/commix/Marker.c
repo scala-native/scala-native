@@ -27,6 +27,7 @@ extern word_t **__stack_bottom;
 //
 // Marking is done when all the packets are empty and in the empty packet list.
 
+
 static inline GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
     Stats_RecordTimeSync(stats, start_ns);
     GreyPacket *packet =
@@ -145,17 +146,22 @@ int Marker_markRange(Heap *heap, Stats *stats, Object *object, GreyPacket **outH
     ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, (word_t *)object);
 
     BlockMeta *blockMeta = Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, (word_t *)object);
-    if (BlockMeta_ContainsLargeObjects(blockMeta)) {
-        blockMeta = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockMeta);
-    }
 
-    if (ObjectMeta_IsMarkedRem(objectMeta) && BlockMeta_IsOld(blockMeta)) {
+    // We reset the remembered state for old objects popped from remembered set.
+    // If the object is actually a young object, then it will be re-set as om_marked_rem after.
+    if (!collectingOld && ObjectMeta_IsMarkedRem(objectMeta)) {
         ObjectMeta_SetMarked(objectMeta);
     }
 
     bool hasPointerToOld = false;
     bool hasPointerToYoung = false;
-    bool willBeOld = BlockMeta_IsOld(blockMeta) || (BlockMeta_GetAge(blockMeta) == MAX_AGE_YOUNG_BLOCK - 1);
+    // Two cases :
+    //  - If we are collecting the old generation, then after the sweep phase only the already old
+    //    block will be old
+    //  - If we are collecting the young generation, the old block AND the young that will be promoted
+    //    will be old
+    bool willBeOld = (collectingOld && BlockMeta_GetAge(blockMeta) == MAX_AGE_YOUNG_BLOCK)
+        || (!collectingOld && BlockMeta_GetAge(blockMeta) >= MAX_AGE_YOUNG_BLOCK - 1);
 
     int objectsTraced = 0;
     word_t **limit = fields + length;
@@ -164,42 +170,41 @@ int Marker_markRange(Heap *heap, Stats *stats, Object *object, GreyPacket **outH
         if (Heap_IsWordInHeap(heap, field)) {
             ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
 
+            // Marking the object for future process by the Marker
             if (ObjectMeta_IsAlive(fieldMeta, collectingOld)) {
+                Marker_markObject(heap, stats, outHolder, bytemap,
+                                  (Object *)field, fieldMeta, collectingOld);
+            }
+
+            // Checking for inter-generationnal pointer
+            assert(!ObjectMeta_IsFree(fieldMeta));
+            if (!ObjectMeta_IsFree(fieldMeta)) {
                 BlockMeta *blockFieldMeta = Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, field);
-                if (BlockMeta_ContainsLargeObjects(blockFieldMeta)) {
-                    blockFieldMeta = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockFieldMeta);
-                }
 
                 // if BlockMeta_GetAge(blockFieldMeta) == MAX_AGE_YOUNG_BLOCK || BlockMeta_GetAge(blockFieldMeta) == MAX_AGE_YOUNG_BLOCK-1
                 if (BlockMeta_GetAge(blockFieldMeta) >= MAX_AGE_YOUNG_BLOCK - 1) {
+                    // After the next sweep, this block will be old
                     hasPointerToOld = true;
                 } else {
                     hasPointerToYoung = true;
                 }
-                Marker_markObject(heap, stats, outHolder, bytemap,
-                                  (Object *)field, fieldMeta, collectingOld);
             }
+
             objectsTraced += 1;
         }
     }
 
     if (willBeOld && hasPointerToYoung) {
         if (collectingOld) {
-            // Currently collecting the old generation. If the object is young, then we do not
-            // need to add him, will be done by the next young generation
-            if (BlockMeta_GetAge(blockMeta) == MAX_AGE_YOUNG_BLOCK) {
-                // If it is indeed an old objects, it will be swept in the next phase. Thus it
-                // need to keep its status of `Allocated` while being remembered.
-                ObjectMeta_SetAllocatedRem(objectMeta);
-                Marker_rememberOldObject(heap, stats, oldRootsHolder, object);
-            }
+            assert(BlockMeta_IsOld(blockMeta));
+            ObjectMeta_SetAllocatedRem(objectMeta);
+            Marker_rememberOldObject(heap, stats, oldRootsHolder, object);
         } else {
-            // Collecting the young generation. Only already old objects, or young to-be promoted
-            // will enter this condition. Both of them need to be `Marked` and remembered.
             ObjectMeta_SetMarkedRem(objectMeta);
             Marker_rememberOldObject(heap, stats, oldRootsHolder, object);
         }
-    } else if (!willBeOld && hasPointerToOld) {
+    }
+    if (!willBeOld && hasPointerToOld) {
         // We do not mark as remembered young objects. They will be use directly if a old collection
         // is needed, or they will be reset at the next young collection
         Marker_rememberYoungObject(heap, stats, youngRootsHolder, object);
@@ -211,25 +216,29 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                              GreyPacket **outHolder, GreyPacket **oldRootsHolder,
                              GreyPacket **youngRootsHolder, Bytemap *bytemap, bool collectingOld) {
     // if the object has pointer to old object and is young after collection we
-    // need to store it in heap->rememberedYoungObject
+    // need to store it in allocator->rememberedYoungObject
     //
     // if the object has pointer to young object and is old after collection we
-    // need to store it in heap->rememberedOldObject
-    ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
+    // need to store it in allocator->rememberedYoungObject
+    ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, (word_t *)object);
 
     BlockMeta *blockMeta = Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, (word_t *)object);
-    if (BlockMeta_ContainsLargeObjects(blockMeta)) {
-        blockMeta = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockMeta);
-    }
 
-    if (ObjectMeta_IsMarkedRem(objectMeta) && BlockMeta_IsOld(blockMeta)) {
+    // We reset the remembered state for old objects popped from remembered set.
+    // If the object is actually a young object, then it will be re-set as om_marked_rem after.
+    if (!collectingOld && ObjectMeta_IsMarkedRem(objectMeta)) {
         ObjectMeta_SetMarked(objectMeta);
     }
 
     bool hasPointerToOld = false;
     bool hasPointerToYoung = false;
-
-    bool willBeOld = BlockMeta_IsOld(blockMeta) || (BlockMeta_GetAge(blockMeta) == MAX_AGE_YOUNG_BLOCK - 1);
+    // Two cases :
+    //  - If we are collecting the old generation, then after the sweep phase only the already old
+    //    block will be old
+    //  - If we are collecting the young generation, the old block AND the young that will be promoted
+    //    will be old
+    bool willBeOld = (collectingOld && BlockMeta_GetAge(blockMeta) == MAX_AGE_YOUNG_BLOCK)
+        || (!collectingOld && BlockMeta_GetAge(blockMeta) >= MAX_AGE_YOUNG_BLOCK - 1);
 
     int objectsTraced = 0;
     int64_t *ptr_map = object->rtti->refMapStruct;
@@ -239,21 +248,22 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
             ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
 
             if (ObjectMeta_IsAlive(fieldMeta, collectingOld)) {
-                BlockMeta *blockFieldMeta = Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, field);
+                Marker_markObject(heap, stats, outHolder, bytemap,
+                                  (Object *)field, fieldMeta, collectingOld);
+            }
 
-                if (BlockMeta_ContainsLargeObjects(blockFieldMeta)) {
-                    blockFieldMeta = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockFieldMeta);
-                }
+            // Checking for inter-generationnal pointer
+            assert(!ObjectMeta_IsFree(fieldMeta));
+            if (!ObjectMeta_IsFree(fieldMeta)) {
+                BlockMeta *blockFieldMeta = Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, field);
 
                 // if BlockMeta_GetAge(blockFieldMeta) == MAX_AGE_YOUNG_BLOCK || BlockMeta_GetAge(blockFieldMeta) == MAX_AGE_YOUNG_BLOCK-1
                 if (BlockMeta_GetAge(blockFieldMeta) >= MAX_AGE_YOUNG_BLOCK - 1) {
+                    // After the next sweep, this block will be old
                     hasPointerToOld = true;
                 } else {
                     hasPointerToYoung = true;
                 }
-
-                Marker_markObject(heap, stats, outHolder, bytemap,
-                                  (Object *)field, fieldMeta, collectingOld);
             }
             objectsTraced += 1;
         }
@@ -261,24 +271,18 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
 
     if (willBeOld && hasPointerToYoung) {
         if (collectingOld) {
-            // Currently collecting the old generation. If the object is young, then we do not
-            // need to add him, will be done by the next young generation
-            if (BlockMeta_GetAge(blockMeta) == MAX_AGE_YOUNG_BLOCK) {
-                // If it is indeed an old objects, it will be swept in the next phase. Thus it
-                // need to keep its status of `Allocated` while being remembered.
-                ObjectMeta_SetAllocatedRem(objectMeta);
-                Marker_rememberOldObject(heap, stats, oldRootsHolder, object);
-            }
+            assert(BlockMeta_IsOld(blockMeta));
+            ObjectMeta_SetAllocatedRem(objectMeta);
+            Marker_rememberOldObject(heap, stats, oldRootsHolder, object);
         } else {
-            // Collecting the young generation. Only already old objects, or young to-be promoted
-            // will enter this condition. Both of them need to be `Marked` and remembered.
             ObjectMeta_SetMarkedRem(objectMeta);
             Marker_rememberOldObject(heap, stats, oldRootsHolder, object);
         }
-    } else if (!willBeOld && hasPointerToOld) {
+    }
+    if (!willBeOld && hasPointerToOld) {
         // We do not mark as remembered young objects. They will be use directly if a old collection
         // is needed, or they will be reset at the next young collection
-        Marker_rememberYoungObject(heap, stats, oldRootsHolder, object);
+        Marker_rememberYoungObject(heap, stats, youngRootsHolder, object);
     }
     return objectsTraced;
 }
@@ -456,15 +460,19 @@ void Marker_Mark(Heap *heap, Stats *stats, bool collectingOld) {
         }
         in = next;
     }
-    if (oldRoots != NULL && oldRoots->size > 0) {
-        GreyList_Push(&heap->mark.rememberedOld, heap->greyPacketsStart, oldRoots);
-    } else if (oldRoots != NULL) {
-        GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, oldRoots);
+    if (oldRoots != NULL) {
+        if (oldRoots->size > 0) {
+            GreyList_Push(&heap->mark.rememberedOld, heap->greyPacketsStart, oldRoots);
+        } else {
+            Marker_giveEmptyPacket(heap, stats, oldRoots);
+        }
     }
-    if (youngRoots != NULL && youngRoots->size > 0) {
-        GreyList_Push(&heap->mark.rememberedYoung, heap->greyPacketsStart, youngRoots);
-    } else if (youngRoots != NULL) {
-        GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, youngRoots);
+    if (youngRoots != NULL) {
+        if (youngRoots->size > 0) {
+            GreyList_Push(&heap->mark.rememberedYoung, heap->greyPacketsStart, youngRoots);
+        } else {
+            Marker_giveEmptyPacket(heap, stats, youngRoots);
+        }
     }
 }
 
@@ -477,6 +485,8 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats, bool collectingOld) {
         Marker_markBatch(heap, stats, in, &out, &oldRoots, &youngRoots, collectingOld);
 
         assert(out != NULL);
+        assert(oldRoots != NULL);
+        assert(youngRoots != NULL);
         assert(GreyPacket_IsEmpty(in));
         GreyPacket *next = Marker_takeFullPacket(heap, stats);
         if (next != NULL) {
@@ -502,15 +512,19 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats, bool collectingOld) {
         }
         in = next;
     }
-    if (oldRoots != NULL && oldRoots->size > 0) {
-        GreyList_Push(&heap->mark.rememberedOld, heap->greyPacketsStart, oldRoots);
-    } else if (oldRoots != NULL) {
-        GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, oldRoots);
+    if (oldRoots != NULL) {
+        if (oldRoots->size > 0) {
+            GreyList_Push(&heap->mark.rememberedOld, heap->greyPacketsStart, oldRoots);
+        } else {
+            Marker_giveEmptyPacket(heap, stats, oldRoots);
+        }
     }
-    if (youngRoots != NULL && youngRoots->size > 0) {
-        GreyList_Push(&heap->mark.rememberedYoung, heap->greyPacketsStart, youngRoots);
-    } else if (youngRoots != NULL) {
-        GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, youngRoots);
+    if (youngRoots != NULL) {
+        if (youngRoots->size > 0) {
+            GreyList_Push(&heap->mark.rememberedYoung, heap->greyPacketsStart, youngRoots);
+        } else {
+            Marker_giveEmptyPacket(heap, stats, youngRoots);
+        }
     }
 }
 

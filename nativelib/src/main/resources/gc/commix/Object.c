@@ -65,14 +65,15 @@ Object *Object_GetUnmarkedObject(Heap *heap, word_t *word, bool collectingOld) {
 void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta, bool collectingOld) {
     // Mark the object itself. The double check is necessary to not overwrite
     // the remembered state
+    uint8_t state = *objectMeta;
     if (collectingOld) {
-        if (ObjectMeta_IsMarked(objectMeta)) {
+        if (state == om_marked) {
             ObjectMeta_SetAllocated(objectMeta);
-        } else if (ObjectMeta_IsMarkedRem(objectMeta))  {
+        } else if (state == om_marked_rem)  {
             ObjectMeta_SetAllocatedRem(objectMeta);
         }
     } else {
-        if (ObjectMeta_IsAllocated(objectMeta)) {
+        if (state == om_allocated) {
             ObjectMeta_SetMarked(objectMeta);
         }
     }

@@ -289,8 +289,8 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
                 BlockMeta_SetFlag(lastBlock, block_superblock_start_me);
             }
         } else {
-            assert(firstObjectAlive);
             // The whole superblock is still alive
+            assert(firstObjectAlive || superblockSize == 1);
             if (BlockMeta_IsOld(lastBlock)) {
                 atomic_fetch_add_explicit(&blockAllocator.oldBlockCount, superblockSize, memory_order_relaxed);
             } else  {
