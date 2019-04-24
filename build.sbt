@@ -21,8 +21,10 @@ def projectName(project: sbt.ResolvedProject): String = {
 }
 
 lazy val startupTransition: State => State = { s: State =>
-  if (System.getProperty("METALS_ENABLED") != null) "^^1.2.6" :: s
-  else s
+  Option(System.getenv("METALS_ENABLED")) match {
+    case Some(sb) => if (sb == "true") s"^^$sbt10Version" :: s else s
+    case None     => s
+  }
 }
 
 onLoad in Global := {
