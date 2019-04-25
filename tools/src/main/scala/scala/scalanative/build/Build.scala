@@ -2,6 +2,7 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Path, Files}
+import scalanative.nir.Global
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -53,22 +54,9 @@ object Build {
     val entries = ScalaNative.entries(config)
     val linked  = ScalaNative.link(config, entries)
 
+    logLinked(config, linked)
     nir.Show.dump(linked.defns, "linked.hnir")
     ScalaNative.check(config, linked)
-
-    if (linked.unavailable.nonEmpty) {
-      linked.unavailable.map(_.show).sorted.foreach { signature =>
-        config.logger.error(s"cannot link: $signature")
-      }
-      throw new BuildException("unable to link")
-    }
-    val classCount = linked.defns.count {
-      case _: nir.Defn.Class | _: nir.Defn.Module => true
-      case _                                      => false
-    }
-    val methodCount = linked.defns.count(_.isInstanceOf[nir.Defn.Define])
-    config.logger.info(
-      s"Discovered ${classCount} classes and ${methodCount} methods")
 
     val optimized = ScalaNative.optimize(config, linked)
     nir.Show.dump(optimized.defns, "optimized.hnir")
@@ -87,5 +75,37 @@ object Build {
     }
 
     LLVM.link(config, linked, objectFiles, unpackedLib, outpath)
+  }
+
+  private def logLinked(config: Config, linked: linker.Result): Unit = {
+    def showLinkingErrors(): Nothing = {
+      config.logger.error("missing symbols:")
+      linked.unavailable.sortBy(_.show).foreach { name =>
+        config.logger.error("* " + name.mangle)
+        val from    = linked.referencedFrom
+        var current = from(name)
+        while (from.contains(current) && current != Global.None) {
+          config.logger.error("  - from " + current.mangle)
+          current = from(current)
+        }
+      }
+      throw new BuildException("unable to link")
+    }
+
+    def showStats(): Unit = {
+      val classCount = linked.defns.count {
+        case _: nir.Defn.Class | _: nir.Defn.Module => true
+        case _                                      => false
+      }
+      val methodCount = linked.defns.count(_.isInstanceOf[nir.Defn.Define])
+      config.logger.info(
+        s"Discovered ${classCount} classes and ${methodCount} methods")
+    }
+
+    if (linked.unavailable.nonEmpty) {
+      showLinkingErrors()
+    } else {
+      showStats()
+    }
   }
 }
