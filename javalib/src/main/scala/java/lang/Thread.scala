@@ -42,6 +42,15 @@ class Thread private (runnable: Runnable) extends Runnable {
   def this(name: String) = this(??? : Runnable)
 
   @stub
+  def this() = this(??? : Runnable)
+
+  @stub
+  def join(): Unit = ???
+
+  @stub
+  def start(): Unit = ???
+
+  @stub
   def getContextClassLoader(): java.lang.ClassLoader = ???
 
   trait UncaughtExceptionHandler {
