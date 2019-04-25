@@ -35,6 +35,7 @@ object Linker {
       val weaks       = mutable.Set.empty[Global]
       val signatures  = mutable.Set.empty[String]
       val dyndefns    = mutable.Set.empty[Global]
+      val from        = mutable.Map.empty[Global, Global]
 
       val classpath = config.classPath.map { p =>
         ClassPath(VirtualDirectory.real(p))
@@ -44,6 +45,11 @@ object Linker {
           case path if path.contains(global) =>
             path.load(global)
         }.flatten
+
+      def pushDirect(global: Global, fromGlobal: Global): Unit = {
+        from(global) = fromGlobal
+        direct.push(global)
+      }
 
       def processDirect =
         while (direct.nonEmpty) {
@@ -77,7 +83,7 @@ object Linker {
                           weak
                     })
                     .foreach { global =>
-                      direct.push(global)
+                      pushDirect(global, workitem)
                       dyndefns += global
                     }
 
@@ -85,7 +91,7 @@ object Linker {
 
                   deps.foreach {
                     case Dep.Direct(dep) =>
-                      direct.push(dep)
+                      pushDirect(dep, workitem)
                       onDirectDependency(workitem, dep)
 
                     case cond @ Dep.Conditional(dep, condition) =>
@@ -95,7 +101,7 @@ object Linker {
                     case Dep.Weak(global) =>
                       // comparing new dependencies with all signatures
                       if (signatures(Global.genSignature(global))) {
-                        direct.push(global)
+                        pushDirect(global, workitem)
                         onDirectDependency(workitem, global)
                         dyndefns += global
                       }
@@ -115,7 +121,7 @@ object Linker {
             ()
 
           case Dep.Conditional(dep, cond) if resolved.contains(cond) =>
-            direct.push(dep)
+            pushDirect(dep, cond)
 
           case dep =>
             rest += dep
@@ -127,7 +133,7 @@ object Linker {
       onStart()
 
       entries.foreach { entry =>
-        direct.push(entry)
+        pushDirect(entry, Global.None)
         onEntry(entry)
       }
 
@@ -144,6 +150,7 @@ object Linker {
       onComplete()
 
       Result(unresolved.toSeq,
+             from.toMap,
              links.toSeq,
              defnss.sortBy(_.name.toString),
              signatures.toSeq)
