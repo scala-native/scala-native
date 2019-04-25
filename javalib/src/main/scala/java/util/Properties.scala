@@ -1,5 +1,6 @@
 package java.util
 
+import java.io.{PrintStream, PrintWriter}
 import java.{util => ju}
 
 import scala.collection.JavaConverters._
@@ -73,6 +74,29 @@ class Properties(protected val defaults: Properties)
   override def size(): Int =
     super.size()
 
+  private def format(entry: ju.Map.Entry[AnyRef, AnyRef]): String = {
+    val key: String   = entry.getKey.asInstanceOf[String]
+    val value: String = entry.getValue.asInstanceOf[String]
+    if (key.length > 40)
+      s"${key.substring(0, 37)}...=$value"
+    else
+      s"$key=$value"
+  }
+
+  def list(out: PrintStream): Unit = {
+    out.println("-- listing properties --")
+    entrySet().asScala.foreach { entry =>
+      out.println(format(entry))
+    }
+  }
+
+  def list(out: PrintWriter): Unit = {
+    out.println("-- listing properties --")
+    entrySet().asScala.foreach { entry =>
+      out.println(format(entry))
+    }
+  }
+
   // TODO:
   // @deprecated("", "") def save(out: OutputStream, comments: String): Unit
   // def store(writer: Writer, comments: String): Unit
@@ -80,6 +104,4 @@ class Properties(protected val defaults: Properties)
   // def loadFromXML(in: InputStream): Unit
   // def storeToXML(os: OutputStream, comment: String): Unit
   // def storeToXML(os: OutputStream, comment: String, encoding: String): Unit
-  // def list(out: PrintStream): Unit
-  // def list(out: PrintWriter): Unit
 }
