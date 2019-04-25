@@ -2,6 +2,7 @@ package scala.scalanative
 package build
 
 import java.nio.file.Path
+import scala.collection.mutable
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -54,8 +55,17 @@ object Build {
     val linkerResult = ScalaNative.link(config, driver)
 
     if (linkerResult.unresolved.nonEmpty) {
-      linkerResult.unresolved.map(_.show).sorted.foreach { signature =>
-        config.logger.error(s"cannot link: $signature")
+      val from = linkerResult.referencedFrom
+      linkerResult.unresolved.sortBy(_.show).foreach { name =>
+        config.logger.error(s"cannot link: ${name.show}")
+        var current = from(name)
+        var seen    = mutable.Set(name)
+        while (current != nir.Global.None && from.contains(name) && !seen
+                 .contains(current)) {
+          config.logger.error("  - from " + current.show)
+          seen += current
+          current = from(current)
+        }
       }
       throw new BuildException("unable to link")
     }

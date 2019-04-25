@@ -8,6 +8,9 @@ trait Result {
   /** Sequence of globals that could not be resolved. */
   private[scalanative] def unresolved: Seq[Global]
 
+  /** Map that stores the dependencies between globals. */
+  private[scalanative] def referencedFrom: Map[Global, Global]
+
   /** Sequence of external c libraries to link with. */
   private[scalanative] def links: Seq[Attr.Link]
 
@@ -19,6 +22,10 @@ trait Result {
 
   /** Create a copy of the result with given unresolved sequence. */
   private[scalanative] def withUnresolved(value: Seq[Global]): Result
+
+  /** Create a copy of the result with given referenced from map. */
+  private[scalanative] def withReferencedFrom(
+      value: Map[Global, Global]): Result
 
   /** Create a copy of the result with given links sequence. */
   private[scalanative] def withLinks(value: Seq[Attr.Link]): Result
@@ -33,15 +40,20 @@ trait Result {
 object Result {
 
   /** Default, empty linker result. */
-  val empty: Result = Impl(Seq.empty, Seq.empty, Seq.empty, Seq.empty)
+  val empty: Result =
+    Impl(Seq.empty, Map.empty, Seq.empty, Seq.empty, Seq.empty)
 
   private[linker] final case class Impl(unresolved: Seq[Global],
+                                        referencedFrom: Map[Global, Global],
                                         links: Seq[Attr.Link],
                                         defns: Seq[nir.Defn],
                                         dyns: Seq[String])
       extends Result {
     def withUnresolved(value: Seq[Global]): Result =
       copy(unresolved = value)
+
+    def withReferencedFrom(value: Map[Global, Global]): Result =
+      copy(referencedFrom = value)
 
     def withLinks(value: Seq[Attr.Link]): Result =
       copy(links = value)
@@ -54,8 +66,9 @@ object Result {
   }
 
   private[linker] def apply(unresolved: Seq[Global],
+                            from: Map[Global, Global],
                             links: Seq[Attr.Link],
                             defns: Seq[nir.Defn],
                             dyns: Seq[String]): Result =
-    Impl(unresolved, links, defns, dyns)
+    Impl(unresolved, from, links, defns, dyns)
 }
