@@ -1,11 +1,7 @@
 package java.util.concurrent.atomic
 
-// Note Well!
-//    Almost all of the methods in this and other Atomic*.scala files
-//    are manifestly not atomic.  The two methods added today
-//    and the prior art all rely upon the fact that Scala Native is
-//    currently single threaded.  They will break, bring great gnashing
-//    of teeth & horrid pain if/when SN becomes multi-threaded.
+// Warning: The current implementation of this entire package relies on
+//          Scala Native being single threaded.
 
 import java.util.function.UnaryOperator
 
