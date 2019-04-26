@@ -1,0 +1,69 @@
+package java.util
+package concurrent
+package atomic
+
+import java.util.function.UnaryOperator
+
+object AtomicReferenceSuite extends tests.Suite {
+
+  // This test suite is INCOMPLETE (obviously!).
+  //
+  // The get() method is used by getAndUpdate() and updateAndGet().
+  // The test is only a shallow probe before use.
+  //
+  // getAndUpdate() and updateAndGet() test only that the expected
+  // values are returned in the success case. It was not evident
+  // how to test concurrent and contended access patterns within
+  // the scope of unit-tests.
+
+  test("get") {
+
+    val expected = -1
+    val ar       = new AtomicReference(expected)
+
+    val result = ar.get()
+
+    assert(result == expected, s"result: ${result} != expected: ${expected}")
+  }
+
+  test("getAndUpdate(updateFunction)") {
+
+    val expectedValue    = 100
+    val expectedNewValue = expectedValue / 2
+
+    val tax = new UnaryOperator[Int] {
+      override def apply(t: Int): Int = t / 2
+    }
+
+    val ar = new AtomicReference[Int](expectedValue)
+
+    val value = ar.getAndUpdate(tax)
+
+    assert(value == expectedValue,
+           s"result before function: ${value} != expected: ${expectedValue}")
+
+    val newValue = ar.get()
+
+    assert(newValue == expectedNewValue,
+           s"newValue after function: ${newValue} != " +
+             s"expected: ${expectedNewValue}")
+  }
+
+  test("updateAndGet(updateFunction)") {
+
+    val initialValue = 100
+    val expected     = initialValue * 3
+
+    val reward = new UnaryOperator[Int] {
+      override def apply(t: Int): Int = t * 3
+    }
+
+    val ar = new AtomicReference[Int](initialValue)
+
+    val result = ar.updateAndGet(reward)
+
+    assert(result == expected,
+           s"result after function: ${result} != expected: ${expected}")
+  }
+
+}

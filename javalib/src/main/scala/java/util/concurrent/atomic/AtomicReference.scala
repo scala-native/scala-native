@@ -1,5 +1,10 @@
 package java.util.concurrent.atomic
 
+// Warning: The current implementation of this entire package relies on
+//          Scala Native being single threaded.
+
+import java.util.function.UnaryOperator
+
 class AtomicReference[T <: AnyRef](private[this] var value: T)
     extends Serializable {
 
@@ -28,6 +33,17 @@ class AtomicReference[T <: AnyRef](private[this] var value: T)
     val old = value
     value = newValue
     old
+  }
+
+  final def getAndUpdate(updateFunction: UnaryOperator[T]): T = {
+    val old = value
+    value = updateFunction(old)
+    old
+  }
+
+  final def updateAndGet(updateFunction: UnaryOperator[T]): T = {
+    value = updateFunction(value)
+    value
   }
 
   override def toString(): String =
