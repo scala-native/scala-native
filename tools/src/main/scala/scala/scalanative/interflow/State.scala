@@ -180,24 +180,24 @@ final class State(block: Local) {
       case Op.Comp(_, _, v1, v2) => reachVal(v1); reachVal(v2)
       case Op.Conv(_, _, v)      => reachVal(v)
 
-      case _: Op.Classalloc            => ()
-      case Op.Fieldload(_, v, _)       => reachVal(v)
-      case Op.Fieldstore(_, v1, _, v2) => reachVal(v1); reachVal(v2)
-      case Op.Method(v, _)             => reachVal(v)
-      case Op.Dynmethod(v, _)          => reachVal(v)
-      case _: Op.Module                => ()
-      case Op.As(_, v)                 => reachVal(v)
-      case Op.Is(_, v)                 => reachVal(v)
-      case Op.Copy(v)                  => reachVal(v)
-      case _: Op.Sizeof                => ()
-      case Op.Box(_, v)                => reachVal(v)
-      case Op.Unbox(_, v)              => reachVal(v)
-      case _: Op.Var                   => ()
-      case Op.Varload(v)               => reachVal(v)
-      case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
-      case Op.Arrayalloc(_, v)         => reachVal(v)
-      case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
-      case Op.Arraystore(_, v1, v2, v3) =>
+      case _: Op.Classalloc               => ()
+      case Op.Fieldload(_, v, _)          => reachVal(v)
+      case Op.Fieldstore(_, v1, _, v2, _) => reachVal(v1); reachVal(v2)
+      case Op.Method(v, _)                => reachVal(v)
+      case Op.Dynmethod(v, _)             => reachVal(v)
+      case _: Op.Module                   => ()
+      case Op.As(_, v)                    => reachVal(v)
+      case Op.Is(_, v)                    => reachVal(v)
+      case Op.Copy(v)                     => reachVal(v)
+      case _: Op.Sizeof                   => ()
+      case Op.Box(_, v)                   => reachVal(v)
+      case Op.Unbox(_, v)                 => reachVal(v)
+      case _: Op.Var                      => ()
+      case Op.Varload(v)                  => reachVal(v)
+      case Op.Varstore(v1, v2)            => reachVal(v1); reachVal(v2)
+      case Op.Arrayalloc(_, v)            => reachVal(v)
+      case Op.Arrayload(_, v1, v2)        => reachVal(v1); reachVal(v2)
+      case Op.Arraystore(_, v1, v2, v3, _) =>
         reachVal(v1); reachVal(v2); reachVal(v3)
       case Op.Arraylength(v) => reachVal(v)
     }
@@ -287,6 +287,7 @@ final class State(block: Local) {
                                 local,
                                 Val.Int(idx),
                                 escapedVal(value),
+                                init = true,
                                 Next.None)
               }
           }
@@ -305,6 +306,7 @@ final class State(block: Local) {
                               local,
                               fld.name,
                               escapedVal(value),
+                              init = true,
                               Next.None)
             }
         }
@@ -333,24 +335,24 @@ final class State(block: Local) {
       case Op.Comp(_, _, v1, v2) => reachVal(v1); reachVal(v2)
       case Op.Conv(_, _, v)      => reachVal(v)
 
-      case _: Op.Classalloc            => ()
-      case Op.Fieldload(_, v, _)       => reachVal(v)
-      case Op.Fieldstore(_, v1, _, v2) => reachVal(v1); reachVal(v2)
-      case Op.Method(v, _)             => reachVal(v)
-      case Op.Dynmethod(v, _)          => reachVal(v)
-      case _: Op.Module                => ()
-      case Op.As(_, v)                 => reachVal(v)
-      case Op.Is(_, v)                 => reachVal(v)
-      case Op.Copy(v)                  => reachVal(v)
-      case _: Op.Sizeof                => ()
-      case Op.Box(_, v)                => reachVal(v)
-      case Op.Unbox(_, v)              => reachVal(v)
-      case _: Op.Var                   => ()
-      case Op.Varload(v)               => reachVal(v)
-      case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
-      case Op.Arrayalloc(_, v)         => reachVal(v)
-      case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
-      case Op.Arraystore(_, v1, v2, v3) =>
+      case _: Op.Classalloc               => ()
+      case Op.Fieldload(_, v, _)          => reachVal(v)
+      case Op.Fieldstore(_, v1, _, v2, _) => reachVal(v1); reachVal(v2)
+      case Op.Method(v, _)                => reachVal(v)
+      case Op.Dynmethod(v, _)             => reachVal(v)
+      case _: Op.Module                   => ()
+      case Op.As(_, v)                    => reachVal(v)
+      case Op.Is(_, v)                    => reachVal(v)
+      case Op.Copy(v)                     => reachVal(v)
+      case _: Op.Sizeof                   => ()
+      case Op.Box(_, v)                   => reachVal(v)
+      case Op.Unbox(_, v)                 => reachVal(v)
+      case _: Op.Var                      => ()
+      case Op.Varload(v)                  => reachVal(v)
+      case Op.Varstore(v1, v2)            => reachVal(v1); reachVal(v2)
+      case Op.Arrayalloc(_, v)            => reachVal(v)
+      case Op.Arrayload(_, v1, v2)        => reachVal(v1); reachVal(v2)
+      case Op.Arraystore(_, v1, v2, v3, _) =>
         reachVal(v1); reachVal(v2); reachVal(v3)
       case Op.Arraylength(v) => reachVal(v)
     }
@@ -388,8 +390,8 @@ final class State(block: Local) {
         op
       case Op.Fieldload(ty, v, n) =>
         Op.Fieldload(ty, escapedVal(v), n)
-      case Op.Fieldstore(ty, v1, n, v2) =>
-        Op.Fieldstore(ty, escapedVal(v1), n, escapedVal(v2))
+      case Op.Fieldstore(ty, v1, n, v2, init) =>
+        Op.Fieldstore(ty, escapedVal(v1), n, escapedVal(v2), init)
       case Op.Method(v, n) =>
         Op.Method(escapedVal(v), n)
       case Op.Dynmethod(v, n) =>
@@ -417,8 +419,8 @@ final class State(block: Local) {
       case Op.Arrayalloc(ty, v) => Op.Arrayalloc(ty, escapedVal(v))
       case Op.Arrayload(ty, v1, v2) =>
         Op.Arrayload(ty, escapedVal(v1), escapedVal(v2))
-      case Op.Arraystore(ty, v1, v2, v3) =>
-        Op.Arraystore(ty, escapedVal(v1), escapedVal(v2), escapedVal(v3))
+      case Op.Arraystore(ty, v1, v2, v3, init) =>
+        Op.Arraystore(ty, escapedVal(v1), escapedVal(v2), escapedVal(v3), init)
       case Op.Arraylength(v) =>
         Op.Arraylength(escapedVal(v))
     }
