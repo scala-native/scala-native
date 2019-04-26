@@ -391,11 +391,12 @@ object Lower {
     }
 
     def genFieldstoreOp(buf: Buffer, n: Local, op: Op.Fieldstore) = {
-      val Op.Fieldstore(ty, obj, name, value) = op
+      val Op.Fieldstore(ty, obj, name, value, init) = op
 
       val elem = genFieldElemOp(buf, obj, name)
       buf.let(n, Op.Store(ty, elem, value), unwind)
-      if (config.gc.needsWriteBarrier && ty.isInstanceOf[Type.RefKind]) {
+      if (!init && config.gc.needsWriteBarrier && ty
+            .isInstanceOf[Type.RefKind]) {
         buf.call(barrierSig, barrier, Seq(obj), Next.None)
       }
     }
@@ -895,7 +896,7 @@ object Lower {
     }
 
     def genArraystoreOp(buf: Buffer, n: Local, op: Op.Arraystore): Unit = {
-      val Op.Arraystore(ty, arr, idx, value) = op
+      val Op.Arraystore(ty, arr, idx, value, init) = op
 
       val len = fresh()
 
@@ -907,7 +908,8 @@ object Lower {
       val elemPtr =
         buf.elem(arrTy, arr, Seq(Val.Int(0), Val.Int(3), idx), unwind)
       buf.let(n, Op.Store(ty, elemPtr, value), unwind)
-      if (config.gc.needsWriteBarrier && ty.isInstanceOf[Type.RefKind]) {
+      if (!init && config.gc.needsWriteBarrier && ty
+            .isInstanceOf[Type.RefKind]) {
         buf.call(barrierSig, barrier, Seq(arr), Next.None)
       }
     }

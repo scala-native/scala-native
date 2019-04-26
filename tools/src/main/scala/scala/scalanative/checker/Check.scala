@@ -190,7 +190,7 @@ final class Check(implicit linked: linker.Result) {
         }
     case Op.Fieldload(ty, obj, name) =>
       checkFieldOp(ty, obj, name, None)
-    case Op.Fieldstore(ty, obj, name, value) =>
+    case Op.Fieldstore(ty, obj, name, value, _) =>
       checkFieldOp(ty, obj, name, Some(value))
     case Op.Method(obj, sig) =>
       expect(Rt.Object, obj)
@@ -299,7 +299,7 @@ final class Check(implicit linked: linker.Result) {
       val arrty = Type.Ref(Type.toArrayClass(ty))
       expect(arrty, arr)
       expect(Type.Int, idx)
-    case Op.Arraystore(ty, arr, idx, value) =>
+    case Op.Arraystore(ty, arr, idx, value, _) =>
       val arrty = Type.Ref(Type.toArrayClass(ty))
       expect(arrty, arr)
       expect(Type.Int, idx)

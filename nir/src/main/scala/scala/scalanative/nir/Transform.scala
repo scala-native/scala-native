@@ -74,8 +74,8 @@ trait Transform {
       Op.Classalloc(n)
     case Op.Fieldload(ty, v, n) =>
       Op.Fieldload(onType(ty), onVal(v), n)
-    case Op.Fieldstore(ty, v1, n, v2) =>
-      Op.Fieldstore(onType(ty), onVal(v1), n, onVal(v2))
+    case Op.Fieldstore(ty, v1, n, v2, init) =>
+      Op.Fieldstore(onType(ty), onVal(v1), n, onVal(v2), init)
     case Op.Method(v, n) =>
       Op.Method(onVal(v), n)
     case Op.Dynmethod(obj, signature) =>
@@ -104,8 +104,8 @@ trait Transform {
       Op.Arrayalloc(onType(ty), onVal(init))
     case Op.Arrayload(ty, arr, idx) =>
       Op.Arrayload(onType(ty), onVal(arr), onVal(idx))
-    case Op.Arraystore(ty, arr, idx, value) =>
-      Op.Arraystore(onType(ty), onVal(arr), onVal(idx), onVal(value))
+    case Op.Arraystore(ty, arr, idx, value, init) =>
+      Op.Arraystore(onType(ty), onVal(arr), onVal(idx), onVal(value), init)
     case Op.Arraylength(arr) =>
       Op.Arraylength(onVal(arr))
   }

@@ -30,6 +30,7 @@ class OpParserTest extends FunSuite {
     Op.Classalloc(global),
     Op.Fieldload(ty, local, global),
     Op.Fieldstore(ty, local, global, local),
+    Op.Fieldstore(ty, local, global, local, init = true),
     Op.Method(local, Sig.Method("foo", Seq(Type.Unit))),
     Op.Dynmethod(local, Sig.Proxy("foo", Seq.empty)),
     Op.Module(global),
@@ -44,6 +45,8 @@ class OpParserTest extends FunSuite {
     Op.Varstore(local, local),
     Op.Arrayalloc(ty, local),
     Op.Arrayload(ty, local, local),
+    Op.Arraystore(ty, local, local, local),
+    Op.Arraystore(ty, local, local, local, init = true),
     Op.Arraylength(local)
   ).foreach { op =>
     test(s"parse op `${op.show}`") {

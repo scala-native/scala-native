@@ -200,14 +200,18 @@ trait Eval { self: Interflow =>
           case obj =>
             emit(Op.Fieldload(ty, materialize(obj), name))
         }
-      case Op.Fieldstore(ty, obj, name @ FieldRef(cls, fld), value) =>
+      case Op.Fieldstore(ty, obj, name @ FieldRef(cls, fld), value, init) =>
         eval(obj) match {
           case VirtualRef(_, _, values) =>
             values(fld.index) = eval(value)
             Val.Unit
           case obj =>
-            emit(Op
-              .Fieldstore(ty, materialize(obj), name, materialize(eval(value))))
+            emit(
+              Op.Fieldstore(ty,
+                            materialize(obj),
+                            name,
+                            materialize(eval(value)),
+                            init))
         }
       case Op.Method(rawObj, sig) =>
         val obj = eval(rawObj)
@@ -350,7 +354,7 @@ trait Eval { self: Interflow =>
           case (arr, idx) =>
             emit(Op.Arrayload(ty, materialize(arr), materialize(idx)))
         }
-      case Op.Arraystore(ty, arr, idx, value) =>
+      case Op.Arraystore(ty, arr, idx, value, init) =>
         (eval(arr), eval(idx)) match {
           case (VirtualRef(_, _, values), Val.Int(offset))
               if inBounds(values, offset) =>
@@ -361,7 +365,8 @@ trait Eval { self: Interflow =>
               Op.Arraystore(ty,
                             materialize(arr),
                             materialize(idx),
-                            materialize(eval(value))))
+                            materialize(eval(value)),
+                            init))
         }
       case Op.Arraylength(arr) =>
         eval(arr) match {
@@ -901,16 +906,18 @@ trait Eval { self: Interflow =>
         case Inst.Let(_, Op.Fieldload(_, Val.Local(to, _), _), _)
             if canStoreTo.contains(to) =>
           true
-        case inst @ Inst.Let(_, Op.Fieldstore(_, Val.Local(to, _), _, value), _)
-            if canStoreTo.contains(to) =>
+        case inst @ Inst.Let(_,
+                             Op.Fieldstore(_, Val.Local(to, _), _, value, _),
+                             _) if canStoreTo.contains(to) =>
           canStoreValue(value)
         case Inst.Let(_, Op.Arrayload(_, Val.Local(to, _), Val.Int(idx)), _)
             if canStoreTo.contains(to)
               && inBounds(arrayLength.getOrElse(to, -1), idx) =>
           true
-        case Inst.Let(_,
-                      Op.Arraystore(_, Val.Local(to, _), Val.Int(idx), value),
-                      _)
+        case Inst.Let(
+            _,
+            Op.Arraystore(_, Val.Local(to, _), Val.Int(idx), value, _),
+            _)
             if canStoreTo.contains(to)
               && inBounds(arrayLength.getOrElse(to, -1), idx) =>
           canStoreValue(value)

@@ -17,16 +17,16 @@ sealed abstract class Op {
     case Op.Comp(_, _, _, _)                  => Type.Bool
     case Op.Conv(_, ty, _)                    => ty
 
-    case Op.Classalloc(n)           => Type.Ref(n, exact = true, nullable = false)
-    case Op.Fieldload(ty, _, _)     => ty
-    case Op.Fieldstore(ty, _, _, _) => Type.Unit
-    case Op.Method(_, _)            => Type.Ptr
-    case Op.Dynmethod(_, _)         => Type.Ptr
-    case Op.Module(n)               => Type.Ref(n, exact = true, nullable = false)
-    case Op.As(ty, _)               => ty
-    case Op.Is(_, _)                => Type.Bool
-    case Op.Copy(v)                 => v.ty
-    case Op.Sizeof(_)               => Type.Long
+    case Op.Classalloc(n)              => Type.Ref(n, exact = true, nullable = false)
+    case Op.Fieldload(ty, _, _)        => ty
+    case Op.Fieldstore(ty, _, _, _, _) => Type.Unit
+    case Op.Method(_, _)               => Type.Ptr
+    case Op.Dynmethod(_, _)            => Type.Ptr
+    case Op.Module(n)                  => Type.Ref(n, exact = true, nullable = false)
+    case Op.As(ty, _)                  => ty
+    case Op.Is(_, _)                   => Type.Bool
+    case Op.Copy(v)                    => v.ty
+    case Op.Sizeof(_)                  => Type.Long
     case Op.Box(refty: Type.RefKind, _) =>
       Type.Ref(refty.className, exact = true, nullable = false)
     case Op.Unbox(ty, _)      => Type.unbox(ty)
@@ -35,9 +35,9 @@ sealed abstract class Op {
     case Op.Varstore(slot, _) => Type.Unit
     case Op.Arrayalloc(ty, _) =>
       Type.Ref(Type.toArrayClass(ty), exact = true, nullable = false)
-    case Op.Arrayload(ty, _, _)    => ty
-    case Op.Arraystore(_, _, _, _) => Type.Unit
-    case Op.Arraylength(_)         => Type.Int
+    case Op.Arrayload(ty, _, _)       => ty
+    case Op.Arraystore(_, _, _, _, _) => Type.Unit
+    case Op.Arraylength(_)            => Type.Int
   }
 
   final def show: String = nir.Show(this)
@@ -121,7 +121,11 @@ object Op {
   // high-level
   final case class Classalloc(name: Global)                    extends Op
   final case class Fieldload(ty: Type, obj: Val, name: Global) extends Op
-  final case class Fieldstore(ty: Type, obj: Val, name: Global, value: Val)
+  final case class Fieldstore(ty: Type,
+                              obj: Val,
+                              name: Global,
+                              value: Val,
+                              init: Boolean = false)
       extends Op
   final case class Method(obj: Val, sig: Sig)              extends Op
   final case class Dynmethod(obj: Val, sig: Sig)           extends Op
@@ -137,7 +141,11 @@ object Op {
   final case class Varstore(slot: Val, value: Val)         extends Op
   final case class Arrayalloc(ty: Type, init: Val)         extends Op
   final case class Arrayload(ty: Type, arr: Val, idx: Val) extends Op
-  final case class Arraystore(ty: Type, arr: Val, idx: Val, value: Val)
+  final case class Arraystore(ty: Type,
+                              arr: Val,
+                              idx: Val,
+                              value: Val,
+                              init: Boolean = false)
       extends Op
   final case class Arraylength(arr: Val) extends Op
 }
