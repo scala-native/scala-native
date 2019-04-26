@@ -26,6 +26,15 @@ object Tag {
       storeRawPtr(toRawPtr(ptr), toRawPtr(value))
   }
 
+  final case object Word extends Tag[native.Word] {
+    @alwaysinline def size: Int = 8
+    @alwaysinline def alignment: Int = 8
+    @alwaysinline override def load(ptr: native.Ptr[native.Word]): native.Word =
+      new Word(loadWord(toRawPtr(ptr)))
+    @alwaysinline override def store(ptr: native.Ptr[native.Word], value: native.Word): Unit =
+      storeWord(toRawPtr(ptr), value.rawWord)
+  }
+
   final case class Class[T <: AnyRef](of: java.lang.Class[T])
       extends Tag[T] {
     @alwaysinline def size: Int = 8

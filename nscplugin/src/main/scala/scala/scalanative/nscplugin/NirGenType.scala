@@ -92,6 +92,7 @@ trait NirGenType { self: NirGenPhase =>
     case NullClass    => nir.Type.Null
     case NothingClass => nir.Type.Nothing
     case RawPtrClass  => nir.Type.Ptr
+    case RawWordClass => nir.Type.Word
     case _            => genRefType(st)
   }
 

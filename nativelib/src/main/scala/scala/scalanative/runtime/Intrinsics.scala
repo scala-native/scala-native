@@ -49,6 +49,8 @@ object Intrinsics {
   /** Intrinsified raw memory load of boolean. */
   def loadBoolean(rawptr: RawPtr): Boolean = intrinsic
 
+  def loadWord(rawptr: RawPtr): RawWord = intrinsic
+
   /** Intrinsified raw memory load of char. */
   def loadChar(rawptr: RawPtr): Char = intrinsic
 
@@ -78,6 +80,8 @@ object Intrinsics {
 
   /** Intrinsified raw memory store of boolean. */
   def storeBoolean(rawptr: RawPtr, value: Boolean): Unit = intrinsic
+
+  def storeWord(rawptr: RawPtr, value: RawWord): Unit = intrinsic
 
   /** Intrinsified raw memory store of char. */
   def storeChar(rawptr: RawPtr, value: Char): Unit = intrinsic
@@ -141,4 +145,14 @@ object Intrinsics {
 
   /** Resolve c-friendly forwarder generated for given CFuncPtr. */
   def resolveCFuncPtr(cfuncptr: CFuncPtr): RawPtr = intrinsic
+  
+  def castRawWordToInt(rawWord: RawWord): Int   = intrinsic
+  def castRawWordToLong(rawWord: RawWord): Long = intrinsic
+  def castIntToRawWord(int: Int): RawWord       = intrinsic
+  def castLongToRawWord(long: Long): RawWord    = intrinsic
+
+  def addRawWords(a: RawWord, b: RawWord): RawWord  = intrinsic
+  def subRawWords(a: RawWord, b: RawWord): RawWord  = intrinsic
+  def multRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+  def divRawWords(a: RawWord, b: RawWord): RawWord  = intrinsic
 }

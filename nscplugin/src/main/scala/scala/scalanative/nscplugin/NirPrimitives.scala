@@ -28,7 +28,8 @@ object NirPrimitives {
   final val ULONG_TO_DOUBLE = 1 + UINT_TO_DOUBLE
 
   final val LOAD_BOOL    = 1 + ULONG_TO_DOUBLE
-  final val LOAD_CHAR    = 1 + LOAD_BOOL
+  final val LOAD_WORD    = 1 + LOAD_BOOL
+  final val LOAD_CHAR    = 1 + LOAD_WORD
   final val LOAD_BYTE    = 1 + LOAD_CHAR
   final val LOAD_SHORT   = 1 + LOAD_BYTE
   final val LOAD_INT     = 1 + LOAD_SHORT
@@ -39,7 +40,8 @@ object NirPrimitives {
   final val LOAD_OBJECT  = 1 + LOAD_RAW_PTR
 
   final val STORE_BOOL    = 1 + LOAD_OBJECT
-  final val STORE_CHAR    = 1 + STORE_BOOL
+  final val STORE_WORD    = 1 + STORE_BOOL
+  final val STORE_CHAR    = 1 + STORE_WORD
   final val STORE_BYTE    = 1 + STORE_CHAR
   final val STORE_SHORT   = 1 + STORE_BYTE
   final val STORE_INT     = 1 + STORE_SHORT
@@ -63,6 +65,16 @@ object NirPrimitives {
   final val CAST_LONG_TO_RAWPTR    = 1 + CAST_INT_TO_RAWPTR
 
   final val RESOLVE_CFUNCPTR = 1 + CAST_LONG_TO_RAWPTR
+  
+  final val CAST_RAWWORD_TO_INT  = 1 + CAST_LONG_TO_RAWPTR
+  final val CAST_RAWWORD_TO_LONG = 1 + CAST_RAWWORD_TO_INT
+  final val CAST_INT_TO_RAWWORD  = 1 + CAST_RAWWORD_TO_LONG
+  final val CAST_LONG_TO_RAWWORD = 1 + CAST_INT_TO_RAWWORD
+
+  final val ADD_RAW_WORDS  = 1 + CAST_LONG_TO_RAWWORD
+  final val SUB_RAW_WORDS  = 1 + ADD_RAW_WORDS
+  final val MULT_RAW_WORDS = 1 + SUB_RAW_WORDS
+  final val DIV_RAW_WORDS  = 1 + MULT_RAW_WORDS
 }
 
 abstract class NirPrimitives {
@@ -108,6 +120,12 @@ abstract class NirPrimitives {
   def isRawCastOp(code: Int): Boolean =
     code >= CAST_RAW_PTR_TO_OBJECT && code <= CAST_LONG_TO_RAWPTR
 
+  def isRawWordCastOp(code: Int): Boolean =
+    code >= CAST_RAWWORD_TO_INT && code <= CAST_LONG_TO_RAWWORD
+
+  def isRawWordOp(code: Int): Boolean =
+    code >= ADD_RAW_WORDS && code <= DIV_RAW_WORDS
+
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
   private def initWithPrimitives(addPrimitive: (Symbol, Int) => Unit): Unit = {
@@ -130,6 +148,7 @@ abstract class NirPrimitives {
     addPrimitive(ULongToDoubleMethod, ULONG_TO_DOUBLE)
     HashMethods.foreach(addPrimitive(_, HASH))
     addPrimitive(LoadBoolMethod, LOAD_BOOL)
+    addPrimitive(LoadWordMethod, LOAD_WORD)
     addPrimitive(LoadCharMethod, LOAD_CHAR)
     addPrimitive(LoadByteMethod, LOAD_BYTE)
     addPrimitive(LoadShortMethod, LOAD_SHORT)
@@ -140,6 +159,7 @@ abstract class NirPrimitives {
     addPrimitive(LoadRawPtrMethod, LOAD_RAW_PTR)
     addPrimitive(LoadObjectMethod, LOAD_OBJECT)
     addPrimitive(StoreBoolMethod, STORE_BOOL)
+    addPrimitive(StoreWordMethod, STORE_WORD)
     addPrimitive(StoreCharMethod, STORE_CHAR)
     addPrimitive(StoreByteMethod, STORE_BYTE)
     addPrimitive(StoreShortMethod, STORE_SHORT)
@@ -161,5 +181,15 @@ abstract class NirPrimitives {
     addPrimitive(CastIntToRawPtrMethod, CAST_INT_TO_RAWPTR)
     addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
     addPrimitive(ResolveCFuncPtrMethod, RESOLVE_CFUNCPTR)
+
+    addPrimitive(CastRawWordToInt, CAST_RAWWORD_TO_INT)
+    addPrimitive(CastRawWordToLong, CAST_RAWWORD_TO_LONG)
+    addPrimitive(CastIntToRawWord, CAST_INT_TO_RAWWORD)
+    addPrimitive(CastLongToRawWord, CAST_LONG_TO_RAWWORD)
+
+    addPrimitive(AddRawWords, ADD_RAW_WORDS)
+    addPrimitive(SubRawWords, SUB_RAW_WORDS)
+    addPrimitive(MultRawWords, MULT_RAW_WORDS)
+    addPrimitive(DivRawWords, DIV_RAW_WORDS)
   }
 }

@@ -743,8 +743,12 @@ trait NirGenExpr { self: NirGenPhase =>
         genRawCastOp(app, code)
       } else if (code == RESOLVE_CFUNCPTR) {
         genResolveCFuncPtr(app, code)
+      } else if (nirPrimitives.isRawWordOp(code)) {
+        genRawWordOp(app, code)
       } else if (isCoercion(code)) {
         genCoercion(app, receiver, code)
+      } else if (nirPrimitives.isRawWordCastOp(code)) {
+        genCoercion(app, args.head, code)
       } else if (code == SYNCHRONIZED) {
         genSynchronized(app)
       } else if (code == STACKALLOC) {
@@ -1159,6 +1163,7 @@ trait NirGenExpr { self: NirGenPhase =>
 
       val ty = code match {
         case LOAD_BOOL    => nir.Type.Bool
+        case LOAD_WORD    => nir.Type.Word
         case LOAD_CHAR    => nir.Type.Char
         case LOAD_BYTE    => nir.Type.Byte
         case LOAD_SHORT   => nir.Type.Short
@@ -1181,6 +1186,7 @@ trait NirGenExpr { self: NirGenPhase =>
 
       val ty = code match {
         case STORE_BOOL    => nir.Type.Bool
+        case STORE_WORD    => nir.Type.Word
         case STORE_CHAR    => nir.Type.Char
         case STORE_BYTE    => nir.Type.Byte
         case STORE_SHORT   => nir.Type.Short
@@ -1202,6 +1208,21 @@ trait NirGenExpr { self: NirGenPhase =>
       val offset = genExpr(offsetp)
 
       buf.elem(Type.Byte, ptr, Seq(offset), unwind)
+    }
+
+    def genRawWordOp(app: Apply, code: Int): Val = (app, code) match {
+      case (Apply(_, Seq(leftp, rightp)), ADD_RAW_WORDS) =>
+        buf.bin(Bin.Iadd, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
+      case (Apply(_, Seq(leftp, rightp)), SUB_RAW_WORDS) =>
+        buf.bin(Bin.Isub, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
+      case (Apply(_, Seq(leftp, rightp)), MULT_RAW_WORDS) =>
+        buf.bin(Bin.Imul, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
+      case (Apply(_, Seq(leftp, rightp)), DIV_RAW_WORDS) =>
+        buf.bin(Bin.Sdiv, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
+      case _ =>
+        abort(
+          s"Unknown word operation #$code : " + app +
+            " at: " + app.pos)
     }
 
     def genRawCastOp(app: Apply, code: Int): Val = {
@@ -1441,6 +1462,11 @@ trait NirGenExpr { self: NirGenPhase =>
         case D2L => (nir.Type.Double, nir.Type.Long)
         case D2F => (nir.Type.Double, nir.Type.Float)
         case D2D => (nir.Type.Double, nir.Type.Double)
+
+        case CAST_RAWWORD_TO_INT => (nir.Type.Word, nir.Type.Int)
+        case CAST_RAWWORD_TO_LONG => (nir.Type.Word, nir.Type.Long)
+        case CAST_INT_TO_RAWWORD => (nir.Type.Int, nir.Type.Word)
+        case CAST_LONG_TO_RAWWORD => (nir.Type.Long, nir.Type.Word)
       }
     }
 

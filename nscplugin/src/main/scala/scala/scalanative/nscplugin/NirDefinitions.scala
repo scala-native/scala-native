@@ -16,6 +16,9 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val UShortClass = getRequiredClass("scala.scalanative.unsigned.UShort")
     lazy val UIntClass   = getRequiredClass("scala.scalanative.unsigned.UInt")
     lazy val ULongClass  = getRequiredClass("scala.scalanative.unsigned.ULong")
+    lazy val WordClass   = getRequiredClass("scala.scalanative.native.Word")
+    lazy val RawWordClass = getRequiredClass(
+      "scala.scalanative.runtime.RawWord")
     lazy val PtrClass    = getRequiredClass("scala.scalanative.unsafe.Ptr")
     lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")
 
@@ -54,6 +57,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val UnitTagMethod = getDecl(TagModule, TermName("materializeUnitTag"))
     lazy val BooleanTagMethod =
       getDecl(TagModule, TermName("materializeBooleanTag"))
+    lazy val WordTagMethod = getDecl(TagModule, TermName("materializeWordTag"))
     lazy val CharTagMethod = getDecl(TagModule, TermName("materializeCharTag"))
     lazy val ByteTagMethod = getDecl(TagModule, TermName("materializeByteTag"))
     lazy val UByteTagMethod =
@@ -139,6 +143,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getMember(IntrinsicsModule, TermName("ulongToDouble"))
     lazy val LoadBoolMethod =
       getMember(IntrinsicsModule, TermName("loadBoolean"))
+    lazy val LoadWordMethod = getMember(IntrinsicsModule, TermName("loadWord"))
     lazy val LoadCharMethod = getMember(IntrinsicsModule, TermName("loadChar"))
     lazy val LoadByteMethod = getMember(IntrinsicsModule, TermName("loadByte"))
     lazy val LoadShortMethod =
@@ -157,6 +162,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getMember(IntrinsicsModule, TermName("storeBoolean"))
     lazy val StoreCharMethod =
       getMember(IntrinsicsModule, TermName("storeChar"))
+    lazy val StoreWordMethod =
+      getMember(IntrinsicsModule, TermName("storeWord"))
     lazy val StoreByteMethod =
       getMember(IntrinsicsModule, TermName("storeByte"))
     lazy val StoreShortMethod =
@@ -198,6 +205,24 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getMember(IntrinsicsModule, TermName("stackalloc"))
     lazy val ResolveCFuncPtrMethod =
       getMember(IntrinsicsModule, TermName("resolveCFuncPtr"))
+
+    lazy val CastRawWordToInt =
+      getMember(IntrinsicsModule, TermName("castRawWordToInt"))
+    lazy val CastRawWordToLong =
+      getMember(IntrinsicsModule, TermName("castRawWordToLong"))
+    lazy val CastIntToRawWord =
+      getMember(IntrinsicsModule, TermName("castIntToRawWord"))
+    lazy val CastLongToRawWord =
+      getMember(IntrinsicsModule, TermName("castLongToRawWord"))
+
+    lazy val AddRawWords =
+      getMember(IntrinsicsModule, TermName("addRawWords"))
+    lazy val SubRawWords =
+      getMember(IntrinsicsModule, TermName("subRawWords"))
+    lazy val MultRawWords =
+      getMember(IntrinsicsModule, TermName("multRawWords"))
+    lazy val DivRawWords =
+      getMember(IntrinsicsModule, TermName("divRawWords"))
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
       'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),

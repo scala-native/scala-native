@@ -431,6 +431,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Vararg => putInt(T.VarargType)
     case Type.Ptr    => putInt(T.PtrType)
     case Type.Bool   => putInt(T.BoolType)
+    case Type.Word   => putInt(T.WordType)
     case Type.Char   => putInt(T.CharType)
     case Type.Byte   => putInt(T.ByteType)
     case Type.Short  => putInt(T.ShortType)

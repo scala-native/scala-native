@@ -564,6 +564,7 @@ object Show {
       case Type.Vararg => str("...")
       case Type.Bool   => str("bool")
       case Type.Ptr    => str("ptr")
+      case Type.Word   => str("word")
       case Type.Char   => str("char")
       case Type.Byte   => str("byte")
       case Type.Short  => str("short")
