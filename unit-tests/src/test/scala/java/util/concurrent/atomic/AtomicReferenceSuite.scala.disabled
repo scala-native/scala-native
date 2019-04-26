@@ -8,15 +8,15 @@ object AtomicReferenceSuite extends tests.Suite {
 
   // This test suite is INCOMPLETE (obviously!).
   // It tests the get() method used by the two methods added
-  // today 2019-04-25: getAndUpdate() and updateAndGet()
+  // today: getAndUpdate() and updateAndGet()
 
   // getAndUpdate() and updateAndGet() test that the expected
   // values are returned in the success case. It was not evident
   // how to test concurrent and contended access patterns.
   //
   // The implementation of getAndUpdate() and updateAndGet() many
-  // other methods in j.u.concurrent.atomic currently (2019-04-25)
-  // relies upon Scala Native itself being single threaded. That is,
+  // other methods in j.u.concurrent.atomic currently
+  // rely upon Scala Native itself being single threaded. That is,
   // the routines belie their names.
 
   test("get") {

@@ -1,8 +1,8 @@
 package java.util.concurrent.atomic
 
-// 2019-04-25 Note Well!
+// Note Well!
 //    Almost all of the methods in this and other Atomic*.scala files
-//    are manifestly not atomic.  The two methods added to day
+//    are manifestly not atomic.  The two methods added today
 //    and the prior art all rely upon the fact that Scala Native is
 //    currently single threaded.  They will break, bring great gnashing
 //    of teeth & horrid pain if/when SN becomes multi-threaded.
