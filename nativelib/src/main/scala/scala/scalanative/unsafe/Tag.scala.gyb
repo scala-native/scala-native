@@ -216,6 +216,8 @@ object Tag {
     Tag.Ptr(tag)
   @alwaysinline implicit def materializeClassTag[T <: AnyRef: ClassTag]: Tag[T] =
     Tag.Class(implicitly[ClassTag[T]].runtimeClass.asInstanceOf[java.lang.Class[T]])
+  @alwaysinline implicit def materializeWordTag: Tag[native.Word] =
+    Tag.Word
   % for (name, T, _) in prims:
   @alwaysinline implicit def materialize${name}Tag: Tag[${T}] =
     ${name}

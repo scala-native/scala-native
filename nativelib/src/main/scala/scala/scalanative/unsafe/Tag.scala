@@ -4319,6 +4319,8 @@ object Tag {
     Tag.Ptr(tag)
   @alwaysinline implicit def materializeClassTag[T <: AnyRef: ClassTag]: Tag[T] =
     Tag.Class(implicitly[ClassTag[T]].runtimeClass.asInstanceOf[java.lang.Class[T]])
+  @alwaysinline implicit def materializeWordTag: Tag[native.Word] =
+    Tag.Word
   @alwaysinline implicit def materializeUnitTag: Tag[scala.Unit] =
     Unit
   @alwaysinline implicit def materializeBooleanTag: Tag[scala.Boolean] =

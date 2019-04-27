@@ -26,6 +26,8 @@ final class Word(private[scalanative] val rawWord: RawWord) {
       case _ =>
         false
     })
+
+  override def toString(): String = castRawWordToLong(rawWord).toString
 }
 
 object Word {

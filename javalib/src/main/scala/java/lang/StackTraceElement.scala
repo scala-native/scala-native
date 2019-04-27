@@ -44,7 +44,7 @@ private[lang] object StackTraceElement {
   object Fail extends scala.util.control.NoStackTrace
 
   def fromSymbol(sym: CString): StackTraceElement = {
-    val len        = strlen(sym)
+    val len        = strlen(sym).toInt
     var pos        = 0
     var className  = ""
     var methodName = ""

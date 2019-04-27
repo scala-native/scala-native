@@ -2913,252 +2913,252 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for Float/Double conversion type 'f'",
-    1443) {
-    val tripleF: Array[Array[Any]] = Array(
-      Array(0f, "%f", "0,000000"),
-      Array(0f, "%#.3f", "0,000"),
-      Array(0f, "%,5f", "0,000000"),
-      Array(0f, "%- (12.0f", " 0          "),
-      Array(0f, "%#+0(1.6f", "+0,000000"),
-      Array(0f, "%-+(8.4f", "+0,0000 "),
-      Array(0f, "% 0#(9.8f", " 0,00000000"),
-      Array(1234f, "%f", "1234,000000"),
-      Array(1234f, "%#.3f", "1234,000"),
-      Array(1234f, "%,5f", "1.234,000000"),
-      Array(1234f, "%- (12.0f", " 1234       "),
-      Array(1234f, "%#+0(1.6f", "+1234,000000"),
-      Array(1234f, "%-+(8.4f", "+1234,0000"),
-      Array(1234f, "% 0#(9.8f", " 1234,00000000"),
-      Array(1.0f, "%f", "1,000000"),
-      Array(1.0f, "%#.3f", "1,000"),
-      Array(1.0f, "%,5f", "1,000000"),
-      Array(1.0f, "%- (12.0f", " 1          "),
-      Array(1.0f, "%#+0(1.6f", "+1,000000"),
-      Array(1.0f, "%-+(8.4f", "+1,0000 "),
-      Array(1.0f, "% 0#(9.8f", " 1,00000000"),
-      Array(-98f, "%f", "-98,000000"),
-      Array(-98f, "%#.3f", "-98,000"),
-      Array(-98f, "%,5f", "-98,000000"),
-      Array(-98f, "%- (12.0f", "(98)        "),
-      Array(-98f, "%#+0(1.6f", "(98,000000)"),
-      Array(-98f, "%-+(8.4f", "(98,0000)"),
-      Array(-98f, "% 0#(9.8f", "(98,00000000)"),
-      Array(0.000001f, "%f", "0,000001"),
-      Array(0.000001f, "%#.3f", "0,000"),
-      Array(0.000001f, "%,5f", "0,000001"),
-      Array(0.000001f, "%- (12.0f", " 0          "),
-      Array(0.000001f, "%#+0(1.6f", "+0,000001"),
-      Array(0.000001f, "%-+(8.4f", "+0,0000 "),
-      Array(0.000001f, "% 0#(9.8f", " 0,00000100"),
-      Array(345.1234567f, "%f", "345,123444"),
-      Array(345.1234567f, "%#.3f", "345,123"),
-      Array(345.1234567f, "%,5f", "345,123444"),
-      Array(345.1234567f, "%- (12.0f", " 345        "),
-      Array(345.1234567f, "%#+0(1.6f", "+345,123444"),
-      Array(345.1234567f, "%-+(8.4f", "+345,1234"),
-      Array(345.1234567f, "% 0#(9.8f", " 345,12344360"),
-      Array(-.00000012345f, "%f", "-0,000000"),
-      Array(-.00000012345f, "%#.3f", "-0,000"),
-      Array(-.00000012345f, "%,5f", "-0,000000"),
-      Array(-.00000012345f, "%- (12.0f", "(0)         "),
-      Array(-.00000012345f, "%#+0(1.6f", "(0,000000)"),
-      Array(-.00000012345f, "%-+(8.4f", "(0,0000)"),
-      Array(-.00000012345f, "% 0#(9.8f", "(0,00000012)"),
-      Array(-987654321.1234567f, "%f", "-987654336,000000"),
-      Array(-987654321.1234567f, "%#.3f", "-987654336,000"),
-      Array(-987654321.1234567f, "%,5f", "-987.654.336,000000"),
-      Array(-987654321.1234567f, "%- (12.0f", "(987654336) "),
-      Array(-987654321.1234567f, "%#+0(1.6f", "(987654336,000000)"),
-      Array(-987654321.1234567f, "%-+(8.4f", "(987654336,0000)"),
-      Array(-987654321.1234567f, "% 0#(9.8f", "(987654336,00000000)"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%f",
-            "340282346638528860000000000000000000000,000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%#.3f",
-            "340282346638528860000000000000000000000,000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%,5f",
-            "340.282.346.638.528.860.000.000.000.000.000.000.000,000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%- (12.0f",
-            " 340282346638528860000000000000000000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%#+0(1.6f",
-            "+340282346638528860000000000000000000000,000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%-+(8.4f",
-            "+340282346638528860000000000000000000000,0000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "% 0#(9.8f",
-            " 340282346638528860000000000000000000000,00000000"),
-      Array(java.lang.Float.MIN_VALUE, "%f", "0,000000"),
-      Array(java.lang.Float.MIN_VALUE, "%#.3f", "0,000"),
-      Array(java.lang.Float.MIN_VALUE, "%,5f", "0,000000"),
-      Array(java.lang.Float.MIN_VALUE, "%- (12.0f", " 0          "),
-      Array(java.lang.Float.MIN_VALUE, "%#+0(1.6f", "+0,000000"),
-      Array(java.lang.Float.MIN_VALUE, "%-+(8.4f", "+0,0000 "),
-      Array(java.lang.Float.MIN_VALUE, "% 0#(9.8f", " 0,00000000"),
-      Array(java.lang.Float.NaN, "%f", "NaN"),
-      Array(java.lang.Float.NaN, "%#.3f", "NaN"),
-      Array(java.lang.Float.NaN, "%,5f", "  NaN"),
-      Array(java.lang.Float.NaN, "%- (12.0f", "NaN         "),
-      Array(java.lang.Float.NaN, "%#+0(1.6f", "NaN"),
-      Array(java.lang.Float.NaN, "%-+(8.4f", "NaN     "),
-      Array(java.lang.Float.NaN, "% 0#(9.8f", "      NaN"),
-      Array(java.lang.Float.NEGATIVE_INFINITY, "%f", "-Infinity"),
-      Array(java.lang.Float.NEGATIVE_INFINITY, "%#.3f", "-Infinity"),
-      Array(java.lang.Float.NEGATIVE_INFINITY, "%,5f", "-Infinity"),
-      Array(java.lang.Float.NEGATIVE_INFINITY, "%- (12.0f", "(Infinity)  "),
-      Array(java.lang.Float.NEGATIVE_INFINITY, "%#+0(1.6f", "(Infinity)"),
-      Array(java.lang.Float.NEGATIVE_INFINITY, "%-+(8.4f", "(Infinity)"),
-      Array(java.lang.Float.NEGATIVE_INFINITY, "% 0#(9.8f", "(Infinity)"),
-      Array(java.lang.Float.POSITIVE_INFINITY, "%f", "Infinity"),
-      Array(java.lang.Float.POSITIVE_INFINITY, "%#.3f", "Infinity"),
-      Array(java.lang.Float.POSITIVE_INFINITY, "%,5f", "Infinity"),
-      Array(java.lang.Float.POSITIVE_INFINITY, "%- (12.0f", " Infinity   "),
-      Array(java.lang.Float.POSITIVE_INFINITY, "%#+0(1.6f", "+Infinity"),
-      Array(java.lang.Float.POSITIVE_INFINITY, "%-+(8.4f", "+Infinity"),
-      Array(java.lang.Float.POSITIVE_INFINITY, "% 0#(9.8f", " Infinity"),
-      Array(0d, "%f", "0,000000"),
-      Array(0d, "%#.3f", "0,000"),
-      Array(0d, "%,5f", "0,000000"),
-      Array(0d, "%- (12.0f", " 0          "),
-      Array(0d, "%#+0(1.6f", "+0,000000"),
-      Array(0d, "%-+(8.4f", "+0,0000 "),
-      Array(0d, "% 0#(9.8f", " 0,00000000"),
-      Array(1d, "%f", "1,000000"),
-      Array(1d, "%#.3f", "1,000"),
-      Array(1d, "%,5f", "1,000000"),
-      Array(1d, "%- (12.0f", " 1          "),
-      Array(1d, "%#+0(1.6f", "+1,000000"),
-      Array(1d, "%-+(8.4f", "+1,0000 "),
-      Array(1d, "% 0#(9.8f", " 1,00000000"),
-      Array(-1d, "%f", "-1,000000"),
-      Array(-1d, "%#.3f", "-1,000"),
-      Array(-1d, "%,5f", "-1,000000"),
-      Array(-1d, "%- (12.0f", "(1)         "),
-      Array(-1d, "%#+0(1.6f", "(1,000000)"),
-      Array(-1d, "%-+(8.4f", "(1,0000)"),
-      Array(-1d, "% 0#(9.8f", "(1,00000000)"),
-      Array(.00000001d, "%f", "0,000000"),
-      Array(.00000001d, "%#.3f", "0,000"),
-      Array(.00000001d, "%,5f", "0,000000"),
-      Array(.00000001d, "%- (12.0f", " 0          "),
-      Array(.00000001d, "%#+0(1.6f", "+0,000000"),
-      Array(.00000001d, "%-+(8.4f", "+0,0000 "),
-      Array(.00000001d, "% 0#(9.8f", " 0,00000001"),
-      Array(1000.10d, "%f", "1000,100000"),
-      Array(1000.10d, "%#.3f", "1000,100"),
-      Array(1000.10d, "%,5f", "1.000,100000"),
-      Array(1000.10d, "%- (12.0f", " 1000       "),
-      Array(1000.10d, "%#+0(1.6f", "+1000,100000"),
-      Array(1000.10d, "%-+(8.4f", "+1000,1000"),
-      Array(1000.10d, "% 0#(9.8f", " 1000,10000000"),
-      Array(0.1d, "%f", "0,100000"),
-      Array(0.1d, "%#.3f", "0,100"),
-      Array(0.1d, "%,5f", "0,100000"),
-      Array(0.1d, "%- (12.0f", " 0          "),
-      Array(0.1d, "%#+0(1.6f", "+0,100000"),
-      Array(0.1d, "%-+(8.4f", "+0,1000 "),
-      Array(0.1d, "% 0#(9.8f", " 0,10000000"),
-      Array(-2.0d, "%f", "-2,000000"),
-      Array(-2.0d, "%#.3f", "-2,000"),
-      Array(-2.0d, "%,5f", "-2,000000"),
-      Array(-2.0d, "%- (12.0f", "(2)         "),
-      Array(-2.0d, "%#+0(1.6f", "(2,000000)"),
-      Array(-2.0d, "%-+(8.4f", "(2,0000)"),
-      Array(-2.0d, "% 0#(9.8f", "(2,00000000)"),
-      Array(-.00009d, "%f", "-0,000090"),
-      Array(-.00009d, "%#.3f", "-0,000"),
-      Array(-.00009d, "%,5f", "-0,000090"),
-      Array(-.00009d, "%- (12.0f", "(0)         "),
-      Array(-.00009d, "%#+0(1.6f", "(0,000090)"),
-      Array(-.00009d, "%-+(8.4f", "(0,0001)"),
-      Array(-.00009d, "% 0#(9.8f", "(0,00009000)"),
-      Array(-1234567890.012345678d, "%f", "-1234567890,012346"),
-      Array(-1234567890.012345678d, "%#.3f", "-1234567890,012"),
-      Array(-1234567890.012345678d, "%,5f", "-1.234.567.890,012346"),
-      Array(-1234567890.012345678d, "%- (12.0f", "(1234567890)"),
-      Array(-1234567890.012345678d, "%#+0(1.6f", "(1234567890,012346)"),
-      Array(-1234567890.012345678d, "%-+(8.4f", "(1234567890,0123)"),
-      Array(-1234567890.012345678d, "% 0#(9.8f", "(1234567890,01234580)"),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%f",
-        "179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,000000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%#.3f",
-        "179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%,5f",
-        "179.769.313.486.231.570.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000,000000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%- (12.0f",
-        " 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%#+0(1.6f",
-        "+179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,000000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%-+(8.4f",
-        "+179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,0000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "% 0#(9.8f",
-        " 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,00000000"
-      ),
-      Array(java.lang.Double.MIN_VALUE, "%f", "0,000000"),
-      Array(java.lang.Double.MIN_VALUE, "%#.3f", "0,000"),
-      Array(java.lang.Double.MIN_VALUE, "%,5f", "0,000000"),
-      Array(java.lang.Double.MIN_VALUE, "%- (12.0f", " 0          "),
-      Array(java.lang.Double.MIN_VALUE, "%#+0(1.6f", "+0,000000"),
-      Array(java.lang.Double.MIN_VALUE, "%-+(8.4f", "+0,0000 "),
-      Array(java.lang.Double.MIN_VALUE, "% 0#(9.8f", " 0,00000000"),
-      Array(java.lang.Double.NaN, "%f", "NaN"),
-      Array(java.lang.Double.NaN, "%#.3f", "NaN"),
-      Array(java.lang.Double.NaN, "%,5f", "  NaN"),
-      Array(java.lang.Double.NaN, "%- (12.0f", "NaN         "),
-      Array(java.lang.Double.NaN, "%#+0(1.6f", "NaN"),
-      Array(java.lang.Double.NaN, "%-+(8.4f", "NaN     "),
-      Array(java.lang.Double.NaN, "% 0#(9.8f", "      NaN"),
-      Array(java.lang.Double.POSITIVE_INFINITY, "%f", "Infinity"),
-      Array(java.lang.Double.POSITIVE_INFINITY, "%#.3f", "Infinity"),
-      Array(java.lang.Double.POSITIVE_INFINITY, "%,5f", "Infinity"),
-      Array(java.lang.Double.POSITIVE_INFINITY, "%- (12.0f", " Infinity   "),
-      Array(java.lang.Double.POSITIVE_INFINITY, "%#+0(1.6f", "+Infinity"),
-      Array(java.lang.Double.POSITIVE_INFINITY, "%-+(8.4f", "+Infinity"),
-      Array(java.lang.Double.POSITIVE_INFINITY, "% 0#(9.8f", " Infinity"),
-      Array(java.lang.Double.NEGATIVE_INFINITY, "%f", "-Infinity"),
-      Array(java.lang.Double.NEGATIVE_INFINITY, "%#.3f", "-Infinity"),
-      Array(java.lang.Double.NEGATIVE_INFINITY, "%,5f", "-Infinity"),
-      Array(java.lang.Double.NEGATIVE_INFINITY, "%- (12.0f", "(Infinity)  "),
-      Array(java.lang.Double.NEGATIVE_INFINITY, "%#+0(1.6f", "(Infinity)"),
-      Array(java.lang.Double.NEGATIVE_INFINITY, "%-+(8.4f", "(Infinity)"),
-      Array(java.lang.Double.NEGATIVE_INFINITY, "% 0#(9.8f", "(Infinity)")
-    )
-    val input: Int   = 0
-    val pattern: Int = 1
-    val output: Int  = 2
-    for (i <- 0 until tripleF.length) {
-      val f = new Formatter(Locale.GERMAN)
-      f.format(tripleF(i)(pattern).asInstanceOf[String],
-               tripleF(i)(input).asInstanceOf[Object])
-      assertEquals(tripleF(i)(output), f.toString)
-    }
-  }
+  // testFails(
+  //   "format(String, Array[Object]) for Float/Double conversion type 'f'",
+  //   1443) {
+  //   val tripleF: Array[Array[Any]] = Array(
+  //     Array(0f, "%f", "0,000000"),
+  //     Array(0f, "%#.3f", "0,000"),
+  //     Array(0f, "%,5f", "0,000000"),
+  //     Array(0f, "%- (12.0f", " 0          "),
+  //     Array(0f, "%#+0(1.6f", "+0,000000"),
+  //     Array(0f, "%-+(8.4f", "+0,0000 "),
+  //     Array(0f, "% 0#(9.8f", " 0,00000000"),
+  //     Array(1234f, "%f", "1234,000000"),
+  //     Array(1234f, "%#.3f", "1234,000"),
+  //     Array(1234f, "%,5f", "1.234,000000"),
+  //     Array(1234f, "%- (12.0f", " 1234       "),
+  //     Array(1234f, "%#+0(1.6f", "+1234,000000"),
+  //     Array(1234f, "%-+(8.4f", "+1234,0000"),
+  //     Array(1234f, "% 0#(9.8f", " 1234,00000000"),
+  //     Array(1.0f, "%f", "1,000000"),
+  //     Array(1.0f, "%#.3f", "1,000"),
+  //     Array(1.0f, "%,5f", "1,000000"),
+  //     Array(1.0f, "%- (12.0f", " 1          "),
+  //     Array(1.0f, "%#+0(1.6f", "+1,000000"),
+  //     Array(1.0f, "%-+(8.4f", "+1,0000 "),
+  //     Array(1.0f, "% 0#(9.8f", " 1,00000000"),
+  //     Array(-98f, "%f", "-98,000000"),
+  //     Array(-98f, "%#.3f", "-98,000"),
+  //     Array(-98f, "%,5f", "-98,000000"),
+  //     Array(-98f, "%- (12.0f", "(98)        "),
+  //     Array(-98f, "%#+0(1.6f", "(98,000000)"),
+  //     Array(-98f, "%-+(8.4f", "(98,0000)"),
+  //     Array(-98f, "% 0#(9.8f", "(98,00000000)"),
+  //     Array(0.000001f, "%f", "0,000001"),
+  //     Array(0.000001f, "%#.3f", "0,000"),
+  //     Array(0.000001f, "%,5f", "0,000001"),
+  //     Array(0.000001f, "%- (12.0f", " 0          "),
+  //     Array(0.000001f, "%#+0(1.6f", "+0,000001"),
+  //     Array(0.000001f, "%-+(8.4f", "+0,0000 "),
+  //     Array(0.000001f, "% 0#(9.8f", " 0,00000100"),
+  //     Array(345.1234567f, "%f", "345,123444"),
+  //     Array(345.1234567f, "%#.3f", "345,123"),
+  //     Array(345.1234567f, "%,5f", "345,123444"),
+  //     Array(345.1234567f, "%- (12.0f", " 345        "),
+  //     Array(345.1234567f, "%#+0(1.6f", "+345,123444"),
+  //     Array(345.1234567f, "%-+(8.4f", "+345,1234"),
+  //     Array(345.1234567f, "% 0#(9.8f", " 345,12344360"),
+  //     Array(-.00000012345f, "%f", "-0,000000"),
+  //     Array(-.00000012345f, "%#.3f", "-0,000"),
+  //     Array(-.00000012345f, "%,5f", "-0,000000"),
+  //     Array(-.00000012345f, "%- (12.0f", "(0)         "),
+  //     Array(-.00000012345f, "%#+0(1.6f", "(0,000000)"),
+  //     Array(-.00000012345f, "%-+(8.4f", "(0,0000)"),
+  //     Array(-.00000012345f, "% 0#(9.8f", "(0,00000012)"),
+  //     Array(-987654321.1234567f, "%f", "-987654336,000000"),
+  //     Array(-987654321.1234567f, "%#.3f", "-987654336,000"),
+  //     Array(-987654321.1234567f, "%,5f", "-987.654.336,000000"),
+  //     Array(-987654321.1234567f, "%- (12.0f", "(987654336) "),
+  //     Array(-987654321.1234567f, "%#+0(1.6f", "(987654336,000000)"),
+  //     Array(-987654321.1234567f, "%-+(8.4f", "(987654336,0000)"),
+  //     Array(-987654321.1234567f, "% 0#(9.8f", "(987654336,00000000)"),
+  //     Array(java.lang.Float.MAX_VALUE,
+  //           "%f",
+  //           "340282346638528860000000000000000000000,000000"),
+  //     Array(java.lang.Float.MAX_VALUE,
+  //           "%#.3f",
+  //           "340282346638528860000000000000000000000,000"),
+  //     Array(java.lang.Float.MAX_VALUE,
+  //           "%,5f",
+  //           "340.282.346.638.528.860.000.000.000.000.000.000.000,000000"),
+  //     Array(java.lang.Float.MAX_VALUE,
+  //           "%- (12.0f",
+  //           " 340282346638528860000000000000000000000"),
+  //     Array(java.lang.Float.MAX_VALUE,
+  //           "%#+0(1.6f",
+  //           "+340282346638528860000000000000000000000,000000"),
+  //     Array(java.lang.Float.MAX_VALUE,
+  //           "%-+(8.4f",
+  //           "+340282346638528860000000000000000000000,0000"),
+  //     Array(java.lang.Float.MAX_VALUE,
+  //           "% 0#(9.8f",
+  //           " 340282346638528860000000000000000000000,00000000"),
+  //     Array(java.lang.Float.MIN_VALUE, "%f", "0,000000"),
+  //     Array(java.lang.Float.MIN_VALUE, "%#.3f", "0,000"),
+  //     Array(java.lang.Float.MIN_VALUE, "%,5f", "0,000000"),
+  //     Array(java.lang.Float.MIN_VALUE, "%- (12.0f", " 0          "),
+  //     Array(java.lang.Float.MIN_VALUE, "%#+0(1.6f", "+0,000000"),
+  //     Array(java.lang.Float.MIN_VALUE, "%-+(8.4f", "+0,0000 "),
+  //     Array(java.lang.Float.MIN_VALUE, "% 0#(9.8f", " 0,00000000"),
+  //     Array(java.lang.Float.NaN, "%f", "NaN"),
+  //     Array(java.lang.Float.NaN, "%#.3f", "NaN"),
+  //     Array(java.lang.Float.NaN, "%,5f", "  NaN"),
+  //     Array(java.lang.Float.NaN, "%- (12.0f", "NaN         "),
+  //     Array(java.lang.Float.NaN, "%#+0(1.6f", "NaN"),
+  //     Array(java.lang.Float.NaN, "%-+(8.4f", "NaN     "),
+  //     Array(java.lang.Float.NaN, "% 0#(9.8f", "      NaN"),
+  //     Array(java.lang.Float.NEGATIVE_INFINITY, "%f", "-Infinity"),
+  //     Array(java.lang.Float.NEGATIVE_INFINITY, "%#.3f", "-Infinity"),
+  //     Array(java.lang.Float.NEGATIVE_INFINITY, "%,5f", "-Infinity"),
+  //     Array(java.lang.Float.NEGATIVE_INFINITY, "%- (12.0f", "(Infinity)  "),
+  //     Array(java.lang.Float.NEGATIVE_INFINITY, "%#+0(1.6f", "(Infinity)"),
+  //     Array(java.lang.Float.NEGATIVE_INFINITY, "%-+(8.4f", "(Infinity)"),
+  //     Array(java.lang.Float.NEGATIVE_INFINITY, "% 0#(9.8f", "(Infinity)"),
+  //     Array(java.lang.Float.POSITIVE_INFINITY, "%f", "Infinity"),
+  //     Array(java.lang.Float.POSITIVE_INFINITY, "%#.3f", "Infinity"),
+  //     Array(java.lang.Float.POSITIVE_INFINITY, "%,5f", "Infinity"),
+  //     Array(java.lang.Float.POSITIVE_INFINITY, "%- (12.0f", " Infinity   "),
+  //     Array(java.lang.Float.POSITIVE_INFINITY, "%#+0(1.6f", "+Infinity"),
+  //     Array(java.lang.Float.POSITIVE_INFINITY, "%-+(8.4f", "+Infinity"),
+  //     Array(java.lang.Float.POSITIVE_INFINITY, "% 0#(9.8f", " Infinity"),
+  //     Array(0d, "%f", "0,000000"),
+  //     Array(0d, "%#.3f", "0,000"),
+  //     Array(0d, "%,5f", "0,000000"),
+  //     Array(0d, "%- (12.0f", " 0          "),
+  //     Array(0d, "%#+0(1.6f", "+0,000000"),
+  //     Array(0d, "%-+(8.4f", "+0,0000 "),
+  //     Array(0d, "% 0#(9.8f", " 0,00000000"),
+  //     Array(1d, "%f", "1,000000"),
+  //     Array(1d, "%#.3f", "1,000"),
+  //     Array(1d, "%,5f", "1,000000"),
+  //     Array(1d, "%- (12.0f", " 1          "),
+  //     Array(1d, "%#+0(1.6f", "+1,000000"),
+  //     Array(1d, "%-+(8.4f", "+1,0000 "),
+  //     Array(1d, "% 0#(9.8f", " 1,00000000"),
+  //     Array(-1d, "%f", "-1,000000"),
+  //     Array(-1d, "%#.3f", "-1,000"),
+  //     Array(-1d, "%,5f", "-1,000000"),
+  //     Array(-1d, "%- (12.0f", "(1)         "),
+  //     Array(-1d, "%#+0(1.6f", "(1,000000)"),
+  //     Array(-1d, "%-+(8.4f", "(1,0000)"),
+  //     Array(-1d, "% 0#(9.8f", "(1,00000000)"),
+  //     Array(.00000001d, "%f", "0,000000"),
+  //     Array(.00000001d, "%#.3f", "0,000"),
+  //     Array(.00000001d, "%,5f", "0,000000"),
+  //     Array(.00000001d, "%- (12.0f", " 0          "),
+  //     Array(.00000001d, "%#+0(1.6f", "+0,000000"),
+  //     Array(.00000001d, "%-+(8.4f", "+0,0000 "),
+  //     Array(.00000001d, "% 0#(9.8f", " 0,00000001"),
+  //     Array(1000.10d, "%f", "1000,100000"),
+  //     Array(1000.10d, "%#.3f", "1000,100"),
+  //     Array(1000.10d, "%,5f", "1.000,100000"),
+  //     Array(1000.10d, "%- (12.0f", " 1000       "),
+  //     Array(1000.10d, "%#+0(1.6f", "+1000,100000"),
+  //     Array(1000.10d, "%-+(8.4f", "+1000,1000"),
+  //     Array(1000.10d, "% 0#(9.8f", " 1000,10000000"),
+  //     Array(0.1d, "%f", "0,100000"),
+  //     Array(0.1d, "%#.3f", "0,100"),
+  //     Array(0.1d, "%,5f", "0,100000"),
+  //     Array(0.1d, "%- (12.0f", " 0          "),
+  //     Array(0.1d, "%#+0(1.6f", "+0,100000"),
+  //     Array(0.1d, "%-+(8.4f", "+0,1000 "),
+  //     Array(0.1d, "% 0#(9.8f", " 0,10000000"),
+  //     Array(-2.0d, "%f", "-2,000000"),
+  //     Array(-2.0d, "%#.3f", "-2,000"),
+  //     Array(-2.0d, "%,5f", "-2,000000"),
+  //     Array(-2.0d, "%- (12.0f", "(2)         "),
+  //     Array(-2.0d, "%#+0(1.6f", "(2,000000)"),
+  //     Array(-2.0d, "%-+(8.4f", "(2,0000)"),
+  //     Array(-2.0d, "% 0#(9.8f", "(2,00000000)"),
+  //     Array(-.00009d, "%f", "-0,000090"),
+  //     Array(-.00009d, "%#.3f", "-0,000"),
+  //     Array(-.00009d, "%,5f", "-0,000090"),
+  //     Array(-.00009d, "%- (12.0f", "(0)         "),
+  //     Array(-.00009d, "%#+0(1.6f", "(0,000090)"),
+  //     Array(-.00009d, "%-+(8.4f", "(0,0001)"),
+  //     Array(-.00009d, "% 0#(9.8f", "(0,00009000)"),
+  //     Array(-1234567890.012345678d, "%f", "-1234567890,012346"),
+  //     Array(-1234567890.012345678d, "%#.3f", "-1234567890,012"),
+  //     Array(-1234567890.012345678d, "%,5f", "-1.234.567.890,012346"),
+  //     Array(-1234567890.012345678d, "%- (12.0f", "(1234567890)"),
+  //     Array(-1234567890.012345678d, "%#+0(1.6f", "(1234567890,012346)"),
+  //     Array(-1234567890.012345678d, "%-+(8.4f", "(1234567890,0123)"),
+  //     Array(-1234567890.012345678d, "% 0#(9.8f", "(1234567890,01234580)"),
+  //     Array(
+  //       java.lang.Double.MAX_VALUE,
+  //       "%f",
+  //       "179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,000000"
+  //     ),
+  //     Array(
+  //       java.lang.Double.MAX_VALUE,
+  //       "%#.3f",
+  //       "179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,000"
+  //     ),
+  //     Array(
+  //       java.lang.Double.MAX_VALUE,
+  //       "%,5f",
+  //       "179.769.313.486.231.570.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000,000000"
+  //     ),
+  //     Array(
+  //       java.lang.Double.MAX_VALUE,
+  //       "%- (12.0f",
+  //       " 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+  //     ),
+  //     Array(
+  //       java.lang.Double.MAX_VALUE,
+  //       "%#+0(1.6f",
+  //       "+179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,000000"
+  //     ),
+  //     Array(
+  //       java.lang.Double.MAX_VALUE,
+  //       "%-+(8.4f",
+  //       "+179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,0000"
+  //     ),
+  //     Array(
+  //       java.lang.Double.MAX_VALUE,
+  //       "% 0#(9.8f",
+  //       " 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,00000000"
+  //     ),
+  //     Array(java.lang.Double.MIN_VALUE, "%f", "0,000000"),
+  //     Array(java.lang.Double.MIN_VALUE, "%#.3f", "0,000"),
+  //     Array(java.lang.Double.MIN_VALUE, "%,5f", "0,000000"),
+  //     Array(java.lang.Double.MIN_VALUE, "%- (12.0f", " 0          "),
+  //     Array(java.lang.Double.MIN_VALUE, "%#+0(1.6f", "+0,000000"),
+  //     Array(java.lang.Double.MIN_VALUE, "%-+(8.4f", "+0,0000 "),
+  //     Array(java.lang.Double.MIN_VALUE, "% 0#(9.8f", " 0,00000000"),
+  //     Array(java.lang.Double.NaN, "%f", "NaN"),
+  //     Array(java.lang.Double.NaN, "%#.3f", "NaN"),
+  //     Array(java.lang.Double.NaN, "%,5f", "  NaN"),
+  //     Array(java.lang.Double.NaN, "%- (12.0f", "NaN         "),
+  //     Array(java.lang.Double.NaN, "%#+0(1.6f", "NaN"),
+  //     Array(java.lang.Double.NaN, "%-+(8.4f", "NaN     "),
+  //     Array(java.lang.Double.NaN, "% 0#(9.8f", "      NaN"),
+  //     Array(java.lang.Double.POSITIVE_INFINITY, "%f", "Infinity"),
+  //     Array(java.lang.Double.POSITIVE_INFINITY, "%#.3f", "Infinity"),
+  //     Array(java.lang.Double.POSITIVE_INFINITY, "%,5f", "Infinity"),
+  //     Array(java.lang.Double.POSITIVE_INFINITY, "%- (12.0f", " Infinity   "),
+  //     Array(java.lang.Double.POSITIVE_INFINITY, "%#+0(1.6f", "+Infinity"),
+  //     Array(java.lang.Double.POSITIVE_INFINITY, "%-+(8.4f", "+Infinity"),
+  //     Array(java.lang.Double.POSITIVE_INFINITY, "% 0#(9.8f", " Infinity"),
+  //     Array(java.lang.Double.NEGATIVE_INFINITY, "%f", "-Infinity"),
+  //     Array(java.lang.Double.NEGATIVE_INFINITY, "%#.3f", "-Infinity"),
+  //     Array(java.lang.Double.NEGATIVE_INFINITY, "%,5f", "-Infinity"),
+  //     Array(java.lang.Double.NEGATIVE_INFINITY, "%- (12.0f", "(Infinity)  "),
+  //     Array(java.lang.Double.NEGATIVE_INFINITY, "%#+0(1.6f", "(Infinity)"),
+  //     Array(java.lang.Double.NEGATIVE_INFINITY, "%-+(8.4f", "(Infinity)"),
+  //     Array(java.lang.Double.NEGATIVE_INFINITY, "% 0#(9.8f", "(Infinity)")
+  //   )
+  //   val input: Int   = 0
+  //   val pattern: Int = 1
+  //   val output: Int  = 2
+  //   for (i <- 0 until tripleF.length) {
+  //     val f = new Formatter(Locale.GERMAN)
+  //     f.format(tripleF(i)(pattern).asInstanceOf[String],
+  //              tripleF(i)(input).asInstanceOf[Object])
+  //     assertEquals(tripleF(i)(output), f.toString)
+  //   }
+  // }
 
   test(
     "format(String, Array[Object]) for Float/Double conversion type 'a' and 'A'") {
@@ -3376,89 +3376,89 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for BigDecimal conversion type 'g' and 'G'",
-    1443) {
-    val tripleG: Array[Array[Any]] = Array(
-      Array(BigDecimal.ZERO, "%g", "0.00000"),
-      Array(BigDecimal.ZERO, "%.5g", "0.0000"),
-      Array(BigDecimal.ZERO, "%- (,9.8g", " 0.0000000"),
-      Array(BigDecimal.ZERO, "%+0(,8.4g", "+000.000"),
-      Array(BigDecimal.ZERO, "%-+10.6g", "+0.00000  "),
-      Array(BigDecimal.ZERO, "% 0(,12.0g", " 00000000000"),
-      Array(BigDecimal.ONE, "%g", "1.00000"),
-      Array(BigDecimal.ONE, "%.5g", "1.0000"),
-      Array(BigDecimal.ONE, "%- (,9.8g", " 1.0000000"),
-      Array(BigDecimal.ONE, "%+0(,8.4g", "+001.000"),
-      Array(BigDecimal.ONE, "%-+10.6g", "+1.00000  "),
-      Array(BigDecimal.ONE, "% 0(,12.0g", " 00000000001"),
-      Array(new BigDecimal(-1), "%g", "-1.00000"),
-      Array(new BigDecimal(-1), "%.5g", "-1.0000"),
-      Array(new BigDecimal(-1), "%- (,9.8g", "(1.0000000)"),
-      Array(new BigDecimal(-1), "%+0(,8.4g", "(01.000)"),
-      Array(new BigDecimal(-1), "%-+10.6g", "-1.00000  "),
-      Array(new BigDecimal(-1), "% 0(,12.0g", "(0000000001)"),
-      Array(new BigDecimal(-0.000001), "%g", "-1.00000e-06"),
-      Array(new BigDecimal(-0.000001), "%.5g", "-1.0000e-06"),
-      Array(new BigDecimal(-0.000001), "%- (,9.8g", "(1.0000000e-06)"),
-      Array(new BigDecimal(-0.000001), "%+0(,8.4g", "(1.000e-06)"),
-      Array(new BigDecimal(-0.000001), "%-+10.6g", "-1.00000e-06"),
-      Array(new BigDecimal(-0.000001), "% 0(,12.0g", "(000001e-06)"),
-      Array(new BigDecimal(0.0002), "%g", "0.000200000"),
-      Array(new BigDecimal(0.0002), "%.5g", "0.00020000"),
-      Array(new BigDecimal(0.0002), "%- (,9.8g", " 0.00020000000"),
-      Array(new BigDecimal(0.0002), "%+0(,8.4g", "+0.0002000"),
-      Array(new BigDecimal(0.0002), "%-+10.6g", "+0.000200000"),
-      Array(new BigDecimal(0.0002), "% 0(,12.0g", " 000000.0002"),
-      Array(new BigDecimal(-0.003), "%g", "-0.00300000"),
-      Array(new BigDecimal(-0.003), "%.5g", "-0.0030000"),
-      Array(new BigDecimal(-0.003), "%- (,9.8g", "(0.0030000000)"),
-      Array(new BigDecimal(-0.003), "%+0(,8.4g", "(0.003000)"),
-      Array(new BigDecimal(-0.003), "%-+10.6g", "-0.00300000"),
-      Array(new BigDecimal(-0.003), "% 0(,12.0g", "(000000.003)"),
-      Array(new BigDecimal("5.000E999"), "%g", "5.00000e+999"),
-      Array(new BigDecimal("5.000E999"), "%.5g", "5.0000e+999"),
-      Array(new BigDecimal("5.000E999"), "%- (,9.8g", " 5.0000000e+999"),
-      Array(new BigDecimal("5.000E999"), "%+0(,8.4g", "+5.000e+999"),
-      Array(new BigDecimal("5.000E999"), "%-+10.6g", "+5.00000e+999"),
-      Array(new BigDecimal("5.000E999"), "% 0(,12.0g", " 000005e+999"),
-      Array(new BigDecimal("-5.000E999"), "%g", "-5.00000e+999"),
-      Array(new BigDecimal("-5.000E999"), "%.5g", "-5.0000e+999"),
-      Array(new BigDecimal("-5.000E999"), "%- (,9.8g", "(5.0000000e+999)"),
-      Array(new BigDecimal("-5.000E999"), "%+0(,8.4g", "(5.000e+999)"),
-      Array(new BigDecimal("-5.000E999"), "%-+10.6g", "-5.00000e+999"),
-      Array(new BigDecimal("-5.000E999"), "% 0(,12.0g", "(00005e+999)")
-    )
-    val input: Int   = 0
-    val pattern: Int = 1
-    val output: Int  = 2
-    for (i <- 0 until tripleG.length) {
-      locally {
-        val f = new Formatter(Locale.US)
-        f.format(tripleG(i)(pattern).asInstanceOf[String],
-                 tripleG(i)(input).asInstanceOf[Object])
-        assertEquals(tripleG(i)(output), f.toString)
-      }
-      // test for conversion type 'G'
-      locally {
-        val f = new Formatter(Locale.US)
-        f.format(tripleG(i)(pattern).asInstanceOf[String].toUpperCase(),
-                 tripleG(i)(input).asInstanceOf[Object])
-        assertEquals(
-          tripleG(i)(output).asInstanceOf[String].toUpperCase(Locale.US),
-          f.toString)
-      }
-    }
-    val f = new Formatter(Locale.GERMAN)
-    f.format("%- (,9.6g", new BigDecimal("4E6"))
-    /*
-     * fail on RI, spec says 'g' requires the output to be formatted in
-     * general scientific notation and the localization algorithm is
-     * applied. But RI format this case to 4.00000e+06, which does not
-     * conform to the German Locale
-     */
-    assertEquals(" 4,00000e+06", f.toString)
-  }
+  // testFails(
+  //   "format(String, Array[Object]) for BigDecimal conversion type 'g' and 'G'",
+  //   1443) {
+  //   val tripleG: Array[Array[Any]] = Array(
+  //     Array(BigDecimal.ZERO, "%g", "0.00000"),
+  //     Array(BigDecimal.ZERO, "%.5g", "0.0000"),
+  //     Array(BigDecimal.ZERO, "%- (,9.8g", " 0.0000000"),
+  //     Array(BigDecimal.ZERO, "%+0(,8.4g", "+000.000"),
+  //     Array(BigDecimal.ZERO, "%-+10.6g", "+0.00000  "),
+  //     Array(BigDecimal.ZERO, "% 0(,12.0g", " 00000000000"),
+  //     Array(BigDecimal.ONE, "%g", "1.00000"),
+  //     Array(BigDecimal.ONE, "%.5g", "1.0000"),
+  //     Array(BigDecimal.ONE, "%- (,9.8g", " 1.0000000"),
+  //     Array(BigDecimal.ONE, "%+0(,8.4g", "+001.000"),
+  //     Array(BigDecimal.ONE, "%-+10.6g", "+1.00000  "),
+  //     Array(BigDecimal.ONE, "% 0(,12.0g", " 00000000001"),
+  //     Array(new BigDecimal(-1), "%g", "-1.00000"),
+  //     Array(new BigDecimal(-1), "%.5g", "-1.0000"),
+  //     Array(new BigDecimal(-1), "%- (,9.8g", "(1.0000000)"),
+  //     Array(new BigDecimal(-1), "%+0(,8.4g", "(01.000)"),
+  //     Array(new BigDecimal(-1), "%-+10.6g", "-1.00000  "),
+  //     Array(new BigDecimal(-1), "% 0(,12.0g", "(0000000001)"),
+  //     Array(new BigDecimal(-0.000001), "%g", "-1.00000e-06"),
+  //     Array(new BigDecimal(-0.000001), "%.5g", "-1.0000e-06"),
+  //     Array(new BigDecimal(-0.000001), "%- (,9.8g", "(1.0000000e-06)"),
+  //     Array(new BigDecimal(-0.000001), "%+0(,8.4g", "(1.000e-06)"),
+  //     Array(new BigDecimal(-0.000001), "%-+10.6g", "-1.00000e-06"),
+  //     Array(new BigDecimal(-0.000001), "% 0(,12.0g", "(000001e-06)"),
+  //     Array(new BigDecimal(0.0002), "%g", "0.000200000"),
+  //     Array(new BigDecimal(0.0002), "%.5g", "0.00020000"),
+  //     Array(new BigDecimal(0.0002), "%- (,9.8g", " 0.00020000000"),
+  //     Array(new BigDecimal(0.0002), "%+0(,8.4g", "+0.0002000"),
+  //     Array(new BigDecimal(0.0002), "%-+10.6g", "+0.000200000"),
+  //     Array(new BigDecimal(0.0002), "% 0(,12.0g", " 000000.0002"),
+  //     Array(new BigDecimal(-0.003), "%g", "-0.00300000"),
+  //     Array(new BigDecimal(-0.003), "%.5g", "-0.0030000"),
+  //     Array(new BigDecimal(-0.003), "%- (,9.8g", "(0.0030000000)"),
+  //     Array(new BigDecimal(-0.003), "%+0(,8.4g", "(0.003000)"),
+  //     Array(new BigDecimal(-0.003), "%-+10.6g", "-0.00300000"),
+  //     Array(new BigDecimal(-0.003), "% 0(,12.0g", "(000000.003)"),
+  //     Array(new BigDecimal("5.000E999"), "%g", "5.00000e+999"),
+  //     Array(new BigDecimal("5.000E999"), "%.5g", "5.0000e+999"),
+  //     Array(new BigDecimal("5.000E999"), "%- (,9.8g", " 5.0000000e+999"),
+  //     Array(new BigDecimal("5.000E999"), "%+0(,8.4g", "+5.000e+999"),
+  //     Array(new BigDecimal("5.000E999"), "%-+10.6g", "+5.00000e+999"),
+  //     Array(new BigDecimal("5.000E999"), "% 0(,12.0g", " 000005e+999"),
+  //     Array(new BigDecimal("-5.000E999"), "%g", "-5.00000e+999"),
+  //     Array(new BigDecimal("-5.000E999"), "%.5g", "-5.0000e+999"),
+  //     Array(new BigDecimal("-5.000E999"), "%- (,9.8g", "(5.0000000e+999)"),
+  //     Array(new BigDecimal("-5.000E999"), "%+0(,8.4g", "(5.000e+999)"),
+  //     Array(new BigDecimal("-5.000E999"), "%-+10.6g", "-5.00000e+999"),
+  //     Array(new BigDecimal("-5.000E999"), "% 0(,12.0g", "(00005e+999)")
+  //   )
+  //   val input: Int   = 0
+  //   val pattern: Int = 1
+  //   val output: Int  = 2
+  //   for (i <- 0 until tripleG.length) {
+  //     locally {
+  //       val f = new Formatter(Locale.US)
+  //       f.format(tripleG(i)(pattern).asInstanceOf[String],
+  //                tripleG(i)(input).asInstanceOf[Object])
+  //       assertEquals(tripleG(i)(output), f.toString)
+  //     }
+  //     // test for conversion type 'G'
+  //     locally {
+  //       val f = new Formatter(Locale.US)
+  //       f.format(tripleG(i)(pattern).asInstanceOf[String].toUpperCase(),
+  //                tripleG(i)(input).asInstanceOf[Object])
+  //       assertEquals(
+  //         tripleG(i)(output).asInstanceOf[String].toUpperCase(Locale.US),
+  //         f.toString)
+  //     }
+  //   }
+  //   val f = new Formatter(Locale.GERMAN)
+  //   f.format("%- (,9.6g", new BigDecimal("4E6"))
+  //   /*
+  //    * fail on RI, spec says 'g' requires the output to be formatted in
+  //    * general scientific notation and the localization algorithm is
+  //    * applied. But RI format this case to 4.00000e+06, which does not
+  //    * conform to the German Locale
+  //    */
+  //   assertEquals(" 4,00000e+06", f.toString)
+  // }
 
   test("format(String, Array[Object]) for BigDecimal conversion type 'f'") {
     val input: Int   = 0

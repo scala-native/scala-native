@@ -89,10 +89,10 @@ package object unsafe {
   @alwaysinline def tagof[T](implicit tag: Tag[T]): Tag[T] = tag
 
   /** The C 'sizeof' operator. */
-  @alwaysinline def sizeof[T](implicit tag: Tag[T]): CSize = tag.size
+  @alwaysinline def sizeof[T](implicit tag: Tag[T]): Int = tag.size
 
   /** C-style alignment operator. */
-  @alwaysinline def alignmentof[T](implicit tag: Tag[T]): CSize = tag.alignment
+  @alwaysinline def alignmentof[T](implicit tag: Tag[T]): Int = tag.alignment
 
   /** Heap allocate and zero-initialize a value
    *  using current implicit allocator.

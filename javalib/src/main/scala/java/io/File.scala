@@ -496,9 +496,9 @@ object File {
 
     // Find the next separator
     var i = start
-    while (i < strlen(path) && path(i) != separatorChar) i += 1
+    while (i < strlen(path).toInt && path(i) != separatorChar) i += 1
 
-    if (i == strlen(path)) resolveLink(path, resolveAbsolute = true)
+    if (i == strlen(path).toInt) resolveLink(path, resolveAbsolute = true)
     else {
       // copy path from start to next separator.
       // and resolve that subpart.
