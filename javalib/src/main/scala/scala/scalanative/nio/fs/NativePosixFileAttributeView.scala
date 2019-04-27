@@ -26,10 +26,10 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
     val buf = alloc[utime.utimbuf]
     buf._1 =
-      if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS)
+      if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS).toWord
       else sb._7
     buf._2 =
-      if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS)
+      if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS).toWord
       else sb._8
     // createTime is ignored: No posix-y way to set it.
     if (utime.utime(toCString(path.toString), buf) != 0)

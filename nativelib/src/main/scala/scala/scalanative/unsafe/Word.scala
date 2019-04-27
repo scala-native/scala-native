@@ -33,8 +33,6 @@ final class Word(private[scalanative] val rawWord: RawWord) {
 object Word {
   @alwaysinline implicit def intToWord(int: Int): Word =
     new Word(castIntToRawWord(int))
-  @alwaysinline implicit def longToWord(long: Long): Word =
-    long.toWord // TODO: drop
   @alwaysinline implicit def wordToLong(word: Word): Long =
     castRawWordToLong(word.rawWord)
 }

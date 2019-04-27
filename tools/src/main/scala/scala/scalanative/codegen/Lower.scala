@@ -744,11 +744,13 @@ object Lower {
         val minus1 = ty match {
           case Type.Int  => Val.Int(-1)
           case Type.Long => Val.Long(-1L)
+          case Type.Word => Val.Long(-1L) // TODO Word vals
           case _         => util.unreachable
         }
         val minValue = ty match {
           case Type.Int  => Val.Int(java.lang.Integer.MIN_VALUE)
           case Type.Long => Val.Long(java.lang.Long.MIN_VALUE)
+          case Type.Word => Val.Long(java.lang.Long.MIN_VALUE) // TODO Word vals
           case _         => util.unreachable
         }
 
