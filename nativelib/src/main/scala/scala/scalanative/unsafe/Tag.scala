@@ -35,6 +35,15 @@ object Tag {
       storeWord(toRawPtr(ptr), value.rawWord)
   }
 
+  final case object UWord extends Tag[native.UWord] {
+    @alwaysinline def size: Int = 8
+    @alwaysinline def alignment: Int = 8
+    @alwaysinline override def load(ptr: native.Ptr[native.UWord]): native.UWord =
+      new UWord(loadWord(toRawPtr(ptr)))
+    @alwaysinline override def store(ptr: native.Ptr[native.UWord], value: native.UWord): Unit =
+      storeWord(toRawPtr(ptr), value.rawWord)
+  }
+
   final case class Class[T <: AnyRef](of: java.lang.Class[T])
       extends Tag[T] {
     @alwaysinline def size: Int = 8
@@ -4321,6 +4330,8 @@ object Tag {
     Tag.Class(implicitly[ClassTag[T]].runtimeClass.asInstanceOf[java.lang.Class[T]])
   @alwaysinline implicit def materializeWordTag: Tag[native.Word] =
     Tag.Word
+  @alwaysinline implicit def materializeUWordTag: Tag[native.UWord] =
+    Tag.UWord
   @alwaysinline implicit def materializeUnitTag: Tag[scala.Unit] =
     Unit
   @alwaysinline implicit def materializeBooleanTag: Tag[scala.Boolean] =

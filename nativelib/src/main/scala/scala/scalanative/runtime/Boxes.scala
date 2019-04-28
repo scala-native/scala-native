@@ -11,7 +11,8 @@ object Boxes {
   @inline def boxToULong(v: Long): ULong    = new ULong(v)
   @inline def boxToPtr[T](v: RawPtr): Ptr[T] =
     if (v == null) null else new Ptr[T](v)
-  @inline def boxToWord(v: RawWord): Word = new Word(v)
+  @inline def boxToWord(v: RawWord): Word   = new Word(v)
+  @inline def boxToUWord(v: RawWord): UWord = new UWord(v)
   @inline def boxToCArray[T, N <: Nat](v: RawPtr): CArray[T, N] =
     if (v == null) null else new CArray[T, N](v)
   @inline def boxToCFuncRawPtr(v: RawPtr): CFuncRawPtr =
@@ -35,6 +36,8 @@ object Boxes {
     if (o == null) null else o.asInstanceOf[Ptr[_]].rawptr
   @inline def unboxToWord(o: java.lang.Object): RawWord =
     if (o == null) castIntToRawWord(0) else o.asInstanceOf[Word].rawWord
+  @inline def unboxToUWord(o: java.lang.Object): RawWord =
+    if (o == null) castIntToRawWord(0) else o.asInstanceOf[UWord].rawWord
   @inline def unboxToCArray(o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CArray[_, _]].rawptr
   @inline def unboxToCFuncRawPtr(o: java.lang.Object): RawPtr =

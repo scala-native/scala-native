@@ -151,8 +151,9 @@ object Intrinsics {
   def castIntToRawWord(int: Int): RawWord       = intrinsic
   def castLongToRawWord(long: Long): RawWord    = intrinsic
 
-  def addRawWords(a: RawWord, b: RawWord): RawWord  = intrinsic
-  def subRawWords(a: RawWord, b: RawWord): RawWord  = intrinsic
-  def multRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
-  def divRawWords(a: RawWord, b: RawWord): RawWord  = intrinsic
+  def addRawWords(a: RawWord, b: RawWord): RawWord         = intrinsic
+  def subRawWords(a: RawWord, b: RawWord): RawWord         = intrinsic
+  def multRawWords(a: RawWord, b: RawWord): RawWord        = intrinsic
+  def divRawWords(a: RawWord, b: RawWord): RawWord         = intrinsic
+  def divRawWordsUnsigned(a: RawWord, b: RawWord): RawWord = intrinsic
 }

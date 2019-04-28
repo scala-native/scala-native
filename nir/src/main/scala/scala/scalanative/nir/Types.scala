@@ -91,6 +91,7 @@ object Type {
 
   val boxesTo = Seq[(Type, Type)](
     Type.Ref(Global.Top("scala.scalanative.native.Word"))         -> Type.Word,
+    Type.Ref(Global.Top("scala.scalanative.native.UWord"))        -> Type.Word,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UByte"))      -> Type.Byte,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UShort"))     -> Type.Short,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UInt"))       -> Type.Int,

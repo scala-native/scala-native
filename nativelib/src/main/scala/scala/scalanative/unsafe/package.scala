@@ -13,9 +13,6 @@ import scalanative.runtime.Intrinsics.{
 
 package object unsafe {
 
-  /** UInt on 32-bit architectures and ULong on 64-bit ones. */
-  type UWord = ULong
-
   /** The C 'char' type. */
   type CChar = Byte
 
@@ -131,12 +128,14 @@ package object unsafe {
   /** Scala Native unsafe extensions to the standard Int. */
   implicit class UnsafeRichInt(val value: Int) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(value))
+    @inline def toUWord: UWord   = value.toUInt
   }
 
   /** Scala Native unsafe extensions to the standard Long. */
   implicit class UnsafeRichLong(val value: Long) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(value))
     @inline def toWord: Word     = new Word(castLongToRawWord(value))
+    @inline def toUWord: UWord   = new UWord(castLongToRawWord(value))
   }
 
   /** Convert a CString to a String using given charset. */

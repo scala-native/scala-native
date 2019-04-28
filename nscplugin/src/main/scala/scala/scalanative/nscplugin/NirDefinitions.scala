@@ -223,6 +223,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getMember(IntrinsicsModule, TermName("multRawWords"))
     lazy val DivRawWords =
       getMember(IntrinsicsModule, TermName("divRawWords"))
+    lazy val DivRawWordsUnsigned =
+      getMember(IntrinsicsModule, TermName("divRawWordsUnsigned"))
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
       'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),

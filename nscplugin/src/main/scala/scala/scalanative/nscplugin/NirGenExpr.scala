@@ -1219,6 +1219,8 @@ trait NirGenExpr { self: NirGenPhase =>
         buf.bin(Bin.Imul, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
       case (Apply(_, Seq(leftp, rightp)), DIV_RAW_WORDS) =>
         buf.bin(Bin.Sdiv, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
+      case (Apply(_, Seq(leftp, rightp)), DIV_RAW_WORDS_UNSIGNED) =>
+        buf.bin(Bin.Udiv, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
       case _ =>
         abort(
           s"Unknown word operation #$code : " + app +

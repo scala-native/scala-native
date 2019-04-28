@@ -8,13 +8,18 @@ import scalanative.runtime.Intrinsics._
 import scalanative.runtime.Boxes._
 
 final class Word(private[scalanative] val rawWord: RawWord) {
-  def toInt: Int   = castRawWordToInt(rawWord)
-  def toUInt: UInt = castRawWordToInt(rawWord).toUInt
+  @alwaysinline def toInt: Int     = castRawWordToInt(rawWord)
+  @alwaysinline def toUInt: UInt   = castRawWordToInt(rawWord).toUInt
+  @alwaysinline def toUWord: UWord = new UWord(rawWord)
 
-  def +(other: Word): Word = new Word(addRawWords(rawWord, other.rawWord))
-  def -(other: Word): Word = new Word(subRawWords(rawWord, other.rawWord))
-  def *(other: Word): Word = new Word(multRawWords(rawWord, other.rawWord))
-  def /(other: Word): Word = new Word(divRawWords(rawWord, other.rawWord))
+  @alwaysinline def +(other: Word): Word =
+    new Word(addRawWords(rawWord, other.rawWord))
+  @alwaysinline def -(other: Word): Word =
+    new Word(subRawWords(rawWord, other.rawWord))
+  @alwaysinline def *(other: Word): Word =
+    new Word(multRawWords(rawWord, other.rawWord))
+  @alwaysinline def /(other: Word): Word =
+    new Word(divRawWords(rawWord, other.rawWord))
 
   override def hashCode: Int =
     java.lang.Long.hashCode(Word.wordToLong(this))
