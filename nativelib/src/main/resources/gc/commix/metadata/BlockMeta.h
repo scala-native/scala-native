@@ -24,7 +24,10 @@ typedef enum {
     block_superblock_start_marked = 0x6,   // 0x4 | block_superblock_start
     block_superblock_tail_marked = 0x7,    // 0x4 | block_superblock_tail
     block_superblock_start_me = 0xb, // block_superblock_tail | 0x8
-    block_coalesce_me = 0x13         // block_superblock_tail | 0x10
+    block_coalesce_me = 0x13,        // block_superblock_tail | 0x10
+    block_simple_aging = 0xD,        // block_simple | 0xC
+    block_superblock_start_aging = 0xE,     // block_superblock_start | 0xC
+    block_superblock_tail_aging = 0xF,      // block_superblock_tail | 0xC
 } BlockFlag;
 
 typedef struct {
@@ -59,6 +62,7 @@ typedef enum {
     dbg_in_use = 0x5
 } DebugFlag;
 #endif
+static inline void BlockMeta_SetFlag(BlockMeta *blockMeta,BlockFlag blockFlag);
 
 static inline int BlockMeta_GetFlags(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags & FLAG_MASK;
@@ -89,6 +93,10 @@ static inline bool BlockMeta_IsSuperblockStartMe(BlockMeta *blockMeta) {
     return BlockMeta_GetFlags(blockMeta) == block_superblock_start_me;
 }
 
+static inline bool BlockMeta_IsAging(BlockMeta *blockMeta) {
+    return (blockMeta->block.simple.flags & 0xC) == 0xC;
+}
+
 static inline int BlockMeta_GetAge(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags >> 5;
 }
@@ -97,27 +105,22 @@ static inline bool BlockMeta_IsOld(BlockMeta *blockMeta) {
     return BlockMeta_GetAge(blockMeta) == MAX_AGE_YOUNG_BLOCK;
 }
 
-static inline bool BlockMeta_IsOldSweep(BlockMeta *blockMeta) {
-    uint8_t flags = blockMeta->block.simple.flags;
-    uint8_t state = flags & FLAG_MASK;
-    int age = flags >> 5;
-    // Two cases :
-    //  - The block is not marked. Then it is old if its age is the limit.
-    //  - The block is marked, then it is old if its age is at least limit - 1. Since we unmark the block AFTER
-    //    incrementing its age, it might be marked but have an age equal to the limit
-
-    if (state == block_marked || state == block_superblock_start_marked || state == block_superblock_tail_marked) {
-        // age == MAX_AGE_YOUNG_BLOCK || age == (MAX_AGE_YOUNG_BLOCK - 1);
-        return age >= MAX_AGE_YOUNG_BLOCK - 1;
-    } else {
-        assert(state == block_simple || state == block_superblock_start || state == block_superblock_start_me || state == block_superblock_tail);
-        return age == MAX_AGE_YOUNG_BLOCK;
-    }
-}
-
 static inline void BlockMeta_IncrementAge(BlockMeta *blockMeta) {
     blockMeta->block.simple.flags += INCREMENT_AGE;
     assert(BlockMeta_GetAge(blockMeta) != 0);
+}
+
+static inline void BlockMeta_IncrementAgeAndMark(BlockMeta *blockMeta) {
+    assert(BlockMeta_IsAging(blockMeta));
+    uint8_t flags = BlockMeta_GetFlags(blockMeta);
+    blockMeta->block.simple.flags += INCREMENT_AGE;
+    if (flags == block_simple_aging) {
+        BlockMeta_SetFlag(blockMeta, block_marked);
+    } else if (flags == block_superblock_start_aging) {
+        BlockMeta_SetFlag(blockMeta, block_superblock_start_marked);
+    } else {
+        BlockMeta_SetFlag(blockMeta, block_superblock_tail_marked);
+    }
 }
 
 static inline void BlockMeta_SetOld(BlockMeta *blockMeta) {

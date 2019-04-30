@@ -119,7 +119,7 @@ NOINLINE void write_barrier_slow(Object *object, BlockMeta *blockMeta) {
 
 INLINE void scalanative_write_barrier(void *object) {
     BlockMeta *blockMeta = Block_GetBlockMeta(heap.blockMetaStart, heap.heapStart, (word_t *)object);
-    if (BlockMeta_IsOldSweep(blockMeta)) {
+    if (BlockMeta_IsOld(blockMeta)) {
         write_barrier_slow(object, blockMeta);
     }
 }

@@ -62,7 +62,17 @@ Object *Object_GetUnmarkedObject(Heap *heap, word_t *word, bool collectingOld) {
     }
 }
 
-void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta, bool collectingOld) {
+void Object_pushYoungBlock(Heap *heap, BlockMeta *blockMeta, GreyPacket **youngBlockHolder) {
+    GreyPacket *packet = *youngBlockHolder;
+    if (!GreyPacket_Push(packet, (Stack_Type)blockMeta)) {
+        atomic_thread_fence(memory_order_acquire);
+        GreyList_Push(&heap->mark.youngMarkedBlocks, heap->greyPacketsStart, packet);
+        *youngBlockHolder = packet = GreyList_Pop(&heap->mark.empty, heap->greyPacketsStart);
+        GreyPacket_Push(packet, (Stack_Type) blockMeta);
+    }
+}
+
+void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta, bool collectingOld, GreyPacket **youngBlockHolder) {
     // Mark the object itself. The double check is necessary to not overwrite
     // the remembered state
     uint8_t state = *objectMeta;
@@ -81,10 +91,29 @@ void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta, bool collec
     BlockMeta *blockMeta = Block_GetBlockMeta(
         heap->blockMetaStart, heap->heapStart, (word_t *)object);
     assert((collectingOld && BlockMeta_IsOld(blockMeta)) || (!collectingOld && !BlockMeta_IsOld(blockMeta)));
-    if (!BlockMeta_ContainsLargeObjects(blockMeta)) {
-        BlockMeta_Mark(blockMeta);
+    if (collectingOld) {
+        if (!BlockMeta_ContainsLargeObjects(blockMeta)) {
+            BlockMeta_Mark(blockMeta);
+        } else {
+            blockMeta = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockMeta);
+            BlockMeta_MarkSuperblock(blockMeta);
+        }
     } else {
-        blockMeta = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockMeta);
-        BlockMeta_MarkSuperblock(blockMeta);
+        // This is a young block. We need to mark it to the aging state. It will be set as
+        // marked during the post-marking process
+        if (!BlockMeta_IsAging(blockMeta)) {
+            if (!BlockMeta_ContainsLargeObjects(blockMeta)) {
+                BlockMeta_SetFlag(blockMeta, block_simple_aging);
+                Object_pushYoungBlock(heap, blockMeta, youngBlockHolder);
+            } else {
+                BlockMeta *superblockStart = BlockMeta_GetSuperblockStart(heap->blockMetaStart, blockMeta);
+                BlockMeta_SetFlag(superblockStart, block_superblock_start_aging);
+                Object_pushYoungBlock(heap, superblockStart, youngBlockHolder);
+                if (superblockStart != blockMeta) {
+                    BlockMeta_SetFlag(blockMeta, block_superblock_tail_aging);
+                    Object_pushYoungBlock(heap, blockMeta, youngBlockHolder);
+                }
+            }
+        }
     }
 }
