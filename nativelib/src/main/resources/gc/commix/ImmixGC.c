@@ -108,7 +108,8 @@ NOINLINE void write_barrier_sweep(Object *object, BlockMeta *blockMeta) {
     }
 }
 
-NOINLINE void write_barrier_slow(Object *object, BlockMeta *blockMeta) {
+NOINLINE void write_barrier_slow(Object *object) {
+    BlockMeta *blockMeta = Block_GetBlockMeta(heap.blockMetaStart, heap.heapStart, (word_t *)object);
     if (!Sweeper_IsSweepDone(&heap)) {
         write_barrier_sweep(object, blockMeta);
     } else {
@@ -118,8 +119,8 @@ NOINLINE void write_barrier_slow(Object *object, BlockMeta *blockMeta) {
 
 
 INLINE void scalanative_write_barrier(void *object) {
-    BlockMeta *blockMeta = Block_GetBlockMeta(heap.blockMetaStart, heap.heapStart, (word_t *)object);
-    if (BlockMeta_IsOldSweep(blockMeta)) {
-        write_barrier_slow(object, blockMeta);
+    ObjectMeta *objectMeta = Bytemap_Get(heap.bytemap, (word_t *)object);
+    if (*objectMeta & 0x80) {
+        write_barrier_slow(object);
     }
 }

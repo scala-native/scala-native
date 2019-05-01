@@ -176,7 +176,7 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
 #ifdef DEBUG_ASSERT
     ObjectMeta_AssertIsValidAllocation(objectMeta, actualBlockSize);
 #endif
-    ObjectMeta_SetAllocated(objectMeta);
+    ObjectMeta_SetFlag(objectMeta, om_allocated);
     word_t *object = (word_t *)chunk;
     memset(object, 0, actualBlockSize);
     return object;
