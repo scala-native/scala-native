@@ -9,9 +9,8 @@
 #include "BlockRange.h"
 #include "../Log.h"
 #include "../headers/ObjectHeader.h"
-#include "../metadata/BlockMeta.h"
 
-typedef void* Stack_Type;
+typedef Object *Stack_Type;
 
 typedef union {
     struct __attribute__((packed)) {

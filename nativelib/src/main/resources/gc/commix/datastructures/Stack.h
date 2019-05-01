@@ -7,7 +7,7 @@
 
 #define INITIAL_STACK_SIZE (256 * 1024)
 
-typedef void *Stack_Type;
+typedef Object *Stack_Type;
 
 typedef struct {
     Stack_Type *bottom;

@@ -151,7 +151,6 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     GreyList_Init(&heap->mark.full);
     GreyList_Init(&heap->mark.rememberedOld);
     GreyList_Init(&heap->mark.rememberedYoung);
-    GreyList_Init(&heap->mark.youngMarkedBlocks);
     uint32_t greyPacketCount =
         (uint32_t)(maxHeapSize * GREY_PACKET_RATIO / GREY_PACKET_SIZE);
     heap->mark.total = greyPacketCount;
@@ -219,6 +218,8 @@ void Heap_Collect(Heap *heap, bool collectingOld) {
     } else {
         printf("Collecting young generation\n");
     }
+    printf("Number of young block %zu\n", blockAllocator.youngBlockCount);
+    printf("Number of old block %zu\n", blockAllocator.oldBlockCount);
     fflush(stdout);
 #endif
     Stats *stats = Stats_OrNull(heap->stats);

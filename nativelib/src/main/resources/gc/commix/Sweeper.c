@@ -105,12 +105,28 @@ uint32_t Sweeper_sweepSimpleBlock(Allocator *allocator, BlockMeta *blockMeta,
         return 1;
     } else {
         Bytemap *bytemap = allocator->bytemap;
-        BlockMeta_Unmark(blockMeta);
-        if (BlockMeta_IsOld(blockMeta)) {
-            atomic_fetch_add_explicit(&blockAllocator.oldBlockCount, 1, memory_order_relaxed);
+
+        if (!collectingOld) {
+            assert(!BlockMeta_IsOld(blockMeta));
+            BlockMeta_IncrementAge(blockMeta);
+            if (!BlockMeta_IsOld(blockMeta)) {
+#ifdef DEBUG_PRINT
+                printf("Sweeper_sweepSimpleBlock %p %" PRIu32 " has age %d/%d\n", blockMeta, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta),
+                        BlockMeta_GetAge(blockMeta), MAX_AGE_YOUNG_BLOCK);
+                fflush(stdout);
+#endif
+                atomic_fetch_add_explicit(&allocator->blockAllocator->youngBlockCount, 1, memory_order_relaxed);
+            } else {
+                atomic_fetch_add_explicit(&allocator->blockAllocator->oldBlockCount, 1, memory_order_relaxed);
+#ifdef DEBUG_PRINT
+                printf("Sweeper_sweepSimpleBlock promoting block %p %" PRIu32 " to old generation\n", blockMeta, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta));
+                fflush(stdout);
+#endif
+            }
         } else {
-            atomic_fetch_add_explicit(&blockAllocator.youngBlockCount, 1, memory_order_relaxed);
+            atomic_fetch_add_explicit(&allocator->blockAllocator->oldBlockCount, 1, memory_order_relaxed);
         }
+        BlockMeta_Unmark(blockMeta);
         ObjectMeta *bytemapCursor = Bytemap_Get(bytemap, (word_t *)blockStart);
         ObjectMeta *lastCursor = bytemapCursor + (WORDS_IN_LINE/ALLOCATION_ALIGNMENT_WORDS)*LINE_COUNT;
         if (collectingOld) {
@@ -165,6 +181,20 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
     // we do not release chunk by chunk but block by block
     //assert(!ObjectMeta_IsFree(firstObject));
     BlockMeta *lastBlock = blockMeta + superblockSize - 1;
+
+    if (!collectingOld) {
+        BlockMeta_IncrementAge(blockMeta);
+        // If the super block is larger than 1 block, then all blocks except the last
+        // one contains the first object. Thus we only need to mark the last block
+        if (superblockSize > 1) {
+            BlockMeta_IncrementAge(lastBlock);
+        }
+#ifdef DEBUG_PRINT
+                printf("Sweeper_sweepSuper promoting block (%p,%p) (%" PRIu32 ",%" PRIu32") to old generation\n", blockMeta, lastBlock, BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta), BlockMeta_GetBlockIndex(allocator->blockMetaStart, lastBlock));
+                fflush(stdout);
+#endif
+        assert(BlockMeta_GetAge(blockMeta) == BlockMeta_GetAge(lastBlock));
+    }
     BlockMeta_UnmarkSuperblock(blockMeta);
 
     int freeCount = 0;

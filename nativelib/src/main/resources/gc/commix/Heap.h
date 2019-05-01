@@ -63,7 +63,6 @@ typedef struct {
         GreyPacket *oldRoots;
         GreyList rememberedYoung;
         GreyPacket *youngRoots;
-        GreyList youngMarkedBlocks;
     } mark;
     Bytemap *bytemap;
     Stats *stats;

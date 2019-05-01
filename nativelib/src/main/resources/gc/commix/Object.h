@@ -8,6 +8,6 @@
 
 word_t *Object_LastWord(Object *object);
 Object *Object_GetUnmarkedObject(Heap *heap, word_t *address, bool collectingOld);
-void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta, bool collectingOld, GreyPacket **youngBlocksHolder);
+void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta, bool collectingOld);
 
 #endif // IMMIX_OBJECT_H

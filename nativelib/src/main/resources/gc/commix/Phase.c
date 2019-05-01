@@ -64,16 +64,6 @@ void Phase_StartMark(Heap *heap, bool collectingOld) {
 }
 
 void Phase_MarkDone(Heap *heap, bool collectingOld) {
-    while (GreyList_Size(&heap->mark.youngMarkedBlocks) > 0) {
-        GreyPacket *packet = GreyList_Pop(&heap->mark.youngMarkedBlocks, heap->greyPacketsStart);
-        while (!GreyPacket_IsEmpty(packet)) {
-            BlockMeta *blockMeta = (BlockMeta *)GreyPacket_Pop(packet);
-            if (BlockMeta_IsAging(blockMeta)) {
-                BlockMeta_IncrementAgeAndMark(blockMeta);
-            }
-        }
-        GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, packet);
-    }
     Phase_Set(heap, gc_idle);
     heap->mark.currentEnd_ns = scalanative_nano_time();
 }
