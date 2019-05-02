@@ -119,8 +119,8 @@ NOINLINE void write_barrier_slow(Object *object) {
 
 
 INLINE void scalanative_write_barrier(void *object) {
-    ObjectMeta *objectMeta = Bytemap_Get(heap.bytemap, (word_t *)object);
-    if (*objectMeta & 0x80) {
+    ObjectMeta objectMeta = Bytemap_GetRaw(heap.bytemap, (word_t *)object);
+    if (objectMeta & 0x80) {
         write_barrier_slow(object);
     }
 }

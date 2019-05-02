@@ -38,6 +38,16 @@ static inline ObjectMeta *Bytemap_Get(Bytemap *bytemap, word_t *address) {
     return &bytemap->data[index];
 }
 
+static inline ObjectMeta Bytemap_GetRaw(Bytemap *bytemap, word_t *address) {
+    size_t index =
+        (address - bytemap->firstAddress) / ALLOCATION_ALIGNMENT_WORDS;
+    assert(address >= bytemap->firstAddress);
+    assert(index < bytemap->size);
+    assert(((word_t)address & ALLOCATION_ALIGNMENT_INVERSE_MASK) ==
+           (word_t)address);
+    return bytemap->data[index];
+}
+
 static inline ObjectMeta *Bytemap_NextLine(ObjectMeta *cursor) {
     return cursor + WORDS_IN_LINE / ALLOCATION_ALIGNMENT_WORDS;
 }
