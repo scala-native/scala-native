@@ -19,7 +19,7 @@ object ZoneSuite extends tests.Suite {
     assert(sum == (0 until n).sum)
   }
 
-  test("zone allocator alloc") {
+  test("zone allocator alloc with apply") {
     Zone { implicit z =>
       val ptr = z.alloc(64 * sizeof[Int])
 
@@ -29,5 +29,21 @@ object ZoneSuite extends tests.Suite {
 
       assertAccessible(ptr2, 128)
     }
+  }
+
+  test("zone allocator alloc with open") {
+    implicit val zone: Zone = Zone.open()
+    assert(!zone.isClosed)
+
+    val ptr = zone.alloc(64 * sizeof[Int])
+
+    assertAccessible(ptr, 64)
+
+    val ptr2 = alloc[Int](128)
+
+    assertAccessible(ptr2, 128)
+
+    zone.close()
+    assert(zone.isClosed)
   }
 }
