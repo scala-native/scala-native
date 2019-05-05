@@ -35,14 +35,21 @@ class DataInputStream(in: InputStream)
     readFully(b, 0, b.length)
 
   override final def readFully(b: Array[Byte], off: Int, len: Int): Unit = {
-    if (off < 0 || len < 0 || len > b.length - off)
+    if ((off < 0) || (len < 0) || (len > b.length - off)) {
       throw new IndexOutOfBoundsException()
-    var i = 0
-    while (i < len) {
-      val value = readByte()
-      if (value == -1) throw new EOFException()
-      b(i + off) = value
-      i += 1
+    }
+
+    var offset = off
+
+    while (offset < len) {
+      val nLeft = len - offset
+      val nRead = in.read(b, offset, nLeft)
+
+      if (nRead == -1) {
+        throw new EOFException()
+      } else {
+        offset += nRead
+      }
     }
   }
 
