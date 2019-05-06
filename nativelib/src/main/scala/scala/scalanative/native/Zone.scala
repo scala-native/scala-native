@@ -47,6 +47,9 @@ object Zone {
     final override def isClosed: Boolean = closed
 
     final def alloc(size: CSize): Ptr[Byte] = {
+      if (isClosed) {
+        throw new IllegalStateException("zone allocator is closed")
+      }
       val rawptr = libc.malloc(size)
       node = new Node(rawptr, node)
       fromRawPtr[Byte](rawptr)

@@ -48,4 +48,14 @@ object ZoneSuite extends tests.Suite {
     assert(!zone.isOpen)
     assert(zone.isClosed)
   }
+
+  test("alloc throws exception if zone allocator is closed") {
+    implicit val zone: Zone = Zone.open()
+
+    zone.alloc(64 * sizeof[Int])
+
+    zone.close()
+
+    assertThrows[IllegalStateException](zone.alloc(64 * sizeof[Int]))
+  }
 }
