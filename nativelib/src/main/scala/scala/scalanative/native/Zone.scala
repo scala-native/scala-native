@@ -14,6 +14,9 @@ trait Zone {
   /** Frees allocations. This zone allocator is not reusable once closed. */
   def close(): Unit
 
+  /** Return this zone allocator is open or not. */
+  def isOpen: Boolean = !isClosed
+
   /** Return this zone allocator is closed or not. */
   def isClosed: Boolean
 
