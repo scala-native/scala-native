@@ -35,14 +35,33 @@ class DataInputStream(in: InputStream)
     readFully(b, 0, b.length)
 
   override final def readFully(b: Array[Byte], off: Int, len: Int): Unit = {
-    if (off < 0 || len < 0 || len > b.length - off)
+    if (b == null) {
+      throw new NullPointerException
+    }
+
+    // Use the same message texts as the JVM for all 3 cases. Yes, 3rd differs.
+    if ((off < 0) || ((off + len) > b.length)) {
+      val msg =
+        s"Range [${off}, ${off} + ${len}) out of bounds for length ${b.length}"
+      throw new IndexOutOfBoundsException(msg)
+    }
+
+    if (len < 0) {
       throw new IndexOutOfBoundsException()
-    var i = 0
-    while (i < len) {
-      val value = readByte()
-      if (value == -1) throw new EOFException()
-      b(i + off) = value
-      i += 1
+    }
+
+    var offset = off
+    var length = len
+
+    while (length > 0) {
+      val nread = in.read(b, offset, length)
+
+      if (nread == -1) {
+        throw new EOFException()
+      } else {
+        offset += nread
+        length -= nread
+      }
     }
   }
 
