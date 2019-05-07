@@ -14,7 +14,7 @@ private[net] class SocketInputStream(socket: PlainSocketImpl)
     val buffer = new Array[Byte](1)
     socket.read(buffer, 0, 1) match {
       case -1 => -1
-      case _  => buffer(0)
+      case _  => buffer(0) & 0xFF // Convert to Int with _no_ sign extension.
     }
   }
 
