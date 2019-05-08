@@ -70,15 +70,21 @@ class DateFormatSymbols(locale: Locale)
 
   def getShortMonths(): Array[String] = {
     shortMonths match {
-      case None         => for (m <- longMonths) yield (m.slice(0, 3))
       case Some(months) => months
+      case None =>
+        val months = for (m <- longMonths) yield (m.slice(0, 3))
+        shortMonths = Some(months)
+        months
     }
   }
 
   def getShortWeekdays(): Array[String] = {
     shortWeekdays match {
-      case None       => for (d <- longWeekdays) yield (d.slice(0, 3))
       case Some(days) => days
+      case None =>
+        val days = for (d <- longWeekdays) yield d.slice(0, 3)
+        shortWeekdays = Some(days)
+        days
     }
   }
 

@@ -171,7 +171,18 @@ object DateFormatSymbolsSuite extends tests.Suite {
            s"result: '${resultString}' != expected: '${expectedString}'")
   }
 
-// format: off
+  test("getShortMonths() - memorization") {
+    val dfs = DateFormatSymbols.getInstance()
+
+    val result   = dfs.getShortMonths()
+    val expected = dfs.getShortMonths()
+
+    // Test object quality. If memoization worked. should be same object.
+    assert(result == expected,
+           s"result: '${result}' != expected: '${expected}'")
+  }
+
+  // format: off
   private var shortWeekdays = Array("",
 				   "Sun",
 				   "Mon",
@@ -193,6 +204,17 @@ object DateFormatSymbolsSuite extends tests.Suite {
 
     assert(result.sameElements(expected),
            s"result: '${resultString}' != expected: '${expectedString}'")
+  }
+
+  test("getShortWeekdays() - memorization") {
+    val dfs = DateFormatSymbols.getInstance()
+
+    val result   = dfs.getShortWeekdays()
+    val expected = dfs.getShortWeekdays()
+
+    // Test object quality. If memoization worked. should be same object.
+    assert(result == expected,
+           s"result: '${result}' != expected: '${expected}'")
   }
 
 // format: off
