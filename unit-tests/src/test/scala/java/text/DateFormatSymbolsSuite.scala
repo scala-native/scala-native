@@ -178,7 +178,7 @@ object DateFormatSymbolsSuite extends tests.Suite {
     val expected = dfs.getShortMonths()
 
     // Test object quality. If memoization worked. should be same object.
-    assert(result == expected,
+    assert(result.eq(expected),
            s"result: '${result}' != expected: '${expected}'")
   }
 
@@ -213,7 +213,7 @@ object DateFormatSymbolsSuite extends tests.Suite {
     val expected = dfs.getShortWeekdays()
 
     // Test object quality. If memoization worked. should be same object.
-    assert(result == expected,
+    assert(result.eq(expected),
            s"result: '${result}' != expected: '${expected}'")
   }
 
