@@ -372,6 +372,10 @@ object IssuesSuite extends tests.Suite {
     val ulong = java.lang.Long.parseUnsignedLong("9223372036854775808").toULong
     assert(ulong.toDouble == 9223372036854775808.0D)
   }
+
+  test("#1359") {
+    issue1359.Main.main(Array())
+  }
 }
 
 package issue1090 {
@@ -396,5 +400,15 @@ package issue1155 {
 package issue900 {
   class C(any: Any) {
     def init: Any = "foobar"
+  }
+}
+
+package issue1359 {
+  object Main {
+    def f[T]: T = throw new Exception
+
+    def f2[T](a: => T) = ()
+
+    def main(args: Array[String]): Unit = f2(f)
   }
 }
