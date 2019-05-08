@@ -22,10 +22,10 @@ trait Visit { self: Interflow =>
 
   def shallDuplicate(name: Global, argtys: Seq[Type]): Boolean =
     mode match {
-      case build.Mode.Debug =>
+      case build.Mode.Debug | build.Mode.ReleaseFast =>
         false
 
-      case build.Mode.Release =>
+      case build.Mode.ReleaseFull =>
         if (!shallVisit(name)) {
           false
         } else {
@@ -48,7 +48,7 @@ trait Visit { self: Interflow =>
     mode match {
       case build.Mode.Debug =>
         linked.defns.foreach(defn => visitEntry(defn.name))
-      case build.Mode.Release =>
+      case _: build.Mode.Release =>
         linked.entries.foreach(visitEntry)
     }
 
@@ -78,7 +78,7 @@ trait Visit { self: Interflow =>
     mode match {
       case build.Mode.Debug =>
         None
-      case build.Mode.Release =>
+      case _: build.Mode.Release =>
         val dup = duplicateName(name, argtys)
         if (shallVisit(dup)) {
           if (!isDone(dup)) {
@@ -109,7 +109,7 @@ trait Visit { self: Interflow =>
     mode match {
       case build.Mode.Debug =>
         allTodo().par.foreach(visit)
-      case build.Mode.Release =>
+      case _: build.Mode.Release =>
         loop()
     }
   }
