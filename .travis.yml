@@ -16,10 +16,14 @@ env:
     - MODE=source-checks
     - MODE=test-tools SBT_VERSION=0.13.17
     - MODE=test-tools SBT_VERSION=1.2.6
-    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=boehm SBT_VERSION=0.13.17 TEST_COMMAND="test-runtime"
-    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=boehm SBT_VERSION=1.2.6 TEST_COMMAND="sbtScalaNative/scripted"
-    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=immix SBT_VERSION=0.13.17 TEST_COMMAND="test-runtime"
-    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=immix SBT_VERSION=1.2.6 TEST_COMMAND="sbtScalaNative/scripted"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=debug SCALANATIVE_GC=boehm SBT_VERSION=0.13.17 TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=debug SCALANATIVE_GC=boehm SBT_VERSION=1.2.6 TEST_COMMAND="sbtScalaNative/scripted"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=debug SCALANATIVE_GC=immix SBT_VERSION=0.13.17 TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=debug SCALANATIVE_GC=immix SBT_VERSION=1.2.6 TEST_COMMAND="sbtScalaNative/scripted"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_GC=boehm SBT_VERSION=0.13.17 TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_GC=boehm SBT_VERSION=1.2.6 TEST_COMMAND="sbtScalaNative/scripted"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_GC=immix SBT_VERSION=0.13.17 TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_GC=immix SBT_VERSION=1.2.6 TEST_COMMAND="sbtScalaNative/scripted"
 
   global:
     - MAVEN_REALM="Sonatype Nexus Repository Manager"
