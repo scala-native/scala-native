@@ -335,7 +335,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(obj)
       putGlobal(name)
 
-    case Op.Fieldstore(ty, obj, name, value) =>
+    case Op.Fieldstore(ty, obj, name, value, _) =>
       putInt(T.FieldstoreOp)
       putType(ty)
       putVal(obj)
@@ -408,7 +408,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(arr)
       putVal(idx)
 
-    case Op.Arraystore(ty, arr, idx, value) =>
+    case Op.Arraystore(ty, arr, idx, value, _) =>
       putInt(T.ArraystoreOp)
       putType(ty)
       putVal(arr)

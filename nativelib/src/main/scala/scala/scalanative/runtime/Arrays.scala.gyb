@@ -139,6 +139,7 @@ object Array {
 
 %{
    alloc = 'GC.alloc_atomic' if T != 'Object' and T != 'BoxedUnit' else 'GC.alloc'
+   barrier = 'GC.write_barrier(this)' if T == 'Object' or T == 'BoxedUnit' else ''
 }%
 
 final class ${T}Array private () extends Array[${T}] {
@@ -179,6 +180,7 @@ final class ${T}Array private () extends Array[${T}] {
       % else:
       storeObject(ith, value.asInstanceOf[Object])
       % end
+      ${barrier}
     }
 
   @inline override def clone(): ${T}Array = {

@@ -15,13 +15,18 @@ package scala.scalanative.build
  *  @param dir name of the gc
  *  @param links linking dependencies of the gc
  */
-sealed abstract class GC private (val name: String, val links: Seq[String]) {
+sealed abstract class GC private (
+    val name: String,
+    val links: Seq[String],
+    private[scalanative] val needsWriteBarrier: Boolean) {
   override def toString: String = name
 }
 object GC {
-  private[scalanative] final case object None  extends GC("none", Seq())
-  private[scalanative] final case object Boehm extends GC("boehm", Seq("gc"))
-  private[scalanative] final case object Immix extends GC("immix", Seq())
+  private[scalanative] final case object None extends GC("none", Seq(), false)
+  private[scalanative] final case object Boehm
+      extends GC("boehm", Seq("gc"), false)
+  private[scalanative] final case object Immix extends GC("immix", Seq(), true)
+  private[scalanative] final case object Commix extends GC("commix", Seq(), true)
 
   /** Non-freeing garbage collector.*/
   def none: GC = None
@@ -32,8 +37,11 @@ object GC {
   /** Mostly-precise mark-region garbage collector. */
   def immix: GC = Immix
 
+  /** Mostly-precise mark-region garbage collector running concurrently. */
+  def commix: GC = Commix
+
   /** The default garbage collector. */
-  def default: GC = Immix
+  def default: GC = Commix
 
   /** Get a garbage collector with given name. */
   def apply(gc: String) = gc match {
@@ -43,8 +51,10 @@ object GC {
       GC.Boehm
     case "immix" =>
       GC.Immix
+    case "commix" =>
+      GC.Commix
     case value =>
       throw new IllegalArgumentException(
-        "nativeGC can be either \"none\", \"boehm\" or \"immix\", not: " + value)
+        "nativeGC can be either \"none\", \"boehm\", \"immix\" or \"commix\", not: " + value)
   }
 }

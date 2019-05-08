@@ -1,4 +1,4 @@
-def GCs   = ["none","boehm", "immix"]
+def GCs   = ["none","boehm","immix","commix"]
 def OSs   = ["mac", "linux"]
 def tasks = [:]
 

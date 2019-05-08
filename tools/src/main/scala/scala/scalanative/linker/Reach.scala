@@ -526,7 +526,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachType(ty)
       reachVal(v)
       reachGlobal(n)
-    case Op.Fieldstore(ty, v1, n, v2) =>
+    case Op.Fieldstore(ty, v1, n, v2, _) =>
       reachType(ty)
       reachVal(v1)
       reachGlobal(n)
@@ -572,7 +572,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachType(ty)
       reachVal(arr)
       reachVal(idx)
-    case Op.Arraystore(ty, arr, idx, value) =>
+    case Op.Arraystore(ty, arr, idx, value, _) =>
       reachType(ty)
       reachVal(arr)
       reachVal(idx)
