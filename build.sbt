@@ -258,7 +258,8 @@ lazy val projectSettings =
     scalaVersion := libScalaVersion,
     resolvers := Nil,
     scalacOptions ++= Seq("-target:jvm-1.8"),
-    nativeCheck := true
+    nativeCheck := true,
+    nativeDump := true
   )
 
 lazy val util =
