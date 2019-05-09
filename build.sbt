@@ -257,7 +257,8 @@ lazy val projectSettings =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil,
-    scalacOptions ++= Seq("-target:jvm-1.8")
+    scalacOptions ++= Seq("-target:jvm-1.8"),
+    nativeCheck := true
   )
 
 lazy val util =
@@ -545,6 +546,7 @@ lazy val tests =
 lazy val sandbox =
   project
     .in(file("sandbox"))
+    .settings(projectSettings)
     .settings(noPublishSettings)
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(

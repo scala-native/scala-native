@@ -56,11 +56,9 @@ object Build {
 
     logLinked(config, linked)
     nir.Show.dump(linked.defns, "linked.hnir")
-    ScalaNative.check(config, linked)
 
     val optimized = ScalaNative.optimize(config, linked)
     nir.Show.dump(optimized.defns, "optimized.hnir")
-    ScalaNative.check(config, optimized)
 
     IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
     ScalaNative.codegen(config, optimized)
