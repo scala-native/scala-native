@@ -50,6 +50,9 @@ sealed trait Config {
   /** The LTO mode to use used during a release build. */
   def LTO: String
 
+  /** Shall linker check that NIR is well-formed after every phase? */
+  def check: Boolean
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): Config
 
@@ -91,6 +94,9 @@ sealed trait Config {
 
   /** Create a new config with the given lto mode. */
   def withLTO(value: String): Config
+
+  /** Create a new config with given check value. */
+  def withCheck(value: Boolean): Config
 }
 
 object Config {
@@ -111,7 +117,8 @@ object Config {
       mode = Mode.default,
       linkStubs = false,
       logger = Logger.default,
-      LTO = "none"
+      LTO = "none",
+      check = false
     )
 
   private final case class Impl(nativelib: Path,
@@ -127,7 +134,8 @@ object Config {
                                 mode: Mode,
                                 linkStubs: Boolean,
                                 logger: Logger,
-                                LTO: String)
+                                LTO: String,
+                                check: Boolean)
       extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
@@ -170,5 +178,8 @@ object Config {
 
     def withLTO(value: String): Config =
       copy(LTO = value)
+
+    def withCheck(value: Boolean): Config =
+      copy(check = value)
   }
 }
