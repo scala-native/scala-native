@@ -31,15 +31,11 @@ private[scalanative] object ScalaNative {
   def link(config: Config, entries: Seq[Global]): linker.Result =
     dump(config, "linked") {
       check(config) {
-        val linked =
-          config.logger.time("Linking")(Link(config, entries))
-
-        logLinked(config, linked)
-
-        linked
+        config.logger.time("Linking")(Link(config, entries))
       }
     }
 
+  /** Show linked universe stats or fail with missing symbols. */
   def logLinked(config: Config, linked: linker.Result): Unit = {
     def showLinkingErrors(): Nothing = {
       config.logger.error("missing symbols:")
