@@ -29,20 +29,55 @@ private[scalanative] object ScalaNative {
    *  assumption.
    */
   def link(config: Config, entries: Seq[Global]): linker.Result =
-    check(config) {
-      config.logger.time("Linking") {
-        Link(config, entries)
+    dump(config, "linked") {
+      check(config) {
+        config.logger.time("Linking")(Link(config, entries))
       }
     }
 
+  /** Show linked universe stats or fail with missing symbols. */
+  def logLinked(config: Config, linked: linker.Result): Unit = {
+    def showLinkingErrors(): Nothing = {
+      config.logger.error("missing symbols:")
+      linked.unavailable.sortBy(_.show).foreach { name =>
+        config.logger.error("* " + name.mangle)
+        val from    = linked.referencedFrom
+        var current = from(name)
+        while (from.contains(current) && current != Global.None) {
+          config.logger.error("  - from " + current.mangle)
+          current = from(current)
+        }
+      }
+      throw new BuildException("unable to link")
+    }
+
+    def showStats(): Unit = {
+      val classCount = linked.defns.count {
+        case _: nir.Defn.Class | _: nir.Defn.Module => true
+        case _                                      => false
+      }
+      val methodCount = linked.defns.count(_.isInstanceOf[nir.Defn.Define])
+      config.logger.info(
+        s"Discovered ${classCount} classes and ${methodCount} methods")
+    }
+
+    if (linked.unavailable.nonEmpty) {
+      showLinkingErrors()
+    } else {
+      showStats()
+    }
+  }
+
   /** Optimizer high-level NIR under closed-world assumption. */
   def optimize(config: Config, linked: linker.Result): linker.Result =
-    check(config) {
-      config.logger.time(s"Optimizing (${config.mode} mode)") {
-        val optimized =
-          interflow.Interflow(config, linked)
+    dump(config, "optimized") {
+      check(config) {
+        config.logger.time(s"Optimizing (${config.mode} mode)") {
+          val optimized =
+            interflow.Interflow(config, linked)
 
-        linker.Link(config, linked.entries, optimized)
+          linker.Link(config, linked.entries, optimized)
+        }
       }
     }
 
@@ -99,6 +134,18 @@ private[scalanative] object ScalaNative {
           warn("")
           warn(s"${errors.size} errors found")
         }
+      }
+    }
+
+    linked
+  }
+
+  def dump(config: Config, phase: String)(
+      linked: scalanative.linker.Result): scalanative.linker.Result = {
+    if (config.dump) {
+      config.logger.time("Dumping intermediate code") {
+        val path = config.workdir.resolve(phase + ".hnir")
+        nir.Show.dump(linked.defns, path.toFile.getAbsolutePath)
       }
     }
 

@@ -53,6 +53,9 @@ sealed trait Config {
   /** Shall linker check that NIR is well-formed after every phase? */
   def check: Boolean
 
+  /** Shall linker dump intermediate NIR after every phase? */
+  def dump: Boolean
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): Config
 
@@ -97,6 +100,9 @@ sealed trait Config {
 
   /** Create a new config with given check value. */
   def withCheck(value: Boolean): Config
+
+  /** Create a new config with given dump value. */
+  def withDump(value: Boolean): Config
 }
 
 object Config {
@@ -118,7 +124,8 @@ object Config {
       linkStubs = false,
       logger = Logger.default,
       LTO = "none",
-      check = false
+      check = false,
+      dump = false
     )
 
   private final case class Impl(nativelib: Path,
@@ -135,7 +142,8 @@ object Config {
                                 linkStubs: Boolean,
                                 logger: Logger,
                                 LTO: String,
-                                check: Boolean)
+                                check: Boolean,
+                                dump: Boolean)
       extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
@@ -181,5 +189,8 @@ object Config {
 
     def withCheck(value: Boolean): Config =
       copy(check = value)
+
+    def withDump(value: Boolean): Config =
+      copy(dump = value)
   }
 }
