@@ -50,8 +50,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
       "scala.scalanative.native.package$CCast")
     lazy val CCastMethod = getDecl(CCastClass, TermName("cast"))
 
-    lazy val FuncPtrClass = (0 to 22).map { n =>
-      getRequiredClass("scala.scalanative.native.FuncPtr" + n)
+    lazy val CFuncPtrClass = (0 to 22).map { n =>
+      getRequiredClass("scala.scalanative.native.CFuncPtr" + n)
     }
 
     lazy val TagModule     = getRequiredModule("scala.scalanative.native.Tag")

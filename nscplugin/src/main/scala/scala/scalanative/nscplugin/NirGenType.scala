@@ -26,10 +26,10 @@ trait NirGenType { self: NirGenPhase =>
     def isField: Boolean =
       !sym.isMethod && sym.isTerm && !isScalaModule
 
-    def isFuncPtrClass: Boolean =
-      FuncPtrClass.contains(sym) || {
+    def isCFuncPtrClass: Boolean =
+      CFuncPtrClass.contains(sym) || {
         sym.info.parents.exists { parent =>
-          FuncPtrClass.contains(parent.typeSymbol)
+          CFuncPtrClass.contains(parent.typeSymbol)
         }
       }
   }
@@ -72,7 +72,7 @@ trait NirGenType { self: NirGenPhase =>
 
   def genExternType(st: SimpleType): nir.Type =
     genType(st) match {
-      case _ if st.isFuncPtrClass =>
+      case _ if st.isCFuncPtrClass =>
         nir.Type.Ptr
       case refty: nir.Type.Ref if nir.Type.boxClasses.contains(refty.name) =>
         nir.Type.unbox(nir.Type.Ref(refty.name))

@@ -32,13 +32,13 @@ object CInteropSuite extends tests.Suite {
     }
   }
 
-  def randFunc = new FuncPtr0[CInt] {
+  def randFunc = new CFuncPtr0[CInt] {
     def apply(): CInt = stdlib.rand()
   }
 
-  test("CFunctionPtr cast and call with given signature") {
+  test("CFuncPtr cast and call with given signature") {
     assertThrows[ClassCastException] {
-      randFunc.asInstanceOf[FuncPtr1[Int, Int]] // wrong arity
+      randFunc.asInstanceOf[CFuncPtr1[Int, Int]] // wrong arity
     }
   }
 

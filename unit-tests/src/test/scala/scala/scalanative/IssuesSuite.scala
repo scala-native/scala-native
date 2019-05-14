@@ -4,10 +4,10 @@ import scalanative.native._
 
 object IssuesSuite extends tests.Suite {
 
-  def foo(arg: Int): Unit                   = ()
-  def crash(arg: FuncPtr1[Int, Unit]): Unit = ()
+  def foo(arg: Int): Unit                    = ()
+  def crash(arg: CFuncPtr1[Int, Unit]): Unit = ()
   def lifted208Test(): Unit =
-    crash(new FuncPtr1[Int, Unit] {
+    crash(new CFuncPtr1[Int, Unit] {
       def apply(value: Int): Unit = ()
     })
 
@@ -114,14 +114,14 @@ object IssuesSuite extends tests.Suite {
     assert(h equals world)
   }
 
-  val fptrBoxed: FuncPtr0[Integer] = new FuncPtr0[Integer] {
+  val fptrBoxed: CFuncPtr0[Integer] = new CFuncPtr0[Integer] {
     def apply() = new Integer(1)
   }
-  val fptr: FuncPtr0[CInt] = new FuncPtr0[CInt] { def apply() = 1 }
-  val fptrFloat: FuncPtr0[CFloat] = new FuncPtr0[CFloat] {
+  val fptr: CFuncPtr0[CInt] = new CFuncPtr0[CInt] { def apply() = 1 }
+  val fptrFloat: CFuncPtr0[CFloat] = new CFuncPtr0[CFloat] {
     def apply() = 1.0.toFloat
   }
-  val fptrDouble: FuncPtr0[CDouble] = new FuncPtr0[CDouble] {
+  val fptrDouble: CFuncPtr0[CDouble] = new CFuncPtr0[CDouble] {
     def apply() = 1.0
   }
   def intIdent(x: Int): Int = x

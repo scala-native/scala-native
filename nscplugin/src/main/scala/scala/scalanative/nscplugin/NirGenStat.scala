@@ -144,7 +144,7 @@ trait NirGenStat { self: NirGenPhase =>
 
       genClassFields(sym)
       genMethods(cd)
-      if (sym.isFuncPtrClass) {
+      if (sym.isCFuncPtrClass) {
         buf += genFuncPtrExternForwarder(cd)
       }
 

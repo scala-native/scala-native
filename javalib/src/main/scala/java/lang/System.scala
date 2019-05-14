@@ -80,7 +80,7 @@ object System {
     new PrintStream(new FileOutputStream(FileDescriptor.err))
 
   private val systemProperties = loadProperties()
-  Platform.setOSProps(new FuncPtr2[CString, CString, Unit] {
+  Platform.setOSProps(new CFuncPtr2[CString, CString, Unit] {
     def apply(key: CString, value: CString): Unit =
       systemProperties.setProperty(fromCString(key), fromCString(value))
   })
