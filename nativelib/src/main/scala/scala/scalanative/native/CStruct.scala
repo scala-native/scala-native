@@ -1,4 +1,4 @@
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 1)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 1)
 package scala.scalanative
 package native
 
@@ -7,7 +7,7 @@ import scalanative.runtime.Intrinsics._
 
 sealed abstract class CStruct
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct0 private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -29,10 +29,10 @@ final class CStruct0 private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct0] =
     fromRawPtr[CStruct0](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct1[T1] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -54,7 +54,11 @@ final class CStruct1[T1] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct1[T1]] =
     fromRawPtr[CStruct1[T1]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(implicit tag: Tag.CStruct1[T1]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(implicit tag: Tag.CStruct1[T1]): T1 = {
@@ -68,10 +72,10 @@ final class CStruct1[T1] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct2[T1, T2] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -93,7 +97,11 @@ final class CStruct2[T1, T2] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct2[T1, T2]] =
     fromRawPtr[CStruct2[T1, T2]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(implicit tag: Tag.CStruct2[T1, T2]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(implicit tag: Tag.CStruct2[T1, T2]): T1 = {
@@ -108,7 +116,11 @@ final class CStruct2[T1, T2] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(implicit tag: Tag.CStruct2[T1, T2]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(implicit tag: Tag.CStruct2[T1, T2]): T2 = {
@@ -123,10 +135,10 @@ final class CStruct2[T1, T2] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct3[T1, T2, T3] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -148,7 +160,11 @@ final class CStruct3[T1, T2, T3] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct3[T1, T2, T3]] =
     fromRawPtr[CStruct3[T1, T2, T3]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(implicit tag: Tag.CStruct3[T1, T2, T3]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(implicit tag: Tag.CStruct3[T1, T2, T3]): T1 = {
@@ -163,7 +179,11 @@ final class CStruct3[T1, T2, T3] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(implicit tag: Tag.CStruct3[T1, T2, T3]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(implicit tag: Tag.CStruct3[T1, T2, T3]): T2 = {
@@ -178,7 +198,11 @@ final class CStruct3[T1, T2, T3] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(implicit tag: Tag.CStruct3[T1, T2, T3]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(implicit tag: Tag.CStruct3[T1, T2, T3]): T3 = {
@@ -193,10 +217,10 @@ final class CStruct3[T1, T2, T3] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct4[T1, T2, T3, T4] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -218,7 +242,11 @@ final class CStruct4[T1, T2, T3, T4] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct4[T1, T2, T3, T4]] =
     fromRawPtr[CStruct4[T1, T2, T3, T4]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): T1 = {
@@ -233,7 +261,11 @@ final class CStruct4[T1, T2, T3, T4] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): T2 = {
@@ -248,7 +280,11 @@ final class CStruct4[T1, T2, T3, T4] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): T3 = {
@@ -263,7 +299,11 @@ final class CStruct4[T1, T2, T3, T4] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): T4 = {
@@ -278,10 +318,10 @@ final class CStruct4[T1, T2, T3, T4] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -303,7 +343,12 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct5[T1, T2, T3, T4, T5]] =
     fromRawPtr[CStruct5[T1, T2, T3, T4, T5]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): T1 = {
@@ -318,7 +363,12 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): T2 = {
@@ -333,7 +383,12 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): T3 = {
@@ -348,7 +403,12 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): T4 = {
@@ -363,7 +423,12 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): T5 = {
@@ -378,10 +443,10 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -403,7 +468,12 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct6[T1, T2, T3, T4, T5, T6]] =
     fromRawPtr[CStruct6[T1, T2, T3, T4, T5, T6]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct6[T1, T2, T3, T4, T5, T6]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -419,7 +489,12 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct6[T1, T2, T3, T4, T5, T6]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -435,7 +510,12 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct6[T1, T2, T3, T4, T5, T6]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -451,7 +531,12 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct6[T1, T2, T3, T4, T5, T6]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -467,7 +552,12 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct6[T1, T2, T3, T4, T5, T6]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -483,7 +573,12 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct6[T1, T2, T3, T4, T5, T6]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -499,10 +594,10 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -524,7 +619,12 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct7[T1, T2, T3, T4, T5, T6, T7]] =
     fromRawPtr[CStruct7[T1, T2, T3, T4, T5, T6, T7]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -540,7 +640,12 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -556,7 +661,12 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -572,7 +682,12 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -588,7 +703,12 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -604,7 +724,12 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -620,7 +745,12 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -636,10 +766,10 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -661,7 +791,12 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]] =
     fromRawPtr[CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -677,7 +812,12 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -693,7 +833,12 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -709,7 +854,12 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -725,7 +875,12 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -741,7 +896,12 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -757,7 +917,12 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -773,7 +938,12 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -789,10 +959,10 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -814,7 +984,12 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]] =
     fromRawPtr[CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -830,7 +1005,12 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -846,7 +1026,12 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -862,7 +1047,12 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -878,7 +1068,12 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -894,7 +1089,12 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -910,7 +1110,12 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -926,7 +1131,12 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -942,7 +1152,12 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -958,10 +1173,10 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -984,7 +1199,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     : Ptr[CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]] =
     fromRawPtr[CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
+    : Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -1002,7 +1223,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
+    : Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -1020,7 +1247,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
+    : Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -1038,7 +1271,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
+    : Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -1056,7 +1295,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
+    : Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -1074,7 +1319,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
+    : Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -1092,7 +1343,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
+    : Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -1110,7 +1367,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
+    : Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -1128,7 +1391,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
+    : Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -1146,7 +1415,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
+    : Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -1164,10 +1439,10 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -1190,7 +1465,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     : Ptr[CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]] =
     fromRawPtr[CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    : Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -1208,7 +1489,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    : Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -1226,7 +1513,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    : Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -1244,7 +1537,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    : Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -1262,7 +1561,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    : Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -1280,7 +1585,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    : Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -1298,7 +1609,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    : Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -1316,7 +1633,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    : Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -1334,7 +1657,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    : Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -1352,7 +1681,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    : Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -1370,7 +1705,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    : Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -1388,10 +1729,10 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -1415,7 +1756,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     fromRawPtr[CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]](
       rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -1452,7 +1809,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -1489,7 +1862,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -1526,7 +1915,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -1563,7 +1968,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -1600,7 +2021,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -1637,7 +2074,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -1674,7 +2127,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -1711,7 +2180,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -1748,7 +2233,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -1786,7 +2287,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -1824,7 +2341,23 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 12. */
+  @alwaysinline def at12(
+      implicit tag: Tag.CStruct12[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12]): Ptr[T12] =
+    new Ptr[T12](elemRawPtr(rawptr, tag.offset(11)))
 
   /** Load a value of a field number 12. */
   @alwaysinline def _12(
@@ -1862,10 +2395,10 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._12)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -1889,7 +2422,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     fromRawPtr[
       CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -1928,7 +2478,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -1967,7 +2534,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -2006,7 +2590,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -2045,7 +2646,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -2084,7 +2702,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -2123,7 +2758,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -2162,7 +2814,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -2201,7 +2870,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -2240,7 +2926,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -2280,7 +2983,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -2320,7 +3040,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 12. */
+  @alwaysinline def at12(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T12] =
+    new Ptr[T12](elemRawPtr(rawptr, tag.offset(11)))
 
   /** Load a value of a field number 12. */
   @alwaysinline def _12(
@@ -2360,7 +3097,24 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._12)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 13. */
+  @alwaysinline def at13(
+      implicit tag: Tag.CStruct13[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13]): Ptr[T13] =
+    new Ptr[T13](elemRawPtr(rawptr, tag.offset(12)))
 
   /** Load a value of a field number 13. */
   @alwaysinline def _13(
@@ -2400,10 +3154,10 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._13)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
@@ -2428,7 +3182,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
       CStruct14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]](
       rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -2469,7 +3241,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -2510,7 +3300,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -2551,7 +3359,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -2592,7 +3418,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -2633,7 +3477,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -2674,7 +3536,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -2715,7 +3595,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -2756,7 +3654,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -2797,7 +3713,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -2839,7 +3773,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -2881,7 +3833,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 12. */
+  @alwaysinline def at12(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T12] =
+    new Ptr[T12](elemRawPtr(rawptr, tag.offset(11)))
 
   /** Load a value of a field number 12. */
   @alwaysinline def _12(
@@ -2923,7 +3893,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._12)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 13. */
+  @alwaysinline def at13(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T13] =
+    new Ptr[T13](elemRawPtr(rawptr, tag.offset(12)))
 
   /** Load a value of a field number 13. */
   @alwaysinline def _13(
@@ -2965,7 +3953,25 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._13)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 14. */
+  @alwaysinline def at14(
+      implicit tag: Tag.CStruct14[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14]): Ptr[T14] =
+    new Ptr[T14](elemRawPtr(rawptr, tag.offset(13)))
 
   /** Load a value of a field number 14. */
   @alwaysinline def _14(
@@ -3007,10 +4013,10 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._14)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
@@ -3062,7 +4068,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
                 T14,
                 T15]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -3105,7 +4130,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -3148,7 +4192,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -3191,7 +4254,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -3234,7 +4316,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -3277,7 +4378,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -3320,7 +4440,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -3363,7 +4502,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -3406,7 +4564,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -3449,7 +4626,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -3493,7 +4689,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -3537,7 +4752,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 12. */
+  @alwaysinline def at12(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T12] =
+    new Ptr[T12](elemRawPtr(rawptr, tag.offset(11)))
 
   /** Load a value of a field number 12. */
   @alwaysinline def _12(
@@ -3581,7 +4815,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._12)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 13. */
+  @alwaysinline def at13(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T13] =
+    new Ptr[T13](elemRawPtr(rawptr, tag.offset(12)))
 
   /** Load a value of a field number 13. */
   @alwaysinline def _13(
@@ -3625,7 +4878,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._13)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 14. */
+  @alwaysinline def at14(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T14] =
+    new Ptr[T14](elemRawPtr(rawptr, tag.offset(13)))
 
   /** Load a value of a field number 14. */
   @alwaysinline def _14(
@@ -3669,7 +4941,26 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._14)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 15. */
+  @alwaysinline def at15(
+      implicit tag: Tag.CStruct15[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15]): Ptr[T15] =
+    new Ptr[T15](elemRawPtr(rawptr, tag.offset(14)))
 
   /** Load a value of a field number 15. */
   @alwaysinline def _15(
@@ -3713,10 +5004,10 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._15)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
@@ -3770,7 +5061,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
                 T15,
                 T16]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -3815,7 +5126,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -3860,7 +5191,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -3905,7 +5256,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -3950,7 +5321,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -3995,7 +5386,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -4040,7 +5451,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -4085,7 +5516,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -4130,7 +5581,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -4175,7 +5646,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -4221,7 +5712,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -4267,7 +5778,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 12. */
+  @alwaysinline def at12(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T12] =
+    new Ptr[T12](elemRawPtr(rawptr, tag.offset(11)))
 
   /** Load a value of a field number 12. */
   @alwaysinline def _12(
@@ -4313,7 +5844,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._12)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 13. */
+  @alwaysinline def at13(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T13] =
+    new Ptr[T13](elemRawPtr(rawptr, tag.offset(12)))
 
   /** Load a value of a field number 13. */
   @alwaysinline def _13(
@@ -4359,7 +5910,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._13)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 14. */
+  @alwaysinline def at14(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T14] =
+    new Ptr[T14](elemRawPtr(rawptr, tag.offset(13)))
 
   /** Load a value of a field number 14. */
   @alwaysinline def _14(
@@ -4405,7 +5976,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._14)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 15. */
+  @alwaysinline def at15(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T15] =
+    new Ptr[T15](elemRawPtr(rawptr, tag.offset(14)))
 
   /** Load a value of a field number 15. */
   @alwaysinline def _15(
@@ -4451,7 +6042,27 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._15)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 16. */
+  @alwaysinline def at16(
+      implicit tag: Tag.CStruct16[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16]): Ptr[T16] =
+    new Ptr[T16](elemRawPtr(rawptr, tag.offset(15)))
 
   /** Load a value of a field number 16. */
   @alwaysinline def _16(
@@ -4497,10 +6108,10 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._16)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17] private[scalanative] (
@@ -4573,7 +6184,28 @@ T14, T15, T16, T17] private[scalanative] (
                 T16,
                 T17]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -4620,7 +6252,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -4667,7 +6320,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -4714,7 +6388,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -4761,7 +6456,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -4808,7 +6524,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -4855,7 +6592,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -4902,7 +6660,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -4949,7 +6728,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -4996,7 +6796,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -5044,7 +6865,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -5092,7 +6934,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 12. */
+  @alwaysinline def at12(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T12] =
+    new Ptr[T12](elemRawPtr(rawptr, tag.offset(11)))
 
   /** Load a value of a field number 12. */
   @alwaysinline def _12(
@@ -5140,7 +7003,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 13. */
+  @alwaysinline def at13(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T13] =
+    new Ptr[T13](elemRawPtr(rawptr, tag.offset(12)))
 
   /** Load a value of a field number 13. */
   @alwaysinline def _13(
@@ -5188,7 +7072,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._13)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 14. */
+  @alwaysinline def at14(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T14] =
+    new Ptr[T14](elemRawPtr(rawptr, tag.offset(13)))
 
   /** Load a value of a field number 14. */
   @alwaysinline def _14(
@@ -5236,7 +7141,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 15. */
+  @alwaysinline def at15(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T15] =
+    new Ptr[T15](elemRawPtr(rawptr, tag.offset(14)))
 
   /** Load a value of a field number 15. */
   @alwaysinline def _15(
@@ -5284,7 +7210,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._15)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 16. */
+  @alwaysinline def at16(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T16] =
+    new Ptr[T16](elemRawPtr(rawptr, tag.offset(15)))
 
   /** Load a value of a field number 16. */
   @alwaysinline def _16(
@@ -5332,7 +7279,28 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 17. */
+  @alwaysinline def at17(
+      implicit tag: Tag.CStruct17[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17]): Ptr[T17] =
+    new Ptr[T17](elemRawPtr(rawptr, tag.offset(16)))
 
   /** Load a value of a field number 17. */
   @alwaysinline def _17(
@@ -5380,10 +7348,10 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._17)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18] private[scalanative] (
@@ -5459,7 +7427,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
                 T17,
                 T18]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -5508,7 +7498,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -5557,7 +7569,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -5606,7 +7640,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -5655,7 +7711,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -5704,7 +7782,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -5753,7 +7853,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -5802,7 +7924,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -5851,7 +7995,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -5900,7 +8066,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -5950,7 +8138,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -6000,7 +8210,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 12. */
+  @alwaysinline def at12(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T12] =
+    new Ptr[T12](elemRawPtr(rawptr, tag.offset(11)))
 
   /** Load a value of a field number 12. */
   @alwaysinline def _12(
@@ -6050,7 +8282,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 13. */
+  @alwaysinline def at13(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T13] =
+    new Ptr[T13](elemRawPtr(rawptr, tag.offset(12)))
 
   /** Load a value of a field number 13. */
   @alwaysinline def _13(
@@ -6100,7 +8354,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._13)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 14. */
+  @alwaysinline def at14(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T14] =
+    new Ptr[T14](elemRawPtr(rawptr, tag.offset(13)))
 
   /** Load a value of a field number 14. */
   @alwaysinline def _14(
@@ -6150,7 +8426,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 15. */
+  @alwaysinline def at15(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T15] =
+    new Ptr[T15](elemRawPtr(rawptr, tag.offset(14)))
 
   /** Load a value of a field number 15. */
   @alwaysinline def _15(
@@ -6200,7 +8498,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._15)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 16. */
+  @alwaysinline def at16(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T16] =
+    new Ptr[T16](elemRawPtr(rawptr, tag.offset(15)))
 
   /** Load a value of a field number 16. */
   @alwaysinline def _16(
@@ -6250,7 +8570,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 17. */
+  @alwaysinline def at17(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T17] =
+    new Ptr[T17](elemRawPtr(rawptr, tag.offset(16)))
 
   /** Load a value of a field number 17. */
   @alwaysinline def _17(
@@ -6300,7 +8642,29 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._17)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 18. */
+  @alwaysinline def at18(
+      implicit tag: Tag.CStruct18[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18]): Ptr[T18] =
+    new Ptr[T18](elemRawPtr(rawptr, tag.offset(17)))
 
   /** Load a value of a field number 18. */
   @alwaysinline def _18(
@@ -6350,10 +8714,10 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._18)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19] private[scalanative] (
@@ -6432,7 +8796,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
                 T18,
                 T19]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -6483,7 +8870,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -6534,7 +8944,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -6585,7 +9018,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -6636,7 +9092,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -6687,7 +9166,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -6738,7 +9240,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -6789,7 +9314,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -6840,7 +9388,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -6891,7 +9462,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -6943,7 +9537,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -6995,7 +9612,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 12. */
+  @alwaysinline def at12(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T12] =
+    new Ptr[T12](elemRawPtr(rawptr, tag.offset(11)))
 
   /** Load a value of a field number 12. */
   @alwaysinline def _12(
@@ -7047,7 +9687,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 13. */
+  @alwaysinline def at13(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T13] =
+    new Ptr[T13](elemRawPtr(rawptr, tag.offset(12)))
 
   /** Load a value of a field number 13. */
   @alwaysinline def _13(
@@ -7099,7 +9762,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._13)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 14. */
+  @alwaysinline def at14(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T14] =
+    new Ptr[T14](elemRawPtr(rawptr, tag.offset(13)))
 
   /** Load a value of a field number 14. */
   @alwaysinline def _14(
@@ -7151,7 +9837,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 15. */
+  @alwaysinline def at15(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T15] =
+    new Ptr[T15](elemRawPtr(rawptr, tag.offset(14)))
 
   /** Load a value of a field number 15. */
   @alwaysinline def _15(
@@ -7203,7 +9912,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._15)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 16. */
+  @alwaysinline def at16(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T16] =
+    new Ptr[T16](elemRawPtr(rawptr, tag.offset(15)))
 
   /** Load a value of a field number 16. */
   @alwaysinline def _16(
@@ -7255,7 +9987,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 17. */
+  @alwaysinline def at17(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T17] =
+    new Ptr[T17](elemRawPtr(rawptr, tag.offset(16)))
 
   /** Load a value of a field number 17. */
   @alwaysinline def _17(
@@ -7307,7 +10062,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._17)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 18. */
+  @alwaysinline def at18(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T18] =
+    new Ptr[T18](elemRawPtr(rawptr, tag.offset(17)))
 
   /** Load a value of a field number 18. */
   @alwaysinline def _18(
@@ -7359,7 +10137,30 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._18)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 19. */
+  @alwaysinline def at19(
+      implicit tag: Tag.CStruct19[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19]): Ptr[T19] =
+    new Ptr[T19](elemRawPtr(rawptr, tag.offset(18)))
 
   /** Load a value of a field number 19. */
   @alwaysinline def _19(
@@ -7411,10 +10212,10 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._19)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
@@ -7496,7 +10297,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
                 T19,
                 T20]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -7549,7 +10374,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -7602,7 +10451,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -7655,7 +10528,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -7708,7 +10605,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -7761,7 +10682,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -7814,7 +10759,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -7867,7 +10836,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -7920,7 +10913,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -7973,7 +10990,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -8027,7 +11068,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -8081,7 +11146,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 12. */
+  @alwaysinline def at12(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T12] =
+    new Ptr[T12](elemRawPtr(rawptr, tag.offset(11)))
 
   /** Load a value of a field number 12. */
   @alwaysinline def _12(
@@ -8135,7 +11224,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 13. */
+  @alwaysinline def at13(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T13] =
+    new Ptr[T13](elemRawPtr(rawptr, tag.offset(12)))
 
   /** Load a value of a field number 13. */
   @alwaysinline def _13(
@@ -8189,7 +11302,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._13)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 14. */
+  @alwaysinline def at14(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T14] =
+    new Ptr[T14](elemRawPtr(rawptr, tag.offset(13)))
 
   /** Load a value of a field number 14. */
   @alwaysinline def _14(
@@ -8243,7 +11380,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 15. */
+  @alwaysinline def at15(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T15] =
+    new Ptr[T15](elemRawPtr(rawptr, tag.offset(14)))
 
   /** Load a value of a field number 15. */
   @alwaysinline def _15(
@@ -8297,7 +11458,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._15)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 16. */
+  @alwaysinline def at16(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T16] =
+    new Ptr[T16](elemRawPtr(rawptr, tag.offset(15)))
 
   /** Load a value of a field number 16. */
   @alwaysinline def _16(
@@ -8351,7 +11536,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 17. */
+  @alwaysinline def at17(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T17] =
+    new Ptr[T17](elemRawPtr(rawptr, tag.offset(16)))
 
   /** Load a value of a field number 17. */
   @alwaysinline def _17(
@@ -8405,7 +11614,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._17)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 18. */
+  @alwaysinline def at18(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T18] =
+    new Ptr[T18](elemRawPtr(rawptr, tag.offset(17)))
 
   /** Load a value of a field number 18. */
   @alwaysinline def _18(
@@ -8459,7 +11692,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._18)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 19. */
+  @alwaysinline def at19(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T19] =
+    new Ptr[T19](elemRawPtr(rawptr, tag.offset(18)))
 
   /** Load a value of a field number 19. */
   @alwaysinline def _19(
@@ -8513,7 +11770,31 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._19)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 20. */
+  @alwaysinline def at20(
+      implicit tag: Tag.CStruct20[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20]): Ptr[T20] =
+    new Ptr[T20](elemRawPtr(rawptr, tag.offset(19)))
 
   /** Load a value of a field number 20. */
   @alwaysinline def _20(
@@ -8567,10 +11848,10 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._20)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
@@ -8655,7 +11936,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
                 T20,
                 T21]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -8710,7 +12016,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -8765,7 +12096,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -8820,7 +12176,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -8875,7 +12256,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -8930,7 +12336,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -8985,7 +12416,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -9040,7 +12496,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -9095,7 +12576,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -9150,7 +12656,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -9206,7 +12737,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -9262,7 +12818,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 12. */
+  @alwaysinline def at12(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T12] =
+    new Ptr[T12](elemRawPtr(rawptr, tag.offset(11)))
 
   /** Load a value of a field number 12. */
   @alwaysinline def _12(
@@ -9318,7 +12899,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 13. */
+  @alwaysinline def at13(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T13] =
+    new Ptr[T13](elemRawPtr(rawptr, tag.offset(12)))
 
   /** Load a value of a field number 13. */
   @alwaysinline def _13(
@@ -9374,7 +12980,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._13)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 14. */
+  @alwaysinline def at14(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T14] =
+    new Ptr[T14](elemRawPtr(rawptr, tag.offset(13)))
 
   /** Load a value of a field number 14. */
   @alwaysinline def _14(
@@ -9430,7 +13061,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 15. */
+  @alwaysinline def at15(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T15] =
+    new Ptr[T15](elemRawPtr(rawptr, tag.offset(14)))
 
   /** Load a value of a field number 15. */
   @alwaysinline def _15(
@@ -9486,7 +13142,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._15)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 16. */
+  @alwaysinline def at16(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T16] =
+    new Ptr[T16](elemRawPtr(rawptr, tag.offset(15)))
 
   /** Load a value of a field number 16. */
   @alwaysinline def _16(
@@ -9542,7 +13223,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 17. */
+  @alwaysinline def at17(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T17] =
+    new Ptr[T17](elemRawPtr(rawptr, tag.offset(16)))
 
   /** Load a value of a field number 17. */
   @alwaysinline def _17(
@@ -9598,7 +13304,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._17)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 18. */
+  @alwaysinline def at18(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T18] =
+    new Ptr[T18](elemRawPtr(rawptr, tag.offset(17)))
 
   /** Load a value of a field number 18. */
   @alwaysinline def _18(
@@ -9654,7 +13385,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._18)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 19. */
+  @alwaysinline def at19(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T19] =
+    new Ptr[T19](elemRawPtr(rawptr, tag.offset(18)))
 
   /** Load a value of a field number 19. */
   @alwaysinline def _19(
@@ -9710,7 +13466,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._19)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 20. */
+  @alwaysinline def at20(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T20] =
+    new Ptr[T20](elemRawPtr(rawptr, tag.offset(19)))
 
   /** Load a value of a field number 20. */
   @alwaysinline def _20(
@@ -9766,7 +13547,32 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._20)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 21. */
+  @alwaysinline def at21(
+      implicit tag: Tag.CStruct21[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21]): Ptr[T21] =
+    new Ptr[T21](elemRawPtr(rawptr, tag.offset(20)))
 
   /** Load a value of a field number 21. */
   @alwaysinline def _21(
@@ -9822,10 +13628,10 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._21)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 12)
 
 final class CStruct22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
@@ -9913,7 +13719,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
                 T21,
                 T22]](rawptr)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 1. */
+  @alwaysinline def at1(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T1] =
+    new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
@@ -9970,7 +13802,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 2. */
+  @alwaysinline def at2(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T2] =
+    new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
@@ -10027,7 +13885,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 3. */
+  @alwaysinline def at3(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T3] =
+    new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
@@ -10084,7 +13968,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 4. */
+  @alwaysinline def at4(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T4] =
+    new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
@@ -10141,7 +14051,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 5. */
+  @alwaysinline def at5(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T5] =
+    new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
@@ -10198,7 +14134,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 6. */
+  @alwaysinline def at6(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T6] =
+    new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
@@ -10255,7 +14217,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 7. */
+  @alwaysinline def at7(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T7] =
+    new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
@@ -10312,7 +14300,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._7)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 8. */
+  @alwaysinline def at8(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T8] =
+    new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
@@ -10369,7 +14383,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 9. */
+  @alwaysinline def at9(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T9] =
+    new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
@@ -10426,7 +14466,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._9)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 10. */
+  @alwaysinline def at10(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T10] =
+    new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
@@ -10484,7 +14550,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 11. */
+  @alwaysinline def at11(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T11] =
+    new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
@@ -10542,7 +14634,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._11)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 12. */
+  @alwaysinline def at12(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T12] =
+    new Ptr[T12](elemRawPtr(rawptr, tag.offset(11)))
 
   /** Load a value of a field number 12. */
   @alwaysinline def _12(
@@ -10600,7 +14718,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 13. */
+  @alwaysinline def at13(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T13] =
+    new Ptr[T13](elemRawPtr(rawptr, tag.offset(12)))
 
   /** Load a value of a field number 13. */
   @alwaysinline def _13(
@@ -10658,7 +14802,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._13)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 14. */
+  @alwaysinline def at14(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T14] =
+    new Ptr[T14](elemRawPtr(rawptr, tag.offset(13)))
 
   /** Load a value of a field number 14. */
   @alwaysinline def _14(
@@ -10716,7 +14886,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 15. */
+  @alwaysinline def at15(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T15] =
+    new Ptr[T15](elemRawPtr(rawptr, tag.offset(14)))
 
   /** Load a value of a field number 15. */
   @alwaysinline def _15(
@@ -10774,7 +14970,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._15)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 16. */
+  @alwaysinline def at16(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T16] =
+    new Ptr[T16](elemRawPtr(rawptr, tag.offset(15)))
 
   /** Load a value of a field number 16. */
   @alwaysinline def _16(
@@ -10832,7 +15054,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 17. */
+  @alwaysinline def at17(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T17] =
+    new Ptr[T17](elemRawPtr(rawptr, tag.offset(16)))
 
   /** Load a value of a field number 17. */
   @alwaysinline def _17(
@@ -10890,7 +15138,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._17)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 18. */
+  @alwaysinline def at18(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T18] =
+    new Ptr[T18](elemRawPtr(rawptr, tag.offset(17)))
 
   /** Load a value of a field number 18. */
   @alwaysinline def _18(
@@ -10948,7 +15222,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._18)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 19. */
+  @alwaysinline def at19(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T19] =
+    new Ptr[T19](elemRawPtr(rawptr, tag.offset(18)))
 
   /** Load a value of a field number 19. */
   @alwaysinline def _19(
@@ -11006,7 +15306,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._19)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 20. */
+  @alwaysinline def at20(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T20] =
+    new Ptr[T20](elemRawPtr(rawptr, tag.offset(19)))
 
   /** Load a value of a field number 20. */
   @alwaysinline def _20(
@@ -11064,7 +15390,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._20)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 21. */
+  @alwaysinline def at21(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T21] =
+    new Ptr[T21](elemRawPtr(rawptr, tag.offset(20)))
 
   /** Load a value of a field number 21. */
   @alwaysinline def _21(
@@ -11122,7 +15474,33 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._21)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 32)
+
+  /** Load a value of a field number 22. */
+  @alwaysinline def at22(
+      implicit tag: Tag.CStruct22[T1,
+                                  T2,
+                                  T3,
+                                  T4,
+                                  T5,
+                                  T6,
+                                  T7,
+                                  T8,
+                                  T9,
+                                  T10,
+                                  T11,
+                                  T12,
+                                  T13,
+                                  T14,
+                                  T15,
+                                  T16,
+                                  T17,
+                                  T18,
+                                  T19,
+                                  T20,
+                                  T21,
+                                  T22]): Ptr[T22] =
+    new Ptr[T22](elemRawPtr(rawptr, tag.offset(21)))
 
   /** Load a value of a field number 22. */
   @alwaysinline def _22(
@@ -11180,5 +15558,5 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._22)
   }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 46)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CStruct.scala.gyb", line: 50)
 }
