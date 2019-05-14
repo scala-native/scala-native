@@ -61,6 +61,8 @@ object NirPrimitives {
   final val CAST_RAWPTR_TO_LONG    = 1 + CAST_RAWPTR_TO_INT
   final val CAST_INT_TO_RAWPTR     = 1 + CAST_RAWPTR_TO_LONG
   final val CAST_LONG_TO_RAWPTR    = 1 + CAST_INT_TO_RAWPTR
+
+  final val RESOLVE_CFUNCPTR = 1 + CAST_LONG_TO_RAWPTR
 }
 
 abstract class NirPrimitives {
@@ -158,6 +160,6 @@ abstract class NirPrimitives {
     addPrimitive(CastRawPtrToLongMethod, CAST_RAWPTR_TO_LONG)
     addPrimitive(CastIntToRawPtrMethod, CAST_INT_TO_RAWPTR)
     addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
-
+    addPrimitive(ResolveCFuncPtrMethod, RESOLVE_CFUNCPTR)
   }
 }

@@ -14,7 +14,7 @@ sealed abstract class Tag[T] {
 }
 
 object Tag {
-  case class Ptr[T](of: Tag[T])
+  final case class Ptr[T](of: Tag[T])
       extends Tag[native.Ptr[T]] {
     @alwaysinline def size: Int = 8
     @alwaysinline def alignment: Int = 8
@@ -24,7 +24,7 @@ object Tag {
       storeRawPtr(toRawPtr(ptr), toRawPtr(value))
   }
 
-  case class Class[T <: AnyRef](of: java.lang.Class[T])
+  final case class Class[T <: AnyRef](of: java.lang.Class[T])
       extends Tag[T] {
     @alwaysinline def size: Int = 8
     @alwaysinline def alignment: Int = 8
@@ -95,7 +95,7 @@ object Tag {
   %   TagNs   = ["Tag[{}]".format(n) for n in Ns]
   %   args    = ", ".join("_{}: {}".format(i + 1, T) for (i, T) in enumerate(TagNs))
 
-  case class Digit${N}${BoundNs}(${args})
+  final case class Digit${N}${BoundNs}(${args})
       extends Tag[native.Nat.Digit${N}${JustNs}]
       with NatTag
   {
@@ -112,7 +112,7 @@ object Tag {
 
   % end
 
-  case class CArray[T, N <: native.Nat](of: Tag[T], n: Tag[N])
+  final case class CArray[T, N <: native.Nat](of: Tag[T], n: Tag[N])
       extends Tag[native.CArray[T, N]]
   {
     @alwaysinline def size: Int = of.size * n.asInstanceOf[NatTag].toInt
@@ -127,7 +127,7 @@ object Tag {
       libc.memcpy(dst, src, size)
     }
   }
-
+  
   private[scalanative] sealed trait StructTag
 
   @alwaysinline private[scalanative] def align(offset: Int, alignment: Int) = {
@@ -144,7 +144,7 @@ object Tag {
   %   TagTs   = ["Tag[{}]".format(T) for T in Ts]
   %   args    = ", ".join("_{}: {}".format(i + 1, T) for (i, T) in enumerate(TagTs))
 
-  case class CStruct${N}${JustTs}(${args})
+  final case class CStruct${N}${JustTs}(${args})
     extends Tag[native.CStruct${N}${JustTs}]
     with StructTag
   {
@@ -186,6 +186,21 @@ object Tag {
 
   % end
 
+  % for N in range(0, 23):
+  %   targs = ", ".join(["Any" for i in range(1, N+1)] + ["Any"])
+  %   nativeCFuncPtr = "native.CFuncPtr{}[{}]".format(N, targs)
+
+  object CFuncPtr${N} extends Tag[${nativeCFuncPtr}] {
+    @alwaysinline def size: Int = 8
+    @alwaysinline def alignment: Int = 8
+    @alwaysinline override def load(ptr: native.Ptr[${nativeCFuncPtr}]): ${nativeCFuncPtr} =
+      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+    @alwaysinline override def store(ptr: native.Ptr[${nativeCFuncPtr}], value: ${nativeCFuncPtr}): Unit =
+      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
+  }
+
+  % end
+
   @alwaysinline implicit def materializePtrTag[T](implicit tag: Tag[T]): Tag[native.Ptr[T]] =
     Tag.Ptr(tag)
   @alwaysinline implicit def materializeClassTag[T <: AnyRef: ClassTag]: Tag[T] =
@@ -216,4 +231,9 @@ object Tag {
   % end
   @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: native.Nat: Tag]: Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
+  % for N in range(0, 23):
+  %   targs = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
+  @alwaysinline implicit def materializeCFuncPtr${N}[${targs}]: Tag[native.CFuncPtr${N}[${targs}]] =
+    Tag.CFuncPtr${N}.asInstanceOf[Tag[native.CFuncPtr${N}[${targs}]]]
+  % end 
 }

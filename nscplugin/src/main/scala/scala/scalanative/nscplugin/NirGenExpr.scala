@@ -741,6 +741,8 @@ trait NirGenExpr { self: NirGenPhase =>
         genRawPtrOp(app, code)
       } else if (nirPrimitives.isRawCastOp(code)) {
         genRawCastOp(app, code)
+      } else if (code == RESOLVE_CFUNCPTR) {
+        genResolveCFuncPtr(app, code)
       } else if (isCoercion(code)) {
         genCoercion(app, receiver, code)
       } else if (code == SYNCHRONIZED) {
@@ -1228,6 +1230,14 @@ trait NirGenExpr { self: NirGenPhase =>
           unsupported(s"cast from $fromty to $toty")
       }
 
+    def genResolveCFuncPtr(app: Apply, code: Int): Val = {
+      val Apply(_, Seq(argp)) = app
+
+      val value = genExpr(argp)
+
+      buf.method(value, Sig.Generated("$extern$forwarder"), unwind)
+    }
+
     def genCastOp(fromty: nir.Type, toty: nir.Type, value: Val): Val =
       castConv(fromty, toty).fold(value)(buf.conv(_, toty, value, unwind))
 
@@ -1576,7 +1586,7 @@ trait NirGenExpr { self: NirGenPhase =>
             && Type.unbox(Type.Ref(refty.name)) == expectedTy =>
           buf.unbox(Type.Ref(refty.name), value, unwind)
         case (Type.Ptr, refty: Type.Ref) =>
-          buf.method(value, Sig.Generated("$extern$forwarder"), unwind)
+          buf.unbox(Type.Ref(genTypeName(CFuncRawPtrClass)), value, unwind)
         case _ =>
           value
       }
@@ -1588,7 +1598,7 @@ trait NirGenExpr { self: NirGenPhase =>
             && Type.unbox(Type.Ref(refty.name)) == ty =>
           buf.box(Type.Ref(refty.name), value, unwind)
         case (Type.Ptr, refty: Type.Ref) =>
-          ???
+          buf.box(Type.Ref(genTypeName(CFuncRawPtrClass)), value, unwind)
         case _ =>
           value
       }

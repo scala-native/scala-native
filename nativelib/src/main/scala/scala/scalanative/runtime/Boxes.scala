@@ -12,6 +12,8 @@ object Boxes {
     if (v == null) null else new Ptr[T](v)
   @inline def boxToCArray[T, N <: Nat](v: RawPtr): CArray[T, N] =
     if (v == null) null else new CArray[T, N](v)
+  @inline def boxToCFuncRawPtr(v: RawPtr): CFuncRawPtr =
+    if (v == null) null else new CFuncRawPtr(v)
 
   @inline def unboxToUByte(o: java.lang.Object): Byte =
     if (o == null) 0.toByte
@@ -29,4 +31,12 @@ object Boxes {
     if (o == null) null else o.asInstanceOf[Ptr[_]].rawptr
   @inline def unboxToCArray(o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CArray[_, _]].rawptr
+  @inline def unboxToCFuncRawPtr(o: java.lang.Object): RawPtr =
+    if (o == null) {
+      null
+    } else if (o.isInstanceOf[CFuncRawPtr]) {
+      o.asInstanceOf[CFuncRawPtr].rawptr
+    } else {
+      Intrinsics.resolveCFuncPtr(o.asInstanceOf[CFuncPtr])
+    }
 }

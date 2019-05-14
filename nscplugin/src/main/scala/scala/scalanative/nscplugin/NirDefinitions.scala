@@ -53,6 +53,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val CFuncPtrClass = (0 to 22).map { n =>
       getRequiredClass("scala.scalanative.native.CFuncPtr" + n)
     }
+    lazy val CFuncRawPtrClass =
+      getRequiredClass("scala.scalanative.runtime.CFuncRawPtr")
 
     lazy val TagModule     = getRequiredModule("scala.scalanative.native.Tag")
     lazy val UnitTagMethod = getDecl(TagModule, TermName("materializeUnitTag"))
@@ -200,6 +202,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getMember(IntrinsicsModule, TermName("castLongToRawPtr"))
     lazy val StackallocMethod =
       getMember(IntrinsicsModule, TermName("stackalloc"))
+    lazy val ResolveCFuncPtrMethod =
+      getMember(IntrinsicsModule, TermName("resolveCFuncPtr"))
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
       'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),

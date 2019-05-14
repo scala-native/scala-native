@@ -87,6 +87,16 @@ trait NirGenStat { self: NirGenPhase =>
 
     def genStructAttrs(sym: Symbol): Attrs = Attrs.None
 
+    def genFuncRawPtrExternForwarder(cd: ClassDef): Defn = {
+      val attrs = Attrs(isExtern = true)
+      val name  = genFuncPtrExternForwarderName(cd.symbol)
+      val sig   = Type.Function(Seq.empty, Type.Unit)
+      val body =
+        Seq(Inst.Label(Local(0), Seq.empty), Inst.Unreachable(Next.None))
+
+      Defn.Define(attrs, name, sig, body)
+    }
+
     def genFuncPtrExternForwarder(cd: ClassDef): Defn = {
       val applys = cd.impl.body.collect {
         case dd: DefDef
@@ -145,7 +155,11 @@ trait NirGenStat { self: NirGenPhase =>
       genClassFields(sym)
       genMethods(cd)
       if (sym.isCFuncPtrClass) {
-        buf += genFuncPtrExternForwarder(cd)
+        if (sym == CFuncRawPtrClass) {
+          buf += genFuncRawPtrExternForwarder(cd)
+        } else {
+          buf += genFuncPtrExternForwarder(cd)
+        }
       }
 
       buf += {
