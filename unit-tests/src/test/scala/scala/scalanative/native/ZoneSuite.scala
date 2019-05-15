@@ -1,4 +1,5 @@
-package scala.scalanative.native
+package scala.scalanative
+package native
 
 object ZoneSuite extends tests.Suite {
   private def assertAccessible(bptr: Ptr[_], n: Int) {

@@ -1,4 +1,5 @@
-package scala.scalanative.native
+package scala.scalanative
+package native
 
 object NoOptSuite extends tests.Suite {
   class A { def foo: String = "A" }

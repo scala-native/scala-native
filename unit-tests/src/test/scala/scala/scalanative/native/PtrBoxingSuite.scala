@@ -1,5 +1,6 @@
 package scala.scalanative
-import scalanative.native._
+package native
+
 import scalanative.runtime.toRawPtr
 import scalanative.libc.stdlib.malloc
 import java.lang.Long.toHexString

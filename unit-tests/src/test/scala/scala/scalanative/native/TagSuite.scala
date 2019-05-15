@@ -1,4 +1,5 @@
-package scala.scalanative.native
+package scala.scalanative
+package native
 
 object TagSuite extends tests.Suite {
 

@@ -1,4 +1,5 @@
-package scala.scalanative.native
+package scala.scalanative
+package native
 
 import scalanative.libc.complex._
 import scalanative.libc.complexOps._

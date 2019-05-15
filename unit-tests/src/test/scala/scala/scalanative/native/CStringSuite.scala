@@ -1,4 +1,5 @@
-package scala.scalanative.native
+package scala.scalanative
+package native
 
 import scalanative.libc.stdio._
 import scalanative.libc.string._

@@ -1,6 +1,5 @@
 package scala.scalanative
-
-import native._
+package native
 
 object CStringEscapesSuite extends tests.Suite {
   test("""c"..." literals with various escapes""") {
