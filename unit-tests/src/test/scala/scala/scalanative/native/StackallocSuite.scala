@@ -3,7 +3,7 @@ package native
 
 object StackallocSuite extends tests.Suite {
 
-  test("Int") {
+  test("stackalloc Int") {
     val ptr = stackalloc[Int]
 
     !ptr = 42
@@ -11,7 +11,7 @@ object StackallocSuite extends tests.Suite {
     assert(!ptr == 42)
   }
 
-  test("Int * 4") {
+  test("stackalloc Int, 4") {
     val ptr = stackalloc[Int](4)
 
     ptr(0) = 1
@@ -25,7 +25,7 @@ object StackallocSuite extends tests.Suite {
     assert(ptr(3) == 4)
   }
 
-  test("CStruct2[Int, Int]") {
+  test("stackalloc CStruct2[Int, Int]") {
     val ptr = stackalloc[CStruct2[Int, Int]]
 
     ptr._1 = 1
@@ -35,7 +35,7 @@ object StackallocSuite extends tests.Suite {
     assert(ptr._2 == 2)
   }
 
-  test("CArray[Int, _4]") {
+  test("stackalloc CArray[Int, _4]") {
     val ptr = stackalloc[CArray[Int, Nat._4]]
     val arr = !ptr
 
@@ -67,7 +67,7 @@ object StackallocSuite extends tests.Suite {
     assert(arr(3) == 40)
   }
 
-  test("stack-allocated list") {
+  test("stackalloc linked list") {
     import CList._
     var i               = 0
     var head: Ptr[Node] = null
