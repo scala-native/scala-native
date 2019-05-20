@@ -706,16 +706,16 @@ Some notes on the implementation:
 3. The following Matcher methods have a minimal implementation:
 
    * Matcher.hasAnchoringBounds() - always return true.
-   * Matcher.hasTransparentBounds() - returns UnsupportedOperationException
-     because RE2 does not support lookaheads.
-   * Matcher.hitEnd() - returns UnsupportedOperationException.
+   * Matcher.hasTransparentBounds() - always throws
+     UnsupportedOperationException because RE2 does not support lookaheads.
+   * Matcher.hitEnd() - always throws UnsupportedOperationException.
    * Matcher.region(int, int)
    * Matcher.regionEnd()
    * Matcher.regionStart()
-   * Matcher.requireEnd() - returns UnsupportedOperationException.
-   * Matcher.useAnchoringBounds(boolean)  - returns
-     UnsupportedOperationException
-   * Matcher.useTransparentBounds(boolean) - returns
+   * Matcher.requireEnd() - always throws UnsupportedOperationException.
+   * Matcher.useAnchoringBounds(boolean)  - always throws
+         UnsupportedOperationException
+   * Matcher.useTransparentBounds(boolean) - always throws
      UnsupportedOperationException because RE2 does not support lookaheads.
 
 4. Scala Native 0.3.8 required POSIX patterns to have the form
