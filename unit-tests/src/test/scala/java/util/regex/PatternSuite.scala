@@ -184,18 +184,30 @@ object PatternSuite extends tests.Suite {
     pass("\\a", "\u0007") // alert (bell)
   }
 
+  test("Unicode block") {
+    pass("\\p{InGreek}", "α")
+    pass("\\p{Greek}", "Ω")
+    fail("\\p{InGreek}", "a")
+    pass("\\P{InGreek}", "a") // not in block
+
+    pass("\\p{InLatin}", "a")
+    pass("\\p{Latin}", "a")
+    fail("\\p{InLatin}", "α")
+    pass("\\P{InLatin}", "α") // not in block
+  }
+
   testFails("(not supported) character classes", 620) {
     pass("\\0100", "\u0040") // 100 octal = 40 hex
-    pass("\\xFF", "\u00FF")
     pass("\\uBEEF", "\uBEEF")
-    pass("\\e", "\u001B") // escape
-    // control char \cx
+    pass("\\e", "\u001B")  // escape
+    pass("\\cZ", s"\\x1A") // Control-Z
   }
 
   test("character classes") {
     pass("[abc]", "a")
     fail("[^abc]", "c")
     pass("[a-zA-Z]", "T")
+    pass("\\xFF", "\u00FF")
   }
 
   test("predefined character classes") {
@@ -208,37 +220,45 @@ object PatternSuite extends tests.Suite {
     pass("\\W", "-")
   }
 
-  testFails("(not supported) POSIX character classes", 620) {
-    // Needs to convert to
-    pass("\\p{Alnum}", "a")     // [[:alpha:]]
-    pass("\\p{Alpha}", "a")     // [[:alnum:]]
-    pass("\\p{ASCII}", "a")     // [[:ascii:]]
-    pass("\\p{Blank}", " ")     // [[:blank:]]
-    pass("\\p{Cntrl}", "\\x20") // [[:cntrl:]]
-    pass("\\p{Digit}", "1")     // [[:digit:]]
-    pass("\\p{Graph}", "a")     // [[:graph:]]
-    pass("\\p{Lower}", "a")     // [[:lower:]]
-    pass("\\p{Print}", "a")     // [[:print:]]
-    pass("\\p{Punct}", ".")     // [[:punct:]]
-    pass("\\p{Space}", " ")     // [[:space:]]
-    pass("\\p{Upper}", "A")     // [[:upper:]]
-    pass("\\p{XDigit}", "a")    // [[:xdigit:]]
+  test("POSIX character classes") {
+    pass("\\p{Alnum}", "a")
+    pass("\\p{Alpha}", "a")
+    pass("\\p{ASCII}", "a")
+    pass("\\p{Blank}", " ")
+    pass("\\p{Cntrl}", "\u0003")
+    pass("\\p{Digit}", "1")
+    pass("\\p{Graph}", "a")
+    pass("\\p{Lower}", "a")
+    pass("\\p{Print}", "a")
+    pass("\\p{Punct}", ".")
+    pass("\\p{Space}", " ")
+    pass("\\p{Upper}", "A")
+    pass("\\p{XDigit}", "a")
   }
 
-  test("unicode classes") {
+  test("Unicode classes") {
     pass("\\p{Lu}", "A")
     pass("\\p{Sc}", "$")
+
+    fail("\\p{Lu}", "@") // should not be in Uppercase class
+    pass("\\P{Lu}", "@") // but should be in negated class. Thanks, Aristotle!
   }
 
-  testFails("(not supported) unicode classes", 620) {
-    // Needs to convert to
-    pass("\\p{InGreek}", "α") // p{Latin}
-    pass("\\p{IsLatin}", "a") // p{Greek}
-    fail("\\p{IsLatin}", "α")
-
-    // not supported
+  testFails("(not supported) Unicode classes", 620) {
+    // not supported: IsAlphabetic binary property.
     pass("\\p{IsAlphabetic}", "a")
     fail("\\p{IsAlphabetic}", "-")
+  }
+
+  test("Unicode script") {
+    // "\u03b1" is Greek alpha character, "\u0061" is Latin lowercase 'a'
+    pass("\\p{IsGreek}", "\u03b1") // behavior changes in Java 9
+    fail("\\p{IsGreek}", "\u0061")
+    pass("\\P{IsGreek}", "\u0061") // not in block
+
+    pass("\\p{IsLatin}", "\u0061") // behavior changes in Java 9
+    fail("\\p{IsLatin}", "\u03b1")
+    pass("\\P{IsLatin}", "\u03b1") // not in block
   }
 
   test("boundary matchers") {
@@ -264,7 +284,7 @@ object PatternSuite extends tests.Suite {
     find("foo\\Z", "foo")
     find("foo\\Z", "foo\n")
 
-    // \R unicode linebreak
+    // \R Unicode linebreak
     pass("\\R", "\u000D\u000A")
   }
 
@@ -379,7 +399,7 @@ object PatternSuite extends tests.Suite {
   }
 
   test("java named groups") {
-    pass("(?<foo>a)", "a") // (?<name> to (?P<name>
+    pass("(?<foo>a)", "a")
   }
 
   // Do not support re2 syntax in java.util.regex.
@@ -387,7 +407,7 @@ object PatternSuite extends tests.Suite {
     pass("(?P<foo>a)", "a")
   }
 
-  test("non capturing groups") {
+  test("non-capturing groups") {
     pass("(?:a)", "a")
   }
 

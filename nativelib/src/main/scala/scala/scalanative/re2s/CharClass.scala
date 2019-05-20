@@ -33,10 +33,15 @@ class CharClass private (unit: Unit) {
     this.len = r.length
   }
 
+  // Size the initial allocaton to reduce the number of doublings & copies
+  // yet still be provident with memory.
+  // 16 bytes is a best guess. See commit mesage for details on its derivation.
+
   // Constructs an empty CharClass.
   def this() {
     this(())
-    this.r = Utils.EMPTY_INTS
+    val initialCapacity = 16
+    this.r = new Array[Int](initialCapacity)
     this.len = 0
   }
 
@@ -70,33 +75,32 @@ class CharClass private (unit: Unit) {
   // cleanClass() sorts the ranges (pairs of elements) of this CharClass,
   // merges them, and eliminates duplicates.
   def cleanClass(): CharClass = {
-    if (len < 4) {
-      return this
-    }
 
-    // Sort by lo increasing, hi decreasing to break ties.
-    qsortIntPair(r, 0, len - 2)
+    if (len >= 4) { // < 4 is clean by definition.
+      // Sort by lo increasing, hi decreasing to break ties.
+      qsortIntPair(r, 0, len - 2)
 
-    // Merge abutting, overlapping.
-    var w = 2 // write index
-    var i = 2
-    while (i < len) {
-      val lo = r(i)
-      val hi = r(i + 1)
-      if (lo <= r(w - 1) + 1) {
-        // merge with previous range
-        if (hi > r(w - 1)) {
-          r(w - 1) = hi
+      // Merge abutting, overlapping.
+      var w = 2 // write index
+      var i = 2
+      while (i < len) {
+        val lo = r(i)
+        val hi = r(i + 1)
+        if (lo <= r(w - 1) + 1) {
+          // merge with previous range
+          if (hi > r(w - 1)) {
+            r(w - 1) = hi
+          }
+        } else {
+          // new disjoint range
+          r(w) = lo
+          r(w + 1) = hi
+          w += 2
         }
-      } else {
-        // new disjoint range
-        r(w) = lo
-        r(w + 1) = hi
-        w += 2
+        i += 2
       }
-      i += 2
+      len = w
     }
-    len = w
 
     this
   }
@@ -116,9 +120,13 @@ class CharClass private (unit: Unit) {
     // Checking two ranges helps when appending case-folded
     // alphabets, so that one range can be expanding A-Z and the
     // other expanding a-z.
+
+    var coalesced = false
+
     if (len > 0) {
-      var i = 2
-      while (i <= 4) {
+      var i   = 2
+      val end = 4
+      while (i <= end) {
         if (len >= i) {
           val rlo = r(len - i)
           val rhi = r(len - i + 1)
@@ -129,20 +137,22 @@ class CharClass private (unit: Unit) {
             if (hi > rhi) {
               r(len - i + 1) = hi
             }
-            return this
+            coalesced = true
+            i = end // loop done
           }
         }
         i += 2
       }
     }
 
-    // Can't coalesce append.   Expand capacity by doubling as needed.
-    ensureCapacity(len + 2)
-    r(len) = lo
-    len += 1
-    r(len) = hi
-    len += 1
-
+    // Can't coalesce append.	Expand capacity by doubling as needed.
+    if (!coalesced) {
+      ensureCapacity(len + 2)
+      r(len) = lo
+      len += 1
+      r(len) = hi
+      len += 1
+    }
     this
   }
 
@@ -155,33 +165,35 @@ class CharClass private (unit: Unit) {
     // Optimizations.
     if (lo <= Unicode.MIN_FOLD && hi >= Unicode.MAX_FOLD) {
       // Range is full: folding can't add more.
-      return appendRange(lo, hi)
-    }
-    if (hi < Unicode.MIN_FOLD || lo > Unicode.MAX_FOLD) {
+      appendRange(lo, hi)
+    } else if (hi < Unicode.MIN_FOLD || lo > Unicode.MAX_FOLD) {
       // Range is outside folding possibilities.
-      return appendRange(lo, hi)
-    }
-    if (lo < Unicode.MIN_FOLD) {
-      // [lo, minFold-1] needs no folding.
-      appendRange(lo, Unicode.MIN_FOLD - 1)
-      lo = Unicode.MIN_FOLD
-    }
-    if (hi > Unicode.MAX_FOLD) {
-      // [maxFold+1, hi] needs no folding.
-      appendRange(Unicode.MAX_FOLD + 1, hi)
-      hi = Unicode.MAX_FOLD
-    }
+      appendRange(lo, hi)
+    } else {
 
-    // Brute force.  Depend on appendRange to coalesce ranges on the fly.
-    var c = lo
-    while (c <= hi) {
-      appendRange(c, c)
-      var f = Unicode.simpleFold(c)
-      while (f != c) {
-        appendRange(f, f)
-        f = Unicode.simpleFold(f)
+      if (lo < Unicode.MIN_FOLD) {
+        // [lo, minFold-1] needs no folding.
+        appendRange(lo, Unicode.MIN_FOLD - 1)
+        lo = Unicode.MIN_FOLD
       }
-      c += 1
+
+      if (hi > Unicode.MAX_FOLD) {
+        // [maxFold+1, hi] needs no folding.
+        appendRange(Unicode.MAX_FOLD + 1, hi)
+        hi = Unicode.MAX_FOLD
+      }
+
+      // Brute force.  Depend on appendRange to coalesce ranges on the fly.
+      var c = lo
+      while (c <= hi) {
+        appendRange(c, c)
+        var f = Unicode.simpleFold(c)
+        while (f != c) {
+          appendRange(f, f)
+          f = Unicode.simpleFold(f)
+        }
+        c += 1
+      }
     }
 
     this
@@ -200,7 +212,7 @@ class CharClass private (unit: Unit) {
   }
 
   // appendFoldedClass() appends the case folding of the class |x| to this
-  // CharClass.  Does not mutate |x|.
+  // CharClass.	 Does not mutate |x|.
   def appendFoldedClass(x: Array[Int]): CharClass = {
     var i = 0
     while (i < x.length) {
@@ -212,7 +224,7 @@ class CharClass private (unit: Unit) {
   }
 
   // appendNegatedClass() append the negation of the class |x| to this
-  // CharClass.  It assumes |x| is clean.  Does not mutate |x|.
+  // CharClass.	 It assumes |x| is clean.  Does not mutate |x|.
   def appendNegatedClass(x: Array[Int]): CharClass = {
     var nextLo = 0
     var i      = 0
@@ -234,13 +246,17 @@ class CharClass private (unit: Unit) {
 
   // appendTable() appends the Unicode range table |table| to this CharClass.
   // Does not mutate |table|.
-  def appendTable(table: Array[Array[Int]]): CharClass = {
+  def appendTable(table: Array[Int]): CharClass = {
+
+    val indexStep = 3 // Number of column in a logical row.
+
     var i = 0
+
     while (i < table.length) {
-      val triple = table(i)
-      val lo     = triple(0)
-      val hi     = triple(1)
-      val stride = triple(2)
+      val lo     = table(i + 0)
+      val hi     = table(i + 1)
+      val stride = table(i + 2)
+
       if (stride == 1) {
         appendRange(lo, hi)
       } else {
@@ -250,7 +266,7 @@ class CharClass private (unit: Unit) {
           c += stride
         }
       }
-      i += 1
+      i += indexStep
     }
 
     this
@@ -258,33 +274,44 @@ class CharClass private (unit: Unit) {
 
   // appendNegatedTable() returns the result of appending the negation of range
   // table |table| to this CharClass.  Does not mutate |table|.
-  def appendNegatedTable(table: Array[Array[Int]]): CharClass = {
-    var nextLo = 0 // lo end of next class to add
-    var i      = 0
+  def appendNegatedTable(table: Array[Int]): CharClass = {
+
+    val indexStep = 3 // Number of column in a logical row.
+
+    var mark = 0 // character space
+    var i    = 0 // array row
+
     while (i < table.length) {
-      val triple = table(i)
-      val lo     = triple(0)
-      val hi     = triple(1)
-      val stride = triple(2)
-      if (stride == 1) {
-        if (nextLo <= lo - 1) {
-          appendRange(nextLo, lo - 1)
-        }
-        nextLo = hi + 1
-      } else {
-        var c = lo
-        while (c <= hi) {
-          if (nextLo <= c - 1) {
-            appendRange(nextLo, c - 1)
-          }
-          nextLo = c + 1
-          c += stride
+      val lo     = table(i + 0)
+      val hi     = table(i + 1)
+      val stride = table(i + 2)
+
+      if (mark < lo) {
+        val newMark = lo - 1
+        appendRange(mark, newMark)
+        mark = newMark
+      }
+
+      if (stride > 1) {
+        val candidates = List.range(lo, hi).filterNot(_ % stride == 0)
+
+        // Keep this code simple (but slooow! Ok because it is not
+        // frequently executed). Correctness is more important than
+        // execution speed here
+
+        // rely on appendRange coalescing abutting ranges.
+        for (c <- candidates) {
+          appendRange(c, c)
         }
       }
-      i += 1
+
+      mark = hi + 1
+
+      i += indexStep
     }
-    if (nextLo <= Unicode.MAX_RUNE) {
-      appendRange(nextLo, Unicode.MAX_RUNE)
+
+    if (mark < Unicode.MAX_RUNE) {
+      appendRange(mark, Unicode.MAX_RUNE)
     }
 
     this
@@ -292,7 +319,7 @@ class CharClass private (unit: Unit) {
 
   // appendTableWithSign() calls append{,Negated}Table depending on sign.
   // Does not mutate |table|.
-  def appendTableWithSign(table: Array[Array[Int]], sign: Int): CharClass = {
+  def appendTableWithSign(table: Array[Int], sign: Int): CharClass = {
     if (sign < 0) {
       appendNegatedTable(table)
     } else {
@@ -332,7 +359,7 @@ class CharClass private (unit: Unit) {
   }
 
   // appendClassWithSign() calls appendClass() if sign is +1 or
-  // appendNegatedClass if sign is -1.  Does not mutate |x|.
+  // appendNegatedClass if sign is -1.	Does not mutate |x|.
   def appendClassWithSign(x: Array[Int], sign: Int): CharClass = {
     if (sign < 0) {
       appendNegatedClass(x)

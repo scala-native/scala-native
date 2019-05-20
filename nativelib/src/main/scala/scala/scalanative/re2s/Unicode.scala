@@ -12,6 +12,7 @@ package re2s
  * Utilities for dealing with Unicode better than Java does.
  *
  * @author adonovan@google.com (Alan Donovan)
+ *         Highly modified by Lee Tibbert for Scala Native.
  */
 object Unicode {
 
@@ -34,62 +35,75 @@ object Unicode {
   final val MIN_FOLD = 0x0041
   final val MAX_FOLD = 0x1044f
 
+  // midpoint() returns the half way point between the lo and hi indices
+  // adjusted to be an integral number of steps above low and below
+  // hi. lo & hi do not need alignment beyond Byte.
+  //
+  // The algorithm is slightly biased towards lo; truncation rather than
+  // rounding. The code which calls this method uses a semi-open range
+  // with hi excluded. So the bias towards lo is not material and of
+  // interest only to those interested in the analysis of algorithms,
+  // particularly search algorithms.
+
+  @inline
+  private def midpoint(lo: Int, hi: Int, step: Int): Int = {
+    (((lo + hi) / 2) / step) * step
+  }
+
   // is32 uses binary search to test whether rune is in the specified
   // slice of 32-bit ranges.
-  private def is32(ranges: Array[Array[Int]], r: Int): Boolean = {
-    // binary search over ranges
+
+  private def is32(ranges: Array[Int], r: Int): Boolean = {
+    // Use when the rune is expected to be outside the first few ranges.
+
+    val indexStep = 3 // Number of column in a logical row.
+
     var lo = 0
     var hi = ranges.length
+
+    var found = false
+
     while (lo < hi) {
-      val m     = lo + (hi - lo) / 2
-      val range = ranges(m) // [lo, hi, stride]
-      if (range(0) <= r && r <= range(1)) {
-        return ((r - range(0)) % range(2)) == 0
-      }
-      if (r < range(0)) {
-        hi = m
+      val m           = midpoint(lo, hi, indexStep)
+      val rangeLow    = ranges(m)
+      val rangeHigh   = ranges(m + 1)
+      val rangeStride = ranges(m + 2)
+
+      if (rangeLow <= r && r <= rangeHigh) {
+        found = ((r - rangeLow) % rangeStride) == 0
+        lo = hi // Done! Exit loop.
+      } else if (r < rangeLow) {
+        hi = m // Search lower half, no indexStep decrement, range is [)
       } else {
-        lo = m + 1
+        lo = m + indexStep // Search upper half
       }
     }
-    return false
+
+    found
   }
 
   // is tests whether rune is in the specified table of ranges.
-  private def is(ranges: Array[Array[Int]], r: Int): Boolean = {
-    // common case: rune is ASCII or Latin-1, so use linear search.
+
+  private def is(ranges: Array[Int], r: Int): Boolean = {
+    // All the code which calls this private method filter
+    // out all characters <= MAX_LATIN1, so always use binary search.
+
     if (r <= MAX_LATIN1) {
-      var i = 0
-      while (i < ranges.length) {
-        val range = ranges(i) // range = [lo, hi, stride]
-        if (r > range(1)) {
-          i += 1
-        } else {
-          if (r < range(0)) {
-            return false
-          }
-          return ((r - range(0)) % range(2)) == 0
-        }
-      }
-      return false
+      assert(false, s"Bad MAX_LATIN1 guess Lee!")
     }
 
-    ranges.length > 0 && r >= ranges(0)(0) && is32(ranges, r)
+    (ranges.length > 0) && (r >= ranges(0)) && is32(ranges, r)
   }
 
-  // isUpper reports whether the rune is an upper case letter.
-  def isUpper(r: Int): Boolean = {
-    // See comment in isGraphic.
-    if (r <= MAX_LATIN1) {
-      Character.isUpperCase(r.toChar)
-    } else {
-      is(UnicodeTables.Upper, r)
-    }
-  }
+  /// isLower, isTitle, and isUpper are used by the re2s test Suite so make
+  /// them visible to package. Java Character.isLowerCase(codepoint),
+  /// Character.isTitleCase(codepoint), and isUpperCase() are possible
+  //  replacements. Keep the existing code until re2s Unicode & Java
+  //  Character are sorted out and/or unified. Testing code should be
+  //  as close to 'known good' as feasible.
 
   // isLower reports whether the rune is a lower case letter.
-  def isLower(r: Int): Boolean = {
-    // See comment in isGraphic.
+  private[re2s] def isLower(r: Int): Boolean = {
     if (r <= MAX_LATIN1) {
       Character.isLowerCase(r.toChar)
     } else {
@@ -97,8 +111,17 @@ object Unicode {
     }
   }
 
+  // isUpper reports whether the rune is an upper case letter.
+  private[re2s] def isUpper(r: Int): Boolean = {
+    if (r <= MAX_LATIN1) {
+      Character.isUpperCase(r.toChar)
+    } else {
+      is(UnicodeTables.Upper, r)
+    }
+  }
+
   // isTitle reports whether the rune is a title case letter.
-  def isTitle(r: Int): Boolean = {
+  private[re2s] def isTitle(r: Int): Boolean = {
     if (r <= MAX_LATIN1) {
       false
     } else {
@@ -106,8 +129,9 @@ object Unicode {
     }
   }
 
+  /// Make visible to Utils.scala
   // isPrint reports whether the rune is printable (Unicode L/M/N/P/S or ' ').
-  def isPrint(r: Int): Boolean = {
+  private[re2s] def isPrint(r: Int): Boolean = {
     if (r <= MAX_LATIN1) {
       r >= 0x20 && r < 0x7F ||
       r >= 0xA1 && r != 0xAD
@@ -120,58 +144,62 @@ object Unicode {
     }
   }
 
-  // A case range is conceptually a record:
-  // class CaseRange {
-  //   int lo, hi
-  //   int upper, lower, title
-  // }
-  // but flattened as an int[5].
-
-  // to maps the rune using the specified case mapping.
-  private def to(kase: Int, r: Int, caseRange: Array[Array[Int]]): Int = {
+  private def to(kase: Int, r: Int, caseRange: Array[Int]): Int = {
     if (kase < 0 || MAX_CASE <= kase) {
-      return REPLACEMENT_CHAR // as reasonable an error as any
-    }
-    // binary search over ranges
-    var lo = 0
-    var hi = caseRange.length
-    while (lo < hi) {
-      val m    = lo + (hi - lo) / 2
-      val cr   = caseRange(m) // cr = [lo, hi, upper, lower, title]
-      val crlo = cr(0)
-      val crhi = cr(1)
-      if (crlo <= r && r <= crhi) {
-        val delta = cr(2 + kase)
-        if (delta > MAX_RUNE) {
-          // In an Upper-Lower sequence, which always starts with
-          // an UpperCase letter, the real deltas always look like:
-          //      {0, 1, 0}    UpperCase (Lower is next)
-          //      {-1, 0, -1}  LowerCase (Upper, Title are previous)
-          // The characters at even offsets from the beginning of the
-          // sequence are upper case the ones at odd offsets are lower.
-          // The correct mapping can be done by clearing or setting the low
-          // bit in the sequence offset.
-          // The constants UpperCase and TitleCase are even while LowerCase
-          // is odd so we take the low bit from kase.
-          return crlo + (((r - crlo) & ~1) | (kase & 1))
+      REPLACEMENT_CHAR // as reasonable an error as any
+    } else {
+      // binary search over ranges
+
+      val indexStep = 5 // Number of column in a logical row.
+
+      var lo = 0
+      var hi = caseRange.length
+
+      var found = -1
+
+      while (lo < hi) {
+        val m    = midpoint(lo, hi, indexStep)
+        val crlo = caseRange(m)
+        val crhi = caseRange(m + 1)
+
+        if (crlo <= r && r <= crhi) {
+          lo = hi // Done! Exit loop.
+
+          val delta = caseRange(m + 2 + kase)
+          if (delta <= Unicode.MAX_RUNE) {
+            found = r + delta
+          } else {
+            // In an Upper-Lower sequence, which always starts with
+            // an UpperCase letter, the real deltas always look like:
+            //	  {0, 1, 0}    UpperCase (Lower is next)
+            //	  {-1, 0, -1}  LowerCase (Upper, Title are previous)
+            // The characters at even offsets from the beginning of the
+            // sequence are upper case the ones at odd offsets are lower.
+            // The correct mapping can be done by clearing or setting the low
+            // bit in the sequence offset.
+            // The constants UpperCase and TitleCase are even while LowerCase
+            // is odd so we take the low bit from kase.
+
+            found = crlo + (((r - crlo) & ~1) | (kase & 1))
+          }
+        } else if (r < crlo) {
+          hi = m // Search lower half, no indexStep decrement, range is [)
+        } else {
+          lo = m + indexStep // Search upper half
         }
-        return r + delta
       }
-      if (r < crlo) {
-        hi = m
-      } else {
-        lo = m + 1
-      }
+
+      if (found >= 0) found else r
     }
-    return r
   }
 
-  // to maps the rune to the specified case: UpperCase, LowerCase, or TitleCase.
+  // to maps the rune to specified case: UpperCase, LowerCase, or TitleCase.
+
   private def to(kase: Int, r: Int): Int =
     to(kase, r, UnicodeTables.CASE_RANGES)
 
   // toUpper maps the rune to upper case.
-  def toUpper(r: Int): Int = {
+  private def toUpper(r: Int): Int = {
     if (r <= MAX_ASCII) {
       var res = r
       if ('a' <= r && r <= 'z') {
@@ -184,7 +212,7 @@ object Unicode {
   }
 
   // toLower maps the rune to lower case.
-  def toLower(r: Int): Int = {
+  private def toLower(r: Int): Int = {
     if (r <= MAX_ASCII) {
       var res = r
       if ('A' <= r && r <= 'Z') {
@@ -212,31 +240,46 @@ object Unicode {
   //      SimpleFold('1') = '1'
   //
   // Derived from Go's unicode.SimpleFold.
-  //
+
   def simpleFold(r: Int): Int = {
+
     // Consult caseOrbit table for special cases.
+
+    val indexStep = 2 // Number of column in a logical row.
+
     var lo = 0
     var hi = UnicodeTables.CASE_ORBIT.length
+
+    var found = -1
+
     while (lo < hi) {
-      val m = lo + (hi - lo) / 2
-      if (UnicodeTables.CASE_ORBIT(m)(0) < r) {
-        lo = m + 1
-      } else {
-        hi = m
+      val m = midpoint(lo, hi, indexStep)
+
+      r.compare(UnicodeTables.CASE_ORBIT(m)) match {
+
+        case -1 =>
+          hi = m // Search lower half, no indexStep decrement, range is [)
+
+        case 0 =>
+          found = m
+          lo = hi // Done! Exit loop.
+
+        case 1 =>
+          lo = m + indexStep // Search upper half
       }
     }
-    if (lo < UnicodeTables.CASE_ORBIT.length &&
-        UnicodeTables.CASE_ORBIT(lo)(0) == r) {
-      return UnicodeTables.CASE_ORBIT(lo)(1)
+
+    val result = if (found >= 0) {
+      UnicodeTables.CASE_ORBIT(found + 1)
+    } else {
+      // No folding specified.  This is a one- or two-element
+      // equivalence class containing rune and toLower(rune)
+      // and toUpper(rune) if they are different from rune.
+      val l = toLower(r)
+      if (l != r) l else toUpper(r)
     }
 
-    // No folding specified.  This is a one- or two-element
-    // equivalence class containing rune and toLower(rune)
-    // and toUpper(rune) if they are different from rune.
-    val l = toLower(r)
-    if (l != r) {
-      return l
-    }
-    return toUpper(r)
+    result
   }
+
 }

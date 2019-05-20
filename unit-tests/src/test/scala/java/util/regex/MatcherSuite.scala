@@ -116,66 +116,55 @@ object MatcherSuite extends tests.Suite {
            s"end index: ${foundEnd} != expected: ${expectedEnd}")
   }
 
-  test("find(start) - invalid start values") {
-    val pattern = "Isaac"
-    val sample  = "Asimov"
+  // find(start) uses reset. reset uses find().
+  // So reset test needs to be before find(start) and after find()
 
-    val m = Pattern.compile(pattern).matcher(sample)
+  test("reset - before use in find(start)") {
+    val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
+    import m._
 
-    assertThrows[IndexOutOfBoundsException] {
-      m.find(-1)
-    }
+    assert(find(), "Assert_1")
+    assert(start == 1, s"Assert_2 start: ${start}")
+    assert(end == 5, s"Assert_3, end: ${end}")
 
-    assertThrows[IndexOutOfBoundsException] {
-      m.find(sample.length + 1)
-    }
+    reset()
+
+    assert(find(), "Assert_4")
+    assert(start == 1, s"Assert_5 start: ${start}")
+    assert(end == 5, s"Assert_6, end: ${end}")
+
+    assert(find(), "Assert_7")
+    assert(start == 6, s"Assert_8 start: ${start}")
+    assert(end == 10, s"Assert_9, end: ${end}")
+
+    assert(!find(), "Assert_10")
   }
 
-  test("find(start)") {
-    val prefix  = "0"
-    val pattern = "abc"
-    val noise   = "def"
-    val sample1 = prefix + pattern + noise
-    val sample2 = sample1 + pattern + pattern
+  test("find - after reset") {
+    val needle = "Twinkle"
+    val prefix = "Sing the song: "
+    // "Sing the song: Twinkle, Twinkle, Little Star"
+    val haystack = s"${prefix}${needle}, ${needle}, Little Star"
 
-    val index = 2 // start at leftmost 'b' in sample.
+    val m = Pattern.compile(needle).matcher(haystack)
 
-    val m1 = Pattern.compile(pattern).matcher(sample1)
+    assert(m.find(),
+           s"first find should have found '${needle}' in '${haystack}'")
 
-    val m1f1Result = m1.find(index)
+    val expectedStart = prefix.length
+    val foundStart    = m.start
+    assert(foundStart == expectedStart,
+           s"first start index: ${foundStart} != expected: ${expectedStart}")
 
-    // Evaluate m1.start and m1.end only in the unexpected case of a match
-    // having being found. Calling either if no match was found throws
-    // an exception.
-    if (m1f1Result) {
-      assert(false,
-             s"find(${index}) wrongly found start: ${m1.start} end: ${m1.end}")
-    }
+    m.reset()
 
-    val m2 = Pattern.compile(pattern).matcher(sample2)
+    assert(m.find(),
+           s"second find should have found '${needle}' in '${haystack}'")
 
-    assert(m2.find(index),
-           s"find(${index}) did not find ${pattern} in ${sample2}")
+    val resetStart = m.start
 
-    val m2ExpectedStart1 = prefix.length + pattern.length + noise.length
-    val m2ExpectedEnd1   = m2ExpectedStart1 + pattern.length
-
-    assert(m2.start == m2ExpectedStart1,
-           s"first start: ${m2.start} != expected: $m2ExpectedStart1")
-    assert(m2.end == m2ExpectedEnd1,
-           s"first end: ${m2.end} != expected: $m2ExpectedEnd1")
-
-    // Simple find() after a find(index) should succeed.
-
-    assert(m2.find(), s"second find() did not find ${pattern} in ${sample2}")
-
-    val m2ExpectedStart2 = m2ExpectedEnd1
-    val m2ExpectedEnd2   = m2ExpectedStart2 + pattern.length
-
-    assert(m2.start == m2ExpectedStart2,
-           s"first start: ${m2.start} != expected: $m2ExpectedStart2")
-    assert(m2.end == m2ExpectedEnd2,
-           s"first end: ${m2.end} != expected: $m2ExpectedEnd2")
+    assert(resetStart == expectedStart,
+           s"reset start index: ${foundStart} != expected: ${expectedStart}")
   }
 
   test("find(start) - invalid start values") {
@@ -240,92 +229,37 @@ object MatcherSuite extends tests.Suite {
            s"first end: ${m2.end} != expected: $m2ExpectedEnd2")
   }
 
-  test("find()") {
-    val prefix  = "0123"
-    val pattern = "abc"
-    val noise   = "def"
-    val sample  = prefix + pattern + noise + pattern + noise
+  test("find(start) - group") { // As reported in Issue #1506
+    val needle     = ".*[aeiou]"
+    val haystack   = "abcdefgh"
+    val startAt    = 1
+    val expectedF0 = "abcde"
+    val expectedF1 = "bcde"
 
-    val m = Pattern.compile(pattern).matcher(sample)
+    val m = Pattern.compile(needle).matcher(haystack)
 
-    val expectedStart1 = prefix.length
-    val expectedEnd1   = prefix.length + pattern.length
-    assert(m.find(), s"initial find() failed.")
-    assert(m.start == expectedStart1,
-           s"first start: ${m.start} != expected: $expectedStart1")
-    assert(m.end == expectedEnd1,
-           s"first end: ${m.end} != expected: $expectedEnd1")
+    assert(m.find(), s"find() should have found '${needle}' in '${haystack}'")
 
-    val expectedStart2 = expectedEnd1 + noise.length
-    val expectedEnd2   = expectedStart2 + pattern.length
+    val foundF0 = m.group
+    assert(foundF0 == expectedF0,
+           s"group: ${foundF0} != expected: ${expectedF0}")
 
-    assert(m.find(), s"second find() failed.")
-    assert(m.start == expectedStart2,
-           s"second start: ${m.start} != expected: $expectedStart2")
-    assert(m.end == expectedEnd2,
-           s"second end: ${m.start} != expected: $expectedEnd2")
-  }
+    assert(m.find(startAt),
+           s"find(1) should have found '${needle}' in '${haystack}'")
 
-  test("find(start) - invalid start values") {
-    val pattern = "Isaac"
-    val sample  = "Asimov"
+    val foundF1 = m.group
+    assert(foundF1 == expectedF1,
+           s"group: ${foundF1} != expected: ${expectedF1}")
 
-    val m = Pattern.compile(pattern).matcher(sample)
+    val expectedF1Start = startAt
+    val foundF1Start    = m.start
+    assert(foundF1Start == expectedF1Start,
+           s"start index: ${foundF1Start} != expected: ${expectedF1Start}")
 
-    assertThrows[IndexOutOfBoundsException] {
-      m.find(-1)
-    }
-
-    assertThrows[IndexOutOfBoundsException] {
-      m.find(sample.length + 1)
-    }
-  }
-
-  test("find(start)") {
-    val prefix  = "0"
-    val pattern = "abc"
-    val noise   = "def"
-    val sample1 = prefix + pattern + noise
-    val sample2 = sample1 + pattern + pattern
-
-    val index = 2 // start at leftmost 'b' in sample.
-
-    val m1 = Pattern.compile(pattern).matcher(sample1)
-
-    val m1f1Result = m1.find(index)
-
-    // Evaluate m1.start and m1.end only in the unexpected case of a match
-    // having being found. Calling either if no match was found throws
-    // an exception.
-    if (m1f1Result) {
-      assert(false,
-             s"find(${index}) wrongly found start: ${m1.start} end: ${m1.end}")
-    }
-
-    val m2 = Pattern.compile(pattern).matcher(sample2)
-
-    assert(m2.find(index),
-           s"find(${index}) did not find ${pattern} in ${sample2}")
-
-    val m2ExpectedStart1 = prefix.length + pattern.length + noise.length
-    val m2ExpectedEnd1   = m2ExpectedStart1 + pattern.length
-
-    assert(m2.start == m2ExpectedStart1,
-           s"first start: ${m2.start} != expected: $m2ExpectedStart1")
-    assert(m2.end == m2ExpectedEnd1,
-           s"first end: ${m2.end} != expected: $m2ExpectedEnd1")
-
-    // Simple find() after a find(index) should succeed.
-
-    assert(m2.find(), s"second find() did not find ${pattern} in ${sample2}")
-
-    val m2ExpectedStart2 = m2ExpectedEnd1
-    val m2ExpectedEnd2   = m2ExpectedStart2 + pattern.length
-
-    assert(m2.start == m2ExpectedStart2,
-           s"first start: ${m2.start} != expected: $m2ExpectedStart2")
-    assert(m2.end == m2ExpectedEnd2,
-           s"first end: ${m2.end} != expected: $m2ExpectedEnd2")
+    val expectedF1End = expectedF1Start + expectedF1.length
+    val foundF1End    = m.end
+    assert(foundF1End == expectedF1End,
+           s"end index: ${foundF1End} != expected: ${expectedF1End}")
   }
 
   test("replaceAll") {
@@ -408,57 +342,6 @@ object MatcherSuite extends tests.Suite {
 
     assert(!m.find(),
            s"should not have found '${needle}' in region '${regionString}'")
-  }
-
-  // find(start) uses reset. reset uses find().
-  // So reset test needs to be before find(start) and after find()
-
-  test("reset - before use in find(start)") {
-    val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
-    import m._
-
-    assert(find(), "Assert_1")
-    assert(start == 1, s"Assert_2 start: ${start}")
-    assert(end == 5, s"Assert_3, end: ${end}")
-
-    reset()
-
-    assert(find(), "Assert_4")
-    assert(start == 1, s"Assert_5 start: ${start}")
-    assert(end == 5, s"Assert_6, end: ${end}")
-
-    assert(find(), "Assert_7")
-    assert(start == 6, s"Assert_8 start: ${start}")
-    assert(end == 10, s"Assert_9, end: ${end}")
-
-    assert(!find(), "Assert_10")
-  }
-
-  test("find - after reset") {
-    val needle = "Twinkle"
-    val prefix = "Sing the song: "
-    // "Sing the song: Twinkle, Twinkle, Little Star"
-    val haystack = s"${prefix}${needle}, ${needle}, Little Star"
-
-    val m = Pattern.compile(needle).matcher(haystack)
-
-    assert(m.find(),
-           s"first find should have found '${needle}' in '${haystack}'")
-
-    val expectedStart = prefix.length
-    val foundStart    = m.start
-    assert(foundStart == expectedStart,
-           s"first start index: ${foundStart} != expected: ${expectedStart}")
-
-    m.reset()
-
-    assert(m.find(),
-           s"second find should have found '${needle}' in '${haystack}'")
-
-    val resetStart = m.start
-
-    assert(resetStart == expectedStart,
-           s"reset start index: ${foundStart} != expected: ${expectedStart}")
   }
 
   test("find(start)") {

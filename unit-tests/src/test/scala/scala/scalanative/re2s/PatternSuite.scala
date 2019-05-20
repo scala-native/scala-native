@@ -88,7 +88,7 @@ object PatternSuite extends tests.Suite {
     pass("\\p{Cntrl}", new String(Array[Byte](0x7F)))
   }
 
-  test("unicode classes") {
+  test("Unicode classes") {
     // Categories
     pass("\\p{Lu}", "A")
     pass("\\p{Sc}", "$")
@@ -136,7 +136,7 @@ object PatternSuite extends tests.Suite {
     find("foo\\z", "foo")
     find("foo\\z", "foo\n", pass = false)
 
-    // \R unicode linebreak
+    // \R Unicode linebreak
     pass("\\R", "\u000D\u000A")
 
     pending // 620
@@ -220,7 +220,7 @@ object PatternSuite extends tests.Suite {
     pass("(?<foo>a)", "a")
   }
 
-  test("non capturing groups") {
+  test("non-capturing groups") {
     pass("(?:a)", "a")
   }
 

@@ -26,6 +26,27 @@ object ParserSuite extends tests.Suite {
     def applies(rune: Int): Boolean
   }
 
+  private val IS_LOWER = new RunePredicate() {
+    override def applies(r: Int): Boolean = Unicode.isLower(r)
+  }
+
+  private val IS_LOWER_FOLD = new RunePredicate() {
+    override def applies(r: Int): Boolean = {
+      if (Unicode.isLower(r)) return true
+      var c = Unicode.simpleFold(r)
+      while (c != r) {
+        if (Unicode.isLower(c)) return true
+
+        c = Unicode.simpleFold(c)
+      }
+      false
+    }
+  }
+
+  private val IS_TITLE = new RunePredicate() {
+    override def applies(r: Int): Boolean = Unicode.isTitle(r)
+  }
+
   private val IS_UPPER = new RunePredicate() {
     override def applies(r: Int): Boolean = Unicode.isUpper(r)
   }
@@ -160,6 +181,11 @@ object ParserSuite extends tests.Suite {
     Array(
       "[\\pZ]",
       "cc{0x20 0xa0 0x1680 0x180e 0x2000-0x200a 0x2028-0x2029 0x202f 0x205f 0x3000}"),
+    Array("\\p{Ll}", mkCharClass(IS_LOWER)),
+    Array("[\\p{Ll}]", mkCharClass(IS_LOWER)),
+    Array("(?i)[\\p{Ll}]", mkCharClass(IS_LOWER_FOLD)),
+    Array("\\p{Lt}", mkCharClass(IS_TITLE)),
+    Array("[\\p{Lt}]", mkCharClass(IS_TITLE)),
     Array("\\p{Lu}", mkCharClass(IS_UPPER)),
     Array("[\\p{Lu}]", mkCharClass(IS_UPPER)),
     Array("(?i)[\\p{Lu}]", mkCharClass(IS_UPPER_FOLD)),
@@ -261,7 +287,8 @@ object ParserSuite extends tests.Suite {
   private val FOLDCASE_TESTS = Array(
     Array("AbCdE", "strfold{ABCDE}"),
     Array("[Aa]", "litfold{A}"),
-    Array("a", "litfold{A}"), // 0x17F is an old English long s (looks like an f) and folds to s.
+    // 0x17F is an old English long s (looks like an f) and folds to s.
+    Array("a", "litfold{A}"),
     // 0x212A is the Kelvin symbol and folds to k.
     Array("A[F-g]", "cat{litfold{A}cc{0x41-0x7a 0x17f 0x212a}}") // [Aa][A-z...]
   )
@@ -303,8 +330,9 @@ object ParserSuite extends tests.Suite {
         val re = Parser.parse(test(0), flags)
         val d  = dump(re)
         if (!(test(1) == d)) {
-          fail(String.format(
-            "parse/dump of " + test(0) + " expected " + test(1) + ", got " + d))
+          fail(
+            String.format("parse/dump of " + test(0) + " expected " + test(1) +
+              ", got " + d))
         }
       } catch {
         case e: PatternSyntaxException =>
@@ -394,6 +422,7 @@ object ParserSuite extends tests.Suite {
     var lo    = -1
     var i     = 0
     while (i <= Unicode.MAX_RUNE) {
+
       if (f.applies(i)) {
         if (lo < 0) lo = i
       } else if (lo >= 0) {
@@ -484,8 +513,8 @@ object ParserSuite extends tests.Suite {
       try {
         val re = Parser.parse(regexp, PERL)
         fail(
-          "Parsing (PERL) " + regexp + " should have failed, instead got " + dump(
-            re))
+          "Parsing (PERL) " + regexp + " should have failed, instead got " +
+            dump(re))
       } catch {
         case e: PatternSyntaxException =>
         /* ok */
@@ -493,8 +522,8 @@ object ParserSuite extends tests.Suite {
       try {
         val re = Parser.parse(regexp, POSIX)
         fail(
-          "parsing (POSIX) " + regexp + " should have failed, instead got " + dump(
-            re))
+          "parsing (POSIX) " + regexp + " should have failed, instead got " +
+            dump(re))
       } catch {
         case e: PatternSyntaxException =>
       }
@@ -504,8 +533,8 @@ object ParserSuite extends tests.Suite {
       try {
         val re = Parser.parse(regexp, POSIX)
         fail(
-          "parsing (POSIX) " + regexp + " should have failed, instead got " + dump(
-            re))
+          "parsing (POSIX) " + regexp + " should have failed, instead got " +
+            dump(re))
       } catch {
         case _: PatternSyntaxException =>
       }
@@ -514,8 +543,8 @@ object ParserSuite extends tests.Suite {
       try {
         val re = Parser.parse(regexp, PERL)
         fail(
-          "parsing (PERL) " + regexp + " should have failed, instead got " + dump(
-            re))
+          "parsing (PERL) " + regexp + " should have failed, instead got " +
+            dump(re))
       } catch {
         case _: PatternSyntaxException =>
       }
@@ -527,7 +556,9 @@ object ParserSuite extends tests.Suite {
     for (tt <- PARSE_TESTS) {
       val re = Parser.parse(tt(0), TEST_FLAGS)
       val d  = dump(re)
-      assert(d == tt(1)) // (already ensured by testParseSimple)
+
+      // (already ensured by testParseSimple)
+      assert(d == tt(1), "ParseSimple failure")
 
       val s = re.toString
       if (!(s == tt(0))) { // If toString didn't return the original regexp,
@@ -543,4 +574,5 @@ object ParserSuite extends tests.Suite {
       }
     }
   }
+
 }

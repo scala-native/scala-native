@@ -649,46 +649,80 @@ Regular expressions (java.util.regex)
 
 Scala Native implements `java.util.regex`-compatible API using
 `Google's RE2 library <https://github.com/google/re2>`_.
+RE2 is not a drop-in replacement for `java.util.regex` but
+handles most common cases well.
 
-There are some differences in terms of the support of the regular
-expression language.
+Some notes on the implementation:
 
-Some expressions are not supported:
+1. The included RE2 implements a Unicode version lower than
+   the version used in the Scala Native Character class (>= 7.0.0).
+   The RE2 Unicode version is in the 6.n range. For reference, Java 8
+   released with Unicode 6.2.0. 
 
-* Character classes:
+   The RE2 implemented may not match codepoints added or changed
+   in later Unicode versions. Similarly, there may be slight differences
+   for Unicode codepoints with high numeric value between values used by RE2
+   and those used by the Character class.
+
+2. This implementation of RE2 does not support:
+
+   * Character classes:
     * Unions: ``[a-d[m-p]]``
     * Intersections: ``[a-z&&[^aeiou]]``
-* Predefined character classes: ``\h``, ``\H``, ``\v``, ``\V``
-* Java character function classes:
+
+   * Predefined character classes: ``\h``, ``\H``, ``\v``, ``\V``
+
+   * Patterns:
+    * Octal: ``\0100`` - use decimal or hexadecimal instead.
+    * Two character Hexadecimal: ``\xFF`` - use ``\x00FF`` instead.
+    * All alphabetic Unicode: ``\uBEEF`` - use hex ``\xBEEF`` instead.
+    * Escape: ``\e`` - use ``\u001B`` instead.
+
+   * Java character function classes:
     * ``\p{javaLowerCase}``
     * ``\p{javaUpperCase}``
     * ``\p{javaWhitespace}``
     * ``\p{javaMirrored}``
-* Boundary matchers: ``\G``, ``\Z``, ``\R``
-* Possessive quantifiers: ``X?+``, ``X*+``, ``X++``, ``X{n}+``, ``X{n,}+``, ``X{n,m}+``
-* Lookaheads: ``(?=X)``, ``(?!X)``, ``(?<=X)``, ``(?<!X)``, ``(?>X)``
 
-Some expressions have an alternative syntax:
+   * Boundary matchers: ``\G``, ``\R``, ``\Z``
 
-============== ================
- Java           RE2
-============== ================
-``(?<foo>a)``  ``(?P<foo>a)``
-``p{Alnum}``   ``[[:alnum:]]``
-``p{Alpha}``   ``[[:alpha:]]``
-``p{ASCII}``   ``[[:ascii:]]``
-``p{Blank}``   ``[[:blank:]]``
-``p{Cntrl}``   ``[[:cntrl:]]``
-``p{Digit}``   ``[[:digit:]]``
-``p{Graph}``   ``[[:graph:]]``
-``p{Lower}``   ``[[:lower:]]``
-``p{Print}``   ``[[:print:]]``
-``p{Punct}``   ``[[:punct:]]``
-``p{Space}``   ``[[:space:]]``
-``p{Upper}``   ``[[:upper:]]``
-``p{XDigit}``  ``[[:xdigit:]]``
-``p{InGreek}`` ``p{Greek}``
-``p{IsLatin}`` ``p{Latin}``
-============== ================
+   * Possessive quantifiers: ``X?+``, ``X*+``, ``X++``, ``X{n}+``,
+     ``X{n,}+``, ``X{n,m}+``
+   * Lookaheads: ``(?=X)``, ``(?!X)``, ``(?<=X)``, ``(?<!X)``, ``(?>X)``
+
+   * Options
+    *  CANON_EQ
+    *  COMMENTS
+    *  LITERAL
+    *  UNICODE_CASE
+    *  UNICODE_CHARACTER_CLASS
+    *  UNIX_LINES
+
+   * Patterns to match a Unicode binary property, such as
+     ``\p{isAlphabetic}`` for a codepoint with the 'alphabetic' property,
+     are not supported. Often another pattern ``\p{isAlpha}`` may be used
+     instead, ``\p{isAlpha}`` in this case.
+
+3. The following Matcher methods have a minimal implementation:
+
+   * Matcher.hasAnchoringBounds() - always return true.
+   * Matcher.hasTransparentBounds() - returns UnsupportedOperationException
+     because RE2 does not support lookaheads.
+   * Matcher.hitEnd() - returns UnsupportedOperationException.
+   * Matcher.region(int, int)
+   * Matcher.regionEnd()
+   * Matcher.regionStart()
+   * Matcher.requireEnd() - returns UnsupportedOperationException.
+   * Matcher.useAnchoringBounds(boolean)  - returns
+     UnsupportedOperationException
+   * Matcher.useTransparentBounds(boolean) - returns
+     UnsupportedOperationException because RE2 does not support lookaheads.
+
+4. Scala Native 0.3.8 required POSIX patterns to have the form
+   ``[[:alpha:]]``.
+   Now the Java standard form ``\p{Alpha}`` is accepted and the former variant
+   pattern is not. This improves compatibility with Java but,
+   regrettably, may require code changes when upgrading from Scala Native
+   0.3.8.
 
 Continue to :ref:`libc`.

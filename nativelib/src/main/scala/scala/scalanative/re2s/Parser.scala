@@ -72,16 +72,18 @@ class Parser(wholeRegexp: String, _flags: Int) {
   // push pushes the regexp re onto the parse stack and returns the regexp.
   // Returns null for a CHAR_CLASS that can be merged with the top-of-stack.
   private def push(re: Regexp): Regexp = {
+    var returnNull = false
     if (re.op == ROP.CHAR_CLASS &&
         re.runes.length == 2 &&
         re.runes(0) == re.runes(1)) {
       // Collapse range [x-x] -> single rune x.
       if (maybeConcat(re.runes(0), flags & ~RE2.FOLD_CASE)) {
-        return null
+        returnNull = true
+      } else {
+        re.op = ROP.LITERAL
+        re.runes = Array[Int](re.runes(0))
+        re.flags = flags & ~RE2.FOLD_CASE
       }
-      re.op = ROP.LITERAL
-      re.runes = Array[Int](re.runes(0))
-      re.flags = flags & ~RE2.FOLD_CASE
     } else if ((re.op == ROP.CHAR_CLASS &&
                re.runes.length == 4 &&
                re.runes(0) == re.runes(1) &&
@@ -95,20 +97,24 @@ class Parser(wholeRegexp: String, _flags: Int) {
                Unicode.simpleFold(re.runes(1)) == re.runes(0))) {
       // Case-insensitive rune like [Aa] or [Δδ].
       if (maybeConcat(re.runes(0), flags | RE2.FOLD_CASE)) {
-        return null
+        returnNull = true
+      } else {
+        // Rewrite as (case-insensitive) literal.
+        re.op = ROP.LITERAL
+        re.runes = Array[Int](re.runes(0))
+        re.flags = flags | RE2.FOLD_CASE
       }
-
-      // Rewrite as (case-insensitive) literal.
-      re.op = ROP.LITERAL
-      re.runes = Array[Int](re.runes(0))
-      re.flags = flags | RE2.FOLD_CASE
     } else {
       // Incremental concatenation.
       maybeConcat(-1, 0)
     }
 
-    stack.add(re)
-    re
+    if (returnNull) {
+      null
+    } else {
+      stack.add(re)
+      re
+    }
   }
 
   // maybeConcat implements incremental concatenation
@@ -121,31 +127,33 @@ class Parser(wholeRegexp: String, _flags: Int) {
   // to push r with the given flags.
   // maybeConcat reports whether r was pushed.
   private def maybeConcat(r: Int, flags: Int): Boolean = {
-    val n = stack.size()
-    if (n < 2) {
-      return false
-    }
-    val re1 = stack.get(n - 1)
-    val re2 = stack.get(n - 2)
-    if (re1.op != ROP.LITERAL ||
-        re2.op != ROP.LITERAL ||
-        (re1.flags & RE2.FOLD_CASE) != (re2.flags & RE2.FOLD_CASE)) {
-      return false
-    }
+    val n      = stack.size()
+    var result = false
 
-    // Push re1 into re2.
-    re2.runes = concatRunes(re2.runes, re1.runes)
+    if (n >= 2) {
 
-    // Reuse re1 if possible.
-    if (r >= 0) {
-      re1.runes = Array[Int](r)
-      re1.flags = flags
-      return true
+      val re1 = stack.get(n - 1)
+      val re2 = stack.get(n - 2)
+      if (!(re1.op != ROP.LITERAL ||
+            re2.op != ROP.LITERAL ||
+            (re1.flags & RE2.FOLD_CASE) != (re2.flags & RE2.FOLD_CASE))) {
+
+        // Push re1 into re2.
+        re2.runes = concatRunes(re2.runes, re1.runes)
+
+        // Reuse re1 if possible.
+        if (r >= 0) {
+          re1.runes = Array[Int](r)
+          re1.flags = flags
+          result = true
+        } else {
+
+          pop()
+          reuse(re1) // did not push r
+        }
+      }
     }
-
-    pop()
-    reuse(re1)
-    false // did not push r
+    result
   }
 
   // newLiteral returns a new LITERAL Regexp with the given flags
@@ -229,10 +237,10 @@ class Parser(wholeRegexp: String, _flags: Int) {
 
     // Empty concatenation is special case.
     if (subs.length == 0) {
-      return push(newRegexp(ROP.EMPTY_MATCH))
+      push(newRegexp(ROP.EMPTY_MATCH))
+    } else {
+      push(collapse(subs, ROP.CONCAT))
     }
-
-    push(collapse(subs, ROP.CONCAT))
   }
 
   // alternate replaces the top of the stack (above the topmost '(') with its
@@ -251,10 +259,10 @@ class Parser(wholeRegexp: String, _flags: Int) {
     // Empty alternate is special case
     // (shouldn't happen but easy to handle).
     if (subs.length == 0) {
-      return push(newRegexp(ROP.NO_MATCH))
+      push(newRegexp(ROP.NO_MATCH))
+    } else {
+      push(collapse(subs, ROP.ALTERNATE))
     }
-
-    push(collapse(subs, ROP.ALTERNATE))
   }
 
   // cleanAlt cleans re for eventual inclusion in an alternation.
@@ -267,16 +275,13 @@ class Parser(wholeRegexp: String, _flags: Int) {
             re.runes(1) == Unicode.MAX_RUNE) {
           re.runes = null
           re.op = ROP.ANY_CHAR
-          return
-        }
-        if (re.runes.length == 4 &&
-            re.runes(0) == 0 &&
-            re.runes(1) == '\n' - 1 &&
-            re.runes(2) == '\n' + 1 &&
-            re.runes(3) == Unicode.MAX_RUNE) {
+        } else if (re.runes.length == 4 &&
+                   re.runes(0) == 0 &&
+                   re.runes(1) == '\n' - 1 &&
+                   re.runes(2) == '\n' + 1 &&
+                   re.runes(3) == Unicode.MAX_RUNE) {
           re.runes = null
           re.op = ROP.ANY_CHAR_NOT_NL
-          return
         }
       case _ =>
     }
@@ -288,44 +293,45 @@ class Parser(wholeRegexp: String, _flags: Int) {
   // alternate of an alternate.
   private def collapse(subs: Array[Regexp], op: ROP): Regexp = {
     if (subs.length == 1) {
-      return subs(0)
-    }
-    // Concatenate subs iff op is same.
-    // Compute length in first pass.
-    var len = 0
-    var i   = 0
-    while (i < subs.length) {
-      val sub = subs(i)
-      len += (if (sub.op == op) sub.subs.length else 1)
-      i += 1
-    }
-    val newsubs = new Array[Regexp](len)
-    i = 0
-    var j = 0
-    while (j < subs.length) {
-      val sub = subs(j)
-      if (sub.op == op) {
-        System.arraycopy(sub.subs, 0, newsubs, i, sub.subs.length)
-        i += sub.subs.length
-        reuse(sub)
-      } else {
-        newsubs(i) = sub
+      subs(0)
+    } else {
+      // Concatenate subs iff op is same.
+      // Compute length in first pass.
+      var len = 0
+      var i   = 0
+      while (i < subs.length) {
+        val sub = subs(i)
+        len += (if (sub.op == op) sub.subs.length else 1)
         i += 1
       }
-      j += 1
-    }
-    var re = newRegexp(op)
-    re.subs = newsubs
-
-    if (op == ROP.ALTERNATE) {
-      re.subs = factor(re.subs, re.flags)
-      if (re.subs.length == 1) {
-        val old = re
-        re = re.subs(0)
-        reuse(old)
+      val newsubs = new Array[Regexp](len)
+      i = 0
+      var j = 0
+      while (j < subs.length) {
+        val sub = subs(j)
+        if (sub.op == op) {
+          System.arraycopy(sub.subs, 0, newsubs, i, sub.subs.length)
+          i += sub.subs.length
+          reuse(sub)
+        } else {
+          newsubs(i) = sub
+          i += 1
+        }
+        j += 1
       }
+      var re = newRegexp(op)
+      re.subs = newsubs
+
+      if (op == ROP.ALTERNATE) {
+        re.subs = factor(re.subs, re.flags)
+        if (re.subs.length == 1) {
+          val old = re
+          re = re.subs(0)
+          reuse(old)
+        }
+      }
+      re
     }
-    re
   }
 
   // factor factors common prefixes from the alternation list sub.  It
@@ -341,274 +347,276 @@ class Parser(wholeRegexp: String, _flags: Int) {
   //
   private def factor(array: Array[Regexp], flags: Int): Array[Regexp] = {
     if (array.length < 2) {
-      return array
-    }
-
-    // The following code is subtle, because it's a literal Java
-    // translation of code that makes clever use of Go "slices".
-    // A slice is a triple (array, offset, length), and the Go
-    // implementation uses two slices, |sub| and |out| backed by the
-    // same array.  In Java, we have to be explicit about all of these
-    // variables, so:
-    //
-    // Go    Java
-    // sub   (array, s, lensub)
-    // out   (array, 0, lenout)	  // (always a prefix of |array|)
-    //
-    // In the comments we'll use the logical notation of go slices, e.g. sub[i]
-    // even though the Java code will read array[s + i].
-
-    var s      = 0 // offset of first |sub| within array.
-    var lensub = array.length // = len(sub)
-    var lenout = 0 // = len(out)
-
-    // Round 1: Factor out common literal prefixes.
-    // Note: (str, strlen) and (istr, istrlen) are like Go slices
-    // onto a prefix of some Regexp's runes array (hence offset=0).
-    var str: Array[Int] = null
-    var strlen          = 0
-    var strflags        = 0
-    var start           = 0
-    var i               = 0
-    while (i <= lensub) {
-      // Invariant: the Regexps that were in sub[0:start] have been
-      // used or marked for reuse, and the slice space has been reused
-      // for out (len <= start).
+      array
+    } else {
+      // The following code is subtle, because it's a literal Java
+      // translation of code that makes clever use of Go "slices".
+      // A slice is a triple (array, offset, length), and the Go
+      // implementation uses two slices, |sub| and |out| backed by the
+      // same array.  In Java, we have to be explicit about all of these
+      // variables, so:
       //
-      // Invariant: sub[start:i] consists of regexps that all begin
-      // with str as modified by strflags.
-      var istr: Array[Int] = null
-      var istrlen          = 0
-      var iflags           = 0
-      var continue         = false
-      if (i < lensub) {
-        // NB, we inlined Go's leadingString() since Java has no pair return.
-        var re = array(s + i)
-        if (re.op == ROP.CONCAT && re.subs.length > 0) {
-          re = re.subs(0)
-        }
-        if (re.op == ROP.LITERAL) {
-          istr = re.runes
-          istrlen = re.runes.length
-          iflags = re.flags & RE2.FOLD_CASE
-        }
-        // istr is the leading literal string that re begins with.
-        // The string refers to storage in re or its children.
+      // Go    Java
+      // sub   (array, s, lensub)
+      // out   (array, 0, lenout)	  // (always a prefix of |array|)
+      //
+      // In the comments we'll use the logical notation of go slices,
+      // e.g. sub[i] even though the Java code will read array[s + i].
 
-        if (iflags == strflags) {
-          var same = 0
-          while (same < strlen &&
-                 same < istrlen &&
-                 str(same) == istr(same)) {
-            same += 1
+      var s      = 0 // offset of first |sub| within array.
+      var lensub = array.length // = len(sub)
+      var lenout = 0 // = len(out)
+
+      // Round 1: Factor out common literal prefixes.
+      // Note: (str, strlen) and (istr, istrlen) are like Go slices
+      // onto a prefix of some Regexp's runes array (hence offset=0).
+      var str: Array[Int] = null
+      var strlen          = 0
+      var strflags        = 0
+      var start           = 0
+      var i               = 0
+      while (i <= lensub) {
+        // Invariant: the Regexps that were in sub[0:start] have been
+        // used or marked for reuse, and the slice space has been reused
+        // for out (len <= start).
+        //
+        // Invariant: sub[start:i] consists of regexps that all begin
+        // with str as modified by strflags.
+        var istr: Array[Int] = null
+        var istrlen          = 0
+        var iflags           = 0
+        var continue         = false
+        if (i < lensub) {
+          // NB, we inlined Go's leadingString() since Java has no pair return.
+          var re = array(s + i)
+          if (re.op == ROP.CONCAT && re.subs.length > 0) {
+            re = re.subs(0)
           }
-          if (same > 0) {
-            // Matches at least one rune in current range.
-            // Keep going around.
-            strlen = same
+          if (re.op == ROP.LITERAL) {
+            istr = re.runes
+            istrlen = re.runes.length
+            iflags = re.flags & RE2.FOLD_CASE
+          }
+          // istr is the leading literal string that re begins with.
+          // The string refers to storage in re or its children.
+
+          if (iflags == strflags) {
+            var same = 0
+            while (same < strlen &&
+                   same < istrlen &&
+                   str(same) == istr(same)) {
+              same += 1
+            }
+            if (same > 0) {
+              // Matches at least one rune in current range.
+              // Keep going around.
+              strlen = same
+              continue = true
+            }
+          }
+        }
+
+        if (!continue) {
+          // Found end of a run with common leading literal string:
+          // sub[start:i] all begin with str[0:strlen], but sub[i]
+          // does not even begin with str[0].
+          //
+          // Factor out common string and append factored expression to out.
+          if (i == start) {
+            // Nothing to do - run of length 0.
+          } else if (i == start + 1) {
+            // Just one: don't bother factoring.
+            array(lenout) = array(s + start)
+            lenout += 1
+          } else {
+            // Construct factored form: prefix(suffix1|suffix2|...)
+            val prefix = newRegexp(ROP.LITERAL)
+            prefix.flags = strflags
+
+            prefix.runes = Utils.subarray(str, 0, strlen)
+
+            var j = start
+            while (j < i) {
+              array(s + j) = removeLeadingString(array(s + j), strlen)
+              j += 1
+            }
+            // Recurse.
+            val suffix =
+              collapse(subarray(array, s + start, s + i), ROP.ALTERNATE)
+            val re = newRegexp(ROP.CONCAT)
+            re.subs = Array[Regexp](prefix, suffix)
+            array(lenout) = re
+            lenout += 1
+          }
+
+          // Prepare for next iteration.
+          start = i
+          str = istr
+          strlen = istrlen
+          strflags = iflags
+        }
+
+        i += 1
+      }
+      // In Go: sub = out
+      lensub = lenout
+      s = 0
+
+      // Round 2: Factor out common complex prefixes,
+      // just the first piece of each concatenation,
+      // whatever it is.	This is good enough a lot of the time.
+      start = 0
+      lenout = 0
+      var first: Regexp = null
+      i = 0
+      while (i <= lensub) {
+        // Invariant: the Regexps that were in sub[0:start] have been
+        // used or marked for reuse, and the slice space has been reused
+        // for out (lenout <= start).
+        //
+        // Invariant: sub[start:i] consists of regexps that all begin with
+        // ifirst.
+        var ifirst: Regexp = null
+        var continue       = false
+        if (i < lensub) {
+          ifirst = leadingRegexp(array(s + i))
+          if (first != null && first.equals(ifirst)) {
             continue = true
           }
         }
-      }
 
-      if (!continue) {
-        // Found end of a run with common leading literal string:
-        // sub[start:i] all begin with str[0:strlen], but sub[i]
-        // does not even begin with str[0].
-        //
-        // Factor out common string and append factored expression to out.
-        if (i == start) {
-          // Nothing to do - run of length 0.
-        } else if (i == start + 1) {
-          // Just one: don't bother factoring.
-          array(lenout) = array(s + start)
-          lenout += 1
-        } else {
-          // Construct factored form: prefix(suffix1|suffix2|...)
-          val prefix = newRegexp(ROP.LITERAL)
-          prefix.flags = strflags
-          prefix.runes = Utils.subarray(str, 0, strlen)
-
-          var j = start
-          while (j < i) {
-            array(s + j) = removeLeadingString(array(s + j), strlen)
-            j += 1
+        if (!continue) {
+          // Found end of a run with common leading regexp:
+          // sub[start:i] all begin with first but sub[i] does not.
+          //
+          // Factor out common regexp and append factored expression to out.
+          if (i == start) {
+            // Nothing to do - run of length 0.
+          } else if (i == start + 1) {
+            // Just one: don't bother factoring.
+            array(lenout) = array(s + start)
+            lenout += 1
+          } else {
+            // Construct factored form: prefix(suffix1|suffix2|...)
+            val prefix = first
+            var j      = start
+            while (j < i) {
+              val reuse = j != start // prefix came from sub[start]
+              array(s + j) = removeLeadingRegexp(array(s + j), reuse)
+              j += 1
+            }
+            // recurse
+            val suffix =
+              collapse(subarray(array, s + start, s + i), ROP.ALTERNATE)
+            val re = newRegexp(ROP.CONCAT)
+            re.subs = Array[Regexp](prefix, suffix)
+            array(lenout) = re
+            lenout += 1
           }
-          // Recurse.
-          val suffix =
-            collapse(subarray(array, s + start, s + i), ROP.ALTERNATE)
-          val re = newRegexp(ROP.CONCAT)
-          re.subs = Array[Regexp](prefix, suffix)
-          array(lenout) = re
-          lenout += 1
+
+          // Prepare for next iteration.
+          start = i
+          first = ifirst
         }
 
-        // Prepare for next iteration.
-        start = i
-        str = istr
-        strlen = istrlen
-        strflags = iflags
+        i += 1
       }
+      // In Go: sub = out
+      lensub = lenout
+      s = 0
 
-      i += 1
-    }
-    // In Go: sub = out
-    lensub = lenout
-    s = 0
-
-    // Round 2: Factor out common complex prefixes,
-    // just the first piece of each concatenation,
-    // whatever it is.	This is good enough a lot of the time.
-    start = 0
-    lenout = 0
-    var first: Regexp = null
-    i = 0
-    while (i <= lensub) {
-      // Invariant: the Regexps that were in sub[0:start] have been
-      // used or marked for reuse, and the slice space has been reused
-      // for out (lenout <= start).
-      //
-      // Invariant: sub[start:i] consists of regexps that all begin with
-      // ifirst.
-      var ifirst: Regexp = null
-      var continue       = false
-      if (i < lensub) {
-        ifirst = leadingRegexp(array(s + i))
-        if (first != null && first.equals(ifirst)) {
+      // Round 3: Collapse runs of single literals into character classes.
+      start = 0
+      lenout = 0
+      i = 0
+      while (i <= lensub) {
+        // Invariant: the Regexps that were in sub[0:start] have been
+        // used or marked for reuse, and the slice space has been reused
+        // for out (lenout <= start).
+        //
+        // Invariant: sub[start:i] consists of regexps that are either
+        // literal runes or character classes.
+        var continue = false
+        if (i < lensub && isCharClass(array(s + i))) {
           continue = true
         }
-      }
 
-      if (!continue) {
-        // Found end of a run with common leading regexp:
-        // sub[start:i] all begin with first but sub[i] does not.
-        //
-        // Factor out common regexp and append factored expression to out.
-        if (i == start) {
-          // Nothing to do - run of length 0.
-        } else if (i == start + 1) {
-          // Just one: don't bother factoring.
-          array(lenout) = array(s + start)
-          lenout += 1
-        } else {
-          // Construct factored form: prefix(suffix1|suffix2|...)
-          val prefix = first
-          var j      = start
-          while (j < i) {
-            val reuse = j != start // prefix came from sub[start]
-            array(s + j) = removeLeadingRegexp(array(s + j), reuse)
-            j += 1
-          }
-          // recurse
-          val suffix =
-            collapse(subarray(array, s + start, s + i), ROP.ALTERNATE)
-          val re = newRegexp(ROP.CONCAT)
-          re.subs = Array[Regexp](prefix, suffix)
-          array(lenout) = re
-          lenout += 1
-        }
-
-        // Prepare for next iteration.
-        start = i
-        first = ifirst
-      }
-
-      i += 1
-    }
-    // In Go: sub = out
-    lensub = lenout
-    s = 0
-
-    // Round 3: Collapse runs of single literals into character classes.
-    start = 0
-    lenout = 0
-    i = 0
-    while (i <= lensub) {
-      // Invariant: the Regexps that were in sub[0:start] have been
-      // used or marked for reuse, and the slice space has been reused
-      // for out (lenout <= start).
-      //
-      // Invariant: sub[start:i] consists of regexps that are either
-      // literal runes or character classes.
-      var continue = false
-      if (i < lensub && isCharClass(array(s + i))) {
-        continue = true
-      }
-
-      if (!continue) {
-        // sub[i] is not a char or char class
-        // emit char class for sub[start:i]...
-        if (i == start) {
-          // Nothing to do - run of length 0.
-        } else if (i == start + 1) {
-          array(lenout) = array(s + start)
-          lenout += 1
-        } else {
-          // Make new char class.
-          // Start with most complex regexp in sub[start].
-          var max = start
-          var j   = start + 1
-          while (j < i) {
-            val subMax = array(s + max)
-            val subJ   = array(s + j)
-            if (subMax.op < subJ.op ||
-                subMax.op == subJ.op && subMax.runes.length < subJ.runes.length) {
-              max = j
+        if (!continue) {
+          // sub[i] is not a char or char class
+          // emit char class for sub[start:i]...
+          if (i == start) {
+            // Nothing to do - run of length 0.
+          } else if (i == start + 1) {
+            array(lenout) = array(s + start)
+            lenout += 1
+          } else {
+            // Make new char class.
+            // Start with most complex regexp in sub[start].
+            var max = start
+            var j   = start + 1
+            while (j < i) {
+              val subMax = array(s + max)
+              val subJ   = array(s + j)
+              if ((subMax.op < subJ.op) ||
+                  ((subMax.op == subJ.op) &&
+                  (subMax.runes.length < subJ.runes.length))) {
+                max = j
+              }
+              j += 1
             }
-            j += 1
-          }
-          // swap sub[start], sub[max].
-          val tmp = array(s + start)
-          array(s + start) = array(s + max)
-          array(s + max) = tmp
+            // swap sub[start], sub[max].
+            val tmp = array(s + start)
+            array(s + start) = array(s + max)
+            array(s + max) = tmp
 
-          j = start + 1
-          while (j < i) {
-            mergeCharClass(array(s + start), array(s + j))
-            reuse(array(s + j))
-            j += 1
+            j = start + 1
+            while (j < i) {
+              mergeCharClass(array(s + start), array(s + j))
+              reuse(array(s + j))
+              j += 1
+            }
+            cleanAlt(array(s + start))
+            array(lenout) = array(s + start)
+            lenout += 1
           }
-          cleanAlt(array(s + start))
-          array(lenout) = array(s + start)
-          lenout += 1
+
+          // ... and then emit sub[i].
+          if (i < lensub) {
+            array(lenout) = array(s + i)
+            lenout += 1
+          }
+          start = i + 1
         }
 
-        // ... and then emit sub[i].
-        if (i < lensub) {
+        i += 1
+      }
+      // In Go: sub = out
+      lensub = lenout
+      s = 0
+
+      // Round 4: Collapse runs of empty matches into a single empty match.
+      start = 0
+      lenout = 0
+      i = 0
+      while (i < lensub) {
+        var continue = false
+        if (i + 1 < lensub &&
+            array(s + i).op == ROP.EMPTY_MATCH &&
+            array(s + i + 1).op == ROP.EMPTY_MATCH) {
+          continue = true
+        }
+        if (!continue) {
           array(lenout) = array(s + i)
           lenout += 1
         }
-        start = i + 1
+        i += 1
       }
+      // In Go: sub = out
+      lensub = lenout
+      s = 0
 
-      i += 1
+      subarray(array, s, lensub)
     }
-    // In Go: sub = out
-    lensub = lenout
-    s = 0
-
-    // Round 4: Collapse runs of empty matches into a single empty match.
-    start = 0
-    lenout = 0
-    i = 0
-    while (i < lensub) {
-      var continue = false
-      if (i + 1 < lensub &&
-          array(s + i).op == ROP.EMPTY_MATCH &&
-          array(s + i + 1).op == ROP.EMPTY_MATCH) {
-        continue = true
-      }
-      if (!continue) {
-        array(lenout) = array(s + i)
-        lenout += 1
-      }
-      i += 1
-    }
-    // In Go: sub = out
-    lensub = lenout
-    s = 0
-
-    subarray(array, s, lensub)
   }
 
   // removeLeadingString removes the first n leading runes
@@ -635,15 +643,14 @@ class Parser(wholeRegexp: String, _flags: Int) {
             re.subs = subarray(re.subs, 1, re.subs.length)
         }
       }
-      return re
-    }
-
-    if (re.op == ROP.LITERAL) {
+    } else if (re.op == ROP.LITERAL) {
       re.runes = Utils.subarray(re.runes, n, re.runes.length)
+
       if (re.runes.length == 0) {
         re.op = ROP.EMPTY_MATCH
       }
     }
+
     re
   }
 
@@ -658,6 +665,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
         this.reuse(re.subs(0))
       }
       re.subs = subarray(re.subs, 1, re.subs.length)
+
       (re.subs.length: @scala.annotation.switch) match {
         case 0 =>
           re.op = ROP.EMPTY_MATCH
@@ -667,12 +675,13 @@ class Parser(wholeRegexp: String, _flags: Int) {
           re = re.subs(0)
           this.reuse(old)
       }
-      return re
+      re
+    } else {
+      if (reuse) {
+        this.reuse(re)
+      }
+      newRegexp(ROP.EMPTY_MATCH)
     }
-    if (reuse) {
-      this.reuse(re)
-    }
-    return newRegexp(ROP.EMPTY_MATCH)
   }
 
   // Parsing.
@@ -680,174 +689,177 @@ class Parser(wholeRegexp: String, _flags: Int) {
   private def parseInternal(): Regexp = {
     if ((flags & RE2.LITERAL) != 0) {
       // Trivial parser for literal string.
-      return literalRegexp(wholeRegexp, flags)
-    }
+      literalRegexp(wholeRegexp, flags)
+    } else {
+      // Otherwise, must do real work.
+      var lastRepeatPos = -1
+      var min           = -1
+      var max           = -1
+      var t             = new StringIterator(wholeRegexp)
 
-    // Otherwise, must do real work.
-    var lastRepeatPos = -1
-    var min           = -1
-    var max           = -1
-    var t             = new StringIterator(wholeRegexp)
-    while (t.more()) {
-      var repeatPos = -1
-      (t.peek(): @scala.annotation.switch) match {
-        case '(' =>
-          if ((flags & RE2.PERL_X) != 0 && t.lookingAt("(?")) {
-            // Flag changes and non-capturing groups.
-            parsePerlFlags(t)
-          } else {
-            numCap += 1
-            op(ROP.LEFT_PAREN).cap = numCap
-            t.skip(1) // '('
-          }
-
-        case '|' =>
-          parseVerticalBar()
-          t.skip(1) // '|'
-
-        case ')' =>
-          parseRightParen(t.pos())
-          t.skip(1) // ')'
-
-        case '^' =>
-          if ((flags & RE2.ONE_LINE) != 0) {
-            op(ROP.BEGIN_TEXT)
-          } else {
-            op(ROP.BEGIN_LINE)
-          }
-          t.skip(1) // '^'
-
-        case '$' =>
-          if ((flags & RE2.ONE_LINE) != 0) {
-            op(ROP.END_TEXT).flags |= RE2.WAS_DOLLAR
-          } else {
-            op(ROP.END_LINE)
-          }
-          t.skip(1) // '$'
-
-        case '.' =>
-          if ((flags & RE2.DOT_NL) != 0) {
-            op(ROP.ANY_CHAR)
-          } else {
-            op(ROP.ANY_CHAR_NOT_NL)
-          }
-          t.skip(1) // '.'
-
-        case '[' =>
-          parseClass(t)
-
-        case '*' | '+' | '?' =>
-          repeatPos = t.pos()
-          val op =
-            (t.pop: @scala.annotation.switch) match {
-              case '*' => ROP.STAR
-              case '+' => ROP.PLUS
-              case '?' => ROP.QUEST
+      while (t.more()) {
+        var repeatPos = -1
+        (t.peek(): @scala.annotation.switch) match {
+          case '(' =>
+            if ((flags & RE2.PERL_X) != 0 && t.lookingAt("(?")) {
+              // Flag changes and non-capturing groups.
+              parsePerlFlags(t)
+            } else {
+              numCap += 1
+              op(ROP.LEFT_PAREN).cap = numCap
+              t.skip(1) // '('
             }
-          repeat(op, min, max, repeatPos, t, lastRepeatPos)
-        // (min and max are now dead.)
 
-        case '{' =>
-          repeatPos = t.pos()
-          val minMax = parseRepeat(t)
-          if (minMax < 0) {
-            // If the repeat cannot be parsed, { is a literal.
-            t.rewindTo(repeatPos)
-            literal(t.pop()) // '{'
-          } else {
-            min = minMax >> 16
-            max = (minMax & 0xffff).toShort // sign extend
-            repeat(ROP.REPEAT, min, max, repeatPos, t, lastRepeatPos)
-          }
+          case '|' =>
+            parseVerticalBar()
+            t.skip(1) // '|'
 
-        case '\\' =>
-          var breakBigswitch = false
-          val savedPos       = t.pos()
-          t.skip(1) // '\\'
-          if ((flags & RE2.PERL_X) != 0 && t.more()) {
-            val c = t.pop()
-            (c: @scala.annotation.switch) match {
-              case 'A' =>
-                op(ROP.BEGIN_TEXT)
-                breakBigswitch = true
-              case 'b' =>
-                op(ROP.WORD_BOUNDARY)
-                breakBigswitch = true
-              case 'B' =>
-                op(ROP.NO_WORD_BOUNDARY)
-                breakBigswitch = true
-              case 'C' =>
-                // any byte not supported
-                throw new PatternSyntaxException(ERR_INVALID_ESCAPE, "\\C", 0)
-              case 'Q' =>
-                // \Q ... \E: the ... is always literals
-                var lit = t.rest()
-                val i   = lit.indexOf("\\E")
-                if (i >= 0) {
-                  lit = lit.substring(0, i)
+          case ')' =>
+            parseRightParen(t.pos())
+            t.skip(1) // ')'
+
+          case '^' =>
+            if ((flags & RE2.ONE_LINE) != 0) {
+              op(ROP.BEGIN_TEXT)
+            } else {
+              op(ROP.BEGIN_LINE)
+            }
+            t.skip(1) // '^'
+
+          case '$' =>
+            if ((flags & RE2.ONE_LINE) != 0) {
+              op(ROP.END_TEXT).flags |= RE2.WAS_DOLLAR
+            } else {
+              op(ROP.END_LINE)
+            }
+            t.skip(1) // '$'
+
+          case '.' =>
+            if ((flags & RE2.DOT_NL) != 0) {
+              op(ROP.ANY_CHAR)
+            } else {
+              op(ROP.ANY_CHAR_NOT_NL)
+            }
+            t.skip(1) // '.'
+
+          case '[' =>
+            parseClass(t)
+
+          case '*' | '+' | '?' =>
+            repeatPos = t.pos()
+            val op =
+              (t.pop: @scala.annotation.switch) match {
+                case '*' => ROP.STAR
+                case '+' => ROP.PLUS
+                case '?' => ROP.QUEST
+              }
+            repeat(op, min, max, repeatPos, t, lastRepeatPos)
+          // (min and max are now dead.)
+
+          case '{' =>
+            repeatPos = t.pos()
+            val minMax = parseRepeat(t)
+            if (minMax < 0) {
+              // If the repeat cannot be parsed, { is a literal.
+              t.rewindTo(repeatPos)
+              literal(t.pop()) // '{'
+            } else {
+              min = minMax >> 16
+              max = (minMax & 0xffff).toShort // sign extend
+              repeat(ROP.REPEAT, min, max, repeatPos, t, lastRepeatPos)
+            }
+
+          case '\\' =>
+            var breakBigswitch = false
+            val savedPos       = t.pos()
+            t.skip(1) // '\\'
+            if ((flags & RE2.PERL_X) != 0 && t.more()) {
+              val c = t.pop()
+              (c: @scala.annotation.switch) match {
+                case 'A' =>
+                  op(ROP.BEGIN_TEXT)
+                  breakBigswitch = true
+                case 'b' =>
+                  op(ROP.WORD_BOUNDARY)
+                  breakBigswitch = true
+                case 'B' =>
+                  op(ROP.NO_WORD_BOUNDARY)
+                  breakBigswitch = true
+                case 'C' =>
+                  // any byte not supported
+                  throw new PatternSyntaxException(ERR_INVALID_ESCAPE, "\\C", 0)
+                case 'Q' =>
+                  // \Q ... \E: the ... is always literals
+                  var lit = t.rest()
+                  val i   = lit.indexOf("\\E")
+                  if (i >= 0) {
+                    lit = lit.substring(0, i)
+                  }
+                  t.skipString(lit)
+                  t.skipString("\\E")
+                  push(literalRegexp(lit, flags))
+                  breakBigswitch = true
+                case 'z' =>
+                  op(ROP.END_TEXT)
+                  breakBigswitch = true
+                case _ =>
+                  t.rewindTo(savedPos)
+              }
+            }
+
+            if (!breakBigswitch) {
+              val re = newRegexp(ROP.CHAR_CLASS)
+              re.flags = flags
+
+              // Look for Unicode character group like \p{Han}
+              if (t.lookingAt("\\p") || t.lookingAt("\\P")) {
+                val cc = new CharClass()
+                if (parseUnicodeClass(t, cc)) {
+                  re.runes = cc.toArray()
+                  push(re)
+                  breakBigswitch = true
                 }
-                t.skipString(lit)
-                t.skipString("\\E")
-                push(literalRegexp(lit, flags))
-                breakBigswitch = true
-              case 'z' =>
-                op(ROP.END_TEXT)
-                breakBigswitch = true
-              case _ =>
+              }
+
+              if (!breakBigswitch) {
+                // Perl character class escape.
+                val cc = new CharClass()
+                if (parsePerlClassEscape(t, cc)) {
+                  re.runes = cc.toArray()
+                  push(re)
+                  breakBigswitch = true
+                }
+              }
+
+              if (!breakBigswitch) {
                 t.rewindTo(savedPos)
-            }
-          }
+                this.reuse(re)
 
-          if (!breakBigswitch) {
-            val re = newRegexp(ROP.CHAR_CLASS)
-            re.flags = flags
-
-            // Look for Unicode character group like \p{Han}
-            if (t.lookingAt("\\p") || t.lookingAt("\\P")) {
-              val cc = new CharClass()
-              if (parseUnicodeClass(t, cc)) {
-                re.runes = cc.toArray()
-                push(re)
-                breakBigswitch = true
+                // Ordinary single-character escape.
+                literal(parseEscape(t))
               }
             }
 
-            if (!breakBigswitch) {
-              // Perl character class escape.
-              val cc = new CharClass()
-              if (parsePerlClassEscape(t, cc)) {
-                re.runes = cc.toArray()
-                push(re)
-                breakBigswitch = true
-              }
-            }
-
-            if (!breakBigswitch) {
-              t.rewindTo(savedPos)
-              this.reuse(re)
-
-              // Ordinary single-character escape.
-              literal(parseEscape(t))
-            }
-          }
-
-        case _ =>
-          literal(t.pop())
+          case _ =>
+            literal(t.pop())
+        }
+        lastRepeatPos = repeatPos
       }
-      lastRepeatPos = repeatPos
-    }
 
-    concat()
-    if (swapVerticalBar()) {
-      pop() // pop vertical bar
-    }
-    alternate()
+      concat()
+      if (swapVerticalBar()) {
+        pop() // pop vertical bar
+      }
+      alternate()
 
-    val n = stack.size()
-    if (n != 1) {
-      throw new PatternSyntaxException(ERR_MISSING_PAREN, wholeRegexp, t.pos())
+      val n = stack.size()
+      if (n != 1) {
+        throw new PatternSyntaxException(ERR_MISSING_PAREN,
+                                         wholeRegexp,
+                                         t.pos())
+      }
+      stack.get(0)
     }
-    stack.get(0)
   }
 
   // parsePerlFlags parses a Perl flag setting or non-capturing group or both,
@@ -877,70 +889,76 @@ class Parser(wholeRegexp: String, _flags: Int) {
       numCap += 1
       re.cap = numCap
       re.name = name
-      return
-    }
+    } else {
 
-    // Non-capturing group.  Might also twiddle Perl flags.
-    t.skip(2) // "(?"
-    var flags   = this.flags
-    var sign    = +1
-    var sawFlag = false
+      // Non-capturing group.  Might also twiddle Perl flags.
+      t.skip(2) // "(?"
+      var flags   = this.flags
+      var sign    = +1
+      var sawFlag = false
 
-    var breakLoop = false
-    while (t.more() && !breakLoop) {
-      val c = t.pop()
-      (c: @scala.annotation.switch) match {
-        // Flags.
-        case 'i' =>
-          flags |= RE2.FOLD_CASE
-          sawFlag = true
-        case 'm' =>
-          flags &= ~RE2.ONE_LINE
-          sawFlag = true
-        case 's' =>
-          flags |= RE2.DOT_NL
-          sawFlag = true
-        case 'U' =>
-          flags |= RE2.NON_GREEDY
-          sawFlag = true
+      var parseCompleted = false
+      var breakLoop      = false
+      while (t.more() && !breakLoop) {
+        val c = t.pop()
+        (c: @scala.annotation.switch) match {
+          // Flags.
+          case 'i' =>
+            flags |= RE2.FOLD_CASE
+            sawFlag = true
+          case 'm' =>
+            flags &= ~RE2.ONE_LINE
+            sawFlag = true
+          case 's' =>
+            flags |= RE2.DOT_NL
+            sawFlag = true
+          case 'U' =>
+            flags |= RE2.NON_GREEDY
+            sawFlag = true
 
-        // Switch to negation.
-        case '-' =>
-          if (sign < 0) {
-            breakLoop = true
-          } else {
-            sign = -1
-            // Invert flags so that | above turn into &~ and vice versa.
-            // We'll invert flags again before using it below.
-            flags = ~flags
-            sawFlag = false
-          }
-
-        // End of flags, starting group or not.
-        case ':' | ')' =>
-          if (sign < 0) {
-            if (!sawFlag) {
+          // Switch to negation.
+          case '-' =>
+            if (sign < 0) {
               breakLoop = true
+            } else {
+              sign = -1
+              // Invert flags so that | above turn into &~ and vice versa.
+              // We'll invert flags again before using it below.
+              flags = ~flags
+              sawFlag = false
+            }
+
+          // End of flags, starting group or not.
+          case ':' | ')' =>
+            if (sign < 0) {
+              if (!sawFlag) {
+                breakLoop = true
+              }
+              if (!breakLoop) {
+                flags = ~flags
+              }
             }
             if (!breakLoop) {
-              flags = ~flags
+              if (c == ':') {
+                // Open new group
+                op(ROP.LEFT_PAREN)
+              }
+              this.flags = flags
+              parseCompleted = true
+              breakLoop = true
             }
-          }
-          if (!breakLoop) {
-            if (c == ':') {
-              // Open new group
-              op(ROP.LEFT_PAREN)
-            }
-            this.flags = flags
-            return
-          }
 
-        case _ =>
-          breakLoop = true
+          case _ =>
+            breakLoop = true
+        }
+      }
+
+      if (!parseCompleted) {
+        throw new PatternSyntaxException(ERR_INVALID_PERL_OP,
+                                         t.from(startPos),
+                                         0)
       }
     }
-
-    throw new PatternSyntaxException(ERR_INVALID_PERL_OP, t.from(startPos), 0)
   }
 
   // parseVerticalBar handles a | in the input.
@@ -963,6 +981,8 @@ class Parser(wholeRegexp: String, _flags: Int) {
     // If above and below vertical bar are literal or char class,
     // can merge into a single char class.
     val n = stack.size()
+
+    var result = false
     if (n >= 3 &&
         stack.get(n - 2).op == ROP.VERTICAL_BAR &&
         isCharClass(stack.get(n - 1)) &&
@@ -979,10 +999,8 @@ class Parser(wholeRegexp: String, _flags: Int) {
       mergeCharClass(re3, re1)
       this.reuse(re1)
       pop()
-      return true
-    }
-
-    if (n >= 2) {
+      result = true
+    } else if (n >= 2) {
       val re1 = stack.get(n - 1)
       val re2 = stack.get(n - 2)
       if (re2.op == ROP.VERTICAL_BAR) {
@@ -993,10 +1011,11 @@ class Parser(wholeRegexp: String, _flags: Int) {
         }
         stack.set(n - 2, re1)
         stack.set(n - 1, re2)
-        return true
+        result = true
       }
     }
-    return false
+
+    result
   }
 
   // parseRightParen handles a ')' in the input.
@@ -1037,18 +1056,23 @@ class Parser(wholeRegexp: String, _flags: Int) {
   private def parsePerlClassEscape(t: StringIterator,
                                    cc: CharClass): Boolean = {
     val beforePos = t.pos()
-    if ((flags & RE2.PERL_X) == 0 ||
-        !t.more() || t.pop() != '\\' || // consume '\\'
-        !t.more()) {
-      return false
-    }
-    t.pop() // e.g. advance past 'd' in "\\d"
-    CharGroup.PERL_GROUPS.get(t.from(beforePos)) match {
-      case Some(v) =>
-        cc.appendGroup(v, (flags & RE2.FOLD_CASE) != 0)
-        true
-      case _ => false
-    }
+
+    val result =
+      if ((flags & RE2.PERL_X) == 0 ||
+          !t.more() || t.pop() != '\\' || // consume '\\'
+          !t.more()) {
+        false
+      } else {
+        t.pop() // e.g. advance past 'd' in "\\d"
+        CharGroup.PERL_GROUPS.get(t.from(beforePos)) match {
+          case Some(v) =>
+            cc.appendGroup(v, (flags & RE2.FOLD_CASE) != 0)
+            true
+          case _ => false
+        }
+      }
+
+    result
   }
 
   // parseUnicodeClass() parses a leading Unicode character class like \p{Han}
@@ -1059,98 +1083,97 @@ class Parser(wholeRegexp: String, _flags: Int) {
   // flag is not enabled |t.pos()| is not advanced in this case.
   // Indicates error by throwing PatternSyntaxException.
   private def parseUnicodeClass(t: StringIterator, cc: CharClass): Boolean = {
+
     val startPos = t.pos()
     if ((flags & RE2.UNICODE_GROUPS) == 0 ||
         !t.lookingAt("\\p") && !t.lookingAt("\\P")) {
-      return false
-    }
-    t.skip(1) // '\\'
-    // Committed to parse or throw exception.
-    var sign = +1
-    var c    = t.pop() // 'p' or 'P'
-    if (c == 'P') {
-      sign = -1
-    }
-    c = t.pop()
-    var name: String = ""
-    if (c != '{') {
-      // Single-letter name.
-      name = Utils.runeToString(c)
+      false
     } else {
-      // Name is in braces.
-      val rest = t.rest()
-      val end  = rest.indexOf('}')
-      if (end < 0) {
-        t.rewindTo(startPos)
-        throw new PatternSyntaxException(ERR_INVALID_CHAR_RANGE,
-                                         t.str,
-                                         t.pos() - 1)
+      t.skip(1) // '\\'
+      // Committed to parse or throw exception.
+      var sign = +1
+      var c    = t.pop() // 'p' or 'P'
+      if (c == 'P') {
+        sign = -1
       }
-      name = rest.substring(0, end) // e.g. "Han"
-      t.skipString(name)
-      t.skip(1) // '}'
-      // Don't use skip(end) because it assumes UTF-16 coding, and
-      // StringIterator doesn't guarantee that.
-    }
-
-    // Group can have leading negation too.
-    //	\p{^Han} == \P{Han}, \P{^Han} == \p{Han}.
-    if (!name.isEmpty() && name.charAt(0) == '^') {
-      sign = -sign
-      name = name.substring(1)
-    }
-
-    CharGroup.POSIX_GROUPS.get(name) match {
-      case Some(v) => {
-        cc.appendGroup(v, (flags & RE2.FOLD_CASE) != 0)
-        true
+      c = t.pop()
+      var name: String = ""
+      if (c != '{') {
+        // Single-letter name.
+        name = Utils.runeToString(c)
+      } else {
+        // Name is in braces.
+        val rest = t.rest()
+        val end  = rest.indexOf('}')
+        if (end < 0) {
+          t.rewindTo(startPos)
+          throw new PatternSyntaxException(ERR_INVALID_CHAR_RANGE,
+                                           t.str,
+                                           t.pos() - 1)
+        }
+        name = rest.substring(0, end) // e.g. "Han"
+        t.skipString(name)
+        t.skip(1) // '}'
+        // Don't use skip(end) because it assumes UTF-16 coding, and
+        // StringIterator doesn't guarantee that.
       }
-      case None => {
 
-        val (isBlock, isScriptOrBinaryProperty) =
-          if (name.length > 2) {
-            val prefixUnicode = name.substring(0, 2) // Is | In
-            (prefixUnicode == "In", prefixUnicode == "Is")
-          } else {
-            (false, false)
+      // Group can have leading negation too.
+      //	\p{^Han} == \P{Han}, \P{^Han} == \p{Han}.
+      if (!name.isEmpty() && name.charAt(0) == '^') {
+        sign = -sign
+        name = name.substring(1)
+      }
+
+      CharGroup.POSIX_GROUPS.get(name) match {
+
+        case Some(v) => cc.appendGroup(v, (flags & RE2.FOLD_CASE) != 0)
+
+        case None =>
+          val (isBlock, isScriptOrBinaryProperty) =
+            if (name.length > 2) {
+              val prefixUnicode = name.substring(0, 2) // Is | In
+              (prefixUnicode == "In", prefixUnicode == "Is")
+            } else {
+              (false, false)
+            }
+
+          val name2 =
+            if (isBlock || isScriptOrBinaryProperty) {
+              name.substring(2, name.length)
+            } else {
+              name
+            }
+
+          val pair = unicodeTable(name2)
+
+          if (pair == null) {
+            throw new PatternSyntaxException(
+              s"Unknown character block name {$name2}",
+              t.str,
+              t.pos() - 1)
           }
 
-        val name2 =
-          if (isBlock || isScriptOrBinaryProperty) {
-            name.substring(2, name.length)
+          val tab  = pair.first
+          val fold = pair.second // fold-equivalent table
+
+          // Variation of CharClass.appendGroup() for tables.
+          if ((flags & RE2.FOLD_CASE) == 0 || fold == null) {
+            cc.appendTableWithSign(tab, sign)
           } else {
-            name
+            // Merge and clean tab and fold in a temporary buffer.
+            // This is necessary for the negative case and just tidy
+            // for the positive case.
+            val tmp = new CharClass()
+              .appendTable(tab)
+              .appendTable(fold)
+              .cleanClass()
+              .toArray()
+            cc.appendClassWithSign(tmp, sign)
           }
-
-        val pair = unicodeTable(name2)
-
-        if (pair == null) {
-          throw new PatternSyntaxException(
-            s"Unknown character block name {$name2}",
-            t.str,
-            t.pos() - 1)
-        }
-        val tab  = pair.first
-        val fold = pair.second // fold-equivalent table
-
-        // Variation of CharClass.appendGroup() for tables.
-        if ((flags & RE2.FOLD_CASE) == 0 || fold == null) {
-          cc.appendTableWithSign(tab, sign)
-        } else {
-          // Merge and clean tab and fold in a temporary buffer.
-          // This is necessary for the negative case and just tidy
-          // for the positive case.
-          val tmp = new CharClass()
-            .appendTable(tab)
-            .appendTable(fold)
-            .cleanClass()
-            .toArray()
-          cc.appendClassWithSign(tmp, sign)
-        }
-        return true
       }
+      true
     }
-
   }
 
   // parseClass parses a character class and pushes it onto the parse stack.
@@ -1299,34 +1322,35 @@ object Parser {
   private def minFoldRune(_r: Int): Int = {
     var r = _r
     if (r < Unicode.MIN_FOLD || r > Unicode.MAX_FOLD) {
-      return r
-    }
-    var min = r
-    var r0  = r
-    r = Unicode.simpleFold(r)
-    while (r != r0) {
-      if (min > r) {
-        min = r
-      }
+      r
+    } else {
+      var min = r
+      var r0  = r
       r = Unicode.simpleFold(r)
+      while (r != r0) {
+        if (min > r) {
+          min = r
+        }
+        r = Unicode.simpleFold(r)
+      }
+      min
     }
-    return min
   }
 
   // leadingRegexp returns the leading regexp that re begins with.
   // The regexp refers to storage in re or its children.
   private def leadingRegexp(re: Regexp): Regexp = {
-    if (re.op == ROP.EMPTY_MATCH) {
-      return null
-    }
-    if (re.op == ROP.CONCAT && re.subs.length > 0) {
+
+    val result = if (re.op == ROP.EMPTY_MATCH) {
+      null
+    } else if (re.op == ROP.CONCAT && re.subs.length > 0) {
       val sub = re.subs(0)
-      if (sub.op == ROP.EMPTY_MATCH) {
-        return null
-      }
-      return sub
+      if (sub.op == ROP.EMPTY_MATCH) null else sub
+    } else {
+      re
     }
-    return re
+
+    result
   }
 
   private def literalRegexp(s: String, flags: Int): Regexp = {
@@ -1417,44 +1441,76 @@ object Parser {
   // On success, advances |t| beyond the repeat otherwise |t.pos()| is
   // undefined.
   private def parseRepeat(t: StringIterator): Int = {
+
+    var result = -1
+    var max    = 0
+    var min    = 0
+
+    val StateStart = 1
+    val StateTwo   = 2
+    val StateThree = 3
+    val StateFour  = 4
+    val StateDone  = 99
+
+    var state = StateStart
+
     val start = t.pos()
-    if (!t.more() || !t.lookingAt('{')) {
-      return -1
-    }
-    t.skip(1) // '{'
-    val min = parseInt(t) // (can be -2)
-    if (min == -1) {
-      return -1
-    }
-    if (!t.more()) {
-      return -1
-    }
-    var max = 0
-    if (!t.lookingAt(',')) {
-      max = min
-    } else {
-      t.skip(1) // ','
-      if (!t.more()) {
-        return -1
+
+    while (state != StateDone) {
+
+      state match {
+
+        case StateStart =>
+          state = StateTwo
+          val start = t.pos()
+          if (!t.more() || !t.lookingAt('{')) {
+            state = StateDone
+          }
+
+        case StateTwo =>
+          state = StateThree
+          t.skip(1) // '{'
+          min = parseInt(t) // (can be -2)
+          if ((min == -1) || (!t.more())) {
+            state = StateDone
+          }
+
+        case StateThree =>
+          state = StateFour
+          if (!t.lookingAt(',')) {
+            max = min
+          } else {
+            t.skip(1) // ','
+            if (!t.more()) {
+              state = StateDone
+            } else {
+              if (t.lookingAt('}')) {
+                max = -1
+              } else if ({ max = parseInt(t); max } == -1) { // (can be -2)
+                state = StateDone
+              }
+            }
+          }
+
+        case StateFour =>
+          state = StateDone
+          if (t.more() && t.lookingAt('}')) {
+            t.skip(1) // '}'
+            if (min < 0 || min > 1000 ||
+                max == -2 || max > 1000 || max >= 0 && min > max) {
+              // Numbers were negative or too big,
+              // or max is present and min > max.
+              throw new PatternSyntaxException(ERR_INVALID_REPEAT_SIZE,
+                                               t.from(start),
+                                               0)
+            }
+
+            result = (min << 16) | (max & 0xffff) // success
+          }
       }
-      if (t.lookingAt('}')) {
-        max = -1
-      } else if ({ max = parseInt(t); max } == -1) { // (can be -2)
-        return -1
-      }
     }
-    if (!t.more() || !t.lookingAt('}')) {
-      return -1
-    }
-    t.skip(1) // '}'
-    if (min < 0 || min > 1000 ||
-        max == -2 || max > 1000 || max >= 0 && min > max) {
-      // Numbers were negative or too big, or max is present and min > max.
-      throw new PatternSyntaxException(ERR_INVALID_REPEAT_SIZE,
-                                       t.from(start),
-                                       0)
-    }
-    return (min << 16) | (max & 0xffff) // success
+
+    result
   }
 
   // isValidCaptureName reports whether name
@@ -1463,18 +1519,20 @@ object Parser {
   // Python rejects names starting with digits.
   // We don't enforce either of those.
   private def isValidCaptureName(name: String): Boolean = {
+
     if (name.isEmpty()) {
-      return false
-    }
-    var i = 0
-    while (i < name.length()) {
-      val c = name.charAt(i)
-      if (c != '_' && !Utils.isalnum(c)) {
-        return false
+      false
+    } else {
+      var i = 0
+      while (i < name.length()) {
+        val c = name.charAt(i)
+        if (c != '_' && !Utils.isalnum(c)) {
+          i = name.length + 1
+        }
+        i += 1
       }
-      i += 1
+      i == name.length
     }
-    return true
   }
 
   // parseInt parses a nonnegative decimal integer.
@@ -1486,14 +1544,15 @@ object Parser {
       t.skip(1) // digit
     }
     val n = t.from(start)
+
     if (n.isEmpty() ||
         n.length() > 1 && n.charAt(0) == '0') { // disallow leading zeros
-      return -1 // bad format
+      -1 // bad format
+    } else if (n.length() > 8) {
+      -2 // overflow
+    } else {
+      Integer.valueOf(n, 10) // can't fail
     }
-    if (n.length() > 8) {
-      return -2 // overflow
-    }
-    return Integer.valueOf(n, 10) // can't fail
   }
 
   // can this be represented as a character class?
@@ -1506,25 +1565,29 @@ object Parser {
 
   // does re match r?
   private def matchRune(re: Regexp, r: Int): Boolean = {
+
+    var matched = false
+
     (re.op: @scala.annotation.switch) match {
-      case ROP.LITERAL =>
-        re.runes.length == 1 && re.runes(0) == r
+      case ROP.LITERAL => re.runes.length == 1 && re.runes(0) == r
+
       case ROP.CHAR_CLASS =>
         var i = 0
         while (i < re.runes.length) {
           if (re.runes(i) <= r && r <= re.runes(i + 1)) {
-            return true
+            matched = true
           }
           i += 2
         }
-        false
-      case ROP.ANY_CHAR_NOT_NL =>
-        r != '\n'
-      case ROP.ANY_CHAR =>
-        true
+
+      case ROP.ANY_CHAR_NOT_NL => r != '\n'
+
+      case ROP.ANY_CHAR => matched = true
+
       case _ =>
-        false
     }
+
+    matched
   }
 
   // mergeCharClass makes dst = dst|src.
@@ -1709,37 +1772,46 @@ object Parser {
 
     // Allow regular escape sequences even though
     // many need not be escaped in this context.
-    if (t.lookingAt('\\')) {
-      return parseEscape(t)
-    }
+    val result = if (t.lookingAt('\\')) parseEscape(t) else t.pop()
 
-    return t.pop()
+    result
   }
 
   // RangeTables are represented as int[][], a list of triples (start, end,
   // stride).
-  private val ANY_TABLE: Array[Array[Int]] = Array(
-    Array(0, Unicode.MAX_RUNE, 1)
+  private val ANY_TABLE: Array[Int] = Array(
+    0,
+    Unicode.MAX_RUNE,
+    1
   )
 
   // unicodeTable() returns the Unicode RangeTable identified by name
   // and the table of additional fold-equivalent code points.
   // Returns null if |name| does not identify a Unicode character range.
-  private def unicodeTable(
-      name: String): Pair[Array[Array[Int]], Array[Array[Int]]] = {
+  private def unicodeTable(name: String): Pair[Array[Int], Array[Int]] = {
+
+    var result = null: Pair[Array[Int], Array[Int]]
+
     // Special case: "Any" means any.
     if (name.equals("Any")) {
-      return Pair.of(ANY_TABLE, ANY_TABLE)
+      result = Pair.of(ANY_TABLE, ANY_TABLE)
+    } else {
+      val table = UnicodeTables.CATEGORIES.getOrElse(name, null)
+
+      if (table != null) {
+        result =
+          Pair.of(table, UnicodeTables.FOLD_CATEGORIES.getOrElse(name, null))
+      } else {
+        val table = UnicodeTables.SCRIPTS.getOrElse(name, null)
+
+        if (table != null) {
+          result =
+            Pair.of(table, UnicodeTables.FOLD_SCRIPT.getOrElse(name, null))
+        }
+      }
     }
-    var table = UnicodeTables.CATEGORIES.get(name)
-    if (table != null) {
-      return Pair.of(table, UnicodeTables.FOLD_CATEGORIES.get(name))
-    }
-    table = UnicodeTables.SCRIPTS.get(name)
-    if (table != null) {
-      return Pair.of(table, UnicodeTables.FOLD_SCRIPT.get(name))
-    }
-    return null
+
+    result
   }
 
   //// Utilities
