@@ -35,9 +35,9 @@ object Boxes {
   @inline def unboxToPtr(o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[Ptr[_]].rawptr
   @inline def unboxToWord(o: java.lang.Object): RawWord =
-    if (o == null) castIntToRawWord(0) else o.asInstanceOf[Word].rawWord
+    if (o == null) Intrinsics.castIntToRawWord(0) else o.asInstanceOf[Word].rawWord
   @inline def unboxToUWord(o: java.lang.Object): RawWord =
-    if (o == null) castIntToRawWord(0) else o.asInstanceOf[UWord].rawWord
+    if (o == null) Intrinsics.castIntToRawWord(0) else o.asInstanceOf[UWord].rawWord
   @inline def unboxToCArray(o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CArray[_, _]].rawptr
   @inline def unboxToCFuncRawPtr(o: java.lang.Object): RawPtr =
