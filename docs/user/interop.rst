@@ -22,9 +22,11 @@ For example, to call C's ``malloc`` one might declare it as following:
 
 .. code-block:: scala
 
-    @native.extern
+    import scala.scalanative.native._
+
+    @extern
     object libc {
-      def malloc(size: native.CSize): native.Ptr[Byte] = native.extern
+      def malloc(size: CSize): Ptr[Byte] = extern
     }
 
 ``native.extern`` on the right hand side of the method definition signifies
@@ -67,7 +69,7 @@ C Type                    Scala Type
 ``void*``                 ``native.Ptr[Byte]`` [2_]
 ``int*``                  ``native.Ptr[native.CInt]`` [2_]
 ``char*``                 ``native.CString`` [2_] [3_]
-``int (*)(int)``          ``native.CFunctionPtr1[native.CInt, native.CInt]`` [2_] [4_]
+``int (*)(int)``          ``native.CFuncPtr1[native.CInt, native.CInt]`` [2_] [4_]
 ``struct { int x, y; }*`` ``native.Ptr[native.CStruct2[native.CInt, native.CInt]]`` [2_] [5_]
 ``struct { int x, y; }``  Not supported
 ========================= =========================
@@ -87,10 +89,12 @@ link with using the ``@native.link`` annotation.
 
 .. code-block:: scala
 
-   @native.link("mylib")
-   @native.extern
+   import scala.scalanative.native._
+
+   @link("mylib")
+   @extern
    object mylib {
-     def f(): Unit = native.extern
+     def f(): Unit = extern
    }
 
 Whenever any of the members of ``mylib`` object are reachable, the Scala Native
@@ -106,6 +110,7 @@ recommended to enforce the Scala naming conventions in bindings:
 .. code-block:: scala
 
     import scala.scalanative.native._
+
     @link("uv")
     @extern
     object uv {
@@ -119,16 +124,35 @@ objects as it is permitted to use the same ``@link`` annotation more than once.
 Variadic functions
 ``````````````````
 
-One can declare variadic functions like ``printf`` using ``native.CVararg``
-auxiliary type:
+Scala Native supports native interoperability with C's variadic argument
+list type (i.e. ``va_list``), but not ``...`` varargs. For example ``vprintf``
+can be declared as:
 
 .. code-block:: scala
 
-   @native.extern
+   import scala.scalanative.native._
+
+   @extern
    object stdio {
-     def printf(format: native.CString,
-                args: native.CVararg*): native.CInt = native.extern
+     def vprintf(format: CString, args: CVarArgList): CInt = extern
    }
+
+One can wrap a function in a nicer API like:
+
+.. code-block:: scala
+
+   import scala.scalanative.native._
+
+   def myprintf(format: CString, args: CVarArg*): CInt =
+     Zone { implicit z =>
+       stdio.vprintf(format, toCVarArgList(args.toSeq))
+     }
+
+And then call it just like a regular Scala function:
+
+.. code-block:: scala
+
+   myprintf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
 
 Pointer types
 -------------
@@ -149,9 +173,9 @@ Pointer to index ``ptr + i``, ``&ptr[i]`` ``ptr + i``
 Elements between ``ptr1 - ptr2``          ``ptr1 - ptr2``
 Load at index    ``ptr[i]``               ``ptr(i)``
 Store at index   ``ptr[i] = value``       ``ptr(i) = value``
-Pointer to field ``&ptr->name``           ``ptr._N``
-Load a field     ``ptr->name``            ``!ptr._N``
-Store a field    ``ptr->name = value``    ``!ptr._N = value``
+Pointer to field ``&ptr->name``           ``ptr.atN``
+Load a field     ``ptr->name``            ``ptr._N``
+Store a field    ``ptr->name = value``    ``ptr._N = value``
 ================ ======================== ===================
 
 Where ``N`` is the index of the field ``name`` in the struct.
@@ -171,15 +195,24 @@ One can declare it as following in Scala Native:
 
 .. code-block:: scala
 
-    def test(f: CFunctionPtr1[CString, Unit]): Unit = native.extern
+    def test(f: native.CFuncPtr1[CString, Unit]): Unit = native.extern
 
-To pass a Scala function to ``CFunctionPtrN``, you need to use the conversion
-function ``CFunctionPtr.fromFunctionN()``:
+`CFuncPtrN` types are a SAM (single abstract method) traits. You
+can define them by creating a class that inherits from the corresponding
+trait:
 
 .. code-block:: scala
 
-    def f(s: CString): Unit = ???
-    def g(): Unit = test(CFunctionPtr.fromFunction1(f))
+   val myfuncptr = new native.FuncPtr0[Unit] {
+     def apply(): Unit = println("hi there!")
+   }
+
+On Scala 2.12 or newer, Scala language automatically coverts
+from clsoures to SAM types:
+
+.. code-block:: scala
+
+   val myfuncptr: native.FuncPtr0[Unit] = () => println("hi there!")
 
 Memory management
 `````````````````
@@ -196,8 +229,10 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 
    .. code-block:: scala
 
-      native.Zone { implicit z =>
-        val buffer = native.alloc[Byte](n)
+      import scala.scalanative.native._
+
+      Zone { implicit z =>
+        val buffer = alloc[Byte](n)
       }
 
    `native.alloc` requests memory sufficient to contain `n` values of a given type.
@@ -278,35 +313,33 @@ pointers and do not have a corresponding first-class values backing them.
   .. code-block:: scala
 
       val ptr = native.stackalloc[native.CStruct2[Int, Int]]
-      !ptr._1 = 10
-      !ptr._2 = 20
+      ptr._1 = 10
+      ptr._2 = 20
       println(s"first ${!ptr._1}, second ${!ptr._2}")
 
-  Here ``_N`` computes a derived pointer that corresponds to memory
-  occupied by field number N.
+  Here ``_N`` is an accessor for the field number N.
 
 * ``native.Ptr[native.CArray[T, N]]``
 
   Pointer to a C array with statically-known length ``N``. Length is encoded as
   a type-level natural number. Natural numbers are types that are composed of
-  base naturals ``Nat._0, ... Nat._9`` and an additional ``Nat.Digit``
-  constructor. So for example number ``1024`` is going to be encoded as
-  following:
+  base naturals ``Nat._0, ... Nat._9`` and an additional ``Nat.DigitN``
+  constructors, where ``N`` refers to number of digits in the given number. 
+  So for example number ``1024`` is going to be encoded as following:
 
   .. code-block:: scala
 
       import scalanative.native._, Nat._
 
-      type _1024 = Digit[_1, Digit[_0, Digit[_2, _4]]]
+      type _1024 = Digit4[_1, _0, _2, _4]
 
   Once you have a natural for the length, it can be used as an array length:
 
   .. code-block:: scala
 
-      val ptr = native.stackalloc[CArray[Byte, _1024]]
+      val arrptr = native.stackalloc[CArray[Byte, _1024]]
 
-  Addresses of the first twenty two elements are accessible via ``_N``
-  accessors. The rest are accessible via ``ptr._1 + index``.
+  You can find an address of n-th array element via ``arrptr.at(n)``.
 
 Byte strings
 ````````````
@@ -326,15 +359,6 @@ strings (similarly to C):
 Additionally, we also expose two helper functions ``native.toCString`` and
 ``native.fromCString`` to convert between C-style and Java-style strings.
 
-Unchecked casts
-```````````````
-
-Quite often, C interfaces expect the user to perform unchecked casts to convert
-between different pointer types, or between pointers and integer values. For
-this particular use case, we provide ``obj.cast[T]`` that is defined in the
-implicit class ``native.CCast``. Unlike Scala's ``asInstanceOf``, ``cast`` does
-not provide any safety guarantees.
-
 Platform-specific types
 -----------------------
 
@@ -342,8 +366,8 @@ Scala Native defines the type ``Word`` and its unsigned counterpart, ``UWord``.
 A word corresponds to ``Int`` on 32-bit architectures and to ``Long`` on 64-bit
 ones.
 
-Size of types
--------------
+Size and alignment of types
+---------------------------
 
 In order to statically determine the size of a type, you can use the ``sizeof``
 function which is Scala Native's counterpart of the eponymous C operator. It
@@ -364,6 +388,12 @@ It can also be used to obtain the size of a structure:
     type TwoBytes = CStruct2[Byte, Byte]
     println(sizeof[TwoBytes])  // 2
 
+Aditionally you can also use ``alignmentof`` to find alignment of a given type:
+
+.. code-block:: scala
+
+    println(alignment[Int])                  // 4
+    println(alignment[CStruct2[Byte, Long]]) // 8
 
 Unsigned integer types
 ----------------------
