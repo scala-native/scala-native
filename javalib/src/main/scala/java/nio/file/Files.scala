@@ -447,7 +447,7 @@ object Files {
     }
     val len   = pathSize.toInt
     val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
-    val fd    = fcntl.open(toCString(path.toString), fcntl.O_RDONLY)
+    val fd    = fcntl.open(toCString(path.toString), fcntl.O_RDONLY, 0.toUInt)
     try {
       var offset = 0
       var read   = 0

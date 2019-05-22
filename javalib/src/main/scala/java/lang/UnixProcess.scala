@@ -248,7 +248,7 @@ object UnixProcess {
   }
 
   @inline def open(f: File, flags: CInt) = Zone { implicit z =>
-    fcntl.open(toCString(f.getAbsolutePath), flags) match {
+    fcntl.open(toCString(f.getAbsolutePath), flags, 0.toUInt) match {
       case -1 => throw new IOException(s"Unable to open file $f ($errno)")
       case fd => fd
     }
