@@ -2,9 +2,9 @@ package scala.scalanative
 package native
 
 /** `UShort`, a 16-bit unsigned integer. */
-final class UShort private[scala] (private val underlying: Short)
-    extends AnyVal
-    with java.io.Serializable
+final class UShort private[scalanative] (
+    private[scalanative] val underlying: Short)
+    extends java.io.Serializable
     with Comparable[UShort] {
 
   @inline final def toByte: Byte     = underlying.toByte

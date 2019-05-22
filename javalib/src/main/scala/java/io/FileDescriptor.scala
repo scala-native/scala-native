@@ -1,7 +1,7 @@
 package java.io
 
+import scala.scalanative.native._
 import scala.scalanative.posix.{fcntl, unistd}
-import scala.scalanative.native.{toCString, Zone}
 
 /** Wraps a UNIX file descriptor */
 final class FileDescriptor private[java] (private[java] val fd: Int,
@@ -19,7 +19,7 @@ final class FileDescriptor private[java] (private[java] val fd: Int,
       }
     }
 
-  def valid(): Boolean = fcntl.fcntl(fd, fcntl.F_GETFD) != -1
+  def valid(): Boolean = fcntl.fcntl(fd, fcntl.F_GETFD, 0) != -1
 
   private def throwSyncFailed(): Unit =
     throw new SyncFailedException("sync failed")
@@ -33,7 +33,7 @@ object FileDescriptor {
 
   private[io] def openReadOnly(file: File): FileDescriptor =
     Zone { implicit z =>
-      val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
+      val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY, 0.toUInt)
       if (fd == -1) {
         throw new FileNotFoundException("No such file " + file.getPath)
       }

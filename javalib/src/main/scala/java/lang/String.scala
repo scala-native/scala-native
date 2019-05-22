@@ -235,9 +235,15 @@ final class _String()
             false
           } else {
             val data1 =
-              value.asInstanceOf[CharArray].at(offset).cast[Ptr[scala.Byte]]
+              value
+                .asInstanceOf[CharArray]
+                .at(offset)
+                .asInstanceOf[Ptr[scala.Byte]]
             val data2 =
-              s.value.asInstanceOf[CharArray].at(s.offset).cast[Ptr[scala.Byte]]
+              s.value
+                .asInstanceOf[CharArray]
+                .at(s.offset)
+                .asInstanceOf[Ptr[scala.Byte]]
             memcmp(data1, data2, count * 2) == 0
           }
         }

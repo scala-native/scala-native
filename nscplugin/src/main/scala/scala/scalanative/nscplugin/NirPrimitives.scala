@@ -8,20 +8,8 @@ object NirPrimitives {
   final val BOXED_UNIT  = 301
   final val ARRAY_CLONE = 1 + BOXED_UNIT
 
-  final val PTR_LOAD   = 1 + ARRAY_CLONE
-  final val PTR_STORE  = 1 + PTR_LOAD
-  final val PTR_ADD    = 1 + PTR_STORE
-  final val PTR_SUB    = 1 + PTR_ADD
-  final val PTR_APPLY  = 1 + PTR_SUB
-  final val PTR_UPDATE = 1 + PTR_APPLY
-  final val PTR_FIELD  = 1 + PTR_UPDATE
-
-  final val FUN_PTR_CALL = 1 + PTR_FIELD
-  final val FUN_PTR_FROM = 1 + FUN_PTR_CALL
-
-  final val CQUOTE     = 1 + FUN_PTR_FROM
-  final val CCAST      = 1 + CQUOTE
-  final val STACKALLOC = 1 + CCAST
+  final val CQUOTE     = 1 + ARRAY_CLONE
+  final val STACKALLOC = 1 + CQUOTE
 
   final val DIV_UINT  = 1 + STACKALLOC
   final val DIV_ULONG = 1 + DIV_UINT
@@ -73,6 +61,8 @@ object NirPrimitives {
   final val CAST_RAWPTR_TO_LONG    = 1 + CAST_RAWPTR_TO_INT
   final val CAST_INT_TO_RAWPTR     = 1 + CAST_RAWPTR_TO_LONG
   final val CAST_LONG_TO_RAWPTR    = 1 + CAST_INT_TO_RAWPTR
+
+  final val RESOLVE_CFUNCPTR = 1 + CAST_LONG_TO_RAWPTR
 }
 
 abstract class NirPrimitives {
@@ -106,12 +96,6 @@ abstract class NirPrimitives {
   def isNirPrimitive(code: Int): Boolean =
     code >= 300 && code < 360
 
-  def isPtrOp(code: Int): Boolean =
-    code >= PTR_LOAD && code <= PTR_FIELD
-
-  def isFunPtrOp(code: Int): Boolean =
-    code == FUN_PTR_CALL || code == FUN_PTR_FROM
-
   def isRawPtrOp(code: Int): Boolean =
     code >= LOAD_BOOL && code <= ELEM_RAW_PTR
 
@@ -129,18 +113,8 @@ abstract class NirPrimitives {
   private def initWithPrimitives(addPrimitive: (Symbol, Int) => Unit): Unit = {
     addPrimitive(BoxedUnit_UNIT, BOXED_UNIT)
     addPrimitive(Array_clone, ARRAY_CLONE)
-    addPrimitive(PtrLoadMethod, PTR_LOAD)
-    addPrimitive(PtrStoreMethod, PTR_STORE)
-    addPrimitive(PtrAddMethod, PTR_ADD)
-    PtrSubMethods.foreach(addPrimitive(_, PTR_SUB))
-    addPrimitive(PtrApplyMethod, PTR_APPLY)
-    addPrimitive(PtrUpdateMethod, PTR_UPDATE)
-    PtrFieldMethod.foreach(addPrimitive(_, PTR_FIELD))
-    CFunctionPtrApply.foreach(addPrimitive(_, FUN_PTR_CALL))
-    CFunctionPtrFrom.foreach(addPrimitive(_, FUN_PTR_FROM))
     addPrimitive(CQuoteMethod, CQUOTE)
-    addPrimitive(CCastMethod, CCAST)
-    StackallocMethods.foreach(addPrimitive(_, STACKALLOC))
+    addPrimitive(StackallocMethod, STACKALLOC)
     addPrimitive(DivUIntMethod, DIV_UINT)
     addPrimitive(DivULongMethod, DIV_ULONG)
     addPrimitive(RemUIntMethod, REM_UINT)
@@ -186,6 +160,6 @@ abstract class NirPrimitives {
     addPrimitive(CastRawPtrToLongMethod, CAST_RAWPTR_TO_LONG)
     addPrimitive(CastIntToRawPtrMethod, CAST_INT_TO_RAWPTR)
     addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
-
+    addPrimitive(ResolveCFuncPtrMethod, RESOLVE_CFUNCPTR)
   }
 }

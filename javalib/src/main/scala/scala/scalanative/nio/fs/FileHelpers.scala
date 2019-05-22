@@ -27,11 +27,11 @@ object FileHelpers {
           var elem = alloc[dirent]
           var res  = 0
           while ({ res = readdir(dir, elem); res == 0 }) {
-            val name = fromCString(elem._2.asInstanceOf[CString])
+            val name = fromCString(elem._2.at(0))
 
             // java doesn't list '.' and '..', we filter them out.
             if (name != "." && name != "..") {
-              buffer += f(name, !elem._3)
+              buffer += f(name, elem._3)
             }
           }
           closedir(dir)
@@ -88,7 +88,9 @@ object FileHelpers {
         case null => "/tmp"
         case d    => d
       }
-    } else fromCString(dir)
+    } else {
+      fromCString(dir)
+    }
   }
 
   private def genTempFile(prefix: String,

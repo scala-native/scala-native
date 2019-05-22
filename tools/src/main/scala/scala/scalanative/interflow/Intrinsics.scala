@@ -26,7 +26,9 @@ trait Intrinsics { self: Interflow =>
     Global.Member(Global.Top("java.lang.Math$"), Rt.SinSig),
     Global.Member(Global.Top("java.lang.Math$"), Rt.PowSig),
     Global.Member(Global.Top("java.lang.Math$"), Rt.MaxSig),
-    Global.Member(Global.Top("java.lang.Math$"), Rt.SqrtSig)
+    Global.Member(Global.Top("java.lang.Math$"), Rt.SqrtSig),
+    Global.Member(Rt.Runtime.name, Rt.FromRawPtrSig),
+    Global.Member(Rt.Runtime.name, Rt.ToRawPtrSig)
   ) ++ arrayIntrinsics
 
   def intrinsic(ty: Type, name: Global, rawArgs: Seq[Val])(
@@ -50,7 +52,7 @@ trait Intrinsics { self: Interflow =>
               case _               => value.ty
             }
             ty match {
-              case refty: Type.RefKind if refty.isExact && !refty.isNullable =>
+              case refty: Type.RefKind if refty.isExact =>
                 Some(Val.Global(refty.className, Type.Ptr))
               case _ =>
                 Some(emit)
@@ -147,6 +149,12 @@ trait Intrinsics { self: Interflow =>
       case _ if name == arrayLengthIntrinsic =>
         val Seq(arr) = rawArgs
         Some(eval(Op.Arraylength(arr)))
+      case Rt.FromRawPtrSig =>
+        val Seq(_, value) = rawArgs
+        Some(eval(Op.Box(Rt.BoxedPtr, value)))
+      case Rt.ToRawPtrSig =>
+        val Seq(_, value) = rawArgs
+        Some(eval(Op.Unbox(Rt.BoxedPtr, value)))
     }
   }
 }

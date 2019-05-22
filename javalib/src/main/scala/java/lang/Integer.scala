@@ -177,15 +177,23 @@ final class Integer(val _value: scala.Int)
   protected def %(x: scala.Double): scala.Double = _value % x
 }
 
+private[lang] object IntegerDecimalScale {
+  private[lang] val decimalScale: Array[scala.Int] = Array(1000000000,
+    100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
+}
+
+private[lang] object IntegerCache {
+  private[lang] val cache = new Array[java.lang.Integer](256)
+}
+
 object Integer {
+  import IntegerDecimalScale.decimalScale
+
   final val TYPE      = classOf[scala.Int]
   final val MIN_VALUE = -2147483648
   final val MAX_VALUE = 2147483647
   final val SIZE      = 32
   final val BYTES     = 4
-
-  private final val decimalScale: Array[scala.Int] = Array(1000000000,
-    100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
 
   @inline def bitCount(i: scala.Int): scala.Int =
     LLVMIntrinsics.`llvm.ctpop.i32`(i)
@@ -668,8 +676,4 @@ object Integer {
       new String(buffer)
     }
   }
-}
-
-private[lang] object IntegerCache {
-  private[lang] val cache = new Array[java.lang.Integer](256)
 }

@@ -10,9 +10,9 @@ import scalanative.runtime.Intrinsics.{
 import java.lang.{Long => JLong}
 
 /** `ULong`, a 64-bit unsigned integer. */
-final class ULong private[scala] (private val underlying: Long)
-    extends AnyVal
-    with java.io.Serializable
+final class ULong private[scalanative] (
+    private[scalanative] val underlying: Long)
+    extends java.io.Serializable
     with Comparable[ULong] {
 
   @inline final def toByte: Byte     = underlying.toByte

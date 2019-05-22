@@ -63,7 +63,7 @@ class UnixFileSystem(override val provider: FileSystemProvider,
     if (err != 0) {
       throw new IOException()
     } else {
-      val flags = !(stat._10)
+      val flags = stat._10
       val mask  = statvfs.ST_RDONLY
       (flags & mask) == mask
     }

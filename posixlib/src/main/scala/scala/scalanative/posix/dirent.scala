@@ -6,7 +6,7 @@ import scala.scalanative.native._, Nat._
 @extern
 object dirent {
 
-  type _256 = Digit[_2, Digit[_5, _6]]
+  type _256 = Digit3[_2, _5, _6]
   type DIR  = Void
   type dirent =
     CStruct3[CUnsignedLongLong, CArray[CChar, _256], CShort]

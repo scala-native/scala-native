@@ -2,7 +2,8 @@ package scala.scalanative
 
 import java.nio.charset.Charset
 import scala.language.experimental.macros
-import scalanative.runtime.{libc, intrinsic}
+import scalanative.runtime.{libc, intrinsic, fromRawPtr}
+import scalanative.runtime.Intrinsics.{castIntToRawPtr, castLongToRawPtr}
 
 package object native {
 
@@ -106,13 +107,15 @@ package object native {
    *
    *  Note: unlike alloc, the memory is not zero-initialized.
    */
-  def stackalloc[T](implicit tag: Tag[T]): Ptr[T] = intrinsic
+  def stackalloc[T](implicit tag: Tag[T]): Ptr[T] =
+    macro MacroImpl.stackalloc1[T]
 
   /** Stack allocate n values of given type.
    *
    *  Note: unlike alloc, the memory is not zero-initialized.
    */
-  def stackalloc[T](n: CSize)(implicit tag: Tag[T]): Ptr[T] = intrinsic
+  def stackalloc[T](n: CSize)(implicit tag: Tag[T]): Ptr[T] =
+    macro MacroImpl.stackallocN[T]
 
   /** Used as right hand side of external method and field declarations. */
   def extern: Nothing = intrinsic
@@ -120,12 +123,6 @@ package object native {
   /** C-style string literal. */
   implicit class CQuote(val ctx: StringContext) {
     def c(): CString = intrinsic
-  }
-
-  /** C-style unchecked cast. */
-  implicit class CCast[From](val from: From) {
-    def cast[To](implicit fromtag: Tag[From], totag: Tag[To]): To =
-      intrinsic
   }
 
   /** Scala Native extensions to the standard Byte. */
@@ -150,6 +147,7 @@ package object native {
     @inline def toUShort: UShort = toUInt.toUShort
     @inline def toUInt: UInt     = new UInt(value)
     @inline def toULong: ULong   = toUInt.toULong
+    @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(value))
   }
 
   /** Scala Native extensions to the standard Long. */
@@ -158,6 +156,7 @@ package object native {
     @inline def toUShort: UShort = toULong.toUShort
     @inline def toUInt: UInt     = toULong.toUInt
     @inline def toULong: ULong   = new ULong(value)
+    @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(value))
   }
 
   /** Convert a CString to a String using given charset. */
@@ -198,6 +197,19 @@ package object native {
     cstr
   }
 
+  /** Create an empty CVarArgList. */
+  def toCVarArgList()(implicit z: Zone): CVarArgList =
+    toCVarArgList(Seq.empty)
+
+  /** Convert given CVarArgs into a c CVarArgList. */
+  def toCVarArgList(vararg: CVarArg, varargs: CVarArg*)(
+      implicit z: Zone): CVarArgList =
+    toCVarArgList(vararg +: varargs)
+
+  /** Convert a sequence of CVarArg into a c CVarArgList. */
+  def toCVarArgList(varargs: Seq[CVarArg])(implicit z: Zone): CVarArgList =
+    CVarArgList.fromSeq(varargs)
+
   private object MacroImpl {
     import scala.reflect.macros.blackbox.Context
 
@@ -214,7 +226,7 @@ package object native {
         val $ptr    = $z.alloc($size)
         val $rawptr = $runtime.toRawPtr($ptr)
         $runtime.libc.memset($rawptr, 0, $size)
-        $ptr.cast[Ptr[$T]]
+        $ptr.asInstanceOf[Ptr[$T]]
       }"""
     }
 
@@ -233,7 +245,42 @@ package object native {
         val $ptr    = $z.alloc($size)
         val $rawptr = $runtime.toRawPtr($ptr)
         $runtime.libc.memset($rawptr, 0, $size)
-        $ptr.cast[Ptr[$T]]
+        $ptr.asInstanceOf[Ptr[$T]]
+      }"""
+    }
+
+    def stackalloc1[T: c.WeakTypeTag](c: Context)(tag: c.Tree): c.Tree = {
+      import c.universe._
+
+      val T = weakTypeOf[T]
+
+      val size, rawptr = TermName(c.freshName())
+
+      val runtime = q"_root_.scala.scalanative.runtime"
+
+      q"""{
+        val $size   = _root_.scala.scalanative.native.sizeof[$T]($tag)
+        val $rawptr = $runtime.Intrinsics.stackalloc($size)
+        $runtime.libc.memset($rawptr, 0, $size)
+        $runtime.fromRawPtr[$T]($rawptr)
+      }"""
+    }
+
+    def stackallocN[T: c.WeakTypeTag](c: Context)(n: c.Tree)(
+        tag: c.Tree): c.Tree = {
+      import c.universe._
+
+      val T = weakTypeOf[T]
+
+      val size, rawptr = TermName(c.freshName())
+
+      val runtime = q"_root_.scala.scalanative.runtime"
+
+      q"""{
+        val $size   = _root_.scala.scalanative.native.sizeof[$T]($tag) * $n
+        val $rawptr = $runtime.Intrinsics.stackalloc($size)
+        $runtime.libc.memset($rawptr, 0, $size)
+        $runtime.fromRawPtr[$T]($rawptr)
       }"""
     }
   }
