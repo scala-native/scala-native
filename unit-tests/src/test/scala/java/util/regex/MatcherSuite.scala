@@ -561,10 +561,11 @@ object MatcherSuite extends tests.Suite {
     assertEquals(group("D"), "Lausanne, Switzerland")
   }
 
-  // Do not expect support for re2 syntax in java.util.regex with re2s.
+  // Do not expect support for re2 syntax in java.util.regex with
+  // scalanative.regex.
   // No Issue number necessary.
   testFails("named group (re2 syntax)", 0) {
-    // re2s behavior change, so no Issue #
+    // scalanative.regex behavior change, so no Issue #
     // change pattern to java: "from (?<S>.*) to (?<D>.*)"
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
@@ -604,13 +605,13 @@ object MatcherSuite extends tests.Suite {
     // of that issue led to an SN idiosyncratic implementation of
     // quoteReplacement.
     //
-    // That implementation has now been replaced. The re2s based
-    // implementation of quoteReplacement now returns the same result
+    // That implementation has now been replaced. The scalanative.regex
+    // based implementation of quoteReplacement now returns the same result
     // as the JVM.
     //
     // The test case for String.replaceAllLiterally() in the StringSuite
-    // shows that things changed for re2s in parallel so that Issue #1070
-    // did not regress. Check & cross check.
+    // shows that things changed for scalanative.regex in parallel so that
+    // Issue #1070 did not regress. Check & cross check.
 
     val replacement = "\\fin$\\du.$$monde\\"
     val expected    = "\\\\fin\\$\\\\du.\\$\\$monde\\\\"
@@ -783,7 +784,8 @@ object MatcherSuite extends tests.Suite {
     assertEquals(end("D"), 46)
   }
 
-  // Do not support re2 syntax in java.util.regex with re2s. No Issue number.
+  // Do not support re2 syntax in java.util.regex with scalanative.regex.
+  // No Issue number.
   testFails("start(name)/end(name) re2 syntax", 0) {
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
@@ -1026,7 +1028,7 @@ object MatcherSuite extends tests.Suite {
                "expected: '${expectedNewGroup2End}'")
     }
 
-    // group count increases. Force re2s Matcher.scala to
+    // group count increases. Force scalanative.regex Matcher.scala to
     // allocate a new, larger data structure.
     val oldNeedle = "\\w+ (\\w+) \\w+ \\w+ \\w+ \\w+ (\\w+-\\w+)"
     val newNeedle = "\\w+ (\\w+) \\w+ (\\w+) (\\w+) \\w+ \\w+-\\w+"
