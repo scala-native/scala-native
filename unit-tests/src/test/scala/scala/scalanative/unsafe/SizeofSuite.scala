@@ -1,6 +1,8 @@
 package scala.scalanative
 package unsafe
 
+import scalanative.unsigned._
+
 object SizeofSuite extends tests.Suite {
 
   test("Byte") {

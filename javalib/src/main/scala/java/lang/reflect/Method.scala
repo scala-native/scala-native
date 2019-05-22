@@ -1,6 +1,6 @@
 package java.lang.reflect
 
-import scalanative.unsafe.stub
+import scalanative.annotation.stub
 
 class Method {
 

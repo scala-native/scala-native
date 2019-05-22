@@ -1,6 +1,6 @@
 package java.util
 
-import scalanative.unsafe.stub
+import scalanative.annotation.stub
 
 class TimeZone extends Serializable with Cloneable {
 

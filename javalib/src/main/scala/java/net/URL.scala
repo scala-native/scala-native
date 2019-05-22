@@ -1,6 +1,6 @@
 package java.net
 
-import scalanative.unsafe.stub
+import scalanative.annotation.stub
 
 class URL(from: String) {
   @stub

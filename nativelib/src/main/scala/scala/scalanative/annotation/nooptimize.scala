@@ -1,5 +1,5 @@
 package scala.scalanative
-package unsafe
+package annotation
 
 /** Don't optimize annotated method at all.
  *

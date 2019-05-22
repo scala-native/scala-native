@@ -1,7 +1,7 @@
 package java.lang
 
 import scalanative.unsigned._
-import scalanative.unsafe.stub
+import scalanative.annotation.stub
 import scalanative.libc.errno
 
 class Thread private (runnable: Runnable) extends Runnable {

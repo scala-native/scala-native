@@ -1,5 +1,5 @@
 package scala.scalanative
-package unsafe
+package annotation
 
 object NoOptSuite extends tests.Suite {
   class A { def foo: String = "A" }

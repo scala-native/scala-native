@@ -4,6 +4,7 @@ import java.nio.file.{FileSystems, Path}
 import java.net.URI
 
 import scala.annotation.tailrec
+import scalanative.annotation.stub
 import scalanative.posix.{fcntl, limits, unistd, utime}
 import scalanative.posix.sys.stat
 import scalanative.unsigned._

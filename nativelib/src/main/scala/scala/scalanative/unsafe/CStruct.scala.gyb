@@ -1,6 +1,7 @@
 package scala.scalanative
 package unsafe
 
+import scalanative.annotation.alwaysinline
 import scalanative.runtime.{fromRawPtr, RawPtr}
 import scalanative.runtime.Intrinsics._
 

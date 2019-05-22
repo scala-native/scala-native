@@ -2,6 +2,7 @@ package scala.scalanative
 package unsafe
 
 import scala.reflect.ClassTag
+import scalanative.annotation.alwaysinline
 import scalanative.unsigned._
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._

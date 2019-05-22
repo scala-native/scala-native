@@ -3,6 +3,7 @@ package unsafe
 
 import scala.runtime.BoxesRunTime._
 import scala.reflect.ClassTag
+import scalanative.annotation.alwaysinline
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
 import scalanative.runtime.Boxes._

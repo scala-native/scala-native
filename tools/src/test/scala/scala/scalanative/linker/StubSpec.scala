@@ -9,15 +9,15 @@ class StubSpec extends LinkerSpec {
   val stubMethodSource = """object Main {
                            |  def main(args: Array[String]): Unit =
                            |    stubMethod
-                           |  @scala.scalanative.unsafe.stub
+                           |  @scala.scalanative.annotation.stub
                            |  def stubMethod: Int = ???
                            |}""".stripMargin
-  val stubClassSource  = """@scalanative.unsafe.stub class StubClass
+  val stubClassSource  = """@scalanative.annotation.stub class StubClass
                           |object Main {
                           |  def main(args: Array[String]): Unit =
                           |    new StubClass
                           |}""".stripMargin
-  val stubModuleSource = """@scalanative.unsafe.stub object StubModule
+  val stubModuleSource = """@scalanative.annotation.stub object StubModule
                            |object Main {
                            |  def main(args: Array[String]): Unit =
                            |    StubModule

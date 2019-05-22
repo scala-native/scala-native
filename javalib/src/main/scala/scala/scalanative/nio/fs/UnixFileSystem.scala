@@ -25,7 +25,7 @@ import scala.scalanative.unsafe.{
 
 import scala.scalanative.posix.sys.statvfs
 
-import scalanative.unsafe.stub
+import scalanative.annotation.stub
 
 class UnixFileSystem(override val provider: FileSystemProvider,
                      val root: String,

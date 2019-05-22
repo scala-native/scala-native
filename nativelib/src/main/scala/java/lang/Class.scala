@@ -2,6 +2,7 @@ package java.lang
 
 import java.lang.reflect.{Field, Method}
 
+import scalanative.annotation._
 import scalanative.unsafe._
 import scalanative.runtime.{Array => _, _}
 
@@ -36,21 +37,11 @@ final class _Class[A](val rawty: RawPtr) {
     else classOf[java.lang.Object]
   }
 
-  def getInterfaces(): Array[_Class[_]] =
-    ???
-
   def getName(): String =
     ty.name
 
   def getSimpleName(): String =
     getName.split('.').last.split('$').last
-
-  def getSuperclass(): Class[_ >: A] =
-    ???
-
-  @stub
-  def getField(name: String): Field =
-    ???
 
   def isArray(): scala.Boolean =
     (rawty == toRawType(classOf[BooleanArray]) ||
@@ -121,6 +112,15 @@ final class _Class[A](val rawty: RawPtr) {
     prefix + name
   }
 
+  @stub
+  def getInterfaces(): Array[_Class[_]] =
+    ???
+  @stub
+  def getSuperclass(): Class[_ >: A] =
+    ???
+  @stub
+  def getField(name: String): Field =
+    ???
   @stub
   def getClassLoader(): java.lang.ClassLoader = ???
   @stub

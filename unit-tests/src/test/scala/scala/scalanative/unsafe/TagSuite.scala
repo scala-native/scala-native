@@ -1,6 +1,8 @@
 package scala.scalanative
 package unsafe
 
+import scalanative.unsigned._
+
 object TagSuite extends tests.Suite {
 
   test("tag size") {

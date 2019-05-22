@@ -23,16 +23,14 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val LinkClass   = getRequiredClass("scala.scalanative.unsafe.link")
     lazy val ExternClass = getRequiredClass("scala.scalanative.unsafe.extern")
     lazy val PinClass    = getRequiredClass("scala.scalanative.unsafe.pin")
-    lazy val StubClass   = getRequiredClass("scala.scalanative.unsafe.stub")
+    lazy val StubClass   = getRequiredClass("scala.scalanative.annotation.stub")
 
-    lazy val InlineHintClass = getRequiredClass(
-      "scala.scalanative.unsafe.inlinehint")
     lazy val AlwaysInlineClass = getRequiredClass(
-      "scala.scalanative.unsafe.alwaysinline")
+      "scala.scalanative.annotation.alwaysinline")
     lazy val NoOptimizeClass = getRequiredClass(
-      "scala.scalanative.unsafe.nooptimize")
+      "scala.scalanative.annotation.nooptimize")
     lazy val NoSpecializeClass = getRequiredClass(
-      "scala.scalanative.unsafe.nospecialize")
+      "scala.scalanative.annotation.nospecialize")
 
     lazy val NativeModule = getRequiredModule(
       "scala.scalanative.unsafe.package")

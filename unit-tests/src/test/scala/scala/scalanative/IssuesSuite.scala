@@ -1,5 +1,6 @@
 package scala.scalanative
 
+import scalanative.unsigned._
 import scalanative.unsafe._
 
 object IssuesSuite extends tests.Suite {
