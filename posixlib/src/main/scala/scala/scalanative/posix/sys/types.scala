@@ -1,6 +1,7 @@
 package scala.scalanative
 package posix.sys
 
+import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 
 @extern

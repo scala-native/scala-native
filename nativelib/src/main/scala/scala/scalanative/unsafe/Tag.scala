@@ -3,6 +3,7 @@ package scala.scalanative
 package unsafe
 
 import scala.reflect.ClassTag
+import scalanative.unsigned._
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
 
@@ -102,16 +103,16 @@ object Tag {
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 51)
 
-  object UByte extends Tag[unsafe.UByte] {
+  object UByte extends Tag[unsigned.UByte] {
     @alwaysinline def size: Int      = 1
     @alwaysinline def alignment: Int = 1
     @alwaysinline override def load(
-        ptr: unsafe.Ptr[unsafe.UByte]): unsafe.UByte =
+        ptr: unsafe.Ptr[unsigned.UByte]): unsigned.UByte =
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 60)
       loadByte(toRawPtr(ptr)).toUByte
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 64)
-    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.UByte],
-                                     value: unsafe.UByte): Unit =
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.UByte],
+                                     value: unsigned.UByte): Unit =
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 69)
       storeByte(toRawPtr(ptr), value.toByte)
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 73)
@@ -135,16 +136,16 @@ object Tag {
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 51)
 
-  object UShort extends Tag[unsafe.UShort] {
+  object UShort extends Tag[unsigned.UShort] {
     @alwaysinline def size: Int      = 2
     @alwaysinline def alignment: Int = 2
     @alwaysinline override def load(
-        ptr: unsafe.Ptr[unsafe.UShort]): unsafe.UShort =
+        ptr: unsafe.Ptr[unsigned.UShort]): unsigned.UShort =
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 60)
       loadShort(toRawPtr(ptr)).toUShort
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 64)
-    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.UShort],
-                                     value: unsafe.UShort): Unit =
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.UShort],
+                                     value: unsigned.UShort): Unit =
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 69)
       storeShort(toRawPtr(ptr), value.toShort)
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 73)
@@ -168,15 +169,15 @@ object Tag {
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 51)
 
-  object UInt extends Tag[unsafe.UInt] {
+  object UInt extends Tag[unsigned.UInt] {
     @alwaysinline def size: Int                                                = 4
     @alwaysinline def alignment: Int                                           = 4
-    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.UInt]): unsafe.UInt =
+    @alwaysinline override def load(ptr: unsafe.Ptr[unsigned.UInt]): unsigned.UInt =
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 60)
       loadInt(toRawPtr(ptr)).toUInt
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 64)
-    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.UInt],
-                                     value: unsafe.UInt): Unit =
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.UInt],
+                                     value: unsigned.UInt): Unit =
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 69)
       storeInt(toRawPtr(ptr), value.toInt)
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 73)
@@ -200,16 +201,16 @@ object Tag {
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 51)
 
-  object ULong extends Tag[unsafe.ULong] {
+  object ULong extends Tag[unsigned.ULong] {
     @alwaysinline def size: Int      = 8
     @alwaysinline def alignment: Int = 8
     @alwaysinline override def load(
-        ptr: unsafe.Ptr[unsafe.ULong]): unsafe.ULong =
+        ptr: unsafe.Ptr[unsigned.ULong]): unsigned.ULong =
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 60)
       loadLong(toRawPtr(ptr)).toULong
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 64)
-    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.ULong],
-                                     value: unsafe.ULong): Unit =
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.ULong],
+                                     value: unsigned.ULong): Unit =
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 69)
       storeLong(toRawPtr(ptr), value.toLong)
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 73)
@@ -10078,25 +10079,25 @@ object Tag {
   @alwaysinline implicit def materializeByteTag: Tag[scala.Byte] =
     Byte
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 209)
-  @alwaysinline implicit def materializeUByteTag: Tag[unsafe.UByte] =
+  @alwaysinline implicit def materializeUByteTag: Tag[unsigned.UByte] =
     UByte
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 209)
   @alwaysinline implicit def materializeShortTag: Tag[scala.Short] =
     Short
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 209)
-  @alwaysinline implicit def materializeUShortTag: Tag[unsafe.UShort] =
+  @alwaysinline implicit def materializeUShortTag: Tag[unsigned.UShort] =
     UShort
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 209)
   @alwaysinline implicit def materializeIntTag: Tag[scala.Int] =
     Int
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 209)
-  @alwaysinline implicit def materializeUIntTag: Tag[unsafe.UInt] =
+  @alwaysinline implicit def materializeUIntTag: Tag[unsigned.UInt] =
     UInt
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 209)
   @alwaysinline implicit def materializeLongTag: Tag[scala.Long] =
     Long
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 209)
-  @alwaysinline implicit def materializeULongTag: Tag[unsafe.ULong] =
+  @alwaysinline implicit def materializeULongTag: Tag[unsigned.ULong] =
     ULong
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 209)
   @alwaysinline implicit def materializeFloatTag: Tag[scala.Float] =

@@ -33,6 +33,7 @@ import java.util.{
 }
 import java.util.stream.{Stream, WrappedScalaStream}
 
+import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.{dirent, fcntl, limits, unistd}, dirent._

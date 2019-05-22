@@ -1,5 +1,6 @@
 package java.lang
 
+import scalanative.unsigned._
 import scalanative.unsafe.stub
 import scalanative.libc.errno
 

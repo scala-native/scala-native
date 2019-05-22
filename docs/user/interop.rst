@@ -400,10 +400,10 @@ Unsigned integer types
 
 Scala Native provides support for four unsigned integer types:
 
-1. ``unsafe.UByte``
-2. ``unsafe.UShort``
-3. ``unsafe.UInt``
-4. ``unsafe.ULong``
+1. ``unsigned.UByte``
+2. ``unsigned.UShort``
+3. ``unsigned.UInt``
+4. ``unsigned.ULong``
 
 They share the same primitive operations as signed integer types.
 Primitive operation between two integer values are supported only

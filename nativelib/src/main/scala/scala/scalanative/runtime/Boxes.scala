@@ -1,6 +1,7 @@
 package scala.scalanative
 package runtime
 
+import scalanative.unsigned._
 import scalanative.unsafe._
 
 object Boxes {

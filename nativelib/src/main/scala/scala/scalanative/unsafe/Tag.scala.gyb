@@ -2,6 +2,7 @@ package scala.scalanative
 package unsafe
 
 import scala.reflect.ClassTag
+import scalanative.unsigned._
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
 
@@ -38,13 +39,13 @@ object Tag {
   %          ('Boolean', 'scala.Boolean', 1),
   %          ('Char', 'scala.Char', 2),
   %          ('Byte', 'scala.Byte', 1),
-  %          ('UByte', 'unsafe.UByte', 1),
+  %          ('UByte', 'unsigned.UByte', 1),
   %          ('Short', 'scala.Short', 2),
-  %          ('UShort', 'unsafe.UShort', 2),
+  %          ('UShort', 'unsigned.UShort', 2),
   %          ('Int', 'scala.Int', 4),
-  %          ('UInt', 'unsafe.UInt', 4),
+  %          ('UInt', 'unsigned.UInt', 4),
   %          ('Long', 'scala.Long', 8),
-  %          ('ULong', 'unsafe.ULong', 8),
+  %          ('ULong', 'unsigned.ULong', 8),
   %          ('Float', 'scala.Float', 4),
   %          ('Double', 'scala.Double', 8)]
   % for (name, T, size) in prims:

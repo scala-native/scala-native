@@ -2,6 +2,7 @@ package scala.scalanative
 
 import java.nio.charset.Charset
 import scala.language.experimental.macros
+import scalanative.unsigned._
 import scalanative.runtime.{libc, intrinsic, fromRawPtr}
 import scalanative.runtime.Intrinsics.{castIntToRawPtr, castLongToRawPtr}
 

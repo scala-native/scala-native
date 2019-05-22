@@ -12,10 +12,10 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     // Native library
 
-    lazy val UByteClass  = getRequiredClass("scala.scalanative.unsafe.UByte")
-    lazy val UShortClass = getRequiredClass("scala.scalanative.unsafe.UShort")
-    lazy val UIntClass   = getRequiredClass("scala.scalanative.unsafe.UInt")
-    lazy val ULongClass  = getRequiredClass("scala.scalanative.unsafe.ULong")
+    lazy val UByteClass  = getRequiredClass("scala.scalanative.unsigned.UByte")
+    lazy val UShortClass = getRequiredClass("scala.scalanative.unsigned.UShort")
+    lazy val UIntClass   = getRequiredClass("scala.scalanative.unsigned.UInt")
+    lazy val ULongClass  = getRequiredClass("scala.scalanative.unsigned.ULong")
     lazy val PtrClass    = getRequiredClass("scala.scalanative.unsafe.Ptr")
     lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")
 

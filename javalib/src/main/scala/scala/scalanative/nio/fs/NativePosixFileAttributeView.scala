@@ -6,6 +6,7 @@ import java.nio.file.{LinkOption, Path}
 import java.nio.file.attribute._
 import java.io.IOException
 
+import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._

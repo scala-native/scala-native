@@ -2,6 +2,7 @@ package scala.scalanative
 package unsafe
 
 import scala.language.implicitConversions
+import scalanative.unsigned._
 import scalanative.runtime.{intrinsic, RawPtr, toRawPtr, libc, LongArray}
 
 /** Type of a C-style vararg list (va_list in C). */

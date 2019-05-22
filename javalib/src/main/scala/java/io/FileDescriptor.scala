@@ -1,5 +1,6 @@
 package java.io
 
+import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.posix.{fcntl, unistd}
 

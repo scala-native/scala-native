@@ -1,5 +1,6 @@
 package java.io
 
+import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._, stdlib._, stdio._, string._
 import scalanative.nio.fs.UnixException
