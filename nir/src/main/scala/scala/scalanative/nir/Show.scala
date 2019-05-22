@@ -35,7 +35,7 @@ object Show {
     val pw = new java.io.PrintWriter(fileName)
     try {
       util
-        .partitionBy(defns)(_.name)
+        .partitionBy(defns.filter(_ != null))(_.name)
         .par
         .map {
           case (_, defns) =>

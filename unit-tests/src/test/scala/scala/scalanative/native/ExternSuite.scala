@@ -1,18 +1,10 @@
 package scala.scalanative
 package native
 
+import scalanative.native._
 import scalanative.libc.{stdio, stdlib, string}
 
 object ExternSuite extends tests.Suite {
-
-  test("extern call with varargs") {
-    val buff = stackalloc[CChar](64)
-    stdio.sprintf(buff, c"%d %d %d", 1, 2, 3)
-    for ((c, i) <- "1 2 3".zipWithIndex) {
-      assert(buff(i) == c)
-    }
-  }
-
   test("extern variable read and assign") {
     import scala.scalanative.posix.getopt
 

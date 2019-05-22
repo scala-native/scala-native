@@ -297,9 +297,6 @@ object zlib {
   @name("scalanative_gzwrite")
   def gzwrite(file: gzFile, buf: voidpc, len: CUnsignedInt): CInt = extern
 
-  @name("scalanative_gzprintf")
-  def gzprintf(file: gzFile, format: CString, args: CVararg*): CInt = extern
-
   @name("scalanative_gzputs")
   def gzputs(file: gzFile, s: CString): CInt = extern
 

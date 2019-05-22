@@ -9,10 +9,6 @@ void scalanative_openlog(const char *ident, int logopt, int facility) {
 
 int scalanative_setlogmask(int maskpri) { return setlogmask(maskpri); }
 
-void scalanative_syslog(int priority, const char *message, va_list args) {
-    syslog(priority, message, args);
-}
-
 int scalanative_log_emerg() { return LOG_EMERG; }
 int scalanative_log_alert() { return LOG_ALERT; }
 int scalanative_log_crit() { return LOG_CRIT; }

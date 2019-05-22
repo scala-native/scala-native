@@ -94,6 +94,7 @@ object Type {
     Type.Ref(Global.Top("scala.scalanative.native.UInt"))         -> Type.Int,
     Type.Ref(Global.Top("scala.scalanative.native.ULong"))        -> Type.Long,
     Type.Ref(Global.Top("scala.scalanative.native.CArray"))       -> Type.Ptr,
+    Type.Ref(Global.Top("scala.scalanative.native.CVarArgList"))  -> Type.Ptr,
     Type.Ref(Global.Top("scala.scalanative.runtime.CFuncRawPtr")) -> Type.Ptr,
     Type.Ref(Global.Top("scala.scalanative.native.Ptr"))          -> Type.Ptr,
     Type.Ref(Global.Top("java.lang.Boolean"))                     -> Type.Bool,

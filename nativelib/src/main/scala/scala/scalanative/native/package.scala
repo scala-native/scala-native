@@ -197,6 +197,19 @@ package object native {
     cstr
   }
 
+  /** Create an empty CVarArgList. */
+  def toCVarArgList()(implicit z: Zone): CVarArgList =
+    toCVarArgList(Seq.empty)
+
+  /** Convert given CVarArgs into a c CVarArgList. */
+  def toCVarArgList(vararg: CVarArg, varargs: CVarArg*)(
+      implicit z: Zone): CVarArgList =
+    toCVarArgList(vararg +: varargs)
+
+  /** Convert a sequence of CVarArg into a c CVarArgList. */
+  def toCVarArgList(varargs: Seq[CVarArg])(implicit z: Zone): CVarArgList =
+    CVarArgList.fromSeq(varargs)
+
   private object MacroImpl {
     import scala.reflect.macros.blackbox.Context
 

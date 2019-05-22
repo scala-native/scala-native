@@ -541,7 +541,7 @@ trait NirGenExpr { self: NirGenPhase =>
       } else {
         val ty     = genType(sym.tpe)
         val module = genModule(sym.owner)
-        genApplyMethod(sym, statically = true, module, Seq(ValTree(module)))
+        genApplyMethod(sym, statically = true, module, Seq())
       }
     }
 
@@ -631,7 +631,7 @@ trait NirGenExpr { self: NirGenPhase =>
 
         val retType   = nir.Type.Ref(nir.Global.Top("java.lang.Object"))
         val signature = nir.Type.Function(callerType :: boxedArgTypes, retType)
-        val args      = genMethodArgs(sym, argsp, boxedArgTypes)
+        val args      = genMethodArgs(sym, argsp)
 
         val method = buf.dynmethod(self, methodName, unwind)
         val values = self +: args
@@ -1616,12 +1616,7 @@ trait NirGenExpr { self: NirGenPhase =>
         } else {
           origSig
         }
-      val argsPt =
-        if (owner.isExternModule || isImplClass(owner))
-          sig.args
-        else
-          sig.args.tail
-      val args = genMethodArgs(sym, argsp, argsPt)
+      val args = genMethodArgs(sym, argsp)
       val method =
         if (isImplClass(owner) || statically || owner.isStruct || owner.isExternModule) {
           Val.Global(name, nir.Type.Ptr)
@@ -1645,101 +1640,24 @@ trait NirGenExpr { self: NirGenPhase =>
       }
     }
 
-    def genSimpleArgs(argsp: Seq[Tree]): Seq[Val] =
-      genSimpleArgsWithPt(argsp, argsp.map(_ => None))
-
-    def genSimpleArgsWithPt(
-        argsp: Seq[Tree],
-        pts: Seq[Option[scalanative.nir.Type]]): Seq[Val] = {
-      val res = mutable.UnrolledBuffer.empty[Val]
-
-      argsp.zip(pts).foreach {
-        case (argp, ptopt) =>
-          val value = genExpr(argp)
-          ptopt.fold {
-            res += value
-          } { pt =>
-            // Under certain circumstances e.g., the result of the c-function
-            // pointer dereference being used in a position where an object
-            // reference is objected, nir code generator leaves a primitive
-            // value, since the Scala compiler didn't box it. Such applications
-            // have to be augmented depending on the expected type of
-            // the function.
-            (value.ty, pt) match {
-              case (ty: nir.Type.I, _: nir.Type.RefKind) =>
-                res += nir.Type.box
-                  .get(ty)
-                  .map(buf.box(_, value, unwind))
-                  .getOrElse(value)
-              case (ty: nir.Type.F, _: nir.Type.RefKind) =>
-                res += nir.Type.box
-                  .get(ty)
-                  .map(buf.box(_, value, unwind))
-                  .getOrElse(value)
-              case _ =>
-                res += value
-            }
-          }
-      }
-
-      res
-    }
-
     def genMethodArgs(sym: Symbol,
-                      argsp: Seq[Tree],
-                      argsPt: Seq[nir.Type]): Seq[Val] =
+                      argsp: Seq[Tree]): Seq[Val] =
       if (!sym.owner.isExternModule) {
-        genSimpleArgsWithPt(argsp, argsPt.map(Some(_)))
+        genSimpleArgs(argsp)
       } else {
-        val wereRepeated = exitingPhase(currentRun.typerPhase) {
-          for {
-            params <- sym.tpe.paramss
-            param  <- params
-          } yield {
-            param.name -> isScalaRepeatedParamType(param.tpe)
-          }
-        }.toMap
-
         val res = mutable.UnrolledBuffer.empty[Val]
 
         argsp.zip(sym.tpe.params).foreach {
           case (argp, paramSym) =>
-            val wasRepeated = wereRepeated.getOrElse(paramSym.name, false)
-            if (wasRepeated) {
-              res ++= genExpandRepeatedArg(argp).get
-            } else {
-              val externType = genExternType(paramSym.tpe)
-              res += toExtern(externType, genExpr(argp))
-            }
+            val externType = genExternType(paramSym.tpe)
+            res += toExtern(externType, genExpr(argp))
         }
 
         res
       }
 
-    def genExpandRepeatedArg(argp: Tree): Option[Seq[Val]] = {
-      // Given an extern method `def foo(args: Vararg*)`
-      argp match {
-        // foo(vararg1, ..., varargN) where N > 0
-        case MaybeAsInstanceOf(
-            WrapArray(MaybeAsInstanceOf(ArrayValue(tpt, elems)))) =>
-          val values = mutable.UnrolledBuffer.empty[Val]
-          elems.foreach {
-            case CVararg(argp) =>
-              val arg = genExpr(argp)
-
-              arg.ty match {
-                case refty: Type.Ref if Type.boxClasses.contains(refty.name) =>
-                  values += toExtern(Type.unbox(Type.Ref(refty.name)), arg)
-                case _ =>
-                  values += arg
-              }
-          }
-          Some(values)
-
-        // foo(argSeq:_*) - cannot be optimized
-        case _ =>
-          None
-      }
+    def genSimpleArgs(argsp: Seq[Tree]): Seq[Val] = {
+      argsp.map(genExpr)
     }
   }
 }

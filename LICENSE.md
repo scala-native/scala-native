@@ -1752,3 +1752,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 The re2s unit-tests appear to be original work of the re2s authors
 and carry the Scala License posted at the top of this file. Original work 
 produced by the port to Scala Native is covered by the Scala License also.
+
+# License notice for apple/swift
+
+Implementation of CVarArg and CVarArgList is based on the code from 
+[apple/swift](https://github.com/apple/swift). The original code
+was licensed under Apache License Version 2.0, just like the 
+Scala Native itself.
+
+

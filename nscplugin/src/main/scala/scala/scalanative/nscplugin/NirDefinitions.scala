@@ -38,10 +38,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
       "scala.scalanative.native.package")
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
 
-    lazy val CVarargModule = getRequiredModule(
-      "scala.scalanative.native.CVararg")
-    lazy val CVarargMethod = getMember(CVarargModule, TermName("apply"))
-
     lazy val CQuoteClass = getRequiredClass(
       "scala.scalanative.native.package$CQuote")
     lazy val CQuoteMethod = getDecl(CQuoteClass, TermName("c"))
