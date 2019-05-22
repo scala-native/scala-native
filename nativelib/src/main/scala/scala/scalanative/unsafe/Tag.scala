@@ -171,9 +171,10 @@ object Tag {
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 51)
 
   object UInt extends Tag[unsigned.UInt] {
-    @alwaysinline def size: Int                                                = 4
-    @alwaysinline def alignment: Int                                           = 4
-    @alwaysinline override def load(ptr: unsafe.Ptr[unsigned.UInt]): unsigned.UInt =
+    @alwaysinline def size: Int      = 4
+    @alwaysinline def alignment: Int = 4
+    @alwaysinline override def load(
+        ptr: unsafe.Ptr[unsigned.UInt]): unsigned.UInt =
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 60)
       loadInt(toRawPtr(ptr)).toUInt
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 64)
