@@ -8,7 +8,7 @@ foreign native code. This includes C and other languages that can expose APIs
 via C ABI (e.g. C++, D, Rust etc.)
 
 All of the interop APIs discussed here are defined in
-``scala.scalanative.native`` package. For brevity, we're going
+``scala.scalanative.unsafe`` package. For brevity, we're going
 to refer to that namespace as just ``native``.
 
 Extern objects
@@ -22,7 +22,7 @@ For example, to call C's ``malloc`` one might declare it as following:
 
 .. code-block:: scala
 
-    import scala.scalanative.native._
+    import scala.scalanative.unsafe._
 
     @extern
     object libc {
@@ -66,11 +66,11 @@ C Type                    Scala Type
 ``char32_t``              ``native.CChar32``
 ``float``                 ``native.CFloat``
 ``double``                ``native.CDouble``
-``void*``                 ``native.Ptr[Byte]`` [2_]
-``int*``                  ``native.Ptr[native.CInt]`` [2_]
+``void*``                 ``unsafe.Ptr[Byte]`` [2_]
+``int*``                  ``unsafe.Ptr[native.CInt]`` [2_]
 ``char*``                 ``native.CString`` [2_] [3_]
-``int (*)(int)``          ``native.CFuncPtr1[native.CInt, native.CInt]`` [2_] [4_]
-``struct { int x, y; }*`` ``native.Ptr[native.CStruct2[native.CInt, native.CInt]]`` [2_] [5_]
+``int (*)(int)``          ``unsafe.CFuncPtr1[native.CInt, native.CInt]`` [2_] [4_]
+``struct { int x, y; }*`` ``unsafe.Ptr[unsafe.CStruct2[native.CInt, native.CInt]]`` [2_] [5_]
 ``struct { int x, y; }``  Not supported
 ========================= =========================
 
@@ -89,7 +89,7 @@ link with using the ``@native.link`` annotation.
 
 .. code-block:: scala
 
-   import scala.scalanative.native._
+   import scala.scalanative.unsafe._
 
    @link("mylib")
    @extern
@@ -109,7 +109,7 @@ recommended to enforce the Scala naming conventions in bindings:
 
 .. code-block:: scala
 
-    import scala.scalanative.native._
+    import scala.scalanative.unsafe._
 
     @link("uv")
     @extern
@@ -130,7 +130,7 @@ can be declared as:
 
 .. code-block:: scala
 
-   import scala.scalanative.native._
+   import scala.scalanative.unsafe._
 
    @extern
    object stdio {
@@ -141,7 +141,7 @@ One can wrap a function in a nicer API like:
 
 .. code-block:: scala
 
-   import scala.scalanative.native._
+   import scala.scalanative.unsafe._
 
    def myprintf(format: CString, args: CVarArg*): CInt =
      Zone { implicit z =>
@@ -158,7 +158,7 @@ Pointer types
 -------------
 
 Scala Native provides a built-in equivalent of C's pointers via
-``native.Ptr[T]`` data type. Under the hood pointers are implemented
+``unsafe.Ptr[T]`` data type. Under the hood pointers are implemented
 using unmanaged machine pointers.
 
 Operations on pointers are closely related to their C counterparts and
@@ -195,7 +195,7 @@ One can declare it as following in Scala Native:
 
 .. code-block:: scala
 
-    def test(f: native.CFuncPtr1[CString, Unit]): Unit = native.extern
+    def test(f: unsafe.CFuncPtr1[CString, Unit]): Unit = native.extern
 
 `CFuncPtrN` types are a SAM (single abstract method) traits. You
 can define them by creating a class that inherits from the corresponding
@@ -229,7 +229,7 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 
    .. code-block:: scala
 
-      import scala.scalanative.native._
+      import scala.scalanative.unsafe._
 
       Zone { implicit z =>
         val buffer = alloc[Byte](n)
@@ -303,7 +303,7 @@ Memory layout types are auxiliary types that let one specify memory layout of
 unmanaged memory. They are meant to be used purely in combination with native
 pointers and do not have a corresponding first-class values backing them.
 
-* ``native.Ptr[native.CStructN[T1, ..., TN]]``
+* ``unsafe.Ptr[unsafe.CStructN[T1, ..., TN]]``
 
   Pointer to a C struct with up to 22 fields.
   Type parameters are the types of corresponding fields.
@@ -312,14 +312,14 @@ pointers and do not have a corresponding first-class values backing them.
 
   .. code-block:: scala
 
-      val ptr = native.stackalloc[native.CStruct2[Int, Int]]
+      val ptr = native.stackalloc[unsafe.CStruct2[Int, Int]]
       ptr._1 = 10
       ptr._2 = 20
       println(s"first ${ptr._1}, second ${ptr._2}")
 
   Here ``_N`` is an accessor for the field number N.
 
-* ``native.Ptr[native.CArray[T, N]]``
+* ``unsafe.Ptr[unsafe.CArray[T, N]]``
 
   Pointer to a C array with statically-known length ``N``. Length is encoded as
   a type-level natural number. Natural numbers are types that are composed of
@@ -329,7 +329,7 @@ pointers and do not have a corresponding first-class values backing them.
 
   .. code-block:: scala
 
-      import scalanative.native._, Nat._
+      import scalanative.unsafe._, Nat._
 
       type _1024 = Digit4[_1, _0, _2, _4]
 
@@ -350,7 +350,7 @@ strings (similarly to C):
 
 .. code-block:: scala
 
-    import scalanative.native._
+    import scalanative.unsafe._
 
     // CString is an alias for Ptr[CChar]
     val msg: CString = c"Hello, world!"
@@ -400,10 +400,10 @@ Unsigned integer types
 
 Scala Native provides support for four unsigned integer types:
 
-1. ``native.UByte``
-2. ``native.UShort``
-3. ``native.UInt``
-4. ``native.ULong``
+1. ``unsafe.UByte``
+2. ``unsafe.UShort``
+3. ``unsafe.UInt``
+4. ``unsafe.ULong``
 
 They share the same primitive operations as signed integer types.
 Primitive operation between two integer values are supported only

@@ -1,4 +1,4 @@
-import scala.scalanative.native._, stdio._
+import scala.scalanative.unsafe._, stdio._
 
 object Hello {
   def main(args: Array[String]): Unit = {

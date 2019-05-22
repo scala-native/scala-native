@@ -4,6 +4,6 @@ object Main {
 }
 
 object Foo {
-  @scalanative.native.stub
+  @scalanative.unsafe.stub
   def bar = ???
 }

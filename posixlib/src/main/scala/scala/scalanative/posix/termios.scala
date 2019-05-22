@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.native.{
+import scalanative.unsafe.{
   CArray,
   CChar,
   CInt,
@@ -12,7 +12,7 @@ import scalanative.native.{
   extern,
   name
 }
-import scalanative.native.Nat._
+import scalanative.unsafe.Nat._
 import posix.sys.types.pid_t
 
 @extern

@@ -1,6 +1,6 @@
 package java.net
 
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 import scala.scalanative.libc._
 import scala.scalanative.runtime.ByteArray
 import scala.scalanative.posix.errno._

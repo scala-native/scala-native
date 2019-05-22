@@ -1,6 +1,6 @@
 package java.util
 
-import scalanative.native.stub
+import scalanative.unsafe.stub
 
 import java.io.Serializable
 

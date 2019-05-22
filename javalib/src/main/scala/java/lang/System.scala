@@ -2,7 +2,7 @@ package java.lang
 
 import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 import scala.scalanative.posix.unistd
 import scala.scalanative.posix.sys.utsname._
 import scala.scalanative.posix.sys.uname._

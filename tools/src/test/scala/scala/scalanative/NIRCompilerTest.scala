@@ -64,7 +64,7 @@ class NIRCompilerTest extends FlatSpec with Matchers with Inspectors {
   it should "report error for extern method without result type" in {
     // given
     val code =
-      """import scala.scalanative.native.extern
+      """import scala.scalanative.unsafe.extern
         |
         |@extern
         |object Dummy {

@@ -1,4 +1,4 @@
-import scalanative.native
+import scalanative.unsafe
 
 object Main {
   def main(args: Array[String]): Unit =

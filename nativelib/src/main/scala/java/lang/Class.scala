@@ -2,7 +2,7 @@ package java.lang
 
 import java.lang.reflect.{Field, Method}
 
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.runtime.{Array => _, _}
 
 // These two methods are generated at link-time by the toolchain

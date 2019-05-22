@@ -2,7 +2,7 @@ package java
 package lang
 
 import java.io._
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 import scala.scalanative.libc._, signal._
 import scala.scalanative.posix.sys.ioctl._
 

@@ -1,6 +1,6 @@
 package scala.scalanative.posix
 
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.posix.sys.socket
 import scalanative.posix.netinet.in
 

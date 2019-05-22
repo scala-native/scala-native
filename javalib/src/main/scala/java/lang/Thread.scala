@@ -1,6 +1,6 @@
 package java.lang
 
-import scalanative.native.stub
+import scalanative.unsafe.stub
 import scalanative.libc.errno
 
 class Thread private (runnable: Runnable) extends Runnable {
@@ -72,7 +72,7 @@ object Thread {
 
   def sleep(millis: scala.Long, nanos: scala.Int): Unit = {
     import scala.scalanative.posix.errno.EINTR
-    import scala.scalanative.native._
+    import scala.scalanative.unsafe._
     import scala.scalanative.posix.unistd
 
     def checkErrno() =

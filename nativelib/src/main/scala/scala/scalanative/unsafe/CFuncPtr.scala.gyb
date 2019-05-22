@@ -1,0 +1,13 @@
+package scala.scalanative
+package unsafe
+
+sealed trait CFuncPtr
+
+% for N in range(0, 23):
+%   args = ", ".join("arg" + str(i) + ": T" + str(i) for i in range(1, N+1))
+
+trait CFuncPtr${N}[${", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])}] extends CFuncPtr {
+  def apply(${args}): R
+}
+
+% end

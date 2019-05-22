@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.native.{UByte, UInt, ULong, UShort}
+import scalanative.unsafe.{UByte, UInt, ULong, UShort}
 
 object inttypes {
 

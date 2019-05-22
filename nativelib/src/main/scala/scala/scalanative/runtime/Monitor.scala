@@ -1,6 +1,6 @@
 package scala.scalanative.runtime
 
-import scalanative.native._
+import scalanative.unsafe._
 
 sealed class Monitor private () {
   @alwaysinline def _notify(): Unit                              = ()

@@ -1,4 +1,4 @@
-package scala.scalanative.native
+package scala.scalanative.unsafe
 
 object AsInstanceOfSuite extends tests.Suite {
   class C

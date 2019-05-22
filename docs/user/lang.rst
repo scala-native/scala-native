@@ -9,7 +9,7 @@ the JVM. However, a few differences exist, which we mention here.
 Interop extensions
 ------------------
 
-Annotations and types defined ``scala.scalanative.native`` may modify semantics
+Annotations and types defined ``scala.scalanative.unsafe`` may modify semantics
 of the language for sake of interoperability with C libraries, read more about
 those in :ref:`interop` section.
 

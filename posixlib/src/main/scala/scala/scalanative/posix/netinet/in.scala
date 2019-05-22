@@ -2,7 +2,7 @@ package scala.scalanative
 package posix
 package netinet
 
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.posix.inttypes._
 import scalanative.posix.sys.socket
 

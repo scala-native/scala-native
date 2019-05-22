@@ -1,7 +1,7 @@
 package scala.runtime
 
 import scala.math.ScalaNumber
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 
 class BoxesRunTime
 

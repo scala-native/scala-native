@@ -3,7 +3,7 @@ package scala.scalanative
 package runtime
 
 import scala.runtime.BoxedUnit
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.runtime.Intrinsics._
 import scalanative.runtime.LLVMIntrinsics._
 

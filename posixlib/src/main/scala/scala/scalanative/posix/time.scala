@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 import scala.scalanative.posix.sys.types, types._
 
 @extern

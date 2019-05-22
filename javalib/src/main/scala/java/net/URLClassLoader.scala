@@ -1,6 +1,6 @@
 package java.net
 
-import scalanative.native.stub
+import scalanative.unsafe.stub
 
 class URLClassLoader(args: Array[Object], parent: ClassLoader)
     extends ClassLoader(parent) {

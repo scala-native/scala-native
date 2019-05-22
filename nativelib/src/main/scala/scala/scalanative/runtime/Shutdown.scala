@@ -1,7 +1,7 @@
 package scala.scalanative.runtime
 
 import scala.collection.mutable
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 
 private[runtime] object Shutdown {
   private val hooks: mutable.ArrayBuffer[() => Unit] = mutable.ArrayBuffer.empty

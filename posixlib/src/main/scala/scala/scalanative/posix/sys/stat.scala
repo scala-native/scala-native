@@ -2,7 +2,7 @@ package scala.scalanative
 package posix
 package sys
 
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.posix.time._
 import scalanative.posix.unistd.off_t
 

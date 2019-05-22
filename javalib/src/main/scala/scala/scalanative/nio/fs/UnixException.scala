@@ -1,6 +1,6 @@
 package scala.scalanative.nio.fs
 
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 import scala.scalanative.posix.errno._
 import java.io.IOException
 import java.nio.file._

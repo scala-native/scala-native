@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.native._
+import scalanative.unsafe._
 
 @extern
 object utime {
