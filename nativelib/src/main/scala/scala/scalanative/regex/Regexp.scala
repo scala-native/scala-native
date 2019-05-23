@@ -10,12 +10,10 @@ package regex
 
 import java.util.Arrays
 
-/**
- * Regular expression abstract syntax tree.
- * Produced by parser, used by compiler.
- * NB, this corresponds to {@code syntax.regexp} in the Go implementation
- * Go's {@code regexp} is called {@code RE2} in Java.
- */
+// Regular expression abstract syntax tree.
+// Produced by parser, used by compiler.
+// NB, this corresponds to {@code syntax.regexp} in the Go implementation
+// Go's {@code regexp} is called {@code RE2} in Java.
 class Regexp {
   import Regexp._
 

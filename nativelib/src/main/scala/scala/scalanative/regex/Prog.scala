@@ -13,9 +13,7 @@ import java.util.List
 
 import Inst.{Op => IOP}
 
-/**
- * A Prog is a compiled regular expression program.
- */
+// A Prog is a compiled regular expression program.
 class Prog {
 
   private val inst = new ArrayList[Inst]()

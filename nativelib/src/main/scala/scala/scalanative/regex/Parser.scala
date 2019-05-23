@@ -16,11 +16,9 @@ import java.util.regex.PatternSyntaxException
 
 import Regexp.{Op => ROP}
 
-/**
- * A parser of regular expression patterns.
- *
- * The only public entry point is {@link #parse(String pattern, int flags)}.
- */
+// A parser of regular expression patterns.
+//
+// The only public entry point is {@link #parse(String pattern, int flags)}.
 class Parser(wholeRegexp: String, _flags: Int) {
   import Parser._
 
@@ -1423,10 +1421,8 @@ object Parser {
     override def toString = rest()
   }
 
-  /**
-   * Parse regular expression pattern {@var pattern} with mode flags
-   * {@var flags}.
-   */
+  // Parse regular expression pattern {@var pattern} with mode flags
+  // {@var flags}.
   def parse(pattern: String, flags: Int): Regexp =
     (new Parser(pattern, flags)).parseInternal()
 
@@ -1647,7 +1643,7 @@ object Parser {
         if (!t.more() || t.peek() < '0' || t.peek() > '7') {
           invalidEscape
         } else {
-          /* fallthrough */
+          // fallthrough
           var r          = c - '0'
           var i          = 1
           var breakInner = false
