@@ -1,6 +1,6 @@
 package scala.scalanative.posix.sys
 
-import scalanative.native._
+import scalanative.unsafe._
 
 @extern
 object ioctl {

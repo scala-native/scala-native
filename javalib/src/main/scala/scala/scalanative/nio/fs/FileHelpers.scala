@@ -1,10 +1,10 @@
 package scala.scalanative.nio.fs
 
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.dirent._
 import scalanative.posix.{errno => e, fcntl, unistd}, e._, unistd.access
-import scalanative.native._, stdlib._, stdio._, string._
+import scalanative.unsafe._, stdlib._, stdio._, string._
 import scala.collection.mutable.UnrolledBuffer
 import scala.reflect.ClassTag
 import java.io.{File, IOException}

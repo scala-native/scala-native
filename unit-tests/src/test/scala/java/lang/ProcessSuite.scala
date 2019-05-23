@@ -4,7 +4,8 @@ import java.util.concurrent.TimeUnit
 import java.io._
 import java.nio.file.Files
 
-import scala.scalanative.native._
+import scala.scalanative.unsigned._
+import scala.scalanative.unsafe._
 import scala.scalanative.posix.{fcntl, unistd}
 import scala.io.Source
 

@@ -1,6 +1,7 @@
 package java.util.zip
 
-import scala.scalanative.native._
+import scala.scalanative.unsigned._
+import scala.scalanative.unsafe._
 import scala.scalanative.runtime.{ByteArray, zlib}
 
 // Ported from Apache Harmony

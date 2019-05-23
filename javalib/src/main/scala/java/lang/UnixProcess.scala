@@ -6,7 +6,8 @@ import java.util.concurrent.TimeUnit
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.scalanative.native._
+import scala.scalanative.unsigned._
+import scala.scalanative.unsafe._
 import scala.scalanative.libc.{errno => err, signal => sig, _}
 import sig._
 import err.errno

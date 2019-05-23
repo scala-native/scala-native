@@ -1,6 +1,6 @@
 package scala.scalanative.posix
 
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 
 import time._
 import timeOps.tmOps

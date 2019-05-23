@@ -1,7 +1,7 @@
 package scala.scalanative.posix.sys
 
-import scalanative.native._
-import scalanative.native.Nat._
+import scalanative.unsafe._
+import scalanative.unsafe.Nat._
 import scalanative.posix.inttypes._
 import scalanative.posix.time._
 
@@ -34,7 +34,7 @@ object select {
   //
   // An fd_set is arguably too large to allocate on the stack, so use a Zone.
   //
-  //    import scalanative.native.{Zone, alloc}
+  //    import scalanative.unsafe.{Zone, alloc}
   //
   //    Zone {
   //

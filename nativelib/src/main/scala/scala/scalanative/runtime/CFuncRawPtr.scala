@@ -2,7 +2,7 @@
 package scala.scalanative
 package runtime
 
-import scalanative.native._
+import scalanative.unsafe._
 
 final class CFuncRawPtr(val rawptr: RawPtr)
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 11)

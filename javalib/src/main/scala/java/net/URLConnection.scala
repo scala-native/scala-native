@@ -1,6 +1,6 @@
 package java.net
 
-import scalanative.native.stub
+import scalanative.annotation.stub
 
 class URLConnection {
   @stub

@@ -5,7 +5,7 @@ import java.util.Map
 import java.io.{File, IOException}
 import java.util
 import java.util.Arrays
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 import scala.scalanative.posix.unistd
 import scala.scalanative.runtime.Platform
 import ProcessBuilder.Redirect

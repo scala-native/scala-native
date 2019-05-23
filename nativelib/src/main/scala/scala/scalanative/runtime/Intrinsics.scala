@@ -1,7 +1,7 @@
 package scala.scalanative
 package runtime
 
-import scalanative.native.CFuncPtr
+import scalanative.unsafe.CFuncPtr
 
 object Intrinsics {
 

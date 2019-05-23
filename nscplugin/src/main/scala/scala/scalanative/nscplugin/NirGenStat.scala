@@ -317,7 +317,6 @@ trait NirGenStat { self: NirGenPhase =>
           sym.annotations.collect {
             case ann if ann.symbol == NoInlineClass     => Attr.NoInline
             case ann if ann.symbol == AlwaysInlineClass => Attr.AlwaysInline
-            case ann if ann.symbol == InlineHintClass   => Attr.InlineHint
             case ann if ann.symbol == InlineClass       => Attr.InlineHint
           }
         }

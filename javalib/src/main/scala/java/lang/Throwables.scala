@@ -1,7 +1,7 @@
 package java.lang
 
 import scala.collection.mutable
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.runtime.unwind
 
 private[lang] object StackTrace {

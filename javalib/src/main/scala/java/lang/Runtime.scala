@@ -2,7 +2,7 @@ package java.lang
 
 import java.io.File
 import scala.collection.JavaConverters._
-import scala.scalanative.native.stub
+import scala.scalanative.annotation.stub
 import scala.scalanative.libc.stdlib
 
 class Runtime private () {

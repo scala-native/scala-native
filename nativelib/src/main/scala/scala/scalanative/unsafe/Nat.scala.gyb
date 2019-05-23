@@ -1,0 +1,21 @@
+package scala.scalanative
+package unsafe
+
+sealed abstract class Nat
+
+object Nat {
+  sealed abstract class Base extends Nat
+
+  % for N in range(0, 10):
+
+  final abstract class _${N} extends Base
+
+  % end
+
+  % for N in range(2, 10):
+  %   Ns = ", ".join("N{} <: Nat.Base".format(i) for i in range(1, N + 1))
+
+  final abstract class Digit${N}[${Ns}] extends Nat
+
+  % end 
+}

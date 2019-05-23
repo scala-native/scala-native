@@ -1,6 +1,7 @@
 package scala.scalanative
 
-import scalanative.native._
+import scalanative.unsigned._
+import scalanative.unsafe._
 
 object IssuesSuite extends tests.Suite {
 
@@ -128,7 +129,7 @@ object IssuesSuite extends tests.Suite {
   test("#382") {
     /// that gave NPE
 
-    import scala.scalanative.native._
+    import scala.scalanative.unsafe._
     intIdent(fptr())
     assert(fptr() == 1)
 
@@ -214,7 +215,7 @@ object IssuesSuite extends tests.Suite {
   }
 
   test("#449") {
-    import scalanative.native.Ptr
+    import scalanative.unsafe.Ptr
     import scala.scalanative.runtime.ByteArray
     val bytes = new Array[Byte](2)
     bytes(0) = 'b'.toByte

@@ -14,7 +14,7 @@ import java.nio.file.spi.FileSystemProvider
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.util.{LinkedList, Set}
 
-import scala.scalanative.native.{
+import scala.scalanative.unsafe.{
   CUnsignedLong,
   Ptr,
   sizeof,
@@ -25,7 +25,7 @@ import scala.scalanative.native.{
 
 import scala.scalanative.posix.sys.statvfs
 
-import scalanative.native.stub
+import scalanative.annotation.stub
 
 class UnixFileSystem(override val provider: FileSystemProvider,
                      val root: String,

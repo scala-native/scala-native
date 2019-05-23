@@ -4,9 +4,11 @@ import java.nio.file.{FileSystems, Path}
 import java.net.URI
 
 import scala.annotation.tailrec
+import scalanative.annotation.stub
 import scalanative.posix.{fcntl, limits, unistd, utime}
 import scalanative.posix.sys.stat
-import scalanative.native._
+import scalanative.unsigned._
+import scalanative.unsafe._
 import scalanative.libc._, stdlib._, stdio._, string._
 import scalanative.nio.fs.FileHelpers
 import scalanative.runtime.{DeleteOnExit, Platform}

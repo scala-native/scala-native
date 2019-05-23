@@ -1,7 +1,7 @@
 package scala.scalanative
 package runtime
 
-import scala.scalanative.native.{CLongLong, extern}
+import scala.scalanative.unsafe.{CLongLong, extern}
 
 @extern
 object time {

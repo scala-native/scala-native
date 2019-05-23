@@ -1,6 +1,6 @@
 package java.lang
 
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.libc.string.memcmp
 import scalanative.runtime.CharArray
 import java.io.Serializable

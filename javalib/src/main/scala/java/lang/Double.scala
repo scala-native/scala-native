@@ -1,6 +1,6 @@
 package java.lang
 
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.libc._
 
 import scalanative.runtime.ieee754tostring.ryu.{RyuRoundingMode, RyuDouble}

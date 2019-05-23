@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native.{CInt, CString, extern}
+import scala.scalanative.unsafe.{CInt, CString, extern}
 
 @extern
 object stdlib {

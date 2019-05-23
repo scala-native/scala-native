@@ -1,6 +1,6 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 
 @link("z")
 @extern

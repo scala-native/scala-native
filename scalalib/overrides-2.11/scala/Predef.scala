@@ -16,7 +16,7 @@ import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
 import scala.language.{implicitConversions, existentials}
 import scala.io.StdIn
-import scala.scalanative.native.alwaysinline
+import scala.scalanative.annotation.alwaysinline
 
 /** The `Predef` object provides definitions that are accessible in all Scala
  *  compilation units without explicit qualification.

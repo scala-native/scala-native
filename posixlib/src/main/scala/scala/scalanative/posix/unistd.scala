@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.posix.sys.stat.{uid_t, gid_t}
 
 @extern

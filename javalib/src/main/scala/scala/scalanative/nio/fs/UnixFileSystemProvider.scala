@@ -1,6 +1,6 @@
 package scala.scalanative.nio.fs
 
-import scala.scalanative.native.{CChar, fromCString, stackalloc}
+import scala.scalanative.unsafe.{CChar, fromCString, stackalloc}
 import scala.scalanative.posix.unistd
 import scala.collection.immutable.{Map => SMap}
 

@@ -1,7 +1,8 @@
 package scala.scalanative
 package runtime
 
-import native._
+import scalanative.unsigned._
+import scalanative.unsafe._
 
 object Boxes {
   @inline def boxToUByte(v: Byte): UByte    = new UByte(v)

@@ -1254,7 +1254,7 @@ trait NirGenExpr { self: NirGenPhase =>
         // Sometimes I really miss quasiquotes.
         //
         // case q"""
-        //   scala.scalanative.native.`package`.CQuote(
+        //   scala.scalanative.unsafe.`package`.CQuote(
         //     new StringContext(scala.this.Predef.wrapRefArray(
         //       Array[String]{${str: String}}.$asInstanceOf[Array[Object]]()
         //     ))

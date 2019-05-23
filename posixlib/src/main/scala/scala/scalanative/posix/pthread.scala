@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native.{
+import scala.scalanative.unsafe.{
   CFuncPtr0,
   CFuncPtr1,
   CInt,

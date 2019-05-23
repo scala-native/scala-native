@@ -12,7 +12,7 @@ C Header          Scala Native Module
 `aio.h`_          N/A
 `arpa/inet.h`_    scala.scalanative.posix.arpa.inet_
 `assert.h`_       N/A
-`complex.h`_      scala.scalanative.native.complex_
+`complex.h`_      scala.scalanative.libc.complex_
 `cpio.h`_         scala.scalanative.posix.cpio_
 `ctype.h`_        N/A
 `dirent.h`_       scala.scalanative.posix.dirent_
@@ -178,34 +178,34 @@ C Header          Scala Native Module
 .. _wctype.h: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/wctype.h.html
 .. _wordexp.h: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/wordexp.h.html
 
-.. _scala.scalanative.posix.arpa.inet: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/arpa/inet.scala
-.. _scala.scalanative.native.complex: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/complex.scala
-.. _scala.scalanative.posix.cpio: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/cpio.scala
-.. _scala.scalanative.posix.dirent: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/dirent.scala
-.. _scala.scalanative.posix.errno: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/errno.scala
-.. _scala.scalanative.posix.fcntl: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/fcntl.scala
-.. _scala.scalanative.posix.getopt: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/getopt.scala
-.. _scala.scalanative.posix.grp: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/grp.scala
-.. _scala.scalanative.posix.inttypes: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/inttypes.scala
-.. _scala.scalanative.posix.limits: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/limits.scala
-.. _scala.scalanative.posix.netdb: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/netdb.scala
-.. _scala.scalanative.posix.netinet.in: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/netinet/in.scala
-.. _scala.scalanative.posix.poll: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/poll.scala
-.. _scala.scalanative.posix.pthread: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/pthread.scala
-.. _scala.scalanative.posix.pwd: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/pwd.scala
-.. _scala.scalanative.posix.regex: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/regex.scala
-.. _scala.scalanative.posix.sched: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/sched.scala
-.. _scala.scalanative.posix.stdlib: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/stdlib.scala
-.. _scala.scalanative.posix.sys.select: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/sys/select.scala
-.. _scala.scalanative.posix.sys.socket: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/sys/socket.scala
-.. _scala.scalanative.posix.sys.stat: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/sys/stat.scala
-.. _scala.scalanative.posix.sys.time: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/sys/time.scala
-.. _scala.scalanative.posix.sys.types: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/sys/types.scala
-.. _scala.scalanative.posix.sys.uio: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/sys/uio.scala
-.. _scala.scalanative.posix.syslog: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/syslog.scala
-.. _scala.scalanative.posix.termios: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/termios.scala
-.. _scala.scalanative.posix.time: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/time.scala
-.. _scala.scalanative.posix.unistd: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/unistd.scala
-.. _scala.scalanative.posix.utime: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/utime.scala
+.. _scala.scalanative.posix.arpa.inet: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/arpa/inet.scala
+.. _scala.scalanative.libc.complex: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/complex.scala
+.. _scala.scalanative.posix.cpio: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/cpio.scala
+.. _scala.scalanative.posix.dirent: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/dirent.scala
+.. _scala.scalanative.posix.errno: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/errno.scala
+.. _scala.scalanative.posix.fcntl: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/fcntl.scala
+.. _scala.scalanative.posix.getopt: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/getopt.scala
+.. _scala.scalanative.posix.grp: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/grp.scala
+.. _scala.scalanative.posix.inttypes: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/inttypes.scala
+.. _scala.scalanative.posix.limits: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/limits.scala
+.. _scala.scalanative.posix.netdb: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/netdb.scala
+.. _scala.scalanative.posix.netinet.in: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/netinet/in.scala
+.. _scala.scalanative.posix.poll: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/poll.scala
+.. _scala.scalanative.posix.pthread: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/pthread.scala
+.. _scala.scalanative.posix.pwd: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/pwd.scala
+.. _scala.scalanative.posix.regex: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/regex.scala
+.. _scala.scalanative.posix.sched: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sched.scala
+.. _scala.scalanative.posix.stdlib: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/stdlib.scala
+.. _scala.scalanative.posix.sys.select: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/select.scala
+.. _scala.scalanative.posix.sys.socket: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/socket.scala
+.. _scala.scalanative.posix.sys.stat: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/stat.scala
+.. _scala.scalanative.posix.sys.time: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/time.scala
+.. _scala.scalanative.posix.sys.types: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/types.scala
+.. _scala.scalanative.posix.sys.uio: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/uio.scala
+.. _scala.scalanative.posix.syslog: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/syslog.scala
+.. _scala.scalanative.posix.termios: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/termios.scala
+.. _scala.scalanative.posix.time: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/time.scala
+.. _scala.scalanative.posix.unistd: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/unistd.scala
+.. _scala.scalanative.posix.utime: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/utime.scala
 
 Continue to :ref:`communitylib`.

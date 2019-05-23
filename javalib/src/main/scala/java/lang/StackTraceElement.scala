@@ -1,6 +1,6 @@
 package java.lang
 
-import scalanative.native.{CString, fromCString}
+import scalanative.unsafe.{CString, fromCString}
 import scalanative.libc.string.strlen
 
 final class StackTraceElement(val getClassName: String,

@@ -1,7 +1,7 @@
 package scala.scalanative.runtime
 
 import scala.collection.mutable
-import scala.scalanative.native.{Zone, toCString}
+import scala.scalanative.unsafe.{Zone, toCString}
 
 object DeleteOnExit {
   private val toDeleteSet: mutable.Set[String] = mutable.Set.empty

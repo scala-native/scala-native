@@ -9,7 +9,7 @@ import java.io.{
 }
 import java.net.Socket
 
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 import scala.scalanative.runtime.ByteArray
 import sbt.testing.{Event => SbtEvent, _}
 

@@ -1,7 +1,8 @@
 package scala.scalanative
 package runtime
 
-import scala.scalanative.native._
+import scala.scalanative.unsigned._
+import scala.scalanative.unsafe._
 import scala.scalanative.libc._
 import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
 import scala.scalanative.posix.arpa.inet._
