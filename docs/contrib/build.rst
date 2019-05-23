@@ -27,6 +27,10 @@ The build has roughly four groups of sub-projects as follows:
 
     - `nativelib`
 
+    - `clib`
+
+    - `posixlib`
+
     - `javalib`
 
     - `auxlib`
@@ -39,9 +43,9 @@ The build has roughly four groups of sub-projects as follows:
 
     - `tools`
 
-    - `nir`
+    - `nir`, `util`
 
-    - `util`
+    - `nirparser`
 
 3.  The Scala Native test interface and dependencies.
 
@@ -65,7 +69,8 @@ Each of the groups above also depend on the previous group being compiled and
 published locally. The sbt plugin ``sbtScalaNative`` is used inside Scala Native
 exactly as it is used in a project using Scala Native. The plugin is needed
 by the `testInterface` and also the `tests` that use the `testInterface`
-to compile native code.
+to compile native code. Please refer to the `build.sbt` file as the final
+authority.
 
 Building Scala Native
 ---------------------
@@ -108,6 +113,44 @@ Some additional tips are as follows.
 
 - If you change `nscplugin`, `rebuild` is the only option. This is because
   the Scala compiler uses this plugin to generate the code that Scala Native uses.
+
+Using Metals for development
+--------------------------------------------------
+The Scala community has been working on
+`Metals <https://scalameta.org/metals/>`_ which uses the
+`Language Server Protocol(LSP) <https://microsoft.github.io/language-server-protocol/>`_
+to communicate with an editor of your choice such as
+`VSCode. <https://code.visualstudio.com/>`_
+
+The default build uses sbt `0.13.18` for the Scala Native plugin which uses
+Scala `2.10` which is not supported by Metals. Switching the build to
+the newer `sbt` version will change the plugin code to compile with
+Scala `2.12` so the Metals restriction does not apply. When Metals starts it
+sets an environment variable `METALS_ENABLED=true` but Metals is not able to
+run the required `rebuild` step so we need to open `sbt` in our own terminal.
+
+You can set the environment variable before running `sbt` which will switch
+the build to use the newer `sbt`. The exact version is specified in the build.
+
+.. code-block:: text
+
+    $ export METALS_ENABLED=true
+    $ sbt
+    > rebuild
+
+If you do not wish to set an environment variable, you can set the `sbt` version
+at the `sbt` prompt as follows:
+
+.. code-block:: text
+
+    $ sbt
+    > ^^1.2.8
+    > rebuild
+
+Once these steps are completed, you can open the Scala Native project with VSCode
+and Metals provides a very good IDE experience. Metals also allows you to run
+`scalafmt` from within the editor. Please refer to the link above for more
+information or use the `Gitter chat here. <https://gitter.im/scalameta/metals>`_
 
 Build settings via environment variables
 --------------------------------------------------
