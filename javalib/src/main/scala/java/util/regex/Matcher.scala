@@ -1,8 +1,8 @@
 package java.util
 package regex
 
-import scalanative.re2s.RE2
-import scalanative.re2s.{Matcher => rMatcher}
+import scalanative.regex.RE2
+import scalanative.regex.{Matcher => rMatcher}
 
 // Inspired & informed by:
 // https://github.com/google/re2j/blob/master/java/com/google/re2j/Matcher.java

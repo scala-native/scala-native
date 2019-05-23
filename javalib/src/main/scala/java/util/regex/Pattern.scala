@@ -1,7 +1,7 @@
 package java.util
 package regex
 
-import scalanative.re2s
+import scalanative.{regex => snRegex}
 
 import java.util.function.Predicate
 import java.util.stream.Stream
@@ -51,13 +51,13 @@ object Pattern {
 
   private def toRe2Flags(flags: Int): Int = {
 
-    // Pass re2s only the flags it knows about and clear the rest.
+    // Pass snRegex only the flags it knows about and clear the rest.
     //
     // j.u.regex LITERAL is handled in j.u.regex.Pattern#compile
-    // so OK to clear that bit. java bits not known to re2s will cause
+    // so OK to clear that bit. java bits not known to snRegex will cause
     // it to throw, so clear them also.
     //
-    // re2s supports only CASE_INSENSITIVE | DOTALL | MULTILINE |
+    // snRegex supports only CASE_INSENSITIVE | DOTALL | MULTILINE |
     //                    DISABLE_UNICODE_GROUPS))
     //
     // DISABLE_UNICODE_GROUPS causes rejectUnsupportedOptions()
@@ -65,12 +65,12 @@ object Pattern {
     // left when execution reaches this point.
     //
     // The constants for these three definitely differ between j.u.regex
-    // and re2s and must be be translated.
+    // and snRegex and must be be translated.
 
     val optionTranslations = Array[(Int, Int)](
-      (CASE_INSENSITIVE, re2s.Pattern.CASE_INSENSITIVE),
-      (DOTALL, re2s.Pattern.DOTALL),
-      (MULTILINE, re2s.Pattern.MULTILINE)
+      (CASE_INSENSITIVE, snRegex.Pattern.CASE_INSENSITIVE),
+      (DOTALL, snRegex.Pattern.DOTALL),
+      (MULTILINE, snRegex.Pattern.MULTILINE)
     )
 
     var re2Flags = 0
@@ -109,7 +109,7 @@ final class Pattern private[regex] (_regex: String, _flags: Int) {
 
   private[regex] val compiled = {
     val re2Flags = Pattern.toRe2Flags(_flags)
-    re2s.Pattern.compile(_regex, re2Flags)
+    snRegex.Pattern.compile(_regex, re2Flags)
   }
 
   def asPredicate(): Predicate[String] = {
