@@ -16,7 +16,7 @@ This generates the following files:
 
 * ``project/plugins.sbt`` to add a plugin dependency::
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.8")
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.0-M1")
 
 * ``project/build.properties`` to specify the sbt version::
 
@@ -49,7 +49,7 @@ Scala Native Version Scala Versions
 0.1.x                2.11.8
 0.2.x                2.11.8, 2.11.11
 0.3.0-0.3.3          2.11.8, 2.11.11
-0.3.4+               2.11.8, 2.11.11, 2.11.12
+0.3.4+, 0.4.0-M1     2.11.8, 2.11.11, 2.11.12
 ==================== ========================
 
 Sbt settings and tasks
@@ -70,7 +70,9 @@ Since Name                     Type            Description
 0.1   ``nativeMode``           ``String``      One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
 0.2   ``nativeGC``             ``String``      One of ``"none"``, ``"boehm"`` or ``"immix"`` (3)
 0.3.3 ``nativeLinkStubs``      ``Boolean``     Whether to link ``@stub`` definitions, or to ignore them
-0.3.9 ``nativeLTO``            ``String``      One of ``"none"``, ``"full"`` or ``"thin"`` (4)
+0.4.0 ``nativeLTO``            ``String``      One of ``"none"``, ``"full"`` or ``"thin"`` (4)
+0.4.0 ``nativeCheck``          ``Boolean``     Shall the linker check intermediate results for correctness?
+0.4.0 ``nativeDump``           ``Boolean``     Shall the linker dump intermediate results to disk? 
 ===== ======================== =============== =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
