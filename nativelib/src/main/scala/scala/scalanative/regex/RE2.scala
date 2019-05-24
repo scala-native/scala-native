@@ -24,20 +24,18 @@ import java.util.ArrayList
 import java.util.Arrays
 import java.util.List
 
-/**
- * An RE2 class instance is a compiled representation of an RE2 regular
- * expression, independent of the public Java-like Pattern/Matcher API.
- *
- * <p>This class also contains various implementation helpers for RE2
- * regular expressions.
- *
- * <p>Use the {@link #quoteMeta(String)} utility function to quote all
- * regular expression metacharacters in an arbitrary string.
- *
- * <p>See the {@code Matcher} and {@code Pattern} classes for the public
- * API, and the <a href='package.html'>package-level
- * documentation</a> for an overview of how to use this API.
- */
+// An RE2 class instance is a compiled representation of an RE2 regular
+// expression, independent of the public Java-like Pattern/Matcher API.
+//
+// <p>This class also contains various implementation helpers for RE2
+// regular expressions.
+//
+// <p>Use the {@link #quoteMeta(String)} utility function to quote all
+// regular expression metacharacters in an arbitrary string.
+//
+// <p>See the {@code Matcher} and {@code Pattern} classes for the public
+// API, and the <a href='package.html'>package-level
+// documentation</a> for an overview of how to use this API.
 class RE2 private {
   import RE2._
 
@@ -89,16 +87,11 @@ class RE2 private {
     this.namedCaps = namedCaps
   }
 
-  /**
-   * Returns the number of parenthesized subexpressions in this regular
-   * expression.
-   */
+  // Returns the number of parenthesized subexpressions in this regular
+  // expression.
   def numberOfCapturingGroups(): Int = numSubexp
 
-  /**
-   * Returns the index of the named group
-   *
-   */
+  // Returns the index of the named group
   def findNamedCapturingGroups(name: String): Int =
     namedCaps.getOrElse(name, -1)
 
@@ -141,28 +134,24 @@ class RE2 private {
     cap
   }
 
-  /**
-   * Returns true iff this regexp matches the string {@code s}.
-   */
+  // Returns true iff this regexp matches the string {@code s}.
   def match_(s: CharSequence): Boolean =
     doExecute(MachineInput.fromUTF16(s), 0, UNANCHORED, 0) != null
 
-  /**
-   * Matches the regular expression against input starting at position start
-   * and ending at position end, with the given anchoring.
-   * Records the submatch boundaries in group, which is [start, end) pairs
-   * of byte offsets. The number of boundaries needed is inferred
-   * from the size of the group array. It is most efficient not to ask for
-   * submatch boundaries.
-   *
-   * @param input the input byte array
-   * @param start the beginning position in the input
-   * @param end the end position in the input
-   * @param anchor the anchoring flag (UNANCHORED, ANCHOR_START, ANCHOR_BOTH)
-   * @param group the array to fill with submatch positions
-   * @param ngroup the number of array pairs to fill in
-   * @return true if a match was found
-   */
+  // Matches the regular expression against input starting at position start
+  // and ending at position end, with the given anchoring.
+  // Records the submatch boundaries in group, which is [start, end) pairs
+  // of byte offsets. The number of boundaries needed is inferred
+  // from the size of the group array. It is most efficient not to ask for
+  // submatch boundaries.
+  //
+  // @param input the input byte array
+  // @param start the beginning position in the input
+  // @param end the end position in the input
+  // @param anchor the anchoring flag (UNANCHORED, ANCHOR_START, ANCHOR_BOTH)
+  // @param group the array to fill with submatch positions
+  // @param ngroup the number of array pairs to fill in
+  // @return true if a match was found
   def match_(input: CharSequence,
              start: Int,
              end: Int,
@@ -189,44 +178,40 @@ class RE2 private {
     true
   }
 
-  /**
-   * Returns true iff this regexp matches the UTF-8 byte array {@code b}.
-   */
+  // Returns true iff this regexp matches the UTF-8 byte array {@code b}.
+  //
   // This is visible for testing.
   def matchUTF8(b: Array[Byte]): Boolean =
     doExecute(MachineInput.fromUTF8(b), 0, UNANCHORED, 0) != null
 
-  /**
-   * Returns a copy of {@code src} in which all matches for this regexp
-   * have been replaced by {@code repl}.  No support is provided for
-   * expressions (e.g. {@code \1} or {@code $1}) in the replacement
-   * string.
-   */
+  // Returns a copy of {@code src} in which all matches for this regexp
+  // have been replaced by {@code repl}.  No support is provided for
+  // expressions (e.g. {@code \1} or {@code $1}) in the replacement
+  // string.
+  //
   // This is visible for testing.
   def replaceAll(src: String, repl: String): String =
     replaceAllFunc(src, 2 * src.length() + 1) { orig =>
       repl
     }
 
-  /**
-   * Returns a copy of {@code src} in which only the first match for this regexp
-   * has been replaced by {@code repl}.  No support is provided for
-   * expressions (e.g. {@code \1} or {@code $1}) in the replacement
-   * string.
-   */
+  // Returns a copy of {@code src} in which only the first match for this regexp
+  // has been replaced by {@code repl}.  No support is provided for
+  // expressions (e.g. {@code \1} or {@code $1}) in the replacement
+  // string.
+  //
   // This is visible for testing.
   def replaceFirst(src: String, repl: String): String =
     replaceAllFunc(src, 1) { orig =>
       repl
     }
 
-  /**
-   * Returns a copy of {@code src} in which at most {@code maxReplaces} matches
-   * for this regexp have been replaced by the return value of of function
-   * {@code repl} (whose first argument is the matched string). No support is
-   * provided for expressions (e.g. {@code \1} or {@code $1}) in the
-   * replacement string.
-   */
+  // Returns a copy of {@code src} in which at most {@code maxReplaces} matches
+  // for this regexp have been replaced by the return value of of function
+  // {@code repl} (whose first argument is the matched string). No support is
+  // provided for expressions (e.g. {@code \1} or {@code $1}) in the
+  // replacement string.
+  //
   // This is visible for testing.
   def replaceAllFunc(src: String, maxReplaces: Int)(
       f: String => String): String = {
@@ -380,12 +365,11 @@ class RE2 private {
   // If an index is negative, it means that subexpression did not match
   // any string in the input.
 
-  /**
-   * Returns an array holding the text of the leftmost match in {@code b}
-   * of this regular expression.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // Returns an array holding the text of the leftmost match in {@code b}
+  // of this regular expression.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findUTF8(b: Array[Byte]): Array[Byte] = {
     val a = doExecute(MachineInput.fromUTF8(b), 0, UNANCHORED, 2)
@@ -395,13 +379,12 @@ class RE2 private {
     Utils.subarray(b, a(0), a(1))
   }
 
-  /**
-   * Returns a two-element array of integers defining the location of
-   * the leftmost match in {@code b} of this regular expression.  The
-   * match itself is at {@code b[loc[0]...loc[1]]}.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // Returns a two-element array of integers defining the location of
+  // the leftmost match in {@code b} of this regular expression.  The
+  // match itself is at {@code b[loc[0]...loc[1]]}.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findUTF8Index(b: Array[Byte]): Array[Int] = {
     val a = doExecute(MachineInput.fromUTF8(b), 0, UNANCHORED, 2)
@@ -411,16 +394,15 @@ class RE2 private {
     return Utils.subarray(a, 0, 2)
   }
 
-  /**
-   * Returns a string holding the text of the leftmost match in
-   * {@code s} of this regular expression.
-   *
-   * <p>If there is no match, the return value is an empty string, but it
-   * will also be empty if the regular expression successfully matches
-   * an empty string.  Use {@link #findIndex} or
-   * {@link #findSubmatch} if it is necessary to distinguish these
-   * cases.
-   */
+  // Returns a string holding the text of the leftmost match in
+  // {@code s} of this regular expression.
+  //
+  // <p>If there is no match, the return value is an empty string, but it
+  // will also be empty if the regular expression successfully matches
+  // an empty string.  Use {@link #findIndex} or
+  // {@link #findSubmatch} if it is necessary to distinguish these
+  // cases.
+  //
   // This is visible for testing.
   def find(s: String): String = {
     val a = doExecute(MachineInput.fromUTF16(s), 0, UNANCHORED, 2)
@@ -430,13 +412,12 @@ class RE2 private {
     return s.substring(a(0), a(1))
   }
 
-  /**
-   * Returns a two-element array of integers defining the location of
-   * the leftmost match in {@code s} of this regular expression.  The
-   * match itself is at {@code s.substring(loc[0], loc[1])}.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // Returns a two-element array of integers defining the location of
+  // the leftmost match in {@code s} of this regular expression.  The
+  // match itself is at {@code s.substring(loc[0], loc[1])}.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findIndex(s: String): Array[Int] = {
     val a = doExecute(MachineInput.fromUTF16(s), 0, UNANCHORED, 2)
@@ -446,14 +427,13 @@ class RE2 private {
     return a
   }
 
-  /**
-   * Returns an array of arrays the text of the leftmost match of the
-   * regular expression in {@code b} and the matches, if any, of its
-   * subexpressions, as defined by the <a
-   * href='#submatch'>Submatch</a> description above.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // Returns an array of arrays the text of the leftmost match of the
+  // regular expression in {@code b} and the matches, if any, of its
+  // subexpressions, as defined by the <a
+  // href='#submatch'>Submatch</a> description above.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findUTF8Submatch(b: Array[Byte]): Array[Array[Byte]] = {
     val a = doExecute(MachineInput.fromUTF8(b), 0, UNANCHORED, prog.numCap)
@@ -471,27 +451,25 @@ class RE2 private {
     ret
   }
 
-  /**
-   * Returns an array holding the index pairs identifying the leftmost
-   * match of this regular expression in {@code b} and the matches, if
-   * any, of its subexpressions, as defined by the the <a
-   * href='#submatch'>Submatch</a> and <a href='#index'>Index</a>
-   * descriptions above.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // Returns an array holding the index pairs identifying the leftmost
+  // match of this regular expression in {@code b} and the matches, if
+  // any, of its subexpressions, as defined by the the <a
+  // href='#submatch'>Submatch</a> and <a href='#index'>Index</a>
+  // descriptions above.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findUTF8SubmatchIndex(b: Array[Byte]): Array[Int] =
     pad(doExecute(MachineInput.fromUTF8(b), 0, UNANCHORED, prog.numCap))
 
-  /**
-   * Returns an array of strings holding the text of the leftmost match
-   * of the regular expression in {@code s} and the matches, if any, of
-   * its subexpressions, as defined by the <a
-   * href='#submatch'>Submatch</a> description above.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // Returns an array of strings holding the text of the leftmost match
+  // of the regular expression in {@code s} and the matches, if any, of
+  // its subexpressions, as defined by the <a
+  // href='#submatch'>Submatch</a> description above.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findSubmatch(s: String): Array[String] = {
     val a = doExecute(MachineInput.fromUTF16(s), 0, UNANCHORED, prog.numCap)
@@ -509,29 +487,27 @@ class RE2 private {
     ret
   }
 
-  /**
-   * Returns an array holding the index pairs identifying the leftmost
-   * match of this regular expression in {@code s} and the matches, if
-   * any, of its subexpressions, as defined by the <a
-   * href='#submatch'>Submatch</a> description above.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // Returns an array holding the index pairs identifying the leftmost
+  // match of this regular expression in {@code s} and the matches, if
+  // any, of its subexpressions, as defined by the <a
+  // href='#submatch'>Submatch</a> description above.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findSubmatchIndex(s: String): Array[Int] =
     pad(doExecute(MachineInput.fromUTF16(s), 0, UNANCHORED, prog.numCap))
 
-  /**
-   * {@code findAllUTF8()} is the <a href='#all'>All</a> version of
-   * {@link #findUTF8} it returns a list of up to {@code n} successive
-   * matches of the expression, as defined by the <a href='#all'>All</a>
-   * description above.
-   *
-   * <p>A return value of null indicates no match.
-   *
-   * TODO(adonovan): think about defining a byte slice view class, like
-   * a read-only Go slice backed by |b|.
-   */
+  // {@code findAllUTF8()} is the <a href='#all'>All</a> version of
+  // {@link #findUTF8} it returns a list of up to {@code n} successive
+  // matches of the expression, as defined by the <a href='#all'>All</a>
+  // description above.
+  //
+  // <p>A return value of null indicates no match.
+  //
+  // TODO(adonovan): think about defining a byte slice view class, like
+  // a read-only Go slice backed by |b|.
+  //
   // This is visible for testing.
   def findAllUTF8(b: Array[Byte], n: Int): List[Array[Byte]] = {
     val result = new ArrayList[Array[Byte]]()
@@ -544,14 +520,13 @@ class RE2 private {
     result
   }
 
-  /**
-   * {@code findAllUTF8Index} is the <a href='#all'>All</a> version of
-   * {@link #findUTF8Index} it returns a list of up to {@code n}
-   * successive matches of the expression, as defined by the <a
-   * href='#all'>All</a> description above.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // {@code findAllUTF8Index} is the <a href='#all'>All</a> version of
+  // {@link #findUTF8Index} it returns a list of up to {@code n}
+  // successive matches of the expression, as defined by the <a
+  // href='#all'>All</a> description above.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findAllUTF8Index(b: Array[Byte], n: Int): List[Array[Int]] = {
     val result = new ArrayList[Array[Int]]()
@@ -564,14 +539,13 @@ class RE2 private {
     return result
   }
 
-  /**
-   * {@code findAll} is the <a href='#all'>All</a> version of
-   * {@link #find} it returns a list of up to {@code n}
-   * successive matches of the expression, as defined by the <a
-   * href='#all'>All</a> description above.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // {@code findAll} is the <a href='#all'>All</a> version of
+  // {@link #find} it returns a list of up to {@code n}
+  // successive matches of the expression, as defined by the <a
+  // href='#all'>All</a> description above.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findAll(s: String, n: Int): List[String] = {
     val result = new ArrayList[String]()
@@ -584,14 +558,13 @@ class RE2 private {
     return result
   }
 
-  /**
-   * {@code findAllIndex} is the <a href='#all'>All</a> version of
-   * {@link #findIndex} it returns a list of up to {@code n}
-   * successive matches of the expression, as defined by the <a
-   * href='#all'>All</a> description above.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // {@code findAllIndex} is the <a href='#all'>All</a> version of
+  // {@link #findIndex} it returns a list of up to {@code n}
+  // successive matches of the expression, as defined by the <a
+  // href='#all'>All</a> description above.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findAllIndex(s: String, n: Int): List[Array[Int]] = {
     val result = new ArrayList[Array[Int]]()
@@ -604,14 +577,13 @@ class RE2 private {
     return result
   }
 
-  /**
-   * {@code findAllUTF8Submatch} is the <a href='#all'>All</a> version
-   * of {@link #findUTF8Submatch} it returns a list of up to {@code n}
-   * successive matches of the expression, as defined by the <a
-   * href='#all'>All</a> description above.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // {@code findAllUTF8Submatch} is the <a href='#all'>All</a> version
+  // of {@link #findUTF8Submatch} it returns a list of up to {@code n}
+  // successive matches of the expression, as defined by the <a
+  // href='#all'>All</a> description above.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findAllUTF8Submatch(b: Array[Byte], n: Int): List[Array[Array[Byte]]] = {
     val result = new ArrayList[Array[Array[Byte]]]()
@@ -632,14 +604,13 @@ class RE2 private {
     return result
   }
 
-  /**
-   * {@code findAllUTF8SubmatchIndex} is the <a href='#all'>All</a>
-   * version of {@link #findUTF8SubmatchIndex} it returns a list of up
-   * to {@code n} successive matches of the expression, as defined by
-   * the <a href='#all'>All</a> description above.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // {@code findAllUTF8SubmatchIndex} is the <a href='#all'>All</a>
+  // version of {@link #findUTF8SubmatchIndex} it returns a list of up
+  // to {@code n} successive matches of the expression, as defined by
+  // the <a href='#all'>All</a> description above.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findAllUTF8SubmatchIndex(b: Array[Byte], n: Int): List[Array[Int]] = {
     val result = new ArrayList[Array[Int]]()
@@ -652,14 +623,13 @@ class RE2 private {
     return result
   }
 
-  /**
-   * {@code findAllSubmatch} is the <a href='#all'>All</a> version
-   * of {@link #findSubmatch} it returns a list of up to
-   * {@code n} successive matches of the expression, as defined by the
-   * <a href='#all'>All</a> description above.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // {@code findAllSubmatch} is the <a href='#all'>All</a> version
+  // of {@link #findSubmatch} it returns a list of up to
+  // {@code n} successive matches of the expression, as defined by the
+  // <a href='#all'>All</a> description above.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findAllSubmatch(s: String, n: Int): List[Array[String]] = {
     val result = new ArrayList[Array[String]]()
@@ -680,14 +650,13 @@ class RE2 private {
     return result
   }
 
-  /**
-   * {@code findAllSubmatchIndex} is the <a href='#all'>All</a>
-   * version of {@link #findSubmatchIndex} it returns a list of
-   * up to {@code n} successive matches of the expression, as defined by
-   * the <a href='#all'>All</a> description above.
-   *
-   * <p>A return value of null indicates no match.
-   */
+  // {@code findAllSubmatchIndex} is the <a href='#all'>All</a>
+  // version of {@link #findSubmatchIndex} it returns a list of
+  // up to {@code n} successive matches of the expression, as defined by
+  // the <a href='#all'>All</a> description above.
+  //
+  // <p>A return value of null indicates no match.
+  //
   // This is visible for testing.
   def findAllSubmatchIndex(s: String, n: Int): List[Array[Int]] = {
     val result = new ArrayList[Array[Int]]()
@@ -760,42 +729,38 @@ object RE2 {
   final val ANCHOR_START = 1
   final val ANCHOR_BOTH  = 2
 
-  /**
-   * Parses a regular expression and returns, if successful, an
-   * {@code RE2} instance that can be used to match against text.
-   *
-   * <p>When matching against text, the regexp returns a match that
-   * begins as early as possible in the input (leftmost), and among those
-   * it chooses the one that a backtracking search would have found first.
-   * This so-called leftmost-first matching is the same semantics
-   * that Perl, Python, and other implementations use, although this
-   * package implements it without the expense of backtracking.
-   * For POSIX leftmost-longest matching, see {@link #compilePOSIX}.
-   */
+  // Parses a regular expression and returns, if successful, an
+  // {@code RE2} instance that can be used to match against text.
+  //
+  // <p>When matching against text, the regexp returns a match that
+  // begins as early as possible in the input (leftmost), and among those
+  // it chooses the one that a backtracking search would have found first.
+  // This so-called leftmost-first matching is the same semantics
+  // that Perl, Python, and other implementations use, although this
+  // package implements it without the expense of backtracking.
+  // For POSIX leftmost-longest matching, see {@link #compilePOSIX}.
   def compile(expr: String): RE2 =
     compileImpl(expr, mode = PERL, longest = false)
 
-  /**
-   * {@code compilePOSIX} is like {@link #compile} but restricts the
-   * regular expression to POSIX ERE (egrep) syntax and changes the
-   * match semantics to leftmost-longest.
-   *
-   * <p>That is, when matching against text, the regexp returns a match that
-   * begins as early as possible in the input (leftmost), and among those
-   * it chooses a match that is as long as possible.
-   * This so-called leftmost-longest matching is the same semantics
-   * that early regular expression implementations used and that POSIX
-   * specifies.
-   *
-   * <p>However, there can be multiple leftmost-longest matches, with different
-   * submatch choices, and here this package diverges from POSIX.
-   * Among the possible leftmost-longest matches, this package chooses
-   * the one that a backtracking search would have found first, while POSIX
-   * specifies that the match be chosen to maximize the length of the first
-   * subexpression, then the second, and so on from left to right.
-   * The POSIX rule is computationally prohibitive and not even well-defined.
-   * See http://swtch.com/~rsc/regexp/regexp2.html#posix
-   */
+  // {@code compilePOSIX} is like {@link #compile} but restricts the
+  // regular expression to POSIX ERE (egrep) syntax and changes the
+  // match semantics to leftmost-longest.
+  //
+  // <p>That is, when matching against text, the regexp returns a match that
+  // begins as early as possible in the input (leftmost), and among those
+  // it chooses a match that is as long as possible.
+  // This so-called leftmost-longest matching is the same semantics
+  // that early regular expression implementations used and that POSIX
+  // specifies.
+  //
+  // <p>However, there can be multiple leftmost-longest matches, with different
+  // submatch choices, and here this package diverges from POSIX.
+  // Among the possible leftmost-longest matches, this package chooses
+  // the one that a backtracking search would have found first, while POSIX
+  // specifies that the match be chosen to maximize the length of the first
+  // subexpression, then the second, and so on from left to right.
+  // The POSIX rule is computationally prohibitive and not even well-defined.
+  // See http://swtch.com/~rsc/regexp/regexp2.html#posix
   def compilePOSIX(expr: String): RE2 =
     compileImpl(expr, mode = POSIX, longest = true)
 
@@ -822,13 +787,12 @@ object RE2 {
     re2
   }
 
-  /**
-   * Returns true iff textual regular expression {@code pattern}
-   * matches string {@code s}.
-   *
-   * <p>More complicated queries need to use {@link #compile} and the
-   * full {@code RE2} interface.
-   */
+  // Returns true iff textual regular expression {@code pattern}
+  // matches string {@code s}.
+  //
+  // <p>More complicated queries need to use {@link #compile} and the
+  // full {@code RE2} interface.
+  //
   // This is visible for testing.
   def match_(pattern: String, s: CharSequence) =
     compile(pattern).match_(s)
@@ -839,12 +803,10 @@ object RE2 {
       throw new UnsupportedOperationException
   }
 
-  /**
-   * Returns a string that quotes all regular expression metacharacters
-   * inside the argument text the returned string is a regular
-   * expression matching the literal text.  For example,
-   * {@code quoteMeta("[foo]").equals("\\[foo\\]")}.
-   */
+  // Returns a string that quotes all regular expression metacharacters
+  // inside the argument text the returned string is a regular
+  // expression matching the literal text.  For example,
+  // {@code quoteMeta("[foo]").equals("\\[foo\\]")}.
   def quoteMeta(s: String): String = {
     val b = new java.lang.StringBuilder(2 * s.length())
     // A char loop is correct because all metacharacters fit in one UTF-16 code.

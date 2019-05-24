@@ -103,6 +103,7 @@ Here is the list of currently available classes:
 * ``java.lang.InstantiationException``
 * ``java.lang.Integer``
 * ``java.lang.IntegerCache``
+* ``java.lang.IntegerDecimalScale``
 * ``java.lang.InternalError``
 * ``java.lang.InterruptedException``
 * ``java.lang.Iterable``
@@ -110,6 +111,7 @@ Here is the list of currently available classes:
 * ``java.lang.Long``
 * ``java.lang.LongCache``
 * ``java.lang.Math``
+* ``java.lang.MathRand``
 * ``java.lang.NegativeArraySizeException``
 * ``java.lang.NoClassDefFoundError``
 * ``java.lang.NoSuchFieldError``
@@ -144,6 +146,7 @@ Here is the list of currently available classes:
 * ``java.lang.StackOverflowError``
 * ``java.lang.StackTrace``
 * ``java.lang.StackTraceElement``
+* ``java.lang.StackTraceElement$Fail``
 * ``java.lang.String``
 * ``java.lang.StringBuffer``
 * ``java.lang.StringBuilder``
@@ -387,6 +390,7 @@ Here is the list of currently available classes:
 * ``java.text.DecimalFormat$BigDecimalFormatting``
 * ``java.text.DecimalFormat$BigIntegerFormatting``
 * ``java.text.DecimalFormat$DoubleFormatting``
+* ``java.text.DecimalFormat$DoubleFormatting$DoubleDigits``
 * ``java.text.DecimalFormat$Formatting``
 * ``java.text.DecimalFormat$Formatting$Digits``
 * ``java.text.DecimalFormat$Formatting$class``
@@ -415,7 +419,9 @@ Here is the list of currently available classes:
 * ``java.text.Format$Field``
 * ``java.text.NumberFormat``
 * ``java.text.ParseException``
+* ``java.time.Duration``
 * ``java.time.Instant``
+* ``java.time.temporal.TemporalAmount``
 * ``java.util.AbstractCollection``
 * ``java.util.AbstractList``
 * ``java.util.AbstractListView``
@@ -509,6 +515,7 @@ Here is the list of currently available classes:
 * ``java.util.HashSet``
 * ``java.util.Hashtable``
 * ``java.util.Hashtable$UnboxedEntry$1``
+* ``java.util.IdentityHashMap``
 * ``java.util.IllegalFormatCodePointException``
 * ``java.util.IllegalFormatConversionException``
 * ``java.util.IllegalFormatException``
@@ -578,10 +585,15 @@ Here is the list of currently available classes:
 * ``java.util.concurrent.atomic.AtomicReferenceArray``
 * ``java.util.concurrent.locks.AbstractOwnableSynchronizer``
 * ``java.util.concurrent.locks.AbstractQueuedSynchronizer``
+* ``java.util.function.BiConsumer``
+* ``java.util.function.BiConsumer$class``
 * ``java.util.function.BiFunction``
 * ``java.util.function.BiFunction$class``
 * ``java.util.function.BiPredicate``
 * ``java.util.function.BiPredicate$class``
+* ``java.util.function.BinaryOperator``
+* ``java.util.function.Consumer``
+* ``java.util.function.Consumer$class``
 * ``java.util.function.Function``
 * ``java.util.function.Function$class``
 * ``java.util.function.Predicate``
@@ -604,6 +616,7 @@ Here is the list of currently available classes:
 * ``java.util.package``
 * ``java.util.package$Box``
 * ``java.util.package$CompareNullablesOps``
+* ``java.util.package$IdentityBox``
 * ``java.util.regex.MatchResult``
 * ``java.util.regex.Matcher``
 * ``java.util.regex.Pattern``

@@ -5,9 +5,7 @@
 package scala.scalanative
 package regex
 
-/**
- * Various constants and helper utilities.
- */
+// Various constants and helper utilities.
 object Utils {
 
   final val EMPTY_INTS = new Array[Int](0)

@@ -11,12 +11,10 @@ package regex
 import Inst.{Op => IOP}
 import Regexp.{Op => ROP}
 
-/**
- * Compiler from {@code Regexp} (RE2 abstract syntax) to {@code RE2}
- * (compiled regular expression).
- *
- * The only entry point is {@link #compileRegexp}.
- */
+// Compiler from {@code Regexp} (RE2 abstract syntax) to {@code RE2}
+// (compiled regular expression).
+//
+// The only entry point is {@link #compileRegexp}.
 class Compiler private () {
   import Compiler._
 
@@ -240,10 +238,8 @@ class Compiler private () {
 
 object Compiler {
 
-  /**
-   * A fragment of a compiled regular expression program.
-   * @see http://swtch.com/~rsc/regexp/regexp1.html
-   */
+  // A fragment of a compiled regular expression program.
+  // @see http://swtch.com/~rsc/regexp/regexp1.html
   private class Frag(
       val i: Int, // an instruction address (pc).
       var out: Int // a patch list see explanation in Prog.java

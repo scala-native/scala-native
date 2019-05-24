@@ -8,14 +8,12 @@
 package scala.scalanative
 package regex
 
-/**
- * A "builder"-style helper class for manipulating character classes
- * represented as an array of pairs of runes [lo, hi], each denoting an
- * inclusive interval.
- *
- * All methods mutate the internal state and return {@code this}, allowing
- * operations to be chained.
- */
+// A "builder"-style helper class for manipulating character classes
+// represented as an array of pairs of runes [lo, hi], each denoting an
+// inclusive interval.
+//
+// All methods mutate the internal state and return {@code this}, allowing
+// operations to be chained.
 class CharClass private (unit: Unit) {
   import CharClass._
 

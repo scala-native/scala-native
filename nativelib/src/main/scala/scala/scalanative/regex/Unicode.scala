@@ -8,12 +8,10 @@
 package scala.scalanative
 package regex
 
-/**
- * Utilities for dealing with Unicode better than Java does.
- *
- * @author adonovan@google.com (Alan Donovan)
- *         Highly modified by Lee Tibbert for Scala Native.
- */
+// Utilities for dealing with Unicode better than Java does.
+//
+// @author adonovan@google.com (Alan Donovan)
+//         Highly modified by Lee Tibbert for Scala Native.
 object Unicode {
 
   // The highest legal rune value.

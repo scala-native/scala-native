@@ -8,10 +8,8 @@
 package scala.scalanative
 package regex
 
-/**
- * MachineInput abstracts different representations of the input text
- * supplied to the Machine.  It provides one-character lookahead.
- */
+// MachineInput abstracts different representations of the input text
+// supplied to the Machine.  It provides one-character lookahead.
 abstract class MachineInput {
 
   // Returns the rune at the specified index the units are
@@ -220,13 +218,13 @@ object MachineInput {
       var i     = fromIndex
 
       while (i <= max) {
-        /* Look for first character. */
+        // Look for first character.
         if (hayStack.charAt(i) != first) {
           i += 1
           while (i <= max && hayStack.charAt(i) != first) { i += 1 }
         }
 
-        /* Found first character, now look at the rest of v2 */
+        // Found first character, now look at the rest of v2
         if (i <= max) {
           var j   = i + 1
           val end = j + needle.length() - 1
@@ -236,7 +234,7 @@ object MachineInput {
             k += 1
           }
           if (j == end) {
-            /* Found whole string. */
+            // Found whole string.
             return i
           }
         }
