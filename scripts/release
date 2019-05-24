@@ -4,8 +4,28 @@ set -ex
 
 sbt rebuild test-all
 sbt "tools/mimaReportBinaryIssues"
-sbt publishSigned
-sbt "project nscplugin" ++2.11.12 publishSigned
-sbt "project nscplugin" ++2.11.11 publishSigned
-sbt "project nscplugin" ++2.11.8 publishSigned
-sbt ^^1.0.4 sbtScalaNative/publishSigned nir/publishSigned tools/publishSigned util/publishSigned testRunner/publishSigned
+sbt \
+    nativelib/publishSigned \
+    auxlib/publishSigned \
+    clib/publishSigned \
+    posixlib/publishSigned \
+    javalib/publishSigned \
+    scalalib/publishSigned \
+    testInterface/publishSigned \
+    testInterfaceSbtDefs/publishSigned \
+    testInterfaceSerialization/publishSigned \
+    testRunner/publishSigned \
+    nscplugin/publishSigned \
+    nir/publishSigned \
+    tools/publishSigned \
+    util/publishSigned \
+    sbtScalaNative/publishSigned
+sbt ++2.11.12 nscplugin/publishSigned
+sbt ++2.11.11 nscplugin/publishSigned
+sbt ++2.11.8 nscplugin/publishSigned
+sbt ^^1.0.4 \
+    testRunner/publishSigned \
+    nir/publishSigned \
+    tools/publishSigned \
+    util/publishSigned \
+    sbtScalaNative/publishSigned
