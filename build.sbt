@@ -20,6 +20,10 @@ def projectName(project: sbt.ResolvedProject): String = {
   convertCamelKebab(project.id)
 }
 
+// Metals settings (next 3 items)
+// Avoid 2.10 for sbt generated root project
+scalaVersion := libScalaVersion
+
 lazy val startupTransition: State => State = { s: State =>
   Option(System.getenv("METALS_ENABLED")) match {
     case Some(sb) => if (sb == "true") s"^^$sbt10Version" :: s else s
