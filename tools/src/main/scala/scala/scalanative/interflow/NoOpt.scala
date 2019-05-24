@@ -76,7 +76,7 @@ trait NoOpt { self: Interflow =>
     case Op.Fieldload(_, v, n) =>
       noOptVal(v)
       noOptGlobal(n)
-    case Op.Fieldstore(_, v1, n, v2) =>
+    case Op.Fieldstore(_, v1, n, v2, _) =>
       noOptVal(v1)
       noOptGlobal(n)
       noOptVal(v2)
@@ -123,7 +123,7 @@ trait NoOpt { self: Interflow =>
     case Op.Arrayload(_, arr, idx) =>
       noOptVal(arr)
       noOptVal(idx)
-    case Op.Arraystore(_, arr, idx, value) =>
+    case Op.Arraystore(_, arr, idx, value, _) =>
       noOptVal(arr)
       noOptVal(idx)
       noOptVal(value)

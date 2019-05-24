@@ -61,8 +61,9 @@ object Op extends Base[nir.Op] {
       case (ty, value, name) => nir.Op.Fieldload(ty, value, name)
     })
   val Fieldstore =
-    P("fieldstore" ~ "[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Global.parser ~ "," ~ Val.parser map {
-      case (ty, obj, name, value) => nir.Op.Fieldstore(ty, obj, name, value)
+    P("init".?.! ~ "fieldstore" ~ "[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Global.parser ~ "," ~ Val.parser map {
+      case (init, ty, obj, name, value) =>
+        nir.Op.Fieldstore(ty, obj, name, value, init.nonEmpty)
     })
   val Method =
     P("method" ~ Val.parser ~ "," ~ Base.stringLit map {
@@ -108,8 +109,9 @@ object Op extends Base[nir.Op] {
       case (ty, arr, idx) => nir.Op.Arrayload(ty, arr, idx)
     })
   val Arraystore = P(
-    "arraystore[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser ~ "," ~ Val.parser map {
-      case (ty, arr, idx, value) => nir.Op.Arraystore(ty, arr, idx, value)
+    "init".?.! ~ "arraystore[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser ~ "," ~ Val.parser map {
+      case (init, ty, arr, idx, value) =>
+        nir.Op.Arraystore(ty, arr, idx, value, init.nonEmpty)
     })
   val Arraylength = P("arraylength" ~ Val.parser map {
     case arr => nir.Op.Arraylength(arr)

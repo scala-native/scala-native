@@ -73,6 +73,13 @@ class Buffer(implicit fresh: Fresh) {
                  value: Val,
                  unwind: Next): Val =
     let(Op.Fieldstore(ty, obj, name, value), unwind)
+  def fieldstore(ty: Type,
+                 obj: Val,
+                 name: Global,
+                 value: Val,
+                 init: Boolean,
+                 unwind: Next): Val =
+    let(Op.Fieldstore(ty, obj, name, value, init), unwind)
   def method(obj: Val, sig: Sig, unwind: Next): Val =
     let(Op.Method(obj, sig), unwind)
   def dynmethod(obj: Val, sig: Sig, unwind: Next): Val =
@@ -103,6 +110,13 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Arrayload(ty, arr, idx), unwind)
   def arraystore(ty: Type, arr: Val, idx: Val, value: Val, unwind: Next): Val =
     let(Op.Arraystore(ty, arr, idx, value), unwind)
+  def arraystore(ty: Type,
+                 arr: Val,
+                 idx: Val,
+                 value: Val,
+                 init: Boolean,
+                 unwind: Next): Val =
+    let(Op.Arraystore(ty, arr, idx, value, init), unwind)
   def arraylength(arr: Val, unwind: Next): Val =
     let(Op.Arraylength(arr), unwind)
 }

@@ -272,7 +272,10 @@ object Show {
         val_(obj)
         str(", ")
         global_(name)
-      case Op.Fieldstore(ty, obj, name, value) =>
+      case Op.Fieldstore(ty, obj, name, value, init) =>
+        if (init) {
+          str("init ")
+        }
         str("fieldstore[")
         type_(ty)
         str("] ")
@@ -347,7 +350,10 @@ object Show {
         val_(arr)
         str(", ")
         val_(idx)
-      case Op.Arraystore(ty, arr, idx, value) =>
+      case Op.Arraystore(ty, arr, idx, value, init) =>
+        if (init) {
+          str("init ")
+        }
         str("arraystore[")
         type_(ty)
         str("] ")
