@@ -51,6 +51,19 @@ object stdlib {
   def strtof(str: CString, str_end: Ptr[CString]): CFloat  = extern
   def strtod(str: CString, str_end: Ptr[CString]): CDouble = extern
 
+  // Searching and sorting
+
+  def bsearch(key: Ptr[Byte],
+              data: Ptr[Byte],
+              num: CSize,
+              size: CSize,
+              comparator: CFuncPtr2[Ptr[Byte], Ptr[Byte], CInt]): Unit = extern
+
+  def qsort(data: Ptr[Byte],
+            num: CSize,
+            size: CSize,
+            comparator: CFuncPtr2[Ptr[Byte], Ptr[Byte], CInt]): Unit = extern
+
   // File management
 
   def realpath(file_name: CString, resolved_name: CString): CString = extern
