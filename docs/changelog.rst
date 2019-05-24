@@ -3,10 +3,16 @@
 Changelog
 =========
 
+0.4.0-M2 (May 23, 2019)
+----------------------
+
+`Read release notes for 0.4.0-M2 on GitHub <https://github.com/scala-native/scala-native/releases/tag/v0.4.0-M2>`_.
+
+
 0.4.0-M1 (May 23, 2019)
 ----------------------
 
-`Read release notes for 0.3.8 on GitHub <https://github.com/scala-native/scala-native/releases/tag/v0.4.0-M1>`_.
+`Read release notes for 0.4.0-M1 on GitHub <https://github.com/scala-native/scala-native/releases/tag/v0.4.0-M1>`_.
 
 0.3.9 (Apr 23, 2019)
 ----------------------

@@ -225,9 +225,8 @@ lazy val noPublishSettings = Seq(
   packagedArtifacts := Map.empty,
   publish := {},
   publishLocal := {},
-  publishSnapshot := {
-    println("no publish")
-  }
+  publishSnapshot := { println("no publish") },
+  skip in publish := true
 ) ++ nameSettings
 
 lazy val toolSettings =
