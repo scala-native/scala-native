@@ -6,7 +6,7 @@ import scalanative.unsafe.CFuncPtr
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: Long): RawPtr = intrinsic
+  def stackalloc(size: Long): RawPtr = intrinsic // TODO(shadaj): take a word
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
@@ -111,7 +111,8 @@ object Intrinsics {
   def storeObject(rawptr: RawPtr, value: Object): Unit = intrinsic
 
   /** Intrinsified computation of derived raw pointer. */
-  def elemRawPtr(rawptr: RawPtr, offset: Long): RawPtr = intrinsic
+  def elemRawPtr(rawptr: RawPtr, offset: Long): RawPtr =
+    intrinsic // TODO(shadaj): word offset
 
   /** Intrinsified cast that reinterprets raw pointer as an object. */
   def castRawPtrToObject(rawptr: RawPtr): Object = intrinsic
@@ -145,7 +146,7 @@ object Intrinsics {
 
   /** Resolve c-friendly forwarder generated for given CFuncPtr. */
   def resolveCFuncPtr(cfuncptr: CFuncPtr): RawPtr = intrinsic
-  
+
   def castRawWordToInt(rawWord: RawWord): Int   = intrinsic
   def castRawWordToLong(rawWord: RawWord): Long = intrinsic
   def castIntToRawWord(int: Int): RawWord       = intrinsic

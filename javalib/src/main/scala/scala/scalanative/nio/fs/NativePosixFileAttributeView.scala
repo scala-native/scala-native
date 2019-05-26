@@ -122,13 +122,13 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
         !isDirectory && !isRegularFile && !isSymbolicLink
 
       override def lastAccessTime =
-        FileTime.from(st_atime, TimeUnit.SECONDS)
+        FileTime.from(st_atime.toLong, TimeUnit.SECONDS)
 
       override def lastModifiedTime =
-        FileTime.from(st_mtime, TimeUnit.SECONDS)
+        FileTime.from(st_mtime.toLong, TimeUnit.SECONDS)
 
       override def creationTime =
-        FileTime.from(st_ctime, TimeUnit.SECONDS)
+        FileTime.from(st_ctime.toLong, TimeUnit.SECONDS)
 
       override def group = new GroupPrincipal {
         override val getName =

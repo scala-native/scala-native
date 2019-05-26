@@ -256,8 +256,8 @@ package object unsafe {
       val runtime = q"_root_.scala.scalanative.runtime"
 
       q"""{
-        val $size   = (_root_.scala.scalanative.unsafe.sizeof[$T]($tag): _root_.scala.scalanative.unsafe.Word) * $n
-        val $rawptr = $runtime.Intrinsics.stackalloc($size)
+        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
+        val $rawptr = $runtime.Intrinsics.stackalloc($size.toLong)
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)
       }"""

@@ -59,7 +59,7 @@ object SystemSuite extends tests.Suite {
     // Truncate down to keep math simple & reduce number of bits in play.
     val ctmSeconds = ctmMillis / 1000
 
-    val delta = Math.abs(ctmSeconds - cSeconds)
+    val delta = Math.abs(ctmSeconds - cSeconds.toLong)
 
     assert(delta <= tolerance)
   }
