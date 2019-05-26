@@ -90,8 +90,8 @@ object Type {
   final case class Function(args: Seq[Type], ret: Type) extends SpecialKind
 
   val boxesTo = Seq[(Type, Type)](
-    Type.Ref(Global.Top("scala.scalanative.native.Word"))         -> Type.Word,
-    Type.Ref(Global.Top("scala.scalanative.native.UWord"))        -> Type.Word,
+    Type.Ref(Global.Top("scala.scalanative.unsafe.Word"))         -> Type.Word,
+    Type.Ref(Global.Top("scala.scalanative.unsafe.UWord"))        -> Type.Word,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UByte"))      -> Type.Byte,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UShort"))     -> Type.Short,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UInt"))       -> Type.Int,

@@ -26,21 +26,21 @@ object Tag {
       storeRawPtr(toRawPtr(ptr), toRawPtr(value))
   }
 
-  final case object Word extends Tag[native.Word] {
+  final case object Word extends Tag[unsafe.Word] {
     @alwaysinline def size: Int = 8
     @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(ptr: native.Ptr[native.Word]): native.Word =
+    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Word]): unsafe.Word =
       new Word(loadWord(toRawPtr(ptr)))
-    @alwaysinline override def store(ptr: native.Ptr[native.Word], value: native.Word): Unit =
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Word], value: unsafe.Word): Unit =
       storeWord(toRawPtr(ptr), value.rawWord)
   }
 
-  final case object UWord extends Tag[native.UWord] {
+  final case object UWord extends Tag[unsafe.UWord] {
     @alwaysinline def size: Int = 8
     @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(ptr: native.Ptr[native.UWord]): native.UWord =
+    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.UWord]): unsafe.UWord =
       new UWord(loadWord(toRawPtr(ptr)))
-    @alwaysinline override def store(ptr: native.Ptr[native.UWord], value: native.UWord): Unit =
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.UWord], value: unsafe.UWord): Unit =
       storeWord(toRawPtr(ptr), value.rawWord)
   }
 
@@ -225,9 +225,9 @@ object Tag {
     Tag.Ptr(tag)
   @alwaysinline implicit def materializeClassTag[T <: AnyRef: ClassTag]: Tag[T] =
     Tag.Class(implicitly[ClassTag[T]].runtimeClass.asInstanceOf[java.lang.Class[T]])
-  @alwaysinline implicit def materializeWordTag: Tag[native.Word] =
+  @alwaysinline implicit def materializeWordTag: Tag[unsafe.Word] =
     Tag.Word
-  @alwaysinline implicit def materializeUWordTag: Tag[native.UWord] =
+  @alwaysinline implicit def materializeUWordTag: Tag[unsafe.UWord] =
     Tag.UWord
   % for (name, T, _) in prims:
   @alwaysinline implicit def materialize${name}Tag: Tag[${T}] =

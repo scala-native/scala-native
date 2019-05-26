@@ -16,7 +16,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val UShortClass = getRequiredClass("scala.scalanative.unsigned.UShort")
     lazy val UIntClass   = getRequiredClass("scala.scalanative.unsigned.UInt")
     lazy val ULongClass  = getRequiredClass("scala.scalanative.unsigned.ULong")
-    lazy val WordClass   = getRequiredClass("scala.scalanative.native.Word")
+    lazy val WordClass   = getRequiredClass("scala.scalanative.unsafe.Word")
     lazy val RawWordClass = getRequiredClass(
       "scala.scalanative.runtime.RawWord")
     lazy val PtrClass    = getRequiredClass("scala.scalanative.unsafe.Ptr")
