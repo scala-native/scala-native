@@ -13,11 +13,17 @@ import scalanative.runtime.Boxes._
 import scalanative.unsigned._
 
 final class Word(private[scalanative] val rawWord: RawWord) {
-  @alwaysinline def toInt: Int   = castRawWordToInt(rawWord)
-  @alwaysinline def toLong: Long = castRawWordToLong(rawWord)
+  @alwaysinline def toByte: Byte   = castRawWordToInt(rawWord).toByte
+  @alwaysinline def toChar: Char   = castRawWordToInt(rawWord).toChar
+  @alwaysinline def toShort: Short = castRawWordToInt(rawWord).toShort
+  @alwaysinline def toInt: Int     = castRawWordToInt(rawWord)
+  @alwaysinline def toLong: Long   = castRawWordToLong(rawWord)
 
-  @alwaysinline def toUInt: UInt   = castRawWordToInt(rawWord).toUInt
-  @alwaysinline def toUWord: UWord = new UWord(rawWord)
+  @alwaysinline def toUByte: UByte   = toByte.toUByte
+  @alwaysinline def toUShort: UShort = toShort.toUShort
+  @alwaysinline def toUInt: UInt     = toInt.toUInt
+  @alwaysinline def toULong: ULong   = toLong.toULong
+  @alwaysinline def toUWord: UWord   = new UWord(rawWord)
 
   /** Returns `true` if this value is greater than x, `false` otherwise. */
   @alwaysinline def >(x: Byte): Boolean = this > x.toWord
@@ -69,10 +75,16 @@ final class Word(private[scalanative] val rawWord: RawWord) {
         false
     })
 
-  override def toString(): String = castRawWordToLong(rawWord).toString
+  override def toString(): String = toLong.toString
 }
 
 object Word {
-  @alwaysinline implicit def intToWord(int: Int): Word =
-    new Word(castIntToRawWord(int))
+  @alwaysinline implicit def byteToWord(x: Byte): Word =
+    new Word(castIntToRawWord(x))
+  @alwaysinline implicit def charToWord(x: Char): Word =
+    new Word(castIntToRawWord(x))
+  @alwaysinline implicit def shortToWord(x: Short): Word =
+    new Word(castIntToRawWord(x))
+  @alwaysinline implicit def intToWord(x: Int): Word =
+    new Word(castIntToRawWord(x))
 }

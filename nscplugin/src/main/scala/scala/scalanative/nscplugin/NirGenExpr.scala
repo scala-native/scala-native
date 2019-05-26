@@ -1210,21 +1210,22 @@ trait NirGenExpr { self: NirGenPhase =>
       buf.elem(Type.Byte, ptr, Seq(offset), unwind)
     }
 
-    def genRawWordOp(app: Apply, code: Int): Val = (app, code) match {
-      case (Apply(_, Seq(leftp, rightp)), ADD_RAW_WORDS) =>
-        buf.bin(Bin.Iadd, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
-      case (Apply(_, Seq(leftp, rightp)), SUB_RAW_WORDS) =>
-        buf.bin(Bin.Isub, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
-      case (Apply(_, Seq(leftp, rightp)), MULT_RAW_WORDS) =>
-        buf.bin(Bin.Imul, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
-      case (Apply(_, Seq(leftp, rightp)), DIV_RAW_WORDS) =>
-        buf.bin(Bin.Sdiv, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
-      case (Apply(_, Seq(leftp, rightp)), DIV_RAW_WORDS_UNSIGNED) =>
-        buf.bin(Bin.Udiv, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
-      case _ =>
-        abort(
-          s"Unknown word operation #$code : " + app +
-            " at: " + app.pos)
+    def genRawWordOp(app: Apply, code: Int): Val = {
+      val Apply(_, Seq(leftp, rightp)) = app
+      
+      val bin = code match {
+        case ADD_RAW_WORDS => Bin.Iadd
+        case SUB_RAW_WORDS => Bin.Isub
+        case MULT_RAW_WORDS => Bin.Imul
+        case DIV_RAW_WORDS => Bin.Sdiv
+        case DIV_RAW_WORDS_UNSIGNED => Bin.Udiv
+        case _ =>
+          abort(
+            s"Unknown word operation #$code : " + app +
+              " at: " + app.pos)
+      }
+
+      buf.bin(bin, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
     }
 
     def genRawCastOp(app: Apply, code: Int): Val = {

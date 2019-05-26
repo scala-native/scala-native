@@ -147,14 +147,30 @@ object Intrinsics {
   /** Resolve c-friendly forwarder generated for given CFuncPtr. */
   def resolveCFuncPtr(cfuncptr: CFuncPtr): RawPtr = intrinsic
 
-  def castRawWordToInt(rawWord: RawWord): Int   = intrinsic
-  def castRawWordToLong(rawWord: RawWord): Long = intrinsic
-  def castIntToRawWord(int: Int): RawWord       = intrinsic
-  def castLongToRawWord(long: Long): RawWord    = intrinsic
+  /** Intrinsified cast that reinterprets raw word as an int. */
+  def castRawWordToInt(rawWord: RawWord): Int = intrinsic
 
-  def addRawWords(a: RawWord, b: RawWord): RawWord         = intrinsic
-  def subRawWords(a: RawWord, b: RawWord): RawWord         = intrinsic
-  def multRawWords(a: RawWord, b: RawWord): RawWord        = intrinsic
-  def divRawWords(a: RawWord, b: RawWord): RawWord         = intrinsic
+  /** Intrinsified cast that reinterprets raw word as a long. */
+  def castRawWordToLong(rawWord: RawWord): Long = intrinsic
+
+  /** Intrinsified cast that reinterprets int as a raw word. */
+  def castIntToRawWord(int: Int): RawWord = intrinsic
+
+  /** Intrinsified cast that reinterprets long as a raw word. */
+  def castLongToRawWord(long: Long): RawWord = intrinsic
+
+  /** Intrinsified addition on raw words. */
+  def addRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+
+  /** Intrinsified subtraction on raw words. */
+  def subRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+
+  /** Intrinsified multiplication on raw words. */
+  def multRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+
+  /** Intrinsified division on raw words. */
+  def divRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+
+  /** Intrinsified division on unsigned raw words. */
   def divRawWordsUnsigned(a: RawWord, b: RawWord): RawWord = intrinsic
 }
