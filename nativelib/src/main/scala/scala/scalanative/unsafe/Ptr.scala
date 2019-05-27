@@ -40,7 +40,7 @@ final class Ptr[T] private[scalanative] (
     new Ptr(elemRawPtr(rawptr, offset * sizeof[T]))
 
   @alwaysinline def -(offset: Word)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, -offset.toLong * sizeof[T])) // TODO(shadaj): word negation
+    new Ptr(elemRawPtr(rawptr, (-offset * sizeof[T]).toLong))
 
   @alwaysinline def -(other: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = {
     val left  = castRawPtrToLong(rawptr)
