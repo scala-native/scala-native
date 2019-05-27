@@ -131,6 +131,54 @@ final class Word(private[scalanative] val rawWord: RawWord) {
   @alwaysinline def ==(other: Word): Boolean =
     this.toLong == other.toLong // TODO(shadaj): intrinsify
 
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
+  @alwaysinline def !=(x: Byte): Boolean = this != x.toWord
+
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
+  @alwaysinline def !=(x: Short): Boolean = this != x.toWord
+
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
+  @alwaysinline def !=(x: Int): Boolean = this != x.toWord
+
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
+  @alwaysinline def !=(x: Long): Boolean = this.toLong != x
+
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
+  @alwaysinline def !=(other: Word): Boolean =
+    this.toLong != other.toLong // TODO(shadaj): intrinsify
+
+  /** Returns `true` if this value is less than x, `false` otherwise. */
+  @alwaysinline def <(x: Byte): Boolean = this < x.toWord
+
+  /** Returns `true` if this value is less than x, `false` otherwise. */
+  @alwaysinline def <(x: Short): Boolean = this < x.toWord
+
+  /** Returns `true` if this value is less than x, `false` otherwise. */
+  @alwaysinline def <(x: Int): Boolean = this < x.toWord
+
+  /** Returns `true` if this value is less than x, `false` otherwise. */
+  @alwaysinline def <(x: Long): Boolean = this.toLong < x
+
+  /** Returns `true` if this value is less than x, `false` otherwise. */
+  @alwaysinline def <(other: Word): Boolean =
+    this.toLong < other.toLong // TODO(shadaj): intrinsify
+
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  @alwaysinline def <=(x: Byte): Boolean = this <= x.toWord
+
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  @alwaysinline def <=(x: Short): Boolean = this <= x.toWord
+
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  @alwaysinline def <=(x: Int): Boolean = this <= x.toWord
+
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  @alwaysinline def <=(x: Long): Boolean = this.toLong <= x
+
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  @alwaysinline def <=(other: Word): Boolean =
+    this.toLong <= other.toLong // TODO(shadaj): intrinsify
+
   /** Returns `true` if this value is greater than x, `false` otherwise. */
   @alwaysinline def >(x: Byte): Boolean = this > x.toWord
 
@@ -147,8 +195,51 @@ final class Word(private[scalanative] val rawWord: RawWord) {
   @alwaysinline def >(other: Word): Boolean =
     this.toLong > other.toLong // TODO(shadaj): intrinsify
 
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  @alwaysinline def >=(x: Byte): Boolean = this >= x.toWord
+
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  @alwaysinline def >=(x: Short): Boolean = this >= x.toWord
+
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  @alwaysinline def >=(x: Int): Boolean = this >= x.toWord
+
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  @alwaysinline def >=(x: Long): Boolean = this.toLong >= x
+
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  @alwaysinline def >=(other: Word): Boolean =
+    this.toLong >= other.toLong // TODO(shadaj): intrinsify
+
+  /** Returns the sum of this value and `x`. */
+  @alwaysinline def +(x: Byte): Word = this + x.toWord
+
+  /** Returns the sum of this value and `x`. */
+  @alwaysinline def +(x: Short): Word = this + x.toWord
+
+  /** Returns the sum of this value and `x`. */
+  @alwaysinline def +(x: Int): Word = this + x.toWord
+
+  /** Returns the sum of this value and `x`. */
+  @alwaysinline def +(x: Long): Long = this.toLong + x
+
+  /** Returns the sum of this value and `x`. */
   @alwaysinline def +(other: Word): Word =
     new Word(addRawWords(rawWord, other.rawWord))
+
+  /** Returns the difference of this value and `x`. */
+  @alwaysinline def -(x: Byte): Word = this - x.toWord
+
+  /** Returns the difference of this value and `x`. */
+  @alwaysinline def -(x: Short): Word = this - x.toWord
+
+  /** Returns the difference of this value and `x`. */
+  @alwaysinline def -(x: Int): Word = this - x.toWord
+
+  /** Returns the difference of this value and `x`. */
+  @alwaysinline def -(x: Long): Long = this.toLong - x
+
+  /** Returns the difference of this value and `x`. */
   @alwaysinline def -(other: Word): Word =
     new Word(subRawWords(rawWord, other.rawWord))
 
@@ -168,8 +259,22 @@ final class Word(private[scalanative] val rawWord: RawWord) {
   @alwaysinline def *(other: Word): Word =
     new Word(multRawWords(rawWord, other.rawWord))
 
+  /** Returns the quotient of this value and `x`. */
+  @alwaysinline def /(x: Byte): Word = this / x.toWord
+
+  /** Returns the quotient of this value and `x`. */
+  @alwaysinline def /(x: Short): Word = this / x.toWord
+
+  /** Returns the quotient of this value and `x`. */
+  @alwaysinline def /(x: Int): Word = this / x.toWord
+
+  /** Returns the quotient of this value and `x`. */
+  @alwaysinline def /(x: Long): Long = this.toLong / x
+
+  /** Returns the quotient of this value and `x`. */
   @alwaysinline def /(other: Word): Word =
     new Word(divRawWords(rawWord, other.rawWord))
+
 }
 
 object Word {
