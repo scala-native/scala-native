@@ -133,14 +133,14 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
       override def group = new GroupPrincipal {
         override val getName =
           Zone { implicit z =>
-            fromCString(fileGroup()._1)
+            fileGroup()
           }
       }
 
       override def owner = new UserPrincipal {
         override val getName =
           Zone { implicit z =>
-            fromCString(filePasswd()._1)
+            filePasswd()
           }
       }
 
@@ -215,12 +215,13 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     else throwIOException()
   }
 
-  private def getGroup(gid: stat.gid_t)(implicit z: Zone): Ptr[grp.group] = {
+  private def getGroup(gid: stat.gid_t)(implicit z: Zone): String = {
     val buf = alloc[grp.group]
     val err = grp.getgrgid(gid, buf)
 
-    if (err == 0) buf
-    else throwIOException()
+    if (err == 0) fromCString(buf._1)
+    else if (err == -1) throwIOException()
+    else gid.toString
   }
 
   private def getPasswd(name: CString)(implicit z: Zone): Ptr[pwd.passwd] = {
@@ -231,12 +232,13 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     else throwIOException()
   }
 
-  private def getPasswd(uid: stat.uid_t)(implicit z: Zone): Ptr[pwd.passwd] = {
+  private def getPasswd(uid: stat.uid_t)(implicit z: Zone): String = {
     val buf = alloc[pwd.passwd]
     val err = pwd.getpwuid(uid, buf)
 
-    if (err == 0) buf
-    else throwIOException()
+    if (err == 0) fromCString(buf._1)
+    else if (err == -1) throwIOException()
+    else uid.toString
   }
 
 }
