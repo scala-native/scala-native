@@ -159,6 +159,15 @@ object Intrinsics {
   /** Intrinsified cast that reinterprets long as a raw word. */
   def castLongToRawWord(long: Long): RawWord = intrinsic
 
+  /** Intrinsified bitwise and on raw words. */
+  def andRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+
+  /** Intrinsified bitwise or on raw words. */
+  def orRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+
+  /** Intrinsified bitwise xor on raw words. */
+  def xorRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+
   /** Intrinsified addition on raw words. */
   def addRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
 
@@ -173,4 +182,7 @@ object Intrinsics {
 
   /** Intrinsified division on unsigned raw words. */
   def divRawWordsUnsigned(a: RawWord, b: RawWord): RawWord = intrinsic
+
+  /** Intrinsified modulo on raw words. */
+  def modRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
 }

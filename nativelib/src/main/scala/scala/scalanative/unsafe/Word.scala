@@ -211,6 +211,54 @@ final class Word(private[scalanative] val rawWord: RawWord) {
   @alwaysinline def >=(other: Word): Boolean =
     this.toLong >= other.toLong // TODO(shadaj): intrinsify
 
+  /** Returns the bitwise AND of this value and `x`. */
+  @alwaysinline def &(x: Byte): Word = this & x.toWord
+
+  /** Returns the bitwise AND of this value and `x`. */
+  @alwaysinline def &(x: Short): Word = this & x.toWord
+
+  /** Returns the bitwise AND of this value and `x`. */
+  @alwaysinline def &(x: Int): Word = this & x.toWord
+
+  /** Returns the bitwise AND of this value and `x`. */
+  @alwaysinline def &(x: Long): Long = this.toLong & x
+
+  /** Returns the bitwise AND of this value and `x`. */
+  @alwaysinline def &(other: Word): Word =
+    new Word(andRawWords(rawWord, other.rawWord))
+
+  /** Returns the bitwise OR of this value and `x`. */
+  @alwaysinline def |(x: Byte): Word = this | x.toWord
+
+  /** Returns the bitwise OR of this value and `x`. */
+  @alwaysinline def |(x: Short): Word = this | x.toWord
+
+  /** Returns the bitwise OR of this value and `x`. */
+  @alwaysinline def |(x: Int): Word = this | x.toWord
+
+  /** Returns the bitwise OR of this value and `x`. */
+  @alwaysinline def |(x: Long): Long = this.toLong | x
+
+  /** Returns the bitwise OR of this value and `x`. */
+  @alwaysinline def |(other: Word): Word =
+    new Word(orRawWords(rawWord, other.rawWord))
+
+  /** Returns the bitwise XOR of this value and `x`. */
+  @alwaysinline def ^(x: Byte): Word = this ^ x.toWord
+
+  /** Returns the bitwise XOR of this value and `x`. */
+  @alwaysinline def ^(x: Short): Word = this ^ x.toWord
+
+  /** Returns the bitwise XOR of this value and `x`. */
+  @alwaysinline def ^(x: Int): Word = this ^ x.toWord
+
+  /** Returns the bitwise XOR of this value and `x`. */
+  @alwaysinline def ^(x: Long): Long = this.toLong ^ x
+
+  /** Returns the bitwise XOR of this value and `x`. */
+  @alwaysinline def ^(other: Word): Word =
+    new Word(xorRawWords(rawWord, other.rawWord))
+
   /** Returns the sum of this value and `x`. */
   @alwaysinline def +(x: Byte): Word = this + x.toWord
 
@@ -274,6 +322,22 @@ final class Word(private[scalanative] val rawWord: RawWord) {
   /** Returns the quotient of this value and `x`. */
   @alwaysinline def /(other: Word): Word =
     new Word(divRawWords(rawWord, other.rawWord))
+
+  /** Returns the remainder of the division of this value by `x`. */
+  @alwaysinline def %(x: Byte): Word = this % x.toWord
+
+  /** Returns the remainder of the division of this value by `x`. */
+  @alwaysinline def %(x: Short): Word = this % x.toWord
+
+  /** Returns the remainder of the division of this value by `x`. */
+  @alwaysinline def %(x: Int): Word = this % x.toWord
+
+  /** Returns the remainder of the division of this value by `x`. */
+  @alwaysinline def %(x: Long): Long = this.toLong % x
+
+  /** Returns the remainder of the division of this value by `x`. */
+  @alwaysinline def %(other: Word): Word =
+    new Word(modRawWords(rawWord, other.rawWord))
 
 }
 

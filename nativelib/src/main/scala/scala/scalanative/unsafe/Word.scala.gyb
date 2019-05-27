@@ -139,13 +139,14 @@ final class Word(private[scalanative] val rawWord: RawWord) {
     this.toLong ${op} other.toLong // TODO(shadaj): intrinsify
 
   % end
-  % binOps = [# TODO(shadaj): |, &, ^
+  % binOps = [('&', 'andRawWords', 'Returns the bitwise AND of this value and `x`.'),
+  %           ('|', 'orRawWords', 'Returns the bitwise OR of this value and `x`.'),
+  %           ('^', 'xorRawWords', 'Returns the bitwise XOR of this value and `x`.'),
   %           ('+', 'addRawWords', 'Returns the sum of this value and `x`.'),
   %           ('-', 'subRawWords', 'Returns the difference of this value and `x`.'),
   %           ('*', 'multRawWords', 'Returns the product of this value and `x`.'),
-  %           ('/', 'divRawWords', 'Returns the quotient of this value and `x`.')
-  %           # TODO(shadaj): %
-  %           ]
+  %           ('/', 'divRawWords', 'Returns the quotient of this value and `x`.'),
+  %           ('%', 'modRawWords', 'Returns the remainder of the division of this value by `x`.')]
   % for (op, intrinsic, doc) in binOps:
   /** ${doc} */
   @alwaysinline def ${op}(x: Byte): Word = this ${op} x.toWord
