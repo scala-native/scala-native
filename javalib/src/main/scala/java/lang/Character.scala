@@ -1202,6 +1202,7 @@ object Character {
   // using the Unicode 7.0 database. This now uses UnicodeData.txt.
   // Refer to the following project for the transformation code.
   // https://github.com/ekrich/scala-unicode
+  // Note: This does not incorporate SpecialCasing.txt
 
   private[this] lazy val upperDeltas = Array[scala.Int](-32, -32, -32, -32, -32,
     -32, -1, -1, 199, -1, -1, -1, -1, -1, -1, 121, -1, -1, -210, -1, -1, -206,
