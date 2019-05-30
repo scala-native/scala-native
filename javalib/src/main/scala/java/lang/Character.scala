@@ -759,15 +759,8 @@ object Character {
   }
 
   def toUpperCase(codePoint: Int): Int = {
-    import CaseFolding._
-    toCase(codePoint,
-           a,
-           z,
-           toUpper,
-           lowerBeta,
-           lowerRanges,
-           lowerDeltas,
-           lowerSteps)
+    import CaseUtil._
+    toCase(codePoint, a, z, lowerBeta, lowerRanges, lowerDeltas, lowerSteps)
   }
 
   def toLowerCase(c: scala.Char): scala.Char = {
@@ -775,15 +768,8 @@ object Character {
   }
 
   def toLowerCase(codePoint: Int): Int = {
-    import CaseFolding._
-    toCase(codePoint,
-           A,
-           Z,
-           toLower,
-           upperMu,
-           upperRanges,
-           upperDeltas,
-           upperSteps)
+    import CaseUtil._
+    toCase(codePoint, A, Z, upperMu, upperRanges, upperDeltas, upperSteps)
   }
 
   def toChars(codePoint: Int): Array[Char] = {
@@ -1311,31 +1297,28 @@ object Character {
     42787, 42799, 42803, 42863, 42874, 42876, 42879, 42887, 42892, 42897, 42899,
     42903, 42921, 65345, 65370, 66600, 66639, 71872, 71903)
 
-  private[this] object CaseFolding {
-    lazy val a     = lowerRanges(0)
-    lazy val z     = lowerRanges(1)
-    lazy val A     = upperRanges(0)
-    lazy val Z     = upperRanges(1)
-    lazy val delta = upperDeltas(0)
+  private[this] object CaseUtil {
+    lazy val a = lowerRanges(0)
+    lazy val z = lowerRanges(1)
+    lazy val A = upperRanges(0)
+    lazy val Z = upperRanges(1)
     // other low char optimization whitespace, punctuation, etc.
     lazy val upperMu                        = upperRanges(2)
     lazy val lowerBeta                      = lowerRanges(2)
     def insertionPoint(idx: Int)            = (-(idx) - 1)
-    def toUpper(codePoint: Int, delta: Int) = codePoint - delta
-    def toLower(codePoint: Int, delta: Int) = codePoint + delta
+    def convert(codePoint: Int, delta: Int) = codePoint - delta
   }
 
   private[this] def toCase(codePoint: Int,
                            asciiLow: Int,
                            asciiHigh: Int,
-                           convert: (Int, Int) => Int,
                            lowFilter: Int,
                            ranges: Array[scala.Int],
                            deltas: Array[scala.Int],
                            steps: Array[scala.Byte]): Int = {
-    import CaseFolding._
+    import CaseUtil._
     if (asciiLow <= codePoint && codePoint <= asciiHigh)
-      convert(codePoint, delta) // ascii
+      convert(codePoint, deltas(0)) // ascii
     else if (codePoint < lowFilter) codePoint // whitespace, punctuation, etc.
     else {
       val idx = Arrays.binarySearch(ranges, codePoint)
