@@ -406,7 +406,6 @@ object CharacterSuite extends tests.Suite {
     assert(toUpperCase(65345) equals 65313)
     assert(toUpperCase(65370) equals 65338)
     assert(toUpperCase(66600) equals 66560)
-    assert(toUpperCase(71872) equals 71840)
   }
 
   test("toUpperCase-above") {
