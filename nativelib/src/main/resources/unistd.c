@@ -15,23 +15,17 @@ int scalanative_stdout_fileno() { return STDOUT_FILENO; }
 
 int scalanative_stderr_fileno() { return STDERR_FILENO; }
 
-int scalanative_symlink(char *path1, char *path2) {
-    return symlink(path1, path2);
-}
+extern char **environ;
+char **scalanative_environ() { return environ; }
 
-int scalanative_symlinkat(char *path1, int fd, char *path2) {
-    return symlinkat(path1, fd, path2);
-}
+extern char *optarg;
+char *scalanative_optarg() { return optarg; }
 
-int scalanative_link(char *oldpath, char *newpath) {
-    return link(oldpath, newpath);
-}
+extern int opterr;
+int scalanative_opterr() { return opterr; }
 
-int scalanative_linkat(int fd1, char *path1, int fd2, char *path2, int flag) {
-    return linkat(fd1, path1, fd2, path2, flag);
-}
+extern int optind;
+int scalanative_optind() { return optind; }
 
-int scalanative_chown(char *path, scalanative_uid_t owner,
-                      scalanative_gid_t group) {
-    return chown(path, owner, group);
-}
+extern int optopt;
+int scalanative_optopt() { return optopt; }

@@ -4,8 +4,6 @@
 #include <math.h>
 #include <errno.h>
 
-extern char **environ;
-
 // This file contains functions that wrap posix
 // built-in macros. We need this because Scala Native
 // can not expand C macros, and that's the easiest way to
@@ -165,5 +163,3 @@ int scalanative_etxtbsy() { return ETXTBSY; }
 int scalanative_ewouldblock() { return EWOULDBLOCK; }
 
 int scalanative_exdev() { return EXDEV; }
-
-char **scalanative_environ() { return environ; }
