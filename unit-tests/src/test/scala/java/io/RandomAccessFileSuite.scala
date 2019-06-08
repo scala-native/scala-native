@@ -79,7 +79,7 @@ object RandomAccessFileSuite extends tests.Suite {
   testWithRAF("Can write and read a whole line with terminator = '\\n'") {
     raf =>
       val line = "Hello, world!"
-      raf.writeChars(line + '\n')
+      raf.writeBytes(line + '\n')
       raf.seek(0)
       assert(raf.readLine() == line)
   }
@@ -87,7 +87,7 @@ object RandomAccessFileSuite extends tests.Suite {
   testWithRAF("Can write and read a whole line with terminator = '\\r'") {
     raf =>
       val line = "Hello, world!"
-      raf.writeChars(line + '\r')
+      raf.writeBytes(line + '\r')
       raf.seek(0)
       assert(raf.readLine() == line)
   }
@@ -95,7 +95,7 @@ object RandomAccessFileSuite extends tests.Suite {
   testWithRAF("Can write and read a whole line with terminator = '\\r\\n'") {
     raf =>
       val line = "Hello, world!"
-      raf.writeChars(line + "\r\n")
+      raf.writeBytes(line + "\r\n")
       raf.seek(0)
       assert(raf.readLine() == line)
   }
