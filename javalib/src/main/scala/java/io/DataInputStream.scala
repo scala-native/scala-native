@@ -4,6 +4,14 @@ class DataInputStream(in: InputStream)
     extends FilterInputStream(in)
     with DataInput {
 
+  // Notes on End of File (EOF) handling.
+  //
+  // The first three read routines return an Int. At EOF this is the
+  // -1 bubbled up by the underlying InputStream.
+  //
+  // The other read*() routines follow the Java 8 description and return
+  // EOFException if the underlying InputStream has returned EOF (-1).
+
   override final def read(b: Array[Byte]): Int =
     in.read(b)
 
@@ -11,14 +19,20 @@ class DataInputStream(in: InputStream)
     in.read(b, off, len)
 
   override final def readBoolean(): Boolean =
-    read() != 0
+    readByte() != 0
 
-  override final def readByte(): Byte =
-    read().toByte
+  override final def readByte(): Byte = {
+    val v = in.read()
+
+    if (v == -1) {
+      throw new EOFException
+    }
+
+    v.toByte
+  }
 
   override final def readChar(): Char = {
-    val b1, b2 = readUnsignedByte()
-    ((b1 << 8) | b2).asInstanceOf[Char]
+    readUnsignedShort().asInstanceOf[Char]
   }
 
   override final def readDouble(): Double = {
@@ -70,21 +84,22 @@ class DataInputStream(in: InputStream)
     (b1 << 24) | (b2 << 16) + (b3 << 8) + b4
   }
 
+  @deprecated
   override final def readLine(): String = {
-    var v = read()
+    var v = in.read()
     if (v == -1) null
     else {
       val builder = new StringBuilder
       var c       = v.toChar
       while (v != -1 && c != '\n' && c != '\r') {
         builder.append(c)
-        v = read()
+        v = in.read()
         c = v.toChar
       }
 
       if (c == '\r') {
         mark(1)
-        if (read().toChar != '\n') reset()
+        if (in.read().toChar != '\n') reset()
       }
       builder.toString
     }
@@ -103,6 +118,8 @@ class DataInputStream(in: InputStream)
     ((b1 << 8) | b2).asInstanceOf[Short]
   }
 
+  // toInt does sign extension, so char 255 becomes -1, high bytes set.
+  // The bitwise and does required conversion to Int with high bytes clear.
   override final def readUnsignedByte(): Int =
     readByte() & 0xFF
 
@@ -114,15 +131,8 @@ class DataInputStream(in: InputStream)
   override final def readUTF(): String =
     DataInputStream.readUTF(this)
 
-  override def skipBytes(n: Int): Int = {
-    var i = 0
-    var v = 0
-    while (i < n && v != -1) {
-      v = read()
-      i += 1
-    }
-    i
-  }
+  override def skipBytes(n: Int): Int =
+    in.skip(n.toLong).toInt
 
 }
 
