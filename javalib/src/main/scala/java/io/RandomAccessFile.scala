@@ -106,7 +106,7 @@ class RandomAccessFile private (file: File,
           case '\r' =>
             // If there's a newline after carriage-return, we must eat it too.
             if (pos < end) {
-              if (readChar() == '\n') {
+              if (readByte().toChar == '\n') {
                 pos += 1
               } else {
                 seek(getFilePointer - 1)

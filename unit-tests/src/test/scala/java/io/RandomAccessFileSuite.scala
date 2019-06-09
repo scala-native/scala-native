@@ -81,23 +81,41 @@ object RandomAccessFileSuite extends tests.Suite {
       val line = "Hello, world!"
       raf.writeBytes(line + '\n')
       raf.seek(0)
-      assert(raf.readLine() == line)
+
+      val result = raf.readLine()
+
+      assert(result.length == line.length,
+             s"result length: ${result.length} != expected: ${line.length}")
+
+      assert(result == line, s"result: '${result}' != expected: '${line}'")
   }
 
   testWithRAF("Can write and read a whole line with terminator = '\\r'") {
     raf =>
       val line = "Hello, world!"
-      raf.writeBytes(line + '\r')
+      raf.writeBytes(line + '\n')
       raf.seek(0)
-      assert(raf.readLine() == line)
+
+      val result = raf.readLine()
+
+      assert(result.length == line.length,
+             s"result length: ${result.length} != expected: ${line.length}")
+
+      assert(result == line, s"result: '${result}' != expected: '${line}'")
   }
 
   testWithRAF("Can write and read a whole line with terminator = '\\r\\n'") {
     raf =>
       val line = "Hello, world!"
-      raf.writeBytes(line + "\r\n")
+      raf.writeBytes(line + '\n')
       raf.seek(0)
-      assert(raf.readLine() == line)
+
+      val result = raf.readLine()
+
+      assert(result.length == line.length,
+             s"result length: ${result.length} != expected: ${line.length}")
+
+      assert(result == line, s"result: '${result}' != expected: '${line}'")
   }
 
   testWithRAF("Can write and read a Long") { raf =>
