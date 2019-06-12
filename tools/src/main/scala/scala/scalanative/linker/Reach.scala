@@ -20,6 +20,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val dynsigs       = mutable.Set.empty[Sig]
   val dynimpls      = mutable.Set.empty[Global]
 
+  val inlineSources = mutable.UnrolledBuffer.empty[Attr.InlineSource]
+
   entries.foreach(reachEntry)
   loader.classesWithEntryPoints.foreach(reachClinit)
 
@@ -36,7 +38,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
                links.toSeq,
                defns,
                dynsigs.toSeq,
-               dynimpls.toSeq)
+               dynimpls.toSeq,
+               inlineSources)
   }
 
   def cleanup(): Unit = {
@@ -433,8 +436,10 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     reachAttrs(attrs)
   }
 
-  def reachAttrs(attrs: Attrs): Unit =
+  def reachAttrs(attrs: Attrs): Unit = {
     links ++= attrs.links
+    inlineSources ++= attrs.extSources
+  }
 
   def reachType(ty: Type): Unit = ty match {
     case Type.ArrayValue(ty, n) =>

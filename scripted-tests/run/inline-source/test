@@ -1,0 +1,5 @@
+> nativeLink
+$ pause
+$ exists Foo.c
+$ exists Bar.cpp
+-$ exists NotLinked.m

@@ -23,8 +23,11 @@ object Attr extends Base[nir.Attr] {
   val Extern        = P("extern".! map (_ => nir.Attr.Extern))
   val Link          = P("link(" ~ stringLit ~ ")" map (nir.Attr.Link(_)))
   val Abstract      = P("abstract".! map (_ => nir.Attr.Abstract))
+  val InlineSource = P(
+    "inlinesource(" ~ stringLit ~ "," ~ stringLit ~ "," ~ stringLit ~ "," ~ Long ~ ")" map (
+        p => nir.Attr.InlineSource(p._1, p._2, p._3, p._4)))
 
   override val parser: P[nir.Attr] =
-    MayInline | InlineHint | NoInline | AlwaysInline | MaySpecialize | NoSpecialize | UnOpt | DidOpt | BailOpt | Dyn | Stub | Extern | Link | Abstract
+    MayInline | InlineHint | NoInline | AlwaysInline | MaySpecialize | NoSpecialize | UnOpt | DidOpt | BailOpt | Dyn | Stub | InlineSource | Extern | Link | Abstract
 
 }

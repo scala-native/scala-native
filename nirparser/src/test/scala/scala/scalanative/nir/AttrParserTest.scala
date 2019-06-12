@@ -26,7 +26,8 @@ class AttrParserTest extends AnyFunSuite {
     Attr.Link("test"),
     Attr.Link("foo bar"),
     Attr.Link("foo \"bar\" baz"),
-    Attr.Abstract
+    Attr.Abstract,
+    Attr.InlineSource("C++", "typedef foo bar;", "foo.Bar", 4321)
   ).foreach { attr =>
     test(s"parse attr `${attr.show}`") {
       val Parsed.Success(result, _) = parser.Attr.parser.parse(attr.show)

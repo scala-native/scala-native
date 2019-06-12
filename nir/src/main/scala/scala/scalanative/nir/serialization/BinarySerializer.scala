@@ -83,6 +83,13 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.Extern   => putInt(T.ExternAttr)
     case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8tring(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
+
+    case Attr.InlineSource(lang, src, annottee, version) =>
+      putInt(T.InlineSrcAttr)
+      putUTF8tring(lang)
+      putUTF8tring(src)
+      putUTF8tring(annottee)
+      putLong(version)
   }
 
   private def putBin(bin: Bin) = bin match {

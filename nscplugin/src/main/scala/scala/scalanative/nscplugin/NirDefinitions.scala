@@ -31,6 +31,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
       "scala.scalanative.annotation.nooptimize")
     lazy val NoSpecializeClass = getRequiredClass(
       "scala.scalanative.annotation.nospecialize")
+    lazy val InlineSourceClass = getRequiredClass(
+      "scala.scalanative.annotation.InlineSource")
 
     lazy val NativeModule = getRequiredModule(
       "scala.scalanative.unsafe.package")
