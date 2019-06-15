@@ -39,6 +39,9 @@ class UnixFileSystem(override val provider: FileSystemProvider,
   @stub
   override def getFileStores(): Iterable[FileStore] = ???
 
+  override def getUserPrincipalLookupService(): UserPrincipalLookupService =
+    attribute.NativeUserPrincipalLookupService
+
   override def getPath(first: String, more: Array[String]): Path =
     new UnixPath(this, (first +: more).mkString("/"))
 

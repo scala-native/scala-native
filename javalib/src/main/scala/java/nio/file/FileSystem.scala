@@ -7,8 +7,7 @@ import java.nio.file.spi.FileSystemProvider
 import java.util.Set
 
 abstract class FileSystem extends Closeable {
-  // def getUserPrincipalLookupService(): UserPrincipalLookupService
-
+  def getUserPrincipalLookupService(): UserPrincipalLookupService
   def close(): Unit
   def getFileStores(): Iterable[FileStore]
   def getPath(first: String, more: Array[String]): Path
