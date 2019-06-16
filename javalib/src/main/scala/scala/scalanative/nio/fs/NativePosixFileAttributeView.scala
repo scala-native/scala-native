@@ -11,6 +11,7 @@ import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
 import scalanative.posix.sys.stat
+import scala.scalanative.nio.fs.attribute._
 
 final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     extends PosixFileAttributeView
@@ -38,14 +39,14 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
   override def setOwner(owner: UserPrincipal): Unit =
     Zone { implicit z =>
-      val ownerName = owner.getName
+      val uid = owner match {
+        case u: NativeUserPrincipal => u.uid
 
-      getPasswd(toCString(ownerName)).fold {
-        throw new UserPrincipalNotFoundException(ownerName)
-      } { passwd =>
-        if (unistd.chown(toCString(path.toString), passwd._2, -1.toUInt) != 0) {
-          throwIOException()
-        }
+        case _ =>
+          throw new IllegalArgumentException("unsupported UserPrincipal")
+      }
+      if (unistd.chown(toCString(path.toString), uid, -1.toUInt) != 0) {
+        throwIOException()
       }
     }
 
@@ -64,14 +65,15 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
   override def setGroup(group: GroupPrincipal): Unit =
     Zone { implicit z =>
-      val grpName = group.getName
+      val gid = group match {
+        case g: NativeGroupPrincipal => g.gid
 
-      getGroup(toCString(grpName)).fold {
-        throw new UserPrincipalNotFoundException(grpName)
-      } { group =>
-        if (unistd.chown(toCString(path.toString), -1.toUInt, group._2) != 0) {
-          throwIOException()
-        }
+        case _ =>
+          throw new IllegalArgumentException("unsupported GroupPrincipal")
+      }
+
+      if (unistd.chown(toCString(path.toString), -1.toUInt, gid) != 0) {
+        throwIOException()
       }
     }
 
@@ -110,12 +112,6 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
         st_mode = buf._13
       }
 
-      private def filePasswd()(implicit z: Zone) =
-        getPasswd(st_uid).fold(st_uid.toString)(_.toString)
-
-      private def fileGroup()(implicit z: Zone) =
-        getGroup(st_gid).fold(st_gid.toString)(_.toString)
-
       override def fileKey = st_ino.asInstanceOf[Object]
 
       override lazy val isDirectory =
@@ -139,19 +135,9 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
       override def creationTime =
         FileTime.from(st_ctime, TimeUnit.SECONDS)
 
-      override def group = new GroupPrincipal {
-        override val getName =
-          Zone { implicit z =>
-            fileGroup()
-          }
-      }
+      override def group = NativeGroupPrincipal(st_gid)(None)
 
-      override def owner = new UserPrincipal {
-        override val getName =
-          Zone { implicit z =>
-            filePasswd()
-          }
-      }
+      override def owner = NativeUserPrincipal(st_uid)(None)
 
       override def permissions = {
         val set = new HashSet[PosixFilePermission]
@@ -214,70 +200,6 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
     if (err == 0) buf
     else throwIOException()
-  }
-
-  private def getGroup(name: CString)(
-      implicit z: Zone): Option[Ptr[grp.group]] = {
-    val buf = alloc[grp.group]
-
-    errno.errno = 0
-    val err = grp.getgrnam(name, buf)
-
-    if (err == 0) {
-      Some(buf)
-    } else if (errno.errno == 0) {
-      None
-    } else {
-      throwIOException()
-    }
-  }
-
-  private def getGroup(gid: stat.gid_t)(
-      implicit z: Zone): Option[Ptr[grp.group]] = {
-    val buf = alloc[grp.group]
-
-    errno.errno = 0
-    val err = grp.getgrgid(gid, buf)
-
-    if (err == 0) {
-      Some(buf)
-    } else if (errno.errno == 0) {
-      None
-    } else {
-      throwIOException()
-    }
-  }
-
-  private def getPasswd(name: CString)(
-      implicit z: Zone): Option[Ptr[pwd.passwd]] = {
-    val buf = alloc[pwd.passwd]
-
-    errno.errno = 0
-    val err = pwd.getpwnam(name, buf)
-
-    if (err == 0) {
-      Some(buf)
-    } else if (errno.errno == 0) {
-      None
-    } else {
-      throwIOException()
-    }
-  }
-
-  private def getPasswd(uid: stat.uid_t)(
-      implicit z: Zone): Option[Ptr[pwd.passwd]] = {
-    val buf = alloc[pwd.passwd]
-
-    errno.errno = 0
-    val err = pwd.getpwuid(uid, buf)
-
-    if (err == 0) {
-      Some(buf)
-    } else if (errno.errno == 0) {
-      None
-    } else {
-      throwIOException()
-    }
   }
 }
 private object NativePosixFileAttributeView {
