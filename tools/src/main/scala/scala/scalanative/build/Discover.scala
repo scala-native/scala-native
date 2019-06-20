@@ -12,6 +12,12 @@ import scalanative.build.IO.RichPath
  */
 object Discover {
 
+  /** Library Id for lookup */
+  case class LibId(org: String, artifact: String)
+
+  /** Native lib org and artifact */
+  val nativelibId = LibId("org.scala-foo", "nativelib")
+
   /** Compilation mode name that takes SCALANATIVE_MODE into account or default otherwise. */
   def mode(): String =
     getenv("SCALANATIVE_MODE").getOrElse(build.Mode.default.name)
@@ -19,6 +25,13 @@ object Discover {
   /** LTO variant used for release mode. */
   def LTO(): String =
     getenv("SCALANATIVE_LTO").getOrElse("none")
+
+  /** Find nativelib jar on the classpath. */
+  def nativelib(classpath: Seq[Path], libId: LibId): Option[Path] =
+    classpath.find { path =>
+      val absolute = path.toAbsolutePath.toString
+      absolute.contains(libId.org) && absolute.contains(libId.artifact)
+    }
 
   /** Find the newest compatible clang binary. */
   def clang(): Path = {
