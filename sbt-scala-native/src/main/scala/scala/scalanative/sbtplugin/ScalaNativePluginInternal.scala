@@ -55,7 +55,9 @@ object ScalaNativePluginInternal {
       .getOrElse(build.GC.default.name),
     nativeLTO := Discover.LTO(),
     nativeCheck := false,
-    nativeDump := false
+    nativeDump := false,
+    nativeLibraryDependencies := Seq[ModuleID](
+      "org.scala-native" %%% "nativelib" % nativeVersion)
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -90,30 +92,21 @@ object ScalaNativePluginInternal {
       val mainClass = selectMainClass.value.getOrElse {
         throw new MessageOnlyException("No main class detected.")
       }
-      val fullCp    = fullClasspath.value
-      val classpath = fullCp.map(_.data.toPath).filter(f => Files.exists(f))
-      val nativelib = {
-        /* Find the entry of the classpath that is the nativelib.
-         * We use the `moduleID.key` attribute of the entries to find the one
-         * whose organization is `org.scala-native` and whose name is
-         * `nativelib`. The name might include the cross-version suffix,
-         * which is why we also accept names that start with
-         * `nativelib_native0.`.
-         */
-        fullCp
-          .find { entry =>
-            entry.get(moduleID.key).exists { module =>
-              module.organization == "org.scala-native" &&
-              (module.name == "nativelib" || module.name.startsWith(
-                "nativelib_native0."))
-            }
-          }
-          .getOrElse {
-            throw new MessageOnlyException(
-              "Could not find nativelib on classpath.")
-          }
-          .data
-          .toPath
+      val classpath =
+        fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
+      // get from scalaNativeDependencySettings.value (first element, then org and artifact)
+      println(nativeLibraryDependencies)
+      val nativeDeps = nativeLibraryDependencies.value
+      println(nativeDeps)
+      val modId = nativeDeps.head
+      println(modId)
+      println(modId.organization)
+      println(modId.name)
+
+      val natId = Discover.nativelibId
+      val nativelib = Discover.nativelib(classpath, natId).getOrElse {
+        throw new MessageOnlyException(
+          s"""Could not find "${natId.org}" %%% "${natId.artifact}" ... on the classpath.""")
       }
       val maincls = mainClass.toString + "$"
       val cwd     = nativeWorkdir.value.toPath

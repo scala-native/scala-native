@@ -59,6 +59,7 @@ object Build {
     IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
     ScalaNative.codegen(config, optimized)
     val generated = IO.getAll(config.workdir, "glob:**.ll")
+    println(s"config.workdir=${config.workdir}")
 
     val unpackedLib = LLVM.unpackNativelib(config.nativelib, config.workdir)
     val objectFiles = config.logger.time("Compiling to native code") {
