@@ -16,7 +16,7 @@ object Discover {
   case class LibId(org: String, artifact: String)
 
   /** Native lib org and artifact */
-  val nativelibId = LibId("org.scala-foo", "nativelib")
+  val nativelibId = LibId("org.scala-native", "nativelib")
 
   /** Compilation mode name that takes SCALANATIVE_MODE into account or default otherwise. */
   def mode(): String =
