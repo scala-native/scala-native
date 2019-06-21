@@ -1,7 +1,9 @@
 package scala.scalanative
 package sbtplugin
 
-import java.nio.file.Files
+import java.lang.System.{lineSeparator => nl}
+import java.io.ByteArrayInputStream
+import java.nio.file.{Files, Path}
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
@@ -56,8 +58,8 @@ object ScalaNativePluginInternal {
     nativeLTO := Discover.LTO(),
     nativeCheck := false,
     nativeDump := false,
-    nativeLibraryDependencies := Seq[ModuleID](
-      "org.scala-native" %%% "nativelib" % nativeVersion)
+    nativeLibraryDependencies := Seq(),
+    nativeCodeInclude := false
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -92,16 +94,24 @@ object ScalaNativePluginInternal {
       val mainClass = selectMainClass.value.getOrElse {
         throw new MessageOnlyException("No main class detected.")
       }
+
+      def createLibIds(nativeDeps: Seq[ModuleID]): Seq[Discover.LibId] = {
+        nativeDeps.map(dep => Discover.LibId(dep.organization, dep.name))
+      }
+
+      def findNativeLibs(libIds: Seq[Discover.LibId],
+                         classpath: Seq[Path]): Seq[Path] =
+        libIds.map { libId =>
+          Discover.nativelib(classpath, libId).getOrElse {
+            throw new MessageOnlyException(
+              s"""Could not find "${libId.org}" %%% "${libId.artifact}" ... on the classpath.""")
+          }
+        }
+
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
-      // get from scalaNativeDependencySettings.value (first element, then org and artifact)
-      println(nativeLibraryDependencies)
-      val nativeDeps = nativeLibraryDependencies.value
-      println(nativeDeps)
-      val modId = nativeDeps.head
-      println(modId)
-      println(modId.organization)
-      println(modId.name)
+      val libIds     = createLibIds(nativeLibraryDependencies.value)
+      val nativeLibs = findNativeLibs(Discover.nativelibId +: libIds, classpath)
 
       val natId = Discover.nativelibId
       val nativelib = Discover.nativelib(classpath, natId).getOrElse {
