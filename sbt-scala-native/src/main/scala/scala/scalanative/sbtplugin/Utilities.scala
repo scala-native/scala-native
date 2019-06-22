@@ -38,6 +38,6 @@ object Utilities {
                    logger.error(_))
 
     def running(command: Seq[String]): Unit =
-      logger.debug("running" + nl + command.mkString(nl + "\t"))
+      logger.debug("Running" + nl + command.mkString(nl + "\t"))
   }
 }

@@ -51,17 +51,18 @@ object Build {
    *  @return `outpath`, the path to the resulting native binary.
    */
   def build(config: Config, outpath: Path): Path = config.logger.time("Total") {
+    val workdir = config.workdir
+    config.logger.debug(s"Workdir: ${workdir}")
     val entries = ScalaNative.entries(config)
     val linked  = ScalaNative.link(config, entries)
     ScalaNative.logLinked(config, linked)
     val optimized = ScalaNative.optimize(config, linked)
 
-    IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
+    IO.getAll(workdir, "glob:**.ll").foreach(Files.delete)
     ScalaNative.codegen(config, optimized)
-    val generated = IO.getAll(config.workdir, "glob:**.ll")
-    println(s"config.workdir=${config.workdir}")
+    val generated = IO.getAll(workdir, "glob:**.ll")
 
-    val unpackedLib = LLVM.unpackNativelib(config.nativelib, config.workdir)
+    val unpackedLib = LLVM.unpackNativelib(config.nativelib, workdir)
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
         config.withCompileOptions("-O2" +: config.compileOptions)

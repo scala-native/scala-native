@@ -21,7 +21,7 @@ trait Logger {
 
   /** Logs at the debug level that the command `cmd` will start running. */
   def running(cmd: Seq[String]): Unit = {
-    val msg = "running" + nl + cmd.mkString(nl + "\t")
+    val msg = "Running" + nl + cmd.mkString(nl + "\t")
     debug(msg)
   }
 
