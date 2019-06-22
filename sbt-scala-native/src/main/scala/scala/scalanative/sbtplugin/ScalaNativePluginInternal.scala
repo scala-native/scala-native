@@ -95,18 +95,18 @@ object ScalaNativePluginInternal {
         throw new MessageOnlyException("No main class detected.")
       }
 
-      def createLibIds(nativeDeps: Seq[ModuleID]): Seq[Discover.LibId] = {
+      def createLibIds(nativeDeps: Seq[ModuleID]): Seq[LibId] = {
         nativeDeps.map(dep => Discover.LibId(dep.organization, dep.name))
       }
 
-      def findNativeLibs(libIds: Seq[Discover.LibId],
-                         classpath: Seq[Path]): Map[String, Path] =
+      def findNativeLibs(libIds: Seq[LibId],
+                         classpath: Seq[Path]): Seq[NativeLib] =
         libIds.map { libId =>
           Discover.nativelib(classpath, libId).getOrElse {
             throw new MessageOnlyException(
               s"""Could not find "${libId.org}" %%% "${libId.artifact}" ... on the classpath.""")
           }
-        }.toMap
+        }
 
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
@@ -121,7 +121,7 @@ object ScalaNativePluginInternal {
       val mode    = build.Mode(nativeMode.value)
 
       build.Config.empty
-        .withNativelib(nativelibs.head._2) // hack for now
+        .withNativelibs(nativelibs)
         .withMainClass(maincls)
         .withClassPath(classpath)
         .withWorkdir(cwd)

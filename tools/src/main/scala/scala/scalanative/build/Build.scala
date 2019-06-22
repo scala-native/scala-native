@@ -2,7 +2,7 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Path, Files}
-import scalanative.nir.Global
+import scalanative.build.Discover.NativeLib
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -62,7 +62,16 @@ object Build {
     ScalaNative.codegen(config, optimized)
     val generated = IO.getAll(workdir, "glob:**.ll")
 
-    val unpackedLib = LLVM.unpackNativelib(config.nativelib, workdir)
+    // deprecation compatibility
+    val nativeLibs = if (config.nativelib.toString().isEmpty()) {
+      config.nativelibs
+    } else {
+      config.logger.warn(
+        "Deprecated. Use config.withNativelibs(value: Seq[NativeLib]) as of 0.4.0")
+      Seq(NativeLib(Discover.nativelibId.artifact, config.nativelib))
+    }
+
+    val unpackedLib = LLVM.unpackNativelib(nativeLibs(0), workdir)
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
         config.withCompileOptions("-O2" +: config.compileOptions)

@@ -7,6 +7,7 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath
+import scalanative.build.Discover.NativeLib
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -22,9 +23,9 @@ private[scalanative] object LLVM {
    *                  to `workdir/lib`.
    * @return The location where the nativelib has been unpacked, `workdir/lib`.
    */
-  def unpackNativelib(nativelib: Path, workdir: Path): Path = {
-    val lib         = workdir.resolve("nativelib")
-    val jarhash     = IO.sha1(nativelib)
+  def unpackNativelib(nativelib: NativeLib, workdir: Path): Path = {
+    val lib         = workdir.resolve(nativelib.name)
+    val jarhash     = IO.sha1(nativelib.path)
     val jarhashPath = lib.resolve("jarhash")
     def unpacked =
       Files.exists(lib) &&
@@ -33,7 +34,7 @@ private[scalanative] object LLVM {
 
     if (!unpacked) {
       IO.deleteRecursive(lib)
-      IO.unzip(nativelib, lib)
+      IO.unzip(nativelib.path, lib)
       IO.write(jarhashPath, jarhash)
     }
 

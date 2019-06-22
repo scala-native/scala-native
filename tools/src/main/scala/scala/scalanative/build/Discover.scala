@@ -15,6 +15,9 @@ object Discover {
   /** Library Id for lookup */
   case class LibId(org: String, artifact: String)
 
+  /** Container to hold name and Path to jar */
+  case class NativeLib(name: String, path: Path)
+
   /** Native lib org and artifact */
   val nativelibId = LibId("org.scala-native", "nativelib")
 
@@ -30,13 +33,14 @@ object Discover {
     getenv("SCALANATIVE_LTO").getOrElse("none")
 
   /** Find nativelib jar on the classpath. */
-  def nativelib(classpath: Seq[Path], libId: LibId): Option[(String, Path)] = {
+  def nativelib(classpath: Seq[Path], libId: LibId): Option[NativeLib] = {
     val artifact = libId.artifact
-    val opt = classpath.find { path =>
-      val absolute = path.toAbsolutePath.toString
-      absolute.contains(libId.org) && absolute.contains(artifact)
-    }
-    opt.flatMap(path => Option((artifact, path)))
+    classpath
+      .find { path =>
+        val absolute = path.toAbsolutePath.toString
+        absolute.contains(libId.org) && absolute.contains(artifact)
+      }
+      .flatMap(path => Option(NativeLib(artifact, path)))
   }
 
   /** Find the newest compatible clang binary. */

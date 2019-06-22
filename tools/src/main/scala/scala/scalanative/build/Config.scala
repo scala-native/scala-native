@@ -3,7 +3,7 @@ package build
 
 import java.nio.file.{Path, Paths}
 
-import nir.Global
+import scalanative.build.Discover.NativeLib
 
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait Config {
@@ -33,11 +33,11 @@ sealed trait Config {
   def workdir: Path
 
   /** Path to the nativelib jar. */
-  @deprecated("Use nativelibs: Map[String, Path]", "0.4.0")
+  @deprecated("Use nativelibs: Seq[NativeLib]", "0.4.0")
   def nativelib: Path
 
-  /** Map of Name to Path for the nativelib jars. */
-  def nativelibs: Map[String, Path]
+  /** Sequence of NativeLib, name and path to jars. */
+  def nativelibs: Seq[NativeLib]
 
   /** Entry point for linking. */
   def mainClass: String
@@ -88,11 +88,11 @@ sealed trait Config {
   def withWorkdir(value: Path): Config
 
   /** Create a new config with given path to nativelib. */
-  @deprecated("Use withNativelibs(value: Seq[Path])", "0.4.0")
+  @deprecated("Use withNativelibs(value: Seq[NativeLib])", "0.4.0")
   def withNativelib(value: Path): Config
 
   /** Create a new config with a Map of name to paths for the nativelibs. */
-  def withNativelibs(value: Map[String, Path]): Config
+  def withNativelibs(value: Seq[NativeLib]): Config
 
   /** Create new config with given mainClass point. */
   def withMainClass(value: String): Config
@@ -125,7 +125,7 @@ object Config {
   def empty: Config =
     Impl(
       nativelib = Paths.get(""),
-      nativelibs = Map.empty,
+      nativelibs = Seq.empty,
       mainClass = "",
       classPath = Seq.empty,
       workdir = Paths.get(""),
@@ -145,7 +145,7 @@ object Config {
     )
 
   private final case class Impl(nativelib: Path,
-                                nativelibs: Map[String, Path],
+                                nativelibs: Seq[NativeLib],
                                 mainClass: String,
                                 classPath: Seq[Path],
                                 workdir: Path,
@@ -166,7 +166,7 @@ object Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
 
-    def withNativelibs(value: Map[String, Path]): Config =
+    def withNativelibs(value: Seq[NativeLib]): Config =
       copy(nativelibs = value)
 
     def withMainClass(value: String): Config =

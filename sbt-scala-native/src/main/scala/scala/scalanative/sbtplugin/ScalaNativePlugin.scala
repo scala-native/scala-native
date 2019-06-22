@@ -54,7 +54,7 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeLibraryDependencies =
       settingKey[Seq[ModuleID]](
-        "A subset of your library dependencies that contain C or C++ code")
+        "The subset of your library dependencies that contain C or C++ code")
 
     val nativeCodeInclude =
       settingKey[Boolean]("The project contains C or C++ code")
