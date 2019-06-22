@@ -23,7 +23,7 @@ private[scalanative] object LLVM {
    * @return The location where the nativelib has been unpacked, `workdir/lib`.
    */
   def unpackNativelib(nativelib: Path, workdir: Path): Path = {
-    val lib         = workdir.resolve("lib")
+    val lib         = workdir.resolve("nativelib")
     val jarhash     = IO.sha1(nativelib)
     val jarhashPath = lib.resolve("jarhash")
     def unpacked =

@@ -30,11 +30,14 @@ object Discover {
     getenv("SCALANATIVE_LTO").getOrElse("none")
 
   /** Find nativelib jar on the classpath. */
-  def nativelib(classpath: Seq[Path], libId: LibId): Option[Path] =
-    classpath.find { path =>
+  def nativelib(classpath: Seq[Path], libId: LibId): Option[(String, Path)] = {
+    val artifact = libId.artifact
+    val opt = classpath.find { path =>
       val absolute = path.toAbsolutePath.toString
-      absolute.contains(libId.org) && absolute.contains(libId.artifact)
+      absolute.contains(libId.org) && absolute.contains(artifact)
     }
+    opt.flatMap(path => Option((artifact, path)))
+  }
 
   /** Find the newest compatible clang binary. */
   def clang(): Path = {

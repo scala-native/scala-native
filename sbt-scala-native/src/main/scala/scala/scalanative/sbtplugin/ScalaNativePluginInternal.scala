@@ -100,24 +100,19 @@ object ScalaNativePluginInternal {
       }
 
       def findNativeLibs(libIds: Seq[Discover.LibId],
-                         classpath: Seq[Path]): Seq[Path] =
+                         classpath: Seq[Path]): Map[String, Path] =
         libIds.map { libId =>
           Discover.nativelib(classpath, libId).getOrElse {
             throw new MessageOnlyException(
               s"""Could not find "${libId.org}" %%% "${libId.artifact}" ... on the classpath.""")
           }
-        }
+        }.toMap
 
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
       val libIds     = createLibIds(nativeLibraryDependencies.value)
-      val nativeLibs = findNativeLibs(Discover.nativelibId +: libIds, classpath)
+      val nativelibs = findNativeLibs(Discover.nativelibId +: libIds, classpath)
 
-      val natId = Discover.nativelibId
-      val nativelib = Discover.nativelib(classpath, natId).getOrElse {
-        throw new MessageOnlyException(
-          s"""Could not find "${natId.org}" %%% "${natId.artifact}" ... on the classpath.""")
-      }
       val maincls = mainClass.toString + "$"
       val cwd     = nativeWorkdir.value.toPath
       val clang   = nativeClang.value.toPath
@@ -126,7 +121,7 @@ object ScalaNativePluginInternal {
       val mode    = build.Mode(nativeMode.value)
 
       build.Config.empty
-        .withNativelib(nativelib)
+        .withNativelib(nativelibs.head._2) // hack for now
         .withMainClass(maincls)
         .withClassPath(classpath)
         .withWorkdir(cwd)
