@@ -144,9 +144,6 @@ object Intrinsics {
   /** Intrinsified cast that reinterprets long as a raw pointer. */
   def castLongToRawPtr(int: Long): RawPtr = intrinsic
 
-  /** Resolve c-friendly forwarder generated for given CFuncPtr. */
-  def resolveCFuncPtr(cfuncptr: CFuncPtr): RawPtr = intrinsic
-
   /** Intrinsified cast that reinterprets raw word as an int. */
   def castRawWordToInt(rawWord: RawWord): Int = intrinsic
 
@@ -158,6 +155,9 @@ object Intrinsics {
 
   /** Intrinsified cast that reinterprets long as a raw word. */
   def castLongToRawWord(long: Long): RawWord = intrinsic
+
+  /** Resolve c-friendly forwarder generated for given CFuncPtr. */
+  def resolveCFuncPtr(cfuncptr: CFuncPtr): RawPtr = intrinsic
 
   /** Intrinsified bitwise and on raw words. */
   def andRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
