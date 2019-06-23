@@ -10,10 +10,10 @@ object InstantSuite extends tests.Suite {
   val someNegativeInstant = Instant.ofEpochSecond(-83827873287L, 88936253)
 
   val samples = Seq(Instant.EPOCH,
-		    Instant.MIN,
-		    Instant.MAX,
-		    somePositiveInstant,
-		    someNegativeInstant)
+                    Instant.MIN,
+                    Instant.MAX,
+                    somePositiveInstant,
+                    someNegativeInstant)
 
   test("compareTo") {
     for (i <- samples)
@@ -27,7 +27,7 @@ object InstantSuite extends tests.Suite {
 
   test("equal") {
     assert(Instant.MIN.equals(Instant.MIN),
-	   s"Instant.MIN does not equal itself")
+           s"Instant.MIN does not equal itself")
 
     val expected = 99
     assert(!expected.equals(Instant.MIN), s"${expected} equals Instant.MIN")
@@ -87,8 +87,8 @@ object InstantSuite extends tests.Suite {
     val tolerance  = 10 // an arbitrary small value
 
     assert(difference <= tolerance,
-	   s"System ms: ${sysNowMillis} Instant ms: ${iNowMillis} are not" +
-	     s" within tolerance ${tolerance}")
+           s"System ms: ${sysNowMillis} Instant ms: ${iNowMillis} are not" +
+             s" within tolerance ${tolerance}")
   }
 
   test("ofEpochSecond") {
@@ -97,17 +97,19 @@ object InstantSuite extends tests.Suite {
 
     assertEquals(Instant.MIN, Instant.ofEpochSecond(-31557014167219200L))
     assertEquals(Instant.MIN, Instant.ofEpochSecond(-31557014167219200L, 0))
-    assertEquals(Instant.MAX, Instant.ofEpochSecond(31556889864403199L, 999999999))
+    assertEquals(Instant.MAX,
+                 Instant.ofEpochSecond(31556889864403199L, 999999999))
 
     expectThrows(classOf[DateTimeException],
                  Instant.ofEpochSecond(-31557014167219200L, Long.MinValue))
 
-    val limits = Seq(-31557014167219200L, 31557014167219200L)
+    val limits       = Seq(-31557014167219200L, 31557014167219200L)
     val invalidNanos = Seq(Long.MinValue, -1L, 1000000000L, Long.MaxValue)
 
-    val invalidPairs = limits.flatMap(l => invalidNanos.map(n => (l, n))).filter {
-      case (a, b) => ((a < 0) && (b < 0)) || ((a > 0) && (b > 0))
-    }
+    val invalidPairs =
+      limits.flatMap(l => invalidNanos.map(n => (l, n))).filter {
+        case (a, b) => ((a < 0) && (b < 0)) || ((a > 0) && (b > 0))
+      }
     for ((s, n) <- invalidPairs)
       expectThrows(classOf[DateTimeException], Instant.ofEpochSecond(s, n))
   }
@@ -118,14 +120,14 @@ object InstantSuite extends tests.Suite {
 
   test("toString") {
 
-      val seconds = 1559843112
-      val nanos   = 2001
-      val expected = s"${seconds}.${nanos}"
+    val seconds  = 1559843112
+    val nanos    = 2001
+    val expected = s"${seconds}.${nanos}"
 
-      val instant = Instant.ofEpochSecond(seconds, nanos)
-      val result  = instant.toString
+    val instant = Instant.ofEpochSecond(seconds, nanos)
+    val result  = instant.toString
 
-      assert(result == expected, s"result: ${result} != expected: ${expected}")
+    assert(result == expected, s"result: ${result} != expected: ${expected}")
 
   }
 
