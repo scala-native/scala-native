@@ -1,6 +1,8 @@
 package scala.scalanative
 package unsigned
 
+import scalanative.runtime.Intrinsics.castLongToRawWord
+
 /** `UShort`, a 16-bit unsigned integer. */
 final class UShort private[scalanative] (
     private[scalanative] val underlying: Short)
@@ -19,6 +21,7 @@ final class UShort private[scalanative] (
   @inline final def toUShort: UShort = this
   @inline final def toUInt: UInt     = new UInt(toInt)
   @inline final def toULong: ULong   = new ULong(toLong)
+  @inline final def toUWord: UWord   = new UWord(castLongToRawWord(toLong))
 
   /**
    * Returns the bitwise negation of this value.
