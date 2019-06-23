@@ -1,5 +1,7 @@
 #include <fcntl.h>
 
+int scalanative_at_fdcwd() { return AT_FDCWD; }
+
 int scalanative_o_rdonly() { return O_RDONLY; }
 
 int scalanative_o_wronly() { return O_WRONLY; }
