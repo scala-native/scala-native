@@ -19,6 +19,8 @@ import java.nio.file.attribute.{
   PosixFilePermissions
 }
 
+import java.time.Instant
+
 import java.util.function.BiPredicate
 import scala.collection.JavaConverters._
 import PosixFilePermission._
@@ -1077,7 +1079,8 @@ object FilesSuite extends tests.Suite {
 
       val referenceMs = f0.toFile().lastModified()
       val filetimeMs  = Files.getLastModifiedTime(f0).toMillis()
-      assert(referenceMs == filetimeMs)
+      assert(referenceMs == filetimeMs,
+             s"filetimeMs: ${filetimeMs} != expected: ${referenceMs}")
     }
   }
 
@@ -1301,9 +1304,8 @@ object FilesSuite extends tests.Suite {
       val time1 = FileTime.fromMillis(1000)
       Files.setAttribute(f0, "lastModifiedTime", FileTime.fromMillis(1000))
       val time2 = Files.getAttribute(f0, "lastModifiedTime")
-
-      assert(time0 != time2)
-      assert(time1 == time2)
+      assert(time0 != time2, s"time1: ${time0} should not == time2: ${time2}")
+      assert(time1 == time2, s"time1: ${time1} should == time2: ${time2}")
     }
   }
 
@@ -1340,6 +1342,34 @@ object FilesSuite extends tests.Suite {
 
       assert(perm0 != perm2)
       assert(perm1 == perm2)
+    }
+  }
+
+  test("Files.setLastModifiedTime works with nanoseconds") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+
+      Files.createFile(f0)
+      assert(Files.exists(f0))
+
+      val expected = 1984
+      val time0    = Files.getLastModifiedTime(f0)
+      val time1    = FileTime.from(Instant.ofEpochSecond(10, expected))
+      Files.setLastModifiedTime(f0, time1)
+      val time2 = Files.getLastModifiedTime(f0)
+
+      assert(time0 != time2, s"unexpected: time0 == time2")
+      assert(time1 == time2, s"unexpected: time1 != time2")
+
+      val result = time2.toInstant.getNano
+
+      // If nanos are zero, system probably does not support nanosecond
+      // filetimes, skip test and do not fail on such systems.
+      if (result != 0) {
+        assert(result == expected,
+               s"result: ${result} != expected: ${expected}")
+      }
     }
   }
 

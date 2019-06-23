@@ -208,4 +208,41 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.unistd: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/unistd.scala
 .. _scala.scalanative.posix.utime: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/utime.scala
 
+Nanosecond file times (scala.scalanative.posix.sys.stat_)
+---------------------------------------------------------
+
+Three fields in ``struct stat`` in scala.scalanative.posix.sys.stat_
+have changed to follow current and recent Posix specifications which
+allow nanosecond file times, where the underlying operating and
+file system permit. These fields manipulate file creation, modification,
+and access times.
+
+**This change necessitates changes to existing applications which access
+these fields.**
+
+One way to access the new layout is to ``import scalanative.posix.timeOps._``
+and use the conventions for accessing time fields in ``struct stat``
+as described by the Linux command ``man 2 stat``. That command may not
+be available on all systems, but its output is readily available on the Web.
+
+Using last modification time as an example and tsPtr as a pointer to
+a ``struct stat``, ``tsPtr.st_mtime`` will access the previous 64 bit field and
+``tsPtr.st_mtim`` will access a 128 bit field. ``st_atim`` and ``st_ctim``
+act similarly. New applications will benefit from using the ``st_?tim`` idiom.
+
+Developers of existing applications should consider using the new
+128 bit ``*_tim`` fields. If that is not feasible, the transformations
+below will preserve existing 64 bit behavior::
+
+   'ptr' is a pointer to a 'struct stat'
+
+   import scalanative.posix.timeOps._
+
+   ptr._7 becomes ptr.st_atime
+   ptr._8 becomes ptr.st_mtime
+   ptr._9 becomes ptr.st_ctime
+
+The ptr._N idiom continues to work, but _N now refers to a ``struct timespec``
+not a ``time_t``. 
+
 Continue to :ref:`communitylib`.

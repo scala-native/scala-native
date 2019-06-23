@@ -3,28 +3,32 @@ package posix
 package sys
 
 import scalanative.unsafe._
-import scalanative.posix.time._
-import scalanative.posix.unistd.off_t
+import scalanative.posix.timeOps._
 
 @extern
 object stat {
-  type dev_t     = CUnsignedLong
-  type ino_t     = CUnsignedLongLong
-  type mode_t    = CUnsignedInt
-  type nlink_t   = CUnsignedLong
-  type uid_t     = CUnsignedInt
-  type gid_t     = CUnsignedInt
-  type blksize_t = CLong
-  type blkcnt_t  = CLongLong
+
+  type timespec = posix.time.timespec
+
+  type blkcnt_t  = types.blkcnt_t
+  type blksize_t = types.blksize_t
+  type dev_t     = types.dev_t
+  type gid_t     = types.gid_t
+  type ino_t     = types.ino_t
+  type mode_t    = types.mode_t
+  type nlink_t   = types.nlink_t
+  type off_t     = types.off_t
+  type uid_t     = types.uid_t
+
   type stat = CStruct13[dev_t, // st_dev
                         dev_t, // st_rdev
                         ino_t, // st_ino
                         uid_t, // st_uid
                         gid_t, // st_gid
                         off_t, // st_size
-                        time_t, // st_atime
-                        time_t, // st_mtime
-                        time_t, // st_ctime
+                        timespec, // st_atim
+                        timespec, // st_mtim
+                        timespec, // st_ctim
                         blkcnt_t, // st_blocks
                         blksize_t, // st_blksize
                         nlink_t, // st_nlink
@@ -47,6 +51,15 @@ object stat {
 
   @name("scalanative_fchmod")
   def fchmod(fd: CInt, mode: mode_t): CInt = extern
+
+  def futimens(fd: CInt, times: Ptr[timespec]): CInt = extern
+
+  def utimensat(dirfd: CInt,
+                pathname: CString,
+                times: Ptr[timespec],
+                flags: CInt): CInt = extern
+
+  // Constants
 
   @name("scalanative_s_isdir")
   def S_ISDIR(mode: mode_t): CInt = extern
@@ -105,4 +118,52 @@ object stat {
   @name("scalanative_s_ixoth")
   def S_IXOTH: mode_t = extern
 
+  @name("scalanative_utime_now")
+  def UTIME_NOW: CLong = extern
+
+  @name("scalanative_utime_omit")
+  def UTIME_OMIT: CLong = extern
+}
+
+object statOps {
+
+  import posix.sys.stat._
+  import posix.time.time_t
+
+  implicit class statOps(val ptr: Ptr[sys.stat.stat]) extends AnyVal {
+
+    def st_dev: dev_t         = ptr._1
+    def st_rdev: dev_t        = ptr._2
+    def st_ino: ino_t         = ptr._3
+    def st_uid: uid_t         = ptr._4
+    def st_gid: gid_t         = ptr._5
+    def st_size: off_t        = ptr._6
+    def st_atim: timespec     = ptr.at7 // seconds & nanoseconds
+    def st_atime: time_t      = ptr.at7.tv_sec // seconds
+    def st_mtim: timespec     = ptr.at8 // seconds & nanoseconds
+    def st_mtime: time_t      = ptr.at8.tv_sec // seconds
+    def st_ctim: timespec     = ptr.at9 // seconds & nanoseconds
+    def st_ctime: time_t      = ptr.at9.tv_sec // seconds
+    def st_blocks: blkcnt_t   = ptr._10
+    def st_blksize: blksize_t = ptr._11
+    def st_nlink: nlink_t     = ptr._12
+    def st_mode: mode_t       = ptr._13
+
+    def st_dev_(v: dev_t): Unit         = ptr._1 = v
+    def st_rdev_(v: dev_t): Unit        = ptr._2 = v
+    def st_ino_(v: ino_t): Unit         = ptr._3 = v
+    def st_uid_(v: uid_t): Unit         = ptr._4 = v
+    def st_gid_(v: gid_t): Unit         = ptr._5 = v
+    def st_size_(v: off_t): Unit        = ptr._6 = v
+    def st_atim_(v: timespec): Unit     = ptr._7 = v
+    def st_atime_(v: time_t): Unit      = ptr._7._1 = v
+    def st_mtim_(v: timespec): Unit     = ptr._8 = v
+    def st_mtime_(v: time_t): Unit      = ptr._8._1 = v
+    def st_ctim_(v: timespec): Unit     = ptr._9 = v
+    def st_ctime_(v: time_t): Unit      = ptr._9._1 = v
+    def st_blocks_(v: blkcnt_t): Unit   = ptr._10 = v
+    def st_blksize_(v: blksize_t): Unit = ptr._11 = v
+    def st_nlink_(v: nlink_t): Unit     = ptr._12 = v
+    def st_mode_(v: mode_t): Unit       = ptr._13 = v
+  }
 }

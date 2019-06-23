@@ -2,13 +2,21 @@ package java.io
 
 import java.nio.file.{FileSystems, Path}
 import java.net.URI
+import java.time.Instant
 
 import scala.annotation.tailrec
 import scalanative.annotation.stub
-import scalanative.posix.{fcntl, limits, unistd, utime}
+
+import scalanative.posix.{fcntl, limits, unistd}
+import scalanative.posix.{errno => posixErrno}, posixErrno._
+
 import scalanative.posix.sys.stat
+import scalanative.posix.sys.statOps._
+import scalanative.posix.timeOps._
+
 import scalanative.unsigned._
 import scalanative.unsafe._
+
 import scalanative.libc._, stdlib._, stdio._, string._
 import scalanative.nio.fs.FileHelpers
 import scalanative.runtime.{DeleteOnExit, Platform}
@@ -214,37 +222,52 @@ class File(_path: String) extends Serializable with Comparable[File] {
   def lastModified(): Long =
     Zone { implicit z =>
       val buf = alloc[stat.stat]
-      if (stat.stat(toCString(path), buf) == 0) {
-        buf._8 * 1000L
-      } else {
+      if (stat.stat(toCString(path), buf) != 0) {
         0L
+      } else {
+        val mtim    = buf.st_mtim
+        val instant = Instant.ofEpochSecond(mtim.tv_sec, mtim.tv_nsec.toInt)
+        instant.toEpochMilli()
       }
     }
 
   private def accessMode()(implicit z: Zone): stat.mode_t = {
     val buf = alloc[stat.stat]
-    if (stat.stat(toCString(path), buf) == 0) {
-      buf._13
-    } else {
+    if (stat.stat(toCString(path), buf) != 0) {
       0.toUInt
+    } else {
+      buf.st_mode
     }
   }
 
-  def setLastModified(time: Long): Boolean =
+  def setLastModified(time: Long): Boolean = {
     if (time < 0) {
       throw new IllegalArgumentException("Negative time")
-    } else
+    } else {
       Zone { implicit z =>
-        val statbuf = alloc[stat.stat]
-        if (stat.stat(toCString(path), statbuf) == 0) {
-          val timebuf = alloc[utime.utimbuf]
-          timebuf._1 = statbuf._8
-          timebuf._2 = time / 1000L
-          utime.utime(toCString(path), timebuf) == 0
-        } else {
-          false
+        val times           = alloc[stat.timespec](2)
+        val newAccessTime   = times
+        val newModifiedTime = times + 1
+
+        newAccessTime.tv_nsec = stat.UTIME_OMIT
+
+        val instant = Instant.ofEpochMilli(time)
+        newModifiedTime.tv_sec = instant.getEpochSecond()
+        newModifiedTime.tv_nsec = instant.getNano()
+
+        errno.errno = 0
+
+        val status = stat.utimensat(fcntl.AT_FDCWD, toCString(path), times, 0)
+
+        if (errno.errno == posixErrno.EPERM) {
+          // Exception is correct but message may vary from that used by JVM.
+          throw new SecurityException("utimensat: Operation not permitted")
         }
+
+        (status == 0)
       }
+    }
+  }
 
   def setReadOnly(): Boolean =
     Zone { implicit z =>
@@ -257,10 +280,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
   def length(): Long =
     Zone { implicit z =>
       val buf = alloc[stat.stat]
-      if (stat.stat(toCString(path), buf) == 0) {
-        buf._6
-      } else {
+      if (stat.stat(toCString(path), buf) != 0) {
         0L
+      } else {
+        buf.st_size
       }
     }
 

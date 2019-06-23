@@ -7,19 +7,27 @@ import scala.scalanative.posix.sys.types, types._
 @extern
 object time {
 
-  type time_t   = types.time_t
-  type clock_t  = types.clock_t
-  type timespec = CStruct2[time_t, CLong]
-  type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
+  type clock_t   = types.clock_t
+  type clockid_t = types.clockid_t
+  type size_t    = types.size_t
+  type time_t    = types.time_t
+  type timer_t   = types.timer_t
+  type timespec  = CStruct2[time_t, CLong]
+  type tm        = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
 
   @name("scalanative_asctime")
   def asctime(time_ptr: Ptr[tm]): CString = extern
   @name("scalanative_asctime_r")
   def asctime_r(time_ptr: Ptr[tm], buf: Ptr[CChar]): CString = extern
-  def clock(): clock_t                                       = extern
-  def ctime(time: Ptr[time_t]): CString                      = extern
-  def ctime_r(time: Ptr[time_t], buf: Ptr[CChar]): CString   = extern
-  def difftime(time_end: CLong, time_beg: CLong): CDouble    = extern
+
+  def clock(): clock_t                                          = extern
+  def clock_getres(clk_id: clockid_t, res: Ptr[timespec]): CInt = extern
+  def clock_gettime(clk_id: clockid_t, tp: Ptr[timespec]): CInt = extern
+  def clock_settime(clk_id: clockid_t, tp: Ptr[timespec]): CInt = extern
+
+  def ctime(time: Ptr[time_t]): CString                    = extern
+  def ctime_r(time: Ptr[time_t], buf: Ptr[CChar]): CString = extern
+  def difftime(time_end: CLong, time_beg: CLong): CDouble  = extern
   @name("scalanative_gmtime")
   def gmtime(time: Ptr[time_t]): Ptr[tm] = extern
   @name("scalanative_gmtime_r")
@@ -44,6 +52,10 @@ object time {
   def timezone(): CLong = extern
   @name("scalanative_tzname")
   def tzname(): Ptr[CStruct2[CString, CString]] = extern
+
+  @name("scalanative_clock_realtime")
+  def CLOCK_REALTIME: CInt = extern
+
 }
 
 object timeOps {
@@ -54,6 +66,13 @@ object timeOps {
     def tv_nsec: CLong            = ptr._2
     def tv_sec_=(v: time_t): Unit = ptr._1 = v
     def tv_nsec_=(v: CLong): Unit = ptr._2 = v
+  }
+
+  implicit class timespecValOps(val ts: timespec) extends AnyVal {
+    def tv_sec: time_t            = ts._1
+    def tv_nsec: CLong            = ts._2
+    def tv_sec_=(v: time_t): Unit = ts._1 = v
+    def tv_nsec_=(v: CLong): Unit = ts._2 = v
   }
 
   implicit class tmOps(val ptr: Ptr[tm]) extends AnyVal {
