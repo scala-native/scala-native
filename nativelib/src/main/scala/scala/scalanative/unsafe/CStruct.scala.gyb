@@ -1,0 +1,53 @@
+package scala.scalanative
+package unsafe
+
+import scalanative.annotation.alwaysinline
+import scalanative.runtime.{fromRawPtr, RawPtr}
+import scalanative.runtime.Intrinsics._
+
+sealed abstract class CStruct
+
+% for N in range(0, 23):
+%    Ts = "" if N == 0 else "[" + ", ".join("T" + str(i) for i in range(1, N + 1)) + "]"
+%    underscores = "" if N == 0 else "[" + ", ".join("_" for i in range(0, N)) + "]"
+
+final class CStruct${N}${Ts} private[scalanative] (private[scalanative] val rawptr: RawPtr) extends CStruct {
+  @alwaysinline override def equals(other: Any): Boolean =
+    (this eq other.asInstanceOf[AnyRef]) || (other match {
+      case other: CStruct${N}${underscores} =>
+        other.rawptr == rawptr
+      case _ =>
+        false
+    })
+
+  @alwaysinline override def hashCode: Int =
+    java.lang.Long.hashCode(castRawPtrToLong(rawptr))
+
+  @alwaysinline override def toString: String =
+    "CStruct${N}@" + java.lang.Long.toHexString(castRawPtrToLong(rawptr))
+
+  @alwaysinline def toPtr: Ptr[CStruct${N}${Ts}] =
+    fromRawPtr[CStruct${N}${Ts}](rawptr)
+
+  % for F in range(1, N + 1):
+
+  /** Load a value of a field number ${F}. */
+  @alwaysinline def at${F}(implicit tag: Tag.CStruct${N}${Ts}): Ptr[T${F}] = 
+    new Ptr[T${F}](elemRawPtr(rawptr, tag.offset(${F - 1})))
+
+  /** Load a value of a field number ${F}. */
+  @alwaysinline def _${F}(implicit tag: Tag.CStruct${N}${Ts}): T${F} = {
+    val ptr = new Ptr[T${F}](elemRawPtr(rawptr, tag.offset(${F - 1})))
+    ptr.unary_!(tag._${F})
+  }
+
+  /** Store a value to a field number ${F}. */
+  @alwaysinline def _${F}_=(value: T${F})(implicit tag: Tag.CStruct${N}${Ts}): Unit = {
+    val ptr = new Ptr[T${F}](elemRawPtr(rawptr, tag.offset(${F - 1})))
+    ptr.`unary_!_=`(value)(tag._${F})
+  }
+
+  % end
+}
+
+% end

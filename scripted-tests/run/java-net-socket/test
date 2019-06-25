@@ -1,0 +1,15 @@
+> launchServer
+$ copy-file tests/EchoClientTest.scala Main.scala
+> run
+
+> launchServer
+$ copy-file tests/EchoManualClientTest.scala Main.scala
+> run
+
+> launchTcpEchoServer
+$ copy-file tests/IsReachableTest.scala Main.scala
+> run
+
+> launchSilentServer
+$ copy-file tests/TimeoutTest.scala Main.scala
+> run

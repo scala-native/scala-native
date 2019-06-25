@@ -3,7 +3,7 @@ package java.util
 import java.{util => ju}
 
 import scala.collection.mutable
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
     extends ju.Dictionary[K, V]
@@ -30,20 +30,21 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
     inner.isEmpty
 
   def keys(): ju.Enumeration[K] =
-    inner.keysIterator.map(_.inner.asInstanceOf[K])
+    inner.keysIterator.map(_.inner.asInstanceOf[K]).asJavaEnumeration
 
   def elements(): ju.Enumeration[V] =
-    inner.valuesIterator
+    inner.valuesIterator.asJavaEnumeration
 
   def contains(value: Any): Boolean =
     containsValue(value)
 
   def containsValue(value: Any): Boolean =
-    inner.containsValue(value)
+    inner.valuesIterator.contains(value)
 
   def containsKey(key: Any): Boolean =
     inner.contains(Box(key))
 
+  @throws[NullPointerException]
   def get(key: Any): V = {
     if (key == null)
       throw new NullPointerException
@@ -53,11 +54,16 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   // Not implemented
   // protected def rehash(): Unit
 
-  def put(key: K, value: V): V =
+  @throws[NullPointerException]
+  def put(key: K, value: V): V = {
+    if (key == null || value == null)
+      throw new NullPointerException
     inner
       .put(Box(key.asInstanceOf[AnyRef]), value)
       .getOrElse(null.asInstanceOf[V])
+  }
 
+  @throws[NullPointerException]
   def remove(key: Any): V = {
     if (key == null)
       throw new NullPointerException
@@ -65,7 +71,8 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   }
 
   def putAll(m: ju.Map[_ <: K, _ <: V]): Unit =
-    m.iterator.foreach(kv => inner.put(Box(kv._1.asInstanceOf[AnyRef]), kv._2))
+    m.asScala.iterator.foreach(kv =>
+      inner.put(Box(kv._1.asInstanceOf[AnyRef]), kv._2))
 
   def clear(): Unit =
     inner.clear()
@@ -79,7 +86,7 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
       .mkString("{", ", ", "}")
 
   def keySet(): ju.Set[K] =
-    inner.keySet.map(_.inner.asInstanceOf[K])
+    inner.keySet.map(_.inner.asInstanceOf[K]).asJava
 
   def entrySet(): ju.Set[ju.Map.Entry[K, V]] = {
     class UnboxedEntry(
@@ -94,9 +101,13 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
       }
       override def hashCode(): Int = boxedEntry.hashCode()
     }
-    setAsJavaSet(inner.entrySet().map(new UnboxedEntry(_)))
+    inner.asJava
+      .entrySet()
+      .asScala
+      .map(new UnboxedEntry(_): ju.Map.Entry[K, V])
+      .asJava
   }
 
   def values(): ju.Collection[V] =
-    inner.values
+    inner.asJava.values
 }

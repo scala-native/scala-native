@@ -1,7 +1,7 @@
 package scala.scalanative
 package runtime
 
-import native._
+import scalanative.unsafe._
 
 /**
  * The Boehm GC conservative garbage collector
@@ -10,10 +10,10 @@ import native._
  */
 @extern
 object GC {
-  @name("scalanative_alloc_raw")
-  def malloc(size: CSize): Ptr[Byte] = extern
-  @name("scalanative_alloc_raw_atomic")
-  def malloc_atomic(size: CSize): Ptr[Byte] = extern
+  @name("scalanative_alloc")
+  def alloc(rawty: RawPtr, size: CSize): RawPtr = extern
+  @name("scalanative_alloc_atomic")
+  def alloc_atomic(rawty: RawPtr, size: CSize): RawPtr = extern
   @name("scalanative_collect")
   def collect(): Unit = extern
 }

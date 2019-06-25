@@ -1,6 +1,7 @@
 package java.lang
 
-import scalanative.runtime.{select, divULong, remULong, undefined, Intrinsics}
+import scalanative.runtime.Intrinsics.{divULong, remULong}
+import scalanative.runtime.LLVMIntrinsics
 
 final class Long(val _value: scala.Long) extends Number with Comparable[Long] {
   @inline def this(s: String) =
@@ -77,9 +78,9 @@ final class Long(val _value: scala.Long) extends Number with Comparable[Long] {
   protected def toFloat: scala.Float   = _value.toFloat
   protected def toDouble: scala.Double = _value.toDouble
 
-  protected def unary_~ : scala.Long = ~ _value
+  protected def unary_~ : scala.Long = ~_value
   protected def unary_+ : scala.Long = _value
-  protected def unary_- : scala.Long = - _value
+  protected def unary_- : scala.Long = -_value
 
   protected def +(x: String): String = _value + x
 
@@ -189,7 +190,7 @@ object Long {
   final val BYTES     = 8
 
   @inline def bitCount(l: scala.Long): scala.Int =
-    Intrinsics.`llvm.ctpop.i64`(l).toInt
+    LLVMIntrinsics.`llvm.ctpop.i64`(l).toInt
 
   @inline def compare(x: scala.Long, y: scala.Long): scala.Int =
     if (x == y) 0
@@ -292,10 +293,10 @@ object Long {
     Math.min(a, b)
 
   @inline def numberOfLeadingZeros(l: scala.Long): Int =
-    Intrinsics.`llvm.ctlz.i64`(l, iszeroundef = false).toInt
+    LLVMIntrinsics.`llvm.ctlz.i64`(l, iszeroundef = false).toInt
 
   @inline def numberOfTrailingZeros(l: scala.Long): Int =
-    Intrinsics.`llvm.cttz.i64`(l, iszeroundef = false).toInt
+    LLVMIntrinsics.`llvm.cttz.i64`(l, iszeroundef = false).toInt
 
   @inline def parseLong(s: String): scala.Long =
     parseLong(s, 10)
@@ -348,15 +349,14 @@ object Long {
   }
 
   @inline
-  def remainderUnsigned(dividend: scala.Long,
-                        divisor: scala.Long): scala.Long =
+  def remainderUnsigned(dividend: scala.Long, divisor: scala.Long): scala.Long =
     remULong(dividend, divisor)
 
   @inline def reverse(l: scala.Long): scala.Long =
-    Intrinsics.`llvm.bitreverse.i64`(l)
+    LLVMIntrinsics.`llvm.bitreverse.i64`(l)
 
   @inline def reverseBytes(l: scala.Long): scala.Long =
-    Intrinsics.`llvm.bswap.i64`(l)
+    LLVMIntrinsics.`llvm.bswap.i64`(l)
 
   @inline def rotateLeft(i: scala.Long, distance: scala.Int): scala.Long =
     (i << distance) | (i >>> -distance)
@@ -438,7 +438,7 @@ object Long {
       var j        = _l
       if (!negative) {
         count = 1
-        j = - _l
+        j = -_l
       }
 
       var l = _l
@@ -469,8 +469,23 @@ object Long {
     }
   }
 
-  @inline def valueOf(longValue: scala.Long): Long =
-    new Long(longValue)
+  import LongCache.cache
+
+  @inline def valueOf(longValue: scala.Long): Long = {
+    if (longValue.toByte.toLong != longValue) {
+      new Long(longValue)
+    } else {
+      val idx    = (longValue + 128).toInt
+      val cached = cache(idx)
+      if (cached != null) {
+        cached
+      } else {
+        val newlong = new Long(longValue)
+        cache(idx) = newlong
+        newlong
+      }
+    }
+  }
 
   @inline def valueOf(s: String): Long =
     valueOf(parseLong(s))
@@ -558,5 +573,8 @@ object Long {
       new String(buffer)
     }
   }
+}
 
+private[lang] object LongCache {
+  private[lang] val cache = new Array[java.lang.Long](256)
 }

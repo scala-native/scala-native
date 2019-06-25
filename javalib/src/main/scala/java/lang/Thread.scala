@@ -1,5 +1,9 @@
 package java.lang
 
+import scalanative.unsigned._
+import scalanative.annotation.stub
+import scalanative.libc.errno
+
 class Thread private (runnable: Runnable) extends Runnable {
   if (runnable ne Thread.MainRunnable) ???
 
@@ -20,16 +24,35 @@ class Thread private (runnable: Runnable) extends Runnable {
   final def getName(): String =
     this.name
 
+  @stub
   def getStackTrace(): Array[StackTraceElement] = ???
 
   def getId(): scala.Long = 1
 
+  @stub
   def getUncaughtExceptionHandler(): UncaughtExceptionHandler = ???
 
+  @stub
   def setUncaughtExceptionHandler(handler: UncaughtExceptionHandler): Unit =
     ???
 
+  @stub
   def setDaemon(on: scala.Boolean): Unit = ???
+
+  @stub
+  def this(name: String) = this(??? : Runnable)
+
+  @stub
+  def this() = this(??? : Runnable)
+
+  @stub
+  def join(): Unit = ???
+
+  @stub
+  def start(): Unit = ???
+
+  @stub
+  def getContextClassLoader(): java.lang.ClassLoader = ???
 
   trait UncaughtExceptionHandler {
     def uncaughtException(thread: Thread, e: Throwable): Unit
@@ -50,7 +73,7 @@ object Thread {
 
   def sleep(millis: scala.Long, nanos: scala.Int): Unit = {
     import scala.scalanative.posix.errno.EINTR
-    import scala.scalanative.native._
+    import scala.scalanative.unsafe._
     import scala.scalanative.posix.unistd
 
     def checkErrno() =
@@ -67,9 +90,12 @@ object Thread {
 
     val secs  = millis / 1000
     val usecs = (millis % 1000) * 1000 + nanos / 1000
-    if (secs > 0 && unistd.sleep(secs.toUInt) != 0) checkErrno()
+    if (secs > 0 && unistd.sleep(secs.toUInt) != 0.toUInt) checkErrno()
     if (usecs > 0 && unistd.usleep(usecs.toUInt) != 0) checkErrno()
   }
 
   def sleep(millis: scala.Long): Unit = sleep(millis, 0)
+
+  @stub
+  def dumpStack(): Unit = ???
 }

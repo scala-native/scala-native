@@ -1,6 +1,6 @@
 package scala.scalanative
 package nir
 
-final case class Local(scope: String, id: Int) {
+final case class Local(id: Long) extends AnyVal {
   final def show: String = nir.Show(this)
 }

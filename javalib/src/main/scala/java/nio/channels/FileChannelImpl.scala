@@ -57,23 +57,38 @@ final class FileChannelImpl(path: Path,
                     start: Int,
                     number: Int): Long = {
     ensureOpen()
-    val dst = new Array[Byte](1)
-    val nb  = raf.read(dst)
-    var i   = 0
+
+    var bytesRead = 0l
+    var i         = 0
+
     while (i < number) {
-      buffers(start + i).put(dst)
+      val startPos = buffers(i).position()
+      val len      = buffers(i).limit() - startPos
+      val dst      = new Array[Byte](len)
+      val nb       = raf.read(dst)
+
+      if (nb > 0) {
+        buffers(i).put(dst)
+        buffers(i).position(startPos + nb)
+      }
+
+      bytesRead += nb
       i += 1
     }
-    nb
+
+    bytesRead
   }
 
   override def read(buffer: ByteBuffer, pos: Long): Int = {
     ensureOpen()
     position(pos)
-    val dst = new Array[Byte](1)
-    val nb  = raf.read(dst)
-    if (nb > 0) buffer.put(dst)
-    nb
+    val bufPosition: Int = buffer.position
+    raf.read(buffer.array, bufPosition, buffer.limit() - bufPosition) match {
+      case bytesRead if bytesRead < 0 => bytesRead
+      case bytesRead =>
+        buffer.position(bufPosition + bytesRead)
+        bytesRead
+    }
   }
 
   override def read(buffer: ByteBuffer): Int = {
@@ -123,9 +138,12 @@ final class FileChannelImpl(path: Path,
   override def write(buffer: ByteBuffer, pos: Long): Int = {
     ensureOpen()
     position(pos)
-    val toWrite = buffer.get()
-    raf.write(toWrite)
-    1
+    val srcPos: Int = buffer.position
+    val srcLim: Int = buffer.limit
+    val lim         = math.abs(srcLim - srcPos)
+    raf.write(buffer.array, 0, lim)
+    buffer.position(srcPos + lim)
+    lim
   }
 
   override def write(src: ByteBuffer): Int =

@@ -2,62 +2,46 @@ package scala.scalanative
 package nir
 
 sealed abstract class Global {
-  def id: String
   def top: Global.Top
+  def member(sig: Sig): Global.Member
+  def member(sig: Sig.Unmangled): Global.Member = member(sig.mangled)
 
-  def member(id: String): Global.Member =
-    Global.Member(this, id)
-
-  def tag(tag: String): Global = this match {
-    case Global.Top(id)       => Global.Top(s"$tag.$id")
-    case Global.Member(n, id) => Global.Member(n, s"$tag.$id")
-    case _                    => util.unreachable
-  }
-
-  final def isIntrinsic: Boolean = this match {
-    case Global.Top(id) if id.startsWith("scalanative_")    => true
-    case Global.Member(_, id) if id.startsWith("extern.__") => true
-    case _                                                  => false
-  }
-
-  final def isTop: Boolean = this.isInstanceOf[Global.Top]
-
-  final def show: String = nir.Show(this)
+  final def isTop: Boolean =
+    this.isInstanceOf[Global.Top]
+  final def show: String =
+    Show(this)
+  final def mangle: String =
+    Mangle(this)
 }
 object Global {
   final case object None extends Global {
-    override def id  = throw new Exception("None doesn't have an id.")
-    override def top = throw new Exception("None doesn't have a top.")
-    override def member(id: String) =
-      throw new Exception("None can't have any members.")
-    override def tag(id: String) = throw new Exception("None is not taggable.")
+    override def top: Global.Top =
+      throw new Exception("None doesn't have a top.")
+    override def member(sig: Sig) =
+      throw new Exception("Global.None can't have any members.")
   }
 
-  final case class Top(override val id: String) extends Global {
-    override def top = this
+  final case class Top(val id: String) extends Global {
+    override def top: Global.Top =
+      this
+    override def member(sig: Sig): Global.Member =
+      Global.Member(this, sig)
   }
 
-  final case class Member(val owner: Global, override val id: String)
-      extends Global {
-    override def top: Global.Top = owner.top
+  final case class Member(val owner: Global, val sig: Sig) extends Global {
+    override def top: Global.Top =
+      owner.top
+    override def member(sig: Sig): Global.Member =
+      throw new Exception("Global.Member can't have any members.")
   }
 
-  def genSignature(methodName: nir.Global, proxy: Boolean = false): String = {
-    val fullSignature = methodName.id
-    val index         = fullSignature.lastIndexOf("_")
-    val signature =
-      if (index != -1) {
-        fullSignature.substring(0, index)
-      } else {
-        fullSignature
-      }
-    if (proxy) {
-      toProxySignature(signature)
-    } else {
-      signature
+  implicit val globalOrdering: Ordering[Global] =
+    Ordering.by[Global, (String, String)] {
+      case Global.Member(Global.Top(id), sig) =>
+        (id, sig.mangle)
+      case Global.Top(id) =>
+        (id, "")
+      case _ =>
+        ("", "")
     }
-  }
-
-  def toProxySignature(signature: String) = signature + "_proxy"
-
 }

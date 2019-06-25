@@ -1,65 +1,93 @@
 package tests
 
+import sbt.testing.{EventHandler, Logger, Status}
+
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-final case object AssertionFailed extends Exception
+final case class AssertionFailed(msg: String) extends Exception(msg)
 
-final case class Test(name: String, run: () => Boolean)
+final case class TestResult(status: Boolean, thrown: Option[Throwable])
+
+final case class Test(name: String, run: () => TestResult)
 
 abstract class Suite {
   private val tests = new mutable.UnrolledBuffer[Test]
 
   def assert(cond: Boolean): Unit =
-    if (!cond) throw AssertionFailed else ()
+    assertTrue(cond)
+
+  def assert(cond: Boolean, message: String): Unit =
+    if (!cond) throw AssertionFailed(message) else ()
+
+  def assertTrue(cond: Boolean): Unit =
+    if (!cond) {
+      throw AssertionFailed(s"condition is false")
+    }
 
   def assertNot(cond: Boolean): Unit =
-    if (cond) throw AssertionFailed else ()
+    assertFalse(cond)
 
-  def assertThrowsAnd[T: ClassTag](f: => Unit)(fe: T => Boolean): Unit = {
-    try {
-      f
-    } catch {
-      case exc: Throwable =>
-        if (exc.getClass.equals(implicitly[ClassTag[T]].runtimeClass) &&
-            fe(exc.asInstanceOf[T]))
-          return
-        else
-          throw AssertionFailed
+  def assertFalse(cond: Boolean): Unit =
+    if (cond) {
+      throw AssertionFailed(s"condition is true")
     }
-    throw AssertionFailed
-  }
 
-  def assertThrows[T: ClassTag](f: => Unit): Unit =
-    assertThrowsAnd[T](f)(_ => true)
+  def assertNull[A](a: A): Unit =
+    if (a != null) {
+      throw AssertionFailed(s"$a != null")
+    }
+
+  def assertNotNull[A](a: A): Unit =
+    if (a == null) {
+      throw AssertionFailed(s"$a == null")
+    }
 
   def assertEquals[T](left: T, right: T): Unit =
-    assert(left == right)
-
-  private def assertThrowsImpl(cls: Class[_], f: => Unit): Unit = {
-    try {
-      f
-    } catch {
-      case exc: Throwable =>
-        if (exc.getClass.equals(cls))
-          return
-        else
-          throw AssertionFailed
+    if (left != right) {
+      throw AssertionFailed(s"${left} != ${right}")
     }
-    throw AssertionFailed
-  }
+
+  def assertEquals(expected: Double, actual: Double, delta: Double): Unit =
+    if (Math.abs(expected - actual) > delta) {
+      throw AssertionFailed(s"$expected - $actual > $delta")
+    }
 
   def expectThrows[T <: Throwable, U](expectedThrowable: Class[T],
                                       code: => U): Unit =
-    assertThrowsImpl(expectedThrowable, code)
+    assertThrowsImpl(expectedThrowable, code, (exc: T) => true)
+
+  def assertThrows[T: ClassTag](f: => Unit): Unit =
+    assertThrowsAnd(f)((exc: T) => true)
+
+  def assertThrowsAnd[T: ClassTag](f: => Unit)(pred: T => Boolean): Unit = {
+    val cls = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+    assertThrowsImpl[T](cls, f, pred)
+  }
+
+  private def assertThrowsImpl[T](expected: Class[T],
+                                  f: => Unit,
+                                  pred: T => Boolean): Unit = {
+    try {
+      f
+    } catch {
+      case exc: Throwable =>
+        if (expected.isInstance(exc) && pred(exc.asInstanceOf[T]))
+          return
+        else
+          throw AssertionFailed(
+            s"expected ${expected.getName} but got ${exc.getClass.getName}")
+    }
+    throw AssertionFailed(s"expected to throw ${expected.getName} but didn't")
+  }
 
   def test(name: String)(body: => Unit): Unit =
     tests += Test(name, { () =>
       try {
         body
-        true
+        TestResult(true, None)
       } catch {
-        case _: Throwable => false
+        case thrown: Throwable => TestResult(false, Option(thrown))
       }
     })
 
@@ -67,20 +95,54 @@ abstract class Suite {
     tests += Test(name, { () =>
       try {
         body
-        false
+        TestResult(false, None)
       } catch {
-        case _: Throwable => true
+        case thrown: Throwable => TestResult(true, None)
       }
     })
 
-  def run(): Boolean = {
-    println("* " + this.getClass.getName)
+  @inline private[this] def getThrownString(thrown: Option[Throwable],
+                                            color: String,
+                                            indent: Int): String = {
+    if (thrown.isEmpty) ""
+    else {
+      val exc          = thrown.get
+      val indentSpaces = " " * indent
+      val info         = exc.toString
+      val writer       = new java.io.StringWriter
+      val printer      = new java.io.PrintWriter(writer)
+      exc.printStackTrace(printer)
+
+      val stacktrace = writer.toString
+        .split('\n')
+        .map { line =>
+          s"\n${color}${indentSpaces}${line}"
+        }
+        .mkString("")
+
+      s"\n${color}${indentSpaces}${info}" + stacktrace
+    }
+  }
+
+  def run(eventHandler: EventHandler, loggers: Array[Logger]): Boolean = {
+    val className = this.getClass.getName
+    loggers.foreach(_.info("* " + className))
     var success = true
 
     tests.foreach { test =>
-      val testSuccess = test.run()
-      val status      = if (testSuccess) "  [ok] " else "  [fail] "
-      println(status + test.name)
+      val (TestResult(testSuccess, thrown)) = test.run()
+      val (status, statusStr, color) =
+        if (testSuccess) (Status.Success, "  [ok] ", Console.GREEN)
+        else (Status.Failure, "  [fail] ", Console.RED)
+      val event = NativeEvent(className, test.name, NativeFingerprint, status)
+
+      val outMsg = color + statusStr + test.name +
+        getThrownString(thrown, color, statusStr.length) +
+        Console.RESET
+
+      loggers.foreach(_.info(outMsg))
+
+      eventHandler.handle(event)
       success = success && testSuccess
     }
 

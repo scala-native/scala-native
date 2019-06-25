@@ -8,5 +8,5 @@
 
 ## License
 
-Scala Native is distributed under the Scala license.
+Scala Native is distributed under the Apache License.
 [See LICENSE.md for details](https://github.com/scala-native/scala-native/blob/master/LICENSE.md)

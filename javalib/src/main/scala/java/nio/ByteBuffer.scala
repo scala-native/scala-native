@@ -8,7 +8,7 @@ object ByteBuffer {
   def allocate(capacity: Int): ByteBuffer =
     wrap(new Array[Byte](capacity))
 
-  // TODO def allocateDirect(capacity: Int): ByteBuffer = ???
+  def allocateDirect(capacity: Int): ByteBuffer = allocate(capacity)
 
   def wrap(array: Array[Byte], offset: Int, length: Int): ByteBuffer =
     HeapByteBuffer.wrap(array, 0, array.length, offset, length, false)
@@ -70,6 +70,41 @@ abstract class ByteBuffer private[nio] (_capacity: Int,
 
   @inline final def arrayOffset(): Int =
     GenBuffer(this).generic_arrayOffset()
+
+  @inline override def position(newPosition: Int): ByteBuffer = {
+    super.position(newPosition)
+    this
+  }
+
+  @inline override def limit(newLimit: Int): ByteBuffer = {
+    super.limit(newLimit)
+    this
+  }
+
+  @inline override def mark(): ByteBuffer = {
+    super.mark()
+    this
+  }
+
+  @inline override def reset(): ByteBuffer = {
+    super.reset()
+    this
+  }
+
+  @inline override def clear(): ByteBuffer = {
+    super.clear()
+    this
+  }
+
+  @inline override def flip(): ByteBuffer = {
+    super.flip()
+    this
+  }
+
+  @inline override def rewind(): ByteBuffer = {
+    super.rewind()
+    this
+  }
 
   def compact(): ByteBuffer
 

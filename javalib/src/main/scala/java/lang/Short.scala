@@ -1,6 +1,7 @@
 package java.lang
 
-import scalanative.runtime.{shortToUInt, shortToULong, Intrinsics}
+import scalanative.runtime.Intrinsics.{shortToUInt, shortToULong}
+import scalanative.runtime.LLVMIntrinsics
 
 final class Short(val _value: scala.Short)
     extends Number
@@ -70,9 +71,9 @@ final class Short(val _value: scala.Short)
   protected def toFloat: scala.Float   = _value.toFloat
   protected def toDouble: scala.Double = _value.toDouble
 
-  protected def unary_~ : scala.Int = ~ _value.toInt
+  protected def unary_~ : scala.Int = ~_value.toInt
   protected def unary_+ : scala.Int = _value.toInt
-  protected def unary_- : scala.Int = - _value.toInt
+  protected def unary_- : scala.Int = -_value.toInt
 
   protected def +(x: String): String = _value + x
 
@@ -217,7 +218,7 @@ object Short {
   }
 
   @inline def reverseBytes(i: scala.Short): scala.Short =
-    Intrinsics.`llvm.bswap.i16`(i)
+    LLVMIntrinsics.`llvm.bswap.i16`(i)
 
   @inline def toString(s: scala.Short): String =
     Integer.toString(s)
@@ -228,12 +229,33 @@ object Short {
   @inline def toUnsignedLong(x: scala.Short): scala.Long =
     shortToULong(x)
 
-  @inline def valueOf(shortValue: scala.Short): Short =
-    new Short(shortValue)
+  private val cache = new Array[java.lang.Short](256)
+
+  import ShortCache.cache
+
+  @inline def valueOf(shortValue: scala.Short): Short = {
+    if (shortValue.toByte.toShort != shortValue) {
+      new Short(shortValue)
+    } else {
+      val idx    = shortValue + 128
+      val cached = cache(idx)
+      if (cached != null) {
+        cached
+      } else {
+        val newshort = new Short(shortValue)
+        cache(idx) = newshort
+        newshort
+      }
+    }
+  }
 
   @inline def valueOf(s: String): Short =
     valueOf(parseShort(s))
 
   @inline def valueOf(s: String, radix: scala.Int): Short =
     valueOf(parseShort(s, radix))
+}
+
+private[lang] object ShortCache {
+  private[lang] val cache = new Array[java.lang.Short](256)
 }

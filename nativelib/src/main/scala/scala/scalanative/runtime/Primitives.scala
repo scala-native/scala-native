@@ -2,7 +2,7 @@
 package scala.scalanative
 package runtime
 
-import native._
+import scalanative.unsafe._
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Primitives.scala.gyb", line: 10)
 

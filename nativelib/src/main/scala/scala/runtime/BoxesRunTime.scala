@@ -1,7 +1,9 @@
 package scala.runtime
 
 import scala.math.ScalaNumber
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
+
+class BoxesRunTime
 
 object BoxesRunTime {
   def boxToBoolean(v: scala.Boolean): java.lang.Boolean =

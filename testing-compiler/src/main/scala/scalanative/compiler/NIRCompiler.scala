@@ -8,23 +8,23 @@ import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.AbstractReporter
 
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 import java.io.File
 
 /**
  * Helper class to compile snippets of code.
  */
-class NIRCompiler(outputDir: File) extends api.NIRCompiler {
+class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
 
-  def this() = this(Files.createTempDirectory("scala-native-target").toFile())
+  def this() = this(Files.createTempDirectory("scala-native-target"))
 
-  override def compile(code: String): Array[File] = {
+  override def compile(code: String): Array[Path] = {
     val source = new BatchSourceFile(NoFile, code)
     compile(Seq(source)).toArray
   }
 
-  override def compile(base: File): Array[File] = {
-    val sources = getFiles(base, _.getName endsWith ".scala")
+  override def compile(base: Path): Array[Path] = {
+    val sources = getFiles(base.toFile, _.getName endsWith ".scala")
     val sourceFiles = sources map { s =>
       val abstractFile = AbstractFile.getFile(s)
       new BatchSourceFile(abstractFile)
@@ -32,12 +32,12 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
     compile(sourceFiles).toArray
   }
 
-  private def compile(sources: Seq[SourceFile]): Seq[File] = {
+  private def compile(sources: Seq[SourceFile]): Seq[Path] = {
     val global = getCompiler(options = ScalaNative)
     import global._
     val run = new Run
     run.compileSources(sources.toList)
-    getFiles(outputDir, _ => true)
+    getFiles(outputDir.toFile, _ => true).map(_.toPath)
   }
 
   /**
@@ -58,12 +58,11 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
    */
   private class TestReporter(override val settings: Settings)
       extends AbstractReporter {
-    override def display(pos: Position,
-                         msg: String,
-                         severity: Severity): Unit = severity match {
-      case INFO | WARNING => ()
-      case ERROR          => reportError(msg)
-    }
+    override def display(pos: Position, msg: String, severity: Severity): Unit =
+      severity match {
+        case INFO | WARNING => ()
+        case ERROR          => reportError(msg)
+      }
 
     override def displayPrompt(): Unit = ()
   }
@@ -79,8 +78,7 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
   /**
    * An option to add a compiler plugin
    */
-  private class CompilerPlugin(val jarPath: String,
-                               val classpath: List[String])
+  private class CompilerPlugin(val jarPath: String, val classpath: List[String])
       extends CompilerOption(
         s"-Xplugin:$jarPath" + (if (classpath.nonEmpty)
                                   classpath
@@ -106,7 +104,7 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
     //
     // Also, using `command.settings.outputDirs.setSingleOutput` I get strange classpath problems.
     // What's even stranger, is that everything works fine using `-d`!
-    val outPath = outputDir.getAbsolutePath
+    val outPath = outputDir.toAbsolutePath
     val arguments =
       CommandLineParser.tokenize(s"-d $outPath " + (options mkString " "))
     val command  = new CompilerCommand(arguments.toList, reportError _)

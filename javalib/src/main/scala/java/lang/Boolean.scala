@@ -8,7 +8,12 @@ final class Boolean(val _value: scala.Boolean) extends Comparable[Boolean] {
     this(Boolean.parseBoolean(s))
 
   @inline override def equals(that: Any): scala.Boolean =
-    this eq that.asInstanceOf[AnyRef]
+    (this eq that.asInstanceOf[AnyRef]) || (that match {
+      case other: Boolean =>
+        _value == other._value
+      case _ =>
+        false
+    })
 
   @inline override def hashCode(): Int =
     Boolean.hashCode(_value)
@@ -29,7 +34,7 @@ final class Boolean(val _value: scala.Boolean) extends Comparable[Boolean] {
    * implementations.
    */
 
-  protected def unary_! : scala.Boolean             = ! _value
+  protected def unary_! : scala.Boolean             = !_value
   protected def ||(x: scala.Boolean): scala.Boolean = _value || x
   protected def &&(x: scala.Boolean): scala.Boolean = _value && x
   protected def |(x: scala.Boolean): scala.Boolean  = _value | x

@@ -1,7 +1,7 @@
 package java.io
 
-class BufferedInputStream(in: InputStream, size: Int)
-    extends FilterInputStream(in)
+class BufferedInputStream(_in: InputStream, size: Int)
+    extends FilterInputStream(_in)
     with Closeable
     with AutoCloseable {
 
@@ -31,7 +31,7 @@ class BufferedInputStream(in: InputStream, size: Int)
 
   override def available(): Int = {
     if (closed) throw new IOException()
-    end - pos
+    end - pos + in.available()
   }
 
   override def close(): Unit = {

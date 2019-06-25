@@ -1,13 +1,16 @@
 package java.io
 
 import scala.annotation.tailrec
-
 import java.nio._
 import java.nio.charset._
+import java.util.Objects
 
 class OutputStreamWriter(private[this] var out: OutputStream,
                          private[this] var enc: CharsetEncoder)
     extends Writer {
+
+  Objects.requireNonNull(out)
+  Objects.requireNonNull(enc)
 
   private[this] var closed: Boolean = false
 
@@ -24,17 +27,28 @@ class OutputStreamWriter(private[this] var out: OutputStream,
    */
   private[this] var outBuf: ByteBuffer = ByteBuffer.allocate(4096)
 
-  def this(out: OutputStream, cs: Charset) =
+  def this(out: OutputStream, cs: Charset) = {
     this(out,
-         cs.newEncoder
+         Objects
+           .requireNonNull(cs)
+           .newEncoder
            .onMalformedInput(CodingErrorAction.REPLACE)
            .onUnmappableCharacter(CodingErrorAction.REPLACE))
+  }
 
   def this(out: OutputStream) =
     this(out, Charset.defaultCharset)
 
   def this(out: OutputStream, charsetName: String) =
-    this(out, Charset.forName(charsetName))
+    this(
+      out,
+      try {
+        Charset.forName(Objects.requireNonNull(charsetName))
+      } catch {
+        case e: UnsupportedCharsetException =>
+          throw new java.io.UnsupportedEncodingException(charsetName)
+      }
+    )
 
   def getEncoding(): String =
     if (closed) null else enc.charset.name
@@ -137,7 +151,7 @@ class OutputStreamWriter(private[this] var out: OutputStream,
   }
 
   private def makeRoomInOutBuf(): Unit = {
-    if (outBuf.position != 0) {
+    if (outBuf.position() != 0) {
       flushBuffer()
     } else {
       // Very unlikely (outBuf.capacity is not enough to encode a single code point)

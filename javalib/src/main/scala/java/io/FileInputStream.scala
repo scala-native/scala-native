@@ -1,13 +1,18 @@
 package java.io
 
-import scalanative.native._, stdlib._, stdio._, string._
-import scala.scalanative.posix.{fcntl, unistd}
-import unistd._
-import scala.scalanative.runtime
+import scalanative.annotation.stub
+import scalanative.unsigned._
+import scalanative.unsafe._
+import scalanative.libc._, stdlib._, stdio._, string._
+import scalanative.nio.fs.UnixException
+import scalanative.posix.{fcntl, unistd}, unistd._
+import scalanative.runtime
 
-class FileInputStream(fd: FileDescriptor) extends InputStream {
+class FileInputStream(fd: FileDescriptor, file: Option[File])
+    extends InputStream {
 
-  def this(file: File) = this(FileInputStream.fileDescriptor(file))
+  def this(fd: FileDescriptor) = this(fd, None)
+  def this(file: File) = this(FileDescriptor.openReadOnly(file), Some(file))
   def this(str: String) = this(new File(str))
 
   override def available(): Int = {
@@ -23,13 +28,13 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
   override protected def finalize(): Unit =
     close()
 
-  final def getFD: FileDescriptor =
+  final def getFD(): FileDescriptor =
     fd
 
   override def read(): Int = {
     val buffer = new Array[Byte](1)
     if (read(buffer) <= 0) -1
-    else buffer(0)
+    else buffer(0).toUInt.toInt
   }
 
   override def read(buffer: Array[Byte]): Int = {
@@ -60,7 +65,7 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
       -1
     } else if (readCount < 0) {
       // negative value (typically -1) indicates that read failed
-      throw new IOException("couldn't read from the file")
+      throw UnixException(file.fold("")(_.toString), errno.errno)
     } else {
       // successfully read readCount bytes
       readCount
@@ -76,13 +81,6 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
       bytesToSkip
     }
 
-  // TODO:
-  // def getChannel: FileChannel
-}
-
-object FileInputStream {
-  private def fileDescriptor(file: File): FileDescriptor = {
-    val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
-    new FileDescriptor(fd, true)
-  }
+  @stub
+  def getChannel: java.nio.channels.FileChannel = ???
 }

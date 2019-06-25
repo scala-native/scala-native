@@ -1,51 +1,54 @@
 package scala.scalanative
 package linker
 
+import scala.collection.mutable
 import nir.{Global, Dep, Attr, Defn}
-import nir.serialization.BinaryDeserializer
-import java.nio.file.FileSystems
+import nir.serialization.deserializeBinary
+import java.nio.file.{FileSystems, Path}
 import scalanative.io.VirtualDirectory
 import scalanative.util.Scope
 
 sealed trait ClassPath {
 
   /** Check if given global is present in this classpath. */
-  def contains(name: Global): Boolean
+  private[scalanative] def contains(name: Global): Boolean
 
   /** Load given global and info about its dependencies. */
-  def load(name: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)]
-
-  /** Load all globals */
-  def globals: Set[Global]
+  private[scalanative] def load(name: Global): Option[Seq[Defn]]
 }
 
 object ClassPath {
 
+  /** Create classpath based on the directory. */
+  def apply(directory: Path): ClassPath =
+    new Impl(VirtualDirectory.local(directory))
+
   /** Create classpath based on the virtual directory. */
-  def apply(directory: VirtualDirectory): ClassPath =
+  private[scalanative] def apply(directory: VirtualDirectory): ClassPath =
     new Impl(directory)
 
   private final class Impl(directory: VirtualDirectory) extends ClassPath {
-    private val entries: Map[Global, BinaryDeserializer] = {
+    private val files =
       directory.files
         .filter(_.toString.endsWith(".nir"))
         .map { file =>
           val name = Global.Top(io.packageNameFromPath(file))
 
-          (name -> new BinaryDeserializer(directory.read(file)))
+          name -> file
         }
         .toMap
-    }
+
+    private val cache =
+      mutable.Map.empty[Global, Option[Seq[Defn]]]
 
     def contains(name: Global) =
-      entries.contains(name.top)
+      files.contains(name.top)
 
-    def load(
-        name: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)] =
-      entries.get(name.top).flatMap { deserializer =>
-        deserializer.deserialize(name)
-      }
-
-    def globals: Set[Global] = entries.values.flatMap(_.globals).toSet
+    def load(name: Global): Option[Seq[Defn]] =
+      cache.getOrElseUpdate(name, {
+        files.get(name.top).map { file =>
+          deserializeBinary(directory.read(file))
+        }
+      })
   }
 }

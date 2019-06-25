@@ -4,8 +4,11 @@ class ServiceConfigurationError(s: String, e: Throwable) extends Error(s, e) {
   def this(s: String) = this(s, null)
 }
 
-class ConcurrentModificationException(s: String) extends RuntimeException(s) {
-  def this() = this(null)
+class ConcurrentModificationException(s: String, c: Throwable)
+    extends RuntimeException(s, c) {
+  def this(c: Throwable) = this(null, c)
+  def this(s: String) = this(s, null)
+  def this() = this(null, null)
 }
 
 class DuplicateFormatFlagsException private () extends IllegalFormatException {
@@ -108,8 +111,7 @@ class InvalidPropertiesFormatException(s: String)
   //   throw new java.io.NotSerializableException("Not serializable.")
 }
 
-class MissingFormatArgumentException private ()
-    extends IllegalFormatException {
+class MissingFormatArgumentException private () extends IllegalFormatException {
   private var s: String = null
   def this(s: String) = {
     this()

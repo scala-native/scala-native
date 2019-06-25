@@ -1,6 +1,6 @@
 package scala.scalanative.nio.fs
 
-import scala.scalanative.native.{CChar, fromCString, stackalloc}
+import scala.scalanative.unsafe.{CChar, fromCString, stackalloc}
 import scala.scalanative.posix.unistd
 import scala.collection.immutable.{Map => SMap}
 
@@ -124,10 +124,9 @@ class UnixFileSystemProvider extends FileSystemProvider {
       options: Array[LinkOption]): A =
     Files.readAttributes(path, tpe, options)
 
-  override def readAttributes(
-      path: Path,
-      attributes: String,
-      options: Array[LinkOption]): Map[String, Object] =
+  override def readAttributes(path: Path,
+                              attributes: String,
+                              options: Array[LinkOption]): Map[String, Object] =
     Files.readAttributes(path, attributes, options)
 
   override def setAttribute(path: Path,
@@ -142,22 +141,19 @@ class UnixFileSystemProvider extends FileSystemProvider {
     fromCString(res)
   }
 
-  private val knownFileAttributeViews: SMap[
-    Class[_ <: FileAttributeView],
-    (Path, Array[LinkOption]) => FileAttributeView] =
+  private val knownFileAttributeViews
+    : SMap[Class[_ <: FileAttributeView],
+           (Path, Array[LinkOption]) => FileAttributeView] =
     SMap(
-      classOf[BasicFileAttributeView] -> ((p, l) =>
-                                            new NativePosixFileAttributeView(
-                                              p,
-                                              l)),
-      classOf[PosixFileAttributeView] -> ((p, l) =>
-                                            new NativePosixFileAttributeView(
-                                              p,
-                                              l)),
-      classOf[FileOwnerAttributeView] -> ((p, l) =>
-                                            new NativePosixFileAttributeView(
-                                              p,
-                                              l))
+      classOf[BasicFileAttributeView] -> (
+          (p,
+           l) => new NativePosixFileAttributeView(p, l)),
+      classOf[PosixFileAttributeView] -> (
+          (p,
+           l) => new NativePosixFileAttributeView(p, l)),
+      classOf[FileOwnerAttributeView] -> (
+          (p,
+           l) => new NativePosixFileAttributeView(p, l))
     )
 
 }

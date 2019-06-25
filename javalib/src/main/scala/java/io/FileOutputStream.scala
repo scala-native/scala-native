@@ -1,12 +1,16 @@
 package java.io
 
-import scala.scalanative.posix.{fcntl, stat, unistd}
-import scala.scalanative.native._
-import scala.scalanative.runtime
+import scalanative.nio.fs.UnixException
+import scalanative.unsafe._
+import scalanative.libc._
+import scalanative.posix.{fcntl, unistd}
+import scalanative.posix.sys.stat
+import scalanative.runtime
 
-class FileOutputStream(fd: FileDescriptor) extends OutputStream {
+class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
+    extends OutputStream {
   def this(file: File, append: Boolean) =
-    this(FileOutputStream.fileDescriptor(file, append))
+    this(FileOutputStream.fileDescriptor(file, append), Some(file))
   def this(file: File) = this(file, false)
   def this(name: String, append: Boolean) = this(new File(name), append)
   def this(name: String) = this(new File(name))
@@ -45,7 +49,7 @@ class FileOutputStream(fd: FileDescriptor) extends OutputStream {
 
     if (writeCount < 0) {
       // negative value (typically -1) indicates that write failed
-      throw new IOException("couldn't write to file")
+      throw UnixException(file.fold("")(_.toString), errno.errno)
     }
   }
 
@@ -57,12 +61,17 @@ class FileOutputStream(fd: FileDescriptor) extends OutputStream {
 }
 
 object FileOutputStream {
-  private def fileDescriptor(file: File, append: Boolean) = {
-    import fcntl._
-    import stat._
-    val flags = O_CREAT | O_WRONLY | (if (append) O_APPEND else 0)
-    val mode  = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
-    val fd    = open(toCString(file.getPath), flags, mode)
-    new FileDescriptor(fd)
-  }
+  private def fileDescriptor(file: File, append: Boolean) =
+    Zone { implicit z =>
+      import fcntl._
+      import stat._
+      val flags = O_CREAT | O_WRONLY | (if (append) O_APPEND else O_TRUNC)
+      val mode  = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+      val fd    = open(toCString(file.getPath), flags, mode)
+      if (fd == -1)
+        throw new FileNotFoundException(
+          s"$file (${fromCString(string.strerror(errno.errno))})")
+      else
+        new FileDescriptor(fd)
+    }
 }

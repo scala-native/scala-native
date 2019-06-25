@@ -1,6 +1,6 @@
 package java.lang
 
-import scalanative.runtime.{byteToUInt, byteToULong}
+import scalanative.runtime.Intrinsics.{byteToUInt, byteToULong}
 
 final class Byte(val _value: scala.Byte) extends Number with Comparable[Byte] {
   @inline def this(s: String) =
@@ -70,9 +70,9 @@ final class Byte(val _value: scala.Byte) extends Number with Comparable[Byte] {
   protected def toFloat: scala.Float   = _value.toFloat
   protected def toDouble: scala.Double = _value.toDouble
 
-  protected def unary_~ : scala.Int = ~ _value.toInt
+  protected def unary_~ : scala.Int = ~_value.toInt
   protected def unary_+ : scala.Int = _value.toInt
-  protected def unary_- : scala.Int = - _value.toInt
+  protected def unary_- : scala.Int = -_value.toInt
 
   protected def +(x: String): String = _value + x
 
@@ -225,12 +225,27 @@ object Byte {
   @inline def toUnsignedLong(x: scala.Byte): scala.Long =
     byteToULong(x)
 
-  @inline def valueOf(byteValue: scala.Byte): Byte =
-    new Byte(byteValue)
+  import ByteCache.cache
+
+  @inline def valueOf(byteValue: scala.Byte): Byte = {
+    val idx    = byteValue - MIN_VALUE
+    val cached = cache(idx)
+    if (cached != null) {
+      cached
+    } else {
+      val newbyte = new Byte(byteValue)
+      cache(idx) = newbyte
+      newbyte
+    }
+  }
 
   @inline def valueOf(s: String): Byte =
     valueOf(parseByte(s))
 
   @inline def valueOf(s: String, radix: scala.Int): Byte =
     valueOf(parseByte(s, radix))
+}
+
+private[lang] object ByteCache {
+  private[lang] val cache = new Array[java.lang.Byte](256)
 }

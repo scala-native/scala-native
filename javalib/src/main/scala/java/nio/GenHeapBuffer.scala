@@ -16,16 +16,18 @@ private[nio] object GenHeapBuffer {
   }
 
   @inline
-  def generic_wrap[BufferType <: Buffer, ElementType](
-      array: Array[ElementType],
-      arrayOffset: Int,
-      capacity: Int,
-      initialPosition: Int,
-      initialLength: Int,
-      isReadOnly: Boolean)(
+  def generic_wrap[BufferType <: Buffer, ElementType](array: Array[ElementType],
+                                                      arrayOffset: Int,
+                                                      capacity: Int,
+                                                      initialPosition: Int,
+                                                      initialLength: Int,
+                                                      isReadOnly: Boolean)(
       implicit newHeapBuffer: NewHeapBuffer[BufferType, ElementType])
     : BufferType = {
-    if (arrayOffset < 0 || capacity < 0 ||
+    if (capacity < 0) {
+      throw new IllegalArgumentException()
+    }
+    if (arrayOffset < 0 ||
         arrayOffset + capacity > array.length)
       throw new IndexOutOfBoundsException
     val initialLimit = initialPosition + initialLength
@@ -60,12 +62,8 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
   @inline
   def generic_duplicate()(
       implicit newHeapBuffer: NewThisHeapBuffer): BufferType = {
-    val result = newHeapBuffer(capacity,
-                               _array,
-                               _arrayOffset,
-                               position,
-                               limit,
-                               isReadOnly)
+    val result =
+      newHeapBuffer(capacity, _array, _arrayOffset, position, limit, isReadOnly)
     result._mark = _mark
     result
   }

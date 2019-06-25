@@ -15,41 +15,42 @@ object Attr {
   final case object NoInline     extends Inline // should never inline
   final case object AlwaysInline extends Inline // should always inline
 
-  final case object Dyn extends Attr
+  sealed abstract class Specialize extends Attr
+  final case object MaySpecialize  extends Specialize
+  final case object NoSpecialize   extends Specialize
 
-  final case object Pure                  extends Attr
-  final case object Extern                extends Attr
-  final case class Override(name: Global) extends Attr
+  sealed abstract class Opt             extends Attr
+  final case object UnOpt               extends Opt
+  final case object NoOpt               extends Opt
+  final case object DidOpt              extends Opt
+  final case class BailOpt(msg: String) extends Opt
 
-  final case class Align(value: Int) extends Attr
-
-  // Linker attributes
-  final case class Link(name: String)               extends Attr
-  sealed abstract class Pin                         extends Attr
-  final case class PinAlways(dep: Global)           extends Pin
-  final case class PinIf(dep: Global, cond: Global) extends Pin
-  final case class PinWeak(dep: Global)             extends Pin
+  final case object Dyn               extends Attr
+  final case object Stub              extends Attr
+  final case object Extern            extends Attr
+  final case class Link(name: String) extends Attr
+  final case object Abstract          extends Attr
 }
 
 final case class Attrs(inline: Inline = MayInline,
-                       isPure: Boolean = false,
+                       specialize: Specialize = MaySpecialize,
+                       opt: Opt = UnOpt,
                        isExtern: Boolean = false,
                        isDyn: Boolean = false,
-                       overrides: Seq[Global] = Seq(),
-                       pins: Seq[Pin] = Seq(),
-                       links: Seq[Attr.Link] = Seq(),
-                       align: Option[Int] = scala.None) {
+                       isStub: Boolean = false,
+                       isAbstract: Boolean = false,
+                       links: Seq[Attr.Link] = Seq()) {
   def toSeq: Seq[Attr] = {
     val out = mutable.UnrolledBuffer.empty[Attr]
 
     if (inline != MayInline) out += inline
-    if (isPure) out += Pure
+    if (specialize != MaySpecialize) out += specialize
+    if (opt != UnOpt) out += opt
     if (isExtern) out += Extern
     if (isDyn) out += Dyn
-    overrides.foreach { out += Override(_) }
-    out ++= pins
+    if (isStub) out += Stub
+    if (isAbstract) out += Abstract
     out ++= links
-    align.foreach { out += Align(_) }
 
     out
   }
@@ -58,26 +59,34 @@ object Attrs {
   val None = new Attrs()
 
   def fromSeq(attrs: Seq[Attr]) = {
-    var inline    = None.inline
-    var isPure    = false
-    var isExtern  = false
-    var isDyn     = false
-    var align     = Option.empty[Int]
-    val overrides = mutable.UnrolledBuffer.empty[Global]
-    val pins      = mutable.UnrolledBuffer.empty[Pin]
-    val links     = mutable.UnrolledBuffer.empty[Attr.Link]
+    var inline     = None.inline
+    var specialize = None.specialize
+    var opt        = None.opt
+    var isExtern   = false
+    var isDyn      = false
+    var isStub     = false
+    var isAbstract = false
+    val overrides  = mutable.UnrolledBuffer.empty[Global]
+    val links      = mutable.UnrolledBuffer.empty[Attr.Link]
 
     attrs.foreach {
-      case attr: Inline    => inline = attr
-      case Pure            => isPure = true
-      case Extern          => isExtern = true
-      case Dyn             => isDyn = true
-      case Align(value)    => align = Some(value)
-      case Override(name)  => overrides += name
-      case attr: Pin       => pins += attr
-      case link: Attr.Link => links += link
+      case attr: Inline     => inline = attr
+      case attr: Specialize => specialize = attr
+      case attr: Opt        => opt = attr
+      case Extern           => isExtern = true
+      case Dyn              => isDyn = true
+      case Stub             => isStub = true
+      case link: Attr.Link  => links += link
+      case Abstract         => isAbstract = true
     }
 
-    new Attrs(inline, isPure, isExtern, isDyn, overrides, pins, links, align)
+    new Attrs(inline,
+              specialize,
+              opt,
+              isExtern,
+              isDyn,
+              isStub,
+              isAbstract,
+              links)
   }
 }

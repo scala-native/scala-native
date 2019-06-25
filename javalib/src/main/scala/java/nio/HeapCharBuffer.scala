@@ -38,8 +38,8 @@ private[nio] final class HeapCharBuffer private (_capacity: Int,
     new HeapCharBuffer(capacity,
                        _array,
                        _arrayOffset,
-                       position + start,
-                       position + end,
+                       position() + start,
+                       position() + end,
                        isReadOnly)
   }
 

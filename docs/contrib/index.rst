@@ -7,5 +7,8 @@ Contributor's Guide
   :maxdepth: 2
 
   contributing
+  build
   compiler
   nir
+  mangling
+

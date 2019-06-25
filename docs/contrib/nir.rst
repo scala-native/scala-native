@@ -6,7 +6,7 @@ Native Intermediate Representation
 NIR is high-level object-oriented SSA-based representation. The core of the
 representation is a subset of LLVM instructions, types and values, augmented
 with a number of high-level primitives that are necessary to
-efficiently compiler modern languages like Scala.
+efficiently compile modern languages like Scala.
 
 .. contents::
 
@@ -640,7 +640,7 @@ inlinehint
 
     inlinehint
 
-Optimiser is incentivized to inline given methods but is it allowed not to.
+Optimiser is incentivized to inline given methods but it is allowed not to.
 
 noinline
 ********
@@ -698,6 +698,17 @@ pin-weak
     pin-weak(@$name)
 
 Require ``$name`` to be reachable if there is a reachable dynmethod with matching signature.
+
+stub
+****
+.. code-block:: text
+
+    stub
+
+Indicates that the annotated method, class or module is only a stub without implementation.
+If the linker is configured with ``linkStubs = false``, then these definitions will be
+ignored and a linking error will be reported. If ``linkStubs = true``, these definitions
+will be linked.
 
 Misc
 ````

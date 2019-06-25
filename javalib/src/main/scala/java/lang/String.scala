@@ -1,11 +1,14 @@
 package java.lang
 
-import scalanative.native._
+import scalanative.unsafe._
+import scalanative.libc.string.memcmp
+import scalanative.runtime.CharArray
 import java.io.Serializable
 import java.util._
 import java.util.regex._
 import java.nio._
 import java.nio.charset._
+import java.util.Objects
 
 final class _String()
     extends Serializable
@@ -48,8 +51,19 @@ final class _String()
   def this(data: Array[scala.Byte],
            start: Int,
            length: Int,
-           encoding: _String) =
-    this(data, start, length, Charset.forName(encoding))
+           encoding: _String) = {
+    this(
+      data,
+      start,
+      length,
+      try {
+        Charset.forName(Objects.requireNonNull(encoding))
+      } catch {
+        case e: UnsupportedCharsetException =>
+          throw new java.io.UnsupportedEncodingException(encoding)
+      }
+    )
+  }
 
   def this(data: Array[scala.Byte], start: Int, length: Int) =
     this(data, start, length, Charset.defaultCharset())
@@ -74,7 +88,7 @@ final class _String()
       count = length
       System.arraycopy(data, start, value, 0, count)
     } else {
-      throw new IndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     }
   }
 
@@ -105,7 +119,7 @@ final class _String()
   def this(codePoints: Array[Int], offset: Int, count: Int) {
     this()
     if (offset < 0 || count < 0 || offset > codePoints.length - count) {
-      throw new IndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     } else {
       this.offset = 0
       this.value = new Array[Char](count * 2)
@@ -204,24 +218,35 @@ final class _String()
     regionMatches(count - suffix.count, suffix, 0, suffix.count)
 
   override def equals(obj: Any): scala.Boolean = obj match {
-    case s: _String if s eq this =>
-      true
     case s: _String =>
-      val thisHash = this.hashCode
-      val thatHash = s.hashCode
-      if (count != s.count ||
-          (thisHash != thatHash && thisHash != 0 && thatHash != 0)) {
-        false
+      if (s eq this) {
+        true
       } else {
-        var i = 0
-        while (i < count) {
-          if (value(offset + i) != s.value(s.offset + i)) {
-            return false
+        val thisCount = this.count
+        val thatCount = s.count
+        if (thisCount != thatCount) {
+          false
+        } else if (thisCount == 0 && thatCount == 0) {
+          true
+        } else {
+          val thisHash = this.cachedHashCode
+          val thatHash = s.cachedHashCode
+          if (thisHash != thatHash && thisHash != 0 && thatHash != 0) {
+            false
           } else {
-            i += 1
+            val data1 =
+              value
+                .asInstanceOf[CharArray]
+                .at(offset)
+                .asInstanceOf[Ptr[scala.Byte]]
+            val data2 =
+              s.value
+                .asInstanceOf[CharArray]
+                .at(s.offset)
+                .asInstanceOf[Ptr[scala.Byte]]
+            memcmp(data1, data2, count * 2) == 0
           }
         }
-        true
       }
     case _ =>
       false
@@ -284,9 +309,14 @@ final class _String()
   }
 
   def getBytes(encoding: _String): Array[scala.Byte] = {
-    val charset = Charset.forName(encoding)
-    val buffer  = charset.encode(CharBuffer.wrap(value, offset, count))
-    val bytes   = new Array[scala.Byte](buffer.limit())
+    val charset = try {
+      Charset.forName(encoding)
+    } catch {
+      case e: UnsupportedCharsetException =>
+        throw new java.io.UnsupportedEncodingException(encoding)
+    }
+    val buffer = charset.encode(CharBuffer.wrap(value, offset, count))
+    val bytes  = new Array[scala.Byte](buffer.limit())
     buffer.get(bytes)
     bytes
   }
@@ -313,10 +343,11 @@ final class _String()
       if (count == 0) {
         0
       } else {
+        val data = value.asInstanceOf[CharArray].at(offset)
         var hash = 0
-        var i    = offset
-        while (i < count + offset) {
-          hash = value(i) + ((hash << 5) - hash)
+        var i    = 0
+        while (i < count) {
+          hash = data(i) + ((hash << 5) - hash)
           i += 1
         }
         cachedHashCode = hash
@@ -648,12 +679,12 @@ final class _String()
   private[this] def toCase(locale: Locale, convert: Int => Int): _String = {
     if (count == 0) return this
     val buf = new StringBuilder(count)
-    var i   = 0
-    while (i < count) {
+    var i   = offset
+    while (i < offset + count) {
       val high = value(i)
       i += 1
       if (Character.isHighSurrogate(high)) {
-        if (i < count) {
+        if (i < offset + count) {
           val low = value(i)
           i += 1
           if (Character.isLowSurrogate(low)) {
@@ -725,32 +756,79 @@ final class _String()
   def replaceFirst(expr: _String, substitute: _String): _String =
     Pattern.compile(expr).matcher(this).replaceFirst(substitute)
 
+  def fastSplit(ch: Char, max: Int): Array[String] = {
+    var separatorCount = 0
+    var begin          = 0
+    var end            = 0
+    while (separatorCount + 1 != max && { end = indexOf(ch, begin); end != -1 }) {
+      separatorCount += 1
+      begin = end + 1
+    }
+    val lastPartEnd = if (max == 0 && begin == count) {
+      if (separatorCount == count) {
+        return Array.empty[String]
+      }
+      do {
+        begin -= 1
+      } while (charAt(begin - 1) == ch)
+      separatorCount -= count - begin
+      begin
+    } else {
+      count
+    }
+
+    val result = new Array[String](separatorCount + 1)
+    begin = 0
+    var i = 0
+    while (i < separatorCount) {
+      end = indexOf(ch, begin)
+      result(i) = substring(begin, end);
+      begin = end + 1
+      i += 1
+    }
+    result(separatorCount) = substring(begin, lastPartEnd)
+    result
+  }
+
+  private[this] final val REGEX_METACHARACTERS = ".$()[{^?*+\\"
+  @inline private def isRegexMeta(c: Char) =
+    REGEX_METACHARACTERS.indexOf(c) >= 0
+
   def split(expr: _String): Array[String] =
-    Pattern.compile(expr).split(this)
+    split(expr, 0)
 
   def split(expr: _String, max: Int): Array[String] =
-    Pattern.compile(expr).split(this, max)
+    if (isEmpty) {
+      Array("")
+    } else {
+      expr.length match {
+        case 1 if !isRegexMeta(expr.charAt(0)) => fastSplit(expr.charAt(0), max)
+        case 2 if expr.charAt(0) == '\\' && isRegexMeta(expr.charAt(1)) =>
+          fastSplit(expr.charAt(1), max)
+        case _ => Pattern.compile(expr).split(this, max)
+      }
+    }
 
   def subSequence(start: Int, end: Int): CharSequence =
     substring(start, end)
 
   def codePointAt(index: Int): Int =
     if (index < 0 || index >= count) {
-      throw new IndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     } else {
       Character.codePointAt(value, index + offset, offset + count)
     }
 
   def codePointBefore(index: Int): Int =
     if (index < 1 || index > count) {
-      throw new IndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     } else {
       Character.codePointBefore(value, index + offset)
     }
 
   def codePointCount(beginIndex: Int, endIndex: Int): Int =
     if (beginIndex < 0 || endIndex > count || beginIndex > endIndex) {
-      throw new IndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException()
     } else {
       Character
         .codePointCount(value, beginIndex + offset, endIndex - beginIndex)

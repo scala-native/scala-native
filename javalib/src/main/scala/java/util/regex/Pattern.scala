@@ -1,13 +1,17 @@
 package java.util
 package regex
 
-import scalanative.native._, stdlib._, stdio._, string._
+import scalanative.{regex => snRegex}
 
-// Inspired by: https://github.com/google/re2j/blob/master/java/com/google/re2j/Pattern.java
+import java.util.function.Predicate
+import java.util.stream.Stream
+import java.util.stream.WrappedScalaStream
 
-import cre2h._
+// Inspired & informed by:
+// https://github.com/google/re2j/blob/master/java/com/google/re2j/Pattern.java
 
 object Pattern {
+
   def CANON_EQ: Int                = 128
   def CASE_INSENSITIVE: Int        = 2
   def COMMENTS: Int                = 4
@@ -18,165 +22,116 @@ object Pattern {
   def UNICODE_CHARACTER_CLASS: Int = 256
   def UNIX_LINES: Int              = 1
 
-  def compile(regex: String): Pattern = compile(regex, 0)
-
-  def compile(regex: String, flags: Int): Pattern =
-    compile(regex, 0, adapt = true)
-
-  def compile(regex: String, flags: Int, adapt: Boolean): Pattern = {
+  private def validateJavaFlags(flags: Int): Unit = {
 
     def notSupported(flag: Int, flagName: String): Unit = {
       if ((flags & flag) == flag) {
-        assert(false, s"regex flag $flagName is not supported")
+        throw new UnsupportedOperationException(
+          s"regex flag $flagName is not supported.")
       }
     }
 
-    notSupported(CANON_EQ, "CANON_EQ(canonical equivalences)")
-    notSupported(COMMENTS, "COMMENTS")
-    notSupported(UNICODE_CASE, "UNICODE_CASE")
-    notSupported(UNICODE_CHARACTER_CLASS, "UNICODE_CHARACTER_CLASS")
-    notSupported(UNIX_LINES, "UNIX_LINES")
-
-    val options = cre2.optNew()
-    cre2.setCaseSensitive(options, flags & CASE_INSENSITIVE)
-    cre2.setDotNl(options, flags & DOTALL)
-    cre2.setLiteral(options, flags & LITERAL)
-    cre2.setLogErrors(options, 0)
-
-    // setOneLine(false) is only available when limiting ourself to posix_syntax
-    // https://github.com/google/re2/blob/2017-03-01/re2/re2.h#L548
-    // regex flag MULTILINE cannot be disabled
-
-    val re2 = cre2.compile(toCString(regex), regex.size, options)
-
-    val code = new ErrorCode(cre2.errorCode(re2))
-    import ErrorCode._
-
-    if (code != NoError) {
-      val errorPattern = {
-        val arg = StringPart.stackalloc
-        cre2.errorArg(re2, arg)
-        arg.toString
-      }
-
-      // we try to find the index of the parsing error
-      // this could return the wrong index it only finds the first match
-      // see https://groups.google.com/forum/#!topic/re2-dev/rnvFZ9Ki8nk
-      val index =
-        if (code == ErrorCode.TrailingBackslash) regex.size - 1
-        else regex.indexOfSlice(errorPattern)
-
-      val reText = fromCString(cre2.errorString(re2))
-
-      val description =
-        code match {
-          case BadEscape         => "Illegal/unsupported escape sequence"
-          case MissingParent     => "Missing parenthesis"
-          case TrailingBackslash => "Trailing Backslash"
-          case MissingBracket    => "Unclosed character class"
-          case BadCharRange      => "Illegal character range"
-          case BadCharClass      => "Illegal/unsupported character class"
-          case RepeatSize        => "Bad repetition argument"
-          case RepeatArgument    => "Dangling meta character '*'"
-          case RepeatOp          => "Bad repetition operator"
-          case BadPerlOp         => "Bad perl operator"
-          case BadUtf8           => "Invalid UTF-8 in regexp"
-          case BadNamedCapture   => "Bad named capture group"
-          case PatternTooLarge   => "Pattern too large (compilation failed)"
-          case Internal          => "Internal Error"
-          case _                 => reText
-        }
-
-      throw new PatternSyntaxException(
-        description,
-        regex,
-        index
-      )
-    }
-
-    cre2.optDelete(options)
-
-    new Pattern(
-      _pattern = regex,
-      _flags = flags,
-      _regex = re2
+    val unsupportedOptions = Array[(Int, String)](
+      (CANON_EQ, "CANON_EQ(canonical equivalences)"),
+      (COMMENTS, "COMMENTS"),
+      (UNICODE_CASE, "UNICODE_CASE"),
+      (UNICODE_CHARACTER_CLASS, "UNICODE_CHARACTER_CLASS"),
+      (UNIX_LINES, "UNIX_LINES")
     )
+
+    for (i <- 0 until unsupportedOptions.length) {
+      notSupported(unsupportedOptions(i)._1, unsupportedOptions(i)._2)
+    }
+
+    // Any bit set other than given set throws.
+    if ((flags & ~(CASE_INSENSITIVE | DOTALL | LITERAL | MULTILINE)) != 0) {
+      throw new IllegalArgumentException(s"Unknown flag ${flags}")
+    }
+  }
+
+  private def toRe2Flags(flags: Int): Int = {
+
+    // Pass snRegex only the flags it knows about and clear the rest.
+    //
+    // j.u.regex LITERAL is handled in j.u.regex.Pattern#compile
+    // so OK to clear that bit. java bits not known to snRegex will cause
+    // it to throw, so clear them also.
+    //
+    // snRegex supports only CASE_INSENSITIVE | DOTALL | MULTILINE |
+    //                    DISABLE_UNICODE_GROUPS))
+    //
+    // DISABLE_UNICODE_GROUPS causes rejectUnsupportedOptions()
+    // to be thrown, so only CASE_INSENSITIVE, DOTALL, and MULTILINE are
+    // left when execution reaches this point.
+    //
+    // The constants for these three definitely differ between j.u.regex
+    // and snRegex and must be be translated.
+
+    val optionTranslations = Array[(Int, Int)](
+      (CASE_INSENSITIVE, snRegex.Pattern.CASE_INSENSITIVE),
+      (DOTALL, snRegex.Pattern.DOTALL),
+      (MULTILINE, snRegex.Pattern.MULTILINE)
+    )
+
+    var re2Flags = 0
+
+    // Optimize for most common case of no flags. Skip loop if no work to do.
+    if (flags != 0) {
+      // use for(range) used to get loop optimized.
+      for (i <- 0 until optionTranslations.length) {
+        if ((flags & optionTranslations(i)._1) != 0) {
+          re2Flags = re2Flags | optionTranslations(i)._2
+        }
+      }
+    }
+
+    re2Flags
+  }
+
+  def compile(regex: String): Pattern = compile(regex, 0)
+
+  def compile(regex: String, flags: Int): Pattern = {
+
+    validateJavaFlags(flags)
+
+    val r = if ((flags & LITERAL) == 0) regex else quote(regex)
+
+    new Pattern(r, flags)
   }
 
   def matches(regex: String, input: CharSequence): Boolean =
     compile(regex).matcher(input).matches
 
-  def quote(s: String): String = {
-    val original = StringPart(s)
-    val quoted   = StringPart.stackalloc
-    cre2.quoteMeta(quoted, original)
-    quoted.toString
-  }
-
-  def adaptPatternToRe2(regex: String): String = {
-    regex
-  }
+  def quote(s: String): String = s"\\Q${s}\\E"
 }
 
-final class Pattern private[regex] (
-    _pattern: String,
-    _flags: Int,
-    _regex: Ptr[Regex]
-) {
+final class Pattern private[regex] (_regex: String, _flags: Int) {
 
-  private[regex] def regex: Ptr[Regex] = _regex
-
-  def split(input: CharSequence): Array[String] =
-    split(input, 0)
-
-  def split(input: CharSequence, limit: Int): Array[String] =
-    split(new Matcher(this, input), limit)
-
-  private def split(m: Matcher, limit: Int): Array[String] = {
-    var matchCount = 0
-    var arraySize  = 0
-    var last       = 0
-    while (m.find()) {
-      matchCount += 1
-      if (limit != 0 || last < m.start()) {
-        arraySize = matchCount
-      }
-      last = m.end()
-    }
-    if (last < m.inputLength || limit != 0) {
-      matchCount += 1
-      arraySize = matchCount
-    }
-    var trunc = 0
-    if (limit > 0 && arraySize > limit) {
-      arraySize = limit
-      trunc = 1
-    }
-
-    val array = Array.ofDim[String](arraySize)
-    var i     = 0
-    last = 0
-    m.reset()
-    while (m.find() && i < arraySize - trunc) {
-      val t = i
-      i += 1
-      array(t) = m.substring(last, m.start())
-      last = m.end()
-    }
-    if (i < arraySize) {
-      array(i) = m.substring(last, m.inputLength)
-    }
-    array
+  private[regex] val compiled = {
+    val re2Flags = Pattern.toRe2Flags(_flags)
+    snRegex.Pattern.compile(_regex, re2Flags)
   }
+
+  def asPredicate(): Predicate[String] = {
+    new Predicate[String] {
+      override def test(t: String): Boolean =
+        matcher(t).matches()
+    }
+  }
+
+  def flags: Int = _flags
 
   def matcher(input: CharSequence): Matcher = new Matcher(this, input)
 
-  def flags: Int                = _flags
-  def pattern: String           = _pattern
-  override def toString: String = _pattern
+  def pattern: String = _regex
 
-  override protected def finalize(): Unit = {
-    super.finalize()
-    cre2.delete(_regex)
-  }
+  def split(input: CharSequence): Array[String] = split(input, 0)
+
+  def split(input: CharSequence, limit: Int): Array[String] =
+    compiled.split(input, limit)
+
+  def splitAsStream(input: CharSequence): Stream[String] =
+    new WrappedScalaStream(split(input).toStream, None)
+
+  override def toString: String = _regex
 }

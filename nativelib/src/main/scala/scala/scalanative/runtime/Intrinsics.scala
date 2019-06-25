@@ -1,115 +1,144 @@
 package scala.scalanative
 package runtime
 
-import native._
+import scalanative.unsafe.CFuncPtr
 
-/**
- * @see [[http://llvm.org/releases/3.7.0/docs/LangRef.html#intrinsic-functions LLVM intrinsics functions]]
- */
-@extern
 object Intrinsics {
-  @struct class IntOverflow(val value: Int, val flag: Boolean)
-  @struct class LongOverflow(val value: Long, val flag: Boolean)
 
-  def `llvm.sadd.with.overflow.i32`(a: Int, b: Int): IntOverflow    = extern
-  def `llvm.sadd.with.overflow.i64`(a: Long, b: Long): LongOverflow = extern
-  def `llvm.uadd.with.overflow.i32`(a: Int, b: Int): IntOverflow    = extern
-  def `llvm.uadd.with.overflow.i64`(a: Long, b: Long): LongOverflow = extern
-  def `llvm.ssub.with.overflow.i32`(a: Int, b: Int): IntOverflow    = extern
-  def `llvm.ssub.with.overflow.i64`(a: Long, b: Long): LongOverflow = extern
-  def `llvm.usub.with.overflow.i32`(a: Int, b: Int): IntOverflow    = extern
-  def `llvm.usub.with.overflow.i64`(a: Long, b: Long): LongOverflow = extern
-  def `llvm.smul.with.overflow.i32`(a: Int, b: Int): IntOverflow    = extern
-  def `llvm.smul.with.overflow.i64`(a: Long, b: Long): LongOverflow = extern
-  def `llvm.umul.with.overflow.i32`(a: Int, b: Int): IntOverflow    = extern
-  def `llvm.umul.with.overflow.i64`(a: Long, b: Long): LongOverflow = extern
-  def `llvm.sqrt.f32`(value: Float): Float                          = extern
-  def `llvm.sqrt.f64`(value: Double): Double                        = extern
-  def `llvm.powi.f32`(value: Float, power: Int): Float              = extern
-  def `llvm.powi.f64`(value: Double, power: Int): Double            = extern
-  def `llvm.sin.f32`(value: Float): Float                           = extern
-  def `llvm.sin.f64`(value: Double): Double                         = extern
-  def `llvm.cos.f32`(value: Float): Float                           = extern
-  def `llvm.cos.f64`(value: Double): Double                         = extern
-  def `llvm.pow.f32`(value: Float, power: Float): Float             = extern
-  def `llvm.pow.f64`(value: Double, power: Double): Double          = extern
-  def `llvm.exp.f32`(value: Float): Float                           = extern
-  def `llvm.exp.f64`(value: Double): Double                         = extern
-  def `llvm.exp2.f32`(value: Float): Float                          = extern
-  def `llvm.exp2.f64`(value: Double): Double                        = extern
-  def `llvm.log.f32`(value: Float): Float                           = extern
-  def `llvm.log.f64`(value: Double): Double                         = extern
-  def `llvm.log10.f32`(value: Float): Float                         = extern
-  def `llvm.log10.f64`(value: Double): Double                       = extern
-  def `llvm.log2.f32`(value: Float): Float                          = extern
-  def `llvm.log2.f64`(value: Double): Double                        = extern
-  def `llvm.fma.f32`(a: Float, b: Float, c: Float): Float           = extern
-  def `llvm.fma.f64`(a: Double, b: Double, c: Double): Double       = extern
-  def `llvm.fabs.f32`(value: Float): Float                          = extern
-  def `llvm.fabs.f64`(value: Double): Double                        = extern
-  def `llvm.minnum.f32`(left: Float, right: Float): Float           = extern
-  def `llvm.minnum.f64`(left: Double, right: Double): Double        = extern
-  def `llvm.maxnum.f32`(left: Float, right: Float): Float           = extern
-  def `llvm.maxnum.f64`(left: Double, right: Double): Double        = extern
-  def `llvm.copysign.f32`(magn: Float, sgn: Float): Float           = extern
-  def `llvm.copysign.f64`(magn: Double, sgn: Double): Double        = extern
-  def `llvm.floor.f32`(value: Float): Float                         = extern
-  def `llvm.floor.f64`(value: Double): Double                       = extern
-  def `llvm.ceil.f32`(value: Float): Float                          = extern
-  def `llvm.ceil.f64`(value: Double): Double                        = extern
-  def `llvm.trunc.f32`(value: Float): Float                         = extern
-  def `llvm.trunc.f64`(value: Double): Double                       = extern
-  def `llvm.rint.f32`(value: Float): Float                          = extern
-  def `llvm.rint.f64`(value: Double): Double                        = extern
-  def `llvm.nearbyint.f32`(value: Float): Float                     = extern
-  def `llvm.nearbyint.f64`(value: Double): Double                   = extern
-  def `llvm.round.f32`(value: Float): Float                         = extern
-  def `llvm.round.f64`(value: Double): Double                       = extern
-  def `llvm.bitreverse.i16`(value: Short): Short                    = extern
-  def `llvm.bitreverse.i32`(value: Int): Int                        = extern
-  def `llvm.bitreverse.i64`(value: Long): Long                      = extern
-  def `llvm.bswap.i16`(value: Short): Short                         = extern
-  def `llvm.bswap.i32`(value: Int): Int                             = extern
-  def `llvm.bswap.i64`(value: Long): Long                           = extern
-  def `llvm.ctpop.i16`(value: Short): Short                         = extern
-  def `llvm.ctpop.i32`(value: Int): Int                             = extern
-  def `llvm.ctpop.i64`(value: Long): Long                           = extern
-  def `llvm.ctlz.i8`(source: Byte, iszeroundef: Boolean): Byte      = extern
-  def `llvm.ctlz.i16`(source: Short, iszeroundef: Boolean): Short   = extern
-  def `llvm.ctlz.i32`(source: Int, iszeroundef: Boolean): Int       = extern
-  def `llvm.ctlz.i64`(source: Long, iszeroundef: Boolean): Long     = extern
-  def `llvm.cttz.i8`(source: Byte, iszeroundef: Boolean): Byte      = extern
-  def `llvm.cttz.i16`(source: Short, iszeroundef: Boolean): Short   = extern
-  def `llvm.cttz.i32`(source: Int, iszeroundef: Boolean): Int       = extern
-  def `llvm.cttz.i64`(source: Long, iszeroundef: Boolean): Long     = extern
-  def `llvm.memset.p0i8.i32`(dest: Ptr[Byte],
-                             value: Byte,
-                             len: Int,
-                             align: Int,
-                             isvolatile: Boolean): Unit = extern
-  def `llvm.memset.p0i8.i64`(dest: Ptr[Byte],
-                             value: Byte,
-                             len: Long,
-                             align: Int,
-                             isvolatile: Boolean): Unit = extern
-  def `llvm.memcpy.p0i8.p0i8.i32`(dest: Ptr[Byte],
-                                  src: Ptr[Byte],
-                                  len: Int,
-                                  align: Int,
-                                  isvolatile: Boolean): Unit = extern
-  def `llvm.memcpy.p0i8.p0i8.i64`(dest: Ptr[Byte],
-                                  src: Ptr[Byte],
-                                  len: Long,
-                                  align: Int,
-                                  isvolatile: Boolean): Unit = extern
-  def `llvm.memmove.p0i8.p0i8.i32`(dest: Ptr[Byte],
-                                   src: Ptr[Byte],
-                                   len: Int,
-                                   align: Int,
-                                   isvolatile: Boolean): Unit = extern
-  def `llvm.memmove.p0i8.p0i8.i64`(dest: Ptr[Byte],
-                                   src: Ptr[Byte],
-                                   len: Long,
-                                   align: Int,
-                                   isvolatile: Boolean): Unit = extern
+  /** Intrinsified stack allocation of n bytes. */
+  def stackalloc(size: Long): RawPtr = intrinsic
+
+  /** Intrinsified unsigned devision on ints. */
+  def divUInt(l: Int, r: Int): Int = intrinsic
+
+  /** Intrinsified unsigned devision on longs. */
+  def divULong(l: Long, r: Long): Long = intrinsic
+
+  /** Intrinsified unsigned remainder on ints. */
+  def remUInt(l: Int, r: Int): Int = intrinsic
+
+  /** Intrinsified unsigned remainder on longs. */
+  def remULong(l: Long, r: Long): Long =
+    intrinsic /** Intrinsified byte to unsigned int converstion. */
+  def byteToUInt(b: Byte): Int = intrinsic
+
+  /** Intrinsified byte to unsigned long conversion. */
+  def byteToULong(b: Byte): Long = intrinsic
+
+  /** Intrinsified short to unsigned int conversion. */
+  def shortToUInt(v: Short): Int = intrinsic
+
+  /** Intrinsified short to unsigned long conversion. */
+  def shortToULong(v: Short): Long = intrinsic
+
+  /** Intrinsified int to unsigned long conversion. */
+  def intToULong(v: Int): Long = intrinsic
+
+  /** Intrinsified unsigned int to float conversion. */
+  def uintToFloat(v: Int): Float = intrinsic
+
+  /** Intrinsified unsigned long to float conversion. */
+  def ulongToFloat(v: Long): Float = intrinsic
+
+  /** Intrinsified unsigned int to double conversion. */
+  def uintToDouble(v: Int): Double = intrinsic
+
+  /** Intrinsified unsigned long to double conversion. */
+  def ulongToDouble(v: Long): Double = intrinsic
+
+  /** Intrinsified raw memory load of boolean. */
+  def loadBoolean(rawptr: RawPtr): Boolean = intrinsic
+
+  /** Intrinsified raw memory load of char. */
+  def loadChar(rawptr: RawPtr): Char = intrinsic
+
+  /** Intrinsified raw memory load of byte. */
+  def loadByte(rawptr: RawPtr): Byte = intrinsic
+
+  /** Intrinsified raw memory load of short. */
+  def loadShort(rawptr: RawPtr): Short = intrinsic
+
+  /** Intrinsified raw memory load of int. */
+  def loadInt(rawptr: RawPtr): Int = intrinsic
+
+  /** Intrinsified raw memory load of long. */
+  def loadLong(rawptr: RawPtr): Long = intrinsic
+
+  /** Intrinsified raw memory load of float. */
+  def loadFloat(rawptr: RawPtr): Float = intrinsic
+
+  /** Intrinsified raw memory load of double. */
+  def loadDouble(rawptr: RawPtr): Double = intrinsic
+
+  /** Intrinsified raw memory load of rawptr. */
+  def loadRawPtr(rawptr: RawPtr): RawPtr = intrinsic
+
+  /** Intrinsified raw memory load of object. */
+  def loadObject(rawptr: RawPtr): Object = intrinsic
+
+  /** Intrinsified raw memory store of boolean. */
+  def storeBoolean(rawptr: RawPtr, value: Boolean): Unit = intrinsic
+
+  /** Intrinsified raw memory store of char. */
+  def storeChar(rawptr: RawPtr, value: Char): Unit = intrinsic
+
+  /** Intrinsified raw memory store of byte. */
+  def storeByte(rawptr: RawPtr, value: Byte): Unit = intrinsic
+
+  /** Intrinsified raw memory store of short. */
+  def storeShort(rawptr: RawPtr, value: Short): Unit = intrinsic
+
+  /** Intrinsified raw memory store of int. */
+  def storeInt(rawptr: RawPtr, value: Int): Unit = intrinsic
+
+  /** Intrinsified raw memory store of long. */
+  def storeLong(rawptr: RawPtr, value: Long): Unit = intrinsic
+
+  /** Intrinsified raw memory store of float. */
+  def storeFloat(rawptr: RawPtr, value: Float): Unit = intrinsic
+
+  /** Intrinsified raw memory store of double. */
+  def storeDouble(rawptr: RawPtr, value: Double): Unit = intrinsic
+
+  /** Intrinsified raw memory store of rawptr. */
+  def storeRawPtr(rawptr: RawPtr, value: RawPtr): Unit = intrinsic
+
+  /** Intrinsified raw memory store of object. */
+  def storeObject(rawptr: RawPtr, value: Object): Unit = intrinsic
+
+  /** Intrinsified computation of derived raw pointer. */
+  def elemRawPtr(rawptr: RawPtr, offset: Long): RawPtr = intrinsic
+
+  /** Intrinsified cast that reinterprets raw pointer as an object. */
+  def castRawPtrToObject(rawptr: RawPtr): Object = intrinsic
+
+  /** Intrinsified cast that reinterprets object as a raw pointers. */
+  def castObjectToRawPtr(obj: Object): RawPtr = intrinsic
+
+  /** Intrinsified cast that reinterprets int as a float. */
+  def castIntToFloat(int: Int): Float = intrinsic
+
+  /** Intrinsified cast that reinterprets float as an int. */
+  def castFloatToInt(float: Float): Int = intrinsic
+
+  /** Intrinsified cast that reinterprets long as a double. */
+  def castLongToDouble(long: Long): Double = intrinsic
+
+  /** Intrinsified cast that reinterprets double as a long. */
+  def castDoubleToLong(double: Double): Long = intrinsic
+
+  /** Intrinsified cast that reinterprets raw pointer as an int. */
+  def castRawPtrToInt(rawptr: RawPtr): Int = intrinsic
+
+  /** Intrinsified cast that reinterprets raw pointer as an long. */
+  def castRawPtrToLong(rawptr: RawPtr): Long = intrinsic
+
+  /** Intrinsified cast that reinterprets int as a raw pointer. */
+  def castIntToRawPtr(int: Int): RawPtr = intrinsic
+
+  /** Intrinsified cast that reinterprets long as a raw pointer. */
+  def castLongToRawPtr(int: Long): RawPtr = intrinsic
+
+  /** Resolve c-friendly forwarder generated for given CFuncPtr. */
+  def resolveCFuncPtr(cfuncptr: CFuncPtr): RawPtr = intrinsic
 }

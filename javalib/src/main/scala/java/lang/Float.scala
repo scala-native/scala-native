@@ -1,6 +1,10 @@
 package java.lang
 
-import scalanative.native, native._
+import scalanative.unsafe._
+import scalanative.libc._
+import scalanative.runtime.Intrinsics
+
+import scalanative.runtime.ieee754tostring.ryu.{RyuRoundingMode, RyuFloat}
 
 final class Float(val _value: scala.Float)
     extends Number
@@ -95,7 +99,7 @@ final class Float(val _value: scala.Float)
   protected def toDouble: scala.Double = _value.toDouble
 
   protected def unary_+ : scala.Float = _value
-  protected def unary_- : scala.Float = - _value
+  protected def unary_- : scala.Float = -_value
 
   protected def +(x: String): String = _value + x
 
@@ -207,13 +211,13 @@ object Float {
     else floatToRawIntBits(value)
 
   @inline def floatToRawIntBits(value: scala.Float): scala.Int =
-    value.cast[scala.Int]
+    Intrinsics.castFloatToInt(value)
 
   @inline def hashCode(value: scala.Float): scala.Int =
     floatToIntBits(value)
 
   @inline def intBitsToFloat(value: scala.Int): scala.Float =
-    value.cast[scala.Float]
+    Intrinsics.castIntToFloat(value)
 
   @inline def isFinite(f: scala.Float): scala.Boolean =
     !isInfinite(f)
@@ -230,16 +234,17 @@ object Float {
   @inline def min(a: scala.Float, b: scala.Float): scala.Float =
     Math.min(a, b)
 
-  def parseFloat(s: String): scala.Float = {
-    val cstr = toCString(s)
-    val end  = stackalloc[CString]
+  def parseFloat(s: String): scala.Float =
+    Zone { implicit z =>
+      val cstr = toCString(s)
+      val end  = stackalloc[CString]
 
-    errno.errno = 0
-    val res = stdlib.strtof(cstr, end)
+      errno.errno = 0
+      val res = stdlib.strtof(cstr, end)
 
-    if (errno.errno == 0) res
-    else throw new NumberFormatException(s)
-  }
+      if (errno.errno == 0 && cstr != !end && string.strlen(!end) == 0) res
+      else throw new NumberFormatException(s)
+    }
 
   @inline def sum(a: scala.Float, b: scala.Float): scala.Float =
     a + b
@@ -317,17 +322,7 @@ object Float {
     }
 
   def toString(f: scala.Float): String = {
-    if (isNaN(f)) {
-      "NaN"
-    } else if (f == POSITIVE_INFINITY) {
-      "Infinity"
-    } else if (f == NEGATIVE_INFINITY) {
-      "-Infinity"
-    } else {
-      val cstr = stackalloc[CChar](32)
-      stdio.snprintf(cstr, 32, c"%f", f.toDouble)
-      fromCString(cstr)
-    }
+    RyuFloat.floatToString(f, RyuRoundingMode.Conservative)
   }
 
   @inline def valueOf(s: String): Float =

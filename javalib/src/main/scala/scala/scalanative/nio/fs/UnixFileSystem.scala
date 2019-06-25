@@ -14,14 +14,18 @@ import java.nio.file.spi.FileSystemProvider
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.util.{LinkedList, Set}
 
-import scala.scalanative.native.{
+import scala.scalanative.unsafe.{
   CUnsignedLong,
   Ptr,
   sizeof,
-  statvfs,
-  toCString
+  toCString,
+  Zone,
+  alloc
 }
-import scala.scalanative.runtime.GC
+
+import scala.scalanative.posix.sys.statvfs
+
+import scalanative.annotation.stub
 
 class UnixFileSystem(override val provider: FileSystemProvider,
                      val root: String,
@@ -32,8 +36,8 @@ class UnixFileSystem(override val provider: FileSystemProvider,
   override def close(): Unit =
     closed = true
 
-  override def getFileStores(): Iterable[FileStore] =
-    ???
+  @stub
+  override def getFileStores(): Iterable[FileStore] = ???
 
   override def getPath(first: String, more: Array[String]): Path =
     new UnixPath(this, (first +: more).mkString("/"))
@@ -53,13 +57,13 @@ class UnixFileSystem(override val provider: FileSystemProvider,
   override def isOpen(): Boolean =
     closed == false
 
-  override def isReadOnly(): Boolean = {
-    val stat =
-      GC.malloc_atomic(sizeof[statvfs.statvfs]).cast[Ptr[statvfs.statvfs]]
-    val err = statvfs.statvfs(toCString(root), stat)
-    if (err != 0) throw new IOException()
-    else {
-      val flags = !(stat._10)
+  override def isReadOnly(): Boolean = Zone { implicit z =>
+    val stat = alloc[statvfs.statvfs]
+    val err  = statvfs.statvfs(toCString(root), stat)
+    if (err != 0) {
+      throw new IOException()
+    } else {
+      val flags = stat._10
       val mask  = statvfs.ST_RDONLY
       (flags & mask) == mask
     }

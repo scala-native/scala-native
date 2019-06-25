@@ -8,4 +8,6 @@ Libraries
 
   javalib
   libc
+  posixlib
+  communitylib
 

@@ -1,6 +1,7 @@
 package java.lang
 
-import scalanative.runtime.{select, divUInt, remUInt, intToULong, Intrinsics}
+import scalanative.runtime.Intrinsics.{divUInt, remUInt, intToULong}
+import scalanative.runtime.LLVMIntrinsics
 
 final class Integer(val _value: scala.Int)
     extends Number
@@ -72,9 +73,9 @@ final class Integer(val _value: scala.Int)
   protected def toFloat: scala.Float   = _value.toFloat
   protected def toDouble: scala.Double = _value.toDouble
 
-  protected def unary_~ : scala.Int = ~ _value
+  protected def unary_~ : scala.Int = ~_value
   protected def unary_+ : scala.Int = _value
-  protected def unary_- : scala.Int = - _value
+  protected def unary_- : scala.Int = -_value
 
   protected def +(x: String): String = _value + x
 
@@ -176,18 +177,26 @@ final class Integer(val _value: scala.Int)
   protected def %(x: scala.Double): scala.Double = _value % x
 }
 
+private[lang] object IntegerDecimalScale {
+  private[lang] val decimalScale: Array[scala.Int] = Array(1000000000,
+    100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
+}
+
+private[lang] object IntegerCache {
+  private[lang] val cache = new Array[java.lang.Integer](256)
+}
+
 object Integer {
+  import IntegerDecimalScale.decimalScale
+
   final val TYPE      = classOf[scala.Int]
   final val MIN_VALUE = -2147483648
   final val MAX_VALUE = 2147483647
   final val SIZE      = 32
   final val BYTES     = 4
 
-  private final val decimalScale: Array[scala.Int] = Array(1000000000,
-    100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
-
   @inline def bitCount(i: scala.Int): scala.Int =
-    Intrinsics.`llvm.ctpop.i32`(i)
+    LLVMIntrinsics.`llvm.ctpop.i32`(i)
 
   @inline def byteValue(i: scala.Int): scala.Byte =
     i.toByte
@@ -278,10 +287,10 @@ object Integer {
     Math.min(a, b)
 
   @inline def numberOfLeadingZeros(i: scala.Int): scala.Int =
-    Intrinsics.`llvm.ctlz.i32`(i, iszeroundef = false)
+    LLVMIntrinsics.`llvm.ctlz.i32`(i, iszeroundef = false)
 
   @inline def numberOfTrailingZeros(i: scala.Int): scala.Int =
-    Intrinsics.`llvm.cttz.i32`(i, iszeroundef = false)
+    LLVMIntrinsics.`llvm.cttz.i32`(i, iszeroundef = false)
 
   @inline def parseInt(s: String): scala.Int =
     parseInt(s, 10)
@@ -340,10 +349,10 @@ object Integer {
     remUInt(dividend, divisor)
 
   @inline def reverse(i: scala.Int): scala.Int =
-    Intrinsics.`llvm.bitreverse.i32`(i)
+    LLVMIntrinsics.`llvm.bitreverse.i32`(i)
 
   @inline def reverseBytes(i: scala.Int): scala.Int =
-    Intrinsics.`llvm.bswap.i32`(i)
+    LLVMIntrinsics.`llvm.bswap.i32`(i)
 
   @inline def rotateLeft(i: scala.Int, distance: scala.Int): scala.Int =
     (i << distance) | (i >>> -distance)
@@ -564,8 +573,23 @@ object Integer {
   @inline def toUnsignedLong(x: scala.Int): scala.Long =
     intToULong(x)
 
-  @inline def valueOf(i: scala.Int): Integer =
-    new Integer(i)
+  import IntegerCache.cache
+
+  @inline def valueOf(intValue: scala.Int): Integer = {
+    if (intValue.toByte.toInt != intValue) {
+      new Integer(intValue)
+    } else {
+      val idx    = intValue + 128
+      val cached = cache(idx)
+      if (cached != null) {
+        cached
+      } else {
+        val newint = new Integer(intValue)
+        cache(idx) = newint
+        newint
+      }
+    }
+  }
 
   @inline def valueOf(s: String): Integer =
     valueOf(parseInt(s))
