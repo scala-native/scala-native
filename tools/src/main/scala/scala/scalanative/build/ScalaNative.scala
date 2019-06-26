@@ -11,7 +11,7 @@ import scalanative.codegen.CodeGen
 import scalanative.interflow.Interflow
 import scalanative.checker.Check
 
-/** Internal utilities to instrument Scala Native linker, otimizer and codegen. */
+/** Internal utilities to instrument Scala Native linker, optimizer and codegen. */
 private[scalanative] object ScalaNative {
 
   /** Compute all globals that must be reachable
