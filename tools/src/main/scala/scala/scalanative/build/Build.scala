@@ -21,12 +21,13 @@ object Build {
    *  val workdir: Path        = ...
    *  val main: String         = ...
    *
-   *  val clang    = Discover.clang()
-   *  val clangpp  = Discover.clangpp()
-   *  val linkopts = Discover.linkingOptions()
-   *  val compopts = Discover.compileOptions()
-   *  val triple   = Discover.targetTriple(clang, workdir)
-   *  val outpath  = workdir.resolve("out")
+   *  val clang     = Discover.clang()
+   *  val clangpp   = Discover.clangpp()
+   *  val linkopts  = Discover.linkingOptions()
+   *  val compopts  = Discover.compileOptions()
+   *  val triple    = Discover.targetTriple(clang, workdir)
+   *  val nativelib = Discover.nativelib(classpath, Discover.nativelibId).get
+   *  val outpath   = workdir.resolve("out")
    *
    *  val config =
    *    Config.empty
@@ -37,7 +38,7 @@ object Build {
    *      .withLinkingOptions(linkopts)
    *      .withCompileOptions(compopts)
    *      .withTargetTriple(triple)
-   *      .withNativelib(nativelib)
+   *      .withNativelibs(Seq(nativelib))
    *      .withMainClass(main)
    *      .withClassPath(classpath)
    *      .withLinkStubs(true)
@@ -63,7 +64,7 @@ object Build {
     val generated = IO.getAll(workdir, "glob:**.ll")
 
     // deprecation compatibility
-    val nativeLibs = if (config.nativelib.toString().isEmpty()) {
+    val nativelibs = if (config.nativelib.toString().isEmpty()) {
       config.nativelibs
     } else {
       config.logger.warn(
@@ -71,14 +72,16 @@ object Build {
       Seq(NativeLib(Discover.nativelibId.artifact, config.nativelib))
     }
 
-    val unpackedLib = LLVM.unpackNativelib(nativeLibs(0), workdir)
+    val unpackedLibs = nativelibs.map(LLVM.unpackNativelib(_, workdir))
+
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
         config.withCompileOptions("-O2" +: config.compileOptions)
-      LLVM.compileNativelib(nativelibConfig, linked, unpackedLib)
+      // head needs to be the nativelib which is required
+      LLVM.compileNativelib(nativelibConfig, linked, unpackedLibs.head)
       LLVM.compile(config, generated)
     }
 
-    LLVM.link(config, linked, objectFiles, unpackedLib, outpath)
+    LLVM.link(config, linked, objectFiles, unpackedLibs, outpath)
   }
 }
