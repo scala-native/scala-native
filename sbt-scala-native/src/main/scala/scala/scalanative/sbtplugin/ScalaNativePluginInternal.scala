@@ -110,7 +110,8 @@ object ScalaNativePluginInternal {
 
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
-      val libIds     = createLibIds(nativeLibraryDependencies.value)
+      val libIds = createLibIds(nativeLibraryDependencies.value)
+      // nativelib needs to be first for compiling gc and optional
       val nativelibs = findNativeLibs(Discover.nativelibId +: libIds, classpath)
 
       val maincls = mainClass.toString + "$"

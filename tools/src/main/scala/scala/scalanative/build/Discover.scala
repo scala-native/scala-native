@@ -15,7 +15,7 @@ object Discover {
   /** Library Id for lookup */
   case class LibId(org: String, artifact: String)
 
-  /** Container to hold name and Path to jar */
+  /** Container to hold the name and Path to jar */
   case class NativeLib(name: String, path: Path)
 
   /** Native lib org and artifact */

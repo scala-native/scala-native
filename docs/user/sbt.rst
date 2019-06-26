@@ -168,6 +168,42 @@ package resolution system.
 .. _sonatype: https://github.com/xerial/sbt-sonatype
 .. _bintray: https://github.com/sbt/sbt-bintray
 
+Using 3rd Party libraries with Native Code
+------------------------------------------
+
+Third party libraries that are targeted only for the Scala Native platform
+can have C and/or C++ components included. In order to be able to use these
+libraries, there are a couple of additions you will need to add to your `sbt`
+build.
+
+Normally in `sbt` you can add a dependency as follows::
+
+    libraryDependencies ++= Seq(
+        "com.lihaoyi" %%% "fastparse" % "1.0.0"
+    )
+
+The Scala Native plugin allows you to add special classpath dependencies
+for libraries that contain native code. Use the following for these libraries::
+
+    nativeLibraryDependencies ++= Seq(
+        "org.ekrich" %%% "stensorflow" % "0.1.0"
+    )
+
+    // They are also normal Scala dependencies so append them
+    libraryDependencies ++ nativeLibraryDependencies.value
+
+The Scala Native will unpack the library and compile and link any native code
+along with the Scala Native runtime and your application code. In order to
+enable linking you must also provide a setting to link to the native library.
+Provide linking options for each library included in the
+``nativeLibraryDependencies`` setting above as follows::
+
+    nativeLinkingOptions ++= Seq(
+        "-ltensorflow"
+    )
+
+
+
 Cross compilation
 -----------------
 
