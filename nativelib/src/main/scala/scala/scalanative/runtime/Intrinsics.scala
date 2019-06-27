@@ -6,7 +6,7 @@ import scalanative.unsafe.CFuncPtr
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: Long): RawPtr = intrinsic // TODO(shadaj): take a word
+  def stackalloc(size: RawWord): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
