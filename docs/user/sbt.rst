@@ -182,8 +182,10 @@ Normally in `sbt` you can add a dependency as follows::
         "com.lihaoyi" %%% "fastparse" % "1.0.0"
     )
 
-The Scala Native plugin allows you to add special classpath dependencies
-for libraries that contain native code. Use the following for these libraries::
+The Scala Native plugin allows you to add classpath dependencies
+for libraries that contain native code. This makes sure that only
+dependencies that use native code are expanded in order to compile
+the native code. Use the following for these libraries::
 
     nativeLibraryDependencies ++= Seq(
         "org.ekrich" %%% "stensorflow" % "0.1.0"
@@ -192,17 +194,8 @@ for libraries that contain native code. Use the following for these libraries::
     // They are also normal Scala dependencies so append them
     libraryDependencies ++ nativeLibraryDependencies.value
 
-The Scala Native will unpack the library and compile and link any native code
-along with the Scala Native runtime and your application code. In order to
-enable linking you must also provide a setting to link to the native library.
-Provide linking options for each library included in the
-``nativeLibraryDependencies`` setting above as follows::
-
-    nativeLinkingOptions ++= Seq(
-        "-ltensorflow"
-    )
-
-
+Scala Native will unpack the library, compile, and link any native code
+along with the Scala Native runtime and your application code.
 
 Cross compilation
 -----------------
