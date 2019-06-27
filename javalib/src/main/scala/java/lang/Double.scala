@@ -248,9 +248,11 @@ object Double {
       errno.errno = 0
       val res = stdlib.strtod(cstr, end)
 
-      if (errno.errno == 0 && cstr != !end && string.strlen(!end).toInt == 0)
+      if (errno.errno == 0 && cstr != !end && string.strlen(!end).toInt == 0) {
         res
-      else throw new NumberFormatException(s)
+      } else {
+        throw new NumberFormatException(s)
+      }
     }
 
   @inline def sum(a: scala.Double, b: scala.Double): scala.Double =

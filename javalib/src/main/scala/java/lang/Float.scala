@@ -242,9 +242,11 @@ object Float {
       errno.errno = 0
       val res = stdlib.strtof(cstr, end)
 
-      if (errno.errno == 0 && cstr != !end && string.strlen(!end).toInt == 0)
+      if (errno.errno == 0 && cstr != !end && string.strlen(!end).toInt == 0) {
         res
-      else throw new NumberFormatException(s)
+      } else {
+        throw new NumberFormatException(s)
+      }
     }
 
   @inline def sum(a: scala.Float, b: scala.Float): scala.Float =

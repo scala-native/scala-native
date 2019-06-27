@@ -1214,15 +1214,15 @@ trait NirGenExpr { self: NirGenPhase =>
       val Apply(_, Seq(leftp, rightp)) = app
       
       val bin = code match {
-        case AND_RAW_WORDS => Bin.And
-        case OR_RAW_WORDS => Bin.Or
-        case XOR_RAW_WORDS => Bin.Xor
-        case ADD_RAW_WORDS => Bin.Iadd
-        case SUB_RAW_WORDS => Bin.Isub
-        case MULT_RAW_WORDS => Bin.Imul
-        case DIV_RAW_WORDS => Bin.Sdiv
+        case AND_RAW_WORDS          => Bin.And
+        case OR_RAW_WORDS           => Bin.Or
+        case XOR_RAW_WORDS          => Bin.Xor
+        case ADD_RAW_WORDS          => Bin.Iadd
+        case SUB_RAW_WORDS          => Bin.Isub
+        case MULT_RAW_WORDS         => Bin.Imul
+        case DIV_RAW_WORDS          => Bin.Sdiv
         case DIV_RAW_WORDS_UNSIGNED => Bin.Udiv
-        case MOD_RAW_WORDS => Bin.Srem
+        case MOD_RAW_WORDS          => Bin.Srem
         case _ =>
           abort(
             s"Unknown word operation #$code : " + app +
