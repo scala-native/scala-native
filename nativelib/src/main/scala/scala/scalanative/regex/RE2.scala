@@ -19,7 +19,6 @@
 package scala.scalanative
 package regex
 
-import java.io.UnsupportedEncodingException
 import java.util.ArrayList
 import java.util.Arrays
 import java.util.List
@@ -775,12 +774,8 @@ object RE2 {
     val prefixBuilder = new java.lang.StringBuilder()
     re2.prefixComplete = prog.prefix(prefixBuilder)
     re2.prefix = prefixBuilder.toString()
-    try {
-      re2.prefixUTF8 = re2.prefix.getBytes("UTF-8")
-    } catch {
-      case e: UnsupportedEncodingException =>
-        throw new IllegalStateException("can't happen")
-    }
+    re2.prefixUTF8 = re2.prefix.getBytes("UTF-8")
+
     if (!re2.prefix.isEmpty()) {
       re2.prefixRune = re2.prefix.codePointAt(0)
     }
