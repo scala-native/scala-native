@@ -201,6 +201,37 @@ object DoubleSuite extends tests.Suite {
     assertThrows[NumberFormatException](Double.parseDouble("0.potato"))
   }
 
+  test("parseDouble - trailing characters, Issue #1559") {
+    // Normally floating point comparisons would be within a specified epsilon
+    // not exact equality.  In this test block the exact equality is
+    // intended & proper.
+
+    assert(Double.parseDouble("8   ") == 8.0, s"'8    ' failed")
+    assert(Double.parseDouble("+8") == 8.0, s"'+8' failed")
+    assert(Double.parseDouble("+8   ") == 8.0, s"'+8    ' failed")
+
+    assert(Double.parseDouble("+99.93    ") == 99.93, s"'+99.93    ' failed")
+
+    assert(Double.parseDouble("2.0E+2D") == 200.0, s"'2.0E+2D' failed")
+
+    assert(Double.parseDouble("2.0d") == 2.0, s"'2.0D' failed")
+
+    assert(Double.parseDouble("-3.14F") == -3.14, s"'-3.14F' failed")
+
+    assert(Double.parseDouble("-3.14f") == -3.14, s"'-3.14f' failed")
+
+    // Yes, JVM accepts trailing blanks for Double/Float (but not Integer)
+    assert(Double.parseDouble("2.9D    ") == 2.9, s"'2.9D    ' failed")
+
+    assertThrows[NumberFormatException](Double.parseDouble("2.9 D"))
+
+    assertThrows[NumberFormatException](Double.parseDouble("2.9D0"))
+
+    assertThrows[NumberFormatException](Double.parseDouble("2.8D 0  "))
+
+    assertThrows[NumberFormatException](Double.parseDouble("2.8D D"))
+  }
+
   // scala.Double passes -0.0d without change. j.l.Double gets forced to +0.0.
   private def assertD2sEquals(expected: String, f: scala.Double): Unit = {
     val result = f.toString

@@ -248,8 +248,35 @@ object Double {
       errno.errno = 0
       val res = stdlib.strtod(cstr, end)
 
-      if (errno.errno == 0 && cstr != !end && string.strlen(!end) == 0) res
-      else throw new NumberFormatException(s)
+      val parsedOk =
+        if ((errno.errno != 0) || (cstr == !end)) {
+          false
+        } else if (!end(0) == '\0') {
+          true
+        } else {
+          // This branch is expected to be executed far less frequently.
+          // Spend some CPU & memory in order to work with Scala Strings.
+          // Easier to get right.
+
+          val trailing = fromCString(!end)
+
+          trailing.head.toUpper match {
+            case t
+                if ((t == 'D') || (t == 'F')
+                  || Character.isWhitespace(t)) =>
+              trailing.tail.filterNot(Character.isWhitespace(_)).length == 0
+
+            case _ => false
+          }
+        }
+
+      if (!parsedOk) {
+        // The need to use \042 for double quote seems to be a Scala 2.11 bug.
+        // Uglier workarounds exist.
+        throw new NumberFormatException(s"For input string \042${s}\042")
+      }
+
+      res
     }
 
   @inline def sum(a: scala.Double, b: scala.Double): scala.Double =

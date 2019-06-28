@@ -196,6 +196,37 @@ object FloatSuite extends tests.Suite {
     assertThrows[NumberFormatException](Float.parseFloat("0.potato"))
   }
 
+  test("parseFloat - trailing characters, Issue #1559") {
+    // Normally floating point comparisons would be within a specified epsilon
+    // not exact equality.  In this test block the exact equality is
+    // intended & proper.
+
+    assert(Float.parseFloat("8   ") == 8.0d, s"'8    ' failed")
+    assert(Float.parseFloat("+8") == 8.0f, s"'+8' failed")
+    assert(Float.parseFloat("+8   ") == 8.0f, s"'+8    ' failed")
+
+    assert(Float.parseFloat("+99.93    ") == 99.93f, s"'+99.93    ' failed")
+
+    assert(Float.parseFloat("2.0E+2D") == 200.0f, s"'2.0E+2D' failed")
+
+    assert(Float.parseFloat("2.0d") == 2.0f, s"'2.0D' failed")
+
+    assert(Float.parseFloat("-3.14F") == -3.14f, s"'-3.14F' failed")
+
+    assert(Float.parseFloat("-3.14f") == -3.14f, s"'-3.14f' failed")
+
+    // Yes, JVM accepts trailing blanks for Float/Float (but not Integer)
+    assert(Float.parseFloat("2.9F    ") == 2.9f, s"'2.9F    ' failed")
+
+    assertThrows[NumberFormatException](Float.parseFloat("2.9 F"))
+
+    assertThrows[NumberFormatException](Float.parseFloat("2.9F0"))
+
+    assertThrows[NumberFormatException](Float.parseFloat("2.8F 0  "))
+
+    assertThrows[NumberFormatException](Float.parseFloat("2.8F F"))
+  }
+
   // scala.Float passes -0.0F without change. j.l.Double forced to +0.0.
   private def assertF2sEquals(expected: String, f: scala.Float): Unit = {
     val result = f.toString

@@ -242,8 +242,33 @@ object Float {
       errno.errno = 0
       val res = stdlib.strtof(cstr, end)
 
-      if (errno.errno == 0 && cstr != !end && string.strlen(!end) == 0) res
-      else throw new NumberFormatException(s)
+      val parsedOk =
+        if ((errno.errno != 0) || (cstr == !end)) {
+          false
+        } else if (!end(0) == '\0') {
+          true
+        } else {
+          // This branch is expected to be executed far less frequently.
+          // Spend some CPU & memory in order to work with Scala Strings.
+          // Easier to get right.
+
+          val trailing = fromCString(!end)
+
+          trailing.head.toUpper match {
+            case t
+                if ((t == 'D') || (t == 'F')
+                  || Character.isWhitespace(t)) =>
+              trailing.tail.filterNot(Character.isWhitespace(_)).length == 0
+
+            case _ => false
+          }
+        }
+
+      if (!parsedOk) {
+        throw new NumberFormatException(s)
+      }
+
+      res
     }
 
   @inline def sum(a: scala.Float, b: scala.Float): scala.Float =
