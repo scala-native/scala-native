@@ -95,6 +95,20 @@ object ScalaNativePluginInternal {
         throw new MessageOnlyException("No main class detected.")
       }
 
+      // val nativeLocalCode = if (nativeCodeInclude.value) {
+      //   // can be nativeWorkdir / name.value
+      //   val workdir = crossTarget.value / "native" / projName
+      //   if (!workdir.exists) {
+      //     IO.createDirectory(workdir)
+      //   }
+      //   //IO.getAll(workdir, "glob:**.o").foreach(Files.delete) // not needed
+      //   val classesDir = crossTarget.value / "classes"
+      //   IO.copyDirectory(classesDir, workdir)
+      //   Some(NativeLib(projName, workdir.toPath()))
+      // } else {
+      //   None
+      // }
+
       def createLibIds(nativeDeps: Seq[ModuleID]): Seq[LibId] = {
         nativeDeps.map(dep => Discover.LibId(dep.organization, dep.name))
       }
@@ -113,6 +127,9 @@ object ScalaNativePluginInternal {
       val libIds = createLibIds(nativeLibraryDependencies.value)
       // nativelib needs to be first for compiling gc and optional
       val nativelibs = findNativeLibs(Discover.nativelibId +: libIds, classpath)
+      // for project name with native C code, used if nativeCodeInclude is true
+      val projName = name.value
+      val nativeCodeDir = crossTarget.value / "classes" // store in config
 
       val maincls = mainClass.toString + "$"
       val cwd     = nativeWorkdir.value.toPath
