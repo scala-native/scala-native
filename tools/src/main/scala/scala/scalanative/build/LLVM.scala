@@ -1,7 +1,7 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import java.util.Arrays
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -41,6 +41,24 @@ private[scalanative] object LLVM {
     }
 
     lib
+  }
+
+  def copyNativeCode(config: Config, workdir: Path): Option[Path] = {
+    if (config.nativeCodeInclude) {
+      val log    = config.logger
+      val outdir = workdir.resolve(config.nativeProject)
+      log.debug(outdir.toString())
+      if (!Files.exists(outdir)) {
+        Files.createDirectory(outdir)
+      }
+      // need the jarhash added
+      val classesDir = workdir.resolve("../classes") // hacky
+      log.debug(classesDir.toString())
+      Files.copy(classesDir, outdir, StandardCopyOption.REPLACE_EXISTING)
+      Some(outdir)
+    } else {
+      None
+    }
   }
 
   /**

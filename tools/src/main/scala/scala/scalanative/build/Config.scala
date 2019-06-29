@@ -60,6 +60,12 @@ sealed trait Config {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean
 
+  /** Project build contains native code. */
+  def nativeCodeInclude: Boolean
+
+  /** Project name used for native code build directory. */
+  def nativeProject: String
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): Config
 
@@ -111,6 +117,12 @@ sealed trait Config {
 
   /** Create a new config with given dump value. */
   def withDump(value: Boolean): Config
+
+  /** Create a new config with the given code include value. */
+  def withNativeCodeInclude(value: Boolean): Config
+
+  /** Create a new config with a project name. */
+  def withNativeProject(value: String): Config
 }
 
 object Config {
@@ -134,7 +146,9 @@ object Config {
       logger = Logger.default,
       LTO = "none",
       check = false,
-      dump = false
+      dump = false,
+      nativeCodeInclude = false,
+      nativeProject = "default"
     )
 
   private final case class Impl(nativelib: Path,
@@ -153,7 +167,9 @@ object Config {
                                 logger: Logger,
                                 LTO: String,
                                 check: Boolean,
-                                dump: Boolean)
+                                dump: Boolean,
+                                nativeCodeInclude: Boolean,
+                                nativeProject: String)
       extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
@@ -205,5 +221,11 @@ object Config {
 
     def withDump(value: Boolean): Config =
       copy(dump = value)
+
+    def withNativeCodeInclude(value: Boolean): Config =
+      copy(nativeCodeInclude = value)
+
+    def withNativeProject(value: String): Config =
+      copy(nativeProject = value)
   }
 }
