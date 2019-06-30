@@ -1,6 +1,7 @@
 package java.nio.file.attribute
 
 import java.nio.file.FileSystems
+import scala.util.Random
 
 object UserPrincipalLookupServiceSuite extends tests.Suite {
   val isTravis = System.getenv("TRAVIS") == "true"
@@ -27,5 +28,18 @@ object UserPrincipalLookupServiceSuite extends tests.Suite {
       assertThrows[UserPrincipalNotFoundException](
         lookupService.lookupPrincipalByGroupName("gobbledygook"))
     }
+  }
+
+  test("lookupPrincipalByName succeeds for numeric name") {
+    val expected = Random.nextInt.toString
+
+    assert(lookupService.lookupPrincipalByName(expected).getName == expected)
+  }
+
+  test("lookupPrincipalByGroupName succeeds for numeric name") {
+    val expected = Random.nextInt.toString
+
+    assert(
+      lookupService.lookupPrincipalByGroupName(expected).getName == expected)
   }
 }

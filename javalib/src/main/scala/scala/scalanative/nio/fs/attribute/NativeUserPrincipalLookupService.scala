@@ -27,7 +27,12 @@ object NativeUserPrincipalLookupService extends UserPrincipalLookupService {
   override def lookupPrincipalByGroupName(group: String): NativeGroupPrincipal =
     Zone { implicit z =>
       val gid = getGroup(toCString(group)).fold {
-        throw new UserPrincipalNotFoundException(group)
+        try {
+          group.toInt.toUInt
+        } catch {
+          case _: NumberFormatException =>
+            throw new UserPrincipalNotFoundException(group)
+        }
       }(_._2)
 
       NativeGroupPrincipal(gid)(Some(group))
@@ -84,7 +89,12 @@ object NativeUserPrincipalLookupService extends UserPrincipalLookupService {
   override def lookupPrincipalByName(name: String): NativeUserPrincipal = Zone {
     implicit z =>
       val uid = getPasswd(toCString(name)).fold {
-        throw new UserPrincipalNotFoundException(name)
+        try {
+          name.toInt.toUInt
+        } catch {
+          case _: NumberFormatException =>
+            throw new UserPrincipalNotFoundException(name)
+        }
       }(_._2)
 
       NativeUserPrincipal(uid)(Some(name))
