@@ -24,7 +24,8 @@ final class UWord(private[scalanative] val rawWord: RawWord) {
   @alwaysinline def toUByte: UByte   = toByte.toUByte
   @alwaysinline def toUShort: UShort = toShort.toUShort
   @alwaysinline def toUInt: UInt     = toInt.toUInt
-  @alwaysinline def toULong: ULong   = new ULong(castRawWordToLongUnsigned(rawWord))
+  @alwaysinline def toULong: ULong =
+    new ULong(castRawWordToLongUnsigned(rawWord))
 
   override def hashCode: Int = java.lang.Long.hashCode(toLong)
 
