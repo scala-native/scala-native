@@ -739,16 +739,16 @@ trait NirGenExpr { self: NirGenPhase =>
         genArrayOp(app, code)
       } else if (nirPrimitives.isRawPtrOp(code)) {
         genRawPtrOp(app, code)
-      } else if (nirPrimitives.isRawCastOp(code)) {
-        genRawCastOp(app, code)
+      } else if (nirPrimitives.isRawPtrCastOp(code)) {
+        genRawPtrCastOp(app, code)
       } else if (code == RESOLVE_CFUNCPTR) {
         genResolveCFuncPtr(app, code)
       } else if (nirPrimitives.isRawWordOp(code)) {
         genRawWordOp(app, code)
+      } else if (nirPrimitives.isRawWordCastOp(code)) {
+        genRawWordCastOp(app, args.head, code)
       } else if (isCoercion(code)) {
         genCoercion(app, receiver, code)
-      } else if (nirPrimitives.isRawWordCastOp(code)) {
-        genCoercion(app, args.head, code)
       } else if (code == SYNCHRONIZED) {
         genSynchronized(app)
       } else if (code == STACKALLOC) {
@@ -1210,6 +1210,16 @@ trait NirGenExpr { self: NirGenPhase =>
       buf.elem(Type.Byte, ptr, Seq(offset), unwind)
     }
 
+    def genRawPtrCastOp(app: Apply, code: Int): Val = {
+      val Apply(_, Seq(argp)) = app
+
+      val fromty = genType(argp.tpe)
+      val toty   = genType(app.tpe)
+      val value  = genExpr(argp)
+
+      genCastOp(fromty, toty, value)
+    }
+
     def genRawWordOp(app: Apply, code: Int): Val = {
       val Apply(_, Seq(leftp, rightp)) = app
       
@@ -1232,14 +1242,16 @@ trait NirGenExpr { self: NirGenPhase =>
       buf.bin(bin, Type.Word, genExpr(leftp), genExpr(rightp), unwind)
     }
 
-    def genRawCastOp(app: Apply, code: Int): Val = {
-      val Apply(_, Seq(argp)) = app
+    def genRawWordCastOp(app: Apply, receiver: Tree, code: Int): Val = {
+      val rec            = genExpr(receiver)
+      val (fromty, toty, convType) = code match {
+        case CAST_RAWWORD_TO_INT => (nir.Type.Word, nir.Type.Int, Conv.Trunc)
+        case CAST_RAWWORD_TO_LONG => (nir.Type.Word, nir.Type.Long, Conv.Bitcast)
+        case CAST_INT_TO_RAWWORD => (nir.Type.Int, nir.Type.Word, Conv.Sext) // TODO(shadaj): Zext for unsigned
+        case CAST_LONG_TO_RAWWORD => (nir.Type.Long, nir.Type.Word, Conv.Bitcast)
+      }
 
-      val fromty = genType(argp.tpe)
-      val toty   = genType(app.tpe)
-      val value  = genExpr(argp)
-
-      genCastOp(fromty, toty, value)
+      genCoercion(rec, fromty, toty)
     }
 
     def castConv(fromty: nir.Type, toty: nir.Type): Option[nir.Conv] =
@@ -1469,11 +1481,6 @@ trait NirGenExpr { self: NirGenPhase =>
         case D2L => (nir.Type.Double, nir.Type.Long)
         case D2F => (nir.Type.Double, nir.Type.Float)
         case D2D => (nir.Type.Double, nir.Type.Double)
-
-        case CAST_RAWWORD_TO_INT => (nir.Type.Word, nir.Type.Int)
-        case CAST_RAWWORD_TO_LONG => (nir.Type.Word, nir.Type.Long)
-        case CAST_INT_TO_RAWWORD => (nir.Type.Int, nir.Type.Word)
-        case CAST_LONG_TO_RAWWORD => (nir.Type.Long, nir.Type.Word)
       }
     }
 

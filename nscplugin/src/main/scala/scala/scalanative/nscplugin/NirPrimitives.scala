@@ -121,7 +121,7 @@ abstract class NirPrimitives {
   def isRawPtrStoreOp(code: Int): Boolean =
     code >= STORE_BOOL && code <= STORE_OBJECT
 
-  def isRawCastOp(code: Int): Boolean =
+  def isRawPtrCastOp(code: Int): Boolean =
     code >= CAST_RAW_PTR_TO_OBJECT && code <= CAST_LONG_TO_RAWPTR
 
   def isRawWordCastOp(code: Int): Boolean =
