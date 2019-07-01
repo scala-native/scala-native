@@ -73,8 +73,7 @@ object Build {
     }
 
     val unpackedLibs = nativelibs.map(LLVM.unpackNativelib(_, workdir))
-    val nativeDir    = LLVM.copyNativeCode(config, workdir)
-    val allDirs      = unpackedLibs ++ nativeDir
+    val allDirs      = unpackedLibs ++ config.nativeCodedir
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
         config.withCompileOptions("-O2" +: config.compileOptions)
