@@ -48,8 +48,7 @@ Scripted tests are used when you need to interact with the file system,
 networking, or the build system that cannot be done with a unit test. They
 are located in the `scripted-tests` directory.
 
-Run all the scripted tests or just one test using the following examples respectively.
-To run an individual test substitute the test to run for `native-code-include`:
+Run all the scripted tests or just one using the following examples respectively:
 
 .. code-block:: text
 
