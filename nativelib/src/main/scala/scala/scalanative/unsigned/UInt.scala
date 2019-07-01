@@ -6,7 +6,7 @@ import scalanative.runtime.Intrinsics.{
   remUInt,
   uintToFloat,
   uintToDouble,
-  castLongToRawWord
+  castIntToRawWordUnsigned
 }
 import java.lang.{Integer => JInteger}
 
@@ -27,7 +27,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
   @inline final def toUShort: UShort = new UShort(toShort)
   @inline final def toUInt: UInt     = this
   @inline final def toULong: ULong   = new ULong(toLong)
-  @inline final def toUWord: UWord   = new UWord(castLongToRawWord(toLong))
+  @inline final def toUWord: UWord   = new UWord(castIntToRawWordUnsigned(underlying))
 
   /**
    * Returns the bitwise negation of this value.

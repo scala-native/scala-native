@@ -210,8 +210,12 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getMember(IntrinsicsModule, TermName("castRawWordToInt"))
     lazy val CastRawWordToLong =
       getMember(IntrinsicsModule, TermName("castRawWordToLong"))
+    lazy val CastRawWordToLongUnsigned =
+      getMember(IntrinsicsModule, TermName("castRawWordToLongUnsigned"))
     lazy val CastIntToRawWord =
       getMember(IntrinsicsModule, TermName("castIntToRawWord"))
+    lazy val CastIntToRawWordUnsigned =
+      getMember(IntrinsicsModule, TermName("castIntToRawWordUnsigned"))
     lazy val CastLongToRawWord =
       getMember(IntrinsicsModule, TermName("castLongToRawWord"))
 

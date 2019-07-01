@@ -1247,7 +1247,9 @@ trait NirGenExpr { self: NirGenPhase =>
       val (fromty, toty, convType) = code match {
         case CAST_RAWWORD_TO_INT => (nir.Type.Word, nir.Type.Int, Conv.Trunc)
         case CAST_RAWWORD_TO_LONG => (nir.Type.Word, nir.Type.Long, Conv.Bitcast)
-        case CAST_INT_TO_RAWWORD => (nir.Type.Int, nir.Type.Word, Conv.Sext) // TODO(shadaj): Zext for unsigned
+        case CAST_RAWWORD_TO_LONG_UNSIGNED => (nir.Type.Word, nir.Type.Long, Conv.Bitcast)
+        case CAST_INT_TO_RAWWORD => (nir.Type.Int, nir.Type.Word, Conv.Sext)
+        case CAST_INT_TO_RAWWORD_UNSIGNED => (nir.Type.Int, nir.Type.Word, Conv.Zext)
         case CAST_LONG_TO_RAWWORD => (nir.Type.Long, nir.Type.Word, Conv.Bitcast)
       }
 

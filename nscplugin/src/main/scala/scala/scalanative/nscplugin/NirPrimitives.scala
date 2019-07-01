@@ -65,8 +65,10 @@ object NirPrimitives {
   final val CAST_LONG_TO_RAWPTR    = 1 + CAST_INT_TO_RAWPTR
   final val CAST_RAWWORD_TO_INT    = 1 + CAST_LONG_TO_RAWPTR
   final val CAST_RAWWORD_TO_LONG   = 1 + CAST_RAWWORD_TO_INT
-  final val CAST_INT_TO_RAWWORD    = 1 + CAST_RAWWORD_TO_LONG
-  final val CAST_LONG_TO_RAWWORD   = 1 + CAST_INT_TO_RAWWORD
+  final val CAST_RAWWORD_TO_LONG_UNSIGNED   = 1 + CAST_RAWWORD_TO_LONG
+  final val CAST_INT_TO_RAWWORD    = 1 + CAST_RAWWORD_TO_LONG_UNSIGNED
+  final val CAST_INT_TO_RAWWORD_UNSIGNED    = 1 + CAST_INT_TO_RAWWORD
+  final val CAST_LONG_TO_RAWWORD   = 1 + CAST_INT_TO_RAWWORD_UNSIGNED
 
   final val RESOLVE_CFUNCPTR = 1 + CAST_LONG_TO_RAWWORD
 
@@ -187,7 +189,9 @@ abstract class NirPrimitives {
     addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
     addPrimitive(CastRawWordToInt, CAST_RAWWORD_TO_INT)
     addPrimitive(CastRawWordToLong, CAST_RAWWORD_TO_LONG)
+    addPrimitive(CastRawWordToLongUnsigned, CAST_RAWWORD_TO_LONG_UNSIGNED)
     addPrimitive(CastIntToRawWord, CAST_INT_TO_RAWWORD)
+    addPrimitive(CastIntToRawWordUnsigned, CAST_INT_TO_RAWWORD_UNSIGNED)
     addPrimitive(CastLongToRawWord, CAST_LONG_TO_RAWWORD)
 
     addPrimitive(ResolveCFuncPtrMethod, RESOLVE_CFUNCPTR)

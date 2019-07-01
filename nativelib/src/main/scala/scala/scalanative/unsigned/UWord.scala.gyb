@@ -14,17 +14,17 @@ import unsafe._
 import java.lang.{Long => JLong}
 
 final class UWord(private[scalanative] val rawWord: RawWord) {
-  @alwaysinline def toByte: Byte   = castRawWordToInt(rawWord).toByte
-  @alwaysinline def toChar: Char   = castRawWordToInt(rawWord).toChar
-  @alwaysinline def toShort: Short = castRawWordToInt(rawWord).toShort
-  @alwaysinline def toInt: Int     = castRawWordToInt(rawWord)
-  @alwaysinline def toLong: Long   = castRawWordToLong(rawWord)
-  @alwaysinline def toWord: unsafe.Word   = new unsafe.Word(rawWord)
+  @alwaysinline def toByte: Byte        = castRawWordToInt(rawWord).toByte
+  @alwaysinline def toChar: Char        = castRawWordToInt(rawWord).toChar
+  @alwaysinline def toShort: Short      = castRawWordToInt(rawWord).toShort
+  @alwaysinline def toInt: Int          = castRawWordToInt(rawWord)
+  @alwaysinline def toLong: Long        = castRawWordToLong(rawWord)
+  @alwaysinline def toWord: unsafe.Word = new unsafe.Word(rawWord)
 
   @alwaysinline def toUByte: UByte   = toByte.toUByte
   @alwaysinline def toUShort: UShort = toShort.toUShort
   @alwaysinline def toUInt: UInt     = toInt.toUInt
-  @alwaysinline def toULong: ULong   = toLong.toULong
+  @alwaysinline def toULong: ULong   = new ULong(castRawWordToLongUnsigned(rawWord))
 
   override def hashCode: Int = java.lang.Long.hashCode(toLong)
 

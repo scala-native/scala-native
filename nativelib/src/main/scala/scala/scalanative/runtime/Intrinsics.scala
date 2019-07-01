@@ -147,11 +147,17 @@ object Intrinsics {
   /** Intrinsified cast that reinterprets raw word as an int. */
   def castRawWordToInt(rawWord: RawWord): Int = intrinsic
 
-  /** Intrinsified cast that reinterprets raw word as a long. */
+  /** Intrinsified cast that reinterprets raw word as a signed long. */
   def castRawWordToLong(rawWord: RawWord): Long = intrinsic
 
-  /** Intrinsified cast that reinterprets int as a raw word. */
+  /** Intrinsified cast that reinterprets raw word as an unsigned long. */
+  def castRawWordToLongUnsigned(rawWord: RawWord): Long = intrinsic
+
+  /** Intrinsified cast that reinterprets int as a signed raw word. */
   def castIntToRawWord(int: Int): RawWord = intrinsic
+
+  /** Intrinsified cast that reinterprets int as an unsigned raw word. */
+  def castIntToRawWordUnsigned(int: Int): RawWord = intrinsic
 
   /** Intrinsified cast that reinterprets long as a raw word. */
   def castLongToRawWord(long: Long): RawWord = intrinsic

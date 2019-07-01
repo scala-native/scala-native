@@ -28,7 +28,7 @@ final class ULong private[scalanative] (
   @inline final def toUShort: UShort = new UShort(toShort)
   @inline final def toUInt: UInt     = new UInt(toInt)
   @inline final def toULong: ULong   = this
-  @inline final def toUWord: UWord   = new UWord(castLongToRawWord(toLong))
+  @inline final def toUWord: UWord   = new UWord(castLongToRawWord(underlying))
 
   /**
    * Returns the bitwise negation of this value.

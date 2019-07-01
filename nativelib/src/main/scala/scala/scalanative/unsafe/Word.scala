@@ -5,9 +5,11 @@ import scala.runtime.BoxesRunTime._
 import scala.reflect.ClassTag
 
 import scalanative.annotation.alwaysinline
+
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
 import scalanative.runtime.Boxes._
+
 import scalanative.unsigned._
 
 final class Word(private[scalanative] val rawWord: RawWord) {
@@ -23,8 +25,7 @@ final class Word(private[scalanative] val rawWord: RawWord) {
   @alwaysinline def toULong: ULong   = toLong.toULong
   @alwaysinline def toUWord: UWord   = new UWord(rawWord)
 
-  override def hashCode: Int =
-    java.lang.Long.hashCode(toLong)
+  override def hashCode: Int = java.lang.Long.hashCode(toLong)
 
   override def equals(other: Any): Boolean =
     (this eq other.asInstanceOf[AnyRef]) || (other match {
