@@ -63,8 +63,8 @@ sealed trait Config {
   /** Project build contains native code. */
   def nativeCodeInclude: Boolean
 
-  /** Project name used for native code build directory. */
-  def nativeProject: String
+  /** Project native code directory to build. */
+  def nativeCodedir: Option[Path]
 
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): Config
@@ -121,8 +121,8 @@ sealed trait Config {
   /** Create a new config with the given code include value. */
   def withNativeCodeInclude(value: Boolean): Config
 
-  /** Create a new config with a project name. */
-  def withNativeProject(value: String): Config
+  /** Create a new config with an optional native code directory. */
+  def withNativeCodedir(value: Option[Path]): Config
 }
 
 object Config {
@@ -148,7 +148,7 @@ object Config {
       check = false,
       dump = false,
       nativeCodeInclude = false,
-      nativeProject = "default"
+      nativeCodedir = None
     )
 
   private final case class Impl(nativelib: Path,
@@ -169,7 +169,7 @@ object Config {
                                 check: Boolean,
                                 dump: Boolean,
                                 nativeCodeInclude: Boolean,
-                                nativeProject: String)
+                                nativeCodedir: Option[Path])
       extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
@@ -225,7 +225,7 @@ object Config {
     def withNativeCodeInclude(value: Boolean): Config =
       copy(nativeCodeInclude = value)
 
-    def withNativeProject(value: String): Config =
-      copy(nativeProject = value)
+    def withNativeCodedir(value: Option[Path]): Config =
+      copy(nativeCodedir = value)
   }
 }
