@@ -13,6 +13,6 @@ object Main {
     !ptr = -34L
     val abs = llabs(ptr)
     assert(abs == 34L)
-    println(s"Abs val of -34 = $abs") 
+    println(s"Abs val of -34 = $abs")
   }
 }
