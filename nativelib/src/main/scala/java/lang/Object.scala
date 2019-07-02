@@ -53,7 +53,8 @@ class _Object {
 
   protected def __clone(): _Object = {
     val rawty = runtime.getRawType(this)
-    val size  = loadInt(elemRawPtr(rawty, sizeof[runtime.Type]))
+    val size = loadInt(
+      elemRawPtr(rawty, castIntToRawWord(sizeof[runtime.Type])))
     val clone = runtime.GC.alloc(rawty, size)
     val src   = castObjectToRawPtr(this)
     libc.memcpy(clone, src, size)

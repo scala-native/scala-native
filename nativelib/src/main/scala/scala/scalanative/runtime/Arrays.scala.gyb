@@ -16,7 +16,7 @@ sealed abstract class Array[T]
   /** Number of elements of the array. */
   @inline def length: Int = {
     val rawptr = castObjectToRawPtr(this)
-    val lenptr = elemRawPtr(rawptr, ${sizePtr})
+    val lenptr = elemRawPtr(rawptr, castIntToRawWord(${sizePtr}))
     loadInt(lenptr)
   }
 
@@ -152,7 +152,7 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
+      elemRawPtr(rawptr, castIntToRawWord(${sizeHeader} + ${sizeT} * i))
     }
 
   @inline def apply(i: Int): ${T} =
@@ -160,7 +160,7 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
+      val ith    = elemRawPtr(rawptr, castIntToRawWord(${sizeHeader} + ${sizeT} * i))
       % if T != 'BoxedUnit':
       load${T}(ith)
       % else:
@@ -173,7 +173,7 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
+      val ith    = elemRawPtr(rawptr, castIntToRawWord(${sizeHeader} + ${sizeT} * i))
       % if T != 'BoxedUnit':
       store${T}(ith, value)
       % else:
@@ -198,8 +198,8 @@ object ${T}Array {
     val arrty   = toRawType(classOf[${T}Array])
     val arrsize = ${sizeHeader} + ${sizeT} * length
     val arr     = ${alloc}(arrty, arrsize)
-    storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), ${sizeT}.toInt)
+    storeInt(elemRawPtr(arr, castIntToRawWord(8)), length)
+    storeInt(elemRawPtr(arr, castIntToRawWord(12)), ${sizeT}.toInt)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 

@@ -111,8 +111,8 @@ object Intrinsics {
   def storeObject(rawptr: RawPtr, value: Object): Unit = intrinsic
 
   /** Intrinsified computation of derived raw pointer. */
-  def elemRawPtr(rawptr: RawPtr, offset: Long): RawPtr =
-    intrinsic // TODO(shadaj): word offset
+  def elemRawPtr(rawptr: RawPtr, offset: RawWord): RawPtr =
+    intrinsic
 
   /** Intrinsified cast that reinterprets raw pointer as an object. */
   def castRawPtrToObject(rawptr: RawPtr): Object = intrinsic
