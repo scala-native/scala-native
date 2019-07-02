@@ -50,6 +50,8 @@ object Lower {
     private val outOfBoundsSlowPath    = mutable.Map.empty[Option[Local], Local]
     private val noSuchMethodSlowPath   = mutable.Map.empty[Option[Local], Local]
 
+    def wordVal(thirtyTwo: Int, sixtyFour: Long): Val = Val.Long(sixtyFour)
+
     private def unwind: Next =
       unwindHandler.get.fold[Next](Next.None) { handler =>
         val exc = Val.Local(fresh(), Rt.Object)
@@ -744,14 +746,14 @@ object Lower {
         val minus1 = ty match {
           case Type.Int  => Val.Int(-1)
           case Type.Long => Val.Long(-1L)
-          case Type.Word => Val.Long(-1L) // TODO(shadaj) Word vals
+          case Type.Word => wordVal(-1, -1L)
           case _         => util.unreachable
         }
         val minValue = ty match {
           case Type.Int  => Val.Int(java.lang.Integer.MIN_VALUE)
           case Type.Long => Val.Long(java.lang.Long.MIN_VALUE)
           case Type.Word =>
-            Val.Long(java.lang.Long.MIN_VALUE) // TODO(shadaj) Word vals
+            wordVal(java.lang.Integer.MIN_VALUE, java.lang.Long.MIN_VALUE)
           case _ => util.unreachable
         }
 
