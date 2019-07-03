@@ -60,11 +60,8 @@ sealed trait Config {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean
 
-  /** Project build contains native code. */
-  def nativeCodeInclude: Boolean
-
-  /** Project native code directory to build. */
-  def nativeCodedir: Option[Path]
+  /** Project contains native. Project name and source directory. */
+  def nativeCodeProject: Option[NativeLib]
 
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): Config
@@ -118,11 +115,8 @@ sealed trait Config {
   /** Create a new config with given dump value. */
   def withDump(value: Boolean): Config
 
-  /** Create a new config with the given code include value. */
-  def withNativeCodeInclude(value: Boolean): Config
-
-  /** Create a new config with an optional native code directory. */
-  def withNativeCodedir(value: Option[Path]): Config
+  /** Create a new config with an optional native code project. */
+  def withNativeCodeProject(value: Option[NativeLib]): Config
 }
 
 object Config {
@@ -147,8 +141,7 @@ object Config {
       LTO = "none",
       check = false,
       dump = false,
-      nativeCodeInclude = false,
-      nativeCodedir = None
+      nativeCodeProject = None
     )
 
   private final case class Impl(nativelib: Path,
@@ -168,8 +161,7 @@ object Config {
                                 LTO: String,
                                 check: Boolean,
                                 dump: Boolean,
-                                nativeCodeInclude: Boolean,
-                                nativeCodedir: Option[Path])
+                                nativeCodeProject: Option[NativeLib])
       extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
@@ -222,10 +214,7 @@ object Config {
     def withDump(value: Boolean): Config =
       copy(dump = value)
 
-    def withNativeCodeInclude(value: Boolean): Config =
-      copy(nativeCodeInclude = value)
-
-    def withNativeCodedir(value: Option[Path]): Config =
-      copy(nativeCodedir = value)
+    def withNativeCodeProject(value: Option[NativeLib]): Config =
+      copy(nativeCodeProject = value)
   }
 }

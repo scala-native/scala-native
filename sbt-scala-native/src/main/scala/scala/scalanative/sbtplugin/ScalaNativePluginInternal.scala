@@ -96,17 +96,11 @@ object ScalaNativePluginInternal {
         throw new MessageOnlyException("No main class detected.")
       }
 
-      val nativeCodedir = {
-        val projName = name.value
-        val workdir  = nativeWorkdir.value / projName
+      val nativeCodeProject = {
         if (nativeCodeInclude.value) {
+          val projName   = name.value
           val classesDir = crossTarget.value / "classes"
-          if (!workdir.exists) {
-            IO.createDirectory(workdir)
-          }
-          // copies each time
-          IO.copyDirectory(classesDir, workdir)
-          Some(workdir.toPath())
+          Some(NativeLib(projName, classesDir.toPath()))
         } else {
           None
         }
@@ -154,8 +148,7 @@ object ScalaNativePluginInternal {
         .withLTO(nativeLTO.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-        .withNativeCodedir(nativeCodedir)
-
+        .withNativeCodeProject(nativeCodeProject)
     },
     nativeLink := {
       val logger  = streams.value.log.toLogger

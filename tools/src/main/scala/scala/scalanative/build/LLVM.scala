@@ -43,6 +43,18 @@ private[scalanative] object LLVM {
     lib
   }
 
+  def copyNativeCode(config: Config, workdir: Path): Option[Path] =
+    config.nativeCodeProject match {
+      case Some(nativelib) => {
+        val dir = workdir.resolve(nativelib.name)
+        // blindly deletes and copies
+        IO.deleteRecursive(dir)
+        IO.copyDirectory(nativelib.path, dir)
+        Some(dir)
+      }
+      case None => None
+    }
+
   /**
    * Compile the native lib to `.o` files
    *

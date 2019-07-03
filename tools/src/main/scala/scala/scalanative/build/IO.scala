@@ -102,27 +102,48 @@ private[scalanative] object IO {
       val rootDirectories = zipFS.getRootDirectories().iterator
       while (rootDirectories.hasNext) {
         val root = rootDirectories.next()
-        Files.walkFileTree(
-          root,
-          new SimpleFileVisitor[Path]() {
-            override def visitFile(
-                file: Path,
-                attrs: BasicFileAttributes): FileVisitResult = {
-              val dest = Paths.get(target.toString, file.toString)
-              Files.copy(file, dest, StandardCopyOption.REPLACE_EXISTING)
-              FileVisitResult.CONTINUE
-            }
-
-            override def preVisitDirectory(
-                dir: Path,
-                attrs: BasicFileAttributes): FileVisitResult = {
-              val dest = Paths.get(target.toString, dir.toString)
-              Files.createDirectories(dest)
-              FileVisitResult.CONTINUE
-            }
-          }
-        )
+        copyRecursive(root, target)
       }
     } finally zipFS.close()
+  }
+
+  /** Copy source directory and contents to target directory. */
+  def copyDirectory(source: Path, target: Path): Unit = {
+    Files.createDirectories(target)
+    println(s"Create Target Dir: $target")
+    copyRecursive(source, target)
+  }
+
+  /** Copy recursively to existing target directory
+   *
+   * Note: We need source.relativize(file) for copying
+   * to and from UNIX FS to get a relative path. We can't
+   * use the following code because you can't resolve
+   * across filesystems like UNIX FS to ZIP FS:
+   * val dest = target.resolve(source.relativize(file))
+   */
+  private def copyRecursive(source: Path, target: Path): Path = {
+    Files.walkFileTree(
+      source,
+      new SimpleFileVisitor[Path]() {
+        override def visitFile(file: Path,
+                               attrs: BasicFileAttributes): FileVisitResult = {
+          val dest =
+            Paths.get(target.toString, source.relativize(file).toString())
+          Files.copy(file, dest, StandardCopyOption.REPLACE_EXISTING)
+          FileVisitResult.CONTINUE
+        }
+
+        override def preVisitDirectory(
+            dir: Path,
+            attrs: BasicFileAttributes): FileVisitResult = {
+          val dest =
+            Paths.get(target.toString, source.relativize(dir).toString())
+          Files.createDirectories(dest)
+          println(s"Create Dir: ${dir} To: $dest  Target: $target")
+          FileVisitResult.CONTINUE
+        }
+      }
+    )
   }
 }

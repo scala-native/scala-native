@@ -53,7 +53,6 @@ object Build {
    */
   def build(config: Config, outpath: Path): Path = config.logger.time("Total") {
     val workdir = config.workdir
-    config.logger.debug(s"Workdir: ${workdir}")
     val entries = ScalaNative.entries(config)
     val linked  = ScalaNative.link(config, entries)
     ScalaNative.logLinked(config, linked)
@@ -73,7 +72,7 @@ object Build {
     }
 
     val unpackedLibs = nativelibs.map(LLVM.unpackNativelib(_, workdir))
-    val allDirs      = unpackedLibs ++ config.nativeCodedir
+    val allDirs      = unpackedLibs ++ LLVM.copyNativeCode(config, workdir)
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
         config.withCompileOptions("-O2" +: config.compileOptions)
