@@ -43,6 +43,15 @@ private[scalanative] object LLVM {
     lib
   }
 
+  /**
+   * Copy project code from project `myproj` to `workdir/myproj`
+   * where is can be compiled and linked.
+   *
+   * @param config    The config that may contain `nativeCodeProject`.
+   * @param workdir   The working directory as described above.
+   * @return An Option with a Path to the `nativeCodeProject` work dir
+   *         or None if there is `NativeCodeProject is not configured.
+   */
   def copyNativeCode(config: Config, workdir: Path): Option[Path] =
     config.nativeCodeProject match {
       case Some(nativelib) => {

@@ -114,7 +114,8 @@ private[scalanative] object IO {
     copyRecursive(source, target)
   }
 
-  /** Copy recursively to existing target directory
+  /**
+   * Copy recursively to existing target directory
    *
    * Note: We need source.relativize(file) for copying
    * to and from UNIX FS to get a relative path. We can't
