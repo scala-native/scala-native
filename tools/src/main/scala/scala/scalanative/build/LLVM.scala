@@ -26,21 +26,22 @@ private[scalanative] object LLVM {
    * @return The location where the nativelib has been unpacked, `workdir/nativelib`.
    */
   def unpackNativelib(nativelib: NativeLib, workdir: Path): Path = {
-    val lib         = workdir.resolve(nativelib.name)
-    val jarhash     = IO.sha1(nativelib.path)
-    val jarhashPath = lib.resolve("jarhash")
+    val target      = workdir.resolve(nativelib.name)
+    val source      = nativelib.path
+    val jarhash     = IO.sha1(source)
+    val jarhashPath = target.resolve("jarhash")
     def unpacked =
-      Files.exists(lib) &&
+      Files.exists(target) &&
         Files.exists(jarhashPath) &&
         Arrays.equals(jarhash, Files.readAllBytes(jarhashPath))
 
     if (!unpacked) {
-      IO.deleteRecursive(lib)
-      IO.unzip(nativelib.path, lib)
+      IO.deleteRecursive(target)
+      IO.unzip(source, target)
       IO.write(jarhashPath, jarhash)
     }
 
-    lib
+    target
   }
 
   /**
@@ -55,11 +56,24 @@ private[scalanative] object LLVM {
   def copyNativeCode(config: Config, workdir: Path): Option[Path] =
     config.nativeCodeProject match {
       case Some(nativelib) => {
-        val dir = workdir.resolve(nativelib.name)
-        // blindly deletes and copies
-        IO.deleteRecursive(dir)
-        IO.copyDirectory(nativelib.path, dir)
-        Some(dir)
+        val target = workdir.resolve(nativelib.name)
+        val source = nativelib.path
+        val files = IO.getAll(source, "glob:**.c") ++
+          IO.getAll(source, "glob:**.cpp") ++
+          IO.getAll(source, "glob:**.S")
+        val fileshash     = IO.sha1files(files)
+        val fileshashPath = target.resolve("fileshash")
+        def copied =
+          Files.exists(target) &&
+            Files.exists(fileshashPath) &&
+            Arrays.equals(fileshash, Files.readAllBytes(fileshashPath))
+        if (!copied) {
+          IO.deleteRecursive(target)
+          IO.copyDirectory(source, target)
+          IO.write(fileshashPath, fileshash)
+        }
+
+        Some(target)
       }
       case None => None
     }
