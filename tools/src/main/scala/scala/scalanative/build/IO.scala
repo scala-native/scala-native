@@ -89,8 +89,12 @@ private[scalanative] object IO {
     val stream       = Files.newInputStream(path)
     val digestStream = new DigestInputStream(stream, digest)
     val buf          = new Array[Byte](bufSize)
-    while (digestStream.read(buf, 0, bufSize) == 1024) {}
-    digest.digest()
+    try {
+      while (digestStream.read(buf, 0, bufSize) != -1) {}
+      digest.digest()
+    } finally {
+      digestStream.close()
+    }
   }
 
   /** Unzip all members of the ZIP archive `archive` to `target`. */
