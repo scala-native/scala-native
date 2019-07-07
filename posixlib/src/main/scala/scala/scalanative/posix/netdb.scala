@@ -50,6 +50,8 @@ object netdb {
 
   @name("scalanative_AI_CANONNAME")
   def AI_CANONNAME: CInt = extern
+
+  def gai_strerror(code:CInt):CString = extern
 }
 
 object netdbOps {
