@@ -3,18 +3,16 @@ package java.io
 import scala.util.Try
 
 object RandomAccessFileSuite extends tests.Suite {
-  test("Creating a `RandomAccessFile` with an invalid mode throws an exception") {
+  test("Creating a RandomAccessFile with invalid mode throws an exception") {
     assertThrows[IllegalArgumentException] {
       new RandomAccessFile("file", "foo")
     }
   }
 
-  test(
-    "Creating a `RandomAccessFile` with mode = `r` and a non-existing file should throw an exception") {
-    val file = new File("i-dont-exist")
-    assert(!file.exists)
-    assertThrows[FileNotFoundException] {
-      new RandomAccessFile(file, "r")
+  test("RandomAccessFile constructor should report errno on open failure") {
+    assertThrows[IOException] {
+      // /root is unlikely to be read/writeable to users running this test.
+      val unused = new RandomAccessFile("/root", "rw")
     }
   }
 

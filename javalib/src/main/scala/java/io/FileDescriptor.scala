@@ -2,6 +2,7 @@ package java.io
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
+import scalanative.libc.{errno, string}
 import scala.scalanative.posix.{fcntl, unistd}
 
 /** Wraps a UNIX file descriptor */
@@ -36,7 +37,8 @@ object FileDescriptor {
     Zone { implicit z =>
       val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY, 0.toUInt)
       if (fd == -1) {
-        throw new FileNotFoundException("No such file " + file.getPath)
+        throw new FileNotFoundException(
+          s"${file} (${fromCString(string.strerror(errno.errno))})")
       }
       new FileDescriptor(fd, true)
     }

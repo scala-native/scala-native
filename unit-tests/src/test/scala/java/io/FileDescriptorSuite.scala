@@ -6,6 +6,25 @@ object FileDescriptorSuite extends tests.Suite {
   val err = FileDescriptor.err
   val fd  = new FileDescriptor()
 
+  test("FileDescriptor.openReadOnly should report errno on failure") {
+
+    // FileDescriptor.openReadOnly is private[io] and hard to invoke
+    // directly.
+    //
+    // The FileInputStream constructor below will call
+    // FileDescriptor.openReadOnly. Because it is public, it is both
+    // easier to work with and the way most users would get to
+    // FileDescriptor.openReadOnly in the first place.
+    //
+    // Test here, rather than in FileInputStreamSuite so that the Suite
+    // and code throwing the exception have corresponding names.
+
+    assertThrows[IOException] {
+      // /root is unlikely to be readable to users running this test.
+      val unused = new FileInputStream("/root")
+    }
+  }
+
   test("valid descriptors") {
     assert(in.valid())
     assert(out.valid())

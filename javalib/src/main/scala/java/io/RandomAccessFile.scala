@@ -1,7 +1,7 @@
 package java.io
 
-import scalanative.unsafe.{toCString, Zone}
-import scalanative.libc.stdio
+import scalanative.unsafe.{fromCString, toCString, Zone}
+import scalanative.libc.{errno, stdio, string}
 import scalanative.posix.{fcntl, unistd}
 import scalanative.posix.sys.stat
 
@@ -224,6 +224,10 @@ private object RandomAccessFile {
       }
       val mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
       val fd   = open(toCString(file.getPath), flags, mode)
+      if (fd == -1) {
+        throw new FileNotFoundException(
+          s"${file} (${fromCString(string.strerror(errno.errno))})")
+      }
       new FileDescriptor(fd)
     }
 

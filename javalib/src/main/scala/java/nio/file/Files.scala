@@ -7,6 +7,7 @@ import java.io.{
   BufferedReader,
   BufferedWriter,
   File,
+  FileNotFoundException,
   FileOutputStream,
   InputStream,
   InputStreamReader,
@@ -450,7 +451,14 @@ object Files {
     }
     val len   = pathSize.toInt
     val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
-    val fd    = fcntl.open(toCString(path.toString), fcntl.O_RDONLY, 0.toUInt)
+
+    val fd = fcntl.open(toCString(path.toString), fcntl.O_RDONLY, 0.toUInt)
+
+    if (fd == -1) {
+      throw new FileNotFoundException(
+        s"${path} (${fromCString(string.strerror(errno.errno))})")
+    }
+
     try {
       var offset = 0
       var read   = 0

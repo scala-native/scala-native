@@ -1359,6 +1359,31 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.readAllBytes reports errno on file open failure") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val in  = new ByteArrayInputStream(Array(10, 20, 30))
+      Files.copy(in, f0)
+      assert(Files.exists(f0))
+      assert(Files.size(f0) == 3)
+
+      val offPermissions = PosixFilePermissions.fromString("---------")
+
+      Files.setPosixFilePermissions(f0, offPermissions)
+
+      try {
+        assertThrows[IOException] {
+          val bytes = Files.readAllBytes(f0)
+        }
+      } finally {
+        val onPermissions = PosixFilePermissions.fromString("rw-------")
+        Files.setPosixFilePermissions(f0, onPermissions)
+        Files.delete(f0)
+      }
+    }
+  }
+
   test("Files.readAllBytes reads all bytes") {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
