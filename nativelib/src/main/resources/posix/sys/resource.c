@@ -63,32 +63,32 @@ int scalanative_setrlimit(int resource, struct scalanative_rlimit *snRlim) {
     return status;
 }
 
-int scalanative_PRIO_PROCESS() { return PRIO_PROCESS; };
+int scalanative_prio_process() { return PRIO_PROCESS; };
 
-int scalanative_PRIO_PGRP() { return PRIO_PGRP; };
+int scalanative_prio_pgrp() { return PRIO_PGRP; };
 
-int scalanative_PRIO_USER() { return PRIO_USER; };
+int scalanative_prio_user() { return PRIO_USER; };
 
-rlim_t scalanative_RLIM_INFINITY() { return RLIM_INFINITY; };
+rlim_t scalanative_rlim_infinity() { return RLIM_INFINITY; };
 
-rlim_t scalanative_RLIM_SAVED_CUR() { return RLIM_SAVED_CUR; };
+rlim_t scalanative_rlim_saved_cur() { return RLIM_SAVED_CUR; };
 
-rlim_t scalanative_RLIM_SAVED_MAX() { return RLIM_SAVED_MAX; };
+rlim_t scalanative_rlim_saved_max() { return RLIM_SAVED_MAX; };
 
-int scalanative_RLIMIT_AS() { return RLIMIT_AS; };
+int scalanative_rlimit_as() { return RLIMIT_AS; };
 
-int scalanative_RLIMIT_CORE() { return RLIMIT_CORE; };
+int scalanative_rlimit_core() { return RLIMIT_CORE; };
 
-int scalanative_RLIMIT_CPU() { return RLIMIT_CPU; };
+int scalanative_rlimit_cpu() { return RLIMIT_CPU; };
 
-int scalanative_RLIMIT_DATA() { return RLIMIT_DATA; };
+int scalanative_rlimit_data() { return RLIMIT_DATA; };
 
-int scalanative_RLIMIT_FSIZE() { return RLIMIT_FSIZE; };
+int scalanative_rlimit_fsize() { return RLIMIT_FSIZE; };
 
-int scalanative_RLIMIT_NOFILE() { return RLIMIT_NOFILE; };
+int scalanative_rlimit_nofile() { return RLIMIT_NOFILE; };
 
-int scalanative_RLIMIT_STACK() { return RLIMIT_STACK; };
+int scalanative_rlimit_stack() { return RLIMIT_STACK; };
 
-int scalanative_RUSAGE_CHILDREN() { return RUSAGE_CHILDREN; };
+int scalanative_rusage_children() { return RUSAGE_CHILDREN; };
 
-int scalanative_RUSAGE_SELF() { return RUSAGE_SELF; };
+int scalanative_rusage_self() { return RUSAGE_SELF; };

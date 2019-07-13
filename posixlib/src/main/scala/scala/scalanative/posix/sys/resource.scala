@@ -41,50 +41,49 @@ object resource {
   def setrlimit(resource: CInt, rlim: Ptr[rlimit]): CInt = extern
 
   // Constants
-
-  @name("scalanative_PRIO_PROCESS")
+  @name("scalanative_prio_process")
   def PRIO_PROCESS: CInt = extern
 
-  @name("scalanative_PRIO_PGRP")
+  @name("scalanative_prio_pgrp")
   def PRIO_PGRP: CInt = extern
 
-  @name("scalanative_PRIO_USER")
+  @name("scalanative_prio_user")
   def PRIO_USER: CInt = extern
 
-  @name("scalanative_RLIM_INFINITY")
+  @name("scalanative_rlim_infinity")
   def RLIM_INFINITY: rlim_t = extern
 
-  @name("scalanative_RLIM_SAVED_CUR")
+  @name("scalanative_rlim_saved_cur")
   def RLIM_SAVED_CUR: rlim_t = extern
 
-  @name("scalanative_RLIM_SAVED_MAX")
+  @name("scalanative_rlim_saved_max")
   def RLIM_SAVED_MAX: rlim_t = extern
 
-  @name("scalanative_RLIMIT_AS")
+  @name("scalanative_rlimit_as")
   def RLIMIT_AS: CInt = extern
 
-  @name("scalanative_RLIMIT_CORE")
+  @name("scalanative_rlimit_core")
   def RLIMIT_CORE: CInt = extern
 
-  @name("scalanative_RLIMIT_CPU")
+  @name("scalanative_rlimit_cpu")
   def RLIMIT_CPU: CInt = extern
 
-  @name("scalanative_RLIMIT_DATA")
+  @name("scalanative_rlimit_data")
   def RLIMIT_DATA: CInt = extern
 
-  @name("scalanative_RLIMIT_FSIZE")
+  @name("scalanative_rlimit_fsize")
   def RLIMIT_FSIZE: CInt = extern
 
-  @name("scalanative_RLIMIT_NOFILE")
+  @name("scalanative_rlimit_nofile")
   def RLIMIT_NOFILE: CInt = extern
 
-  @name("scalanative_RLIMIT_STACK")
+  @name("scalanative_rlimit_stack")
   def RLIMIT_STACK: CInt = extern
 
-  @name("scalanative_RUSAGE_CHILDREN")
+  @name("scalanative_rusage_children")
   def RUSAGE_CHILDREN: CInt = extern
 
-  @name("scalanative_RUSAGE_SELF")
+  @name("scalanative_rusage_self")
   def RUSAGE_SELF: CInt = extern
 
 }
