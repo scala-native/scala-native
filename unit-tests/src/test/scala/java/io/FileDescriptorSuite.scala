@@ -1,5 +1,7 @@
 package java.io
 
+import java.nio.file.{Files, Paths}
+
 object FileDescriptorSuite extends tests.Suite {
   val in  = FileDescriptor.in
   val out = FileDescriptor.out
@@ -19,10 +21,18 @@ object FileDescriptorSuite extends tests.Suite {
     // Test here, rather than in FileInputStreamSuite so that the Suite
     // and code throwing the exception have corresponding names.
 
+    val file = File.createTempFile("scala-native-test-FileDescriptor", "")
+
+    assert(file.setReadable(false, false), s"setReadable() failed")
+    assert(file.setWritable(false, false), s"setWritable(false) failed")
+
     assertThrows[IOException] {
-      // /root is unlikely to be readable to users running this test.
-      val unused = new FileInputStream("/root")
+      val unused = new FileInputStream(file)
     }
+
+    // Clean up only if expected throw happened, else leave audit trail.
+    assert(file.setWritable(true, true), s"setWritable(true) failed")
+    assert(file.delete(), s"delete() failed")
   }
 
   test("valid descriptors") {

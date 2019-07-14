@@ -1,9 +1,10 @@
 package java.io
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
+import scalanative.unsigned._
+import scalanative.unsafe._
+import scalanative.io.FcntlHelpers.checkedOpen
 import scalanative.libc.{errno, string}
-import scala.scalanative.posix.{fcntl, unistd}
+import scalanative.posix.{fcntl, unistd}
 
 /** Wraps a UNIX file descriptor */
 final class FileDescriptor private[java] (private[java] val fd: Int,
@@ -33,13 +34,8 @@ object FileDescriptor {
   val out: FileDescriptor = new FileDescriptor(unistd.STDOUT_FILENO)
   val err: FileDescriptor = new FileDescriptor(unistd.STDERR_FILENO)
 
-  private[io] def openReadOnly(file: File): FileDescriptor =
-    Zone { implicit z =>
-      val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY, 0.toUInt)
-      if (fd == -1) {
-        throw new FileNotFoundException(
-          s"${file} (${fromCString(string.strerror(errno.errno))})")
-      }
-      new FileDescriptor(fd, true)
-    }
+  private[io] def openReadOnly(file: File): FileDescriptor = {
+    val fd = checkedOpen(file.getPath, fcntl.O_RDONLY, 0.toUInt)
+    new FileDescriptor(fd, true)
+  }
 }

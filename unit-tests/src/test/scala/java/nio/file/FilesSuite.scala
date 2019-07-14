@@ -1360,27 +1360,23 @@ object FilesSuite extends tests.Suite {
   }
 
   test("Files.readAllBytes reports errno on file open failure") {
-    withTemporaryDirectory { dirFile =>
-      val dir = dirFile.toPath()
-      val f0  = dir.resolve("f0")
-      val in  = new ByteArrayInputStream(Array(10, 20, 30))
-      Files.copy(in, f0)
-      assert(Files.exists(f0))
-      assert(Files.size(f0) == 3)
+    withTemporaryDirectoryPath { dirPath =>
+      val noAccess = PosixFilePermissions.asFileAttribute(
+        PosixFilePermissions.fromString("---------"))
 
-      val offPermissions = PosixFilePermissions.fromString("---------")
+      val file =
+        Files.createTempFile(dirPath, "test-readAllBytes", ".tmp", noAccess)
 
-      Files.setPosixFilePermissions(f0, offPermissions)
+      assert(Files.exists(file))
 
-      try {
-        assertThrows[IOException] {
-          val bytes = Files.readAllBytes(f0)
-        }
-      } finally {
-        val onPermissions = PosixFilePermissions.fromString("rw-------")
-        Files.setPosixFilePermissions(f0, onPermissions)
-        Files.delete(f0)
+      assertThrows[IOException] {
+        val unused = Files.readAllBytes(file)
       }
+
+      // Clean up only if expected throw happened, else leave audit trail.
+      val userDeleteAccess = PosixFilePermissions.fromString("rw-------")
+      Files.setPosixFilePermissions(file, userDeleteAccess)
+      Files.delete(file)
     }
   }
 

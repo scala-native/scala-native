@@ -10,10 +10,18 @@ object RandomAccessFileSuite extends tests.Suite {
   }
 
   test("RandomAccessFile constructor should report errno on open failure") {
+    val file = File.createTempFile("scala-native-test-RandomAccessFile", "")
+
+    assert(file.setReadable(false, false), s"setReadable() failed")
+    assert(file.setWritable(false, false), s"setWritable(false) failed")
+
     assertThrows[IOException] {
-      // /root is unlikely to be read/writeable to users running this test.
-      val unused = new RandomAccessFile("/root", "rw")
+      val unused = new RandomAccessFile(file, "rw")
     }
+
+    // Clean up only if expected throw happened, else leave audit trail.
+    assert(file.setWritable(true, true), s"setWritable(true) failed")
+    assert(file.delete(), s"delete() failed")
   }
 
   test("valid file descriptor and sync success") {

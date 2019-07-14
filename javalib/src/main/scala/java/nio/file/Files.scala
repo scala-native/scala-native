@@ -39,6 +39,7 @@ import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.{dirent, fcntl, limits, unistd}, dirent._
 import scalanative.posix.sys.stat
+import scalanative.io.FcntlHelpers.checkedOpen
 import scalanative.nio.fs.{FileHelpers, UnixException}
 
 import scala.collection.immutable.{Map => SMap, Stream => SStream, Set => SSet}
@@ -115,7 +116,6 @@ object Files {
       out.write(value)
       written += 1
     }
-
     written
   }
 
@@ -452,12 +452,7 @@ object Files {
     val len   = pathSize.toInt
     val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
 
-    val fd = fcntl.open(toCString(path.toString), fcntl.O_RDONLY, 0.toUInt)
-
-    if (fd == -1) {
-      throw new FileNotFoundException(
-        s"${path} (${fromCString(string.strerror(errno.errno))})")
-    }
+    val fd = checkedOpen(path.toString, fcntl.O_RDONLY, 0.toUInt)
 
     try {
       var offset = 0
