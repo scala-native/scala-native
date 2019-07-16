@@ -9,7 +9,7 @@ import java.io.{FileNotFoundException}
 
 object FcntlHelpers {
 
-  def checkedOpen(pathname: String, flags: CInt, mode: mode_t): CInt =
+  def fcntlOpenOrThrow(pathname: String, flags: CInt, mode: mode_t): CInt =
     Zone { implicit z =>
       val fd = fcntl.open(toCString(pathname), flags, mode)
 

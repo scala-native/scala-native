@@ -2,7 +2,7 @@ package java.io
 
 import scalanative.unsigned._
 import scalanative.unsafe._
-import scalanative.io.FcntlHelpers.checkedOpen
+import scalanative.io.FcntlHelpers.fcntlOpenOrThrow
 import scalanative.libc.{errno, string}
 import scalanative.posix.{fcntl, unistd}
 
@@ -35,7 +35,7 @@ object FileDescriptor {
   val err: FileDescriptor = new FileDescriptor(unistd.STDERR_FILENO)
 
   private[io] def openReadOnly(file: File): FileDescriptor = {
-    val fd = checkedOpen(file.getPath, fcntl.O_RDONLY, 0.toUInt)
+    val fd = fcntlOpenOrThrow(file.getPath, fcntl.O_RDONLY, 0.toUInt)
     new FileDescriptor(fd, true)
   }
 }
