@@ -3,9 +3,18 @@
  */
 package java.util
 
-//
-
-import java.io.{PrintStream, PrintWriter}
+import java.io.{
+  BufferedInputStream,
+  BufferedReader,
+  InputStream,
+  InputStreamReader,
+  OutputStream,
+  OutputStreamWriter,
+  PrintStream,
+  PrintWriter,
+  Reader,
+  Writer
+}
 import java.{util => ju}
 
 import scala.annotation.{switch, tailrec}
@@ -21,7 +30,7 @@ class Properties(protected val defaults: Properties)
   def setProperty(key: String, value: String): AnyRef =
     put(key, value)
 
-  def load(inStream: java.io.InputStream): Unit = {
+  def load(inStream: InputStream): Unit = {
     if (inStream == null) {
       throw new NullPointerException()
     }
@@ -38,8 +47,12 @@ class Properties(protected val defaults: Properties)
     }
   }
 
-  @stub
-  def load(reader: java.io.Reader): Unit = ???
+  def load(reader: Reader): Unit = {
+    if (reader == null) {
+      throw new NullPointerException()
+    }
+    loadImpl(reader)
+  }
 
   def getProperty(key: String): String =
     getProperty(key, defaultValue = null)
@@ -97,37 +110,16 @@ class Properties(protected val defaults: Properties)
     entrySet().asScala.foreach { entry => out.println(format(entry)) }
   }
 
-  def load(reader: Reader): Unit = {
-    if (reader == null) {
-      throw new NullPointerException()
-    }
-    loadImpl(reader)
-  }
-
   def store(out: OutputStream, comments: String): Unit = {
-    val buffer = new StringBuilder(200)
-    val writer = new OutputStreamWriter(out, "ISO8859_1") //$NON-NLS-1$
-    if (comments != null)
-      writeComments(writer, comments)
-    writer.write('#')
-    writer.write(new Date().toString)
-    writer.write(System.lineSeparator)
-
-    entrySet().asScala.foreach { entry =>
-      val key = entry.getKey.asInstanceOf[String]
-      dumpString(buffer, key, true, true)
-      buffer.append('=')
-      dumpString(buffer, entry.getValue.asInstanceOf[String], false, true)
-      buffer.append(System.lineSeparator)
-      writer.write(buffer.toString)
-      buffer.setLength(0)
-    }
-    writer.flush()
+    val writer = new OutputStreamWriter(out, "ISO8859_1")
+    store(writer, comments)
   }
 
   def store(writer: Writer, comments: String): Unit = {
-    if (comments != null)
+    if (comments != null) {
       writeComments(writer, comments)
+    }
+
     writer.write('#')
     writer.write(new Date().toString)
     writer.write(System.lineSeparator)
@@ -160,10 +152,10 @@ class Properties(protected val defaults: Properties)
   private def isEbcdic(in: BufferedInputStream): Boolean = {
     var b = in.read
     while (b != 0xffffffff) {
-      if (b == 0x23 || b == 0x0a || b == 0x3d) { //ascii: newline/#/=
+      if (b == 0x23 || b == 0x0a || b == 0x3d) { // ascii: newline/#/=
         return false
       }
-      if (b == 0x15) { //EBCDIC newline
+      if (b == 0x15) { // EBCDIC newline
         return true
       }
       b = in.read
@@ -337,7 +329,7 @@ class Properties(protected val defaults: Properties)
     val chars = comments.toCharArray
     var index = 0
     while (index < chars.length) {
-      if (chars(index) < 256)
+      if (chars(index) < 256) {
         if (chars(index) == '\r' || chars(index) == '\n') {
           val indexPlusOne = index + 1
           if (chars(index) == '\r' && indexPlusOne < chars.length && chars(
@@ -350,9 +342,13 @@ class Properties(protected val defaults: Properties)
 //          continue //todo: continue is not supported
           }
           writer.write('#')
-        } else writer.write(chars(index))
-      else writer.write(unicodeToHexaDecimal(chars(index)))
-      index += 1
+        } else {
+          writer.write(chars(index))
+        }
+      } else {
+        writer.write(unicodeToHexaDecimal(chars(index)))
+        index += 1
+      }
     }
     writer.write(System.lineSeparator)
   }
@@ -364,7 +360,7 @@ class Properties(protected val defaults: Properties)
     var index  = 0
     val length = string.length
     if (!isKey && index < length && string.charAt(index) == ' ') {
-      buffer.append("\\ ") //$NON-NLS-1$
+      buffer.append("\\ ")
       index += 1
     }
 
