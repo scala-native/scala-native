@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.native.{CInt, CString, CStruct3, extern, name, Ptr}
+import scalanative.unsafe.{CInt, CString, CStruct3, extern, name, Ptr}
 import scalanative.posix.sys.stat.gid_t
 
 @extern

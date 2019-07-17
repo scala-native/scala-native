@@ -16,6 +16,7 @@ import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
 import scala.language.{implicitConversions, existentials}
 import scala.io.StdIn
+import scala.scalanative.annotation.alwaysinline
 
 /** The `Predef` object provides definitions that are accessible in all Scala
  *  compilation units without explicit qualification.
@@ -132,7 +133,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   // Minor variations on identity functions
   @inline def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
-  @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
+  @alwaysinline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
   // errors and asserts -------------------------------------------------

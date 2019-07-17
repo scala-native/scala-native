@@ -1,6 +1,6 @@
 package java.lang
 
-import scalanative.native.stub
+import scalanative.annotation.stub
 
 class ClassLoader protected (parent: ClassLoader) {
   def this() = this(null)

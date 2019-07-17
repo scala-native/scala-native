@@ -103,6 +103,7 @@ Here is the list of currently available classes:
 * ``java.lang.InstantiationException``
 * ``java.lang.Integer``
 * ``java.lang.IntegerCache``
+* ``java.lang.IntegerDecimalScale``
 * ``java.lang.InternalError``
 * ``java.lang.InterruptedException``
 * ``java.lang.Iterable``
@@ -110,6 +111,7 @@ Here is the list of currently available classes:
 * ``java.lang.Long``
 * ``java.lang.LongCache``
 * ``java.lang.Math``
+* ``java.lang.MathRand``
 * ``java.lang.NegativeArraySizeException``
 * ``java.lang.NoClassDefFoundError``
 * ``java.lang.NoSuchFieldError``
@@ -144,6 +146,7 @@ Here is the list of currently available classes:
 * ``java.lang.StackOverflowError``
 * ``java.lang.StackTrace``
 * ``java.lang.StackTraceElement``
+* ``java.lang.StackTraceElement$Fail``
 * ``java.lang.String``
 * ``java.lang.StringBuffer``
 * ``java.lang.StringBuilder``
@@ -387,6 +390,7 @@ Here is the list of currently available classes:
 * ``java.text.DecimalFormat$BigDecimalFormatting``
 * ``java.text.DecimalFormat$BigIntegerFormatting``
 * ``java.text.DecimalFormat$DoubleFormatting``
+* ``java.text.DecimalFormat$DoubleFormatting$DoubleDigits``
 * ``java.text.DecimalFormat$Formatting``
 * ``java.text.DecimalFormat$Formatting$Digits``
 * ``java.text.DecimalFormat$Formatting$class``
@@ -415,7 +419,9 @@ Here is the list of currently available classes:
 * ``java.text.Format$Field``
 * ``java.text.NumberFormat``
 * ``java.text.ParseException``
+* ``java.time.Duration``
 * ``java.time.Instant``
+* ``java.time.temporal.TemporalAmount``
 * ``java.util.AbstractCollection``
 * ``java.util.AbstractList``
 * ``java.util.AbstractListView``
@@ -509,6 +515,7 @@ Here is the list of currently available classes:
 * ``java.util.HashSet``
 * ``java.util.Hashtable``
 * ``java.util.Hashtable$UnboxedEntry$1``
+* ``java.util.IdentityHashMap``
 * ``java.util.IllegalFormatCodePointException``
 * ``java.util.IllegalFormatConversionException``
 * ``java.util.IllegalFormatException``
@@ -578,10 +585,15 @@ Here is the list of currently available classes:
 * ``java.util.concurrent.atomic.AtomicReferenceArray``
 * ``java.util.concurrent.locks.AbstractOwnableSynchronizer``
 * ``java.util.concurrent.locks.AbstractQueuedSynchronizer``
+* ``java.util.function.BiConsumer``
+* ``java.util.function.BiConsumer$class``
 * ``java.util.function.BiFunction``
 * ``java.util.function.BiFunction$class``
 * ``java.util.function.BiPredicate``
 * ``java.util.function.BiPredicate$class``
+* ``java.util.function.BinaryOperator``
+* ``java.util.function.Consumer``
+* ``java.util.function.Consumer$class``
 * ``java.util.function.Function``
 * ``java.util.function.Function$class``
 * ``java.util.function.Predicate``
@@ -604,17 +616,11 @@ Here is the list of currently available classes:
 * ``java.util.package``
 * ``java.util.package$Box``
 * ``java.util.package$CompareNullablesOps``
+* ``java.util.package$IdentityBox``
 * ``java.util.regex.MatchResult``
 * ``java.util.regex.Matcher``
 * ``java.util.regex.Pattern``
-* ``java.util.regex.Pattern$CompiledPatternStore``
-* ``java.util.regex.Pattern$CompiledPatternStore$Key``
-* ``java.util.regex.Pattern$CompiledPatternStore$Node``
 * ``java.util.regex.PatternSyntaxException``
-* ``java.util.regex.cre2``
-* ``java.util.regex.cre2h``
-* ``java.util.regex.cre2h$RE2RegExpOps``
-* ``java.util.regex.cre2h$RE2StringOps``
 * ``java.util.stream.BaseStream``
 * ``java.util.stream.CompositeStream``
 * ``java.util.stream.EmptyIterator``
@@ -656,45 +662,80 @@ Regular expressions (java.util.regex)
 
 Scala Native implements `java.util.regex`-compatible API using
 `Google's RE2 library <https://github.com/google/re2>`_.
-There is some differences in terms of the support of the regular
-expression language.
+RE2 is not a drop-in replacement for `java.util.regex` but
+handles most common cases well.
 
-Some expressions are not supported:
+Some notes on the implementation:
 
-* Character classes:
+1. The included RE2 implements a Unicode version lower than
+   the version used in the Scala Native Character class (>= 7.0.0).
+   The RE2 Unicode version is in the 6.n range. For reference, Java 8
+   released with Unicode 6.2.0. 
+
+   The RE2 implemented may not match codepoints added or changed
+   in later Unicode versions. Similarly, there may be slight differences
+   for Unicode codepoints with high numeric value between values used by RE2
+   and those used by the Character class.
+
+2. This implementation of RE2 does not support:
+
+   * Character classes:
     * Unions: ``[a-d[m-p]]``
     * Intersections: ``[a-z&&[^aeiou]]``
-* Predefined character classes: ``\h``, ``\H``, ``\v``, ``\V``
-* Java character function classes:
+
+   * Predefined character classes: ``\h``, ``\H``, ``\v``, ``\V``
+
+   * Patterns:
+    * Octal: ``\0100`` - use decimal or hexadecimal instead.
+    * Two character Hexadecimal: ``\xFF`` - use ``\x00FF`` instead.
+    * All alphabetic Unicode: ``\uBEEF`` - use hex ``\xBEEF`` instead.
+    * Escape: ``\e`` - use ``\u001B`` instead.
+
+   * Java character function classes:
     * ``\p{javaLowerCase}``
     * ``\p{javaUpperCase}``
     * ``\p{javaWhitespace}``
     * ``\p{javaMirrored}``
-* Boundary matchers: ``\G``, ``\Z``, ``\R``
-* Possessive quantifiers: ``X?+``, ``X*+``, ``X++``, ``X{n}+``, ``X{n,}+``, ``X{n,m}+``
-* Lookaheads: ``(?=X)``, ``(?!X)``, ``(?<=X)``, ``(?<!X)``, ``(?>X)``
 
-Some expressions have an alternative syntax:
+   * Boundary matchers: ``\G``, ``\R``, ``\Z``
 
-============== ================
- Java           RE2
-============== ================
-``(?<foo>a)``  ``(?P<foo>a)``
-``p{Alnum}``   ``[[:alnum:]]``
-``p{Alpha}``   ``[[:alpha:]]``
-``p{ASCII}``   ``[[:ascii:]]``
-``p{Blank}``   ``[[:blank:]]``
-``p{Cntrl}``   ``[[:cntrl:]]``
-``p{Digit}``   ``[[:digit:]]``
-``p{Graph}``   ``[[:graph:]]``
-``p{Lower}``   ``[[:lower:]]``
-``p{Print}``   ``[[:print:]]``
-``p{Punct}``   ``[[:punct:]]``
-``p{Space}``   ``[[:space:]]``
-``p{Upper}``   ``[[:upper:]]``
-``p{XDigit}``  ``[[:xdigit:]]``
-``p{InGreek}`` ``p{Greek}``
-``p{IsLatin}`` ``p{Latin}``
-============== ================
+   * Possessive quantifiers: ``X?+``, ``X*+``, ``X++``, ``X{n}+``,
+     ``X{n,}+``, ``X{n,m}+``
+   * Lookaheads: ``(?=X)``, ``(?!X)``, ``(?<=X)``, ``(?<!X)``, ``(?>X)``
+
+   * Options
+    *  CANON_EQ
+    *  COMMENTS
+    *  LITERAL
+    *  UNICODE_CASE
+    *  UNICODE_CHARACTER_CLASS
+    *  UNIX_LINES
+
+   * Patterns to match a Unicode binary property, such as
+     ``\p{isAlphabetic}`` for a codepoint with the 'alphabetic' property,
+     are not supported. Often another pattern ``\p{isAlpha}`` may be used
+     instead, ``\p{isAlpha}`` in this case.
+
+3. The following Matcher methods have a minimal implementation:
+
+   * Matcher.hasAnchoringBounds() - always return true.
+   * Matcher.hasTransparentBounds() - always throws
+     UnsupportedOperationException because RE2 does not support lookaheads.
+   * Matcher.hitEnd() - always throws UnsupportedOperationException.
+   * Matcher.region(int, int)
+   * Matcher.regionEnd()
+   * Matcher.regionStart()
+   * Matcher.requireEnd() - always throws UnsupportedOperationException.
+   * Matcher.useAnchoringBounds(boolean)  - always throws
+         UnsupportedOperationException
+   * Matcher.useTransparentBounds(boolean) - always throws
+     UnsupportedOperationException because RE2 does not support lookaheads.
+
+4. Scala Native 0.3.8 required POSIX patterns to have the form
+   ``[[:alpha:]]``.
+   Now the Java standard form ``\p{Alpha}`` is accepted and the former variant
+   pattern is not. This improves compatibility with Java but,
+   regrettably, may require code changes when upgrading from Scala Native
+   0.3.8.
 
 Continue to :ref:`libc`.

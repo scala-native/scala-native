@@ -1,7 +1,7 @@
 package scala.scalanative
 package libc
 
-import scalanative.native._
+import scalanative.unsafe._
 
 @extern
 object stdio {
@@ -48,17 +48,20 @@ object stdio {
 
   // Formatted input/output
 
-  def scanf(format: CString, args: CVararg*): CInt                     = extern
-  def fscanf(stream: Ptr[FILE], format: CString, args: CVararg*): CInt = extern
-  def sscanf(buffer: CString, format: CString, args: CVararg*): CInt   = extern
-  def printf(format: CString, args: CVararg*): CInt                    = extern
-  def fprintf(stream: Ptr[FILE], format: CString, args: CVararg*): CInt =
+  def vscanf(format: CString, valist: CVarArgList): CInt = extern
+  def vfscanf(stream: Ptr[FILE], format: CString, valist: CVarArgList): CInt =
     extern
-  def sprintf(buffer: CString, format: CString, args: CVararg*): CInt = extern
-  def snprintf(buffer: CString,
-               bufsz: CInt,
-               format: CString,
-               args: CVararg*): CInt =
+  def vsscanf(buffer: CString, format: CString, valist: CVarArgList): CInt =
+    extern
+  def vprintf(format: CString, valist: CVarArgList): CInt = extern
+  def vfprintf(stream: Ptr[FILE], format: CString, valist: CVarArgList): CInt =
+    extern
+  def vsprintf(buffer: CString, format: CString, valist: CVarArgList): CInt =
+    extern
+  def vsnprintf(buffer: CString,
+                bufsz: CInt,
+                format: CString,
+                valist: CVarArgList): CInt =
     extern
 
   // File positioning

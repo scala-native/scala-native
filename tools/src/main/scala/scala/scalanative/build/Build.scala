@@ -2,6 +2,7 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Path, Files}
+import scalanative.nir.Global
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -52,27 +53,8 @@ object Build {
   def build(config: Config, outpath: Path): Path = config.logger.time("Total") {
     val entries = ScalaNative.entries(config)
     val linked  = ScalaNative.link(config, entries)
-
-    nir.Show.dump(linked.defns, "linked.hnir")
-    ScalaNative.check(config, linked)
-
-    if (linked.unavailable.nonEmpty) {
-      linked.unavailable.map(_.show).sorted.foreach { signature =>
-        config.logger.error(s"cannot link: $signature")
-      }
-      throw new BuildException("unable to link")
-    }
-    val classCount = linked.defns.count {
-      case _: nir.Defn.Class | _: nir.Defn.Module => true
-      case _                                      => false
-    }
-    val methodCount = linked.defns.count(_.isInstanceOf[nir.Defn.Define])
-    config.logger.info(
-      s"Discovered ${classCount} classes and ${methodCount} methods")
-
+    ScalaNative.logLinked(config, linked)
     val optimized = ScalaNative.optimize(config, linked)
-    nir.Show.dump(optimized.defns, "optimized.hnir")
-    ScalaNative.check(config, optimized)
 
     IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
     ScalaNative.codegen(config, optimized)

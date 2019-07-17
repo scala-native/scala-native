@@ -34,12 +34,25 @@ object Show {
   def dump(defns: Seq[Defn], fileName: String): Unit = {
     val pw = new java.io.PrintWriter(fileName)
     try {
-      defns.foreach { defn =>
-        if (defn != null) {
-          pw.write(defn.show)
-          pw.write("\n")
+      util
+        .partitionBy(defns.filter(_ != null))(_.name)
+        .par
+        .map {
+          case (_, defns) =>
+            defns.collect {
+              case defn if defn != null =>
+                (defn.name, defn.show)
+            }
         }
-      }
+        .seq
+        .flatten
+        .toSeq
+        .sortBy(_._1)
+        .foreach {
+          case (_, shown) =>
+            pw.write(shown)
+            pw.write("\n")
+        }
     } finally {
       pw.close()
     }

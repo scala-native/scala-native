@@ -16,7 +16,7 @@ This generates the following files:
 
 * ``project/plugins.sbt`` to add a plugin dependency::
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.8")
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.0-M2")
 
 * ``project/build.properties`` to specify the sbt version::
 
@@ -43,14 +43,14 @@ Scala versions
 
 Scala Native supports following Scala versions for corresponding releases:
 
-==================== ========================
-Scala Native Version Scala Versions
-==================== ========================
-0.1.x                2.11.8
-0.2.x                2.11.8, 2.11.11
-0.3.0-0.3.3          2.11.8, 2.11.11
-0.3.4+               2.11.8, 2.11.11, 2.11.12
-==================== ========================
+========================== ========================
+Scala Native Version       Scala Versions
+========================== ========================
+0.1.x                      2.11.8
+0.2.x                      2.11.8, 2.11.11
+0.3.0-0.3.3                2.11.8, 2.11.11
+0.3.4+, 0.4.0-M1, 0.4.0-M2 2.11.8, 2.11.11, 2.11.12
+========================== ========================
 
 Sbt settings and tasks
 ----------------------
@@ -67,10 +67,12 @@ Since Name                     Type            Description
 0.1   ``nativeClangPP``        ``File``        Path to ``clang++`` command
 0.1   ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim during compilation
 0.1   ``nativeLinkingOptions`` ``Seq[String]`` Extra options passed to clang verbatim during linking
-0.1   ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` (2)
-0.2   ``nativeGC``             ``String``      Either ``"none"``, ``"boehm"`` or ``"immix"`` (3)
+0.1   ``nativeMode``           ``String``      One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
+0.2   ``nativeGC``             ``String``      One of ``"none"``, ``"boehm"`` or ``"immix"`` (3)
 0.3.3 ``nativeLinkStubs``      ``Boolean``     Whether to link ``@stub`` definitions, or to ignore them
-0.3.9 ``nativeLTO``            ``String``      Either ``"none"``, ``"full"`` or ``"thin"`` (4)
+0.4.0 ``nativeLTO``            ``String``      One of ``"none"``, ``"full"`` or ``"thin"`` (4)
+0.4.0 ``nativeCheck``          ``Boolean``     Shall the linker check intermediate results for correctness?
+0.4.0 ``nativeDump``           ``Boolean``     Shall the linker dump intermediate results to disk? 
 ===== ======================== =============== =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
@@ -81,7 +83,7 @@ Since Name                     Type            Description
 Compilation modes
 -----------------
 
-Scala Native supports two distinct linking modes:
+Scala Native supports three distinct linking modes:
 
 1. **debug.** (default)
 
@@ -89,10 +91,23 @@ Scala Native supports two distinct linking modes:
    optimizations and is much more suited for iterative development workflow.
    Similar to clang's ``-O0``.
 
-2. **release.**
+2. **release.** (deprecated since 0.4.0)
 
-   Optimized for best runtime performance at expense of longer compilation time.
+   Aliases to **release-full**.
+
+2. **release-fast.** (introduced in 0.4.0)
+
+   Optimize for runtime performance while still trying to keep
+   quick compilation time and small emitted code size.
    Similar to clang's ``-O2`` with addition of link-time optimization over
+   the whole application code.
+
+3. **release-full.** (introduced in 0.4.0)
+
+   Optimized for best runtime performance, even if hurts compilation
+   time and code size. This modes includes a number of more aggresive optimizations
+   such type-driven method duplication and more aggresive inliner.
+   Similar to clang's ``-O3`` with addition of link-time optimization over
    the whole application code.
 
 Garbage collectors
@@ -124,24 +139,19 @@ of release builds. There are three possible modes that are currently supported:
 1. **none.** (default)
 
    Does not inline across Scala/C boundary. Scala to Scala calls
-   are still optimized by emitting one fat LLVM IR module for
-   the whole application.
+   are still optimized.
 
-2. **full.** (Clang 3.8 or older)
+2. **full.** (available on Clang 3.8 or older)
 
-   Inlines across Scala/C boundary by merging all of the LLVM IR
-   modules into a single module for the whole application. Unlike
-   **none** this module also includes the runtime code thus allows
-   for additional optimization opportunities.
+   Inlines across Scala/C boundary using legacy FullLTO mode.
 
 3. **thin.** (recommended on Clang 3.9 or newer)
 
-   Inlines across Scala/C boundary using LLVM's
-   `ThinLTO <https://clang.llvm.org/docs/ThinLTO.html>`_.
-   Unlike **none** and **full**
-   it's able to optimize the application in parallel.
-   It also offers the best runtime performance according
-   to our benchmarks.
+   Inlines across Scala/C boundary using LLVM's latest
+   `ThinLTO mode <https://clang.llvm.org/docs/ThinLTO.html>`_.
+   Offers both better compilation speed and
+   better runtime performance of the generated code
+   than the legacy FullLTO mode.
 
 Publishing
 ----------

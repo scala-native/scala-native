@@ -4,9 +4,11 @@ import java.nio.file.{FileSystems, Path}
 import java.net.URI
 
 import scala.annotation.tailrec
+import scalanative.annotation.stub
 import scalanative.posix.{fcntl, limits, unistd, utime}
 import scalanative.posix.sys.stat
-import scalanative.native._
+import scalanative.unsigned._
+import scalanative.unsafe._
 import scalanative.libc._, stdlib._, stdio._, string._
 import scalanative.nio.fs.FileHelpers
 import scalanative.runtime.{DeleteOnExit, Platform}
@@ -213,7 +215,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     Zone { implicit z =>
       val buf = alloc[stat.stat]
       if (stat.stat(toCString(path), buf) == 0) {
-        !(buf._8) * 1000L
+        buf._8 * 1000L
       } else {
         0L
       }
@@ -222,7 +224,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
   private def accessMode()(implicit z: Zone): stat.mode_t = {
     val buf = alloc[stat.stat]
     if (stat.stat(toCString(path), buf) == 0) {
-      !(buf._13)
+      buf._13
     } else {
       0.toUInt
     }
@@ -236,8 +238,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
         val statbuf = alloc[stat.stat]
         if (stat.stat(toCString(path), statbuf) == 0) {
           val timebuf = alloc[utime.utimbuf]
-          !(timebuf._1) = !(statbuf._8)
-          !(timebuf._2) = time / 1000L
+          timebuf._1 = statbuf._8
+          timebuf._2 = time / 1000L
           utime.utime(toCString(path), timebuf) == 0
         } else {
           false
@@ -256,7 +258,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     Zone { implicit z =>
       val buf = alloc[stat.stat]
       if (stat.stat(toCString(path), buf) == 0) {
-        !(buf._6)
+        buf._6
       } else {
         0L
       }

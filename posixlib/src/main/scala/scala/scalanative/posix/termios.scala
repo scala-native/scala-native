@@ -1,19 +1,29 @@
 package scala.scalanative
 package posix
 
-import native.{CArray, CChar, CInt, CLong, CStruct7, Nat, Ptr, extern, name}
+import scalanative.unsafe.{
+  CArray,
+  CChar,
+  CInt,
+  CLong,
+  CStruct7,
+  Nat,
+  Ptr,
+  extern,
+  name
+}
+import scalanative.unsafe.Nat._
 import posix.sys.types.pid_t
 
 @extern
 object termios {
-  import Nat._
 
   // types
 
   type tcflag_t = CLong
   type cc_t     = CChar
   type speed_t  = CLong
-  type NCCS     = Digit[_2, _0]
+  type NCCS     = Digit2[_2, _0]
   type c_cc     = CArray[cc_t, NCCS]
 
   type termios = CStruct7[

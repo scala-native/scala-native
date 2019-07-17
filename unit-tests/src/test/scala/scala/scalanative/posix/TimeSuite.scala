@@ -1,6 +1,6 @@
 package scala.scalanative.posix
 
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 
 import time._
 import timeOps.tmOps
@@ -93,4 +93,95 @@ object TimeSuite extends tests.Suite {
       assert("Monday Mon Jan  1 00:00:00 1900".equals(dateString))
     }
   }
+
+  test(s"strptime() - detect invalid format") {
+    Zone { implicit z =>
+      val tmPtr = alloc[tm]
+
+      // %Q in format is invalid
+      val result =
+        strptime(c"December 31, 2016 23:59:60", c"%B %d, %Y %Q", tmPtr)
+
+      assert(result == null, s"expected null result, got pointer")
+    }
+  }
+
+  test(s"strptime() - detect invalid string") {
+    Zone { implicit z =>
+      val tmPtr = alloc[tm]
+
+      // 32 in string is invalid
+      val result =
+        strptime(c"December 32, 2016 23:59:60", c"%B %d, %Y %T", tmPtr)
+
+      assert(result == null, s"expected null result, got pointer")
+    }
+  }
+
+  test(s"strptime() - detect string shorter than format") {
+    Zone { implicit z =>
+      val tmPtr = alloc[tm]
+
+      val result =
+        strptime(c"December 32, 2016 23:59", c"%B %d, %Y %T", tmPtr)
+
+      assert(result == null, s"expected null result, got pointer")
+    }
+  }
+
+  test("strptime() for December 31, 2016 23:59:60") {
+    Zone { implicit z =>
+      val tmPtr = alloc[tm]
+
+      // A leap second was added at this time
+      val result =
+        strptime(c"December 31, 2016 23:59:60", c"%B %d, %Y %T", tmPtr)
+
+      assert(result != null, s"error: unexpected null returned")
+
+      val expectedYear = 116
+      assert(tmPtr.tm_year == expectedYear,
+             s"tm_year: ${tmPtr.tm_year} != expected: ${expectedYear}")
+
+      val expectedMonth = 11
+      assert(tmPtr.tm_mon == expectedMonth,
+             s"tm_mon: ${tmPtr.tm_mon} != expected: ${expectedMonth}")
+
+      val expectedMday = 31
+      assert(tmPtr.tm_mday == expectedMday,
+             s"tm_mon: ${tmPtr.tm_mday} != expected: ${expectedMday}")
+
+      val expectedHour = 23
+      assert(tmPtr.tm_hour == expectedHour,
+             s"tm_mon: ${tmPtr.tm_hour} != expected: ${expectedHour}")
+
+      val expectedMin = 59
+      assert(tmPtr.tm_min == expectedMin,
+             s"tm_min: ${tmPtr.tm_min} != expected: ${expectedMin}")
+
+      val expectedSec = 60
+      assert(tmPtr.tm_sec == expectedSec,
+             s"tm_sec: ${tmPtr.tm_sec} != expected: ${expectedSec}")
+
+      val expectedIsdst = 0
+      assert(tmPtr.tm_isdst == expectedIsdst,
+             s"tm_isdst: ${tmPtr.tm_isdst} != expected: ${expectedIsdst}")
+    }
+  }
+
+  test("strptime() -- extra text after date string is OK") {
+    Zone { implicit z =>
+      val tmPtr = alloc[tm]
+
+      val result =
+        strptime(c"December 31, 2016 23:59:60 UTC", c"%B %d, %Y %T ", tmPtr)
+
+      assert(result != null, s"error: null returned")
+
+      val expected = 'U'
+      assert(!result == expected,
+             s"character: ${!result} != expected: ${expected}")
+    }
+  }
+
 }

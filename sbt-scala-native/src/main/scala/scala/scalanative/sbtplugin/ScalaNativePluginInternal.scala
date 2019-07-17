@@ -69,7 +69,11 @@ object ScalaNativePluginInternal {
       .getOrElse(build.GC.default.name),
     nativeGC in NativeTest := (nativeGC in Test).value,
     nativeLTO := Discover.LTO(),
-    nativeLTO in NativeTest := (nativeLTO in Test).value
+    nativeLTO in NativeTest := (nativeLTO in Test).value,
+    nativeCheck := false,
+    nativeCheck in NativeTest := (nativeCheck in Test).value,
+    nativeDump := false,
+    nativeDump in NativeTest := (nativeDump in Test).value
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -130,6 +134,8 @@ object ScalaNativePluginInternal {
         .withMode(mode)
         .withLinkStubs(nativeLinkStubs.value)
         .withLTO(nativeLTO.value)
+        .withCheck(nativeCheck.value)
+        .withDump(nativeDump.value)
     },
     nativeLink := {
       val logger  = streams.value.log.toLogger

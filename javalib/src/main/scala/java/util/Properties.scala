@@ -4,7 +4,7 @@ import java.io.{PrintStream, PrintWriter}
 import java.{util => ju}
 
 import scala.collection.JavaConverters._
-import scala.scalanative.native.stub
+import scala.scalanative.annotation.stub
 
 class Properties(protected val defaults: Properties)
     extends ju.Hashtable[AnyRef, AnyRef] {

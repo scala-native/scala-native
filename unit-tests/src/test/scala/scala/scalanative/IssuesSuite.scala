@@ -1,12 +1,16 @@
 package scala.scalanative
 
-import scalanative.native._
+import scalanative.unsigned._
+import scalanative.unsafe._
 
 object IssuesSuite extends tests.Suite {
 
-  def foo(arg: Int): Unit                        = ()
-  def crash(arg: CFunctionPtr1[Int, Unit]): Unit = ()
-  def lifted208Test(): Unit                      = crash(foo _)
+  def foo(arg: Int): Unit                    = ()
+  def crash(arg: CFuncPtr1[Int, Unit]): Unit = ()
+  def lifted208Test(): Unit =
+    crash(new CFuncPtr1[Int, Unit] {
+      def apply(value: Int): Unit = ()
+    })
 
   test("#208") {
     // If we put the test directly, behind the scenes, this will
@@ -111,15 +115,21 @@ object IssuesSuite extends tests.Suite {
     assert(h equals world)
   }
 
-  val fptrBoxed: CFunctionPtr0[Integer]  = () => new Integer(1)
-  val fptr: CFunctionPtr0[CInt]          = () => 1
-  val fptrFloat: CFunctionPtr0[CFloat]   = () => 1.0.toFloat
-  val fptrDouble: CFunctionPtr0[CDouble] = () => 1.0
-  def intIdent(x: Int): Int              = x
+  val fptrBoxed: CFuncPtr0[Integer] = new CFuncPtr0[Integer] {
+    def apply() = new Integer(1)
+  }
+  val fptr: CFuncPtr0[CInt] = new CFuncPtr0[CInt] { def apply() = 1 }
+  val fptrFloat: CFuncPtr0[CFloat] = new CFuncPtr0[CFloat] {
+    def apply() = 1.0.toFloat
+  }
+  val fptrDouble: CFuncPtr0[CDouble] = new CFuncPtr0[CDouble] {
+    def apply() = 1.0
+  }
+  def intIdent(x: Int): Int = x
   test("#382") {
     /// that gave NPE
 
-    import scala.scalanative.native._
+    import scala.scalanative.unsafe._
     intIdent(fptr())
     assert(fptr() == 1)
 
@@ -133,11 +143,6 @@ object IssuesSuite extends tests.Suite {
     assert(x1 == 1)
     val x2 = fptrFloat()
     assert(x2 == 1.0)
-
-    // Should be possible
-    val conv1: Int = (1: Float).cast[Int]
-    // Should fail
-    //val conv2: Int = (1: Double).cast[Int]
   }
 
   test("#404") {
@@ -210,7 +215,7 @@ object IssuesSuite extends tests.Suite {
   }
 
   test("#449") {
-    import scalanative.native.Ptr
+    import scalanative.unsafe.Ptr
     import scala.scalanative.runtime.ByteArray
     val bytes = new Array[Byte](2)
     bytes(0) = 'b'.toByte
@@ -372,6 +377,37 @@ object IssuesSuite extends tests.Suite {
     val ulong = java.lang.Long.parseUnsignedLong("9223372036854775808").toULong
     assert(ulong.toDouble == 9223372036854775808.0D)
   }
+
+  test("#1359") {
+    issue1359.Main.main(Array())
+  }
+
+  test("#1516") {
+    locally {
+      val data = new Array[UByte](6)
+      data(0) = 64.toUByte
+      assert(data(0).getClass == classOf[UByte])
+      assert(data(0).toString == "64")
+    }
+    locally {
+      val data = new Array[UShort](6)
+      data(0) = 64.toUShort
+      assert(data(0).getClass == classOf[UShort])
+      assert(data(0).toString == "64")
+    }
+    locally {
+      val data = new Array[UInt](6)
+      data(0) = 64.toUInt
+      assert(data(0).getClass == classOf[UInt])
+      assert(data(0).toString == "64")
+    }
+    locally {
+      val data = new Array[ULong](6)
+      data(0) = 64.toULong
+      assert(data(0).getClass == classOf[ULong])
+      assert(data(0).toString == "64")
+    }
+  }
 }
 
 package issue1090 {
@@ -396,5 +432,15 @@ package issue1155 {
 package issue900 {
   class C(any: Any) {
     def init: Any = "foobar"
+  }
+}
+
+package issue1359 {
+  object Main {
+    def f[T]: T = throw new Exception
+
+    def f2[T](a: => T) = ()
+
+    def main(args: Array[String]): Unit = f2(f)
   }
 }

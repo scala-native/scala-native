@@ -1,7 +1,7 @@
 package scala.scalanative.posix.sys
 
-import scalanative.native._
-import scalanative.native.Nat.{Digit, _1, _6}
+import scalanative.unsafe._
+import scalanative.unsafe.Nat._
 import scalanative.posix.inttypes._
 import scalanative.posix.time._
 
@@ -26,7 +26,7 @@ object select {
 
   // Linux specifies an array of 64 bit longs.
   // 16 * 64 == 1024 == FD_SETSIZE.
-  private[this] type _16 = Digit[_1, _6]
+  private[this] type _16 = Digit2[_1, _6]
 
   type fd_set = CStruct1[CArray[CLongInt, _16]]
 
@@ -34,7 +34,7 @@ object select {
   //
   // An fd_set is arguably too large to allocate on the stack, so use a Zone.
   //
-  //    import scalanative.native.{Zone, alloc}
+  //    import scalanative.unsafe.{Zone, alloc}
   //
   //    Zone {
   //

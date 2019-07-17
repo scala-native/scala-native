@@ -1,7 +1,7 @@
 package scala.scalanative.runtime
 
 import scala.collection.mutable
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 
 private[runtime] object Shutdown {
   private val hooks: mutable.ArrayBuffer[() => Unit] = mutable.ArrayBuffer.empty
@@ -14,11 +14,13 @@ private[runtime] object Shutdown {
         case e: Exception => // Maybe add a system propery that adds logging of exceptions?
       }
     }
-  NativeShutdown.init(CFunctionPtr.fromFunction0(() => runHooks()))
+  NativeShutdown.init(new CFuncPtr0[Unit] {
+    def apply(): Unit = runHooks()
+  })
 }
 
 @extern
 private[runtime] object NativeShutdown {
   @name("scalanative_native_shutdown_init")
-  def init(func: CFunctionPtr0[Unit]): Unit = extern
+  def init(func: CFuncPtr0[Unit]): Unit = extern
 }

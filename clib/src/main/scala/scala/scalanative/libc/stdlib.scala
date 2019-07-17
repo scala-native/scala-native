@@ -1,7 +1,7 @@
 package scala.scalanative
 package libc
 
-import scalanative.native._
+import scalanative.unsafe._
 
 @extern
 object stdlib {
@@ -16,12 +16,12 @@ object stdlib {
 
   // Program utilities
 
-  def abort(): Unit                                  = extern
-  def exit(exitCode: CInt): Unit                     = extern
-  def quick_exit(exitCode: CInt): Unit               = extern
-  def _Exit(exitCode: CInt): Unit                    = extern
-  def atexit(func: CFunctionPtr0[Unit]): CInt        = extern
-  def at_quick_exit(func: CFunctionPtr0[Unit]): CInt = extern
+  def abort(): Unit                              = extern
+  def exit(exitCode: CInt): Unit                 = extern
+  def quick_exit(exitCode: CInt): Unit           = extern
+  def _Exit(exitCode: CInt): Unit                = extern
+  def atexit(func: CFuncPtr0[Unit]): CInt        = extern
+  def at_quick_exit(func: CFuncPtr0[Unit]): CInt = extern
 
   // Communicating with the environment
 
@@ -50,6 +50,19 @@ object stdlib {
     extern
   def strtof(str: CString, str_end: Ptr[CString]): CFloat  = extern
   def strtod(str: CString, str_end: Ptr[CString]): CDouble = extern
+
+  // Searching and sorting
+
+  def bsearch(key: Ptr[Byte],
+              data: Ptr[Byte],
+              num: CSize,
+              size: CSize,
+              comparator: CFuncPtr2[Ptr[Byte], Ptr[Byte], CInt]): Unit = extern
+
+  def qsort(data: Ptr[Byte],
+            num: CSize,
+            size: CSize,
+            comparator: CFuncPtr2[Ptr[Byte], Ptr[Byte], CInt]): Unit = extern
 
   // File management
 

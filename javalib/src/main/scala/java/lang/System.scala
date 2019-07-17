@@ -2,13 +2,11 @@ package java.lang
 
 import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 import scala.scalanative.posix.unistd
 import scala.scalanative.posix.sys.utsname._
 import scala.scalanative.posix.sys.uname._
-import scala.scalanative.runtime.time
-import scala.scalanative.runtime.Platform
-import scala.scalanative.runtime.GC
+import scala.scalanative.runtime.{time, Platform, GC, Intrinsics}
 
 final class System private ()
 
@@ -17,16 +15,15 @@ object System {
                 srcPos: scala.Int,
                 dest: Object,
                 destPos: scala.Int,
-                length: scala.Int): Unit = {
+                length: scala.Int): Unit =
     scalanative.runtime.Array.copy(src, srcPos, dest, destPos, length)
-  }
 
-  def exit(status: Int): Unit = {
+  def exit(status: Int): Unit =
     Runtime.getRuntime().exit(status)
-  }
 
   def identityHashCode(x: Object): scala.Int =
-    x.cast[Word].hashCode
+    java.lang.Long
+      .hashCode(Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(x)))
 
   private def loadProperties() = {
     val sysProps = new Properties()
@@ -83,10 +80,10 @@ object System {
     new PrintStream(new FileOutputStream(FileDescriptor.err))
 
   private val systemProperties = loadProperties()
-  Platform.setOSProps(
-    CFunctionPtr.fromFunction2((key: CString, value: CString) => {
-      systemProperties.setProperty(fromCString(key), fromCString(value));
-    }))
+  Platform.setOSProps(new CFuncPtr2[CString, CString, Unit] {
+    def apply(key: CString, value: CString): Unit =
+      systemProperties.setProperty(fromCString(key), fromCString(value))
+  })
 
   def lineSeparator(): String = {
     if (Platform.isWindows) "\r\n"

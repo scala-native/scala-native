@@ -1,6 +1,7 @@
 package java.lang
 
-import scalanative.native.stub
+import scalanative.unsigned._
+import scalanative.annotation.stub
 import scalanative.libc.errno
 
 class Thread private (runnable: Runnable) extends Runnable {
@@ -42,6 +43,15 @@ class Thread private (runnable: Runnable) extends Runnable {
   def this(name: String) = this(??? : Runnable)
 
   @stub
+  def this() = this(??? : Runnable)
+
+  @stub
+  def join(): Unit = ???
+
+  @stub
+  def start(): Unit = ???
+
+  @stub
   def getContextClassLoader(): java.lang.ClassLoader = ???
 
   trait UncaughtExceptionHandler {
@@ -63,7 +73,7 @@ object Thread {
 
   def sleep(millis: scala.Long, nanos: scala.Int): Unit = {
     import scala.scalanative.posix.errno.EINTR
-    import scala.scalanative.native._
+    import scala.scalanative.unsafe._
     import scala.scalanative.posix.unistd
 
     def checkErrno() =

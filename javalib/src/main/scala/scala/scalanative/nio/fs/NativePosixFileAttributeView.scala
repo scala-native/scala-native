@@ -6,7 +6,8 @@ import java.nio.file.{LinkOption, Path}
 import java.nio.file.attribute._
 import java.io.IOException
 
-import scalanative.native._
+import scalanative.unsigned._
+import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
 import scalanative.posix.sys.stat
@@ -24,12 +25,12 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     val sb = getStat()
 
     val buf = alloc[utime.utimbuf]
-    !(buf._1) =
+    buf._1 =
       if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS)
-      else !(sb._7)
-    !(buf._2) =
+      else sb._7
+    buf._2 =
       if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS)
-      else !(sb._8)
+      else sb._8
     // createTime is ignored: No posix-y way to set it.
     if (utime.utime(toCString(path.toString), buf) != 0)
       throwIOException()
@@ -38,7 +39,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
   override def setOwner(owner: UserPrincipal): Unit =
     Zone { implicit z =>
       val passwd = getPasswd(toCString(owner.getName))
-      if (unistd.chown(toCString(path.toString), !(passwd._2), -1.toUInt) != 0)
+      if (unistd.chown(toCString(path.toString), passwd._2, -1.toUInt) != 0)
         throwIOException()
     }
 
@@ -58,7 +59,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
   override def setGroup(group: GroupPrincipal): Unit =
     Zone { implicit z =>
       val _group = getGroup(toCString(group.getName))
-      val err    = unistd.chown(toCString(path.toString), -1.toUInt, !(_group._2))
+      val err    = unistd.chown(toCString(path.toString), -1.toUInt, _group._2)
 
       if (err != 0) {
         throwIOException()
@@ -85,19 +86,19 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
       Zone { implicit z =>
         val buf = getStat()
-        st_dev = !buf._1
-        st_rdev = !buf._2
-        st_ino = !buf._3
-        st_uid = !buf._4
-        st_gid = !buf._5
-        st_size = !buf._6
-        st_atime = !buf._7
-        st_mtime = !buf._8
-        st_ctime = !buf._9
-        st_blocks = !buf._10
-        st_blksize = !buf._11
-        st_nlink = !buf._12
-        st_mode = !buf._13
+        st_dev = buf._1
+        st_rdev = buf._2
+        st_ino = buf._3
+        st_uid = buf._4
+        st_gid = buf._5
+        st_size = buf._6
+        st_atime = buf._7
+        st_mtime = buf._8
+        st_ctime = buf._9
+        st_blocks = buf._10
+        st_blksize = buf._11
+        st_nlink = buf._12
+        st_mode = buf._13
       }
 
       private def filePasswd()(implicit z: Zone) =
@@ -132,14 +133,14 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
       override def group = new GroupPrincipal {
         override val getName =
           Zone { implicit z =>
-            fromCString(!(fileGroup()._1))
+            fromCString(fileGroup()._1)
           }
       }
 
       override def owner = new UserPrincipal {
         override val getName =
           Zone { implicit z =>
-            fromCString(!(filePasswd()._1))
+            fromCString(filePasswd()._1)
           }
       }
 

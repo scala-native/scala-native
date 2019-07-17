@@ -4,7 +4,8 @@ import java.util.concurrent.TimeUnit
 import java.io._
 import java.nio.file.Files
 
-import scala.scalanative.native.{Zone, toCString}
+import scala.scalanative.unsigned._
+import scala.scalanative.unsafe._
 import scala.scalanative.posix.{fcntl, unistd}
 import scala.io.Source
 
@@ -58,7 +59,7 @@ object ProcessSuite extends tests.Suite {
     val savedFD = unistd.dup(unistd.STDOUT_FILENO)
     val flags   = fcntl.O_RDWR | fcntl.O_TRUNC | fcntl.O_CREAT
     val fd = Zone { implicit z =>
-      fcntl.open(toCString(f.toAbsolutePath.toString), flags)
+      fcntl.open(toCString(f.toAbsolutePath.toString), flags, 0.toUInt)
     }
     val out = try {
       unistd.dup2(fd, unistd.STDOUT_FILENO)

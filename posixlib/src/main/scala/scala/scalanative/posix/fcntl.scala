@@ -1,18 +1,18 @@
 package scala.scalanative
 package posix
 
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.posix.sys.stat.mode_t
 import scalanative.posix.sys.stat.mode_t
 
 @extern
 object fcntl {
 
-  def open(pathname: CString, flags: CInt, mode: CVararg*): CInt = extern
+  def open(pathname: CString, flags: CInt, mode: mode_t): CInt = extern
 
   def close(fd: CInt): CInt = extern
 
-  def fcntl(fd: CInt, cmd: CInt, args: CVararg*): CInt = extern
+  def fcntl(fd: CInt, cmd: CInt, flags: CInt): CInt = extern
 
   @name("scalanative_o_rdonly")
   def O_RDONLY: CInt = extern

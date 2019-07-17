@@ -1,6 +1,6 @@
 package java.lang.reflect
 
-import scalanative.native.stub
+import scalanative.annotation.stub
 
 class Field {
   @stub

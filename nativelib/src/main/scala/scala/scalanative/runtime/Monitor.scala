@@ -1,15 +1,17 @@
 package scala.scalanative.runtime
 
+import scalanative.annotation.alwaysinline
+
 sealed class Monitor private () {
-  def _notify(): Unit                              = ()
-  def _notifyAll(): Unit                           = ()
-  def _wait(): Unit                                = ()
-  def _wait(timeout: scala.Long): Unit             = ()
-  def _wait(timeout: scala.Long, nanos: Int): Unit = ()
-  def enter(): Unit                                = ()
-  def exit(): Unit                                 = ()
+  @alwaysinline def _notify(): Unit                              = ()
+  @alwaysinline def _notifyAll(): Unit                           = ()
+  @alwaysinline def _wait(): Unit                                = ()
+  @alwaysinline def _wait(timeout: scala.Long): Unit             = ()
+  @alwaysinline def _wait(timeout: scala.Long, nanos: Int): Unit = ()
+  @alwaysinline def enter(): Unit                                = ()
+  @alwaysinline def exit(): Unit                                 = ()
 }
 
 object Monitor {
-  @inline def dummy: Monitor = new Monitor
+  @alwaysinline def dummy: Monitor = new Monitor
 }

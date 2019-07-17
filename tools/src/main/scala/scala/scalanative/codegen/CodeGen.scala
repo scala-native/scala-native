@@ -54,7 +54,7 @@ object CodeGen {
       // of available processesors. This prevents LLVM from optimizing
       // across IR module boundary unless LTO is turned on.
       def separate(): Unit =
-        partitionBy(assembly, procs)(_.name).par.foreach {
+        partitionBy(assembly, procs)(_.name.top.mangle).par.foreach {
           case (id, defns) =>
             val sorted = defns.sortBy(_.name.show)
             val impl   = new Impl(config.targetTriple, env, sorted)
@@ -75,9 +75,9 @@ object CodeGen {
       }
 
       (config.mode, config.LTO) match {
-        case (build.Mode.Debug, _)        => separate()
-        case (build.Mode.Release, "none") => single()
-        case (build.Mode.Release, _)      => separate()
+        case (build.Mode.Debug, _)           => separate()
+        case (_: build.Mode.Release, "none") => single()
+        case (_: build.Mode.Release, _)      => separate()
       }
     }
 

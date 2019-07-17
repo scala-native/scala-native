@@ -1,7 +1,12 @@
 package scala.scalanative
 package runtime
 
+import scalanative.unsafe.CFuncPtr
+
 object Intrinsics {
+
+  /** Intrinsified stack allocation of n bytes. */
+  def stackalloc(size: Long): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
@@ -13,9 +18,8 @@ object Intrinsics {
   def remUInt(l: Int, r: Int): Int = intrinsic
 
   /** Intrinsified unsigned remainder on longs. */
-  def remULong(l: Long, r: Long): Long = intrinsic
-
-  /** Intrinsified byte to unsigned int converstion. */
+  def remULong(l: Long, r: Long): Long =
+    intrinsic /** Intrinsified byte to unsigned int converstion. */
   def byteToUInt(b: Byte): Int = intrinsic
 
   /** Intrinsified byte to unsigned long conversion. */
@@ -134,4 +138,7 @@ object Intrinsics {
 
   /** Intrinsified cast that reinterprets long as a raw pointer. */
   def castLongToRawPtr(int: Long): RawPtr = intrinsic
+
+  /** Resolve c-friendly forwarder generated for given CFuncPtr. */
+  def resolveCFuncPtr(cfuncptr: CFuncPtr): RawPtr = intrinsic
 }

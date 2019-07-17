@@ -1,7 +1,7 @@
 package java.io
 
 import scalanative.nio.fs.UnixException
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.{fcntl, unistd}
 import scalanative.posix.sys.stat

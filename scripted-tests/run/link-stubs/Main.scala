@@ -4,6 +4,6 @@ object Main {
 }
 
 object Foo {
-  @scalanative.native.stub
+  @scalanative.annotation.stub
   def bar = ???
 }

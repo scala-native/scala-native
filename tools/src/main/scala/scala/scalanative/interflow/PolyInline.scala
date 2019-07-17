@@ -43,12 +43,16 @@ trait PolyInline { self: Interflow =>
     case build.Mode.Debug =>
       false
 
-    case build.Mode.Release =>
+    case _: build.Mode.Release =>
       val targets    = polyTargets(op)
       val classCount = targets.map(_._1).size
       val implCount  = targets.map(_._2).distinct.size
 
-      classCount <= 16 && implCount >= 2 && implCount <= 4
+      if (mode == build.Mode.ReleaseFast) {
+        classCount <= 8 && implCount == 2
+      } else {
+        classCount <= 16 && implCount >= 2 && implCount <= 4
+      }
   }
 
   def polyInline(op: Op.Method, args: Seq[Val])(implicit state: State,

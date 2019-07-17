@@ -1,6 +1,6 @@
 package scala.scalanative.posix.netinet
 
-import scalanative.native._
+import scalanative.unsafe._
 
 @extern
 object tcp {

@@ -1,7 +1,8 @@
 package java.lang
 
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.libc._
+import scalanative.runtime.Intrinsics
 
 import scalanative.runtime.ieee754tostring.ryu.{RyuRoundingMode, RyuFloat}
 
@@ -210,13 +211,13 @@ object Float {
     else floatToRawIntBits(value)
 
   @inline def floatToRawIntBits(value: scala.Float): scala.Int =
-    value.cast[scala.Int]
+    Intrinsics.castFloatToInt(value)
 
   @inline def hashCode(value: scala.Float): scala.Int =
     floatToIntBits(value)
 
   @inline def intBitsToFloat(value: scala.Int): scala.Float =
-    value.cast[scala.Float]
+    Intrinsics.castIntToFloat(value)
 
   @inline def isFinite(f: scala.Float): scala.Boolean =
     !isInfinite(f)

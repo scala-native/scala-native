@@ -1,10 +1,10 @@
 package scala.scalanative.nio.fs
 
-import scalanative.native._
+import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.dirent._
 import scalanative.posix.{errno => e, fcntl, unistd}, e._, unistd.access
-import scalanative.native._, stdlib._, stdio._, string._
+import scalanative.unsafe._, stdlib._, stdio._, string._
 import scala.collection.mutable.UnrolledBuffer
 import scala.reflect.ClassTag
 import java.io.{File, IOException}
@@ -27,11 +27,11 @@ object FileHelpers {
           var elem = alloc[dirent]
           var res  = 0
           while ({ res = readdir(dir, elem); res == 0 }) {
-            val name = fromCString(elem._2.asInstanceOf[CString])
+            val name = fromCString(elem._2.at(0))
 
             // java doesn't list '.' and '..', we filter them out.
             if (name != "." && name != "..") {
-              buffer += f(name, !elem._3)
+              buffer += f(name, elem._3)
             }
           }
           closedir(dir)
@@ -88,7 +88,9 @@ object FileHelpers {
         case null => "/tmp"
         case d    => d
       }
-    } else fromCString(dir)
+    } else {
+      fromCString(dir)
+    }
   }
 
   private def genTempFile(prefix: String,

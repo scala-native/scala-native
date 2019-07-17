@@ -1,0 +1,20 @@
+package scala.scalanative
+package runtime
+
+import scalanative.unsafe._
+
+final class CFuncRawPtr(val rawptr: RawPtr) 
+% for N in range(0, 23):
+%   args  = ", ".join("arg" + str(i) + ": Any" for i in range(1, N+1))
+%   targs = ", ".join(["Any" for i in range(1, N+1)] + ["Any"])
+%   kw    = "extends" if N == 0 else "with"
+  ${kw} CFuncPtr${N}[${targs}]
+% end
+{
+% for N in range(0, 23):
+%   args  = ", ".join("arg" + str(i) + ": Any" for i in range(1, N+1))
+%   targs = ", ".join(["Any" for i in range(1, N+1)] + ["Any"])
+%   kw    = "extends" if N == 0 else "with"
+  def apply(${args}): Any = throwUndefined()
+% end
+}

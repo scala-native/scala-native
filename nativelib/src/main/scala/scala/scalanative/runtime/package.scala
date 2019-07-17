@@ -1,7 +1,8 @@
 package scala.scalanative
 
 import scala.reflect.ClassTag
-import scalanative.native._
+import scalanative.annotation.alwaysinline
+import scalanative.unsafe._
 import scalanative.runtime.Intrinsics._
 import scalanative.runtime.LLVMIntrinsics._
 
@@ -11,35 +12,35 @@ package object runtime {
   type Type = CStruct2[Int, String]
 
   implicit class TypeOps(val self: Ptr[Type]) extends AnyVal {
-    def id: Int          = !(self._1)
-    def name: String     = !(self._2)
-    def isClass: Boolean = id >= 0
+    @alwaysinline def id: Int          = self._1
+    @alwaysinline def name: String     = self._2
+    @alwaysinline def isClass: Boolean = id >= 0
   }
 
   /** Class runtime type information. */
   type ClassType = CStruct3[Type, Int, Int]
 
   implicit class ClassTypeOps(val self: Ptr[ClassType]) extends AnyVal {
-    def id: Int            = self._1.id
-    def name: String       = self._1.name
-    def size: Int          = !(self._2)
-    def idRangeUntil: Long = !(self._3)
+    @alwaysinline def id: Int            = self._1._1
+    @alwaysinline def name: String       = self._1._2
+    @alwaysinline def size: Int          = self._2
+    @alwaysinline def idRangeUntil: Long = self._3
   }
 
   /** Used as a stub right hand of intrinsified methods. */
   def intrinsic: Nothing = throwUndefined()
 
-  @inline def toRawType(cls: Class[_]): RawPtr =
+  @alwaysinline def toRawType(cls: Class[_]): RawPtr =
     cls.asInstanceOf[java.lang._Class[_]].rawty
 
   /** Read type information of given object. */
-  @inline def getRawType(obj: Object): RawPtr = {
+  @alwaysinline def getRawType(obj: Object): RawPtr = {
     val rawptr = Intrinsics.castObjectToRawPtr(obj)
     Intrinsics.loadRawPtr(rawptr)
   }
 
   /** Get monitor for given object. */
-  @inline def getMonitor(obj: Object): Monitor = Monitor.dummy
+  @alwaysinline def getMonitor(obj: Object): Monitor = Monitor.dummy
 
   /** Initialize runtime with given arguments and return the
    *  rest as Java-style array.
@@ -59,16 +60,16 @@ package object runtime {
     args
   }
 
-  def fromRawPtr[T](rawptr: RawPtr): Ptr[T] =
-    rawptr.cast[Ptr[T]]
+  @alwaysinline def fromRawPtr[T](rawptr: RawPtr): Ptr[T] =
+    Boxes.boxToPtr(rawptr)
 
-  def toRawPtr[T](ptr: Ptr[T]): RawPtr =
-    ptr.cast[RawPtr]
+  @alwaysinline def toRawPtr[T](ptr: Ptr[T]): RawPtr =
+    Boxes.unboxToPtr(ptr)
 
   /** Run the runtime's event loop. The method is called from the
    *  generated C-style after the application's main method terminates.
    */
-  def loop(): Unit =
+  @noinline def loop(): Unit =
     ExecutionContext.loop()
 
   /** Called by the generated code in case of division by zero. */

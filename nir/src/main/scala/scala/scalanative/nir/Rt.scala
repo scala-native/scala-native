@@ -10,6 +10,7 @@ object Rt {
   val Type    = StructValue(Seq(Int, Int, Ptr))
   val Runtime = Ref(Global.Top("scala.scalanative.runtime.package$"))
 
+  val BoxedPtr        = Ref(Global.Top("scala.scalanative.unsafe.Ptr"))
   val BoxedNull       = Ref(Global.Top("scala.runtime.Null$"))
   val BoxedUnit       = Ref(Global.Top("scala.runtime.BoxedUnit"))
   val BoxedUnitModule = Ref(Global.Top("scala.scalanative.runtime.BoxedUnit$"))
@@ -27,11 +28,13 @@ object Rt {
   val ReverseBytesSig = Sig.Method("reverseBytes", Seq(Int, Int)).mangled
   val NumberOfLeadingZerosSig =
     Sig.Method("numberOfLeadingZeros", Seq(Int, Int)).mangled
-  val CosSig  = Sig.Method("cos", Seq(Double, Double)).mangled
-  val SinSig  = Sig.Method("sin", Seq(Double, Double)).mangled
-  val PowSig  = Sig.Method("pow", Seq(Double, Double, Double)).mangled
-  val MaxSig  = Sig.Method("max", Seq(Double, Double, Double)).mangled
-  val SqrtSig = Sig.Method("sqrt", Seq(Double, Double)).mangled
+  val CosSig        = Sig.Method("cos", Seq(Double, Double)).mangled
+  val SinSig        = Sig.Method("sin", Seq(Double, Double)).mangled
+  val PowSig        = Sig.Method("pow", Seq(Double, Double, Double)).mangled
+  val MaxSig        = Sig.Method("max", Seq(Double, Double, Double)).mangled
+  val SqrtSig       = Sig.Method("sqrt", Seq(Double, Double)).mangled
+  val FromRawPtrSig = Sig.Method("fromRawPtr", Seq(Ptr, BoxedPtr)).mangled
+  val ToRawPtrSig   = Sig.Method("toRawPtr", Seq(BoxedPtr, Ptr)).mangled
 
   val GetRawTypeTy   = Function(Seq(Runtime, Object), Ptr)
   val GetRawTypeName = Global.Member(Runtime.name, GetRawTypeSig)

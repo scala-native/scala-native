@@ -1,0 +1,241 @@
+package scala.scalanative
+package unsafe
+
+import scala.reflect.ClassTag
+import scalanative.annotation.alwaysinline
+import scalanative.unsigned._
+import scalanative.runtime._
+import scalanative.runtime.Intrinsics._
+
+sealed abstract class Tag[T] {
+  def size: Int
+  def alignment: Int
+  @noinline def offset(idx: Int): Int = throwUndefined()
+  @noinline def load(ptr: unsafe.Ptr[T]): T = throwUndefined()
+  @noinline def store(ptr: unsafe.Ptr[T], value: T): Unit = throwUndefined()
+}
+
+object Tag {
+  final case class Ptr[T](of: Tag[T])
+      extends Tag[unsafe.Ptr[T]] {
+    @alwaysinline def size: Int = 8
+    @alwaysinline def alignment: Int = 8
+    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Ptr[T]]): unsafe.Ptr[T] =
+      fromRawPtr[T](loadRawPtr(toRawPtr(ptr)))
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Ptr[T]], value: unsafe.Ptr[T]): Unit =
+      storeRawPtr(toRawPtr(ptr), toRawPtr(value))
+  }
+
+  final case class Class[T <: AnyRef](of: java.lang.Class[T])
+      extends Tag[T] {
+    @alwaysinline def size: Int = 8
+    @alwaysinline def alignment: Int = 8
+    @alwaysinline override def load(ptr: unsafe.Ptr[T]): T =
+      loadObject(toRawPtr(ptr)).asInstanceOf[T]
+    @alwaysinline override def store(ptr: unsafe.Ptr[T], value: T): Unit =
+      storeObject(toRawPtr(ptr), value.asInstanceOf[Object])
+  }
+
+  % prims = [('Unit', 'scala.Unit', 8),
+  %          ('Boolean', 'scala.Boolean', 1),
+  %          ('Char', 'scala.Char', 2),
+  %          ('Byte', 'scala.Byte', 1),
+  %          ('UByte', 'unsigned.UByte', 1),
+  %          ('Short', 'scala.Short', 2),
+  %          ('UShort', 'unsigned.UShort', 2),
+  %          ('Int', 'scala.Int', 4),
+  %          ('UInt', 'unsigned.UInt', 4),
+  %          ('Long', 'scala.Long', 8),
+  %          ('ULong', 'unsigned.ULong', 8),
+  %          ('Float', 'scala.Float', 4),
+  %          ('Double', 'scala.Double', 8)]
+  % for (name, T, size) in prims:
+
+  object ${name} extends Tag[${T}] {
+    @alwaysinline def size: Int = ${size}
+    @alwaysinline def alignment: Int = ${size}
+    @alwaysinline override def load(ptr: unsafe.Ptr[${T}]): ${T} =
+      % if name == 'Unit':
+      loadObject(toRawPtr(ptr)).asInstanceOf[Unit]
+      % elif name.startswith('U'):
+      %   signed = name[1:]
+      load${signed}(toRawPtr(ptr)).to${name}
+      % else:
+      load${name}(toRawPtr(ptr))
+      % end
+    @alwaysinline override def store(ptr: unsafe.Ptr[${T}], value: ${T}): Unit =
+      % if name == 'Unit':
+      storeObject(toRawPtr(ptr), value.asInstanceOf[Object])
+      % elif name.startswith('U'):
+      %   signed = name[1:]
+      store${signed}(toRawPtr(ptr), value.to${signed})
+      % else:
+      store${name}(toRawPtr(ptr), value)
+      % end
+  }
+
+  % end
+
+  private[scalanative] sealed trait NatTag {
+    def toInt: Int
+  }
+
+  % for N in range(0, 10):
+
+  object Nat${N} extends Tag[unsafe.Nat._${N}] with NatTag {
+    @noinline def size: Int = throwUndefined()
+    @noinline def alignment: Int = throwUndefined()
+    @alwaysinline def toInt: Int = ${N}
+  }
+
+  % end
+
+  % for N in range(2, 10):
+  %   Ns      = ["N" + str(i) for i in range(1, N + 1)]
+  %   BoundNs = "[" + ", ".join(N + " <: Nat.Base" for N in Ns) + "]"
+  %   JustNs  = "[" + ", ".join(Ns) + "]"
+  %   TagNs   = ["Tag[{}]".format(n) for n in Ns]
+  %   args    = ", ".join("_{}: {}".format(i + 1, T) for (i, T) in enumerate(TagNs))
+
+  final case class Digit${N}${BoundNs}(${args})
+      extends Tag[unsafe.Nat.Digit${N}${JustNs}]
+      with NatTag
+  {
+    @alwaysinline def size: Int = throwUndefined()
+    @alwaysinline def alignment: Int = throwUndefined()
+    @alwaysinline def toInt: Int = {
+      var res = 0
+      % for i in range(1, N + 1):
+      res = res * 10 + _${i}.asInstanceOf[NatTag].toInt
+      % end
+      res
+    }
+  }
+
+  % end
+
+  final case class CArray[T, N <: unsafe.Nat](of: Tag[T], n: Tag[N])
+      extends Tag[unsafe.CArray[T, N]]
+  {
+    @alwaysinline def size: Int = of.size * n.asInstanceOf[NatTag].toInt
+    @alwaysinline def alignment: Int = of.alignment
+    @alwaysinline override def offset(idx: Int): Int = of.size * idx
+    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CArray[T, N]]): unsafe.CArray[T, N] = {
+      new unsafe.CArray[T, N](ptr.rawptr)
+    }
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CArray[T, N]], value: unsafe.CArray[T, N]): Unit = {
+      val dst = ptr.rawptr
+      val src = value.rawptr
+      libc.memcpy(dst, src, size)
+    }
+  }
+  
+  private[scalanative] sealed trait StructTag
+
+  @alwaysinline private[scalanative] def align(offset: Int, alignment: Int) = {
+    val alignmentMask = alignment - 1
+    val padding =
+      if ((offset & alignmentMask) == 0) 0
+      else alignment - (offset & alignmentMask)
+    offset + padding
+  }
+
+  % for N in range(0, 23):
+  %   Ts      = ["T" + str(i) for i in range(1, N + 1)]
+  %   JustTs  = "" if N == 0 else "[" + ", ".join(Ts) + "]"
+  %   TagTs   = ["Tag[{}]".format(T) for T in Ts]
+  %   args    = ", ".join("_{}: {}".format(i + 1, T) for (i, T) in enumerate(TagTs))
+
+  final case class CStruct${N}${JustTs}(${args})
+    extends Tag[unsafe.CStruct${N}${JustTs}]
+    with StructTag
+  {
+    @alwaysinline def size: Int = {
+      var res = 0
+      % for i in range(1, N + 1):
+      res = align(res, _${i}.alignment) + _${i}.size
+      % end
+      align(res, alignment)
+    }
+    @alwaysinline def alignment: Int = {
+      var res = 1
+      % for i in range(1, N + 1):
+      res = Math.max(res, _${i}.alignment)
+      % end
+      res
+    }
+    @alwaysinline override def offset(idx: Int): Int = idx match {
+      % for fld in range(1, N + 1):
+      case ${fld - 1} =>
+        var res = 0
+        % for i in range(1, fld):
+        res = align(res, _${i}.alignment) + _${i}.size
+        % end
+        align(res, _${fld}.alignment)
+      % end
+      case _ =>
+        throwUndefined()
+    }
+    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CStruct${N}${JustTs}]): unsafe.CStruct${N}${JustTs} = {
+      new unsafe.CStruct${N}${JustTs}(ptr.rawptr)
+    }
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct${N}${JustTs}], value: unsafe.CStruct${N}${JustTs}): Unit = {
+      val dst = ptr.rawptr
+      val src = value.rawptr
+      libc.memcpy(dst, src, size)
+    }
+  }
+
+  % end
+
+  % for N in range(0, 23):
+  %   targs = ", ".join(["Any" for i in range(1, N+1)] + ["Any"])
+  %   nativeCFuncPtr = "unsafe.CFuncPtr{}[{}]".format(N, targs)
+
+  object CFuncPtr${N} extends Tag[${nativeCFuncPtr}] {
+    @alwaysinline def size: Int = 8
+    @alwaysinline def alignment: Int = 8
+    @alwaysinline override def load(ptr: unsafe.Ptr[${nativeCFuncPtr}]): ${nativeCFuncPtr} =
+      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+    @alwaysinline override def store(ptr: unsafe.Ptr[${nativeCFuncPtr}], value: ${nativeCFuncPtr}): Unit =
+      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
+  }
+
+  % end
+
+  @alwaysinline implicit def materializePtrTag[T](implicit tag: Tag[T]): Tag[unsafe.Ptr[T]] =
+    Tag.Ptr(tag)
+  @alwaysinline implicit def materializeClassTag[T <: AnyRef: ClassTag]: Tag[T] =
+    Tag.Class(implicitly[ClassTag[T]].runtimeClass.asInstanceOf[java.lang.Class[T]])
+  % for (name, T, _) in prims:
+  @alwaysinline implicit def materialize${name}Tag: Tag[${T}] =
+    ${name}
+  % end
+  % for N in range(0, 10):
+  @alwaysinline implicit def materializeNat${N}Tag: Tag[unsafe.Nat._${N}] =
+    Nat${N}
+  % end
+  % for N in range(2, 10):
+  %   Ns      = ["N" + str(i) for i in range(1, N + 1)]
+  %   BoundNs = "[" + ", ".join(N + " <: Nat.Base : Tag" for N in Ns) + "]"
+  %   JustNs  = "[" + ", ".join(Ns) + "]"
+  %   tags    = ", ".join("implicitly[Tag[{}]]".format(N) for N in Ns)
+  @alwaysinline implicit def materializeNatDigit${N}Tag${BoundNs}: Tag.Digit${N}${JustNs} =
+    Tag.Digit${N}(${tags})
+  % end
+  % for N in range(0, 23):
+  %   Ts      = ["T" + str(i) for i in range(1, N + 1)]
+  %   BoundTs = "" if N == 0 else "[" + ", ".join(map(lambda T: T + ": Tag", Ts)) + "]"
+  %   JustTs  = "" if N == 0 else "[" + ", ".join(Ts) + "]"
+  %   tags    = ", ".join("implicitly[Tag[{}]]".format(T) for T in Ts)
+  @alwaysinline implicit def materializeCStruct${N}Tag${BoundTs}: Tag.CStruct${N}${JustTs} =
+    Tag.CStruct${N}(${tags})
+  % end
+  @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]: Tag.CArray[T, N] =
+    Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
+  % for N in range(0, 23):
+  %   targs = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
+  @alwaysinline implicit def materializeCFuncPtr${N}[${targs}]: Tag[unsafe.CFuncPtr${N}[${targs}]] =
+    Tag.CFuncPtr${N}.asInstanceOf[Tag[unsafe.CFuncPtr${N}[${targs}]]]
+  % end 
+}

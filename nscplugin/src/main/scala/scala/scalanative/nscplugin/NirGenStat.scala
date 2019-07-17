@@ -87,6 +87,64 @@ trait NirGenStat { self: NirGenPhase =>
 
     def genStructAttrs(sym: Symbol): Attrs = Attrs.None
 
+    def genFuncRawPtrExternForwarder(cd: ClassDef): Defn = {
+      val attrs = Attrs(isExtern = true)
+      val name  = genFuncPtrExternForwarderName(cd.symbol)
+      val sig   = Type.Function(Seq.empty, Type.Unit)
+      val body =
+        Seq(Inst.Label(Local(0), Seq.empty), Inst.Unreachable(Next.None))
+
+      Defn.Define(attrs, name, sig, body)
+    }
+
+    def genFuncPtrExternForwarder(cd: ClassDef): Defn = {
+      val applys = cd.impl.body.collect {
+        case dd: DefDef
+            if dd.name == nme.apply
+              && !dd.symbol.hasFlag(BRIDGE) =>
+          dd
+      }
+      val applySym = applys match {
+        case Seq() =>
+          unsupported("func ptr impl not found")
+        case Seq(apply) =>
+          apply.symbol
+        case _ =>
+          unsupported("multiple func ptr impls found")
+      }
+      val applyName = Val.Global(genMethodName(applySym), Type.Ptr)
+      val applySig  = genMethodSig(applySym)
+
+      val attrs = Attrs(isExtern = true)
+      val name  = genFuncPtrExternForwarderName(cd.symbol)
+      val sig   = genExternMethodSig(applySym)
+
+      val body = scoped(
+        curUnwindHandler := None
+      ) {
+        val fresh = Fresh()
+        val buf   = new ExprBuffer()(fresh)
+
+        val Type.Function(origtys, origretty) = applySig
+        val Type.Function(paramtys, retty)    = sig
+
+        val params = paramtys.map(ty => Val.Local(fresh(), ty))
+        buf.label(fresh(), params)
+        val boxedParams = params.zip(origtys.tail).map {
+          case (param, ty) =>
+            buf.fromExtern(ty, param)
+        }
+        val res =
+          buf.call(applySig, applyName, Val.Null +: boxedParams, Next.None)
+        val unboxedRes = buf.toExtern(retty, res)
+        buf.ret(unboxedRes)
+
+        buf.toSeq
+      }
+
+      Defn.Define(attrs, name, sig, body)
+    }
+
     def genNormalClass(cd: ClassDef): Unit = {
       val sym    = cd.symbol
       def attrs  = genClassAttrs(cd)
@@ -96,19 +154,33 @@ trait NirGenStat { self: NirGenPhase =>
 
       genClassFields(sym)
       genMethods(cd)
+      if (sym.isCFuncPtrClass) {
+        if (sym == CFuncRawPtrClass) {
+          buf += genFuncRawPtrExternForwarder(cd)
+        } else {
+          buf += genFuncPtrExternForwarder(cd)
+        }
+      }
 
       buf += {
-        if (sym.isScalaModule) Defn.Module(attrs, name, parent, traits)
-        else if (sym.isInterface) Defn.Trait(attrs, name, traits)
-        else Defn.Class(attrs, name, parent, traits)
+        if (sym.isScalaModule) {
+          Defn.Module(attrs, name, parent, traits)
+        } else if (sym.isInterface) {
+          Defn.Trait(attrs, name, traits)
+        } else {
+          Defn.Class(attrs, name, parent, traits)
+        }
       }
     }
 
     def genClassParent(sym: Symbol): Option[nir.Global] =
-      if (sym == NObjectClass) None
-      else if (sym.superClass == NoSymbol || sym.superClass == ObjectClass)
+      if (sym == NObjectClass) {
+        None
+      } else if (sym.superClass == NoSymbol || sym.superClass == ObjectClass) {
         Some(genTypeName(NObjectClass))
-      else Some(genTypeName(sym.superClass))
+      } else {
+        Some(genTypeName(sym.superClass))
+      }
 
     def genClassAttrs(cd: ClassDef): Attrs = {
       val sym = cd.symbol
@@ -139,7 +211,7 @@ trait NirGenStat { self: NirGenPhase =>
       val attrs = nir.Attrs(isExtern = sym.isExternModule)
 
       for (f <- sym.info.decls if f.isField) {
-        val ty   = genType(f.tpe, box = false)
+        val ty   = genType(f.tpe)
         val name = genFieldName(f)
 
         buf += Defn.Var(attrs, name, ty, Val.Zero(ty))
@@ -169,9 +241,8 @@ trait NirGenStat { self: NirGenPhase =>
         val owner    = curClassSym.get
         val attrs    = genMethodAttrs(sym)
         val name     = genMethodName(sym)
+        val sig      = genMethodSig(sym)
         val isStatic = owner.isExternModule || owner.isImplClass
-        val sig      = genMethodSig(sym, isStatic)
-        val params   = genParams(dd, isStatic)
 
         dd.rhs match {
           case EmptyTree =>
@@ -186,25 +257,29 @@ trait NirGenStat { self: NirGenPhase =>
 
           case rhs if owner.isExternModule =>
             checkExplicitReturnTypeAnnotation(dd)
-            genExternMethod(attrs, name, sig, params, rhs)
+            genExternMethod(attrs, name, sig, rhs)
 
           case rhs =>
-            val body = genNormalMethodBody(dd, params, rhs, isStatic)
-            buf += Defn.Define(attrs, name, sig, body)
+            scoped(
+              curMethodSig := sig
+            ) {
+              val body = genMethodBody(dd, rhs, isStatic, isExtern = false)
+              buf += Defn.Define(attrs, name, sig, body)
+            }
         }
       }
     }
 
     def genExternMethod(attrs: nir.Attrs,
                         name: nir.Global,
-                        sig: nir.Type,
-                        params: Seq[nir.Val.Local],
+                        origSig: nir.Type,
                         rhs: Tree): Unit = {
       rhs match {
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
           val moduleName  = genTypeName(curClassSym)
           val externAttrs = Attrs(isExtern = true)
-          val externDefn  = Defn.Declare(externAttrs, name, sig)
+          val externSig   = genExternMethodSig(curMethodSym)
+          val externDefn  = Defn.Declare(externAttrs, name, externSig)
 
           buf += externDefn
 
@@ -242,7 +317,6 @@ trait NirGenStat { self: NirGenPhase =>
           sym.annotations.collect {
             case ann if ann.symbol == NoInlineClass     => Attr.NoInline
             case ann if ann.symbol == AlwaysInlineClass => Attr.AlwaysInline
-            case ann if ann.symbol == InlineHintClass   => Attr.InlineHint
             case ann if ann.symbol == InlineClass       => Attr.InlineHint
           }
         }
@@ -259,32 +333,44 @@ trait NirGenStat { self: NirGenPhase =>
       Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs)
     }
 
-    def genParams(dd: DefDef, isStatic: Boolean): Seq[Val.Local] =
-      genParamSyms(dd, isStatic).map {
+    def genMethodBody(dd: DefDef,
+                      bodyp: Tree,
+                      isStatic: Boolean,
+                      isExtern: Boolean): Seq[nir.Inst] = {
+      val fresh = curFresh.get
+      val buf   = new ExprBuffer()(fresh)
+
+      val paramSyms = genParamSyms(dd, isStatic)
+      val params = paramSyms.map {
         case None =>
-          val fresh = curFresh.get
-          Val.Local(fresh(), genType(curClassSym.tpe, box = true))
+          val ty = genType(curClassSym.tpe)
+          Val.Local(fresh(), ty)
         case Some(sym) =>
-          val fresh = curFresh.get
-          val name  = fresh()
-          val ty    = genType(sym.tpe, box = false)
-          val param = Val.Local(name, ty)
+          val ty    = if (isExtern) genExternType(sym.tpe) else genType(sym.tpe)
+          val param = Val.Local(fresh(), ty)
           curMethodEnv.enter(sym, param)
           param
       }
 
-    def genNormalMethodBody(dd: DefDef,
-                            params: Seq[Val.Local],
-                            bodyp: Tree,
-                            isStatic: Boolean): Seq[nir.Inst] = {
-      val fresh = curFresh.get
-      val buf   = new ExprBuffer()(fresh)
-
-      def genPrelude(): Unit = {
-        val vars = curMethodInfo.mutableVars.toSeq
+      def genEntry(): Unit = {
         buf.label(fresh(), params)
+
+        if (isExtern) {
+          paramSyms.zip(params).foreach {
+            case (Some(sym), param) if isExtern =>
+              val ty    = genType(sym.tpe)
+              val value = buf.fromExtern(ty, param)
+              curMethodEnv.enter(sym, value)
+            case _ =>
+              ()
+          }
+        }
+      }
+
+      def genVars(): Unit = {
+        val vars = curMethodInfo.mutableVars.toSeq
         vars.foreach { sym =>
-          val ty   = genType(sym.info, box = false)
+          val ty   = genType(sym.info)
           val slot = buf.var_(ty, unwind(fresh))
           curMethodEnv.enter(sym, slot)
         }
@@ -303,62 +389,35 @@ trait NirGenStat { self: NirGenPhase =>
             curMethodThis := {
               if (isStatic) None
               else Some(Val.Local(params.head.name, params.head.ty))
-            }
+            },
+            curMethodIsExtern := isExtern
           ) {
-            buf.genTailRecLabel(dd, isStatic, label)
+            buf.genReturn(buf.genTailRecLabel(dd, isStatic, label))
           }
 
         case _ if curMethodSym.get == NObjectInitMethod =>
-          nir.Val.Unit
+          scoped(
+            curMethodIsExtern := isExtern
+          ) {
+            buf.genReturn(nir.Val.Unit)
+          }
 
         case _ =>
           scoped(
             curMethodThis := {
               if (isStatic) None
               else Some(Val.Local(params.head.name, params.head.ty))
-            }
+            },
+            curMethodIsExtern := isExtern
           ) {
-            buf.genExpr(bodyp)
+            buf.genReturn(buf.genExpr(bodyp))
           }
       }
 
-      genPrelude()
-      buf.ret(genBody())
+      genEntry()
+      genVars()
+      genBody()
       removeDeadBlocks(buf.toSeq)
-    }
-
-    def genFunctionPtrForwarder(sym: Symbol): Val = {
-      val anondef = consumeLazyAnonDef(sym)
-      val body    = anondef.impl.body
-      val apply = body
-        .collectFirst {
-          case dd: DefDef if dd.symbol.hasFlag(SPECIALIZED) =>
-            dd
-        }
-        .getOrElse {
-          body.collectFirst {
-            case dd: DefDef
-                if dd.name == nme.apply && !dd.symbol.hasFlag(BRIDGE) =>
-              dd
-          }.get
-        }
-
-      apply match {
-        case ExternForwarder(tosym) =>
-          Val.Global(genMethodName(tosym), Type.Ptr)
-
-        case _ =>
-          val attrs  = Attrs(isExtern = true)
-          val name   = genAnonName(curClassSym, anondef.symbol)
-          val sig    = genMethodSig(apply.symbol, forceStatic = true)
-          val params = genParams(apply, isStatic = true)
-          val body =
-            genNormalMethodBody(apply, params, apply.rhs, isStatic = true)
-
-          buf += Defn.Define(attrs, name, sig, body)
-
-          Val.Global(name, Type.Ptr)
-      }
     }
   }
 

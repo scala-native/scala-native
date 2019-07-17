@@ -25,6 +25,13 @@ trait NirGenType { self: NirGenPhase =>
 
     def isField: Boolean =
       !sym.isMethod && sym.isTerm && !isScalaModule
+
+    def isCFuncPtrClass: Boolean =
+      CFuncPtrClass.contains(sym) || {
+        sym.info.parents.exists { parent =>
+          CFuncPtrClass.contains(parent.typeSymbol)
+        }
+      }
   }
 
   object SimpleType {
@@ -51,64 +58,41 @@ trait NirGenType { self: NirGenPhase =>
   def genArrayCode(st: SimpleType): Char =
     genPrimCode(st.targs.head)
 
-  def genType(st: SimpleType, box: Boolean): nir.Type = st.sym match {
-    // format: off
-    case CharClass    => if (!box) nir.Type.Char    else genRefType(BoxedCharacterClass)
-    case BooleanClass => if (!box) nir.Type.Bool    else genRefType(BoxedBooleanClass)
-    case ByteClass    => if (!box) nir.Type.Byte    else genRefType(BoxedByteClass)
-    case ShortClass   => if (!box) nir.Type.Short   else genRefType(BoxedShortClass)
-    case IntClass     => if (!box) nir.Type.Int     else genRefType(BoxedIntClass)
-    case LongClass    => if (!box) nir.Type.Long    else genRefType(BoxedLongClass)
-    case FloatClass   => if (!box) nir.Type.Float   else genRefType(BoxedFloatClass)
-    case DoubleClass  => if (!box) nir.Type.Double  else genRefType(BoxedDoubleClass)
-    // format: on
+  def genBoxType(st: SimpleType): nir.Type = st.sym match {
+    case CharClass    => genType(BoxedCharacterClass)
+    case BooleanClass => genType(BoxedBooleanClass)
+    case ByteClass    => genType(BoxedByteClass)
+    case ShortClass   => genType(BoxedShortClass)
+    case IntClass     => genType(BoxedIntClass)
+    case LongClass    => genType(BoxedLongClass)
+    case FloatClass   => genType(BoxedFloatClass)
+    case DoubleClass  => genType(BoxedDoubleClass)
+    case _            => genType(st)
+  }
 
-    case UByteClass if !box  => nir.Type.Byte
-    case UShortClass if !box => nir.Type.Short
-    case UIntClass if !box   => nir.Type.Int
-    case ULongClass if !box  => nir.Type.Long
+  def genExternType(st: SimpleType): nir.Type =
+    genType(st) match {
+      case _ if st.isCFuncPtrClass =>
+        nir.Type.Ptr
+      case refty: nir.Type.Ref if nir.Type.boxClasses.contains(refty.name) =>
+        nir.Type.unbox(nir.Type.Ref(refty.name))
+      case ty =>
+        ty
+    }
 
+  def genType(st: SimpleType): nir.Type = st.sym match {
+    case CharClass    => nir.Type.Char
+    case BooleanClass => nir.Type.Bool
+    case ByteClass    => nir.Type.Byte
+    case ShortClass   => nir.Type.Short
+    case IntClass     => nir.Type.Int
+    case LongClass    => nir.Type.Long
+    case FloatClass   => nir.Type.Float
+    case DoubleClass  => nir.Type.Double
     case NullClass    => nir.Type.Null
     case NothingClass => nir.Type.Nothing
-    case PtrClass     => nir.Type.Ptr
     case RawPtrClass  => nir.Type.Ptr
-
-    case sym if CStructClass.contains(sym) =>
-      nir.Type.StructValue(st.targs.map(genType(_, box = false)))
-    case CArrayClass =>
-      genCArrayType(st)
-    case sym if CFunctionPtrClass.contains(sym) =>
-      nir.Type.Ptr
-    case _ =>
-      genRefType(st)
-  }
-
-  def genCArrayType(st: SimpleType): nir.Type = st.targs match {
-    case Seq() =>
-      nir.Type.ArrayValue(nir.Rt.Object, 0)
-    case Seq(targ, tnat) =>
-      val ty = genType(targ, box = false)
-      val n  = genNatType(tnat)
-      nir.Type.ArrayValue(ty, n)
-  }
-
-  def genNatType(st: SimpleType): Int = {
-    def base(st: SimpleType): Int = st.sym match {
-      case sym if NatBaseClass.contains(sym) =>
-        NatBaseClass.indexOf(sym)
-      case _ =>
-        scalanative.util.unsupported("base nat type expected")
-    }
-    def digits(st: SimpleType): List[Int] = st.sym match {
-      case sym if NatBaseClass.contains(sym) =>
-        base(st) :: Nil
-      case NatDigitClass =>
-        base(st.targs(0)) :: digits(st.targs(1))
-      case _ =>
-        scalanative.util.unsupported("nat type expected")
-    }
-
-    digits(st).foldLeft(0)(_ * 10 + _)
+    case _            => genRefType(st)
   }
 
   def genRefType(st: SimpleType): nir.Type = st.sym match {
@@ -116,7 +100,7 @@ trait NirGenType { self: NirGenPhase =>
     case UnitClass        => nir.Type.Unit
     case BoxedUnitClass   => nir.Rt.BoxedUnit
     case NullClass        => genRefType(RuntimeNullClass)
-    case ArrayClass       => nir.Type.Array(genType(st.targs.head, box = false))
+    case ArrayClass       => nir.Type.Array(genType(st.targs.head))
     case _ if st.isStruct => genStruct(st)
     case _                => nir.Type.Ref(genTypeName(st.sym))
   }
@@ -137,7 +121,7 @@ trait NirGenType { self: NirGenPhase =>
     for {
       f <- st.sym.info.decls if f.isField
     } yield {
-      genType(f.tpe, box = false)
+      genType(f.tpe)
     }
   }.toSeq
 
@@ -159,45 +143,32 @@ trait NirGenType { self: NirGenPhase =>
     case _            => 'O'
   }
 
-  def genBoxType(st: SimpleType): nir.Type = st.sym match {
-    case BooleanClass =>
-      nir.Type.Ref(nir.Global.Top("java.lang.Boolean"))
-    case CharClass =>
-      nir.Type.Ref(nir.Global.Top("java.lang.Character"))
-    case ByteClass =>
-      nir.Type.Ref(nir.Global.Top("java.lang.Byte"))
-    case ShortClass =>
-      nir.Type.Ref(nir.Global.Top("java.lang.Short"))
-    case IntClass =>
-      nir.Type.Ref(nir.Global.Top("java.lang.Integer"))
-    case LongClass =>
-      nir.Type.Ref(nir.Global.Top("java.lang.Long"))
-    case FloatClass =>
-      nir.Type.Ref(nir.Global.Top("java.lang.Float"))
-    case DoubleClass =>
-      nir.Type.Ref(nir.Global.Top("java.lang.Double"))
-    case _ =>
-      unsupported("Box type must be primitive type.")
-  }
+  def genMethodSig(sym: Symbol): nir.Type.Function =
+    genMethodSigImpl(sym, isExtern = false)
 
-  def genMethodSig(sym: Symbol,
-                   forceStatic: Boolean = false): nir.Type.Function = {
+  def genExternMethodSig(sym: Symbol): nir.Type.Function =
+    genMethodSigImpl(sym, isExtern = true)
+
+  private def genMethodSigImpl(sym: Symbol,
+                               isExtern: Boolean): nir.Type.Function = {
     require(sym.isMethod || sym.isStaticMember)
 
     val tpe      = sym.tpe
     val owner    = sym.owner
-    val paramtys = genMethodSigParams(sym)
+    val paramtys = genMethodSigParamsImpl(sym, isExtern)
     val selfty =
-      if (forceStatic || owner.isExternModule || owner.isImplClass) None
-      else Some(genType(owner.tpe, box = true))
+      if (isExtern || owner.isExternModule || owner.isImplClass) None
+      else Some(genType(owner.tpe))
     val retty =
       if (sym.isClassConstructor) nir.Type.Unit
-      else genType(sym.tpe.resultType, box = false)
+      else if (isExtern) genExternType(sym.tpe.resultType)
+      else genType(sym.tpe.resultType)
 
     nir.Type.Function(selfty ++: paramtys, retty)
   }
 
-  def genMethodSigParams(sym: Symbol): Seq[nir.Type] = {
+  private def genMethodSigParamsImpl(sym: Symbol,
+                                     isExtern: Boolean): Seq[nir.Type] = {
     val wereRepeated = exitingPhase(currentRun.typerPhase) {
       for {
         params <- sym.tpe.paramss
@@ -214,7 +185,11 @@ trait NirGenType { self: NirGenPhase =>
         nir.Type.Vararg
 
       case p =>
-        genType(p.tpe, box = false)
+        if (isExtern) {
+          genExternType(p.tpe)
+        } else {
+          genType(p.tpe)
+        }
     }
   }
 }

@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.native._
+import scalanative.unsafe._
 
 @extern
 object poll {
@@ -84,12 +84,11 @@ object pollOps {
   import poll._
 
   implicit class pollOps(val ptr: Ptr[struct_pollfd]) extends AnyVal {
-    def fd: CInt             = !(ptr._1)
-    def events: pollEvent_t  = !(ptr._2)
-    def revents: pollEvent_t = !(ptr._3)
-
-    def fd_=(v: CInt): Unit             = !ptr._1 = v
-    def events_=(v: pollEvent_t): Unit  = !ptr._2 = v
-    def revents_=(v: pollEvent_t): Unit = !ptr._3 = v
+    def fd: CInt                        = ptr._1
+    def events: pollEvent_t             = ptr._2
+    def revents: pollEvent_t            = ptr._3
+    def fd_=(v: CInt): Unit             = ptr._1 = v
+    def events_=(v: pollEvent_t): Unit  = ptr._2 = v
+    def revents_=(v: pollEvent_t): Unit = ptr._3 = v
   }
 }

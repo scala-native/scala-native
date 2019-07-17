@@ -6,7 +6,8 @@ import java.util.concurrent.TimeUnit
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.scalanative.native._
+import scala.scalanative.unsigned._
+import scala.scalanative.unsafe._
 import scala.scalanative.libc.{errno => err, signal => sig, _}
 import sig._
 import err.errno
@@ -68,11 +69,10 @@ private[lang] class UnixProcess private (
         val ts = stackalloc[timespec]
         val tv = stackalloc[timeval]
         throwOnError(gettimeofday(tv, null), "Failed to set time of day.")
-        val nsec = unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(
-          !tv._2.cast[Ptr[CInt]])
-        val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
-        !ts._1 = !tv._1 + sec
-        !ts._2 = if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec
+        val nsec = unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2)
+        val sec  = TimeUnit.NANOSECONDS.toSeconds(nsec)
+        ts._1 = tv._1 + sec
+        ts._2 = if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec
         waitImpl(() => waitFor(ts)) == 0
       case _ => true
     }
@@ -249,7 +249,7 @@ object UnixProcess {
   }
 
   @inline def open(f: File, flags: CInt) = Zone { implicit z =>
-    fcntl.open(toCString(f.getAbsolutePath), flags) match {
+    fcntl.open(toCString(f.getAbsolutePath), flags, 0.toUInt) match {
       case -1 => throw new IOException(s"Unable to open file $f ($errno)")
       case fd => fd
     }

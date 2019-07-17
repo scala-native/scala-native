@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.native._
+import scalanative.unsafe._
 
 @extern
 object syslog {
@@ -13,9 +13,6 @@ object syslog {
 
   @name("scalanative_setlogmask")
   def setlogmask(maskpri: CInt): CInt = extern
-
-  @name("scalanative_syslog")
-  def syslog(priority: CInt, message: CString, args: CVararg*): Unit = extern
 
   @name("scalanative_log_emerg")
   def LOG_EMERG: CInt = extern

@@ -8,8 +8,8 @@ foreign native code. This includes C and other languages that can expose APIs
 via C ABI (e.g. C++, D, Rust etc.)
 
 All of the interop APIs discussed here are defined in
-``scala.scalanative.native`` package. For brevity, we're going
-to refer to that namespace as just ``native``.
+``scala.scalanative.unsafe`` package. For brevity, we're going
+to refer to that namespace as just ``unsafe``.
 
 Extern objects
 --------------
@@ -22,12 +22,14 @@ For example, to call C's ``malloc`` one might declare it as following:
 
 .. code-block:: scala
 
-    @native.extern
+    import scala.scalanative.unsafe._
+
+    @extern
     object libc {
-      def malloc(size: native.CSize): native.Ptr[Byte] = native.extern
+      def malloc(size: CSize): Ptr[Byte] = extern
     }
 
-``native.extern`` on the right hand side of the method definition signifies
+``extern`` on the right hand side of the method definition signifies
 that the body of the method is defined elsewhere in a native library that is
 available on the library path (see `Linking with native libraries`_). The
 signature of the external function must match the signature of the original C
@@ -43,32 +45,32 @@ equivalent Scala type for each of the arguments:
 C Type                    Scala Type
 ========================= =========================
 ``void``                  ``Unit``
-``bool``                  ``native.CBool``
-``char``                  ``native.CChar``
-``signed char``           ``native.CSignedChar``
-``unsigned char``         ``native.CUnsignedChar`` [1_]
-``short``                 ``native.CShort``
-``unsigned short``        ``native.CUnsignedShort`` [1_]
-``int``                   ``native.CInt``
-``long int``              ``native.CLongInt``
-``unsigned int``          ``native.CUnsignedInt`` [1_]
-``unsigned long int``     ``native.CUnsignedLongInt`` [1_]
-``long``                  ``native.CLong``
-``unsigned long``         ``native.CUnsignedLong`` [1_]
-``long long``             ``native.CLongLong``
-``unsigned long long``    ``native.CUnsignedLongLong`` [1_]
-``size_t``                ``native.CSize``
-``ptrdiff_t``             ``native.CPtrDiff`` [2_]
-``wchar_t``               ``native.CWideChar``
-``char16_t``              ``native.CChar16``
-``char32_t``              ``native.CChar32``
-``float``                 ``native.CFloat``
-``double``                ``native.CDouble``
-``void*``                 ``native.Ptr[Byte]`` [2_]
-``int*``                  ``native.Ptr[native.CInt]`` [2_]
-``char*``                 ``native.CString`` [2_] [3_]
-``int (*)(int)``          ``native.CFunctionPtr1[native.CInt, native.CInt]`` [2_] [4_]
-``struct { int x, y; }*`` ``native.Ptr[native.CStruct2[native.CInt, native.CInt]]`` [2_] [5_]
+``bool``                  ``unsafe.CBool``
+``char``                  ``unsafe.CChar``
+``signed char``           ``unsafe.CSignedChar``
+``unsigned char``         ``unsafe.CUnsignedChar`` [1_]
+``short``                 ``unsafe.CShort``
+``unsigned short``        ``unsafe.CUnsignedShort`` [1_]
+``int``                   ``unsafe.CInt``
+``long int``              ``unsafe.CLongInt``
+``unsigned int``          ``unsafe.CUnsignedInt`` [1_]
+``unsigned long int``     ``unsafe.CUnsignedLongInt`` [1_]
+``long``                  ``unsafe.CLong``
+``unsigned long``         ``unsafe.CUnsignedLong`` [1_]
+``long long``             ``unsafe.CLongLong``
+``unsigned long long``    ``unsafe.CUnsignedLongLong`` [1_]
+``size_t``                ``unsafe.CSize``
+``ptrdiff_t``             ``unsafe.CPtrDiff`` [2_]
+``wchar_t``               ``unsafe.CWideChar``
+``char16_t``              ``unsafe.CChar16``
+``char32_t``              ``unsafe.CChar32``
+``float``                 ``unsafe.CFloat``
+``double``                ``unsafe.CDouble``
+``void*``                 ``unsafe.Ptr[Byte]`` [2_]
+``int*``                  ``unsafe.Ptr[unsafe.CInt]`` [2_]
+``char*``                 ``unsafe.CString`` [2_] [3_]
+``int (*)(int)``          ``unsafe.CFuncPtr1[unsafe.CInt, unsafe.CInt]`` [2_] [4_]
+``struct { int x, y; }*`` ``unsafe.Ptr[unsafe.CStruct2[unsafe.CInt, unsafe.CInt]]`` [2_] [5_]
 ``struct { int x, y; }``  Not supported
 ========================= =========================
 
@@ -83,14 +85,16 @@ Linking with native libraries
 
 C compilers typically require to pass an additional ``-l mylib`` flag to
 dynamically link with a library. In Scala Native, one can annotate libraries to
-link with using the ``@native.link`` annotation.
+link with using the ``@link`` annotation.
 
 .. code-block:: scala
 
-   @native.link("mylib")
-   @native.extern
+   import scala.scalanative.unsafe._
+
+   @link("mylib")
+   @extern
    object mylib {
-     def f(): Unit = native.extern
+     def f(): Unit = extern
    }
 
 Whenever any of the members of ``mylib`` object are reachable, the Scala Native
@@ -98,14 +102,15 @@ linker will automatically link with the corresponding native library.
 
 As in C, library names are specified without the ``lib`` prefix. For example,
 the library `libuv <https://github.com/libuv/libuv>`_  corresponds to
-``@native.link("uv")`` in Scala Native.
+``@link("uv")`` in Scala Native.
 
 It is possible to rename functions using the ``@name`` annotation. Its use is
 recommended to enforce the Scala naming conventions in bindings:
 
 .. code-block:: scala
 
-    import scala.scalanative.native._
+    import scala.scalanative.unsafe._
+
     @link("uv")
     @extern
     object uv {
@@ -119,22 +124,41 @@ objects as it is permitted to use the same ``@link`` annotation more than once.
 Variadic functions
 ``````````````````
 
-One can declare variadic functions like ``printf`` using ``native.CVararg``
-auxiliary type:
+Scala Native supports native interoperability with C's variadic argument
+list type (i.e. ``va_list``), but not ``...`` varargs. For example ``vprintf``
+can be declared as:
 
 .. code-block:: scala
 
-   @native.extern
-   object stdio {
-     def printf(format: native.CString,
-                args: native.CVararg*): native.CInt = native.extern
+   import scala.scalanative.unsafe._
+
+   @extern
+   object mystdio {
+     def vprintf(format: CString, args: CVarArgList): CInt = extern
    }
+
+One can wrap a function in a nicer API like:
+
+.. code-block:: scala
+
+   import scala.scalanative.unsafe._
+
+   def myprintf(format: CString, args: CVarArg*): CInt =
+     Zone { implicit z =>
+       mystdio.vprintf(format, toCVarArgList(args.toSeq))
+     }
+
+And then call it just like a regular Scala function:
+
+.. code-block:: scala
+
+   myprintf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
 
 Pointer types
 -------------
 
 Scala Native provides a built-in equivalent of C's pointers via
-``native.Ptr[T]`` data type. Under the hood pointers are implemented
+``unsafe.Ptr[T]`` data type. Under the hood pointers are implemented
 using unmanaged machine pointers.
 
 Operations on pointers are closely related to their C counterparts and
@@ -149,9 +173,9 @@ Pointer to index ``ptr + i``, ``&ptr[i]`` ``ptr + i``
 Elements between ``ptr1 - ptr2``          ``ptr1 - ptr2``
 Load at index    ``ptr[i]``               ``ptr(i)``
 Store at index   ``ptr[i] = value``       ``ptr(i) = value``
-Pointer to field ``&ptr->name``           ``ptr._N``
-Load a field     ``ptr->name``            ``!ptr._N``
-Store a field    ``ptr->name = value``    ``!ptr._N = value``
+Pointer to field ``&ptr->name``           ``ptr.atN``
+Load a field     ``ptr->name``            ``ptr._N``
+Store a field    ``ptr->name = value``    ``ptr._N = value``
 ================ ======================== ===================
 
 Where ``N`` is the index of the field ``name`` in the struct.
@@ -171,15 +195,24 @@ One can declare it as following in Scala Native:
 
 .. code-block:: scala
 
-    def test(f: CFunctionPtr1[CString, Unit]): Unit = native.extern
+    def test(f: unsafe.CFuncPtr1[CString, Unit]): Unit = unsafe.extern
 
-To pass a Scala function to ``CFunctionPtrN``, you need to use the conversion
-function ``CFunctionPtr.fromFunctionN()``:
+`CFuncPtrN` types are a SAM (single abstract method) traits. You
+can define them by creating a class that inherits from the corresponding
+trait:
 
 .. code-block:: scala
 
-    def f(s: CString): Unit = ???
-    def g(): Unit = test(CFunctionPtr.fromFunction1(f))
+   val myfuncptr = new unsafe.FuncPtr0[Unit] {
+     def apply(): Unit = println("hi there!")
+   }
+
+On Scala 2.12 or newer, Scala language automatically coverts
+from clsoures to SAM types:
+
+.. code-block:: scala
+
+   val myfuncptr: unsafe.FuncPtr0[Unit] = () => println("hi there!")
 
 Memory management
 `````````````````
@@ -196,11 +229,13 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 
    .. code-block:: scala
 
-      native.Zone { implicit z =>
-        val buffer = native.alloc[Byte](n)
+      import scala.scalanative.unsafe._
+
+      Zone { implicit z =>
+        val buffer = alloc[Byte](n)
       }
 
-   `native.alloc` requests memory sufficient to contain `n` values of a given type.
+   ``alloc`` requests memory sufficient to contain `n` values of a given type.
    If number of elements is not specified, it defaults to a single element.
    Memory is zeroed out by default.
 
@@ -209,7 +244,7 @@ runtime system, one has to be extra careful when working with unmanaged memory.
    has to zone allocate.
 
    One typical example of this are C strings that are created from
-   Scala strings using ``native.toCString``. The conversion takes implicit
+   Scala strings using ``unsafe.toCString``. The conversion takes implicit
    zone parameter and allocates the result in that zone.
 
    When using zone allocated memory one has to be careful not to
@@ -219,11 +254,11 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 2. **Stack allocation.**
 
    Scala Native provides a built-in way to perform stack allocations of
-   using ``native.stackalloc`` function:
+   using ``unsafe.stackalloc`` function:
 
    .. code-block:: scala
 
-       val buffer = native.stackalloc[Byte](256)
+       val buffer = unsafe.stackalloc[Byte](256)
 
    This code will allocate 256 bytes that are going to be available until
    the enclosing method returns. Number of elements to be allocated is optional
@@ -237,7 +272,7 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 
    Scala Native's library contains a bindings for a subset of the standard
    libc functionality. This includes the trio of ``malloc``, ``realloc`` and
-   ``free`` functions that are defined in ``native.stdlib`` extern object.
+   ``free`` functions that are defined in ``unsafe.stdlib`` extern object.
 
    Calling those will let you allocate memory using system's standard
    dynamic memory allocator. Every single manual allocation must also
@@ -268,7 +303,7 @@ Memory layout types are auxiliary types that let one specify memory layout of
 unmanaged memory. They are meant to be used purely in combination with native
 pointers and do not have a corresponding first-class values backing them.
 
-* ``native.Ptr[native.CStructN[T1, ..., TN]]``
+* ``unsafe.Ptr[unsafe.CStructN[T1, ..., TN]]``
 
   Pointer to a C struct with up to 22 fields.
   Type parameters are the types of corresponding fields.
@@ -277,36 +312,34 @@ pointers and do not have a corresponding first-class values backing them.
 
   .. code-block:: scala
 
-      val ptr = native.stackalloc[native.CStruct2[Int, Int]]
-      !ptr._1 = 10
-      !ptr._2 = 20
-      println(s"first ${!ptr._1}, second ${!ptr._2}")
+      val ptr = unsafe.stackalloc[unsafe.CStruct2[Int, Int]]
+      ptr._1 = 10
+      ptr._2 = 20
+      println(s"first ${ptr._1}, second ${ptr._2}")
 
-  Here ``_N`` computes a derived pointer that corresponds to memory
-  occupied by field number N.
+  Here ``_N`` is an accessor for the field number N.
 
-* ``native.Ptr[native.CArray[T, N]]``
+* ``unsafe.Ptr[unsafe.CArray[T, N]]``
 
   Pointer to a C array with statically-known length ``N``. Length is encoded as
   a type-level natural number. Natural numbers are types that are composed of
-  base naturals ``Nat._0, ... Nat._9`` and an additional ``Nat.Digit``
-  constructor. So for example number ``1024`` is going to be encoded as
-  following:
+  base naturals ``Nat._0, ... Nat._9`` and an additional ``Nat.DigitN``
+  constructors, where ``N`` refers to number of digits in the given number. 
+  So for example number ``1024`` is going to be encoded as following:
 
   .. code-block:: scala
 
-      import scalanative.native._, Nat._
+      import scalanative.unsafe._, Nat._
 
-      type _1024 = Digit[_1, Digit[_0, Digit[_2, _4]]]
+      type _1024 = Digit4[_1, _0, _2, _4]
 
   Once you have a natural for the length, it can be used as an array length:
 
   .. code-block:: scala
 
-      val ptr = native.stackalloc[CArray[Byte, _1024]]
+      val arrptr = unsafe.stackalloc[CArray[Byte, _1024]]
 
-  Addresses of the first twenty two elements are accessible via ``_N``
-  accessors. The rest are accessible via ``ptr._1 + index``.
+  You can find an address of n-th array element via ``arrptr.at(n)``.
 
 Byte strings
 ````````````
@@ -317,23 +350,15 @@ strings (similarly to C):
 
 .. code-block:: scala
 
-    import scalanative.native._
+    import scalanative.unsafe._
+    import scalanative.libc._
 
     // CString is an alias for Ptr[CChar]
     val msg: CString = c"Hello, world!"
     stdio.printf(msg)
 
-Additionally, we also expose two helper functions ``native.toCString`` and
-``native.fromCString`` to convert between C-style and Java-style strings.
-
-Unchecked casts
-```````````````
-
-Quite often, C interfaces expect the user to perform unchecked casts to convert
-between different pointer types, or between pointers and integer values. For
-this particular use case, we provide ``obj.cast[T]`` that is defined in the
-implicit class ``native.CCast``. Unlike Scala's ``asInstanceOf``, ``cast`` does
-not provide any safety guarantees.
+Additionally, we also expose two helper functions ``unsafe.toCString`` and
+``unsafe.fromCString`` to convert between C-style and Java-style strings.
 
 Platform-specific types
 -----------------------
@@ -342,8 +367,8 @@ Scala Native defines the type ``Word`` and its unsigned counterpart, ``UWord``.
 A word corresponds to ``Int`` on 32-bit architectures and to ``Long`` on 64-bit
 ones.
 
-Size of types
--------------
+Size and alignment of types
+---------------------------
 
 In order to statically determine the size of a type, you can use the ``sizeof``
 function which is Scala Native's counterpart of the eponymous C operator. It
@@ -351,37 +376,43 @@ returns the size in bytes:
 
 .. code-block:: scala
 
-    println(sizeof[Byte])    // 1
-    println(sizeof[CBool])   // 1
-    println(sizeof[CShort])  // 2
-    println(sizeof[CInt])    // 4
-    println(sizeof[CLong])   // 8
+    println(unsafe.sizeof[Byte])    // 1
+    println(unsafe.sizeof[CBool])   // 1
+    println(unsafe.sizeof[CShort])  // 2
+    println(unsafe.sizeof[CInt])    // 4
+    println(unsafe.sizeof[CLong])   // 8
 
 It can also be used to obtain the size of a structure:
 
 .. code-block:: scala
 
-    type TwoBytes = CStruct2[Byte, Byte]
-    println(sizeof[TwoBytes])  // 2
+    type TwoBytes = unsafe.CStruct2[Byte, Byte]
+    println(unsafe.sizeof[TwoBytes])  // 2
 
+Aditionally you can also use ``alignmentof`` to find alignment of a given type:
+
+.. code-block:: scala
+
+    println(unsafe.alignmentof[Int])                         // 4
+    println(unsafe.alignmentof[unsafe.CStruct2[Byte, Long]]) // 8
 
 Unsigned integer types
 ----------------------
 
 Scala Native provides support for four unsigned integer types:
 
-1. ``native.UByte``
-2. ``native.UShort``
-3. ``native.UInt``
-4. ``native.ULong``
+1. ``unsigned.UByte``
+2. ``unsigned.UShort``
+3. ``unsigned.UInt``
+4. ``unsigned.ULong``
 
 They share the same primitive operations as signed integer types.
 Primitive operation between two integer values are supported only
 if they have the same signedness (they must both signed or both unsigned.)
 
 Conversions between signed and unsigned integers must be done explicitly
-using ``signed.toUByte``, ``signed.toUShort``, ``signed.toUInt``, ``signed.toULong``
-and conversely ``unsigned.toByte``, ``unsigned.toShort``, ``unsigned.toInt``,
-``unsigned.toLong``.
+using ``byteValue.toUByte``, ``shortValue.toUShort``, ``intValue.toUInt``, ``longValue.toULong``
+and conversely ``unsignedByteValue.toByte``, ``unsignedShortValue.toShort``, ``unsignedIntValue.toInt``,
+``unsignedLongValue.toLong``.
 
 Continue to :ref:`lib`.

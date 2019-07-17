@@ -1636,42 +1636,6 @@ of the original license below:
     ===============================================================================
     ===============================================================================
 
-# License notice for marcomaggi/cre2
-
-Scala Native includes [marcomaggi/cre2](https://github.com/marcomaggi/cre2)
-bindings with minor modifications as part of its regular expression
-implementation. The original project copyright notice is available below:
-
-```
-    Copyright (c) 2009 The RE2 Authors. All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are
-    met:
-
-       * Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-       * Redistributions in binary form must reproduce the above
-    copyright notice, this list of conditions and the following disclaimer
-    in the documentation and/or other materials provided with the
-    distribution.
-       * Neither the name of Google Inc. nor the names of its
-    contributors may be used to endorse or promote products derived from
-    this software without specific prior written permission.
-
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
 # License notice for ryu IEEE754 Double & Float toString conversion
 
 Scala Native code to convert IEEE754 Double & Float values to strings
@@ -1742,3 +1706,58 @@ The original license notice is included below:
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 ```
+
+# License notice for  re2s regular expression code
+
+The re2s code is derived, with appreciation and thanks, from Scala JVM code
+at  [scala-native/re2s](https://github.com/scala-native/re2s).  The
+re2s implementation carries the license of the work from which 
+it was derived. This original license notice is included below:
+
+```
+This is a work derived from James Ring's RE2/J port of Russ Cox's RE2 in Go, whose license
+http://golang.org/LICENSE is as follows:
+
+Copyright (c) 2009 The Go Authors. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+   * Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+
+   * Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in
+     the documentation and/or other materials provided with the
+     distribution.
+
+   * Neither the name of Google Inc. nor the names of its contributors
+     may be used to endorse or promote products derived from this
+     software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+The re2s unit-tests appear to be original work of the re2s authors
+and carry the Scala License posted at the top of this file. Original work 
+produced by the port to Scala Native is covered by the Scala License also.
+
+# License notice for apple/swift
+
+Implementation of CVarArg and CVarArgList is based on the code from 
+[apple/swift](https://github.com/apple/swift). The original code
+was licensed under Apache License Version 2.0, just like the 
+Scala Native itself.
+
+

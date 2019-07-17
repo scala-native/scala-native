@@ -1,4 +1,4 @@
-package scala.scalanative.native
+package scala.scalanative.unsafe
 
 object NullPointerSuite extends tests.Suite {
   class E extends Exception

@@ -1,7 +1,7 @@
 package scala.scalanative
 package libc
 
-import scalanative.native._
+import scalanative.unsafe._
 
 /** All functions take complex but Scala Native does not
  * support pass by value so we pass a pointer to an
@@ -29,8 +29,8 @@ import scalanative.native._
 @extern
 object complex {
   import Nat._2
-  type CFloatComplex  = CArray[CFloat, _2]
-  type CDoubleComplex = CArray[CDouble, _2]
+  type CFloatComplex  = CStruct2[CFloat, CFloat]
+  type CDoubleComplex = CStruct2[CDouble, CDouble]
 
   @name("scalanative_cacosf")
   def cacosf(complex: Ptr[CFloatComplex],
@@ -188,14 +188,10 @@ object complexOps {
   import complex._
 
   implicit class complexOpsFloat(val ptr: Ptr[CFloatComplex]) extends AnyVal {
-    def re: CFloat = !(ptr._1)
-    def re_=(value: CFloat): Unit = {
-      !ptr._1 = value
-    }
-    def im: CFloat = !(ptr._2)
-    def im_=(value: CFloat): Unit = {
-      !ptr._2 = value
-    }
+    def re: CFloat                = ptr._1
+    def re_=(value: CFloat): Unit = ptr._1 = value
+    def im: CFloat                = ptr._2
+    def im_=(value: CFloat): Unit = ptr._2 = value
     def copy(to: Ptr[CFloatComplex]): Ptr[CFloatComplex] = {
       to.re = re
       to.im = im
@@ -209,14 +205,10 @@ object complexOps {
   }
 
   implicit class complexOpsDouble(val ptr: Ptr[CDoubleComplex]) extends AnyVal {
-    def re: CDouble = !(ptr._1)
-    def re_=(value: CDouble): Unit = {
-      !ptr._1 = value
-    }
-    def im: CDouble = !(ptr._2)
-    def im_=(value: CDouble): Unit = {
-      !ptr._2 = value
-    }
+    def re: CDouble                = ptr._1
+    def re_=(value: CDouble): Unit = ptr._1 = value
+    def im: CDouble                = ptr._2
+    def im_=(value: CDouble): Unit = ptr._2 = value
     def copy(to: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = {
       to.re = re
       to.im = im

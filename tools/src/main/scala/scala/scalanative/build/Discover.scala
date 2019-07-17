@@ -12,6 +12,10 @@ import scalanative.build.IO.RichPath
  */
 object Discover {
 
+  /** Compilation mode name that takes SCALANATIVE_MODE into account or default otherwise. */
+  def mode(): String =
+    getenv("SCALANATIVE_MODE").getOrElse(build.Mode.default.name)
+
   /** LTO variant used for release mode. */
   def LTO(): String =
     getenv("SCALANATIVE_LTO").getOrElse("none")

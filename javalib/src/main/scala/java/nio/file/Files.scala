@@ -33,7 +33,8 @@ import java.util.{
 }
 import java.util.stream.{Stream, WrappedScalaStream}
 
-import scalanative.native._
+import scalanative.unsigned._
+import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.{dirent, fcntl, limits, unistd}, dirent._
 import scalanative.posix.sys.stat
@@ -248,9 +249,18 @@ object Files {
            matcher: BiPredicate[Path, BasicFileAttributes],
            options: Array[FileVisitOption]): Stream[Path] = {
     val stream = walk(start, maxDepth, 0, options, SSet.empty).filter { p =>
-      val attributes = getFileAttributeView(p,
-                                            classOf[BasicFileAttributeView],
-                                            Array.empty).readAttributes()
+      //
+      // See comments for FileVisitOption & linkOpts in _walkFileTree
+      val linkOpts =
+        if (options.contains(FileVisitOption.FOLLOW_LINKS))
+          Array.empty[LinkOption]
+        else
+          Array(LinkOption.NOFOLLOW_LINKS)
+
+      val attributes =
+        getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
+          .readAttributes()
+
       matcher.test(p, attributes)
     }
     new WrappedScalaStream(stream.toStream, None)
@@ -323,7 +333,7 @@ object Files {
         } else {
           stat.stat(toCString(path.toFile.getPath()), buf)
         }
-      if (err == 0) stat.S_ISREG(!(buf._13)) == 1
+      if (err == 0) stat.S_ISREG(buf._13) == 1
       else false
     }
 
@@ -334,7 +344,7 @@ object Files {
     Zone { implicit z =>
       val buf = alloc[stat.stat]
       if (stat.lstat(toCString(path.toFile.getPath()), buf) == 0) {
-        stat.S_ISLNK(!(buf._13)) == 1
+        stat.S_ISLNK(buf._13) == 1
       } else {
         false
       }
@@ -438,7 +448,7 @@ object Files {
     }
     val len   = pathSize.toInt
     val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
-    val fd    = fcntl.open(toCString(path.toString), fcntl.O_RDONLY)
+    val fd    = fcntl.open(toCString(path.toString), fcntl.O_RDONLY, 0.toUInt)
     try {
       var offset = 0
       var read   = 0
@@ -604,6 +614,7 @@ object Files {
                  visitor)
 
   private case object TerminateTraversalException extends Exception
+
   def walkFileTree(start: Path,
                    options: Set[FileVisitOption],
                    maxDepth: Int,
@@ -627,36 +638,56 @@ object Files {
 
       if (dirsToSkip.contains(parent)) ()
       else {
-        val attributes = getFileAttributeView(p,
-                                              classOf[BasicFileAttributeView],
-                                              Array.empty).readAttributes()
-        while (openDirs.nonEmpty && !parent.startsWith(openDirs.head)) {
-          visitor.postVisitDirectory(openDirs.pop(), null)
-        }
+        try {
 
-        val result =
-          if (attributes.isRegularFile) {
-            visitor.visitFile(p, attributes)
-          } else if (attributes.isDirectory) {
-            openDirs.push(p)
-            visitor.preVisitDirectory(p, attributes) match {
-              case FileVisitResult.SKIP_SUBTREE =>
-                openDirs.pop; FileVisitResult.SKIP_SUBTREE
-              case other => other
-            }
-          } else {
-            FileVisitResult.CONTINUE
+          // The sense of how LinkOption follows links or not is somewhat
+          // inverted because of a double negative.  The absense of
+          // LinkOption.NOFOLLOW_LINKS means follow links, the default.
+          // There is no explicit LinkOption.FOLLOW_LINKS.
+
+          val linkOpts =
+            if (options.contains(FileVisitOption.FOLLOW_LINKS))
+              Array.empty[LinkOption]
+            else
+              Array(LinkOption.NOFOLLOW_LINKS)
+
+          val attributes =
+            getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
+              .readAttributes()
+
+          while (openDirs.nonEmpty && !parent.startsWith(openDirs.head)) {
+            visitor.postVisitDirectory(openDirs.pop(), null)
           }
 
-        result match {
-          case FileVisitResult.TERMINATE     => throw TerminateTraversalException
-          case FileVisitResult.SKIP_SUBTREE  => dirsToSkip += p
-          case FileVisitResult.SKIP_SIBLINGS => dirsToSkip += parent
-          case FileVisitResult.CONTINUE      => ()
+          val result =
+            if (attributes.isRegularFile) {
+              visitor.visitFile(p, attributes)
+            } else if (attributes.isDirectory) {
+              openDirs.push(p)
+              visitor.preVisitDirectory(p, attributes) match {
+                case FileVisitResult.SKIP_SUBTREE =>
+                  openDirs.pop; FileVisitResult.SKIP_SUBTREE
+                case other => other
+              }
+            } else {
+              FileVisitResult.CONTINUE
+            }
+
+          result match {
+            case FileVisitResult.TERMINATE =>
+              throw TerminateTraversalException
+            case FileVisitResult.SKIP_SUBTREE  => dirsToSkip += p
+            case FileVisitResult.SKIP_SIBLINGS => dirsToSkip += parent
+            case FileVisitResult.CONTINUE      => ()
+          }
+
+        } catch {
+          // Give the visitor a last chance to fix things up.
+          case e: IOException => visitor.visitFileFailed(p, e)
         }
       }
-
     }
+
     while (openDirs.nonEmpty) {
       visitor.postVisitDirectory(openDirs.pop(), null)
     }

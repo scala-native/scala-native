@@ -1,6 +1,6 @@
 package java.util
 
-import scalanative.native.stub
+import scalanative.annotation.stub
 
 import java.io.Serializable
 

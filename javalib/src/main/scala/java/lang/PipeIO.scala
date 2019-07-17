@@ -2,7 +2,8 @@ package java
 package lang
 
 import java.io._
-import scala.scalanative.native._
+import scala.scalanative.annotation.stub
+import scala.scalanative.unsafe._
 import scala.scalanative.libc._, signal._
 import scala.scalanative.posix.sys.ioctl._
 
@@ -79,7 +80,7 @@ private[lang] object PipeIO {
     private[this] var drained = false
     private def availableFD() = {
       val res = stackalloc[CInt]
-      ioctl(is.getFD.fd, FIONREAD, res.cast[Ptr[scala.Byte]]) match {
+      ioctl(is.getFD.fd, FIONREAD, res.asInstanceOf[Ptr[scala.Byte]]) match {
         case -1 => 0
         case _  => !res
       }

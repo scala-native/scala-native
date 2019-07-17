@@ -2,13 +2,13 @@ package scala.scalanative
 package posix
 package sys
 
-import scalanative.native._
+import scalanative.unsafe._
 
 @extern
 object socket {
   type socklen_t   = CUnsignedInt
   type sa_family_t = CUnsignedShort
-  type _14         = Nat.Digit[Nat._1, Nat._4]
+  type _14         = Nat.Digit2[Nat._1, Nat._4]
   type sockaddr =
     CStruct2[sa_family_t, // sa_family
              CArray[CChar, _14]] // sa_data, size = 14 in OS X and Linux
@@ -191,53 +191,48 @@ object socketOps {
   import socket._
 
   implicit class sockaddrOps(val ptr: Ptr[sockaddr]) extends AnyVal {
-    def sa_family: sa_family_t      = !ptr._1
-    def sa_data: CArray[CChar, _14] = !ptr._2
-
-    def sa_family_=(v: sa_family_t): Unit      = !ptr._1 = v
-    def sa_data_=(v: CArray[CChar, _14]): Unit = !ptr._2 = v
+    def sa_family: sa_family_t                 = ptr._1
+    def sa_data: CArray[CChar, _14]            = ptr._2
+    def sa_family_=(v: sa_family_t): Unit      = ptr._1 = v
+    def sa_data_=(v: CArray[CChar, _14]): Unit = ptr._2 = v
   }
 
   implicit class sockaddr_storageOps(val ptr: Ptr[sockaddr_storage])
       extends AnyVal {
-    def ss_family: sa_family_t            = !ptr._1
-    def ss_family_=(v: sa_family_t): Unit = !ptr._1 = v
+    def ss_family: sa_family_t            = ptr._1
+    def ss_family_=(v: sa_family_t): Unit = ptr._1 = v
   }
 
   implicit class msghdrOps(val ptr: Ptr[msghdr]) extends AnyVal {
-    def msg_name: Ptr[Byte]       = !ptr._1
-    def msg_namelen: socklen_t    = !ptr._2
-    def msg_iov: Ptr[uio.iovec]   = !ptr._3
-    def msg_iovlen: CInt          = !ptr._4
-    def msg_control: Ptr[Byte]    = !ptr._5
-    def msg_controllen: socklen_t = !ptr._6
-    def msg_flags: CInt           = !ptr._7
-
-    def msg_name_=(v: Ptr[Byte]): Unit       = !ptr._1 = v
-    def msg_namelen_=(v: socklen_t): Unit    = !ptr._2 = v
-    def msg_iov_=(v: Ptr[uio.iovec]): Unit   = !ptr._3 = v
-    def msg_iovlen_=(v: CInt): Unit          = !ptr._4 = v
-    def msg_control_=(v: Ptr[Byte]): Unit    = !ptr._5 = v
-    def msg_controllen_=(v: socklen_t): Unit = !ptr._6 = v
-    def msg_flags_=(v: CInt): Unit           = !ptr._7 = v
+    def msg_name: Ptr[Byte]                  = ptr._1
+    def msg_namelen: socklen_t               = ptr._2
+    def msg_iov: Ptr[uio.iovec]              = ptr._3
+    def msg_iovlen: CInt                     = ptr._4
+    def msg_control: Ptr[Byte]               = ptr._5
+    def msg_controllen: socklen_t            = ptr._6
+    def msg_flags: CInt                      = ptr._7
+    def msg_name_=(v: Ptr[Byte]): Unit       = ptr._1 = v
+    def msg_namelen_=(v: socklen_t): Unit    = ptr._2 = v
+    def msg_iov_=(v: Ptr[uio.iovec]): Unit   = ptr._3 = v
+    def msg_iovlen_=(v: CInt): Unit          = ptr._4 = v
+    def msg_control_=(v: Ptr[Byte]): Unit    = ptr._5 = v
+    def msg_controllen_=(v: socklen_t): Unit = ptr._6 = v
+    def msg_flags_=(v: CInt): Unit           = ptr._7 = v
   }
 
   implicit class cmsghdrOps(val ptr: Ptr[cmsghdr]) extends AnyVal {
-    def cmsg_len: socklen_t = !ptr._1
-    def cmsg_level: CInt    = !ptr._2
-    def cmsg_type: CInt     = !ptr._3
-
-    def cmsg_len_=(v: socklen_t): Unit = !ptr._1 = v
-    def cmsg_level_=(v: CInt): Unit    = !ptr._2 = v
-    def cmsg_type_=(v: CInt): Unit     = !ptr._3 = v
+    def cmsg_len: socklen_t            = ptr._1
+    def cmsg_level: CInt               = ptr._2
+    def cmsg_type: CInt                = ptr._3
+    def cmsg_len_=(v: socklen_t): Unit = ptr._1 = v
+    def cmsg_level_=(v: CInt): Unit    = ptr._2 = v
+    def cmsg_type_=(v: CInt): Unit     = ptr._3 = v
   }
 
   implicit class lingerOps(val ptr: Ptr[linger]) extends AnyVal {
-    def l_onoff: CInt  = !ptr._1
-    def l_linger: CInt = !ptr._2
-
-    def l_onoff_=(v: CInt): Unit  = !ptr._1 = v
-    def l_linger_=(v: CInt): Unit = !ptr._2 = v
+    def l_onoff: CInt             = ptr._1
+    def l_linger: CInt            = ptr._2
+    def l_onoff_=(v: CInt): Unit  = ptr._1 = v
+    def l_linger_=(v: CInt): Unit = ptr._2 = v
   }
-
 }

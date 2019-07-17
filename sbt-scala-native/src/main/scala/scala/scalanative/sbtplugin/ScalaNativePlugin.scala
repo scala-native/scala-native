@@ -44,6 +44,13 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeLTO =
       taskKey[String](
         "LTO variant used for release mode (either \"none\", \"thin\" or \"full\").")
+
+    val nativeCheck =
+      settingKey[Boolean]("Shall native toolchain check NIR during linking?")
+
+    val nativeDump =
+      settingKey[Boolean](
+        "Shall native toolchain dump intermediate NIR to disk during linking?")
   }
 
   @deprecated("use autoImport instead", "0.3.7")

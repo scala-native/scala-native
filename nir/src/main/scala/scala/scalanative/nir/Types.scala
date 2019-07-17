@@ -1,7 +1,7 @@
 package scala.scalanative
 package nir
 
-import util.unsupported
+import util.{unreachable, unsupported}
 
 sealed abstract class Type {
 
@@ -88,18 +88,42 @@ object Type {
   final case class Var(ty: Type)                        extends SpecialKind
   final case class Function(args: Seq[Type], ret: Type) extends SpecialKind
 
-  val unbox = Map[Type, Type](
-    Type.Ref(Global.Top("java.lang.Boolean"))   -> Type.Bool,
-    Type.Ref(Global.Top("java.lang.Character")) -> Type.Char,
-    Type.Ref(Global.Top("java.lang.Byte"))      -> Type.Byte,
-    Type.Ref(Global.Top("java.lang.Short"))     -> Type.Short,
-    Type.Ref(Global.Top("java.lang.Integer"))   -> Type.Int,
-    Type.Ref(Global.Top("java.lang.Long"))      -> Type.Long,
-    Type.Ref(Global.Top("java.lang.Float"))     -> Type.Float,
-    Type.Ref(Global.Top("java.lang.Double"))    -> Type.Double
+  val boxesTo = Seq[(Type, Type)](
+    Type.Ref(Global.Top("scala.scalanative.unsigned.UByte"))      -> Type.Byte,
+    Type.Ref(Global.Top("scala.scalanative.unsigned.UShort"))     -> Type.Short,
+    Type.Ref(Global.Top("scala.scalanative.unsigned.UInt"))       -> Type.Int,
+    Type.Ref(Global.Top("scala.scalanative.unsigned.ULong"))      -> Type.Long,
+    Type.Ref(Global.Top("scala.scalanative.unsafe.CArray"))       -> Type.Ptr,
+    Type.Ref(Global.Top("scala.scalanative.unsafe.CVarArgList"))  -> Type.Ptr,
+    Type.Ref(Global.Top("scala.scalanative.runtime.CFuncRawPtr")) -> Type.Ptr,
+    Type.Ref(Global.Top("scala.scalanative.unsafe.Ptr"))          -> Type.Ptr,
+    Type.Ref(Global.Top("java.lang.Boolean"))                     -> Type.Bool,
+    Type.Ref(Global.Top("java.lang.Character"))                   -> Type.Char,
+    Type.Ref(Global.Top("java.lang.Byte"))                        -> Type.Byte,
+    Type.Ref(Global.Top("java.lang.Short"))                       -> Type.Short,
+    Type.Ref(Global.Top("java.lang.Integer"))                     -> Type.Int,
+    Type.Ref(Global.Top("java.lang.Long"))                        -> Type.Long,
+    Type.Ref(Global.Top("java.lang.Float"))                       -> Type.Float,
+    Type.Ref(Global.Top("java.lang.Double"))                      -> Type.Double
   )
 
-  val box = unbox.map { case (k, v) => (v, k) }
+  val unbox = boxesTo.toMap
+
+  val box = boxesTo.map { case (l, r) => (r, l) }.toMap
+
+  val boxClasses = unbox.keys.map {
+    case ty: Type.Ref =>
+      ty.name
+    case _ =>
+      unreachable
+  }.toSeq
+
+  def isPtrBox(ty: Type): Boolean = ty match {
+    case refty: Type.RefKind =>
+      box.get(Type.Ref(refty.className)) == Some(Type.Ptr)
+    case _ =>
+      false
+  }
 
   val typeToArray = Map[Type, Global](
     Type.Bool    -> Global.Top("scala.scalanative.runtime.BooleanArray"),
