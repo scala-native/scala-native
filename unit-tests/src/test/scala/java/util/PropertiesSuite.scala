@@ -195,63 +195,63 @@ object PropertiesSuite extends tests.Suite {
     assertEquals("\\", prop.getProperty("dblbackslash"))
   }
 
-  test("store(OutputStream, comments) with null input") {
-    val prop = new java.util.Properties()
-    assertThrows[NullPointerException] {
-      prop.store(null: OutputStream, "")
-    }
-  }
+  // test("store(OutputStream, comments) with null input") {
+  //   val prop = new java.util.Properties()
+  //   assertThrows[NullPointerException] {
+  //     prop.store(null: OutputStream, "")
+  //   }
+  // }
 
-  test("store(OutputStream, comments)") {
-    val prop1 = new Properties()
-    val prop2 = new Properties()
+  // test("store(OutputStream, comments)") {
+  //   val prop1 = new Properties()
+  //   val prop2 = new Properties()
 
-    prop1.put("Property A", " aye\\\f\t\n\r\b")
-    prop1.put("Property B", "b ee#!=:")
-    prop1.put("Property C", "see")
+  //   prop1.put("Property A", " aye\\\f\t\n\r\b")
+  //   prop1.put("Property B", "b ee#!=:")
+  //   prop1.put("Property C", "see")
 
-    val out = new ByteArrayOutputStream()
-    prop1.store(out, "A Header")
-    out.close()
+  //   val out = new ByteArrayOutputStream()
+  //   prop1.store(out, "A Header")
+  //   out.close()
 
-    val in = new ByteArrayInputStream(out.toByteArray)
-    prop2.load(in)
-    in.close()
+  //   val in = new ByteArrayInputStream(out.toByteArray)
+  //   prop2.load(in)
+  //   in.close()
 
-    val e = prop1.propertyNames()
-    while (e.hasMoreElements) {
-      val nextKey = e.nextElement().asInstanceOf[String]
-      assertEquals(prop2.getProperty(nextKey), prop1.getProperty(nextKey))
-    }
-  }
+  //   val e = prop1.propertyNames()
+  //   while (e.hasMoreElements) {
+  //     val nextKey = e.nextElement().asInstanceOf[String]
+  //     assertEquals(prop2.getProperty(nextKey), prop1.getProperty(nextKey))
+  //   }
+  // }
 
-  test("store(Writer, comments) with null input") {
-    val prop = new java.util.Properties()
-    assertThrows[NullPointerException] {
-      prop.store(null: OutputStream, "")
-    }
-  }
+  // test("store(Writer, comments) with null input") {
+  //   val prop = new java.util.Properties()
+  //   assertThrows[NullPointerException] {
+  //     prop.store(null: OutputStream, "")
+  //   }
+  // }
 
-  test("store(Writer, comments)") {
-    val prop1 = new Properties()
-    val prop2 = new Properties()
+  // test("store(Writer, comments)") {
+  //   val prop1 = new Properties()
+  //   val prop2 = new Properties()
 
-    prop1.put("Property A", " aye\\\f\t\n\r\b")
-    prop1.put("Property B", "b ee#!=:")
-    prop1.put("Property C", "see")
+  //   prop1.put("Property A", " aye\\\f\t\n\r\b")
+  //   prop1.put("Property B", "b ee#!=:")
+  //   prop1.put("Property C", "see")
 
-    val out = new ByteArrayOutputStream()
-    prop1.store(new OutputStreamWriter(out), "A Header")
-    out.close()
+  //   val out = new ByteArrayOutputStream()
+  //   prop1.store(new OutputStreamWriter(out), "A Header")
+  //   out.close()
 
-    val in = new ByteArrayInputStream(out.toByteArray)
-    prop2.load(in)
-    in.close()
+  //   val in = new ByteArrayInputStream(out.toByteArray)
+  //   prop2.load(in)
+  //   in.close()
 
-    val e = prop1.propertyNames()
-    while (e.hasMoreElements) {
-      val nextKey = e.nextElement().asInstanceOf[String]
-      assertEquals(prop2.getProperty(nextKey), prop1.getProperty(nextKey))
-    }
-  }
+  //   val e = prop1.propertyNames()
+  //   while (e.hasMoreElements) {
+  //     val nextKey = e.nextElement().asInstanceOf[String]
+  //     assertEquals(prop2.getProperty(nextKey), prop1.getProperty(nextKey))
+  //   }
+  // }
 }

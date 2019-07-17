@@ -110,35 +110,43 @@ class Properties(protected val defaults: Properties)
     entrySet().asScala.foreach { entry => out.println(format(entry)) }
   }
 
-  def store(out: OutputStream, comments: String): Unit = {
-    val writer = new OutputStreamWriter(out, "ISO8859_1")
-    store(writer, comments)
-  }
+  // def store(out: OutputStream, comments: String): Unit = {
+  //   if (out == null) {
+  //     throw new NullPointerException()
+  //   }
 
-  def store(writer: Writer, comments: String): Unit = {
-    if (comments != null) {
-      writeComments(writer, comments)
-    }
+  //   val writer = new OutputStreamWriter(out, "ISO8859_1")
+  //   store(writer, comments)
+  // }
 
-    writer.write('#')
-    writer.write(new Date().toString)
-    writer.write(System.lineSeparator)
+  // def store(writer: Writer, comments: String): Unit = {
+  //   if (writer == null) {
+  //      throw new NullPointerException()
+  //   }
 
-    val buffer = new StringBuilder(200)
-    entrySet().asScala.foreach { entry =>
-      val key = entry.getKey.asInstanceOf[String]
-      dumpString(buffer, key, true, false)
-      buffer.append('=')
-      dumpString(buffer, entry.getValue.asInstanceOf[String], false, false)
-      buffer.append(System.lineSeparator)
-      writer.write(buffer.toString)
-      buffer.setLength(0)
-    }
-    writer.flush()
-  }
+  //   if (comments != null) {
+  //     writeComments(writer, comments)
+  //   }
 
-  @deprecated("", "") def save(out: OutputStream, comments: String): Unit =
-    store(out, comments)
+  //   writer.write('#')
+  //   writer.write(new Date().toString)
+  //   writer.write(System.lineSeparator)
+
+  //   val buffer = new StringBuilder(200)
+  //   entrySet().asScala.foreach { entry =>
+  //     val key = entry.getKey.asInstanceOf[String]
+  //     dumpString(buffer, key, true, false)
+  //     buffer.append('=')
+  //     dumpString(buffer, entry.getValue.asInstanceOf[String], false, false)
+  //     buffer.append(System.lineSeparator)
+  //     writer.write(buffer.toString)
+  //     buffer.setLength(0)
+  //   }
+  //   writer.flush()
+  // }
+
+  // @deprecated("", "") def save(out: OutputStream, comments: String): Unit =
+  //   store(out, comments)
 
   private val NONE     = 0
   private val SLASH    = 1
@@ -226,9 +234,7 @@ class Properties(protected val defaults: Properties)
               @tailrec def ignoreCharsTillEOL(tempVal: Char): Unit = {
                 if (tempVal != 0xFFFF) { // -1.toChar
                   nextChar = tempVal.toChar
-
-                  // not
-                  // required
+                  // not required
                   if (nextChar != '\r' && nextChar != '\n' && nextChar != '\u0085') {
                     ignoreCharsTillEOL(br.read().toChar)
                   }
