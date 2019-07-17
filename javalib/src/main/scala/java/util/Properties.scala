@@ -32,9 +32,9 @@ class Properties(protected val defaults: Properties)
     stream.reset()
 
     if (!_isEbcdic) {
-      loadImpl(new InputStreamReader(stream, "ISO8859-1")); //$NON-NLS-1$
+      loadImpl(new InputStreamReader(stream, "ISO8859-1"))
     } else {
-      loadImpl(new InputStreamReader(stream)); //$NON-NLS-1$
+      loadImpl(new InputStreamReader(stream))
     }
   }
 
