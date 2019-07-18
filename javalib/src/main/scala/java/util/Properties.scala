@@ -20,7 +20,6 @@ import java.{util => ju}
 import scala.annotation.{switch, tailrec}
 import scala.collection.immutable.{Map => SMap}
 import scala.collection.JavaConverters._
-import scala.scalanative.annotation.stub
 
 class Properties(protected val defaults: Properties)
     extends ju.Hashtable[AnyRef, AnyRef] {
@@ -110,43 +109,43 @@ class Properties(protected val defaults: Properties)
     entrySet().asScala.foreach { entry => out.println(format(entry)) }
   }
 
-  // def store(out: OutputStream, comments: String): Unit = {
-  //   if (out == null) {
-  //     throw new NullPointerException()
-  //   }
+  def store(out: OutputStream, comments: String): Unit = {
+    if (out == null) {
+      throw new NullPointerException()
+    }
+    // https://docs.oracle.com/javase/8/docs/api/java/util/Properties.html#load-java.io.InputStream-
+    val writer = new OutputStreamWriter(out, "ISO8859_1")
+    store(writer, comments)
+  }
 
-  //   val writer = new OutputStreamWriter(out, "ISO8859_1")
-  //   store(writer, comments)
-  // }
+  def store(writer: Writer, comments: String): Unit = {
+    if (writer == null) {
+      throw new NullPointerException()
+    }
 
-  // def store(writer: Writer, comments: String): Unit = {
-  //   if (writer == null) {
-  //      throw new NullPointerException()
-  //   }
+    if (comments != null) {
+      writeComments(writer, comments)
+    }
 
-  //   if (comments != null) {
-  //     writeComments(writer, comments)
-  //   }
+    writer.write('#')
+    writer.write(new Date().toString)
+    writer.write(System.lineSeparator)
 
-  //   writer.write('#')
-  //   writer.write(new Date().toString)
-  //   writer.write(System.lineSeparator)
+    val buffer = new StringBuilder(200)
+    entrySet().asScala.foreach { entry =>
+      val key = entry.getKey.asInstanceOf[String]
+      dumpString(buffer, key, true, false)
+      buffer.append('=')
+      dumpString(buffer, entry.getValue.asInstanceOf[String], false, false)
+      buffer.append(System.lineSeparator)
+      writer.write(buffer.toString)
+      buffer.setLength(0)
+    }
+    writer.flush()
+  }
 
-  //   val buffer = new StringBuilder(200)
-  //   entrySet().asScala.foreach { entry =>
-  //     val key = entry.getKey.asInstanceOf[String]
-  //     dumpString(buffer, key, true, false)
-  //     buffer.append('=')
-  //     dumpString(buffer, entry.getValue.asInstanceOf[String], false, false)
-  //     buffer.append(System.lineSeparator)
-  //     writer.write(buffer.toString)
-  //     buffer.setLength(0)
-  //   }
-  //   writer.flush()
-  // }
-
-  // @deprecated("", "") def save(out: OutputStream, comments: String): Unit =
-  //   store(out, comments)
+  @deprecated("", "") def save(out: OutputStream, comments: String): Unit =
+    store(out, comments)
 
   private val NONE     = 0
   private val SLASH    = 1
@@ -183,6 +182,7 @@ class Properties(protected val defaults: Properties)
     var offset         = 0
     var keyLength      = -1
     val br             = new BufferedReader(reader)
+
     @tailrec def processNext(isFirstChar: Boolean): Unit = {
       val intVal = br.read()
       if (intVal == -1) {
@@ -337,24 +337,27 @@ class Properties(protected val defaults: Properties)
     while (index < chars.length) {
       if (chars(index) < 256) {
         if (chars(index) == '\r' || chars(index) == '\n') {
-          val indexPlusOne = index + 1
+          def indexPlusOne = index + 1
           if (chars(index) == '\r' && indexPlusOne < chars.length && chars(
                 indexPlusOne) == '\n') { // "\r\n"
-//          continue //todo: continue is not supported
+            index += 1
           }
           writer.write(System.lineSeparator)
           if (indexPlusOne < chars.length && (chars(indexPlusOne) == '#' || chars(
                 indexPlusOne) == '!')) { // return char with either '#' or '!' afterward
-//          continue //todo: continue is not supported
+            writer.write(chars(indexPlusOne))
+            index += 1
+          } else {
+            writer.write('#')
           }
-          writer.write('#')
+
         } else {
           writer.write(chars(index))
         }
       } else {
         writer.write(unicodeToHexaDecimal(chars(index)))
-        index += 1
       }
+      index += 1
     }
     writer.write(System.lineSeparator)
   }
@@ -381,6 +384,8 @@ class Properties(protected val defaults: Properties)
           buffer.append("\\f")
         case '\r' =>
           buffer.append("\\r")
+        case '\b' =>
+          buffer.appendAll(unicodeToHexaDecimal(ch))
         case _ =>
           if ("\\#!=:".indexOf(ch) >= 0 || (isKey && ch == ' '))
             buffer.append('\\')
