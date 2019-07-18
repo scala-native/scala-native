@@ -338,13 +338,13 @@ class Properties(protected val defaults: Properties)
       if (chars(index) < 256) {
         if (chars(index) == '\r' || chars(index) == '\n') {
           def indexPlusOne = index + 1
-          if (chars(index) == '\r' && indexPlusOne < chars.length && chars(
-                indexPlusOne) == '\n') { // "\r\n"
+          if (chars(index) == '\r' && indexPlusOne < chars.length
+              && chars(indexPlusOne) == '\n') { // "\r\n"
             index += 1
           }
           writer.write(System.lineSeparator)
-          if (indexPlusOne < chars.length && (chars(indexPlusOne) == '#' || chars(
-                indexPlusOne) == '!')) { // return char with either '#' or '!' afterward
+          if (indexPlusOne < chars.length && (chars(indexPlusOne) == '#' 
+          || chars(indexPlusOne) == '!')) { // return char with either '#' or '!' afterward
             writer.write(chars(indexPlusOne))
             index += 1
           } else {
@@ -385,6 +385,8 @@ class Properties(protected val defaults: Properties)
         case '\r' =>
           buffer.append("\\r")
         case '\b' =>
+          // On JVM \b get printed like \u0008 - See the following:
+          // https://docs.oracle.com/javase/8/docs/api/java/util/Properties.html#load-java.io.Reader-
           buffer.appendAll(unicodeToHexaDecimal(ch))
         case _ =>
           if ("\\#!=:".indexOf(ch) >= 0 || (isKey && ch == ' '))
