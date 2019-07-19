@@ -1,7 +1,7 @@
 package java.util
 
 import scalanative.libc.{errno, string}
-import scalanative.posix.time._
+import scalanative.posix.time, time._
 import scalanative.unsafe._
 
 import java.io.IOException
@@ -39,33 +39,43 @@ class Date(var milliseconds: Long)
   def setTime(time: Long): Unit =
     milliseconds = time
 
-  private var tzsetDone = false
+  override def toString(): String = {
+    Date
+      .secondsToStringOpt(milliseconds / 1000L)
+      .getOrElse(s"Date($milliseconds)")
+  }
 
-  private def secondsToString(seconds: Long): String = Zone { implicit z =>
+}
+
+private object Date {
+
+  var tzsetDone = false
+
+  def secondsToStringOpt(seconds: Long): Option[String] = Zone { implicit z =>
     val ttPtr = alloc[time_t]
     !ttPtr = seconds
     val tmPtr = alloc[tm]
 
     if (!tzsetDone) {
-      tzset() // needed in order to portably use localtime_r
+      time.tzset() // needed once in order to portably use localtime_r
       tzsetDone = true
     }
 
     if (localtime_r(ttPtr, tmPtr) == null) {
       throw new IOException(fromCString(string.strerror(errno.errno)))
     } else {
-      val bufSize = "Thu Jul 18 09:16:29 PDT 2019".length + 1
+      // 70 is gross overprovisioning based on fear.
+      // Most result strings should be about 28 + 1 for terminal NULL
+      // + 2 because some IANA timezone appreviation can have 5 characters.
+      val bufSize = 70
       val buf     = alloc[Byte](bufSize)
 
       val n = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 
       // strftime does not set errno on error
-      val result = if (n == 0) "" else fromCString(buf)
+      val result = if (n == 0) None else Some(fromCString(buf))
 
       result
     }
   }
-
-  override def toString(): String = secondsToString(milliseconds / 1000L)
-
 }
