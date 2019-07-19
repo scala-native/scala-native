@@ -1,6 +1,8 @@
 package scala.scalanative.posix
 
-import scala.scalanative.unsafe._
+import scalanative.libc.{errno => libcErrno, string}
+import scalanative.unsafe._
+import java.io.IOException
 
 import time._
 import timeOps.tmOps
@@ -79,6 +81,9 @@ object TimeSuite extends tests.Suite {
     }
   }
 
+  // The "Monday Mon" is kind of wierd.  I think the idea is to test
+  // both the long and short form of the name and both %A and %c formats
+
   test("strftime() for Monday Mon Jan  1 00:00:00 1900") {
     Zone { implicit z =>
       val timePtr             = alloc[tm]
@@ -91,6 +96,34 @@ object TimeSuite extends tests.Suite {
 
       val dateString: String = fromCString(datePtr)
       assert("Monday Mon Jan  1 00:00:00 1900".equals(dateString))
+    }
+  }
+
+  test("strftime() for Fri Mar 31 14:47:44 EDT 2017") {
+    Zone { implicit z =>
+      val ttPtr = alloc[time_t]
+      !ttPtr = 1490986064740L / 1000L
+      val tmPtr = alloc[tm]
+
+      if (localtime_r(ttPtr, tmPtr) == null) {
+        throw new IOException(fromCString(string.strerror(libcErrno.errno)))
+      } else {
+        val bufSize = "Fri Mar 31 14:47:44 EDT 2017".length + 1
+        val buf     = alloc[Byte](bufSize)
+
+        val n = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
+
+        // strftime does not set errno on error                                        assert(n != 0, s"unexpected zero from strftime")
+
+        val result = fromCString(buf)
+
+        val expected = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
+          "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{3} 20[1-3]\\d"
+
+        assert(
+          result.matches(expected),
+          s"result: '${result}' does not match expected regex: '${expected}'")
+      }
     }
   }
 

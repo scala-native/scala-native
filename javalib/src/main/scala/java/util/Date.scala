@@ -60,7 +60,7 @@ class Date(var milliseconds: Long)
       val n = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 
       // strftime does not set errno on error
-      var result = if (n == 0) "" else fromCString(buf)
+      val result = if (n == 0) "" else fromCString(buf)
 
       result
     }
