@@ -49,8 +49,11 @@ object DateSuite extends tests.Suite {
   test("toString") {
     // val now : java.util.Date = Fri Mar 31 14:47:44 EDT 2017
     val result = now.toString
+
+    // See notes for test "strftime() for Fri Mar 31 14:47:44 EDT 2017"
+    // in posix.TimeSuite.
     val expected = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
-      "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{3} 20[1-3]\\d"
+      "\\d\\d \\d{2}:\\d{2}:\\d{2} (?: db|[A-Z]{2,5}) 20[1-3]\\d"
 
     assert(result.matches(expected),
            s"result: '${result}' does not match expected regex: '${expected}'")

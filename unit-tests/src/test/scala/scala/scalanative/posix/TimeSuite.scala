@@ -117,8 +117,19 @@ object TimeSuite extends tests.Suite {
 
         val result = fromCString(buf)
 
+        // Travis CI currently reports its timezone name as the
+        // apparently bogus "db", which is supposed to force UTC.
+        // Somebody apparently forgot to tell strftime %Z that.
+
+        // This test is using a known date which has two digits for
+        // day-of-month, so the second from left field should be
+        // two digits. This a stricter, hence. more informative,
+        // test that a one-or-two digit test. The latter is required
+        // in the general case where the number of days is in the
+        // range [1-31].
+
         val expected = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
-          "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{3} 20[1-3]\\d"
+          "\\d\\d \\d{2}:\\d{2}:\\d{2} (?: db|[A-Z]{2,5}) 20[1-3]\\d"
 
         assert(
           result.matches(expected),
