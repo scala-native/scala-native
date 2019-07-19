@@ -53,7 +53,7 @@ object DateSuite extends tests.Suite {
       "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{3} 20[1-3]\\d"
 
     assert(result.matches(expected),
-           s"result: ${result} does not match expected regex: '${expected}'")
+           s"result: '${result}' does not match expected regex: '${expected}'")
   }
 
 }
