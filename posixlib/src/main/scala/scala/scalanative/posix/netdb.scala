@@ -18,6 +18,8 @@ object netdb {
   @name("scalanative_freeaddrinfo")
   def freeaddrinfo(addr: Ptr[addrinfo]): Unit = extern
 
+  def gai_strerror(code: CInt): CString = extern
+
   @name("scalanative_getaddrinfo")
   def getaddrinfo(name: CString,
                   service: CString,
@@ -50,8 +52,6 @@ object netdb {
 
   @name("scalanative_AI_CANONNAME")
   def AI_CANONNAME: CInt = extern
-
-  def gai_strerror(code: CInt): CString = extern
 }
 
 object netdbOps {

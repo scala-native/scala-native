@@ -3,22 +3,24 @@ package posix
 
 import scalanative.unsafe._
 import scalanative.posix.sys.stat.{uid_t, gid_t}
+import scalanative.posix.sys.types.pid_t
 
 @extern
 object unistd {
 
   type off_t = CLongLong
 
-  def _exit(status: CInt): Unit                   = extern
-  def access(pathname: CString, mode: CInt): CInt = extern
-  def chdir(path: CString): CInt                  = extern
-  def close(fildes: CInt): CInt                   = extern
-  def dup(fildes: CInt): CInt                     = extern
-  def dup2(fildes: CInt, fildesnew: CInt): CInt   = extern
+  def _exit(status: CInt): Unit                      = extern
+  def access(pathname: CString, mode: CInt): CInt    = extern
+  def chdir(path: CString): CInt                     = extern
+  def close(fildes: CInt): CInt                      = extern
+  def dup(fildes: CInt): CInt                        = extern
+  def dup2(fildes: CInt, fildesnew: CInt): CInt      = extern
+  def execv(path: CString, argv: Ptr[CString]): CInt = extern
   def execve(path: CString, argv: Ptr[CString], envp: Ptr[CString]): CInt =
     extern
   def execvp(path: CString, args: Ptr[CString]): CInt             = extern
-  def fork(): CInt                                                = extern
+  def fork(): pid_t                                               = extern
   def fsync(fildes: CInt): CInt                                   = extern
   def ftruncate(fildes: CInt, length: off_t): CInt                = extern
   def getcwd(buf: CString, size: CSize): CString                  = extern
