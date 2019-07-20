@@ -71,7 +71,7 @@ static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap,
 void *GCThread_loop(void *arg) {
     GCThread *thread = (GCThread *)arg;
     Heap *heap = thread->heap;
-    sem_t *start = &heap->gcThreads.startWorkers;
+    sem_t *start = heap->gcThreads.startWorkers;
     Stats *stats = Stats_OrNull(thread->stats);
 
     while (true) {
@@ -102,7 +102,7 @@ void *GCThread_loop(void *arg) {
 void *GCThread_loopMaster(void *arg) {
     GCThread *thread = (GCThread *)arg;
     Heap *heap = thread->heap;
-    sem_t *start = &heap->gcThreads.startMaster;
+    sem_t *start = heap->gcThreads.startMaster;
     Stats *stats = Stats_OrNull(thread->stats);
     while (true) {
         thread->active = false;
@@ -169,11 +169,11 @@ int GCThread_ActiveCount(Heap *heap) {
 }
 
 INLINE void GCThread_WakeMaster(Heap *heap) {
-    sem_post(&heap->gcThreads.startMaster);
+    sem_post(heap->gcThreads.startMaster);
 }
 
 INLINE void GCThread_WakeWorkers(Heap *heap, int toWake) {
-    sem_t *startWorkers = &heap->gcThreads.startWorkers;
+    sem_t *startWorkers = heap->gcThreads.startWorkers;
     for (int i = 0; i < toWake; i++) {
         sem_post(startWorkers);
     }

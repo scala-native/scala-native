@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <fcntl.h>
 
 typedef struct {
     word_t *blockMetaStart;
@@ -28,8 +29,8 @@ typedef struct {
     double maxMarkTimeRatio;
     double minFreeRatio;
     struct {
-        sem_t startWorkers;
-        sem_t startMaster;
+        sem_t *startWorkers;
+        sem_t *startMaster;
         atomic_uint_fast8_t phase;
         int count;
         void *all;
