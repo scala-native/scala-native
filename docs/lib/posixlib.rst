@@ -78,7 +78,7 @@ C Header          Scala Native Module
 `sys/uio.h`_      scala.scalanative.posix.sys.uio_
 `sys/un.h`_       N/A
 `sys/utsname.h`_  N/A
-`sys/wait.h`_     N/A
+`sys/wait.h`_     scala.scalanative.posix.sys.wait_
 `syslog.h`_       scala.scalanative.posix.syslog_
 `tar.h`_          N/A
 `termios.h`_      scala.scalanative.posix.termios_
