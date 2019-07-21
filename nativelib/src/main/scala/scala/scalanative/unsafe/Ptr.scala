@@ -7,6 +7,7 @@ import scalanative.annotation.alwaysinline
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
 import scalanative.runtime.Boxes._
+import scalanative.runtime.CFuncRawPtr
 
 final class Ptr[T] private[scalanative] (
     private[scalanative] val rawptr: RawPtr) {
@@ -29,6 +30,9 @@ final class Ptr[T] private[scalanative] (
 
   @alwaysinline def toLong: scala.Long =
     Intrinsics.castRawPtrToLong(rawptr)
+
+  @alwaysinline def toCFuncPtr[F <: CFuncPtr](): F =
+    new CFuncRawPtr(rawptr).asInstanceOf[F]
 
   @alwaysinline def unary_!(implicit tag: Tag[T]): T =
     tag.load(this)
@@ -61,4 +65,7 @@ object Ptr {
 
   @alwaysinline implicit def ptrToCStruct[T <: CStruct](ptr: Ptr[T])(
       implicit tag: Tag[T]): T = !ptr
+
+  @alwaysinline def fromCFuncPtr[T](f: CFuncPtr) =
+    Boxes.boxToPtr[Byte](Boxes.unboxToCFuncRawPtr(f))
 }
