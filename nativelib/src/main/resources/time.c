@@ -1,6 +1,22 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <sys/time.h>
+
+#define __USE_XOPEN // strptime()
 #include <time.h>
+
+#if defined(__linux__) || (defined(__APPLE__) && defined(__MACH__))
+#define HAVE_TM_ZONE
+#elif defined(__unix__)
+#include <sys/param.h>
+#if defined(BSD)
+#define HAVE_TM_ZONE
+#endif
+#endif
+
+// Keep scalanative_tm in sync manually with the Scala 'type tm' definition
+// in posix/time.scala.
+// See comments for 'type tm' in that file for details & rationale.
 
 struct scalanative_tm {
     int tm_sec;
@@ -12,6 +28,14 @@ struct scalanative_tm {
     int tm_wday;
     int tm_yday;
     int tm_isdst;
+#if defined(HAVE_TM_ZONE)
+    int pad_1; // pad to int64_t boundary
+    // This is linux declaration order.
+    // macOS swaps the two but that is OK because they get accessed
+    // by name, not offset.
+    int64_t tm_gmtoff;
+    const char *tm_zone;
+#endif
 };
 
 static struct scalanative_tm scalanative_gmtime_buf;
@@ -28,6 +52,11 @@ static void scalanative_tm_init(struct scalanative_tm *scala_tm,
     scala_tm->tm_wday = tm->tm_wday;
     scala_tm->tm_yday = tm->tm_yday;
     scala_tm->tm_isdst = tm->tm_isdst;
+#if defined(HAVE_TM_ZONE)
+    scala_tm->pad_1 = 0; // probably unnecessary, but be paranoid.
+    scala_tm->tm_gmtoff = tm->tm_gmtoff;
+    scala_tm->tm_zone = tm->tm_zone;
+#endif
 }
 
 static void tm_init(struct tm *tm, struct scalanative_tm *scala_tm) {
@@ -40,6 +69,10 @@ static void tm_init(struct tm *tm, struct scalanative_tm *scala_tm) {
     tm->tm_wday = scala_tm->tm_wday;
     tm->tm_yday = scala_tm->tm_yday;
     tm->tm_isdst = scala_tm->tm_isdst;
+#if defined(HAVE_TM_ZONE)
+    tm->tm_gmtoff = scala_tm->tm_gmtoff;
+    tm->tm_zone = scala_tm->tm_zone;
+#endif
 }
 
 char *scalanative_asctime_r(struct scalanative_tm *scala_tm, char *buf) {
@@ -89,6 +122,14 @@ size_t scalanative_strftime(char *buf, size_t maxsize, const char *format,
     struct tm tm;
     tm_init(&tm, scala_tm);
     return strftime(buf, maxsize, format, &tm);
+}
+
+char *scalanative_strptime(const char *s, const char *format,
+                           struct scalanative_tm *scala_tm) {
+    struct tm tm = {0};
+    char *result = strptime(s, format, &tm);
+    scalanative_tm_init(scala_tm, &tm);
+    return result;
 }
 
 long long scalanative_current_time_millis() {
