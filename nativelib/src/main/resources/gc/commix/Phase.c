@@ -23,8 +23,8 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
         sem_open(startMasterName, O_CREAT | O_EXCL, 0644, 0);
     // clean up when process closes
     // also prevents any other process from `sem_open`ing it
-    sem_unlink("startWorkers");
-    sem_unlink("startMaster");
+    sem_unlink(startWorkersName);
+    sem_unlink(startMasterName);
 
     heap->sweep.cursor = initialBlockCount;
     heap->lazySweep.cursorDone = initialBlockCount;
