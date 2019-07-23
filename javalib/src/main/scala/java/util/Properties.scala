@@ -20,6 +20,7 @@ import java.{util => ju}
 import scala.annotation.{switch, tailrec}
 import scala.collection.immutable.{Map => SMap}
 import scala.collection.JavaConverters._
+import scala.util.control.Breaks._
 
 class Properties(protected val defaults: Properties)
     extends ju.Hashtable[AnyRef, AnyRef] {
@@ -157,15 +158,14 @@ class Properties(protected val defaults: Properties)
     SMap('b' -> '\b', 'f' -> '\f', 'n' -> '\n', 'r' -> '\r', 't' -> '\t')
 
   private def isEbcdic(in: BufferedInputStream): Boolean = {
-    var b = in.read
-    while (b != 0xffffffff) {
+    var b: Byte = 0
+    while ({ b = in.read.toByte; b != -1 }) {
       if (b == 0x23 || b == 0x0a || b == 0x3d) { // ascii: newline/#/=
         return false
       }
       if (b == 0x15) { // EBCDIC newline
         return true
       }
-      b = in.read
     }
     //we found no ascii newline, '#', neither '=', relative safe to consider it
     //as non-ascii, the only exception will be a single line with only key(no value and '=')
@@ -364,6 +364,46 @@ class Properties(protected val defaults: Properties)
     writer.write(System.lineSeparator)
   }
 
+  // private def dumpString2(buffer: StringBuilder,
+  //                         string: String,
+  //                         isKey: Boolean,
+  //                         convertHexaDecimal: Boolean): Unit = {
+  //   var index  = 0
+  //   val length = string.length
+  //   if (!isKey && index < length && string.charAt(index) == ' ') {
+  //     buffer.append("\\ ")
+  //     index += 1
+  //   }
+
+  //   while (index < length) {
+  //     val ch = string.charAt(index)
+  //     (ch: @switch) match {
+  //       case '\t' =>
+  //         buffer.append("\\t")
+  //       case '\n' =>
+  //         buffer.append("\\n")
+  //       case '\f' =>
+  //         buffer.append("\\f")
+  //       case '\r' =>
+  //         buffer.append("\\r")
+  //       case _ =>
+  //         if ("\\#!=:".indexOf(ch) >= 0 || (isKey && ch == ' ')) {
+  //           buffer.append('\\')
+  //         }
+  //         if (ch >= ' ' && ch <= '~') {
+  //           buffer.append(ch)
+  //         } else {
+  //           if (convertHexaDecimal) {
+  //             buffer.append(unicodeToHexaDecimal(ch))
+  //           } else {
+  //             buffer.append(ch)
+  //           }
+  //         }
+  //     }
+  //     index += 1
+  //   }
+  // }
+
   private def dumpString(buffer: StringBuilder,
                          string: String,
                          isKey: Boolean,
@@ -416,7 +456,7 @@ class Properties(protected val defaults: Properties)
       else hexChar += '0'
       index -= 1
       hexChars(index) = hexChar.toChar
-    } while ({ copyOfCh >>>= 4; copyOfCh } != 0)
+    } while ({ copyOfCh >>>= 4; copyOfCh != 0})
     hexChars
   }
 

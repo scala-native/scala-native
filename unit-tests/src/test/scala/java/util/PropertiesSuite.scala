@@ -245,7 +245,7 @@ object PropertiesSuite extends tests.Suite {
   }
 
   test("check properties formatted correctly") {
-    // for better or worse JVM outputs \b and you
+    // for better or worse JVM outputs \b as \u0008 and you
     // can't just add \u0008 to the end of the last property
     val props = new StringBuilder("""|Property\ C=see
          |Property\ B=b ee\#\!\=\:
@@ -254,7 +254,11 @@ object PropertiesSuite extends tests.Suite {
       .append(System.lineSeparator)
       .append('|')
 
-    assertTrue(out1.toString().endsWith(props.toString.stripMargin))
+    val res = props.toString.stripMargin
+    // uncomment for debug
+    //println(out1.toString())
+    //println(res)
+    assertTrue(out1.toString().endsWith(res))
   }
 
   test("store(Writer, comments) with null input") {
