@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <sys/time.h>
+
+#define __USE_XOPEN // strptime()
 #include <time.h>
 
 struct scalanative_tm {
@@ -89,6 +91,14 @@ size_t scalanative_strftime(char *buf, size_t maxsize, const char *format,
     struct tm tm;
     tm_init(&tm, scala_tm);
     return strftime(buf, maxsize, format, &tm);
+}
+
+char *scalanative_strptime(const char *s, const char *format,
+                           struct scalanative_tm *scala_tm) {
+    struct tm tm = {0};
+    char *result = strptime(s, format, &tm);
+    scalanative_tm_init(scala_tm, &tm);
+    return result;
 }
 
 long long scalanative_current_time_millis() {
