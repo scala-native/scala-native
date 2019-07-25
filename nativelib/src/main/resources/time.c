@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <sys/time.h>
 
 #define __USE_XOPEN // strptime()
@@ -33,6 +34,19 @@ static void scalanative_tm_init(struct scalanative_tm *scala_tm,
 }
 
 static void tm_init(struct tm *tm, struct scalanative_tm *scala_tm) {
+
+  if (sizeof(struct tm) > sizeof(struct scalanative_tm)) {
+        // The size of the operating system struct tm can be larger than
+        // the scalanative tm.  On Linux this is true.
+        // Clearing the entire tm and then setting known fields ensures
+        // that any fields not known to scalanative, such as tm_zone,
+	// are zero/NULL, not J-Random garbage.
+	// strftime() in release mode if particularly sensitive to
+	// garbage beyond the end of the scalanative tm.
+
+        memset(tm, 0, sizeof(*tm));
+    }
+
     tm->tm_sec = scala_tm->tm_sec;
     tm->tm_min = scala_tm->tm_min;
     tm->tm_hour = scala_tm->tm_hour;
