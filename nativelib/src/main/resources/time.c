@@ -14,8 +14,7 @@ struct scalanative_tm {
     int tm_isdst;
 };
 
-static struct scalanative_tm scalanative_gmtime_buf;
-static struct scalanative_tm scalanative_localtime_buf;
+static struct scalanative_tm scalanative_time_buf;
 
 static void scalanative_tm_init(struct scalanative_tm *scala_tm,
                                 struct tm *tm) {
@@ -63,7 +62,7 @@ struct scalanative_tm *scalanative_gmtime_r(const time_t *clock,
 }
 
 struct scalanative_tm *scalanative_gmtime(const time_t *clock) {
-    return scalanative_gmtime_r(clock, &scalanative_gmtime_buf);
+    return scalanative_gmtime_r(clock, &scalanative_time_buf);
 }
 
 struct scalanative_tm *scalanative_localtime_r(const time_t *clock,
@@ -75,7 +74,15 @@ struct scalanative_tm *scalanative_localtime_r(const time_t *clock,
 }
 
 struct scalanative_tm *scalanative_localtime(const time_t *clock) {
-    return scalanative_localtime_r(clock, &scalanative_localtime_buf);
+
+    // Calling C localtime() ensures underlying Posix required tzset() is done.
+    // This allows a later paired C strftime() to work without its tset()
+    // possibly clobbering this hidden one. Assumes short span of
+    // elapsed time between the two calls.
+
+    struct tm *tmPtr = localtime(clock);
+    scalanative_tm_init(&scalanative_time_buf, tmPtr);
+    return &scalanative_time_buf;
 }
 
 time_t scalanative_mktime(struct scalanative_tm *result) {
