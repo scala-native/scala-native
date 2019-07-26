@@ -3,13 +3,13 @@
 C POSIX Library
 ===============
 
-Scala Native provides bindings for the core subset of the
+Scala Native provides bindings for a core subset of the
 `POSIX library <https://pubs.opengroup.org/onlinepubs/9699919799/idx/head.html>`_:
 
 ================= ==================================
 C Header          Scala Native Module
 ================= ==================================
-`aio.h`_          N/A
+`aio.h`_          N/A - *indicates binding not available*
 `arpa/inet.h`_    scala.scalanative.posix.arpa.inet_
 `assert.h`_       N/A
 `complex.h`_      scala.scalanative.libc.complex_

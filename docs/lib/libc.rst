@@ -3,13 +3,13 @@
 C Standard Library
 ==================
 
-Scala Native provides bindings for the core subset of the
+Scala Native provides bindings for a core subset of the
 `C standard library <https://en.cppreference.com/w/c/header>`_:
 
 ============== ==================================
 C Header       Scala Native Module
 ============== ==================================
-assert.h_      N/A
+assert.h_      N/A - *indicates binding not available*
 complex.h_     scala.scalanative.libc.complex_
 ctype.h_       scala.scalanative.libc.ctype_
 errno.h_       scala.scalanative.libc.errno_
