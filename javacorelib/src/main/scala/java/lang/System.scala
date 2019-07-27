@@ -85,11 +85,11 @@ object System {
   }
 
   var in: InputStream =
-    new FileInputStream(FileDescriptor.in)
+    null //new FileInputStream(FileDescriptor.in)
   var out: PrintStream =
-    new PrintStream(new FileOutputStream(FileDescriptor.out))
+    null //new PrintStream(new FileOutputStream(FileDescriptor.out))
   var err: PrintStream =
-    new PrintStream(new FileOutputStream(FileDescriptor.err))
+    null //new PrintStream(new FileOutputStream(FileDescriptor.err))
 
   private val systemProperties = loadProperties()
   Platform.setOSProps(new CFuncPtr2[CString, CString, Unit] {

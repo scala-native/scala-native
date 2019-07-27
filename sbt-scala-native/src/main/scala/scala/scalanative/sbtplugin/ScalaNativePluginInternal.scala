@@ -30,7 +30,7 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "nativelib"      % nativeVersion,
-      "org.scala-native" %%% "javalib"        % nativeVersion,
+      "org.scala-native" %%% "javacorelib"    % nativeVersion,
       "org.scala-native" %%% "auxlib"         % nativeVersion,
       "org.scala-native" %%% "scalalib"       % nativeVersion,
       "org.scala-native" %%% "test-interface" % nativeVersion % Test
