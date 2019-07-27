@@ -3,9 +3,9 @@ package java.lang
 import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.unsafe._
-import scala.scalanative.posix.unistd
-import scala.scalanative.posix.sys.utsname._
-import scala.scalanative.posix.sys.uname._
+//import scala.scalanative.posix.unistd
+//import scala.scalanative.posix.sys.utsname._
+//import scala.scalanative.posix.sys.uname._
 import scala.scalanative.runtime.{time, Platform, GC, Intrinsics}
 
 final class System private ()
@@ -63,10 +63,7 @@ object System {
       }
       sysProps.setProperty("user.home", getenv("HOME"))
       val buf = stackalloc[scala.Byte](1024)
-      unistd.getcwd(buf, 1024) match {
-        case null =>
-        case b    => sysProps.setProperty("user.dir", fromCString(b))
-      }
+      sysProps.setProperty("user.dir", null)
     }
 
     sysProps
@@ -130,14 +127,14 @@ object System {
 
     // Count to preallocate the map
     var size    = 0
-    var sizePtr = unistd.environ
+    /*var sizePtr = unistd.environ
     while (isDefined(sizePtr)) {
       size += 1
       sizePtr += 1
-    }
+    }*/
 
     val map               = new HashMap[String, String](size)
-    var ptr: Ptr[CString] = unistd.environ
+    /*var ptr: Ptr[CString] = unistd.environ
     while (isDefined(ptr)) {
       val variable = fromCString(ptr(0))
       val name     = variable.takeWhile(_ != '=')
@@ -148,7 +145,7 @@ object System {
           ""
       map.put(name, value)
       ptr = ptr + 1
-    }
+    }*/
 
     Collections.unmodifiableMap(map)
   }
