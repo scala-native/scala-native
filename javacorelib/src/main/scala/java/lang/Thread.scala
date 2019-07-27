@@ -73,7 +73,7 @@ object Thread {
   }
 
   def sleep(millis: scala.Long, nanos: scala.Int): Unit = {
-    import scala.scalanative.posix.errno.EINTR
+    /*import scala.scalanative.posix.errno.EINTR
     import scala.scalanative.unsafe._
     import scala.scalanative.posix.unistd
 
@@ -92,7 +92,7 @@ object Thread {
     val secs  = millis / 1000
     val usecs = (millis % 1000) * 1000 + nanos / 1000
     if (secs > 0 && unistd.sleep(secs.toUInt) != 0.toUInt) checkErrno()
-    if (usecs > 0 && unistd.usleep(usecs.toUInt) != 0) checkErrno()
+    if (usecs > 0 && unistd.usleep(usecs.toUInt) != 0) checkErrno()*/
   }
 
   def sleep(millis: scala.Long): Unit = sleep(millis, 0)

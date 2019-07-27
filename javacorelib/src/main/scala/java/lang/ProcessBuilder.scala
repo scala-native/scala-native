@@ -6,7 +6,7 @@ import java.io.{File, IOException}
 import java.util
 import java.util.Arrays
 import scala.scalanative.unsafe._
-import scala.scalanative.posix.unistd
+//import scala.scalanative.posix.unistd
 import scala.scalanative.runtime.Platform
 import ProcessBuilder.Redirect
 
@@ -108,7 +108,9 @@ final class ProcessBuilder(private var _command: List[String]) {
       val msg = "No windows implementation of java.lang.Process"
       throw new UnsupportedOperationException(msg)
     } else {
-      UnixProcess(this)
+      //UnixProcess(this)
+      val msg = "No POSIX implementation of java.lang.Process"
+      throw new UnsupportedOperationException(msg)
     }
   }
 

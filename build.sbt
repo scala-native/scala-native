@@ -205,6 +205,7 @@ lazy val buildInfoSettings: Seq[Setting[_]] =
       sbtVersion,
       scalaVersion,
       "nativeScalaVersion" -> (nativelib / scalaVersion).value
+  )
     )
   )
 
@@ -367,10 +368,75 @@ lazy val posixlib =
     .settings(mavenPublishSettings)
     .dependsOn(nscplugin % "plugin", nativelib)
 
-lazy val javalib =
+lazy val javacorelib =
   project
-    .in(file("javalib"))
+    .in(file("javacorelib"))
+    .settings(libSettings)
+    .settings(mavenPublishSettings)
+    .settings(
+      sources in doc in Compile := Nil, // doc generation currently broken
+      // This is required to have incremental compilation to work in javacorelib.
+      // We put our classes on scalac's `javabootclasspath` so that it uses them
+      // when compiling rather than the definitions from the JDK.
+      scalacOptions in Compile := {
+        val previous = (scalacOptions in Compile).value
+        val javaBootClasspath =
+          scala.tools.util.PathResolver.Environment.javaBootClassPath
+        val classDir  = (classDirectory in Compile).value.getAbsolutePath()
+        val separator = sys.props("path.separator")
+        "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
+      },
+      // Don't include classfiles for javacorelib in the packaged jar.
+      mappings in packageBin in Compile := {
+        val previous = (mappings in packageBin in Compile).value
+        previous.filter {
+          case (file, path) =>
+            !path.endsWith(".class")
+        }
+      },
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in nativelib, publishLocal in clib)
+        .value
+    )
+    .dependsOn(nativelib, clib)
+
+lazy val javafilelib =
+  project
+    .in(file("javafilelib"))
+    .settings(libSettings)
+    .settings(mavenPublishSettings)
+    .settings(
+      sources in doc in Compile := Nil, // doc generation currently broken
+      // This is required to have incremental compilation to work in javafilelib.
+      // We put our classes on scalac's `javabootclasspath` so that it uses them
+      // when compiling rather than the definitions from the JDK.
+      scalacOptions in Compile := {
+        val previous = (scalacOptions in Compile).value
+        val javaBootClasspath =
+          scala.tools.util.PathResolver.Environment.javaBootClassPath
+        val classDir  = (classDirectory in Compile).value.getAbsolutePath()
+        val separator = sys.props("path.separator")
+        "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
+      },
+      // Don't include classfiles for javafilelib in the packaged jar.
+      mappings in packageBin in Compile := {
+        val previous = (mappings in packageBin in Compile).value
+        previous.filter {
+          case (file, path) =>
+            !path.endsWith(".class")
+        }
+      },
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in nativelib, publishLocal in posixlib)
+        .value
+    )
+    .dependsOn(nativelib, javacorelib, posixlib)
+
+lazy val javanetlib =
+  project
+    .in(file("javanetlib"))
     .enablePlugins(MyScalaNativePlugin)
+    .settings(libSettings)
     .settings(mavenPublishSettings)
     .settings(
       Compile / doc / sources := Nil, // doc generation currently broken
@@ -385,7 +451,7 @@ lazy val javalib =
         val separator = sys.props("path.separator")
         "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
       },
-      // Don't include classfiles for javalib in the packaged jar.
+      // Don't include classfiles for javanetlib in the packaged jar.
       Compile / packageBin / mappings := {
         val previous = (Compile / packageBin / mappings).value
         previous.filter {
@@ -396,6 +462,71 @@ lazy val javalib =
       exportJars := true
     )
     .dependsOn(nscplugin % "plugin", posixlib, clib)
+    .dependsOn(nativelib, javacorelib, posixlib)
+
+lazy val javaziplib =
+  project
+    .in(file("javaziplib"))
+    .settings(libSettings)
+    .settings(mavenPublishSettings)
+    .settings(
+      sources in doc in Compile := Nil, // doc generation currently broken
+      // This is required to have incremental compilation to work in javaziplib.
+      // We put our classes on scalac's `javabootclasspath` so that it uses them
+      // when compiling rather than the definitions from the JDK.
+      scalacOptions in Compile := {
+        val previous = (scalacOptions in Compile).value
+        val javaBootClasspath =
+          scala.tools.util.PathResolver.Environment.javaBootClassPath
+        val classDir  = (classDirectory in Compile).value.getAbsolutePath()
+        val separator = sys.props("path.separator")
+        "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
+      },
+      // Don't include classfiles for javaziplib in the packaged jar.
+      mappings in packageBin in Compile := {
+        val previous = (mappings in packageBin in Compile).value
+        previous.filter {
+          case (file, path) =>
+            !path.endsWith(".class")
+        }
+      },
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in nativelib, publishLocal in posixlib)
+        .value
+    )
+    .dependsOn(nativelib, javacorelib, posixlib)
+
+lazy val javaextlib =
+  project
+    .in(file("javaextlib"))
+    .settings(libSettings)
+    .settings(mavenPublishSettings)
+    .settings(
+      sources in doc in Compile := Nil, // doc generation currently broken
+      // This is required to have incremental compilation to work in javaextlib.
+      // We put our classes on scalac's `javabootclasspath` so that it uses them
+      // when compiling rather than the definitions from the JDK.
+      scalacOptions in Compile := {
+        val previous = (scalacOptions in Compile).value
+        val javaBootClasspath =
+          scala.tools.util.PathResolver.Environment.javaBootClassPath
+        val classDir  = (classDirectory in Compile).value.getAbsolutePath()
+        val separator = sys.props("path.separator")
+        "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
+      },
+      // Don't include classfiles for javaextlib in the packaged jar.
+      mappings in packageBin in Compile := {
+        val previous = (mappings in packageBin in Compile).value
+        previous.filter {
+          case (file, path) =>
+            !path.endsWith(".class")
+        }
+      },
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in nativelib, publishLocal in posixlib)
+        .value
+    )
+    .dependsOn(nativelib, javacorelib, posixlib)
 
 val fetchScalaSource =
   taskKey[File]("Fetches the scala source for the current scala version")
@@ -556,7 +687,7 @@ lazy val scalalib =
       },
       exportJars := true
     )
-    .dependsOn(nscplugin % "plugin", auxlib, nativelib, javalib)
+    .dependsOn(nscplugin % "plugin", auxlib, nativelib, javacorelib)
 
 // Shortcut for further Native projects to depend on all core libraries
 lazy val allCoreLibs: Project =
@@ -630,6 +761,7 @@ lazy val testingCompiler =
 lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = Seq(
   unmanagedSourceDirectories in Compile += baseDirectory.value.getParentFile / "test-interface-common/src/main/scala",
   unmanagedSourceDirectories in Test += baseDirectory.value.getParentFile / "test-interface-common/src/test/scala"
+    )
 )
 
 lazy val testInterface =
