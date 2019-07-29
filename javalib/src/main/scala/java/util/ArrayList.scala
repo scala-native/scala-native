@@ -68,6 +68,9 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
   // cannot link: @java.util.ArrayList::isEmpty_bool
   override def isEmpty(): Boolean = _size == 0
 
+  // cannot link: @java.util.ArrayList::hashCode_i32
+  override def hashCode(): Int = inner.hashCode()
+
   override def indexOf(o: Any): Int = inner.indexOf(o)
 
   override def lastIndexOf(o: Any): Int = inner.lastIndexOf(o)
