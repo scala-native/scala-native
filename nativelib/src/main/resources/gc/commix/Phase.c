@@ -3,10 +3,28 @@
 #include "State.h"
 #include "Allocator.h"
 #include "BlockAllocator.h"
+#include <stdio.h>
+#include <unistd.h>
 
 void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
-    sem_init(&heap->gcThreads.startWorkers, 0, 0);
-    sem_init(&heap->gcThreads.startMaster, 0, 0);
+    pid_t pid = getpid();
+    // size = static part + 32 bit int as string
+    char startWorkersName[32 + 10];
+    char startMasterName[31 + 10];
+    snprintf(startWorkersName, 32 + 10, "scalanative_commix_startWorkers_%d",
+             pid);
+    snprintf(startMasterName, 31 + 10, "scalanative_commix_startMaster_%d",
+             pid);
+    // only reason for using named semaphores here is for compatibility with
+    // MacOs we do not share them across processes
+    heap->gcThreads.startWorkers =
+        sem_open(startWorkersName, O_CREAT | O_EXCL, 0644, 0);
+    heap->gcThreads.startMaster =
+        sem_open(startMasterName, O_CREAT | O_EXCL, 0644, 0);
+    // clean up when process closes
+    // also prevents any other process from `sem_open`ing it
+    sem_unlink(startWorkersName);
+    sem_unlink(startMasterName);
 
     heap->sweep.cursor = initialBlockCount;
     heap->lazySweep.cursorDone = initialBlockCount;
