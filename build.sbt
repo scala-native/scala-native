@@ -427,7 +427,7 @@ lazy val javafilelib =
         }
       },
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib, publishLocal in posixlib)
+        .dependsOn(publishLocal in nativelib, publishLocal in javacorelib, publishLocal in posixlib)
         .value
     )
     .dependsOn(nativelib, javacorelib, posixlib)
@@ -462,7 +462,7 @@ lazy val javanetlib =
       exportJars := true
     )
     .dependsOn(nscplugin % "plugin", posixlib, clib)
-    .dependsOn(nativelib, javacorelib, posixlib)
+    .dependsOn(nativelib, javacorelib, javafilelib, posixlib)
 
 lazy val javaziplib =
   project
@@ -523,10 +523,10 @@ lazy val javaextlib =
         }
       },
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib, publishLocal in posixlib)
+        .dependsOn(publishLocal in nativelib, publishLocal in posixlib, publishLocal in javafilelib)
         .value
     )
-    .dependsOn(nativelib, javacorelib, posixlib)
+    .dependsOn(nativelib, javacorelib, javafilelib, posixlib)
 
 val fetchScalaSource =
   taskKey[File]("Fetches the scala source for the current scala version")
