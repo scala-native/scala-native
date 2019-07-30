@@ -427,7 +427,9 @@ lazy val javafilelib =
         }
       },
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib, publishLocal in javacorelib, publishLocal in posixlib)
+        .dependsOn(publishLocal in nativelib,
+                   publishLocal in javacorelib,
+                   publishLocal in posixlib)
         .value
     )
     .dependsOn(nativelib, javacorelib, posixlib)
@@ -523,7 +525,9 @@ lazy val javaextlib =
         }
       },
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib, publishLocal in posixlib, publishLocal in javafilelib)
+        .dependsOn(publishLocal in nativelib,
+                   publishLocal in posixlib,
+                   publishLocal in javafilelib)
         .value
     )
     .dependsOn(nativelib, javacorelib, javafilelib, posixlib)
