@@ -126,14 +126,14 @@ object System {
     }
 
     // Count to preallocate the map
-    var size    = 0
+    var size = 0
     /*var sizePtr = unistd.environ
     while (isDefined(sizePtr)) {
       size += 1
       sizePtr += 1
     }*/
 
-    val map               = new HashMap[String, String](size)
+    val map = new HashMap[String, String](size)
     /*var ptr: Ptr[CString] = unistd.environ
     while (isDefined(ptr)) {
       val variable = fromCString(ptr(0))

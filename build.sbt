@@ -115,16 +115,16 @@ lazy val publishSnapshot =
   taskKey[Unit]("Publish snapshot to sonatype on every commit to master.")
 
 lazy val setUpTestingCompiler = Def.task {
-  val nscpluginjar = (Keys.`package` in nscplugin in Compile).value
-  val nativelibjar = (Keys.`package` in nativelib in Compile).value
-  val auxlibjar    = (Keys.`package` in auxlib in Compile).value
-  val clibjar      = (Keys.`package` in clib in Compile).value
-  val posixlibjar  = (Keys.`package` in posixlib in Compile).value
-  val scalalibjar  = (Keys.`package` in scalalib in Compile).value
-  val javacorelibjar   = (Keys.`package` in javacorelib in Compile).value
-  val javafilelibjar   = (Keys.`package` in javafilelib in Compile).value
-  val javanetlibjar   = (Keys.`package` in javanetlib in Compile).value
-  val javaziplibjar   = (Keys.`package` in javaziplib in Compile).value
+  val nscpluginjar   = (Keys.`package` in nscplugin in Compile).value
+  val nativelibjar   = (Keys.`package` in nativelib in Compile).value
+  val auxlibjar      = (Keys.`package` in auxlib in Compile).value
+  val clibjar        = (Keys.`package` in clib in Compile).value
+  val posixlibjar    = (Keys.`package` in posixlib in Compile).value
+  val scalalibjar    = (Keys.`package` in scalalib in Compile).value
+  val javacorelibjar = (Keys.`package` in javacorelib in Compile).value
+  val javafilelibjar = (Keys.`package` in javafilelib in Compile).value
+  val javanetlibjar  = (Keys.`package` in javanetlib in Compile).value
+  val javaziplibjar  = (Keys.`package` in javaziplib in Compile).value
   val testingcompilercp =
     (fullClasspath in testingCompiler in Compile).value.files
   val testingcompilerjar = (Keys.`package` in testingCompiler in Compile).value
@@ -133,7 +133,15 @@ lazy val setUpTestingCompiler = Def.task {
   sys.props("scalanative.testingcompiler.cp") =
     (testingcompilercp :+ testingcompilerjar) map (_.getAbsolutePath) mkString pathSeparator
   sys.props("scalanative.nativeruntime.cp") =
-    Seq(nativelibjar, auxlibjar, clibjar, posixlibjar, scalalibjar, javacorelibjar, javafilelibjar, javanetlibjar, javaziplibjar) mkString pathSeparator
+    Seq(nativelibjar,
+        auxlibjar,
+        clibjar,
+        posixlibjar,
+        scalalibjar,
+        javacorelibjar,
+        javafilelibjar,
+        javanetlibjar,
+        javaziplibjar) mkString pathSeparator
   sys.props("scalanative.nativelib.dir") =
     ((crossTarget in Compile).value / "nativelib").getAbsolutePath
 }
@@ -472,7 +480,9 @@ lazy val javafilelib =
         }
       },
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib, publishLocal in javacorelib, publishLocal in posixlib)
+        .dependsOn(publishLocal in nativelib,
+                   publishLocal in javacorelib,
+                   publishLocal in posixlib)
         .value
     )
     .dependsOn(nativelib, javacorelib, posixlib)
@@ -504,7 +514,10 @@ lazy val javanetlib =
         }
       },
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib, publishLocal in javacorelib, publishLocal in javafilelib, publishLocal in posixlib)
+        .dependsOn(publishLocal in nativelib,
+                   publishLocal in javacorelib,
+                   publishLocal in javafilelib,
+                   publishLocal in posixlib)
         .value
     )
     .dependsOn(nativelib, javacorelib, javafilelib, posixlib)
@@ -568,7 +581,9 @@ lazy val javaextlib =
         }
       },
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib, publishLocal in posixlib, publishLocal in javafilelib)
+        .dependsOn(publishLocal in nativelib,
+                   publishLocal in posixlib,
+                   publishLocal in javafilelib)
         .value
     )
     .dependsOn(nativelib, javacorelib, javafilelib, posixlib)
