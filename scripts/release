@@ -9,7 +9,10 @@ sbt \
     auxlib/publishSigned \
     clib/publishSigned \
     posixlib/publishSigned \
-    javalib/publishSigned \
+    javacorelib/publishSigned \
+    javafilelib/publishSigned \
+    javanetlib/publishSigned \
+    javaziplib/publishSigned \
     scalalib/publishSigned \
     testInterface/publishSigned \
     testInterfaceSbtDefs/publishSigned \
