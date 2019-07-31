@@ -21,10 +21,12 @@ import java.nio.file.attribute.{
 
 import java.util.function.BiPredicate
 import scala.collection.JavaConverters._
+import scala.io.Source
 import PosixFilePermission._
 import StandardCopyOption._
 
 object FilesSuite extends tests.Suite {
+  val isTravis = System.getenv("TRAVIS") == "true"
 
   test("Files.copy can copy to a non-existing file") {
     val targetFile = File.createTempFile("test", ".tmp")
@@ -1401,6 +1403,60 @@ object FilesSuite extends tests.Suite {
       val dir   = dirFile.toPath
       val attrs = Files.readAttributes(dir, "posix:*")
       assert(!attrs.isEmpty())
+    }
+  }
+
+  test("Files.readAttributes(Path, String) works for non-existent user") {
+    if (isTravis) {
+      val maxUserId =
+        Source.fromFile("/etc/passwd").getLines.map(_.split(":")(2).toInt).max
+      val nonExistentUser = maxUserId + 42
+      val tempFile =
+        File.createTempFile("scala-native-test-user", ".tmp").toPath
+
+      val setNonExistingUser = new ProcessBuilder("sudo",
+                                                  "--non-interactive",
+                                                  "chown",
+                                                  nonExistentUser.toString,
+                                                  tempFile.toString).start
+
+      setNonExistingUser.waitFor()
+
+      assert(setNonExistingUser.exitValue == 0, "sudo chown user failed")
+      assert(
+        Files
+          .readAttributes(tempFile,
+                          classOf[attribute.PosixFileAttributes],
+                          LinkOption.NOFOLLOW_LINKS)
+          .owner
+          .getName == nonExistentUser.toString)
+    }
+  }
+
+  test("Files.readAttributes(Path, String) works for non-existent group") {
+    if (isTravis) {
+      val maxGroupId =
+        Source.fromFile("/etc/group").getLines.map(_.split(":")(2).toInt).max
+      val nonExistentGroup = maxGroupId + 42
+      val tempFile =
+        File.createTempFile("scala-native-test-group", ".tmp").toPath
+
+      val setNonExistingGroup = new ProcessBuilder("sudo",
+                                                   "--non-interactive",
+                                                   "chown",
+                                                   s":$nonExistentGroup",
+                                                   tempFile.toString).start
+
+      setNonExistingGroup.waitFor()
+
+      assert(setNonExistingGroup.exitValue == 0, "sudo chown :group failed")
+      assert(
+        Files
+          .readAttributes(tempFile,
+                          classOf[attribute.PosixFileAttributes],
+                          LinkOption.NOFOLLOW_LINKS)
+          .group
+          .getName == nonExistentGroup.toString)
     }
   }
 
