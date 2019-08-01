@@ -2,6 +2,7 @@
 #include "StackTrace.h"
 
 void StackTrace_PrintStackTrace() {
+#ifndef _WIN32
     unw_cursor_t cursor;
     unw_context_t context;
     unw_getcontext(&context);
@@ -19,4 +20,5 @@ void StackTrace_PrintStackTrace() {
             printf("\tat %s\n", sym);
         }
     }
+#endif
 }

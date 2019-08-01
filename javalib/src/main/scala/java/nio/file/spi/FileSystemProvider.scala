@@ -19,8 +19,6 @@ import java.nio.channels.{
   SeekableByteChannel
 }
 
-import scala.scalanative.nio.fs.UnixFileSystemProvider
-
 abstract class FileSystemProvider protected () {
 
   // def getFileStore(path: Path): FileStore
@@ -155,7 +153,7 @@ abstract class FileSystemProvider protected () {
 object FileSystemProvider {
   def installedProviders: List[FileSystemProvider] = {
     val list = new LinkedList[FileSystemProvider]
-    list.add(new UnixFileSystemProvider())
+    list.add(CreateFileSystemProvider())
     list
   }
 

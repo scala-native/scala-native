@@ -5,18 +5,9 @@ import java.nio.file.spi.FileSystemProvider
 import java.net.URI
 import java.util.{HashMap, Map}
 
-import scala.scalanative.nio.fs.{UnixFileSystem, UnixFileSystemProvider}
-
 object FileSystems {
-  private lazy val fs =
-    (new UnixFileSystemProvider).getFileSystem(
-      new URI(scheme = "file",
-              userInfo = null,
-              host = null,
-              port = -1,
-              path = "/",
-              query = null,
-              fragment = null))
+  private lazy val fs = CreateFileSystem()
+    
   def getDefault(): FileSystem =
     fs
 

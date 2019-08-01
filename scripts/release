@@ -9,6 +9,8 @@ sbt \
     auxlib/publishSigned \
     clib/publishSigned \
     posixlib/publishSigned \
+    cpplib/publishSigned \
+    winlib/publishSigned \
     javalib/publishSigned \
     scalalib/publishSigned \
     testInterface/publishSigned \

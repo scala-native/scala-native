@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <sys/mman.h>
+#include "Platform/MemoryMap.h"
 #include <stdio.h>
 #include "Heap.h"
 #include "Block.h"
@@ -13,14 +13,6 @@
 #include "Memory.h"
 #include <memory.h>
 #include <time.h>
-
-// Allow read and write
-#define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
-// Map private anonymous memory, and prevent from reserving swap
-#define HEAP_MEM_FLAGS (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
-// Map anonymous memory (not a file)
-#define HEAP_MEM_FD -1
-#define HEAP_MEM_FD_OFFSET 0
 
 void Heap_exitWithOutOfMemory() {
     printf("Out of heap space\n");
@@ -47,8 +39,7 @@ size_t Heap_getMemoryLimit() {
  */
 word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
     assert(alignmentSize % WORD_SIZE == 0);
-    word_t *heapStart = mmap(NULL, memoryLimit, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
-                             HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
+    word_t *heapStart = memoryMap(memoryLimit);
 
     size_t alignmentMask = ~(alignmentSize - 1);
     // Heap start not aligned on
@@ -69,7 +60,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         fprintf(stderr,
                 "SCALANATIVE_MAX_HEAP_SIZE too small to initialize heap.\n");
         fprintf(stderr, "Minimum required: %zum \n",
-                MIN_HEAP_SIZE / 1024 / 1024);
+                MIN_HEAP_SIZE / 1024ULL / 1024ULL);
         fflush(stderr);
         exit(1);
     }
@@ -77,7 +68,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     if (minHeapSize > memoryLimit) {
         fprintf(stderr, "SCALANATIVE_MIN_HEAP_SIZE is too large.\n");
         fprintf(stderr, "Maximum possible: %zug \n",
-                memoryLimit / 1024 / 1024 / 1024);
+                memoryLimit / 1024ULL / 1024ULL / 1024ULL);
         fflush(stderr);
         exit(1);
     }
@@ -173,7 +164,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
             return (word_t *)object;
         } else {
             size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
-            uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
+            uint32_t pow2increment = 1ULL << MathUtils_Log2Ceil(increment);
             Heap_Grow(heap, pow2increment);
 
             object = LargeAllocator_GetBlock(&largeAllocator, size);
