@@ -3,11 +3,6 @@ package java.lang
 import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.unsafe._
-import scala.scalanative.posix.unistd
-import scala.scalanative.posix.sys.utsname._
-import scala.scalanative.posix.sys.uname._
-import scala.scalanative.posix.pwd
-import scala.scalanative.posix.pwdOps._
 import scala.scalanative.runtime.{time, Platform, GC, Intrinsics}
 
 final class System private ()
