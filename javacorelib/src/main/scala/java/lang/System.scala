@@ -84,7 +84,7 @@ object System {
     sysProps
   }
 
-  var in: InputStream = SystemImpl.std_in()
+  var in: InputStream  = SystemImpl.std_in()
   var out: PrintStream = new PrintStream(SystemImpl.std_out())
   var err: PrintStream = new PrintStream(SystemImpl.std_err())
 
@@ -137,9 +137,9 @@ private object SystemImpl {
   val envmap = new HashMap[String, String](Platform.getAllEnv(null))
   def loadAllEnv(): Map[String, String] = {
     Platform.getAllEnv(new CFuncPtr2[CString, CString, Unit] {
-        def apply(key: CString, value: CString): Unit =
-          envmap.put(fromCString(key), fromCString(value))
-      })
+      def apply(key: CString, value: CString): Unit =
+        envmap.put(fromCString(key), fromCString(value))
+    })
     Collections.unmodifiableMap(envmap)
   }
 

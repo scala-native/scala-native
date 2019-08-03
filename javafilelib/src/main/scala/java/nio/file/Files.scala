@@ -570,8 +570,9 @@ object Files {
 
   def walk(start: Path,
            maxDepth: Int,
-           options: Array[FileVisitOption]): Stream[Path] = 
-    new WrappedScalaStream(walk(start, maxDepth, 0, options, SSet[Path](start)), None)
+           options: Array[FileVisitOption]): Stream[Path] =
+    new WrappedScalaStream(walk(start, maxDepth, 0, options, SSet[Path](start)),
+                           None)
 
   private def walk(start: Path,
                    maxDepth: Int,
@@ -758,10 +759,12 @@ object Files {
       "posix" -> classOf[PosixFileAttributeView]
     )
 
-  private[java] def autoClose(reader: BufferedReader, closeAtTheEnd: Boolean): Stream[String] =
+  private[java] def autoClose(reader: BufferedReader,
+                              closeAtTheEnd: Boolean): Stream[String] =
     new WrappedScalaStream(autoCloseImpl(reader, closeAtTheEnd), None)
 
-  private[this] def autoCloseImpl(reader: BufferedReader, closeAtTheEnd: Boolean): SStream[String] = {
+  private[this] def autoCloseImpl(reader: BufferedReader,
+                                  closeAtTheEnd: Boolean): SStream[String] = {
     Option(reader.readLine()) match {
       case None =>
         if (closeAtTheEnd) {

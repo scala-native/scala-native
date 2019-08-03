@@ -42,7 +42,7 @@ object FileDescriptor {
     }
 }
 
-object FileDescriptorImpl{
+object FileDescriptorImpl {
   def apply(fd: Int, readOnly: Boolean = false): FileDescriptor = {
     new FileDescriptor(fd, readOnly)
   }

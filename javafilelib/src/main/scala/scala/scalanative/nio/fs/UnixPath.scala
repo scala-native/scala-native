@@ -73,7 +73,13 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     else new File(s"${fs.defaultDirectory}/$path")
 
   private lazy val uri =
-    new java.net.URI("file", null, null, -1, toFile().getAbsolutePath(), null, null)
+    new java.net.URI("file",
+                     null,
+                     null,
+                     -1,
+                     toFile().getAbsolutePath(),
+                     null,
+                     null)
 
   override def getFileSystem(): FileSystem = fs
 

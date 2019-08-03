@@ -22,7 +22,13 @@ import scala.scalanative.posix.sys.select._
 import scala.scalanative.posix.sys.time._
 import scala.scalanative.posix.sys.timeOps._
 import scala.scalanative.posix.unistd.{close => cClose}
-import java.io.{FileDescriptor, FileDescriptorImpl, IOException, OutputStream, InputStream}
+import java.io.{
+  FileDescriptor,
+  FileDescriptorImpl,
+  IOException,
+  OutputStream,
+  InputStream
+}
 
 private[net] class PlainSocketImpl extends SocketImpl {
 
@@ -58,7 +64,9 @@ private[net] class PlainSocketImpl extends SocketImpl {
       val sin = stackalloc[in.sockaddr_in]
       !len = sizeof[in.sockaddr_in].toUInt
 
-      if (socket.getsockname(getFD(fd), sin.asInstanceOf[Ptr[socket.sockaddr]], len) == -1) {
+      if (socket.getsockname(getFD(fd),
+                             sin.asInstanceOf[Ptr[socket.sockaddr]],
+                             len) == -1) {
         None
       } else {
         Some(sin.sin_port)
@@ -67,7 +75,9 @@ private[net] class PlainSocketImpl extends SocketImpl {
       val sin = stackalloc[in.sockaddr_in6]
       !len = sizeof[in.sockaddr_in6].toUInt
 
-      if (socket.getsockname(getFD(fd), sin.asInstanceOf[Ptr[socket.sockaddr]], len) == -1) {
+      if (socket.getsockname(getFD(fd),
+                             sin.asInstanceOf[Ptr[socket.sockaddr]],
+                             len) == -1) {
         None
       } else {
         Some(sin.sin6_port)
@@ -300,7 +310,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     val oldOpts = if (timeout == 0) 0 else connectSetFdNoBlock(getFD(fd))
 
-    val connectRet = socket.connect(getFD(fd), (!ret).ai_addr, (!ret).ai_addrlen)
+    val connectRet =
+      socket.connect(getFD(fd), (!ret).ai_addr, (!ret).ai_addrlen)
 
     freeaddrinfo(!ret) // Must be after last use of ai_addr.
 
