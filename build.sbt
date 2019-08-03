@@ -74,6 +74,9 @@ addCommandAlias(
 addCommandAlias(
   "dirty-rebuild",
   Seq(
+    "javafilelib/publishLocal",
+    "javanetlib/publishLocal",
+    "javaziplib/publishLocal",
     "scalalib/publishLocal",
     "testRunner/publishLocal",
     "sbtScalaNative/publishLocal",
@@ -658,7 +661,6 @@ lazy val tests =
       nativeLinkStubs := true
     )
     .enablePlugins(ScalaNativePlugin)
-    .dependsOn(javafilelib, javanetlib, javaziplib)
 
 lazy val sandbox =
   project
@@ -668,6 +670,9 @@ lazy val sandbox =
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
+      libraryDependencies -= "org.scala-native" %%% "javafilelib"    % nativeVersion,
+      libraryDependencies -= "org.scala-native" %%% "javanetlib"    % nativeVersion,
+      libraryDependencies -= "org.scala-native" %%% "javaziplib"    % nativeVersion,
       scalaVersion := libScalaVersion
     )
     .enablePlugins(ScalaNativePlugin)
