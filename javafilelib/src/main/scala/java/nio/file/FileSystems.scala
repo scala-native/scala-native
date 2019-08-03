@@ -9,8 +9,8 @@ import scala.scalanative.nio.fs.{UnixFileSystem, UnixFileSystemProvider}
 
 object FileSystems {
   private lazy val fs =
-    (new UnixFileSystemProvider).getFileSystem(
-      new URI("file", null, null, -1, "/", null, null))
+    (new UnixFileSystemProvider)
+      .getFileSystem(new URI("file", null, null, -1, "/", null, null))
   def getDefault(): FileSystem =
     fs
 
