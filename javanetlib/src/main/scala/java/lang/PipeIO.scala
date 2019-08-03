@@ -22,10 +22,13 @@ private[lang] object PipeIO {
   )(implicit ioStream: PipeIO[T]): T = {
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.PIPE =>
-        ioStream.fdStream(process, new FileDescriptor(childFd))
+        ioStream.fdStream(process, FileDescriptorImpl(childFd))
       case _ =>
         ioStream.nullStream
     }
+  }
+  private[lang] def fd(fd: FileDescriptor): Int = {
+    FileDescriptorImpl.fd(fd)
   }
   trait Stream extends InputStream {
     def process: UnixProcess
@@ -80,7 +83,7 @@ private[lang] object PipeIO {
     private[this] var drained = false
     private def availableFD() = {
       val res = stackalloc[CInt]
-      ioctl(is.getFD().fd, FIONREAD, res.asInstanceOf[Ptr[scala.Byte]]) match {
+      ioctl(fd(is.getFD()), FIONREAD, res.asInstanceOf[Ptr[scala.Byte]]) match {
         case -1 => 0
         case _  => !res
       }

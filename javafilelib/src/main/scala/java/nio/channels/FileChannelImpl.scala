@@ -9,7 +9,7 @@ import java.nio.file.{
   StandardOpenOption
 }
 import java.nio.file.attribute.FileAttribute
-import java.nio.{ByteBuffer, MappedByteBuffer}
+import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 
 import java.io.RandomAccessFile
 
@@ -38,8 +38,7 @@ final class FileChannelImpl(path: Path,
                    size: Long): MappedByteBuffer = {
     var total  = 0
     var copied = 0
-    val buffer =
-      new MappedByteBuffer(mode, size.toInt, new Array(size.toInt), 0) {}
+    val buffer = new MappedByteBufferImpl(mode, size.toInt, new Array(size.toInt), 0)
     while (copied < size && { copied = read(buffer); copied > 0 }) {
       total += copied
     }

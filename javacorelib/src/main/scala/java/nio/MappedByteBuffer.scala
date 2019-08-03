@@ -168,3 +168,9 @@ abstract class MappedByteBuffer(mode: FileChannel.MapMode,
   private def ensureWritable(): Unit =
     if (isReadOnly()) throw new NonWritableChannelException()
 }
+
+class MappedByteBufferImpl(mode: FileChannel.MapMode,
+              _capacity: Int,
+              _array: Array[Byte],
+              _arrayOffset: Int) extends MappedByteBuffer(mode, _capacity, _array, _arrayOffset)
+              {}

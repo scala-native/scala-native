@@ -84,12 +84,9 @@ object System {
     sysProps
   }
 
-  var in: InputStream =
-    null //new FileInputStream(FileDescriptor.in)
-  var out: PrintStream =
-    null //new PrintStream(new FileOutputStream(FileDescriptor.out))
-  var err: PrintStream =
-    null //new PrintStream(new FileOutputStream(FileDescriptor.err))
+  var in: InputStream = SystemImpl.std_in()
+  var out: PrintStream = new PrintStream(SystemImpl.std_out())
+  var err: PrintStream = new PrintStream(SystemImpl.std_err())
 
   private val systemProperties = loadProperties()
   Platform.setOSProps(new CFuncPtr2[CString, CString, Unit] {
@@ -133,35 +130,49 @@ object System {
 
   def gc(): Unit = GC.collect()
 
-  private lazy val envVars: Map[String, String] = {
-    // workaround since `while(ptr(0) != null)` causes segfault
-    def isDefined(ptr: Ptr[CString]): Boolean = {
-      val s: CString = ptr(0)
-      s != null
-    }
+  private lazy val envVars: Map[String, String] = SystemImpl.loadAllEnv()
+}
 
-    // Count to preallocate the map
-    var size    = 0
-    var sizePtr = unistd.environ
-    while (isDefined(sizePtr)) {
-      size += 1
-      sizePtr += 1
-    }
+private object SystemImpl {
+  val envmap = new HashMap[String, String](Platform.getAllEnv(null))
+  def loadAllEnv(): Map[String, String] = {
+    Platform.getAllEnv(new CFuncPtr2[CString, CString, Unit] {
+        def apply(key: CString, value: CString): Unit =
+          envmap.put(fromCString(key), fromCString(value))
+      })
+    Collections.unmodifiableMap(envmap)
+  }
 
-    val map               = new HashMap[String, String](size)
-    var ptr: Ptr[CString] = unistd.environ
-    while (isDefined(ptr)) {
-      val variable = fromCString(ptr(0))
-      val name     = variable.takeWhile(_ != '=')
-      val value =
-        if (name.length < variable.length)
-          variable.substring(name.length + 1, variable.length)
-        else
-          ""
-      map.put(name, value)
-      ptr = ptr + 1
-    }
+  import scala.scalanative.libc.stdio
+  import scala.scalanative.runtime
 
-    Collections.unmodifiableMap(map)
+  def std_in(): InputStream = new InputStream {
+    def read(): Int = {
+      stdio.fgetc(stdio.stdin)
+    }
+    def read(b: Array[Byte], off: Int, len: Int): Int = {
+      val buf = b.asInstanceOf[runtime.ByteArray].at(off)
+      stdio.fread(buf, len, 1, stdio.stdin).toInt
+    }
+  }
+
+  def std_out(): OutputStream = new OutputStream {
+    def write(b: Int): Unit = {
+      stdio.fputc(b, stdio.stdout)
+    }
+    def write(b: Array[Byte], off: Int, len: Int): Unit = {
+      val buf = b.asInstanceOf[runtime.ByteArray].at(off)
+      stdio.fwrite(buf, len, 1, stdio.stdout).toInt
+    }
+  }
+
+  def std_err(): OutputStream = new OutputStream {
+    def write(b: Int): Unit = {
+      stdio.fputc(b, stdio.stderr)
+    }
+    def write(b: Array[Byte], off: Int, len: Int): Unit = {
+      val buf = b.asInstanceOf[runtime.ByteArray].at(off)
+      stdio.fwrite(buf, len, 1, stdio.stderr)
+    }
   }
 }

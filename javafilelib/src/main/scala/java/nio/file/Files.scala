@@ -352,7 +352,7 @@ object Files {
     lines(path, StandardCharsets.UTF_8)
 
   def lines(path: Path, cs: Charset): Stream[String] =
-    newBufferedReader(path, cs).lines(true)
+    autoClose(newBufferedReader(path, cs), true)
 
   def list(dir: Path): Stream[Path] =
     new WrappedScalaStream(
@@ -570,8 +570,8 @@ object Files {
 
   def walk(start: Path,
            maxDepth: Int,
-           options: Array[FileVisitOption]): Stream[Path] =
-    new WrappedScalaStream(walk(start, maxDepth, 0, options, Set(start)), None)
+           options: Array[FileVisitOption]): Stream[Path] = 
+    new WrappedScalaStream(walk(start, maxDepth, 0, options, SSet[Path](start)), None)
 
   private def walk(start: Path,
                    maxDepth: Int,
@@ -758,4 +758,17 @@ object Files {
       "posix" -> classOf[PosixFileAttributeView]
     )
 
+  private[java] def autoClose(reader: BufferedReader, closeAtTheEnd: Boolean): Stream[String] =
+    new WrappedScalaStream(autoCloseImpl(reader, closeAtTheEnd), None)
+
+  private[this] def autoCloseImpl(reader: BufferedReader, closeAtTheEnd: Boolean): SStream[String] = {
+    Option(reader.readLine()) match {
+      case None =>
+        if (closeAtTheEnd) {
+          reader.close()
+        }
+        SStream.empty
+      case Some(line) => line #:: autoCloseImpl(reader, closeAtTheEnd)
+    }
+  }
 }

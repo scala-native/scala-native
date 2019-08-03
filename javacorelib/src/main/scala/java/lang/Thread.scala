@@ -73,14 +73,7 @@ object Thread {
   }
 
   def sleep(millis: scala.Long, nanos: scala.Int): Unit = {
-    /*import scala.scalanative.posix.errno.EINTR
-    import scala.scalanative.unsafe._
-    import scala.scalanative.posix.unistd
-
-    def checkErrno() =
-      if (errno.errno == EINTR) {
-        throw new InterruptedException("Sleep was interrupted")
-      }
+    import scala.scalanative.runtime.Platform
 
     if (millis < 0) {
       throw new IllegalArgumentException("millis must be >= 0")
@@ -89,10 +82,9 @@ object Thread {
       throw new IllegalArgumentException("nanos value out of range")
     }
 
-    val secs  = millis / 1000
-    val usecs = (millis % 1000) * 1000 + nanos / 1000
-    if (secs > 0 && unistd.sleep(secs.toUInt) != 0.toUInt) checkErrno()
-    if (usecs > 0 && unistd.usleep(usecs.toUInt) != 0) checkErrno()*/
+    if (!Platform.thread_sleep(millis, nanos)) {
+      throw new InterruptedException("Sleep was interrupted")
+    }
   }
 
   def sleep(millis: scala.Long): Unit = sleep(millis, 0)
