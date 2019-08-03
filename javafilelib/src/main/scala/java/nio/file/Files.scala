@@ -20,6 +20,7 @@ import java.nio.channels.{FileChannel, SeekableByteChannel}
 import java.util.function.BiPredicate
 import java.util.{
   EnumSet,
+  EnumSetImpl,
   HashMap,
   HashSet,
   Iterator,
@@ -612,7 +613,7 @@ object Files {
 
   def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path =
     walkFileTree(start,
-                 EnumSet.noneOf(classOf[FileVisitOption]),
+                 EnumSetImpl.noneOf(classOf[FileVisitOption]),
                  Int.MaxValue,
                  visitor)
 

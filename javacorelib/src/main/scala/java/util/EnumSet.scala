@@ -25,3 +25,8 @@ object EnumSet {
       elementType: Class[E]): EnumSet[E] =
     new EnumSet[E](Array.empty[E])
 }
+
+object EnumSetImpl {
+  def noneOf[E <: Enum[E]: scala.reflect.ClassTag](
+      elementType: Class[E]): EnumSet[E] = EnumSet.noneOf[E](elementType)
+}
