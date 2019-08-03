@@ -670,9 +670,9 @@ lazy val sandbox =
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
-      libraryDependencies -= "org.scala-native" %%% "javafilelib"    % nativeVersion,
-      libraryDependencies -= "org.scala-native" %%% "javanetlib"    % nativeVersion,
-      libraryDependencies -= "org.scala-native" %%% "javaziplib"    % nativeVersion,
+      libraryDependencies -= "org.scala-native" %%% "javafilelib" % nativeVersion,
+      libraryDependencies -= "org.scala-native" %%% "javanetlib"  % nativeVersion,
+      libraryDependencies -= "org.scala-native" %%% "javaziplib"  % nativeVersion,
       scalaVersion := libScalaVersion
     )
     .enablePlugins(ScalaNativePlugin)
