@@ -3,6 +3,7 @@
 #else
 #include <sys/utsname.h>
 #include <unistd.h>
+#include <string.h>
 #endif
 
 int scalanative_platform_is_mac() {
@@ -58,11 +59,14 @@ int scalanative_platform_get_all_env(void (*add_env)(const char *, const char *)
     FreeEnvironmentStringsW(lpEnvStrings);
     return result;
 #else
+    extern char **environ;
     char** string = environ;
     int result = 0;
-    while(string)
+    char buf[1024];
+    while(*string)
     {
-        char* name = *string;
+        strcpy(buf, *string);
+        char* name = buf;
         char* value = name;
         while (value && value == name)
         {
