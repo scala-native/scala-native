@@ -973,3 +973,7 @@ object Arrays {
     }
   }
 }
+
+object ArraysImpl {
+  def asList[T <: AnyRef](a: Array[T]): List[T] = Arrays.asList[T](a)
+}

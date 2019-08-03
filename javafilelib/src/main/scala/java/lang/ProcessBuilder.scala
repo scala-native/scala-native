@@ -4,21 +4,21 @@ import java.util.{ArrayList, List}
 import java.util.Map
 import java.io.{File, IOException}
 import java.util
-import java.util.Arrays
+import java.util.{Arrays, ArraysImpl}
 import scala.scalanative.unsafe._
-//import scala.scalanative.posix.unistd
+import scala.scalanative.posix.unistd
 import scala.scalanative.runtime.Platform
 import ProcessBuilder.Redirect
 
 final class ProcessBuilder(private var _command: List[String]) {
   def this(command: Array[String]) = {
-    this(Arrays.asList(command))
+    this(ArraysImpl.asList(command))
   }
 
   def command(): List[String] = _command
 
   def command(command: Array[String]): ProcessBuilder =
-    set { _command = Arrays.asList(command) }
+    set { _command = ArraysImpl.asList(command) }
 
   def command(command: List[String]): ProcessBuilder = set {
     _command = command
@@ -108,9 +108,7 @@ final class ProcessBuilder(private var _command: List[String]) {
       val msg = "No windows implementation of java.lang.Process"
       throw new UnsupportedOperationException(msg)
     } else {
-      //UnixProcess(this)
-      val msg = "No POSIX implementation of java.lang.Process"
-      throw new UnsupportedOperationException(msg)
+      UnixProcess(this)
     }
   }
 
