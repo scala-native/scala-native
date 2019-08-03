@@ -658,6 +658,7 @@ lazy val tests =
       nativeLinkStubs := true
     )
     .enablePlugins(ScalaNativePlugin)
+    .dependsOn(javafilelib, javanetlib, javaziplib)
 
 lazy val sandbox =
   project
