@@ -67,5 +67,5 @@ object Ptr {
       implicit tag: Tag[T]): T = !ptr
 
   @alwaysinline def fromCFuncPtr[T](f: CFuncPtr) =
-    Boxes.boxToPtr[Byte](Boxes.unboxToCFuncRawPtr(f))
+    Boxes.boxToPtr[T](Boxes.unboxToCFuncRawPtr(f))
 }
