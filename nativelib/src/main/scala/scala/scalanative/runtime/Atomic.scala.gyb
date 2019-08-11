@@ -35,11 +35,6 @@ import scala.scalanative.native.{
 @extern
 object Atomic {
 
-  // Memory
-  def alloc(sz: CSize): Ptr[Byte] = extern
-
-  def free(ptr: Ptr[Byte]): Unit = extern
-
   // Init
   % for (C, T, N) in zip(classes, types, names):
   def init_${N}(atm: ${C}, initValue: ${T}): Unit = extern

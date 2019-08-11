@@ -1,5 +1,7 @@
 package scala.concurrent.impl
 
+import java.util.concurrent.atomic.AtomicReference
+
 /**
  * JavaScript specific implementation of AbstractPromise
  *
@@ -9,19 +11,9 @@ package scala.concurrent.impl
  * @author Tobias Schlatter
  */
 abstract class AbstractPromise {
-
-  private var state: AnyRef = _
-
-  protected final
-  def updateState(oldState: AnyRef, newState: AnyRef): Boolean = {
-    if (state eq oldState) {
-      state = newState
-      true
-    } else false
-  }
-
-  protected final def getState: AnyRef = state
-
+  private val state: AtomicReference[AnyRef] = new AtomicReference[AnyRef](null)
+  protected final def updateState(oldState: AnyRef, newState: AnyRef): Boolean = state.compareAndSet(oldState, newState)
+  protected final def getState: AnyRef = state.get()
 }
 
 object AbstractPromise {

@@ -1,9 +1,9 @@
 package java.lang
 
-import scala.scalanative.native.{stdlib, stub}
+import scala.scalanative.native.{stdlib, stub, sysinfo}
 
 class Runtime private () {
-  def availableProcessors(): Int = 1
+  def availableProcessors(): Int = sysinfo.get_nprocs
   def exit(status: Int): Unit    = stdlib.exit(status)
   def gc(): Unit                 = ()
 

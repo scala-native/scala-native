@@ -5,7 +5,7 @@ import runtime._
 import native._
 import stdlib._
 
-object AtomicSuite extends tests.Suite {
+object AtomicSuite extends tests.MultiThreadSuite {
 
 %{
    classes = ['Byte', 'Short', 'Int', 'Long',
@@ -16,14 +16,28 @@ object AtomicSuite extends tests.Suite {
             'Byte', 'CUnsignedShort', 'CUnsignedInt', 'CUnsignedLong',
             'CSize']
 
+   companionObjects = ['Byte', 'CShort', 'CInt', 'CLong',
+                       'Byte', 'UShort', 'UInt', 'ULong',
+                       'CSize']
+
    names = ['byte', 'short', 'int', 'long',
             'ubyte', 'ushort', 'uint', 'ulong', 'csize']
 }%
 
-% for (C, T, N) in zip(classes, types, names):
+% for (C, O, T, N) in zip(classes, companionObjects, types, names):
 %{
    default = '0' if N in ['int'] else '0.asInstanceOf['+T+']'
    cast = '' if N == 'int' else '.asInstanceOf['+T+']'
+
+   if N in ['int','byte','short','ubyte']:
+       defaultCounter = '0'
+       counterT = 'Int'
+   elif N in ['ushort']:
+       defaultCounter = '0.asInstanceOf[CUnsignedInt]'
+       counterT = 'UInt'
+   else:
+       defaultCounter = '0.asInstanceOf['+T+']'
+       counterT = T
 }%
 % for cmp in ['Strong', 'Weak']:
 
@@ -39,6 +53,67 @@ object AtomicSuite extends tests.Suite {
     a.free()
   }
 % end
+
+test("compare_and_swap (weak and strong) is atomic for ${N}") {
+
+    val numThreads = 2
+    testWithMinRepetitions() { n: Int =>
+      var number = ${defaultCounter}
+      withThreads(numThreads, label = "CounterExample") { _: Int =>
+        @inline def badCaS(expectedValue: ${counterT}, newValue: ${counterT}): ${counterT} = {
+          val oldValue = number
+          if (number == expectedValue) {
+            number = newValue
+          }
+          oldValue
+        }
+
+        var i = n
+        val b = 1${cast}
+        // making this as fast as possible
+        while (i > 0) {
+          var newValue = ${defaultCounter}
+          var expected = ${defaultCounter}
+          do {
+            expected = number
+            newValue = expected + b
+          } while (badCaS(expected, newValue) != expected)
+          i -= 1
+        }
+      }
+      number != (n * numThreads)${cast}
+    } { n: Int =>
+% for cmp in ['Strong', 'Weak']:
+      {
+      val number = CAtomic${C}()
+      withThreads(numThreads, label = "Test") { _: Int =>
+        var i = n
+        val b = 1${cast}
+        // making this as fast as possible
+        while (i > 0) {
+          var newValue = 0${cast}
+          var expected = 0${cast}
+          do {
+            expected = number.load()
+%   if N == 'ushort':
+            newValue = (expected + b).toUShort
+%   else:
+            newValue = (expected + b)${cast}
+%   end
+          } while (!number.compareAndSwap${cmp}(expected, newValue)._1)
+          i -= 1
+        }
+      }
+
+      val value    = number.load()
+      val expected = (n * numThreads)${cast}
+      number.free()
+      assertEquals(value, expected)
+      }
+% end
+      true
+    }
+  }
 
   test("load and store ${N}") {
     val a = CAtomic${C}()
@@ -77,6 +152,66 @@ object AtomicSuite extends tests.Suite {
 
     a.free()
   }
+
+    test("fetch_add, add_fetch, fetch_sub, sub_fetch are atomic for ${N}") {
+        val numThreads = 2
+        testWithMinRepetitions() {
+          n: Int =>
+            var number = ${defaultCounter}
+            withThreads(numThreads, label = "CounterExample") {_: Int =>
+              var i = n
+              val b = 1${cast}
+              // making this as fast as possible
+              while (i > 0) {
+                number  = number + b
+                i -= 1
+              }
+            }
+            number != (n * numThreads)${cast}
+        } {
+          n: Int =>
+% for op in ['fetchAdd', 'addFetch']:
+            {
+            val number = CAtomic${C}()
+            withThreads(numThreads, label = "Test") {_: Int =>
+              var i = n
+              val b = 1${cast}
+              // making this as fast as possible
+              while (i > 0) {
+                number.${op}(b)
+                i -= 1
+              }
+            }
+
+            val value = number.load()
+            val expected = (n * numThreads)${cast}
+            number.free()
+            assertEquals(value, expected)
+            }
+% end
+% for op in ['fetchSub', 'subFetch']:
+% minusOne = '-1'+cast if N in ['byte', 'ubyte', 'short', 'int', 'long', 'csize'] else O+'.MaxValue'
+            {
+            val number = CAtomic${C}()
+            withThreads(numThreads, label = "Test") {_: Int =>
+              var i = n
+              val b = ${minusOne}
+              // making this as fast as possible
+              while (i > 0) {
+                number.${op}(b)
+                i -= 1
+              }
+            }
+
+            val value = number.load()
+            val expected = (n * numThreads)${cast}
+            number.free()
+            assertEquals(value, expected)
+            }
+% end
+            true
+        }
+      }
 
   test("fetch_sub ${N}") {
     val a = CAtomic${C}(1${cast})

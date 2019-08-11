@@ -9,7 +9,7 @@ final case object AssertionFailed extends Exception
 
 final case class Test(name: String, run: () => Boolean)
 
-abstract class Suite {
+trait Suite {
   private val tests = new mutable.UnrolledBuffer[Test]
 
   def assert(cond: Boolean): Unit =

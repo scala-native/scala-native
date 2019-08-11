@@ -1,4 +1,4 @@
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 1)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 1)
 package scala.scalanative
 package runtime
 
@@ -11,22 +11,22 @@ abstract class CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 26)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 26)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
 
 class CAtomicByte(default: Byte = 0.asInstanceOf[Byte]) extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[Byte])
+  private[this] val atm = stdlib.malloc(sizeof[Byte])
   init_byte(atm, default)
 
   def load(): Byte = load_byte(atm)
 
   def store(value: Byte): Unit = store_byte(atm, value)
 
-  def free(): Unit = Atomic.free(atm)
+  def free(): Unit = stdlib.free(atm)
 
   def compareAndSwapStrong(expected: Byte, desired: Byte): (Boolean, Byte) = {
     val expectedPtr = stackalloc[Byte]
@@ -103,20 +103,20 @@ object CAtomicByte extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
 
 class CAtomicShort(default: CShort = 0.asInstanceOf[CShort]) extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[CShort]).cast[Ptr[CShort]]
+  private[this] val atm = stdlib.malloc(sizeof[CShort]).cast[Ptr[CShort]]
   init_short(atm, default)
 
   def load(): CShort = load_short(atm)
 
   def store(value: CShort): Unit = store_short(atm, value)
 
-  def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
+  def free(): Unit = stdlib.free(atm.cast[Ptr[Byte]])
 
   def compareAndSwapStrong(expected: CShort,
                            desired: CShort): (Boolean, CShort) = {
@@ -195,20 +195,20 @@ object CAtomicShort extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
 
 class CAtomicInt(default: CInt = 0) extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[CInt]).cast[Ptr[CInt]]
+  private[this] val atm = stdlib.malloc(sizeof[CInt]).cast[Ptr[CInt]]
   init_int(atm, default)
 
   def load(): CInt = load_int(atm)
 
   def store(value: CInt): Unit = store_int(atm, value)
 
-  def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
+  def free(): Unit = stdlib.free(atm.cast[Ptr[Byte]])
 
   def compareAndSwapStrong(expected: CInt, desired: CInt): (Boolean, CInt) = {
     val expectedPtr = stackalloc[CInt]
@@ -285,20 +285,20 @@ object CAtomicInt extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
 
 class CAtomicLong(default: CLong = 0.asInstanceOf[CLong]) extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[CLong]).cast[Ptr[CLong]]
+  private[this] val atm = stdlib.malloc(sizeof[CLong]).cast[Ptr[CLong]]
   init_long(atm, default)
 
   def load(): CLong = load_long(atm)
 
   def store(value: CLong): Unit = store_long(atm, value)
 
-  def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
+  def free(): Unit = stdlib.free(atm.cast[Ptr[Byte]])
 
   def compareAndSwapStrong(expected: CLong,
                            desired: CLong): (Boolean, CLong) = {
@@ -376,21 +376,21 @@ object CAtomicLong extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
 
 class CAtomicUnsignedByte(default: Byte = 0.asInstanceOf[Byte])
     extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[Byte])
+  private[this] val atm = stdlib.malloc(sizeof[Byte])
   init_ubyte(atm, default)
 
   def load(): Byte = load_ubyte(atm)
 
   def store(value: Byte): Unit = store_ubyte(atm, value)
 
-  def free(): Unit = Atomic.free(atm)
+  def free(): Unit = stdlib.free(atm)
 
   def compareAndSwapStrong(expected: Byte, desired: Byte): (Boolean, Byte) = {
     val expectedPtr = stackalloc[Byte]
@@ -467,23 +467,23 @@ object CAtomicUnsignedByte extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
 
 class CAtomicUnsignedShort(
     default: CUnsignedShort = 0.asInstanceOf[CUnsignedShort])
     extends CAtomic {
 
   private[this] val atm =
-    Atomic.alloc(sizeof[CUnsignedShort]).cast[Ptr[CUnsignedShort]]
+    stdlib.malloc(sizeof[CUnsignedShort]).cast[Ptr[CUnsignedShort]]
   init_ushort(atm, default)
 
   def load(): CUnsignedShort = load_ushort(atm)
 
   def store(value: CUnsignedShort): Unit = store_ushort(atm, value)
 
-  def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
+  def free(): Unit = stdlib.free(atm.cast[Ptr[Byte]])
 
   def compareAndSwapStrong(
       expected: CUnsignedShort,
@@ -568,22 +568,22 @@ object CAtomicUnsignedShort extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
 
 class CAtomicUnsignedInt(default: CUnsignedInt = 0.asInstanceOf[CUnsignedInt])
     extends CAtomic {
 
   private[this] val atm =
-    Atomic.alloc(sizeof[CUnsignedInt]).cast[Ptr[CUnsignedInt]]
+    stdlib.malloc(sizeof[CUnsignedInt]).cast[Ptr[CUnsignedInt]]
   init_uint(atm, default)
 
   def load(): CUnsignedInt = load_uint(atm)
 
   def store(value: CUnsignedInt): Unit = store_uint(atm, value)
 
-  def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
+  def free(): Unit = stdlib.free(atm.cast[Ptr[Byte]])
 
   def compareAndSwapStrong(expected: CUnsignedInt,
                            desired: CUnsignedInt): (Boolean, CUnsignedInt) = {
@@ -662,23 +662,23 @@ object CAtomicUnsignedInt extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
 
 class CAtomicUnsignedLong(
     default: CUnsignedLong = 0.asInstanceOf[CUnsignedLong])
     extends CAtomic {
 
   private[this] val atm =
-    Atomic.alloc(sizeof[CUnsignedLong]).cast[Ptr[CUnsignedLong]]
+    stdlib.malloc(sizeof[CUnsignedLong]).cast[Ptr[CUnsignedLong]]
   init_ulong(atm, default)
 
   def load(): CUnsignedLong = load_ulong(atm)
 
   def store(value: CUnsignedLong): Unit = store_ulong(atm, value)
 
-  def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
+  def free(): Unit = stdlib.free(atm.cast[Ptr[Byte]])
 
   def compareAndSwapStrong(expected: CUnsignedLong,
                            desired: CUnsignedLong): (Boolean, CUnsignedLong) = {
@@ -733,8 +733,7 @@ class CAtomicUnsignedLong(
     load()
   }
 
-  def fetchOr(value: CUnsignedLong): CUnsignedLong =
-    atomic_or_ulong(atm, value)
+  def fetchOr(value: CUnsignedLong): CUnsignedLong = atomic_or_ulong(atm, value)
 
   def xorFetch(value: CUnsignedLong): CUnsignedLong = {
     fetchXor(value)
@@ -762,20 +761,20 @@ object CAtomicUnsignedLong extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
 
 class CAtomicChar(default: CChar = 'a'.asInstanceOf[CChar]) extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[CChar]).cast[Ptr[CChar]]
+  private[this] val atm = stdlib.malloc(sizeof[CChar]).cast[Ptr[CChar]]
   init_char(atm, default)
 
   def load(): CChar = load_char(atm)
 
   def store(value: CChar): Unit = store_char(atm, value)
 
-  def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
+  def free(): Unit = stdlib.free(atm.cast[Ptr[Byte]])
 
   def compareAndSwapStrong(expected: CChar,
                            desired: CChar): (Boolean, CChar) = {
@@ -853,23 +852,23 @@ object CAtomicChar extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
 
 class CAtomicUnsignedChar(
     default: CUnsignedChar = 'a'.asInstanceOf[CUnsignedChar])
     extends CAtomic {
 
   private[this] val atm =
-    Atomic.alloc(sizeof[CUnsignedChar]).cast[Ptr[CUnsignedChar]]
+    stdlib.malloc(sizeof[CUnsignedChar]).cast[Ptr[CUnsignedChar]]
   init_uchar(atm, default)
 
   def load(): CUnsignedChar = load_uchar(atm)
 
   def store(value: CUnsignedChar): Unit = store_uchar(atm, value)
 
-  def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
+  def free(): Unit = stdlib.free(atm.cast[Ptr[Byte]])
 
   def compareAndSwapStrong(expected: CUnsignedChar,
                            desired: CUnsignedChar): (Boolean, CUnsignedChar) = {
@@ -924,8 +923,7 @@ class CAtomicUnsignedChar(
     load()
   }
 
-  def fetchOr(value: CUnsignedChar): CUnsignedChar =
-    atomic_or_uchar(atm, value)
+  def fetchOr(value: CUnsignedChar): CUnsignedChar = atomic_or_uchar(atm, value)
 
   def xorFetch(value: CUnsignedChar): CUnsignedChar = {
     fetchXor(value)
@@ -953,20 +951,20 @@ object CAtomicUnsignedChar extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
 
 class CAtomicCSize(default: CSize = 0.asInstanceOf[CSize]) extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[CSize]).cast[Ptr[CSize]]
+  private[this] val atm = stdlib.malloc(sizeof[CSize]).cast[Ptr[CSize]]
   init_csize(atm, default)
 
   def load(): CSize = load_csize(atm)
 
   def store(value: CSize): Unit = store_csize(atm, value)
 
-  def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
+  def free(): Unit = stdlib.free(atm.cast[Ptr[Byte]])
 
   def compareAndSwapStrong(expected: CSize,
                            desired: CSize): (Boolean, CSize) = {
@@ -1044,7 +1042,7 @@ object CAtomicCSize extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 122)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 122)
 
 class CAtomicRef[T <: AnyRef](default: T = 0L.asInstanceOf[T])
     extends CAtomicLong(default.asInstanceOf[Long]) {}
@@ -1065,28 +1063,28 @@ object CAtomicsImplicits {
   implicit def underlying[T <: AnyRef](a: CAtomicRef[T]): T =
     a.load().asInstanceOf[T]
   implicit def cas[T](v: (Boolean, T)): Boolean = v._1
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
   implicit def underlying(a: CAtomicByte): Byte = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
   implicit def underlying(a: CAtomicShort): CShort = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
   implicit def underlying(a: CAtomicInt): CInt = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
   implicit def underlying(a: CAtomicLong): CLong = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
   implicit def underlying(a: CAtomicUnsignedByte): Byte = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
   implicit def underlying(a: CAtomicUnsignedShort): CUnsignedShort = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
   implicit def underlying(a: CAtomicUnsignedInt): CUnsignedInt = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
   implicit def underlying(a: CAtomicUnsignedLong): CUnsignedLong = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
   implicit def underlying(a: CAtomicChar): CChar = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
   implicit def underlying(a: CAtomicUnsignedChar): CUnsignedChar = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 141)
   implicit def underlying(a: CAtomicCSize): CSize = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 143)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 143)
 
 }

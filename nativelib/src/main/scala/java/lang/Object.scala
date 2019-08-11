@@ -5,6 +5,7 @@ import scala.scalanative.runtime, runtime.ClassTypeOps
 import scala.scalanative.runtime.Intrinsics._
 
 class _Object {
+  var __monitor: scala.scalanative.runtime.Monitor = _
   @inline def __equals(that: _Object): scala.Boolean =
     this eq that
 

@@ -2,6 +2,7 @@ package scala.scalanative
 
 import native._
 import runtime.Intrinsics._
+import scala.scalanative.runtime.ExecutionContext.QueueExecutionContext
 
 package object runtime {
 
@@ -72,13 +73,19 @@ package object runtime {
   def getType(obj: Object): Ptr[ClassType] = !obj.cast[Ptr[Ptr[ClassType]]]
 
   /** Get monitor for given object. */
-  def getMonitor(obj: Object): Monitor = Monitor.dummy
+  def getMonitor(obj: Object): Monitor = Monitor(obj)
 
   /** Initialize runtime with given arguments and return the
    *  rest as Java-style array.
    */
   def init(argc: Int, argv: Ptr[Ptr[Byte]]): ObjectArray = {
     val args = new scala.Array[String](argc - 1)
+
+    // force Thread class initialization
+    // to make sure it is initialized from the main thread
+    ThreadBase.initMainThread()
+    // make sure Cached stackTrace is initialized
+    new Throwable().getStackTrace
 
     // skip the executable name in argv(0)
     var c = 0
@@ -94,5 +101,14 @@ package object runtime {
   /** Run the runtime's event loop. The method is called from the
    *  generated C-style after the application's main method terminates.
    */
-  def loop(): Unit = ExecutionContext.loop()
+  def loop(): Unit = {
+    new Thread("EventLoop") {
+      override def run() =
+        ExecutionContext.global
+          .asInstanceOf[QueueExecutionContext]
+          .waitUntilDone()
+    }.start()
+    ThreadBase.mainThreadEnds()
+    ThreadBase.shutdownCheckLoop()
+  }
 }

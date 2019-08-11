@@ -1,8 +1,8 @@
 package scala.scalanative
 package runtime
 
-import native.{extern, name, CSize, CInt}
-import posix.sys.types.pthread_t
+import native.{CInt, CSize, Ptr, extern, name}
+import posix.sys.types.{pthread_attr_t, pthread_t}
 
 @extern
 object NativeThread {
@@ -22,10 +22,6 @@ object NativeThread {
   @name("set_priority")
   def setPriority(thread: pthread_t, priority: CInt): Unit = extern
 
-  @name("thd_continue")
-  def resume(thread: pthread_t): CInt = extern
-
-  @name("thd_suspend")
-  def suspend(thread: pthread_t): CInt = extern
-
+  @name("attr_set_priority")
+  def attrSetPriority(attr: Ptr[pthread_attr_t], priority: CInt): Unit = extern
 }

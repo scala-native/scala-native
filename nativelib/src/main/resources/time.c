@@ -18,3 +18,5 @@ long long scalanative_current_time_millis() {
 
     return current_time_millis;
 }
+
+int scalanative_clock_realtime() { return CLOCK_REALTIME; }
