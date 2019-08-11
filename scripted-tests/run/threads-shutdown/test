@@ -1,0 +1,8 @@
+$ copy-file tests/SingleThread.scala Main.scala
+> run
+
+$ copy-file tests/OneDaemonThread.scala Main.scala
+> run
+
+$ copy-file tests/LongLivingThread.scala Main.scala
+> run

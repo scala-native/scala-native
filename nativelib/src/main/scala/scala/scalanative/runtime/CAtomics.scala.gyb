@@ -34,14 +34,14 @@ abstract class CAtomic {
 
 class CAtomic${C}(default: ${T} = ${default}) extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[${T}])${cast}
+  private[this] val atm = stdlib.malloc(sizeof[${T}])${cast}
   init_${N}(atm, default)
 
   def load(): ${T} = load_${N}(atm)
 
   def store(value: ${T}): Unit = store_${N}(atm, value)
 
-  def free(): Unit = Atomic.free(atm${castB})
+  def free(): Unit = stdlib.free(atm${castB})
 
   def compareAndSwapStrong(expected: ${T}, desired: ${T}): (Boolean, ${T}) = {
     val expectedPtr = stackalloc[${T}]

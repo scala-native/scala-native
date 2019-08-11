@@ -1,182 +1,136 @@
 package java.lang
 
 import java.util
-import java.lang.Thread._
 
-import scala.scalanative.runtime.NativeThread
 import scala.scalanative.native.{
+  CCast,
   CFunctionPtr,
-  CFunctionPtr1,
   CInt,
   Ptr,
   ULong,
+  signal,
+  sizeof,
   stackalloc
 }
-import scala.scalanative.posix.sys.types.{pthread_attr_t, pthread_t}
 import scala.scalanative.posix.pthread._
 import scala.scalanative.posix.sched._
+import scala.scalanative.posix.sys.types.{
+  pthread_attr_t,
+  pthread_key_t,
+  pthread_t
+}
+import scala.scalanative.runtime.{
+  CAtomicInt,
+  CAtomicLong,
+  NativeThread,
+  ShadowLock,
+  ThreadBase
+}
 
 // Ported from Harmony
 
-class Thread extends Runnable {
+class Thread private (
+    parentThread: Thread, // only the main thread does not have a parent (= null)
+    rawGroup: ThreadGroup,
+    // Thread's target - a Runnable object whose run method should be invoked
+    private val target: Runnable,
+    rawName: String,
+    // Stack size to be passes to VM for thread execution
+    val stackSize: scala.Long,
+    mainThread: scala.Boolean)
+    extends ThreadBase
+    with Runnable {
 
-  private var interruptedState = false
+  import java.lang.Thread._
 
-  // Thread's name
-  private[this] var name: String = "main" // default name of the main thread
+  private var livenessState = CAtomicInt(internalNew)
 
-  // This thread's thread group
-  var group: ThreadGroup = _
+  private val threadId: scala.Long = getNextThreadId
 
-  // This thread's context class loader
-  private var contextClassLoader: ClassLoader = _
+  private[this] var name: String =
+    if (rawName != THREAD) rawName.toString else THREAD + threadId
 
-  // Indicates whether this thread was marked as daemon
-  private var daemon: scala.Boolean = false
+  private[lang] var group: ThreadGroup =
+    if (rawGroup != null) rawGroup else parentThread.group
+  group.checkGroup()
 
-  // Thread's priority
-  private var priority: Int = 5
+  private var daemon: scala.Boolean =
+    if (!mainThread) parentThread.daemon else false
 
-  // Stack size to be passes to VM for thread execution
-  private var stackSize: scala.Long = NativeThread.THREAD_DEFAULT_STACK_SIZE
+  private var priority: Int = if (!mainThread) parentThread.priority else 5
+
+  // main thread is not started via Thread.start, set it up manually
+  def initMainThread(): Unit = {
+    group.add(this)
+    livenessState.store(internalStarted)
+    underlying = pthread_self()
+    pthread_setspecific(myThreadKey, this.cast[Ptr[scala.Byte]])
+  }
 
   // Indicates if the thread was already started
-  var started: scala.Boolean = false
+  def started: scala.Boolean = {
+    val value = livenessState.load()
+    value > internalNew
+  }
 
-  // Indicates if the thread is alive
-  // Note: this was originally named 'isAlive' in Harmony but
-  // conflicted with the 'isAlive' method
-  var alive: scala.Boolean = false
-
-  // Thread's target - a Runnable object whose run method should be invoked
-  private var target: Runnable = _
-
-  // Uncaught exception handler for this thread
   private var exceptionHandler: Thread.UncaughtExceptionHandler = _
 
-  // Thread's ID
-  private var threadId: scala.Long = _
+  private var underlying: pthread_t = 0.asInstanceOf[ULong]
 
-  // The underlying pthread ID
-  /*
-   * NOTE: This is used to keep track of the pthread linked to this Thread,
-   * it might be easier/better to handle this at lower level
-   */
-  private[this] val underlying: pthread_t = 0.asInstanceOf[ULong]
+  private val sleepMutex   = new Object
+  private val joinMutex    = new Object
+  private val suspendMutex = new Object
+  private var suspendState = internalNotSuspended
 
-  // Synchronization is done using internal lock
-  val lock: Object = new Object()
-
-  // ThreadLocal values : local and inheritable
   var localValues: ThreadLocal.Values = _
 
-  var inheritableValues: ThreadLocal.Values = _
+  var inheritableValues: ThreadLocal.Values =
+    if (parentThread != null && parentThread.inheritableValues != null) {
+      new ThreadLocal.Values(parentThread.inheritableValues)
+    } else null
+
+  checkAccess()
 
   def this(group: ThreadGroup,
            target: Runnable,
            name: String,
            stacksize: scala.Long) = {
-    this()
-    val currentThread: Thread = Thread.currentThread()
-
-    var threadGroup: ThreadGroup = null
-    if (group != null) {
-      threadGroup = group
-    } else if (threadGroup == null)
-      threadGroup = currentThread.group
-
-    threadGroup.checkGroup()
-
-    this.group = threadGroup
-    this.daemon = currentThread.daemon
-    this.contextClassLoader = currentThread.contextClassLoader
-    this.target = target
-    this.stackSize = stacksize
-    this.priority = currentThread.priority
-    this.threadId = getNextThreadId
-    // throws NullPointerException if the given name is null
-    this.name = if (name != THREAD) name.toString else THREAD + threadId
-
-    checkGCWatermark()
-    checkAccess()
-
-    val parent: Thread = currentThread
-    if (parent != null && parent.inheritableValues != null)
-      inheritableValues = new ThreadLocal.Values(parent.inheritableValues)
+    this(Thread.currentThread(),
+         group,
+         target,
+         name,
+         stacksize,
+         mainThread = false)
   }
 
-  def this(target: Runnable) = this(null, target, THREAD, 0)
+  def this() = this(null, null, Thread.THREAD, 0)
+
+  def this(target: Runnable) = this(null, target, Thread.THREAD, 0)
 
   def this(target: Runnable, name: String) = this(null, target, name, 0)
 
   def this(name: String) = this(null, null, name, 0)
 
   def this(group: ThreadGroup, target: Runnable) =
-    this(group, target, THREAD, 0)
+    this(group, target, Thread.THREAD, 0)
 
   def this(group: ThreadGroup, target: Runnable, name: String) =
     this(group, target, name, 0)
-
-  def this(gp: ThreadGroup,
-           name: String,
-           nativeAddr: scala.Long,
-           stackSize: scala.Long,
-           priority: Int,
-           daemon: scala.Boolean) = {
-    this()
-    val contextLoader: ClassLoader = null
-
-    var group: ThreadGroup = gp
-
-    if (group == null) {
-      if (systemThreadGroup == null) {
-        // This is main thread
-        systemThreadGroup = new ThreadGroup()
-        mainThreadGroup = new ThreadGroup(systemThreadGroup, "main")
-        group = mainThreadGroup
-      } else {
-        group = mainThreadGroup
-      }
-    }
-
-    this.group = group
-    this.stackSize = stackSize
-    this.priority = priority
-    this.daemon = daemon
-    this.threadId = getNextThreadId
-    this.name = if (name != null) name else THREAD + threadId
-    // Each thread created from JNI has bootstrap class loader as
-    // its context class loader. The only exception is the main thread
-    // which has system class loader as its context class loader.
-    this.contextClassLoader = contextLoader
-    this.target = null
-    // The thread is actually running
-    this.alive = true
-    this.started = true
-
-    // adding the thread to the thread group should be the last action
-    group.add(this)
-
-    val parent: Thread = Thread.currentThread()
-    if (parent != null && parent.inheritableValues != null) {
-      inheritableValues = new ThreadLocal.Values(parent.inheritableValues)
-    }
-  }
 
   def this(group: ThreadGroup, name: String) = this(group, null, name, 0)
 
   final def checkAccess(): Unit = ()
 
-  @deprecated
-  def countStackFrames: Int = 0 //deprecated
+  override final def clone(): AnyRef =
+    throw new CloneNotSupportedException("Thread.clone() is not meaningful")
 
   @deprecated
-  def destroy(): Unit =
-    // this method is not implemented
-    throw new NoSuchMethodError()
-
-  def getContextClassLoader: ClassLoader =
-    lock.synchronized(contextClassLoader)
+  def countStackFrames: Int =
+    if (suspendState == internalSuspended) {
+      getStackTrace.length
+    } else {
+      throw new IllegalThreadStateException()
+    }
 
   final def getName: String = name
 
@@ -187,24 +141,34 @@ class Thread extends Runnable {
   def getId: scala.Long = threadId
 
   def interrupt(): Unit = {
-    lock.synchronized {
-      checkAccess()
-      if (started) interruptedState = true
+    checkAccess()
+    livenessState.compareAndSwapStrong(internalStarting, internalInterrupted)
+    livenessState.compareAndSwapStrong(internalStarted, internalInterrupted)
+    sleepMutex.synchronized {
+      sleepMutex.notify()
     }
   }
 
-  final def isAlive: scala.Boolean = lock.synchronized(alive)
+  final def isAlive: scala.Boolean = {
+    val value = livenessState.load()
+    value == internalStarted || value == internalStarting
+  }
 
   final def isDaemon: scala.Boolean = daemon
 
-  def isInterrupted: scala.Boolean = interruptedState
-
-  //synchronized
-  final def join(): Unit = {
-    while (isAlive) wait()
+  def isInterrupted: scala.Boolean = {
+    val value = livenessState.load()
+    value == internalInterrupted || value == internalInterruptedTerminated
   }
 
-  // synchronized
+  final def join(): Unit = {
+    if (isAlive) {
+      joinMutex.synchronized {
+        while (isAlive) joinMutex.wait()
+      }
+    }
+  }
+
   final def join(ml: scala.Long): Unit = {
     var millis: scala.Long = ml
     if (millis == 0)
@@ -213,7 +177,11 @@ class Thread extends Runnable {
       val end: scala.Long         = System.currentTimeMillis() + millis
       var continue: scala.Boolean = true
       while (isAlive && continue) {
-        wait(millis)
+        joinMutex.synchronized {
+          if (isAlive) {
+            joinMutex.wait(millis)
+          }
+        }
         millis = end - System.currentTimeMillis()
         if (millis <= 0)
           continue = false
@@ -221,7 +189,6 @@ class Thread extends Runnable {
     }
   }
 
-  //synchronized
   final def join(ml: scala.Long, n: Int): Unit = {
     var nanos: Int         = n
     var millis: scala.Long = ml
@@ -234,7 +201,11 @@ class Thread extends Runnable {
       var rest: scala.Long        = 0L
       var continue: scala.Boolean = true
       while (isAlive && continue) {
-        wait(millis, nanos)
+        joinMutex.synchronized {
+          if (isAlive) {
+            joinMutex.wait(millis, nanos)
+          }
+        }
         rest = end - System.nanoTime()
         if (rest <= 0)
           continue = false
@@ -246,158 +217,201 @@ class Thread extends Runnable {
     }
   }
 
-  @deprecated
-  final def resume(): Unit = {
-    checkAccess()
-    if (started && NativeThread.resume(underlying) != 0)
-      throw new RuntimeException(
-        "Error while trying to unpark thread " + toString)
-  }
-
-  private def toCRoutine(
-      f: => (() => Unit)): (Ptr[scala.Byte]) => Ptr[scala.Byte] = {
-    def g(ptr: Ptr[scala.Byte]) = {
-      f
-      null.asInstanceOf[Ptr[scala.Byte]]
-    }
-    g
-  }
-
   def run(): Unit = {
     if (target != null) {
       target.run()
     }
   }
 
-  def getStackTrace: Array[StackTraceElement] = new Array[StackTraceElement](0)
+  private var stackTraceTs = 0L
+  // not initializing to empty to no trigger System class initialization
+  private var lastStackTrace: Array[StackTraceElement] =
+    new Array[StackTraceElement](0)
+  def getStackTrace: Array[StackTraceElement] = {
+    if (this == Thread.currentThread()) {
+      lastStackTrace = new Throwable().getStackTrace
+      joinMutex.synchronized {
+        stackTraceTs += 1
+        joinMutex.notifyAll()
+      }
+    } else {
+      val oldTs = stackTraceTs
+      pthread_kill(underlying, currentThreadStackTraceSignal)
+      joinMutex.synchronized {
+        while (stackTraceTs <= oldTs && isAlive) {
+          // trigger getStackTrace on that thread
+          joinMutex.wait()
+        }
+      }
+    }
+    lastStackTrace
+  }
 
+  private def classLoadersNotSupported =
+    throw new NotImplementedError("Custom class loaders not supported")
+  @deprecated
   def setContextClassLoader(classLoader: ClassLoader): Unit =
-    lock.synchronized(contextClassLoader = classLoader)
+    classLoadersNotSupported
+  @deprecated
+  def getContextClassLoader: ClassLoader = classLoadersNotSupported
 
   final def setDaemon(daemon: scala.Boolean): Unit = {
-    lock.synchronized {
-      checkAccess()
-      if (isAlive)
-        throw new IllegalThreadStateException()
-      this.daemon = daemon
-    }
+    checkAccess()
+    if (livenessState.load() != internalNew)
+      throw new IllegalThreadStateException()
+    // There is a chance to set the even if the thread is already started.
+    // However, it is just a boolean variable, that can be safely changed
+    // even when the thread has started.
+    this.daemon = daemon
   }
 
   final def setName(name: String): Unit = {
     checkAccess()
-    // throws NullPointerException if the given name is null
     this.name = name.toString
   }
 
   final def setPriority(priority: Int): Unit = {
     checkAccess()
-    if (priority > 10 || priority < 1)
+    if (priority > Thread.MAX_PRIORITY || priority < Thread.MIN_PRIORITY)
       throw new IllegalArgumentException("Wrong Thread priority value")
-    val threadGroup: ThreadGroup = group
-    this.priority = priority
-    if (started)
-      NativeThread.setPriority(underlying, priority)
+    val groupLocal = group
+    if (groupLocal != null) {
+      val maxPriorityInGroup = groupLocal.getMaxPriority
+      // min(priority,maxPriorityInGroup)
+      this.priority =
+        if (priority > maxPriorityInGroup) maxPriorityInGroup else priority
+      if (isAlive) {
+        NativeThread.setPriority(underlying, Thread.toNativePriority(priority))
+      }
+    }
   }
 
-  //synchronized
-  def start(): Unit = { /*
-    lock.synchronized {
-      if(started)
-        //this thread was started
-        throw new IllegalThreadStateException("This thread was already started!")
-      // adding the thread to the thread group
-      group.add(this)
+  def start(): Unit = {
+    if (!livenessState.compareAndSwapStrong(internalNew, internalStarting)._1) {
+      //this thread was started
+      throw new IllegalThreadStateException("This thread was already started!")
+    }
+    // adding the thread to the thread group
+    group.add(this)
 
-      val a: (Ptr[scala.Byte]) => Ptr[scala.Byte] = toCRoutine(run)
+    val id = stackalloc[pthread_t]
+    // pthread_attr_t is a struct, not a ULong
+    val attrs = stackalloc[scala.Byte](pthread_attr_t_size)
+      .asInstanceOf[Ptr[pthread_attr_t]]
+    pthread_attr_init(attrs)
+    NativeThread.attrSetPriority(attrs, Thread.toNativePriority(priority))
+    if (stackSize > 0) {
+      pthread_attr_setstacksize(attrs, stackSize)
+    }
 
-      val routine = CFunctionPtr.fromFunction1(a)
+    val status =
+      pthread_create(id, attrs, callRunRoutine, this.cast[Ptr[scala.Byte]])
+    if (status != 0)
+      throw new Exception(
+        "Failed to create new thread, pthread error " + status)
 
-      val id = stackalloc[pthread_t]
-      val status = pthread_create(id, null.asInstanceOf[Ptr[pthread_attr_t]],
-        routine, null.asInstanceOf[Ptr[scala.Byte]])
-      if(status != 0)
-        throw new Exception("Failed to create new thread, pthread error " + status)
+    underlying = !id
 
-      started = true
-      underlying = !id
-      THREAD_LIST(underlying) = this
-
-    }*/ }
-
-  type State = CInt
-
-  final val NEW: State           = 0
-  final val RUNNABLE: State      = 1
-  final val BLOCKED: State       = 2
-  final val WAITING: State       = 3
-  final val TIMED_WAITING: State = 4
-  final val TERMINATED: State    = 5
+  }
 
   def getState: State = {
-    RUNNABLE
-    /*
-    var dead: scala.Boolean = false
-    lock.synchronized{
-      if(started && !isAlive) dead = true
+    val value = livenessState.load()
+    if (value == internalNew) {
+      State.NEW
+    } else if (value == internalStarting) {
+      State.RUNNABLE
+    } else if (value == internalStarted) {
+      val lockState = getLockState
+      if (lockState == ThreadBase.Blocked) {
+        State.BLOCKED
+      } else if (lockState == ThreadBase.Waiting) {
+        State.WAITING
+      } else if (lockState == ThreadBase.TimedWaiting) {
+        State.TIMED_WAITING
+      } else {
+        State.RUNNABLE
+      }
+    } else {
+      State.TERMINATED
     }
-    if(dead) return TERMINATED
-
-    val state = VMThreadManager.getState(this)
-
-    if(0 != (state & VMThreadManager.TM_THREAD_STATE_TERMINATED)) State.TERMINATED
-    else if(0 != (state & VMThreadManager.TM_THREAD_STATE_WAITING_WITH_TIMEOUT)) State.TIMED_WAITING
-    else if(0 != (state & VMThreadManager.TM_THREAD_STATE_WAITING)
-      || 0 != (state & VMThreadManager.TM_THREAD_STATE_PARKED)) State.WAITING
-    else if(0 != (state & VMThreadManager.TM_THREAD_STATE_BLOCKED_ON_MONITOR_ENTER)) State.BLOCKED
-    else if(0 != (state & VMThreadManager.TM_THREAD_STATE_RUNNABLE)) State.RUNNABLE
-
-    //TODO track down all situations where a thread is really in RUNNABLE state
-    // but TM_THREAD_STATE_RUNNABLE is not set.  In the meantime, leave the following
-    // TM_THREAD_STATE_ALIVE test as it is.
-    else if(0 != (state & VMThreadManager.TM_THREAD_STATE_ALIVE)) State.RUNNABLE
-    else State.NEW
-   */
   }
+  @deprecated
+  def destroy(): Unit = stop()
 
   @deprecated
-  final def stop(): Unit = {
-    lock.synchronized {
-      if (isAlive)
-        stop(new ThreadDeath())
-    }
-  }
+  final def stop(): Unit = stop(new ThreadDeath())
 
   @deprecated
   final def stop(throwable: Throwable): Unit = {
     if (throwable == null)
       throw new NullPointerException("The argument is null!")
-    lock.synchronized {
-      if (isAlive && started) {
-        val status: Int = pthread_cancel(underlying)
-        if (status != 0)
-          throw new InternalError("Pthread error " + status)
+
+    val shouldTerminate = joinMutex.synchronized {
+      val terminated = livenessState
+        .compareAndSwapStrong(internalStarted, internalTerminated)
+        ._1
+      val interruptedTerminated = livenessState
+        .compareAndSwapStrong(internalInterrupted,
+                              internalInterruptedTerminated)
+        ._1
+      group.remove(this)
+      notifyAll()
+      terminated || interruptedTerminated
+    }
+
+    if (shouldTerminate) {
+      val status: Int = pthread_cancel(underlying)
+      if (status != 0) {
+        throw new InternalError("Pthread error " + status)
       }
     }
+
   }
 
   @deprecated
   final def suspend(): Unit = {
     checkAccess()
-    if (started && NativeThread.suspend(underlying) != 0)
-      throw new RuntimeException(
-        "Error while trying to park thread " + toString)
+    if (this == Thread.currentThread()) {
+      if (suspendState == internalSuspending) {
+        suspendMutex.synchronized {
+          if (suspendState == internalSuspending) {
+            suspendState = internalSuspended
+            while (suspendState == internalSuspended) {
+              suspendMutex.wait()
+            }
+            suspendState = internalNotSuspended
+          }
+        }
+      }
+    } else {
+      @inline
+      def goodToSuspend =
+        suspendState == internalNotSuspended ||
+          suspendState == internalResuming
+      if (goodToSuspend) {
+        suspendMutex.synchronized {
+          if (goodToSuspend) {
+            suspendState = internalSuspending
+            pthread_kill(underlying, suspendSignal)
+          }
+        }
+      }
+    }
+  }
+
+  @deprecated
+  final def resume(): Unit = {
+    checkAccess()
+    suspendMutex.synchronized {
+      suspendState = internalResuming
+      suspendMutex.notifyAll()
+    }
   }
 
   override def toString: String = {
     val threadGroup: ThreadGroup = group
     val s: String                = if (threadGroup == null) "" else threadGroup.name
     "Thread[" + name + "," + priority + "," + s + "]"
-  }
-
-  private def checkGCWatermark(): Unit = {
-    currentGCWatermarkCount += 1
-    if (currentGCWatermarkCount % GC_WATERMARK_MAX_COUNT == 0)
-      System.gc()
   }
 
   def getUncaughtExceptionHandler: Thread.UncaughtExceptionHandler = {
@@ -408,53 +422,146 @@ class Thread extends Runnable {
 
   def setUncaughtExceptionHandler(eh: Thread.UncaughtExceptionHandler): Unit =
     exceptionHandler = eh
+
+  def threadModuleBase = Thread
 }
 
-object Thread {
+object Thread extends scala.scalanative.runtime.ThreadModuleBase {
 
-  import scala.collection.mutable
+  val myThreadKey: pthread_key_t = {
+    val ptr = stackalloc[pthread_key_t]
+    pthread_key_create(ptr, null)
+    !ptr
+  }
 
-  private final val THREAD_LIST = new mutable.HashMap[pthread_t, Thread]()
+  // defined as Ptr[Void] => Ptr[Void]
+  // called as Ptr[Thread] => Ptr[Void]
+  private def callRun(p: Ptr[scala.Byte]): Ptr[scala.Byte] = {
+    val thread = p.cast[Thread]
+    pthread_setspecific(myThreadKey, p)
+    if (thread.underlying == 0L.asInstanceOf[ULong]) {
+      // the parent hasn't set the underlying thread id yet
+      // make sure it is initialized
+      thread.underlying = pthread_self()
+    }
+    thread.livenessState
+      .compareAndSwapStrong(internalStarting, internalStarted)
+    try {
+      thread.run()
+    } catch {
+      case e: Throwable =>
+        thread.getUncaughtExceptionHandler.uncaughtException(thread, e)
+    } finally {
+      post(thread)
+    }
 
-  private val lock: Object = new Object()
+    null.asInstanceOf[Ptr[scala.Byte]]
+  }
 
-  final val MAX_PRIORITY: Int = NativeThread.THREAD_MAX_PRIORITY
+  private def post(thread: Thread) = {
+    shutdownMutex.safeSynchronized {
+      thread.group.remove(thread)
+      shutdownMutex.notifyAll()
+    }
+    // workaround release all locks that might be kept after exception
+    thread.asInstanceOf[ThreadBase].freeAllLocks()
+    thread.joinMutex.synchronized {
+      thread.livenessState
+        .compareAndSwapStrong(internalStarted, internalTerminated)
+      thread.livenessState
+        .compareAndSwapStrong(internalInterrupted,
+                              internalInterruptedTerminated)
+      thread.joinMutex.notifyAll()
+    }
+    pthread_setspecific(myThreadKey, null.asInstanceOf[Ptr[scala.Byte]])
+  }
 
-  final val MIN_PRIORITY: Int = NativeThread.THREAD_MIN_PRIORITY
+  private val callRunRoutine = CFunctionPtr.fromFunction1(callRun)
 
-  final val NORM_PRIORITY: Int = NativeThread.THREAD_NORM_PRIORITY
+  // internal liveness state values
+  // waiting and blocked handled separately
+  private final val internalNew                   = 0
+  private final val internalStarting              = 1
+  private final val internalStarted               = 2
+  private final val internalInterrupted           = 3
+  private final val internalTerminated            = 4
+  private final val internalInterruptedTerminated = 5
 
-  final val STACK_TRACE_INDENT: String = "    "
+  // seperate states for suspending
+  private final val internalNotSuspended = 0
+  private final val internalSuspending   = 1
+  private final val internalSuspended    = 2
+  private final val internalResuming     = 3
 
-  // Main thread group
-  var mainThreadGroup: ThreadGroup = new ThreadGroup()
+  // for compatibility match Java Enums as close as possible
+  final class State private (override val toString: String)
 
-  private val MainThread = new Thread()
+  object State {
+    final val NEW           = new State("NEW")
+    final val RUNNABLE      = new State("RUNNABLE")
+    final val BLOCKED       = new State("BLOCKED")
+    final val WAITING       = new State("WAITING")
+    final val TIMED_WAITING = new State("TIMED_WAITING")
+    final val TERMINATED    = new State("TERMINATED")
+  }
 
-  MainThread.group = mainThreadGroup
+  final val MAX_PRIORITY: Int  = 10
+  final val MIN_PRIORITY: Int  = 1
+  final val NORM_PRIORITY: Int = 5
 
-  // Default uncaught exception handler
+  private def toNativePriority(priority: Int) = {
+    val range = NativeThread.THREAD_MAX_PRIORITY - NativeThread.THREAD_MIN_PRIORITY
+    if (range == 0) {
+      NativeThread.THREAD_MAX_PRIORITY
+    } else {
+      priority * range / 10
+    }
+  }
+
+  private final val STACK_TRACE_INDENT: String = "    "
+
   private var defaultExceptionHandler: UncaughtExceptionHandler = _
 
   // Counter used to generate thread's ID
-  private var threadOrdinalNum: scala.Long = 0L
+  private val threadOrdinalNum = CAtomicLong(0L)
 
   // used to generate a default thread name
   private final val THREAD: String = "Thread-"
 
-  // System thread group for keeping helper threads
-  var systemThreadGroup: ThreadGroup = _
-
-  // Number of threads that was created w/o garbage collection //TODO
-  private var currentGCWatermarkCount: Int = 0
-
-  // Max number of threads to be created w/o GC, required collect dead Thread references
-  private final val GC_WATERMARK_MAX_COUNT: Int = 700
-
   def activeCount: Int = currentThread().group.activeCount()
 
-  def currentThread(): Thread =
-    lock.synchronized(THREAD_LIST.getOrElse(pthread_self(), MainThread))
+  def currentThreadInternal(): Thread with ThreadBase =
+    pthread_getspecific(myThreadKey)
+      .cast[Thread]
+      .asInstanceOf[Thread with ThreadBase]
+
+  def currentThread(): Thread = {
+    val value = currentThreadInternal()
+    if (value != null) {
+      value
+    } else {
+      if (mainThread.underlying == 0L.asInstanceOf[ULong]) {
+        // main thread uninitialized, so it must be the only thread
+        mainThread
+      } else {
+        // the thread is handling a signal before it has initialized
+        findSelf(pthread_self(), mainThreadGroup).getOrElse {
+          throw new IllegalThreadStateException(
+            "Unknown thread. Is it a non-Scala thread?")
+        }
+      }
+    }
+  }
+
+  private def findSelf(id: pthread_t, group: ThreadGroup): Option[Thread] = {
+    val threads: scala.collection.immutable.List[Thread]     = group.threads
+    val groups: scala.collection.immutable.List[ThreadGroup] = group.groups
+    threads.find(_.underlying == id).orElse {
+      val it: scala.collection.Iterator[Option[Thread]] =
+        groups.iterator.map(g => findSelf(id, g))
+      it.find(_.isDefined).flatten
+    }
+  }
 
   def dumpStack(): Unit = {
     val stack: Array[StackTraceElement] = new Throwable().getStackTrace
@@ -467,30 +574,21 @@ object Thread {
   }
 
   def enumerate(list: Array[Thread]): Int =
-    currentThread().group.enumerate(list)
+    currentThread().getThreadGroup.enumerateThreads(list, 0, true)
 
-  def holdsLock(obj: Object): scala.Boolean = ???
+  def holdsLock(obj: Object): scala.Boolean =
+    currentThread().asInstanceOf[ThreadBase].holdsLock(obj)
 
-  def `yield`(): Unit = {
-    sched_yield()
-  }
+  def `yield`(): Unit = sched_yield()
 
   def getAllStackTraces: java.util.Map[Thread, Array[StackTraceElement]] = {
-    var parent: ThreadGroup =
-      new ThreadGroup(currentThread().getThreadGroup, "Temporary")
-    var newParent: ThreadGroup = parent.getParent
-    parent.destroy()
-    while (newParent != null) {
-      parent = newParent
-      newParent = parent.getParent
-    }
-    var threadsCount: Int          = parent.activeCount() + 1
+    var threadsCount: Int          = mainThreadGroup.activeCount() + 1
     var count: Int                 = 0
     var liveThreads: Array[Thread] = Array.empty
     var break: scala.Boolean       = false
     while (!break) {
       liveThreads = new Array[Thread](threadsCount)
-      count = parent.enumerate(liveThreads)
+      count = mainThreadGroup.enumerateThreads(liveThreads, 0, recurse = true)
       if (count == threadsCount) {
         threadsCount *= 2
       } else
@@ -513,42 +611,30 @@ object Thread {
   def getDefaultUncaughtExceptionHandler: UncaughtExceptionHandler =
     defaultExceptionHandler
 
-  def setDefaultUncaughtHandler(eh: UncaughtExceptionHandler): Unit =
+  def setDefaultUncaughtExceptionHandler(eh: UncaughtExceptionHandler): Unit =
     defaultExceptionHandler = eh
 
-  //synchronized
-  private def getNextThreadId: scala.Long = {
-    threadOrdinalNum += 1
-    threadOrdinalNum
-  }
+  private def getNextThreadId: scala.Long = threadOrdinalNum.addFetch(1)
 
   def interrupted(): scala.Boolean = {
-    val ret = currentThread().isInterrupted
-    currentThread().interruptedState = false
-    ret
+    val current = currentThread()
+    if (current.livenessState.load() == internalInterrupted) {
+      current.livenessState
+        .compareAndSwapStrong(internalInterrupted, internalStarted)
+        ._1
+    } else {
+      false
+    }
   }
 
   def sleep(millis: scala.Long, nanos: scala.Int): Unit = {
-    import scala.scalanative.posix.errno.EINTR
-    import scala.scalanative.native._
-    import scala.scalanative.posix.unistd
-
-    def checkErrno() =
-      if (errno.errno == EINTR) {
-        throw new InterruptedException("Sleep was interrupted")
-      }
-
-    if (millis < 0) {
-      throw new IllegalArgumentException("millis must be >= 0")
+    val sleepMutex: Object = currentThread().sleepMutex
+    sleepMutex.synchronized {
+      sleepMutex.wait(millis, nanos)
     }
-    if (nanos < 0 || nanos > 999999) {
-      throw new IllegalArgumentException("nanos value out of range")
+    if (interrupted()) {
+      throw new InterruptedException("Interrupted during sleep")
     }
-
-    val secs  = millis / 1000
-    val usecs = (millis % 1000) * 1000 + nanos / 1000
-    if (secs > 0 && unistd.sleep(secs.toUInt) != 0) checkErrno()
-    if (usecs > 0 && unistd.usleep(usecs.toUInt) != 0) checkErrno()
   }
 
   def sleep(millis: scala.Long): Unit = sleep(millis, 0)
@@ -557,4 +643,53 @@ object Thread {
     def uncaughtException(t: Thread, e: Throwable)
   }
 
+  private val mainThreadGroup: ThreadGroup =
+    new ThreadGroup(parent = null, name = "system", mainGroup = true)
+
+  private val mainThread = new Thread(parentThread = null,
+                                      mainThreadGroup,
+                                      target = null,
+                                      "main",
+                                      0,
+                                      mainThread = true)
+
+  private def currentThreadStackTrace(signal: CInt): Unit =
+    try {
+      currentThread().getStackTrace
+    } catch {
+      case t: Throwable => t.printStackTrace()
+    }
+
+  private val currentThreadStackTracePtr =
+    CFunctionPtr.fromFunction1(currentThreadStackTrace _)
+  private val currentThreadStackTraceSignal = signal.SIGRTMIN + 7
+  signal.signal(currentThreadStackTraceSignal, currentThreadStackTracePtr)
+
+  private def currentThreadSuspend(signal: CInt): Unit =
+    try {
+      currentThread().suspend()
+    } catch {
+      case t: Throwable => t.printStackTrace()
+    }
+
+  private val currentThreadSuspendPtr =
+    CFunctionPtr.fromFunction1(currentThreadSuspend _)
+  private val suspendSignal = signal.SIGRTMIN + 8
+  signal.signal(suspendSignal, currentThreadSuspendPtr)
+
+  def mainThreadEnds(): Unit = post(mainThread)
+
+  private val shutdownMutex = new ShadowLock
+
+  def shutdownCheckLoop(): Unit = {
+    if (mainThreadGroup.nonDaemonThreadExists) {
+      shutdownMutex.synchronized {
+        while (mainThreadGroup.nonDaemonThreadExists) {
+          shutdownMutex.wait()
+        }
+      }
+    }
+  }
+
+  def initMainThread(): Unit = mainThread.initMainThread()
 }

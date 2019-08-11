@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <pthread.h>
+#include <stdatomic.h>
 
 // Darwin defines MAP_ANON instead of MAP_ANONYMOUS
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
@@ -18,26 +20,40 @@
 #define DUMMY_GC_FD -1
 #define DUMMY_GC_FD_OFFSET 0
 
-void *current = 0;
+atomic_long current_atomic = 0;
 void *end = 0;
 
+pthread_mutex_t chunk_alloc_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void allocateChunksUpTo(void *target) {
+    pthread_mutex_lock(&chunk_alloc_mutex);
+    // do not allocate multiple chunks at once
+    if (target >= end) {
+        void *current = (void *)current_atomic;
+        current = mmap(NULL, CHUNK, DUMMY_GC_PROT, DUMMY_GC_FLAGS, DUMMY_GC_FD,
+                       DUMMY_GC_FD_OFFSET);
+        current_atomic = (long)current;
+        end = current + CHUNK;
+    }
+    pthread_mutex_unlock(&chunk_alloc_mutex);
+}
+
 void scalanative_init() {
-    current = mmap(NULL, CHUNK, DUMMY_GC_PROT, DUMMY_GC_FLAGS, DUMMY_GC_FD,
-                   DUMMY_GC_FD_OFFSET);
-    end = current + CHUNK;
+    // get some space initially
+    allocateChunksUpTo((void *)1);
 }
 
 void *scalanative_alloc(void *info, size_t size) {
     size = size + (8 - size % 8);
-    if (current + size < end) {
-        void **alloc = current;
-        *alloc = info;
-        current += size;
-        return alloc;
-    } else {
-        scalanative_init();
-        return scalanative_alloc(info, size);
+    void *new_current;
+    new_current = (void *)atomic_fetch_add(&current_atomic, size);
+    if (new_current >= end) {
+        allocateChunksUpTo(new_current);
     }
+
+    void **alloc = new_current;
+    *alloc = info;
+    return alloc;
 }
 
 void *scalanative_alloc_small(void *info, size_t size) {

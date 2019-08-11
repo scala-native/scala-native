@@ -135,6 +135,8 @@ private[lang] object StackTraceElement {
    */
   private[lang] def cached(cursor: Ptr[scala.Byte],
                            startIp: CUnsignedLong): StackTraceElement =
-    cache.getOrElseUpdate(startIp, makeStackTraceElement(cursor))
+    cache.synchronized {
+      cache.getOrElseUpdate(startIp, makeStackTraceElement(cursor))
+    }
 
 }

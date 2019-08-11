@@ -10,13 +10,6 @@ matrix:
       jdk: oraclejdk8
       language: scala
       env: SCALANATIVE_GC=boehm
-
-    - os: linux
-      dist: trusty
-      jdk: oraclejdk8
-      language: scala
-      env: SCALANATIVE_GC=immix
-
 env:
   global:
     - MAVEN_REALM="Sonatype Nexus Repository Manager"
