@@ -7,6 +7,7 @@ import scala.scalanative.unsafe.{
   CBool,
   CString,
   CFuncPtr2,
+  CFuncPtr3,
   Ptr,
   extern,
   name
@@ -28,7 +29,7 @@ object Platform {
     extern
 
   @name("scalanative_platform_get_all_env")
-  def getAllEnv(addEnv: CFuncPtr2[CString, CString, Unit]): Int = extern
+  def getAllEnv(obj: RawPtr, addEnv: CFuncPtr3[RawPtr, CString, CString, Unit]): Int = extern
 
   @name("scalanative_platform_thread_sleep")
   def thread_sleep(millis: CLong, nanos: CInt): CBool = extern

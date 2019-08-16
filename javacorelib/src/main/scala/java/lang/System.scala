@@ -3,7 +3,7 @@ package java.lang
 import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.unsafe._
-import scala.scalanative.runtime.{time, Platform, GC, Intrinsics}
+import scala.scalanative.runtime.{time, Platform, GC, Intrinsics, RawPtr}
 
 final class System private ()
 
@@ -129,11 +129,15 @@ object System {
 }
 
 private object SystemImpl {
-  val envmap = new HashMap[String, String](Platform.getAllEnv(null))
   def loadAllEnv(): Map[String, String] = {
-    Platform.getAllEnv(new CFuncPtr2[CString, CString, Unit] {
-      def apply(key: CString, value: CString): Unit =
-        envmap.put(fromCString(key), fromCString(value))
+    val envmap = new HashMap[String, String](Platform.getAllEnv(null, null))
+    val mapPtr = Intrinsics.castObjectToRawPtr(envmap)
+    Platform.getAllEnv(mapPtr, new CFuncPtr3[RawPtr, CString, CString, Unit] {
+      def apply(obj: RawPtr, key: CString, value: CString): Unit = {
+        val emap = Intrinsics.castRawPtrToObject(obj).asInstanceOf[HashMap[String, String]]
+        val valueOrEmpty: String = if (value != null && value(0) != 0) fromCString(value) else ""
+        emap.put(fromCString(key), valueOrEmpty)
+      }
     })
     Collections.unmodifiableMap(envmap)
   }
