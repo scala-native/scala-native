@@ -28,64 +28,47 @@ int scalanative_little_endian() {
     return (*(char *)&n);
 }
 
-int scalanative_platform_get_all_env(void (*add_env)(const char *, const char *)) {
-#ifdef _WIN32
-    LPWCH lpEnvStrings = GetEnvironmentStringsW();
-    LPWSTR lpszVariable= (LPWSTR)lpEnvStrings;
-    char buf[1024];
+int scalanative_platform_get_all_env(void* obj, void (*add_env)(void*, const char *, const char *)) {
+    char buf[4096];
     int result = 0;
-    while (*lpszVariable)
-    {
-        if (wcstombs(buf, lpszVariable, 1024) != -1) {
-            char* name = buf;
-            char* value = name;
-            while (value && value == name)
-            {
-                value = strchr(value + 1, '=');
-            }
-            if (value) {
-                *value = 0;
-                int name_length = value - name;
-                if (name_length > 0) {
-                    if (add_env) {
-                        add_env(name, value + 1);
-                    }
-                    ++result;
-                }
-            }
-        }
-        lpszVariable+=wcslen(lpszVariable) + 1;
-    }
-    FreeEnvironmentStringsW(lpEnvStrings);
-    return result;
+#ifdef _WIN32
+    LPWCH variables = GetEnvironmentStringsW();
+    LPWSTR string= (LPWSTR)variables;
 #else
     extern char **environ;
     char** string = environ;
-    int result = 0;
-    char buf[1024];
-    while(*string)
+#endif
+    while (string && *string)
     {
-        strcpy(buf, *string);
-        char* name = buf;
-        char* value = name;
-        while (value && value == name)
-        {
-            value = strchr(value + 1, '=');
+#ifdef _WIN32
+        int length = wcstombs(buf, string, 4096);
+        if (length == -1) {
+            continue;
         }
+        buf[length] = 0;
+#else
+        strcpy(buf, *string);
+#endif
+        char* name = buf;
+        char* value = strchr(name, '=');
         if (value) {
-            *value = 0;
-            int name_length = value - name;
-            if (name_length > 0) {
+            if (name < value) {
+                *value++ = 0;
                 if (add_env) {
-                    add_env(name, value + 1);
+                    add_env(obj, name, value);
                 }
                 ++result;
             }
         }
+#ifdef _WIN32
+        string+=wcslen(string) + 1;
+    }
+    FreeEnvironmentStringsW(variables);
+#else
         ++string;
     }
-    return result;
 #endif
+    return result;
 }
 
 void scalanative_set_os_props(void (*add_prop)(const char *, const char *)) {
