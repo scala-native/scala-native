@@ -132,13 +132,19 @@ private object SystemImpl {
   def loadAllEnv(): Map[String, String] = {
     val envmap = new HashMap[String, String](Platform.getAllEnv(null, null))
     val mapPtr = Intrinsics.castObjectToRawPtr(envmap)
-    Platform.getAllEnv(mapPtr, new CFuncPtr3[RawPtr, CString, CString, Unit] {
-      def apply(obj: RawPtr, key: CString, value: CString): Unit = {
-        val emap = Intrinsics.castRawPtrToObject(obj).asInstanceOf[HashMap[String, String]]
-        val valueOrEmpty: String = if (value != null && value(0) != 0) fromCString(value) else ""
-        emap.put(fromCString(key), valueOrEmpty)
+    Platform.getAllEnv(
+      mapPtr,
+      new CFuncPtr3[RawPtr, CString, CString, Unit] {
+        def apply(obj: RawPtr, key: CString, value: CString): Unit = {
+          val emap = Intrinsics
+            .castRawPtrToObject(obj)
+            .asInstanceOf[HashMap[String, String]]
+          val valueOrEmpty: String =
+            if (value != null && value(0) != 0) fromCString(value) else ""
+          emap.put(fromCString(key), valueOrEmpty)
+        }
       }
-    })
+    )
     Collections.unmodifiableMap(envmap)
   }
 
