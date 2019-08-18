@@ -14,6 +14,8 @@ import java.util.List
 
 import java.util.regex.PatternSyntaxException
 
+import regex.UnicodeTables.UnicodeTable_t
+
 import Regexp.{Op => ROP}
 
 // A parser of regular expression patterns.
@@ -184,12 +186,14 @@ class Parser(wholeRegexp: String, _flags: Int) {
   // Pre: t is positioned after the initial repetition operator.
   // Post: t advances past an optional perl-mode '?', or stays put.
   //	   Or, it fails with PatternSyntaxException.
-  private def repeat(op: ROP,
-                     min: Int,
-                     max: Int,
-                     beforePos: Int,
-                     t: StringIterator,
-                     lastRepeatPos: Int): Unit = {
+  private def repeat(
+      op: ROP,
+      min: Int,
+      max: Int,
+      beforePos: Int,
+      t: StringIterator,
+      lastRepeatPos: Int
+  ): Unit = {
     var flags = this.flags
     if ((flags & RE2.PERL_X) != 0) {
       if (t.more() && t.lookingAt('?')) {
@@ -200,22 +204,28 @@ class Parser(wholeRegexp: String, _flags: Int) {
         // In Perl it is not allowed to stack repetition operators:
         // a** is a syntax error, not a doubled star, and a++ means
         // something else entirely, which we don't support!
-        throw new PatternSyntaxException(ERR_INVALID_REPEAT_OP,
-                                         t.from(lastRepeatPos),
-                                         0)
+        throw new PatternSyntaxException(
+          ERR_INVALID_REPEAT_OP,
+          t.from(lastRepeatPos),
+          0
+        )
       }
     }
     val n = stack.size()
     if (n == 0) {
-      throw new PatternSyntaxException(ERR_MISSING_REPEAT_ARGUMENT,
-                                       t.from(beforePos),
-                                       0)
+      throw new PatternSyntaxException(
+        ERR_MISSING_REPEAT_ARGUMENT,
+        t.from(beforePos),
+        0
+      )
     }
     val sub = stack.get(n - 1)
     if (ROP.isPseudo(sub.op)) {
-      throw new PatternSyntaxException(ERR_MISSING_REPEAT_ARGUMENT,
-                                       t.from(beforePos),
-                                       0)
+      throw new PatternSyntaxException(
+        ERR_MISSING_REPEAT_ARGUMENT,
+        t.from(beforePos),
+        0
+      )
     }
     val re = newRegexp(op)
     re.min = min
@@ -878,9 +888,11 @@ class Parser(wholeRegexp: String, _flags: Int) {
       t.skipString(name)
       t.skip(4) // "(?<>"
       if (!isValidCaptureName(name)) {
-        throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE,
-                                         s.substring(0, end),
-                                         0) // "(?P<name>"
+        throw new PatternSyntaxException(
+          ERR_INVALID_NAMED_CAPTURE,
+          s.substring(0, end),
+          0
+        ) // "(?P<name>"
       }
       // Like ordinary capture, but named.
       val re = op(ROP.LEFT_PAREN)
@@ -1053,8 +1065,10 @@ class Parser(wholeRegexp: String, _flags: Int) {
   // from the beginning of |t|.	 If one is present, it appends the characters
   // to cc and returns true.  The iterator is advanced past the escape
   // on success, undefined on failure, in which case false is returned.
-  private def parsePerlClassEscape(t: StringIterator,
-                                   cc: CharClass): Boolean = {
+  private def parsePerlClassEscape(
+      t: StringIterator,
+      cc: CharClass
+  ): Boolean = {
     val beforePos = t.pos()
 
     val result =
@@ -1107,9 +1121,11 @@ class Parser(wholeRegexp: String, _flags: Int) {
         val end  = rest.indexOf('}')
         if (end < 0) {
           t.rewindTo(startPos)
-          throw new PatternSyntaxException(ERR_INVALID_CHAR_RANGE,
-                                           t.str,
-                                           t.pos() - 1)
+          throw new PatternSyntaxException(
+            ERR_INVALID_CHAR_RANGE,
+            t.str,
+            t.pos() - 1
+          )
         }
         name = rest.substring(0, end) // e.g. "Han"
         t.skipString(name)
@@ -1151,7 +1167,8 @@ class Parser(wholeRegexp: String, _flags: Int) {
             throw new PatternSyntaxException(
               s"Unknown character block name {$name2}",
               t.str,
-              t.pos() - 1)
+              t.pos() - 1
+            )
           }
 
           val tab  = pair.first
@@ -1212,9 +1229,11 @@ class Parser(wholeRegexp: String, _flags: Int) {
         val s = t.rest()
         if (s.equals("-") || !s.startsWith("-]")) {
           t.rewindTo(startPos)
-          throw new PatternSyntaxException(ERR_INVALID_CHAR_RANGE,
-                                           t.str,
-                                           t.pos() - 1)
+          throw new PatternSyntaxException(
+            ERR_INVALID_CHAR_RANGE,
+            t.str,
+            t.pos() - 1
+          )
         }
       }
       first = false
@@ -1243,9 +1262,11 @@ class Parser(wholeRegexp: String, _flags: Int) {
               } else {
                 hi = parseClassChar(t, startPos)
                 if (hi < lo) {
-                  throw new PatternSyntaxException(ERR_INVALID_CHAR_RANGE,
-                                                   t.str,
-                                                   t.pos() - 1)
+                  throw new PatternSyntaxException(
+                    ERR_INVALID_CHAR_RANGE,
+                    t.str,
+                    t.pos() - 1
+                  )
                 }
               }
             }
@@ -1501,9 +1522,11 @@ object Parser {
                 max == -2 || max > 1000 || max >= 0 && min > max) {
               // Numbers were negative or too big,
               // or max is present and min > max.
-              throw new PatternSyntaxException(ERR_INVALID_REPEAT_SIZE,
-                                               t.from(start),
-                                               0)
+              throw new PatternSyntaxException(
+                ERR_INVALID_REPEAT_SIZE,
+                t.from(start),
+                0
+              )
             }
 
             result = (min << 16) | (max & 0xffff) // success
@@ -1766,9 +1789,11 @@ object Parser {
   // Pre: t at class char Post: t after it.
   private def parseClassChar(t: StringIterator, wholeClassPos: Int): Int = {
     if (!t.more()) {
-      throw new PatternSyntaxException(ERR_INVALID_CHAR_CLASS,
-                                       t.str,
-                                       t.pos() - 1)
+      throw new PatternSyntaxException(
+        ERR_INVALID_CHAR_CLASS,
+        t.str,
+        t.pos() - 1
+      )
     }
 
     // Allow regular escape sequences even though
@@ -1786,28 +1811,43 @@ object Parser {
     1
   )
 
+  // Retrieve table for name from a map set up for delayed evaluation of
+  // large data tables. Populate the table only when first used.
+
+  private def lookupTable(
+      m: Map[String, () => Array[Int]],
+      name: String
+  ): Option[UnicodeTable_t] = {
+    m.get(name) match {
+      case None    => None
+      case Some(f) => Some(f())
+    }
+  }
+
   // unicodeTable() returns the Unicode RangeTable identified by name
   // and the table of additional fold-equivalent code points.
   // Returns null if |name| does not identify a Unicode character range.
-  private def unicodeTable(name: String): Pair[Array[Int], Array[Int]] = {
+  private def unicodeTable(
+      name: String
+  ): Pair[UnicodeTable_t, UnicodeTable_t] = {
 
-    var result = null: Pair[Array[Int], Array[Int]]
+    var result = null: Pair[UnicodeTable_t, UnicodeTable_t]
 
     // Special case: "Any" means any.
     if (name.equals("Any")) {
       result = Pair.of(ANY_TABLE, ANY_TABLE)
     } else {
-      val table = UnicodeTables.CATEGORIES.getOrElse(name, null)
+      val table = lookupTable(UnicodeTables.CATEGORIES, name)
 
-      if (table != null) {
-        result =
-          Pair.of(table, UnicodeTables.FOLD_CATEGORIES.getOrElse(name, null))
+      if (!table.isEmpty) {
+        val foldTable = lookupTable(UnicodeTables.FOLD_CATEGORIES, name)
+        result = Pair.of(table.get, foldTable.getOrElse(null))
       } else {
-        val table = UnicodeTables.SCRIPTS.getOrElse(name, null)
+        val scriptTable = lookupTable(UnicodeTables.SCRIPTS, name)
 
-        if (table != null) {
-          result =
-            Pair.of(table, UnicodeTables.FOLD_SCRIPT.getOrElse(name, null))
+        if (!scriptTable.isEmpty) {
+          val scriptFoldTable = lookupTable(UnicodeTables.FOLD_SCRIPT, name)
+          result = Pair.of(scriptTable.get, scriptFoldTable.getOrElse(null))
         }
       }
     }

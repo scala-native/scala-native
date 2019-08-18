@@ -24,45 +24,35 @@ import Regexp.Op._
 
 class ParserTest {
 
-  private trait RunePredicate {
+  private[regex] trait RunePredicate {
     def applies(rune: Int): Boolean
   }
 
   private val IS_LOWER = new RunePredicate() {
-    override def applies(r: Int): Boolean = Unicode.isLower(r)
+    override def applies(r: Int): Boolean = {
+      Character.getType(r) == Character.LOWERCASE_LETTER
+    }
   }
 
-  private val IS_LOWER_FOLD = new RunePredicate() {
+  private val IS_LETTER_CASEBLIND = new RunePredicate() {
     override def applies(r: Int): Boolean = {
-      if (Unicode.isLower(r)) return true
-      var c = Unicode.simpleFold(r)
-      while (c != r) {
-        if (Unicode.isLower(c)) return true
+      val t = Character.getType(r)
 
-        c = Unicode.simpleFold(c)
-      }
-      false
+      (t == Character.LOWERCASE_LETTER) ||
+      (t == Character.UPPERCASE_LETTER) ||
+      (t == Character.TITLECASE_LETTER)
     }
   }
 
   private val IS_TITLE = new RunePredicate() {
-    override def applies(r: Int): Boolean = Unicode.isTitle(r)
+    override def applies(r: Int): Boolean = {
+      Character.getType(r) == Character.TITLECASE_LETTER
+    }
   }
 
   private val IS_UPPER = new RunePredicate() {
-    override def applies(r: Int): Boolean = Unicode.isUpper(r)
-  }
-
-  private val IS_UPPER_FOLD = new RunePredicate() {
     override def applies(r: Int): Boolean = {
-      if (Unicode.isUpper(r)) return true
-      var c = Unicode.simpleFold(r)
-      while (c != r) {
-        if (Unicode.isUpper(c)) return true
-
-        c = Unicode.simpleFold(c)
-      }
-      false
+      Character.getType(r) == Character.UPPERCASE_LETTER
     }
   }
 
@@ -90,7 +80,7 @@ class ParserTest {
     temp
   }
 
-  private val TEST_FLAGS = MATCH_NL | PERL_X | UNICODE_GROUPS
+  private[regex] val TEST_FLAGS = MATCH_NL | PERL_X | UNICODE_GROUPS
 
   private val PARSE_TESTS = Array(
     // Base cases
@@ -185,12 +175,12 @@ class ParserTest {
       "cc{0x20 0xa0 0x1680 0x180e 0x2000-0x200a 0x2028-0x2029 0x202f 0x205f 0x3000}"),
     Array("\\p{Ll}", mkCharClass(IS_LOWER)),
     Array("[\\p{Ll}]", mkCharClass(IS_LOWER)),
-    Array("(?i)[\\p{Ll}]", mkCharClass(IS_LOWER_FOLD)),
+    Array("(?i)[\\p{Ll}]", mkCharClass(IS_LETTER_CASEBLIND)),
     Array("\\p{Lt}", mkCharClass(IS_TITLE)),
     Array("[\\p{Lt}]", mkCharClass(IS_TITLE)),
     Array("\\p{Lu}", mkCharClass(IS_UPPER)),
     Array("[\\p{Lu}]", mkCharClass(IS_UPPER)),
-    Array("(?i)[\\p{Lu}]", mkCharClass(IS_UPPER_FOLD)),
+    Array("(?i)[\\p{Lu}]", mkCharClass(IS_LETTER_CASEBLIND)),
     Array("\\p{Any}", "dot{}"),
     Array("\\p{^Any}", "cc{}"),
     // Hex, octal.
@@ -345,7 +335,7 @@ class ParserTest {
 
   // dump prints a string representation of the regexp showing
   // the structure explicitly.
-  private def dump(re: Regexp) = {
+  private[regex] def dump(re: Regexp) = {
     val b = new StringBuffer()
     dumpRegexp(b, re)
     b.toString
@@ -418,7 +408,7 @@ class ParserTest {
     b.append('}')
   }
 
-  private def mkCharClass(f: RunePredicate): String = {
+  private[regex] def mkCharClass(f: RunePredicate): String = {
     val re    = new Regexp(Regexp.Op.CHAR_CLASS)
     val runes = new util.ArrayList[Integer]
     var lo    = -1
