@@ -49,49 +49,111 @@ private[lang] object StackTrace {
   }
 }
 
-class Throwable(s: String, private var e: Throwable)
+class Throwable protected (s: String,
+                           private[this] var e: Throwable,
+                           enableSuppression: scala.Boolean,
+                           writableStackTrace: scala.Boolean)
     extends Object
     with java.io.Serializable {
+
+  def this(message: String, cause: Throwable) =
+    this(message, cause, true, true)
+
   def this() = this(null, null)
+
   def this(s: String) = this(s, null)
+
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)
 
-  private var stackTrace: Array[StackTraceElement] = _
+  private[this] var stackTrace: Array[StackTraceElement] = _
 
-  fillInStackTrace()
+  // We use an Array rather than, say, a List, so that Throwable does not
+  // depend on the Scala collections.
+  private[this] var suppressed: Array[Throwable] = _
 
-  def initCause(cause: Throwable): Throwable = {
-    e = cause
-    this
+  if (writableStackTrace)
+    fillInStackTrace()
+
+  final def addSuppressed(exception: Throwable): Unit = {
+
+    if (exception == null) {
+      // Yes, JVM message uses 'cannot' (sic) & has terminal period/full_stop!
+      throw new java.lang.NullPointerException(
+        "Cannot suppress a null exception.")
+    }
+
+    if (exception == this) {
+      throw new java.lang.IllegalArgumentException(
+        "Self-suppression not permitted")
+    }
+
+    if (enableSuppression) this.synchronized {
+      if (suppressed eq null) {
+        suppressed = Array(exception)
+      } else {
+        val length        = suppressed.length
+        val newSuppressed = new Array[Throwable](length + 1)
+        System.arraycopy(suppressed, 0, newSuppressed, 0, length)
+        newSuppressed(length) = exception
+        suppressed = newSuppressed
+      }
+    }
   }
 
-  def getMessage(): String = s
+  def fillInStackTrace(): Throwable = {
+    // currentStackTrace should be handling exclusion in its own
+    // critical section, but does not. So do
+    if (writableStackTrace) this.synchronized {
+      this.stackTrace = StackTrace.currentStackTrace()
+    }
+    this
+  }
 
   def getCause(): Throwable = e
 
   def getLocalizedMessage(): String = getMessage()
 
-  def fillInStackTrace(): Throwable = {
-    this.stackTrace = StackTrace.currentStackTrace()
-    this
-  }
+  def getMessage(): String = s
 
   def getStackTrace(): Array[StackTraceElement] = {
     if (stackTrace eq null) {
-      stackTrace = Array.empty
-    }
-    stackTrace
+      Array.empty[StackTraceElement]
+    } else
+      this.synchronized {
+        stackTrace.clone
+      }
   }
 
-  def setStackTrace(stackTrace: Array[StackTraceElement]): Unit = {
-    var i = 0
-    while (i < stackTrace.length) {
-      if (stackTrace(i) eq null)
-        throw new NullPointerException()
-      i += 1
+  final def getSuppressed(): Array[Throwable] = {
+    if (suppressed == null) {
+      Array.empty[Throwable]
+    } else
+      this.synchronized {
+        suppressed.clone()
+      }
+  }
+
+  def initCause(cause: Throwable): Throwable = {
+    // Java 8 spec says initCause has "at-most-once" semantics,
+    // where implied use in a constructor counts.
+
+    if (cause == this) {
+      throw new java.lang.IllegalArgumentException(
+        "Self-causation not permitted")
     }
 
-    this.stackTrace = stackTrace.clone()
+    this.synchronized {
+      if (e != null) {
+        // Yes, JVM uses contraction "Can't"
+        val msg = if (cause == null) "a null" else cause.toString
+        throw new java.lang.IllegalStateException(
+          s"Can't overwrite cause with ${msg}")
+      } else {
+        e = cause
+      }
+    }
+
+    this
   }
 
   def printStackTrace(): Unit =
@@ -104,15 +166,15 @@ class Throwable(s: String, private var e: Throwable)
     printStackTrace(pw.println(_: String))
 
   private def printStackTrace(println: String => Unit): Unit = {
-    // Init to empty stack trace if it's null
-    getStackTrace()
 
-    // Print curent stack trace
+    val trace = getStackTrace()
+
+    // Print current stack trace
     println(toString)
-    if (stackTrace.nonEmpty) {
+    if (trace.nonEmpty) {
       var i = 0
-      while (i < stackTrace.length) {
-        println("\tat " + stackTrace(i))
+      while (i < trace.length) {
+        println("\tat " + trace(i))
         i += 1
       }
     } else {
@@ -120,12 +182,12 @@ class Throwable(s: String, private var e: Throwable)
     }
 
     // Print causes
-    var parentStack = stackTrace
+    var parentStack = trace
     var throwable   = getCause()
     while (throwable != null) {
       println("Caused by: " + throwable)
 
-      val currentStack = throwable.stackTrace
+      val currentStack = throwable.getStackTrace
       if (currentStack.nonEmpty) {
         val duplicates = countDuplicates(currentStack, parentStack)
         var i          = 0
@@ -161,6 +223,25 @@ class Throwable(s: String, private var e: Throwable)
       parentIndex -= 1
     }
     duplicates
+  }
+
+  def setStackTrace(stackTrace: Array[StackTraceElement]): Unit = {
+
+    if (stackTrace eq null) {
+      throw new java.lang.NullPointerException()
+    }
+
+    for (i <- 0 until stackTrace.length) {
+      if (stackTrace(i) eq null) {
+        throw new java.lang.NullPointerException()
+      }
+    }
+
+    if (writableStackTrace) {
+      // store of a pointer/address/array should be thread-safe on its own.
+      this.stackTrace = stackTrace.clone()
+    }
+
   }
 
   override def toString(): String = {
