@@ -67,12 +67,12 @@ class Throwable protected (s: String,
 
   private[this] var stackTrace: Array[StackTraceElement] = _
 
+  if (writableStackTrace)
+    fillInStackTrace()
+
   // We use an Array rather than, say, a List, so that Throwable does not
   // depend on the Scala collections.
   private[this] var suppressed: Array[Throwable] = _
-
-  if (writableStackTrace)
-    fillInStackTrace()
 
   final def addSuppressed(exception: Throwable): Unit = {
 
