@@ -113,7 +113,6 @@ abstract class Suite {
     else {
       val exc          = thrown.get
       val indentSpaces = " " * indent
-      val info         = exc.toString
       val writer       = new java.io.StringWriter
       val printer      = new java.io.PrintWriter(writer)
       exc.printStackTrace(printer)
@@ -123,7 +122,7 @@ abstract class Suite {
         .map { line => s"\n${color}${indentSpaces}${line}" }
         .mkString("")
 
-      s"\n${color}${indentSpaces}${info}" + stacktrace
+      stacktrace
     }
   }
 
