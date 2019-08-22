@@ -1116,6 +1116,15 @@ class Parser(wholeRegexp: String, _flags: Int) {
       if (c == 'P') {
         sign = -1
       }
+      if (!t.more()) {
+        val pos = t.pos()
+        t.rewindTo(startPos);
+        throw new PatternSyntaxException(
+          ERR_UNKNOWN_CHARACTER_PROPERTY_NAME,
+          t.rest(),
+          pos
+        )
+      }
       c = t.pop()
       var name: String = ""
       if (c != '{') {
@@ -1126,11 +1135,12 @@ class Parser(wholeRegexp: String, _flags: Int) {
         val rest = t.rest()
         val end = rest.indexOf('}')
         if (end < 0) {
+          val pos = t.pos()
           t.rewindTo(startPos)
           throw new PatternSyntaxException(
-            ERR_INVALID_CHAR_RANGE,
+            ERR_UNKNOWN_CHARACTER_PROPERTY_NAME,
             t.str,
-            t.pos() - 1
+            pos
           )
         }
         name = rest.substring(0, end) // e.g. "Han"
@@ -1325,7 +1335,7 @@ object Parser {
     "Unknown inline modifier"
 
   private final val ERR_INVALID_REPEAT_OP =
-    "invalid nested repetition operator"
+    "Invalid nested repetition operator"
 
   private final val ERR_INVALID_REPEAT_SIZE =
     "Dangling meta character '*'"
@@ -1341,6 +1351,9 @@ object Parser {
 
   private final val ERR_UNMATCHED_CLOSING_PAREN =
     "Unmatched closing ')'"
+
+  private final val ERR_UNKNOWN_CHARACTER_PROPERTY_NAME =
+    "Unknown character property name"
 
   // Hack to expose ArrayList.removeRange().
   private class Stack extends ArrayList[Regexp] {
