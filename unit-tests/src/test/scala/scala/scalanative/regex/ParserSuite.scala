@@ -165,7 +165,7 @@ object ParserSuite extends tests.Suite {
       "(?i)\\W",
       "cc{0x0-0x2f 0x3a-0x40 0x5b-0x5e 0x60 0x7b-0x17e 0x180-0x2129 0x212b-0x10ffff}"),
     Array("[^\\\\]", "cc{0x0-0x5b 0x5d-0x10ffff}"),
-    //  { "\\C", "byte{}" },  // probably never
+    //	{ "\\C", "byte{}" },  // probably never
     // Unicode, negatives, and a double negative.
     Array("\\p{Braille}", "cc{0x2800-0x28ff}"),
     Array("\\P{Braille}", "cc{0x0-0x27ff 0x2900-0x10ffff}"),
@@ -316,11 +316,23 @@ object ParserSuite extends tests.Suite {
   private val NOMATCHNL_TESTS = Array(
     Array(".", "dnl{}"),
     Array("\n", "lit{\n}"),
+    // These two tests exercise a pattern containing NL, using the NOMATCHNL
+    // flag (well, flags == 0). Dot will not match NL, so the alternation
+    // ".|\n" idiom is uses as a way to match any character, including NL.
+    //
+    // Yes, these tests belong here and not in MATCHNL_TESTS above.
+    // When MATCHNL, a.k.a DOTALL is the flag, there is no need for the idiom.
+    //
+    // Test both forms of alternation idiom for ROP.ANY_CHAR a.k.a. dot{}.
+    // The code paths differ slightly depending on the left term.
+    Array(".|\\n", "dot{}"),
+    Array("\\n|.", "dot{}"),
     Array("[^a]", "cc{0x0-0x9 0xb-0x60 0x62-0x10ffff}"),
-    Array("[a\\n]", "cc{0xa 0x61}"))
+    Array("[a\\n]", "cc{0xa 0x61}")
+  )
 
   test("ParseNoMatchNL") {
-    testParseDump(NOMATCHNL_TESTS, 0)
+    testParseDump(NOMATCHNL_TESTS, 0) // All flags are clear.
   }
 
   // Test Parse -> Dump.
