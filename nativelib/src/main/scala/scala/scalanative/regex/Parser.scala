@@ -14,6 +14,8 @@ import java.util.List
 
 import java.util.regex.PatternSyntaxException
 
+import scala.annotation.switch
+
 import Regexp.{Op => ROP}
 
 // A parser of regular expression patterns.
@@ -1609,25 +1611,31 @@ object Parser {
   // does re match r?
   private def matchRune(re: Regexp, r: Int): Boolean = {
 
-    var matched = false
+    val matched = (re.op: @switch) match {
 
-    (re.op: @scala.annotation.switch) match {
-      case ROP.LITERAL => re.runes.length == 1 && re.runes(0) == r
+      case ROP.LITERAL => (re.runes.length == 1) && (re.runes(0) == r)
 
       case ROP.CHAR_CLASS =>
+        val len = re.runes.length
+        assert((len % 2) == 0, s"matchRune: runs.length ${len} must be even")
+
+        var found = false
         var i = 0
-        while (i < re.runes.length) {
-          if (re.runes(i) <= r && r <= re.runes(i + 1)) {
-            matched = true
+
+        while ((i < len) && (!found)) {
+          if ((re.runes(i) <= r) && (r <= re.runes(i + 1))) {
+            found = true
           }
           i += 2
         }
 
-      case ROP.ANY_CHAR_NOT_NL => r != '\n'
+        found
 
-      case ROP.ANY_CHAR => matched = true
+      case ROP.ANY_CHAR_NOT_NL => (r != '\n')
 
-      case _ =>
+      case ROP.ANY_CHAR => true
+
+      case _ => false
     }
 
     matched
