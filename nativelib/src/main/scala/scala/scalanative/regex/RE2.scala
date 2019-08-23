@@ -53,6 +53,13 @@ class RE2 private {
 
   // Cache of machines for running regexp.
   // Accesses must be serialized using |this| monitor.
+  // @GuardedBy("this")
+
+  /// ScalaNative Porting Note:
+  /// re2j PR #85 changed the data type of machine field to ArrayDeque.
+  /// That type is not yet implemented on ScalaNative, so retain declaration
+  /// prior to that PR; it has worked well for months.
+
   private val machine = new ArrayList[Machine]()
 
   // This is visible for testing.
@@ -96,25 +103,42 @@ class RE2 private {
 
   // get() returns a machine to use for matching |this|.  It uses |this|'s
   // machine cache if possible, to avoid unnecessary allocation.
-  def get(): Machine = synchronized {
-    val n = machine.size()
-    if (n > 0) {
-      return machine.remove(n - 1)
+
+  def get(): Machine = {
+    /// See ScalaNative Porting note where machine field is declared above
+    /// for the reason why the ArrayList datatype from before re2j PR #85
+    /// is retained.
+
+    /// Having two return statements is an eyesore but it _vastly_ simplifies
+    /// the mutual exclusion logic.
+
+    this.synchronized {
+      val n = machine.size()
+      if (n > 0) {
+        return machine.remove(n - 1)
+      }
     }
-    return new Machine(this)
+
+    return new Machine(this);
   }
 
   // Clears the memory associated with this machine.
-  def reset(): Unit = synchronized {
-    machine.clear()
+  def reset(): Unit = {
+    // Interior synchronized block to work around SN Issue #1091
+    this.synchronized {
+      machine.clear()
+    }
   }
 
   // put() returns a machine to |this|'s machine cache.  There is no attempt to
   // limit the size of the cache, so it will grow to the maximum number of
   // simultaneous matches run using |this|.  (The cache empties when |this|
   // gets garbage collected.)
-  def put(m: Machine): Unit = synchronized {
-    machine.add(m)
+  def put(m: Machine): Unit = {
+    // Interior synchronized block to work around SN Issue #1091
+    this.synchronized {
+      machine.add(m)
+    }
   }
 
   override def toString: String = expr
