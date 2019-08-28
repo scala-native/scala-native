@@ -892,10 +892,11 @@ object ArrayDequeSuite extends tests.Suite {
   }
 
   testFails("toArray(a: Array[T]) - throws ArrayStoreException when not " +
-      "T >: E", 1694) {
+              "T >: E",
+            1694) {
 
-      class NotSuperClass
-      class SubClass
+    class NotSuperClass
+    class SubClass
 
     locally { // This passes on Scala JVM
       val ad = new ArrayList[SubClass]()
@@ -905,7 +906,7 @@ object ArrayDequeSuite extends tests.Suite {
 
     locally { // This is the case which is failing on ScalaNative.
       // The difference is that this Deque is not Empty.
-      val ad =  new ArrayDeque(Seq(new SubClass).asJava)
+      val ad = new ArrayDeque(Seq(new SubClass).asJava)
 
       assertThrows[ArrayStoreException] {
         ad.toArray(Array.empty[NotSuperClass])
