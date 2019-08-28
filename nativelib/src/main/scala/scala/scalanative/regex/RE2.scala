@@ -19,9 +19,11 @@
 package scala.scalanative
 package regex
 
+import java.util.ArrayDeque
 import java.util.ArrayList
 import java.util.Arrays
 import java.util.List
+import java.util.Queue
 
 // An RE2 class instance is a compiled representation of an RE2 regular
 // expression, independent of the public Java-like Pattern/Matcher API.
@@ -55,12 +57,7 @@ class RE2 private {
   // Accesses must be serialized using |this| monitor.
   // @GuardedBy("this")
 
-  /// ScalaNative Porting Note:
-  /// re2j PR #85 changed the data type of machine field to ArrayDeque.
-  /// That type is not yet implemented on ScalaNative, so retain declaration
-  /// prior to that PR; it has worked well for months.
-
-  private val machine = new ArrayList[Machine]()
+  private val machine: Queue[Machine] = new ArrayDeque[Machine]()
 
   // This is visible for testing.
   def this(expr: String) {
@@ -105,17 +102,12 @@ class RE2 private {
   // machine cache if possible, to avoid unnecessary allocation.
 
   def get(): Machine = {
-    /// See ScalaNative Porting note where machine field is declared above
-    /// for the reason why the ArrayList datatype from before re2j PR #85
-    /// is retained.
-
-    /// Having two return statements is an eyesore but it _vastly_ simplifies
-    /// the mutual exclusion logic.
+    /// SN: Having two return statements is an eyesore that directly from
+    /// the re2j base code. It _vastly_ simplifies the mutual exclusion logic.
 
     this.synchronized {
-      val n = machine.size()
-      if (n > 0) {
-        return machine.remove(n - 1)
+      if (!machine.isEmpty()) {
+        return machine.remove()
       }
     }
 
