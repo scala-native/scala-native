@@ -10,6 +10,8 @@ package regex
 
 import java.util.Arrays
 
+import scala.annotation.switch
+
 // Regular expression abstract syntax tree.
 // Produced by parser, used by compiler.
 // NB, this corresponds to {@code syntax.regexp} in the Go implementation
@@ -19,7 +21,7 @@ class Regexp {
 
   var op: Op = _ // operator
   var flags: Int = _ // bitmap of parse flags
-  var subs: Array[Regexp] = _ // subexpressions, if any.  Never null.
+  var subs: Array[Regexp] = EMPTY_SUBS // subexpressions, if any.  Never null.
   // subs[0] is used as the freelist.
   var runes: Array[Int] = _ // matched runes, for LITERAL, CHAR_CLASS
   var min, max: Int = _ // min, max for REPEAT
@@ -62,7 +64,7 @@ class Regexp {
 
   // appendTo() appends the Perl syntax for |this| regular expression to |out|.
   private def appendTo(out: java.lang.StringBuilder): Unit = {
-    (op: @scala.annotation.switch) match {
+    (op: @switch) match {
       case Op.NO_MATCH =>
         out.append("[^\\x00-\\x{10FFFF}]")
       case Op.EMPTY_MATCH =>
@@ -77,7 +79,7 @@ class Regexp {
         } else {
           sub.appendTo(out)
         }
-        (op: @scala.annotation.switch) match {
+        (op: @switch) match {
           case Op.STAR =>
             out.append('*')
           case Op.PLUS =>
@@ -256,7 +258,80 @@ class Regexp {
     groups.toMap
   }
 
-  // TODO: shallow copy shouldn't match, so removing equals
+  // SN Port: hashCode() ported from re2j aided by initial translation from
+  // http://http://javatoscala.com/.
+
+  override def hashCode(): Int = {
+    var hashcode: Int = op.hashCode
+    (op: @switch) match {
+      case Op.END_TEXT => hashcode += 31 * (flags & RE2.WAS_DOLLAR)
+      case Op.LITERAL | Op.CHAR_CLASS =>
+        hashcode += 31 * Arrays.hashCode(runes)
+      case Op.ALTERNATE | Op.CONCAT =>
+        hashcode += 31 * Arrays.deepHashCode(subs.asInstanceOf[Array[Object]])
+      case Op.STAR | Op.PLUS | Op.QUEST =>
+        hashcode += 31 * ((flags & RE2.NON_GREEDY) + subs(0).hashCode)
+      case Op.REPEAT =>
+        hashcode += 31 * (min + max + subs(0).hashCode)
+      case Op.CAPTURE =>
+        hashcode += 31 * (cap +
+          (if (name == null) 0 else name.hashCode) +
+          subs(0).hashCode)
+      case _ =>
+        // Fowler-Noll-Vo 32 bit hash constants. Public domain.
+        // http://isthe.com/chongo/tech/comp/fnv/
+        hashcode = (hashcode ^ 0x811c9dc5) * 0x01000193
+    }
+    hashcode
+  }
+
+  // SN Port: equals() ported from re2j aided by initial translation from
+  // http://http://javatoscala.com/.
+
+  override def equals(that: Any): Boolean = {
+    if (!(that.isInstanceOf[Regexp])) {
+      false
+    } else {
+      val x = this
+      val y = that.asInstanceOf[Regexp]
+
+      if (x.eq(y)) {
+        true
+      } else if (x.op != y.op) {
+        false
+      } else
+        (x.op: @switch) match {
+          case Op.END_TEXT =>
+            // The parse flags remember whether this is \z or \Z.
+            (x.flags & RE2.WAS_DOLLAR) == (y.flags & RE2.WAS_DOLLAR)
+
+          case Op.LITERAL | Op.CHAR_CLASS =>
+            x.runes.sameElements(y.runes)
+
+          case Op.ALTERNATE | Op.CONCAT =>
+            x.subs.sameElements(y.subs)
+
+          case Op.STAR | Op.PLUS | Op.QUEST =>
+            ((x.flags & RE2.NON_GREEDY) == (y.flags & RE2.NON_GREEDY)) &&
+              (x.subs(0).equals(y.subs(0)))
+
+          case Op.REPEAT =>
+            ((x.flags & RE2.NON_GREEDY) == (y.flags & RE2.NON_GREEDY)) &&
+              (x.min == y.min) &&
+              (x.max == y.max) &&
+              (x.subs(0).equals(y.subs(0)))
+
+          case Op.CAPTURE =>
+            (x.cap == y.cap) &&
+              (if (x.name == null) y.name == null else x.name == y.name) &&
+              (x.subs(0) == y.subs(0))
+
+          case _ =>
+            true // Handle ANY_CHAR, ANY_CHAR_NOT_NL, END_LINE, & others
+        }
+    }
+  }
+
 }
 
 object Regexp {

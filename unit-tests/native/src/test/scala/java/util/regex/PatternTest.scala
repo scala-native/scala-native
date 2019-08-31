@@ -436,8 +436,7 @@ class PatternTest {
     pass("(?<foo>a)", "a")
   }
 
-  // Do not support re2 syntax in java.util.regex.
-  @Ignore("no issue")
+  // re2 syntax is not defined in Java, but it works with scalanative.regex
   @Test def notSupportedRe2NamedGroups(): Unit = {
     pass("(?P<foo>a)", "a")
   }

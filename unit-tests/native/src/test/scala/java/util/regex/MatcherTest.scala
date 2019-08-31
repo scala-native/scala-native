@@ -660,12 +660,8 @@ class MatcherTest {
     assertEquals(m.group("D"), "Lausanne, Switzerland")
   }
 
-  // Do not expect support for re2 syntax in java.util.regex with
-  // scalanative.regex.
-  @Ignore("no issue needed")
+  // re2 syntax is not defined in Java, but it works with scalanative.regex
   @Test def namedGroupRe2Syntax(): Unit = {
-    // scalanative.regex behavior change, so no Issue #
-    // change pattern to java: "from (?<S>.*) to (?<D>.*)"
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
@@ -884,8 +880,7 @@ class MatcherTest {
     assertEquals(m.end("D"), 46)
   }
 
-  // Do not support re2 syntax in java.util.regex with scalanative.regex.
-  @Ignore("no issue needed")
+  // re2 syntax is not defined in Java, but it works with scalanative.regex
   @Test def startNameEndNameRe2Syntax(): Unit = {
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
