@@ -19,9 +19,12 @@
 package scala.scalanative
 package regex
 
+import java.util.ArrayDeque
 import java.util.ArrayList
 import java.util.Arrays
 import java.util.List
+import java.util.Map
+import java.util.Queue
 
 // An RE2 class instance is a compiled representation of an RE2 regular
 // expression, independent of the public Java-like Pattern/Matcher API.
@@ -42,9 +45,8 @@ class RE2 private {
   var prog: Prog   = _ // compiled program
   var cond: Int    = _ // EMPTY_* bitmask: empty-width conditions
   // required at start of match
-  var numSubexp: Int              = _
-  var longest: Boolean            = _
-  var namedCaps: Map[String, Int] = _
+  var numSubexp: Int   = _
+  var longest: Boolean = _
 
   var prefix: String          = _ // required UTF-16 prefix in unanchored matches
   var prefixUTF8: Array[Byte] = _ // required UTF-8 prefix in unanchored matches
@@ -53,7 +55,11 @@ class RE2 private {
 
   // Cache of machines for running regexp.
   // Accesses must be serialized using |this| monitor.
-  private val machine = new ArrayList[Machine]()
+  // @GuardedBy("this")
+
+  private val machine: Queue[Machine] = new ArrayDeque[Machine]()
+
+  var namedGroups: Map[String, Int] = _
 
   // This is visible for testing.
   def this(expr: String) {
@@ -65,56 +71,58 @@ class RE2 private {
     this.cond = re2.cond
     this.numSubexp = re2.numSubexp
     this.longest = re2.longest
-    this.namedCaps = re2.namedCaps
     this.prefix = re2.prefix
     this.prefixUTF8 = re2.prefixUTF8
     this.prefixComplete = re2.prefixComplete
     this.prefixRune = re2.prefixRune
   }
 
-  def this(expr: String,
-           prog: Prog,
-           numSubexp: Int,
-           longest: Boolean,
-           namedCaps: Map[String, Int]) {
+  def this(expr: String, prog: Prog, numSubexp: Int, longest: Boolean) {
     this()
     this.expr = expr
     this.prog = prog
     this.numSubexp = numSubexp
     this.cond = prog.startCond()
     this.longest = longest
-    this.namedCaps = namedCaps
   }
 
   // Returns the number of parenthesized subexpressions in this regular
   // expression.
   def numberOfCapturingGroups(): Int = numSubexp
 
-  // Returns the index of the named group
-  def findNamedCapturingGroups(name: String): Int =
-    namedCaps.getOrElse(name, -1)
-
   // get() returns a machine to use for matching |this|.  It uses |this|'s
   // machine cache if possible, to avoid unnecessary allocation.
-  def get(): Machine = synchronized {
-    val n = machine.size()
-    if (n > 0) {
-      return machine.remove(n - 1)
+
+  def get(): Machine = {
+    /// SN: Having two return statements is an eyesore that directly from
+    /// the re2j base code. It _vastly_ simplifies the mutual exclusion logic.
+
+    this.synchronized {
+      if (!machine.isEmpty()) {
+        return machine.remove()
+      }
     }
-    return new Machine(this)
+
+    return new Machine(this);
   }
 
   // Clears the memory associated with this machine.
-  def reset(): Unit = synchronized {
-    machine.clear()
+  def reset(): Unit = {
+    // Interior synchronized block to work around SN Issue #1091
+    this.synchronized {
+      machine.clear()
+    }
   }
 
   // put() returns a machine to |this|'s machine cache.  There is no attempt to
   // limit the size of the cache, so it will grow to the maximum number of
   // simultaneous matches run using |this|.  (The cache empties when |this|
   // gets garbage collected.)
-  def put(m: Machine): Unit = synchronized {
-    machine.add(m)
+  def put(m: Machine): Unit = {
+    // Interior synchronized block to work around SN Issue #1091
+    this.synchronized {
+      machine.add(m)
+    }
   }
 
   override def toString: String = expr
@@ -765,12 +773,11 @@ object RE2 {
 
   // Exposed to ExecTests.
   def compileImpl(expr: String, mode: Int, longest: Boolean): RE2 = {
-    var re        = Parser.parse(expr, mode)
-    val maxCap    = re.maxCap() // (may shrink during simplify)
-    val namedCaps = re.namedCaps
+    var re     = Parser.parse(expr, mode)
+    val maxCap = re.maxCap() // (may shrink during simplify)
     re = Simplify.simplify(re)
     val prog          = Compiler.compileRegexp(re)
-    val re2           = new RE2(expr, prog, maxCap, longest, namedCaps)
+    val re2           = new RE2(expr, prog, maxCap, longest)
     val prefixBuilder = new java.lang.StringBuilder()
     re2.prefixComplete = prog.prefix(prefixBuilder)
     re2.prefix = prefixBuilder.toString()
@@ -779,6 +786,7 @@ object RE2 {
     if (!re2.prefix.isEmpty()) {
       re2.prefixRune = re2.prefix.codePointAt(0)
     }
+    re2.namedGroups = re.namedGroups
     re2
   }
 

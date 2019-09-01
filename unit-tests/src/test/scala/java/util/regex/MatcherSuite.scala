@@ -559,14 +559,13 @@ object MatcherSuite extends tests.Suite {
     assert(find())
     assertEquals(group("S"), "Montreal, Canada")
     assertEquals(group("D"), "Lausanne, Switzerland")
+    assertThrowsAnd[IllegalStateException](group("foo"))(
+      _.getMessage == "No match found"
+    )
   }
 
-  // Do not expect support for re2 syntax in java.util.regex with
-  // scalanative.regex.
-  // No Issue number necessary.
-  testFails("named group (re2 syntax)", 0) {
-    // scalanative.regex behavior change, so no Issue #
-    // change pattern to java: "from (?<S>.*) to (?<D>.*)"
+  // re2 syntax is not defined in Java, but it works with scalanative.regex
+  test("named group (re2 syntax, not in Java 8)") {
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
@@ -576,8 +575,8 @@ object MatcherSuite extends tests.Suite {
     assert(find(), "A1")
     assert(group("S") == "Montreal, Canada", "A2")
     assert(group("D") == "Lausanne, Switzerland", "A3")
-    assertThrowsAnd[IllegalArgumentException](group("foo"))(
-      _.getMessage == "No group with name <foo>"
+    assertThrowsAnd[IllegalStateException](group("foo"))(
+      _.getMessage == "No match found"
     )
   }
 
@@ -784,9 +783,8 @@ object MatcherSuite extends tests.Suite {
     assertEquals(end("D"), 46)
   }
 
-  // Do not support re2 syntax in java.util.regex with scalanative.regex.
-  // No Issue number.
-  testFails("start(name)/end(name) re2 syntax", 0) {
+  // re2 syntax is not defined in Java, but it works with scalanative.regex
+  test("start(name)/end(name) re2 syntax (not in Java 8)") {
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
@@ -800,12 +798,12 @@ object MatcherSuite extends tests.Suite {
     assertEquals(start("D"), 25)
     assertEquals(end("D"), 46)
 
-    assertThrowsAnd[IllegalArgumentException](start("foo"))(
-      _.getMessage == "No group with name <foo>"
+    assertThrowsAnd[IllegalStateException](start("foo"))(
+      _.getMessage == "No match found"
     )
 
-    assertThrowsAnd[IllegalArgumentException](end("foo"))(
-      _.getMessage == "No group with name <foo>"
+    assertThrowsAnd[IllegalStateException](end("foo"))(
+      _.getMessage == "No match found"
     )
   }
 

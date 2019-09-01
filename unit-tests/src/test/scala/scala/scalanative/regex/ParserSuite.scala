@@ -235,7 +235,8 @@ object ParserSuite extends tests.Suite {
     Array("(?-m)\\A", "bot{}"),
     Array("(?-m)\\z", "eot{\\z}"),
     // Test named captures
-    Array("(?<name>a)", "cap{name:lit{a}}"),
+    Array("(?P<name>a)", "cap{name:lit{a}}"), // Perl style
+    Array("(?<name>a)", "cap{name:lit{a}}"),  // Java style
     // Case-folded literals
     Array("[Aa]", "litfold{A}"),
     Array("[\\x{100}\\x{101}]", "litfold{Ā}"),
@@ -492,7 +493,10 @@ object ParserSuite extends tests.Suite {
     "[a-Z]",
     "(?i)[a-Z]",
     "a{100000}",
-    "a{100000,}"
+    "a{100000,}",
+    // Group names may not be repeated
+    "(?P<foo>bar)(?P<foo>baz)",
+    "(?<foo>bar)(?<foo>baz)"
   )
 
   private val ONLY_PERL = Array("[a-b-c]",
