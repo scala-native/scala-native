@@ -437,7 +437,7 @@ class PatternTest {
   }
 
   // re2 syntax is not defined in Java, but it works with scalanative.regex
-  @Test def notSupportedRe2NamedGroups(): Unit = {
+  @Test def re2NamedGroupsNotInJava8(): Unit = {
     pass("(?P<foo>a)", "a")
   }
 

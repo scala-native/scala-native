@@ -25,6 +25,7 @@ object Simplify {
     if (re == null) {
       return null
     }
+
     (re.op: @scala.annotation.switch) match {
       case ROP.CAPTURE | ROP.CONCAT | ROP.ALTERNATE =>
         // Simplify children, building new Regexp if children change.

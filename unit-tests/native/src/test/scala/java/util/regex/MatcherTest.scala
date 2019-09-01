@@ -658,6 +658,9 @@ class MatcherTest {
     assertTrue(m.find())
     assertEquals(m.group("S"), "Montreal, Canada")
     assertEquals(m.group("D"), "Lausanne, Switzerland")
+    assertThrowsAnd(classOf[IllegalStateException], m.group("foo"))(
+      _.getMessage == "No match found"
+    )
   }
 
   // re2 syntax is not defined in Java, but it works with scalanative.regex
@@ -670,8 +673,8 @@ class MatcherTest {
     assertTrue("A1", m.find())
     assertTrue("A2", m.group("S") == "Montreal, Canada")
     assertTrue("A3", m.group("D") == "Lausanne, Switzerland")
-    assertThrowsAnd(classOf[IllegalArgumentException], m.group("foo"))(
-      _.getMessage == "No group with name <foo>"
+    assertThrowsAnd(classOf[IllegalStateException], m.group("foo"))(
+      _.getMessage == "No match found"
     )
   }
 
@@ -894,12 +897,12 @@ class MatcherTest {
     assertEquals(m.start("D"), 25)
     assertEquals(m.end("D"), 46)
 
-    assertThrowsAnd(classOf[IllegalArgumentException], m.start("foo"))(
-      _.getMessage == "No group with name <foo>"
+    assertThrowsAnd(classOf[IllegalStateException], m.start("foo"))(
+      _.getMessage == "No match found"
     )
 
-    assertThrowsAnd(classOf[IllegalArgumentException], m.end("foo"))(
-      _.getMessage == "No group with name <foo>"
+    assertThrowsAnd(classOf[IllegalStateException], m.end("foo"))(
+      _.getMessage == "No match found"
     )
   }
 

@@ -10,7 +10,9 @@ package regex
 
 import java.util.ArrayList
 import java.util.Arrays
+import java.util.HashMap
 import java.util.List
+import java.util.Map
 
 import java.util.regex.PatternSyntaxException
 
@@ -32,6 +34,8 @@ class Parser(wholeRegexp: String, _flags: Int) {
   private val stack = new Stack()
   private var free: Regexp = _
   private var numCap = 0 // number of capturing groups seen
+
+  private val namedGroups = new HashMap[String, Int]()
 
   // Allocate a Regexp, from the free list if possible.
   private def newRegexp(op: ROP): Regexp = {
@@ -868,6 +872,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
           t.pos()
         )
       }
+      stack.get(0).namedGroups = namedGroups
       stack.get(0)
     }
   }
@@ -923,14 +928,21 @@ class Parser(wholeRegexp: String, _flags: Int) {
       if (!isValidCaptureName(name)) {
         throw new PatternSyntaxException(
           ERR_INVALID_NAMED_CAPTURE,
-          s.substring(0, end),
-          0
+          s,
+          end
         ) // "(?<name>" or "(?P<name>"
       }
       // Like ordinary capture, but named.
       val re = op(ROP.LEFT_PAREN)
       numCap += 1
       re.cap = numCap
+      if (namedGroups.put(name, numCap) != 0) {
+        throw new PatternSyntaxException(
+          ERR_DUPLICATE_NAMED_CAPTURE + s" <${name}> " + "is already defined",
+          s,
+          end
+        )
+      }
       re.name = name
     } else {
 
@@ -1362,7 +1374,7 @@ object Parser {
     "Illegal/unsupported escape sequence"
 
   private final val ERR_INVALID_NAMED_CAPTURE =
-    "Bad named capture group"
+    "capturing group name does not start with a Latin letter"
 
   private final val ERR_INVALID_PERL_OP =
     "Unknown inline modifier"
@@ -1387,6 +1399,9 @@ object Parser {
 
   private final val ERR_UNKNOWN_CHARACTER_PROPERTY_NAME =
     "Unknown character property name"
+
+  private final val ERR_DUPLICATE_NAMED_CAPTURE =
+    "Named capturing group"
 
   // Hack to expose ArrayList.removeRange().
   private class Stack extends ArrayList[Regexp] {

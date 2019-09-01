@@ -3,6 +3,8 @@
 package scala.scalanative
 package regex
 
+import java.util.Map
+
 // A stateful iterator that interprets a regex {@code Pattern} on a
 // specific input.  Its interface mimics the JDK 1.4.2
 // {@code java.util.regex.Matcher}.
@@ -56,6 +58,8 @@ final class Matcher private (private var _pattern: Pattern) {
   // The group indexes, in [start, end) pairs.	Zeroth pair is overall match.
   // By convention a pair (-1, -1) indicates no or null match.
   private var _groups: Array[Int] = createGroups(_groupCount)
+
+  private val namedGroups: Map[String, Int] = _pattern.re2.namedGroups
 
   private var _inputSequence: CharSequence = ""
 
@@ -154,16 +158,54 @@ final class Matcher private (private var _pattern: Pattern) {
     _groups(2 * group + 1)
   }
 
-  def start(name: String): Int = start(groupIndex(name))
-  def end(name: String): Int = end(groupIndex(name))
-  def group(name: String): String = group(groupIndex(name))
-
-  private def groupIndex(name: String): Int = {
-    val pos = _pattern.re2.findNamedCapturingGroups(name)
-    if (pos == -1) {
-      throw new IllegalArgumentException(s"No group with name <$name>")
+  private def getOrThrow(_map: Map[String, Int], key: String): Int = {
+    val v = _map.get(key)
+    // Use knowledge about how the map is used to save execution cycles
+    // on error path. There will never be a _named_ group with index 0,
+    // so any 0 here truely means the name was not found.
+    if (v == 0) {
+      throw new IllegalStateException("No match found")
     }
-    pos
+    v
+  }
+
+  /** Returns the start of the named group of the most recent match, or -1 if
+   *  the group was not matched.
+   *
+   *  @param group
+   *    the group name
+   *  @throws IllegalStateException
+   *    if no group with that name exists
+   */
+  def start(_group: String): Int = {
+    val g = getOrThrow(namedGroups, _group)
+    start(g)
+  }
+
+  /** Returns the end of the named group of the most recent match, or -1 if the
+   *  group was not matched.
+   *
+   *  @param group
+   *    the group name
+   *  @throws IllegalStateException
+   *    if no group with that name exists
+   */
+  def end(_group: String): Int = {
+    val g = getOrThrow(namedGroups, _group)
+    end(g)
+  }
+
+  /** Returns the named group of the most recent match, or {@code null} if the
+   *  group was not matched.
+   *
+   *  @param group
+   *    the group name
+   *  @throws IllegalStateException
+   *    if no group with that name exists
+   */
+  def group(_group: String): String = {
+    val g = getOrThrow(namedGroups, _group)
+    group(g)
   }
 
   def region(start: Int, end: Int): Matcher = {

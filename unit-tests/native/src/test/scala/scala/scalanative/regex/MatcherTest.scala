@@ -190,6 +190,66 @@ class MatcherTest {
     )
   }
 
+  @Test def namedGroupsPerl() {
+
+    val p = Pattern.compile(
+      "(?P<baz>f(?P<foo>b*a(?P<another>r+)){0,10})" +
+        "(?P<bag>bag)?(?P<nomatch>zzz)?"
+    )
+
+    val m = p.matcher("fbbarrrrrbag")
+
+    assert(m.matches(), "match failed");
+    assertEquals("fbbarrrrr", m.group("baz"));
+    assertEquals("bbarrrrr", m.group("foo"));
+    assertEquals("rrrrr", m.group("another"));
+    assertEquals(0, m.start("baz"));
+    assertEquals(1, m.start("foo"));
+    assertEquals(4, m.start("another"));
+    assertEquals(9, m.end("baz"));
+    assertEquals(9, m.end("foo"));
+    assertEquals("bag", m.group("bag"));
+    assertEquals(9, m.start("bag"));
+    assertEquals(12, m.end("bag"));
+    assertEquals(null, m.group("nomatch"));
+    assertEquals(-1, m.start("nomatch"));
+    assertEquals(-1, m.end("nomatch"));
+
+    assertThrowsAnd(classOf[IllegalStateException], m.group("nonexistent"))(
+      _.getMessage == "No match found"
+    )
+  }
+
+  @Test def namedGroupsJava() {
+
+    val p = Pattern.compile(
+      "(?<baz>f(?<foo>b*a(?<another>r+)){0,10})" +
+        "(?<bag>bag)?(?<nomatch>zzz)?"
+    )
+
+    val m = p.matcher("fbbarrrrrbag")
+
+    assert(m.matches(), "match failed");
+    assertEquals("fbbarrrrr", m.group("baz"));
+    assertEquals("bbarrrrr", m.group("foo"));
+    assertEquals("rrrrr", m.group("another"));
+    assertEquals(0, m.start("baz"));
+    assertEquals(1, m.start("foo"));
+    assertEquals(4, m.start("another"));
+    assertEquals(9, m.end("baz"));
+    assertEquals(9, m.end("foo"));
+    assertEquals("bag", m.group("bag"));
+    assertEquals(9, m.start("bag"));
+    assertEquals(12, m.end("bag"));
+    assertEquals(null, m.group("nomatch"));
+    assertEquals(-1, m.start("nomatch"));
+    assertEquals(-1, m.end("nomatch"));
+
+    assertThrowsAnd(classOf[IllegalStateException], m.group("nonexistent"))(
+      _.getMessage == "No match found"
+    )
+  }
+
   @Test def stringIndexOutOfBoundsExceptionIssue852(): Unit = {
     val JsonNumberRegex =
       """(-)?((?:[1-9][0-9]*|0))(?:\.([0-9]+))?(?:[eE]([-+]?[0-9]+))?""".r
