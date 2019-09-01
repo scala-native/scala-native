@@ -102,8 +102,10 @@ class RE2 private {
   // machine cache if possible, to avoid unnecessary allocation.
 
   def get(): Machine = {
-    /// SN: Having two return statements is an eyesore that directly from
-    /// the re2j base code. It _vastly_ simplifies the mutual exclusion logic.
+    /// SN: Having a return statement in the middle of the code is an
+    /// eyesore that comes directly from the re2j base code.
+    /// Its saving grace is that it _vastly_ simplifies the mutual
+    /// exclusion logic.
 
     this.synchronized {
       if (!machine.isEmpty()) {
@@ -111,7 +113,7 @@ class RE2 private {
       }
     }
 
-    return new Machine(this);
+    new Machine(this)
   }
 
   // Clears the memory associated with this machine.
