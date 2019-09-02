@@ -158,13 +158,17 @@ final class Matcher private (private var _pattern: Pattern) {
     _groups(2 * group + 1)
   }
 
-  private def getOrThrow(_map: Map[String, Int], key: String): Int = {
+  private def getOrThrow(
+      _map: Map[String, Int],
+      key: String,
+      msg: String
+  ): Int = {
     val v = _map.get(key)
     // Use knowledge about how the map is used to save execution cycles
     // on error path. There will never be a _named_ group with index 0,
     // so any 0 here truely means the name was not found.
     if (v == 0) {
-      throw new IllegalStateException("No match found")
+      throw new IllegalStateException(msg)
     }
     v
   }
@@ -178,7 +182,7 @@ final class Matcher private (private var _pattern: Pattern) {
    *    if no group with that name exists
    */
   def start(_group: String): Int = {
-    val g = getOrThrow(namedGroups, _group)
+    val g = getOrThrow(namedGroups, _group, "No match found")
     start(g)
   }
 
@@ -191,7 +195,7 @@ final class Matcher private (private var _pattern: Pattern) {
    *    if no group with that name exists
    */
   def end(_group: String): Int = {
-    val g = getOrThrow(namedGroups, _group)
+    val g = getOrThrow(namedGroups, _group, "No match found")
     end(g)
   }
 
@@ -204,7 +208,7 @@ final class Matcher private (private var _pattern: Pattern) {
    *    if no group with that name exists
    */
   def group(_group: String): String = {
-    val g = getOrThrow(namedGroups, _group)
+    val g = getOrThrow(namedGroups, _group, "No match found")
     group(g)
   }
 
@@ -462,12 +466,13 @@ final class Matcher private (private var _pattern: Pattern) {
             j += 1
           }
           if (j == replacement.length || replacement.charAt(j) == ' ') {
-            throw new IllegalArgumentException(
-              "named capturing group is missing trailing '}'"
-            )
+            throw new IllegalStateException("No match available")
           }
           val groupName = replacement.substring(i + 1, j)
-          sb.append(this.group(groupName))
+          // JVM uses slightly different Exception message for non-extant
+          // named group in replacement string.
+          val gid = getOrThrow(namedGroups, groupName, "No match available")
+          sb.append(this.group(gid))
           i += 1 // '}'
           last = j + 1
         }

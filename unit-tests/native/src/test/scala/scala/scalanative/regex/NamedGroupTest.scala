@@ -76,10 +76,10 @@ class NamedGroupTest {
     import m._
     find()
     assertThrowsAnd(
-      classOf[IllegalArgumentException],
+      classOf[IllegalStateException],
       appendReplacement(buf, "such open ${S such closed ${D}")
     )(
-      _.getMessage == "named capturing group is missing trailing '}'"
+      _.getMessage == "No match available"
     )
 
   }

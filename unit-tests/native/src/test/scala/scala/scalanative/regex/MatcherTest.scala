@@ -190,6 +190,14 @@ class MatcherTest {
     )
   }
 
+  // This helper is named appendReplacement() in re2j. That name causes
+  // conflicts with the 'import m._' idiom used in this Suite.
+  private def re2jAppendReplacement(m: Matcher, replacement: String): String = {
+    val b = new StringBuffer()
+    m.appendReplacement(b, replacement)
+    b.toString()
+  }
+
   @Test def namedGroupsPerl() {
 
     val p = Pattern.compile(
@@ -217,6 +225,26 @@ class MatcherTest {
 
     assertThrowsAnd(classOf[IllegalStateException], m.group("nonexistent"))(
       _.getMessage == "No match found"
+    )
+
+    // appendReplacement
+    assertEquals(
+      "whatbbarrrrreverbag",
+      re2jAppendReplacement(m, "what$2ever${bag}")
+    )
+
+    assertThrowsAnd(
+      classOf[IllegalStateException],
+      re2jAppendReplacement(m, "what$2ever${no-final-brace ")
+    )(
+      _.getMessage == "No match available"
+    )
+
+    assertThrowsAnd(
+      classOf[IllegalStateException],
+      re2jAppendReplacement(m, "what$2ever${NOTbag}")
+    )(
+      _.getMessage == "No match available"
     )
   }
 
@@ -247,6 +275,26 @@ class MatcherTest {
 
     assertThrowsAnd(classOf[IllegalStateException], m.group("nonexistent"))(
       _.getMessage == "No match found"
+    )
+
+    // appendReplacement
+    assertEquals(
+      "whatbbarrrrreverbag",
+      re2jAppendReplacement(m, "what$2ever${bag}")
+    )
+
+    assertThrowsAnd(
+      classOf[IllegalStateException],
+      re2jAppendReplacement(m, "what$2ever${no-final-brace ")
+    )(
+      _.getMessage == "No match available"
+    )
+
+    assertThrowsAnd(
+      classOf[IllegalStateException],
+      re2jAppendReplacement(m, "what$2ever${NOTbag}")
+    )(
+      _.getMessage == "No match available"
     )
   }
 
