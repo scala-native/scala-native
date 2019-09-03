@@ -234,6 +234,7 @@ class ParserTest {
     // Test Perl quoted literals
     Array("\\Q+|*?{[\\E", "str{+|*?{[}"),
     Array("\\Q+\\E+", "plus{lit{+}}"),
+    Array("\\Qab\\E+", "cat{lit{a}plus{lit{b}}}"),
     Array("\\Q\\\\E", "lit{\\}"),
     Array("\\Q\\\\\\E", "str{\\\\}"),
     // Test Perl \A and \z

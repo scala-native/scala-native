@@ -826,9 +826,14 @@ class Parser(wholeRegexp: String, _flags: Int) {
                   if (i >= 0) {
                     lit = lit.substring(0, i)
                   }
+
+                  // Ported directly to Scala Native from Go Repository
+                  // commit 0680e9c0c16a7d900e3564e1836b8cb93d962a2b
+                  // to fix Go issue #11187.
+                  lit.foreach(ch => literal(ch))
+
                   t.skipString(lit)
                   t.skipString("\\E")
-                  push(literalRegexp(lit, flags))
                   breakBigswitch = true
                 case 'z' =>
                   op(ROP.END_TEXT)
