@@ -6,7 +6,7 @@ import scalanative.libc.errno
 import scala.annotation.{switch, tailrec}
 import scalanative.posix.errno.ERANGE
 
-private [java] object  IEEE754Helpers {
+private[java] object IEEE754Helpers {
 
   // Java parseDouble() and parseFloat() allow characters at & after
   // after where C strtod() or strtof() stops. Continuous trailing whitespace
@@ -34,7 +34,6 @@ private [java] object  IEEE754Helpers {
     }
   }
 
-
   def parseIEEE754[T](s: String, f: (CString, Ptr[CString]) => T): T = {
     Zone { implicit z =>
       val cstr = toCString(s)
@@ -47,19 +46,19 @@ private [java] object  IEEE754Helpers {
 
       if (errno.errno != 0) {
         if (errno.errno != ERANGE) {
-        // The need to use \042 for double quote seems to be a Scala 2.11 bug.
-        // Uglier workarounds exist.
+          // The need to use \042 for double quote seems to be a Scala 2.11 bug.
+          // Uglier workarounds exist.
           throw new NumberFormatException(exceptionMsg)
         }
         // Else strtod() or strtof() will have returned the proper type for
         // 0.0 (too close to zero) or +/- infinity. Slick C lib design!
       } else if (!end == cstr) {
-          throw new NumberFormatException(exceptionMsg)
+        throw new NumberFormatException(exceptionMsg)
       } else if ((!end(0) == 0) ||
-          vetIEEE754Tail(s.slice((!end - cstr).toInt, s.length))) {
-         res
+                 vetIEEE754Tail(s.slice((!end - cstr).toInt, s.length))) {
+        res
       } else {
-          throw new NumberFormatException(exceptionMsg)
+        throw new NumberFormatException(exceptionMsg)
       }
 
       res
