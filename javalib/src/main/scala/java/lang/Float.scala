@@ -1,10 +1,12 @@
 package java.lang
 
 import scalanative.unsafe._
-import scalanative.libc._
+import scalanative.libc
 import scalanative.runtime.Intrinsics
 
 import scalanative.runtime.ieee754tostring.ryu.{RyuRoundingMode, RyuFloat}
+
+import java.lang.IEEE754Helpers.parseIEEE754
 
 final class Float(val _value: scala.Float)
     extends Number
@@ -235,16 +237,7 @@ object Float {
     Math.min(a, b)
 
   def parseFloat(s: String): scala.Float =
-    Zone { implicit z =>
-      val cstr = toCString(s)
-      val end  = stackalloc[CString]
-
-      errno.errno = 0
-      val res = stdlib.strtof(cstr, end)
-
-      if (errno.errno == 0 && cstr != !end && string.strlen(!end) == 0) res
-      else throw new NumberFormatException(s)
-    }
+    parseIEEE754[scala.Float](s, libc.stdlib.strtof)
 
   @inline def sum(a: scala.Float, b: scala.Float): scala.Float =
     a + b
