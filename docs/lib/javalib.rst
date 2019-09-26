@@ -681,22 +681,22 @@ Some notes on the implementation:
 2. This implementation of RE2 does not support:
 
    * Character classes:
-    * Unions: ``[a-d[m-p]]``
-    * Intersections: ``[a-z&&[^aeiou]]``
+     * Unions: ``[a-d[m-p]]``
+     * Intersections: ``[a-z&&[^aeiou]]``
 
    * Predefined character classes: ``\h``, ``\H``, ``\v``, ``\V``
 
    * Patterns:
-    * Octal: ``\0100`` - use decimal or hexadecimal instead.
-    * Two character Hexadecimal: ``\xFF`` - use ``\x00FF`` instead.
-    * All alphabetic Unicode: ``\uBEEF`` - use hex ``\xBEEF`` instead.
-    * Escape: ``\e`` - use ``\u001B`` instead.
+     * Octal: ``\0100`` - use decimal or hexadecimal instead.
+     * Two character Hexadecimal: ``\xFF`` - use ``\x00FF`` instead.
+     * All alphabetic Unicode: ``\uBEEF`` - use hex ``\xBEEF`` instead.
+     * Escape: ``\e`` - use ``\u001B`` instead.
 
    * Java character function classes:
-    * ``\p{javaLowerCase}``
-    * ``\p{javaUpperCase}``
-    * ``\p{javaWhitespace}``
-    * ``\p{javaMirrored}``
+     * ``\p{javaLowerCase}``
+     * ``\p{javaUpperCase}``
+     * ``\p{javaWhitespace}``
+     * ``\p{javaMirrored}``
 
    * Boundary matchers: ``\G``, ``\R``, ``\Z``
 
@@ -705,12 +705,12 @@ Some notes on the implementation:
    * Lookaheads: ``(?=X)``, ``(?!X)``, ``(?<=X)``, ``(?<!X)``, ``(?>X)``
 
    * Options
-    *  CANON_EQ
-    *  COMMENTS
-    *  LITERAL
-    *  UNICODE_CASE
-    *  UNICODE_CHARACTER_CLASS
-    *  UNIX_LINES
+     *  CANON_EQ
+     *  COMMENTS
+     *  LITERAL
+     *  UNICODE_CASE
+     *  UNICODE_CHARACTER_CLASS
+     *  UNIX_LINES
 
    * Patterns to match a Unicode binary property, such as
      ``\p{isAlphabetic}`` for a codepoint with the 'alphabetic' property,
@@ -738,5 +738,49 @@ Some notes on the implementation:
    pattern is not. This improves compatibility with Java but,
    regrettably, may require code changes when upgrading from Scala Native
    0.3.8.
+
+Nanosecond file times (java.io, java.nio)
+-----------------------------------------
+
+Scala Native will now report times in FileTime instances to the precision
+supported by  the underlying operating and file systems. For example::
+
+  import java.nio.file.{Files, Paths}
+  import java.time.Instant
+
+  // A file existing in the current working directory.
+  // Modify to choice.
+
+  val f0 = Paths.get("build.sbt")
+ 
+  // returns an instance of FileTime
+  val time1 = Files.getLastModifiedTime(f0)
+
+  val instant = time1.toInstant 
+
+  // Retrieve nanoseconds elapsed after full seconds since Epoch.
+  val nanos = instant.getNano()     
+
+  // Retrieve full seconds since Epoch.
+  val seconds = instant.getEpochSecond()
+
+Methods defined as returning seconds since Epoch continue to do just that.
+
+Previously, methods defined to return milliseconds,
+such as ``java.io.File.lastModified()``, would always zero for the
+rightmost three (millisecond) places of the result. These now return
+the documented milliseconds since epoch as returned by the operating system. 
+
+One can gain an idea of the file time precision supported by an
+operating and file system combination by executing the Linux ``stat``
+command on a file and examining the times in the output. 
+
+Alternatively, one can execute the code block above in the Scala (JVM)
+REPL and examine the times displayed.
+
+In either case, sub-seconds, if available, are displayed to the right
+of the full-stop (period). Trailing zeros, especially after ``touch`` ing
+the file several times may indicate that the file system does not support
+the full precision supported by the operating system.
 
 Continue to :ref:`libc`.

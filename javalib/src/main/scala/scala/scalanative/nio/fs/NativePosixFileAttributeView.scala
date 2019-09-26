@@ -1,40 +1,73 @@
 package scala.scalanative.nio.fs
 
-import java.util.{HashMap, HashSet, Set}
-import java.util.concurrent.TimeUnit
 import java.nio.file.{LinkOption, Path}
 import java.nio.file.attribute._
-import java.io.IOException
+import java.time.Instant, Instant._
+import java.util.{HashMap, HashSet, Set}
 
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
-import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
-import scalanative.posix.sys.stat
-import scala.scalanative.nio.fs.attribute._
+//<<<<<<< HEAD
+//import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
+//import scalanative.posix.sys.stat
+//import scala.scalanative.nio.fs.attribute._
+//=======
+
+import scalanative.posix.{fcntl, grp, pwd, time, unistd}
+import scalanative.posix.{errno => posixErrno}, posixErrno._
+import scalanative.posix.sys.stat, stat._
+import scalanative.posix.sys.statOps._
+import scalanative.posix.timeOps._
+//>>>>>>> PR_j_n_f_FileNanoseconds_I1610
 
 final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     extends PosixFileAttributeView
     with FileOwnerAttributeView {
-  private def throwIOException() =
-    throw UnixException(path.toString, errno.errno)
+
+  private def throwIOException() = {
+    // Exception is correct but message may differ from that given by JVM.
+    if (errno.errno == posixErrno.EPERM) {
+      throw new SecurityException("Operation not permitted")
+    } else {
+      throw UnixException(path.toString, errno.errno)
+    }
+  }
+
   override val name: String = "posix"
+
+  private def fillTimespec(from: FileTime, to: Ptr[timespec]) {
+
+    if (from == null) {
+      to.tv_nsec = stat.UTIME_OMIT
+    } else {
+      // There ways to do this which are faster at runtime, but keep time
+      // math centralized in Instant. Easier to get one place correct.
+      // Have to leave some opportunities for improvement to the next
+      // generation.
+      val instant = from.toInstant
+      to.tv_sec = instant.getEpochSecond()
+      to.tv_nsec = instant.getNano()
+    }
+  }
 
   override def setTimes(lastModifiedTime: FileTime,
                         lastAccessTime: FileTime,
                         createTime: FileTime): Unit = Zone { implicit z =>
-    val sb = getStat()
+    val times = alloc[timespec](2)
 
-    val buf = alloc[utime.utimbuf]
-    buf._1 =
-      if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS)
-      else sb._7
-    buf._2 =
-      if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS)
-      else sb._8
+    fillTimespec(lastAccessTime, times)
+    fillTimespec(lastModifiedTime, times + 1)
+
     // createTime is ignored: No posix-y way to set it.
-    if (utime.utime(toCString(path.toString), buf) != 0)
+
+    errno.errno = 0
+
+    val status =
+      stat.utimensat(fcntl.AT_FDCWD, toCString(path.toString), times, 0)
+    if (status != 0) {
       throwIOException()
+    }
   }
 
   override def setOwner(owner: UserPrincipal): Unit =
@@ -81,35 +114,35 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
   private def attributes =
     new PosixFileAttributes {
-      private[this] var st_dev: stat.dev_t         = _
-      private[this] var st_rdev: stat.dev_t        = _
-      private[this] var st_ino: stat.ino_t         = _
-      private[this] var st_uid: stat.uid_t         = _
-      private[this] var st_gid: stat.gid_t         = _
-      private[this] var st_size: unistd.off_t      = _
-      private[this] var st_atime: time.time_t      = _
-      private[this] var st_mtime: time.time_t      = _
-      private[this] var st_ctime: time.time_t      = _
-      private[this] var st_blocks: stat.blkcnt_t   = _
-      private[this] var st_blksize: stat.blksize_t = _
-      private[this] var st_nlink: stat.nlink_t     = _
-      private[this] var st_mode: stat.mode_t       = _
+      private[this] var st_dev: dev_t         = _
+      private[this] var st_rdev: dev_t        = _
+      private[this] var st_ino: ino_t         = _
+      private[this] var st_uid: uid_t         = _
+      private[this] var st_gid: gid_t         = _
+      private[this] var st_size: off_t        = _
+      private[this] var st_atim: timespec     = _
+      private[this] var st_mtim: timespec     = _
+      private[this] var st_ctim: timespec     = _
+      private[this] var st_blocks: blkcnt_t   = _
+      private[this] var st_blksize: blksize_t = _
+      private[this] var st_nlink: nlink_t     = _
+      private[this] var st_mode: mode_t       = _
 
       Zone { implicit z =>
         val buf = getStat()
-        st_dev = buf._1
-        st_rdev = buf._2
-        st_ino = buf._3
-        st_uid = buf._4
-        st_gid = buf._5
-        st_size = buf._6
-        st_atime = buf._7
-        st_mtime = buf._8
-        st_ctime = buf._9
-        st_blocks = buf._10
-        st_blksize = buf._11
-        st_nlink = buf._12
-        st_mode = buf._13
+        st_dev = buf.st_dev
+        st_rdev = buf.st_rdev
+        st_ino = buf.st_ino
+        st_uid = buf.st_uid
+        st_gid = buf.st_gid
+        st_size = buf.st_size
+        st_atim = buf.st_atim
+        st_mtim = buf.st_mtim
+        st_ctim = buf.st_ctim
+        st_blocks = buf.st_blocks
+        st_blksize = buf.st_blksize
+        st_nlink = buf.st_nlink
+        st_mode = buf.st_mode
       }
 
       override def fileKey = st_ino.asInstanceOf[Object]
@@ -127,13 +160,13 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
         !isDirectory && !isRegularFile && !isSymbolicLink
 
       override def lastAccessTime =
-        FileTime.from(st_atime, TimeUnit.SECONDS)
+        FileTime.from(new Instant(st_atim._1, st_atim._2.toInt))
 
       override def lastModifiedTime =
-        FileTime.from(st_mtime, TimeUnit.SECONDS)
+        FileTime.from(new Instant(st_mtim._1, st_mtim._2.toInt))
 
       override def creationTime =
-        FileTime.from(st_ctime, TimeUnit.SECONDS)
+        FileTime.from(new Instant(st_ctim._1, st_ctim._2.toInt))
 
       override def group = NativeGroupPrincipal(st_gid)(None)
 
@@ -191,6 +224,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
   private def getStat()(implicit z: Zone): Ptr[stat.stat] = {
     val buf = alloc[stat.stat]
+    errno.errno = 0
     val err =
       if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
         stat.lstat(toCString(path.toString), buf)

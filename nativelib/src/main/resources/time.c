@@ -113,3 +113,5 @@ char **scalanative_tzname() { return tzname; }
 long scalanative_timezone() { return timezone; }
 
 int scalanative_daylight() { return daylight; }
+
+int scalanative_clock_realtime() { return CLOCK_REALTIME; }
