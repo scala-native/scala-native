@@ -11,7 +11,7 @@ import scalanative.libc._
 //<<<<<<< HEAD
 //import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
 //import scalanative.posix.sys.stat
-//import scala.scalanative.nio.fs.attribute._
+import scala.scalanative.nio.fs.attribute._
 //=======
 
 import scalanative.posix.{fcntl, grp, pwd, time, unistd}
