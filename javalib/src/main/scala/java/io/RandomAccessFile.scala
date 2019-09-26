@@ -25,7 +25,7 @@ class RandomAccessFile private (file: File,
 
   override def close(): Unit = {
     closed = true
-    fcntl.close(fd.fd)
+    unistd.close(fd.fd)
   }
 
   // final def getChannel(): FileChannel
