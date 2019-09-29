@@ -572,6 +572,8 @@ Here is the list of currently available classes:
 * ``java.util.WeakHashMap$ValuesView``
 * ``java.util.concurrent.Callable``
 * ``java.util.concurrent.CancellationException``
+* ``java.util.concurrent.ConcurrentHashMap``
+* ``java.util.concurrent.ConcurrentMap``
 * ``java.util.concurrent.ExecutionException``
 * ``java.util.concurrent.Executor``
 * ``java.util.concurrent.RejectedExecutionException``
