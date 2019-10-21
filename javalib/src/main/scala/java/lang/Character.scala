@@ -179,7 +179,7 @@ class Character(val _value: scala.Char)
 }
 
 object Character {
-  final val TYPE      = classOf[scala.Char]
+  final val TYPE      = scala.Predef.classOf[scala.scalanative.runtime.PrimitiveChar]
   final val MIN_VALUE = '\u0000'
   final val MAX_VALUE = '\uffff'
   final val SIZE      = 16

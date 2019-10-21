@@ -1007,6 +1007,10 @@ object CodeGen {
     val buf = mutable.UnrolledBuffer.empty[Global]
     buf ++= Lower.depends
     buf ++= Generate.depends
+    buf += Rt.Object.name member Rt.ScalaEqualsSig
+    buf += Rt.Object.name member Rt.ScalaHashCodeSig
+    buf += Rt.Object.name member Rt.JavaEqualsSig
+    buf += Rt.Object.name member Rt.JavaHashCodeSig
     buf
   }
 }

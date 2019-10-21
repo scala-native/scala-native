@@ -4,8 +4,8 @@ import scala.util.Try
 
 val sbt10Version          = "1.1.6" // minimum version
 val sbt10ScalaVersion     = "2.12.11"
-val libScalaVersion       = "2.11.12"
-val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
+val libScalaVersion       = "2.12.11"
+val libCrossScalaVersions = Seq("2.11.8", "2.11.11", "2.11.12", libScalaVersion)
 
 // Convert "SomeName" to "some-name".
 def convertCamelKebab(name: String): String = {
@@ -589,6 +589,8 @@ lazy val sandbox =
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
+      scalaVersion := libScalaVersion,
+      nativeLinkStubs := true
     )
     .dependsOn(nscplugin % "plugin", allCoreLibs, testInterface % Test)
 

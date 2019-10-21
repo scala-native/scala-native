@@ -189,7 +189,7 @@ object Float {
   final val NEGATIVE_INFINITY = 1.0f / -0.0f
   final val POSITIVE_INFINITY = 1.0f / 0.0f
   final val SIZE              = 32
-  final val TYPE              = classOf[scala.Float]
+  final val TYPE              = scala.Predef.classOf[scala.scalanative.runtime.PrimitiveFloat]
 
   @inline def compare(x: scala.Float, y: scala.Float): scala.Int =
     if (x > y) 1

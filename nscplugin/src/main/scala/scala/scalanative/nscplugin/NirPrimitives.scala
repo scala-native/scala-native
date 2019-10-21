@@ -128,7 +128,6 @@ abstract class NirPrimitives {
     addPrimitive(ULongToFloatMethod, ULONG_TO_FLOAT)
     addPrimitive(UIntToDoubleMethod, UINT_TO_DOUBLE)
     addPrimitive(ULongToDoubleMethod, ULONG_TO_DOUBLE)
-    HashMethods.foreach(addPrimitive(_, HASH))
     addPrimitive(LoadBoolMethod, LOAD_BOOL)
     addPrimitive(LoadCharMethod, LOAD_CHAR)
     addPrimitive(LoadByteMethod, LOAD_BYTE)

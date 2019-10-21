@@ -287,14 +287,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
       ULongClass  -> getDecl(RuntimeBoxesModule, TermName("boxToULong"))
     )
 
-    lazy val HashMethods = Seq(
-      getDecl(BoxesRunTimeModule, TermName("hashFromObject")),
-      getDecl(BoxesRunTimeModule, TermName("hashFromNumber")),
-      getDecl(BoxesRunTimeModule, TermName("hashFromFloat")),
-      getDecl(BoxesRunTimeModule, TermName("hashFromDouble")),
-      getDecl(BoxesRunTimeModule, TermName("hashFromLong"))
-    ) ++ getMember(ScalaRunTimeModule, TermName("hash")).alternatives
-
     lazy val UnboxMethod = Map[Char, Symbol](
       'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),
       'C' -> getDecl(BoxesRunTimeModule, TermName("unboxToChar")),

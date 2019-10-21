@@ -41,16 +41,21 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def cleanup(): Unit = {
     // Remove all unreachable methods from the
-    // responds map of every class. Optimizer and
-    // codegen may never increase reachability past
-    // what's known now, so it's safe to do this.
+    // responds and defaultResponds of every class.
+    // Optimizer and codegen may never increase reachability
+    // past what's known now, so it's safe to do this.
     infos.values.foreach {
       case cls: Class =>
-        val entries = cls.responds.toArray
-        entries.foreach {
+        cls.responds.foreach {
           case (sig, name) =>
             if (!done.contains(name)) {
               cls.responds -= sig
+            }
+        }
+        cls.defaultResponds.foreach {
+          case (sig, name) =>
+            if (!done.contains(name)) {
+              cls.defaultResponds -= sig
             }
         }
       case _ =>
@@ -183,11 +188,33 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
             ()
         }
       case info: Trait =>
+        // Register given trait as a subtrait of
+        // all its transitive parent traits.
         def loopTraits(traitInfo: Trait): Unit = {
           traitInfo.subtraits += info
           traitInfo.traits.foreach(loopTraits)
         }
         info.traits.foreach(loopTraits)
+
+        // Initialize default method implementations that
+        // can be resolved on a given trait. It includes both
+        // all of its parent default methods and any of the
+        // non-abstract method declared directly in this trait.
+        info.linearized.foreach {
+          case parentTraitInfo: Trait =>
+            info.responds ++= parentTraitInfo.responds
+          case _ =>
+            util.unreachable
+        }
+        loaded(info.name).foreach {
+          case (_, defn: Defn.Define) =>
+            val Global.Member(_, sig) = defn.name
+
+            info.responds(sig) = defn.name
+
+          case _ =>
+            ()
+        }
       case info: Class =>
         // Register given class as a subclass of all
         // transitive parents and as an implementation
@@ -217,7 +244,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
           case (_, defn: Defn.Define) =>
             val Global.Member(_, sig) = defn.name
             def update(sig: Sig): Unit = {
-              info.responds(sig) = resolve(info, sig).get
+              info.responds(sig) = lookup(info, sig).get
             }
             sig match {
               case Rt.JavaEqualsSig =>
@@ -232,6 +259,16 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
               case _ =>
                 ()
             }
+          case _ =>
+            ()
+        }
+
+        // Initialize the scope of the default methods that can
+        // be used as a fallback if no method implementation is given
+        // in a given class.
+        info.linearized.foreach {
+          case traitInfo: Trait =>
+            info.defaultResponds ++= traitInfo.responds
           case _ =>
             ()
         }
@@ -631,7 +668,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     }
   }
 
-  def resolve(cls: Class, sig: Sig): Option[Global] = {
+  def lookup(cls: Class, sig: Sig): Option[Global] = {
     assert(loaded.contains(cls.name))
 
     def lookupSig(cls: Class, sig: Sig): Option[Global] = {
@@ -661,8 +698,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       case Rt.ScalaHashCodeSig =>
         val scalaImpl = lookupSig(cls, Rt.ScalaHashCodeSig).get
         val javaImpl  = lookupSig(cls, Rt.JavaHashCodeSig).get
-        if (javaImpl.top != Rt.Object.name &&
-            scalaImpl.top == Rt.Object.name) {
+        if (javaImpl.top != Some(Rt.Object.name) &&
+            scalaImpl.top == Some(Rt.Object.name)) {
           Some(javaImpl)
         } else {
           Some(scalaImpl)

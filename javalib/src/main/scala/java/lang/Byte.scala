@@ -175,7 +175,7 @@ final class Byte(val _value: scala.Byte) extends Number with Comparable[Byte] {
 }
 
 object Byte {
-  final val TYPE  = classOf[scala.Byte]
+  final val TYPE  = scala.Predef.classOf[scala.scalanative.runtime.PrimitiveByte]
   final val SIZE  = 8
   final val BYTES = 1
 

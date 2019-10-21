@@ -84,6 +84,33 @@ abstract class PrepNativeInterop
 
     override def transform(tree: Tree): Tree =
       tree match {
+        // Catch calls to Predef.classOf[T]. These should NEVER reach this phase
+        // but unfortunately do. In normal cases, the typer phase replaces these
+        // calls by a literal constant of the given type. However, when we compile
+        // the scala library itself and Predef.scala is in the sources, this does
+        // not happen.
+        //
+        // The trees reach this phase under the form:
+        //
+        //   scala.this.Predef.classOf[T]
+        //
+        // or, as of Scala 2.12.0, as:
+        //
+        //   scala.Predef.classOf[T]
+        //
+        // or so it seems, at least.
+        case TypeApply(classOfTree @ Select(predef, nme.classOf), List(tpeArg))
+          if predef.symbol == PredefModule =>
+          // Replace call by literal constant containing type
+          if (typer.checkClassType(tpeArg)) {
+            val widenedTpe = tpeArg.tpe.dealias.widen
+            println("rewriting class of for" + widenedTpe)
+            typer.typed { Literal(Constant(widenedTpe)) }
+          } else {
+            reporter.error(tpeArg.pos, s"Type ${tpeArg} is not a class type")
+            EmptyTree
+          }
+
         // Catch the definition of scala.Enumeration itself
         case cldef: ClassDef if cldef.symbol == EnumerationClass =>
           enterOwner(OwnerKind.EnumImpl) { super.transform(cldef) }
@@ -161,7 +188,12 @@ abstract class PrepNativeInterop
           )
           super.transform(tree)
 
-        case _ => super.transform(tree)
+        // case TypeApply(_, _) if tree.toString.contains("classOf") =>
+        //   println("type apply: " + tree)
+        //   super.transform(tree)
+
+        case _ =>
+          super.transform(tree)
       }
   }
 

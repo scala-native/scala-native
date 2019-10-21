@@ -189,7 +189,7 @@ private[lang] object IntegerCache {
 object Integer {
   import IntegerDecimalScale.decimalScale
 
-  final val TYPE      = classOf[scala.Int]
+  final val TYPE      = scala.Predef.classOf[scala.scalanative.runtime.PrimitiveInt]
   final val MIN_VALUE = -2147483648
   final val MAX_VALUE = 2147483647
   final val SIZE      = 32
