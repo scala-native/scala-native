@@ -1,7 +1,7 @@
 import java.io.File.pathSeparator
 import scala.util.Try
-import scala.scalanative.sbtplugin.ScalaNativePluginInternal._
-import scala.scalanative.io.packageNameFromPath
+import scalanative.sbtplugin.ScalaNativePluginInternal._
+import scalanative.io.packageNameFromPath
 
 val sbt13Version          = "0.13.18"
 val sbt13ScalaVersion     = "2.10.7"
