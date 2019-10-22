@@ -1,12 +1,12 @@
 import java.io.File.pathSeparator
 import scala.util.Try
-import scalanative.sbtplugin.ScalaNativePluginInternal._
-import scalanative.io.packageNameFromPath
+import scala.scalanative.sbtplugin.ScalaNativePluginInternal._
+import scala.scalanative.io.packageNameFromPath
 
 val sbt13Version          = "0.13.18"
 val sbt13ScalaVersion     = "2.10.7"
-val sbt10Version          = "1.2.8"
-val sbt10ScalaVersion     = "2.12.8"
+val sbt10Version          = "1.3.3"
+val sbt10ScalaVersion     = "2.12.10"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
@@ -175,7 +175,7 @@ lazy val mavenPublishSettings = Seq(
           "not going to publish a snapshot due to: " +
             s"travis = $travis, pr = $pr, " +
             s"branch = $branch, snapshot = $snapshot")
-        Def.task()
+        Def.task((): Unit)
     }
   }.value,
   credentials ++= {
@@ -338,19 +338,23 @@ lazy val nscplugin =
 lazy val sbtPluginSettings =
   toolSettings ++
     bintrayPublishSettings ++
-    ScriptedPlugin.scriptedSettings ++
+    ScriptedPlugin.projectSettings ++
     Seq(
       sbtPlugin := true,
-      scriptedLaunchOpts ++=
-        Seq("-Xmx1024M",
-            "-XX:MaxMetaspaceSize=256M",
-            "-Dplugin.version=" + version.value) ++
+      scriptedBufferLog := false,
+      scriptedLaunchOpts := {
+        scriptedLaunchOpts.value ++
+          Seq("-Xmx1024M",
+              "-XX:MaxMetaspaceSize=256M",
+              "-Dplugin.version=" + version.value) ++
           ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=${home}").toSeq
+      }
     )
 
 lazy val sbtScalaNative =
   project
     .in(file("sbt-scala-native"))
+    .enablePlugins(SbtPlugin)
     .settings(sbtPluginSettings)
     .settings(
       crossScalaVersions := libCrossScalaVersions,
@@ -363,11 +367,11 @@ lazy val sbtScalaNative =
       // We simply add the sources to mimic cross-compilation.
       sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
       // publish the other projects before running scripted tests.
-      scripted := scripted
-        .dependsOn(publishLocal in testInterface)
-        .dependsOn(publishLocal in ThisProject)
-        .dependsOn(publishLocal in scalalib)
-        .evaluated,
+      scriptedTests := scriptedTests
+        .dependsOn(testInterface / publishLocal)
+        .dependsOn(ThisProject / publishLocal)
+        .dependsOn(scalalib / publishLocal),
+      //.evaluated,
       publishLocal := publishLocal
         .dependsOn(publishLocal in tools, publishLocal in testRunner)
         .value
@@ -566,7 +570,7 @@ lazy val testingCompilerInterface =
     .settings(noPublishSettings)
     .settings(
       crossPaths := false,
-      crossVersion := CrossVersion.Disabled,
+      crossVersion := CrossVersion.disabled,
       autoScalaLibrary := false
     )
 
