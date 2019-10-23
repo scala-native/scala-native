@@ -20,27 +20,6 @@ def projectName(project: sbt.ResolvedProject): String = {
   convertCamelKebab(project.id)
 }
 
-// Metals settings (next 3 items)
-// Avoid 2.10 for sbt generated root project
-scalaVersion := libScalaVersion
-
-lazy val startupTransition: State => State = { s: State =>
-  Option(System.getenv("METALS_ENABLED")) match {
-    case Some(sb) => if (sb == "true") s"^^$sbt10Version" :: s else s
-    case None     => s
-  }
-}
-
-onLoad in Global := {
-  val sbtCrossVersion = (sbtVersion in pluginCrossBuild).value
-  val old             = (onLoad in Global).value
-  if (sbtCrossVersion != sbt10Version) {
-    startupTransition compose old
-  } else {
-    old
-  }
-}
-
 // Provide consistent project name pattern.
 lazy val nameSettings = Seq(
   normalizedName := projectName(thisProject.value), // Maven <artifactId>
@@ -338,10 +317,7 @@ lazy val nscplugin =
 lazy val sbtPluginSettings =
   toolSettings ++
     bintrayPublishSettings ++
-    ScriptedPlugin.projectSettings ++
     Seq(
-      sbtPlugin := true,
-      scriptedBufferLog := false,
       scriptedLaunchOpts := {
         scriptedLaunchOpts.value ++
           Seq("-Xmx1024M",
@@ -367,11 +343,11 @@ lazy val sbtScalaNative =
       // We simply add the sources to mimic cross-compilation.
       sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
       // publish the other projects before running scripted tests.
-      scriptedTests := scriptedTests
+      scripted := scripted
         .dependsOn(testInterface / publishLocal)
         .dependsOn(ThisProject / publishLocal)
-        .dependsOn(scalalib / publishLocal),
-      //.evaluated,
+        .dependsOn(scalalib / publishLocal)
+        .evaluated,
       publishLocal := publishLocal
         .dependsOn(publishLocal in tools, publishLocal in testRunner)
         .value

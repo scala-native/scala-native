@@ -13,7 +13,6 @@ unmanagedSourceDirectories in Compile ++= {
 }
 
 libraryDependencies ++= Seq(
-  "org.scala-sbt"    %% "scripted-plugin"     % sbtVersion.value,
   "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "3.7.1.201504261725-r"
 )
 
