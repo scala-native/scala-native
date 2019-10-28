@@ -3,8 +3,6 @@ import scala.util.Try
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 
-val sbt13Version          = "0.13.18"
-val sbt13ScalaVersion     = "2.10.7"
 val sbt10Version          = "1.3.3"
 val sbt10ScalaVersion     = "2.12.10"
 val libScalaVersion       = "2.11.12"
@@ -115,11 +113,11 @@ lazy val setUpTestingCompiler = Def.task {
 }
 
 // to publish plugin (we only need to do this once, it's already done!)
-// follow: http://www.scala-sbt.org/0.13/docs/Bintray-For-Plugins.html
+// follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html
 // then add a new package
 // name: sbt-scala-native, license: BSD-like, version control: git@github.com:scala-native/scala-native.git
 // to be available without a resolver
-// follow: http://www.scala-sbt.org/0.13/docs/Bintray-For-Plugins.html#Linking+your+package+to+the+sbt+organization
+// follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html#Linking+your+package+to+the+sbt+organization
 lazy val bintrayPublishSettings = Seq(
   bintrayRepository := "sbt-plugins",
   bintrayOrganization := Some("scala-native")
@@ -211,11 +209,10 @@ lazy val noPublishSettings = Seq(
 lazy val toolSettings =
   baseSettings ++
     Seq(
-      crossSbtVersions := List(sbt13Version, sbt10Version),
+      crossSbtVersions := List(sbt10Version),
       scalaVersion := {
         (sbtBinaryVersion in pluginCrossBuild).value match {
-          case "0.13" => sbt13ScalaVersion
-          case _      => sbt10ScalaVersion
+          case _ => sbt10ScalaVersion
         }
       },
       scalacOptions ++= Seq(
@@ -334,12 +331,10 @@ lazy val sbtScalaNative =
     .settings(sbtPluginSettings)
     .settings(
       crossScalaVersions := libCrossScalaVersions,
-      // fixed in https://github.com/sbt/sbt/pull/3397 (for sbt 0.13.17)
-      sbtBinaryVersion in update := (sbtBinaryVersion in pluginCrossBuild).value,
       addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
       // `testInterfaceSerialization` needs to be available from the sbt plugin,
-      // but it's a Scala Native project (and thus 2.11), and the plugin is 2.10 or 2.12.
+      // but it's a Scala Native project (and thus 2.11), and the plugin is 2.12.
       // We simply add the sources to mimic cross-compilation.
       sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
       // publish the other projects before running scripted tests.
@@ -611,7 +606,7 @@ lazy val testRunner =
     .settings(mavenPublishSettings)
     .in(file("test-runner"))
     .settings(
-      crossScalaVersions := Seq(sbt13ScalaVersion, sbt10ScalaVersion),
+      crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies += "org.scala-sbt" % "test-interface" % "1.0",
       sources in Compile ++= (sources in testInterfaceSerialization in Compile).value
     )
