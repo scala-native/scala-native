@@ -23,7 +23,7 @@ private[nio] object GenHeapBuffer {
                                                       initialLength: Int,
                                                       isReadOnly: Boolean)(
       implicit newHeapBuffer: NewHeapBuffer[BufferType, ElementType])
-    : BufferType = {
+      : BufferType = {
     if (capacity < 0) {
       throw new IllegalArgumentException()
     }

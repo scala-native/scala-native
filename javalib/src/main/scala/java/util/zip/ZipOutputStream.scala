@@ -93,7 +93,9 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
       writeShort(cDir, 0)
     }
     var c: String = null
-    if ({ c = currentEntry.getComment(); c != null }) {
+    if ({
+      c = currentEntry.getComment(); c != null
+    }) {
       writeShort(cDir, c.length())
     } else {
       writeShort(cDir, 0)

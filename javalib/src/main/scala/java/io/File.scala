@@ -376,7 +376,7 @@ object File {
     var uncIndex =
       if (separatorChar == '/') 0 // UNIX world
       else if (length > 2 && path.charAt(1) == ':')
-        2 // Windows, but starts with C:...
+        2    // Windows, but starts with C:...
       else 1 // Possible UNC path name
 
     var foundSlash = false

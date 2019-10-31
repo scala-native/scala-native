@@ -567,12 +567,12 @@ object PatternSuite extends tests.Suite {
     assertThrowsAnd[PatternSyntaxException](Pattern.compile("foo\\L"))(
       e => {
         e.getDescription == "Illegal/unsupported escape sequence" &&
-        e.getIndex == 4 &&
-        e.getPattern == "foo\\L" &&
-        e.getMessage ==
-          """|Illegal/unsupported escape sequence near index 4
-             |foo\L
-             |    ^""".stripMargin
+          e.getIndex == 4 &&
+          e.getPattern == "foo\\L" &&
+          e.getMessage ==
+            """|Illegal/unsupported escape sequence near index 4
+               |foo\L
+               |    ^""".stripMargin
       }
     )
 

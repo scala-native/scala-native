@@ -73,9 +73,9 @@ object Base {
   val Long: P[Long]       = neg((HexNum | DecNum).!) map (_.toLong)
   val Infinity: P[String] = P("Infinityf".!) map (_.init)
   val Float
-    : P[Float] = neg(Infinity | Literals.Literals.Float.!) map (_.toFloat)
+      : P[Float] = neg(Infinity | Literals.Literals.Float.!) map (_.toFloat)
   val Double
-    : P[Double] = neg(Infinity | Literals.Literals.Float.!) map (_.toDouble)
+      : P[Double] = neg(Infinity | Literals.Literals.Float.!) map (_.toDouble)
   val stringLit: P[String] = P(Literals.Literals.NoInterp.String.! map { x =>
     unquote(x.init.tail)
   })

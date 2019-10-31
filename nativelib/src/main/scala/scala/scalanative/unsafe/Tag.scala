@@ -816,7 +816,7 @@ object Tag {
     }
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CStruct3[T1, T2, T3]])
-      : unsafe.CStruct3[T1, T2, T3] = {
+        : unsafe.CStruct3[T1, T2, T3] = {
       new unsafe.CStruct3[T1, T2, T3](ptr.rawptr)
     }
     @alwaysinline override def store(
@@ -901,7 +901,7 @@ object Tag {
     }
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CStruct4[T1, T2, T3, T4]])
-      : unsafe.CStruct4[T1, T2, T3, T4] = {
+        : unsafe.CStruct4[T1, T2, T3, T4] = {
       new unsafe.CStruct4[T1, T2, T3, T4](ptr.rawptr)
     }
     @alwaysinline override def store(
@@ -1004,7 +1004,7 @@ object Tag {
     }
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CStruct5[T1, T2, T3, T4, T5]])
-      : unsafe.CStruct5[T1, T2, T3, T4, T5] = {
+        : unsafe.CStruct5[T1, T2, T3, T4, T5] = {
       new unsafe.CStruct5[T1, T2, T3, T4, T5](ptr.rawptr)
     }
     @alwaysinline override def store(
@@ -1127,7 +1127,7 @@ object Tag {
     }
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CStruct6[T1, T2, T3, T4, T5, T6]])
-      : unsafe.CStruct6[T1, T2, T3, T4, T5, T6] = {
+        : unsafe.CStruct6[T1, T2, T3, T4, T5, T6] = {
       new unsafe.CStruct6[T1, T2, T3, T4, T5, T6](ptr.rawptr)
     }
     @alwaysinline override def store(
@@ -1272,7 +1272,7 @@ object Tag {
     }
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CStruct7[T1, T2, T3, T4, T5, T6, T7]])
-      : unsafe.CStruct7[T1, T2, T3, T4, T5, T6, T7] = {
+        : unsafe.CStruct7[T1, T2, T3, T4, T5, T6, T7] = {
       new unsafe.CStruct7[T1, T2, T3, T4, T5, T6, T7](ptr.rawptr)
     }
     @alwaysinline override def store(
@@ -1441,7 +1441,7 @@ object Tag {
     }
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]])
-      : unsafe.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] = {
+        : unsafe.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] = {
       new unsafe.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8](ptr.rawptr)
     }
     @alwaysinline override def store(
@@ -1636,7 +1636,7 @@ object Tag {
     }
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]])
-      : unsafe.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] = {
+        : unsafe.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] = {
       new unsafe.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9](ptr.rawptr)
     }
     @alwaysinline override def store(
@@ -1861,14 +1861,14 @@ object Tag {
     @alwaysinline override def load(
         ptr: unsafe.Ptr[
           unsafe.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]])
-      : unsafe.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] = {
+        : unsafe.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] = {
       new unsafe.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10](ptr.rawptr)
     }
     @alwaysinline override def store(
         ptr: unsafe.Ptr[
           unsafe.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]],
         value: unsafe.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-      : Unit = {
+        : Unit = {
       val dst = ptr.rawptr
       val src = value.rawptr
       libc.memcpy(dst, src, size)
@@ -2119,7 +2119,7 @@ object Tag {
     @alwaysinline override def load(
         ptr: unsafe.Ptr[
           unsafe.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]])
-      : unsafe.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] = {
+        : unsafe.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] = {
       new unsafe.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11](
         ptr.rawptr)
     }
@@ -2127,7 +2127,7 @@ object Tag {
         ptr: unsafe.Ptr[
           unsafe.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]],
         value: unsafe.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-      : Unit = {
+        : Unit = {
       val dst = ptr.rawptr
       val src = value.rawptr
       libc.memcpy(dst, src, size)
@@ -2408,9 +2408,29 @@ object Tag {
         throwUndefined()
     }
     @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]])
-      : unsafe.CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] = {
+        ptr: unsafe.Ptr[unsafe.CStruct12[T1,
+                                         T2,
+                                         T3,
+                                         T4,
+                                         T5,
+                                         T6,
+                                         T7,
+                                         T8,
+                                         T9,
+                                         T10,
+                                         T11,
+                                         T12]]): unsafe.CStruct12[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12] = {
       new unsafe.CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12](
         ptr.rawptr)
     }
@@ -2767,19 +2787,19 @@ object Tag {
     }
     @alwaysinline override def load(ptr: unsafe.Ptr[
       unsafe.CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]])
-      : unsafe.CStruct13[T1,
-                         T2,
-                         T3,
-                         T4,
-                         T5,
-                         T6,
-                         T7,
-                         T8,
-                         T9,
-                         T10,
-                         T11,
-                         T12,
-                         T13] = {
+        : unsafe.CStruct13[T1,
+                           T2,
+                           T3,
+                           T4,
+                           T5,
+                           T6,
+                           T7,
+                           T8,
+                           T9,
+                           T10,
+                           T11,
+                           T12,
+                           T13] = {
       new unsafe.CStruct13[T1,
                            T2,
                            T3,
@@ -8659,7 +8679,7 @@ object Tag {
     @alwaysinline def size: Int      = 8
     @alwaysinline def alignment: Int = 8
     @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr1[Any, Any]])
-      : unsafe.CFuncPtr1[Any, Any] =
+        : unsafe.CFuncPtr1[Any, Any] =
       Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(
         ptr: unsafe.Ptr[unsafe.CFuncPtr1[Any, Any]],
@@ -8674,7 +8694,7 @@ object Tag {
     @alwaysinline def alignment: Int = 8
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CFuncPtr2[Any, Any, Any]])
-      : unsafe.CFuncPtr2[Any, Any, Any] =
+        : unsafe.CFuncPtr2[Any, Any, Any] =
       Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(
         ptr: unsafe.Ptr[unsafe.CFuncPtr2[Any, Any, Any]],
@@ -8689,7 +8709,7 @@ object Tag {
     @alwaysinline def alignment: Int = 8
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CFuncPtr3[Any, Any, Any, Any]])
-      : unsafe.CFuncPtr3[Any, Any, Any, Any] =
+        : unsafe.CFuncPtr3[Any, Any, Any, Any] =
       Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(
         ptr: unsafe.Ptr[unsafe.CFuncPtr3[Any, Any, Any, Any]],
@@ -8704,7 +8724,7 @@ object Tag {
     @alwaysinline def alignment: Int = 8
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CFuncPtr4[Any, Any, Any, Any, Any]])
-      : unsafe.CFuncPtr4[Any, Any, Any, Any, Any] =
+        : unsafe.CFuncPtr4[Any, Any, Any, Any, Any] =
       Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(
         ptr: unsafe.Ptr[unsafe.CFuncPtr4[Any, Any, Any, Any, Any]],
@@ -8719,7 +8739,7 @@ object Tag {
     @alwaysinline def alignment: Int = 8
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CFuncPtr5[Any, Any, Any, Any, Any, Any]])
-      : unsafe.CFuncPtr5[Any, Any, Any, Any, Any, Any] =
+        : unsafe.CFuncPtr5[Any, Any, Any, Any, Any, Any] =
       Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(
         ptr: unsafe.Ptr[unsafe.CFuncPtr5[Any, Any, Any, Any, Any, Any]],
@@ -8735,7 +8755,7 @@ object Tag {
     @alwaysinline def alignment: Int = 8
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.CFuncPtr6[Any, Any, Any, Any, Any, Any, Any]])
-      : unsafe.CFuncPtr6[Any, Any, Any, Any, Any, Any, Any] =
+        : unsafe.CFuncPtr6[Any, Any, Any, Any, Any, Any, Any] =
       Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(
         ptr: unsafe.Ptr[unsafe.CFuncPtr6[Any, Any, Any, Any, Any, Any, Any]],
@@ -8752,7 +8772,7 @@ object Tag {
     @alwaysinline override def load(
         ptr: unsafe.Ptr[
           unsafe.CFuncPtr7[Any, Any, Any, Any, Any, Any, Any, Any]])
-      : unsafe.CFuncPtr7[Any, Any, Any, Any, Any, Any, Any, Any] =
+        : unsafe.CFuncPtr7[Any, Any, Any, Any, Any, Any, Any, Any] =
       Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(
         ptr: unsafe.Ptr[
@@ -8770,13 +8790,13 @@ object Tag {
     @alwaysinline override def load(
         ptr: unsafe.Ptr[
           unsafe.CFuncPtr8[Any, Any, Any, Any, Any, Any, Any, Any, Any]])
-      : unsafe.CFuncPtr8[Any, Any, Any, Any, Any, Any, Any, Any, Any] =
+        : unsafe.CFuncPtr8[Any, Any, Any, Any, Any, Any, Any, Any, Any] =
       Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(
         ptr: unsafe.Ptr[
           unsafe.CFuncPtr8[Any, Any, Any, Any, Any, Any, Any, Any, Any]],
         value: unsafe.CFuncPtr8[Any, Any, Any, Any, Any, Any, Any, Any, Any])
-      : Unit =
+        : Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
 
@@ -8790,7 +8810,7 @@ object Tag {
     @alwaysinline override def load(
         ptr: unsafe.Ptr[
           unsafe.CFuncPtr9[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]])
-      : unsafe.CFuncPtr9[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any] =
+        : unsafe.CFuncPtr9[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any] =
       Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(
         ptr: unsafe.Ptr[
@@ -8827,17 +8847,17 @@ object Tag {
     @alwaysinline def alignment: Int = 8
     @alwaysinline override def load(ptr: unsafe.Ptr[
       unsafe.CFuncPtr10[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]])
-      : unsafe.CFuncPtr10[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any] =
+        : unsafe.CFuncPtr10[Any,
+                            Any,
+                            Any,
+                            Any,
+                            Any,
+                            Any,
+                            Any,
+                            Any,
+                            Any,
+                            Any,
+                            Any] =
       Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(ptr: unsafe.Ptr[
                                        unsafe.CFuncPtr10[Any,
@@ -10065,7 +10085,7 @@ object Tag {
       implicit tag: Tag[T]): Tag[unsafe.Ptr[T]] =
     Tag.Ptr(tag)
   @alwaysinline implicit def materializeClassTag[T <: AnyRef: ClassTag]
-    : Tag[T] =
+      : Tag[T] =
     Tag.Class(
       implicitly[ClassTag[T]].runtimeClass.asInstanceOf[java.lang.Class[T]])
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 209)
@@ -10140,20 +10160,20 @@ object Tag {
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 221)
   @alwaysinline implicit def materializeNatDigit2Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag]
-    : Tag.Digit2[N1, N2] =
+      : Tag.Digit2[N1, N2] =
     Tag.Digit2(implicitly[Tag[N1]], implicitly[Tag[N2]])
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 221)
   @alwaysinline implicit def materializeNatDigit3Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag]
-    : Tag.Digit3[N1, N2, N3] =
+      : Tag.Digit3[N1, N2, N3] =
     Tag.Digit3(implicitly[Tag[N1]], implicitly[Tag[N2]], implicitly[Tag[N3]])
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 221)
   @alwaysinline implicit def materializeNatDigit4Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
                                                      N4 <: Nat.Base: Tag]
-    : Tag.Digit4[N1, N2, N3, N4] =
+      : Tag.Digit4[N1, N2, N3, N4] =
     Tag.Digit4(implicitly[Tag[N1]],
                implicitly[Tag[N2]],
                implicitly[Tag[N3]],
@@ -10164,7 +10184,7 @@ object Tag {
                                                      N3 <: Nat.Base: Tag,
                                                      N4 <: Nat.Base: Tag,
                                                      N5 <: Nat.Base: Tag]
-    : Tag.Digit5[N1, N2, N3, N4, N5] =
+      : Tag.Digit5[N1, N2, N3, N4, N5] =
     Tag.Digit5(implicitly[Tag[N1]],
                implicitly[Tag[N2]],
                implicitly[Tag[N3]],
@@ -10177,7 +10197,7 @@ object Tag {
                                                      N4 <: Nat.Base: Tag,
                                                      N5 <: Nat.Base: Tag,
                                                      N6 <: Nat.Base: Tag]
-    : Tag.Digit6[N1, N2, N3, N4, N5, N6] =
+      : Tag.Digit6[N1, N2, N3, N4, N5, N6] =
     Tag.Digit6(implicitly[Tag[N1]],
                implicitly[Tag[N2]],
                implicitly[Tag[N3]],
@@ -10192,7 +10212,7 @@ object Tag {
                                                      N5 <: Nat.Base: Tag,
                                                      N6 <: Nat.Base: Tag,
                                                      N7 <: Nat.Base: Tag]
-    : Tag.Digit7[N1, N2, N3, N4, N5, N6, N7] =
+      : Tag.Digit7[N1, N2, N3, N4, N5, N6, N7] =
     Tag.Digit7(implicitly[Tag[N1]],
                implicitly[Tag[N2]],
                implicitly[Tag[N3]],
@@ -10209,7 +10229,7 @@ object Tag {
                                                      N6 <: Nat.Base: Tag,
                                                      N7 <: Nat.Base: Tag,
                                                      N8 <: Nat.Base: Tag]
-    : Tag.Digit8[N1, N2, N3, N4, N5, N6, N7, N8] =
+      : Tag.Digit8[N1, N2, N3, N4, N5, N6, N7, N8] =
     Tag.Digit8(
       implicitly[Tag[N1]],
       implicitly[Tag[N2]],
@@ -10230,7 +10250,7 @@ object Tag {
                                                      N7 <: Nat.Base: Tag,
                                                      N8 <: Nat.Base: Tag,
                                                      N9 <: Nat.Base: Tag]
-    : Tag.Digit9[N1, N2, N3, N4, N5, N6, N7, N8, N9] =
+      : Tag.Digit9[N1, N2, N3, N4, N5, N6, N7, N8, N9] =
     Tag.Digit9(
       implicitly[Tag[N1]],
       implicitly[Tag[N2]],
@@ -10250,18 +10270,18 @@ object Tag {
     Tag.CStruct1(implicitly[Tag[T1]])
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 229)
   @alwaysinline implicit def materializeCStruct2Tag[T1: Tag, T2: Tag]
-    : Tag.CStruct2[T1, T2] =
+      : Tag.CStruct2[T1, T2] =
     Tag.CStruct2(implicitly[Tag[T1]], implicitly[Tag[T2]])
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 229)
   @alwaysinline implicit def materializeCStruct3Tag[T1: Tag, T2: Tag, T3: Tag]
-    : Tag.CStruct3[T1, T2, T3] =
+      : Tag.CStruct3[T1, T2, T3] =
     Tag.CStruct3(implicitly[Tag[T1]], implicitly[Tag[T2]], implicitly[Tag[T3]])
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 229)
   @alwaysinline implicit def materializeCStruct4Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
                                                     T4: Tag]
-    : Tag.CStruct4[T1, T2, T3, T4] =
+      : Tag.CStruct4[T1, T2, T3, T4] =
     Tag.CStruct4(implicitly[Tag[T1]],
                  implicitly[Tag[T2]],
                  implicitly[Tag[T3]],
@@ -10272,7 +10292,7 @@ object Tag {
                                                     T3: Tag,
                                                     T4: Tag,
                                                     T5: Tag]
-    : Tag.CStruct5[T1, T2, T3, T4, T5] =
+      : Tag.CStruct5[T1, T2, T3, T4, T5] =
     Tag.CStruct5(implicitly[Tag[T1]],
                  implicitly[Tag[T2]],
                  implicitly[Tag[T3]],
@@ -10285,7 +10305,7 @@ object Tag {
                                                     T4: Tag,
                                                     T5: Tag,
                                                     T6: Tag]
-    : Tag.CStruct6[T1, T2, T3, T4, T5, T6] =
+      : Tag.CStruct6[T1, T2, T3, T4, T5, T6] =
     Tag.CStruct6(implicitly[Tag[T1]],
                  implicitly[Tag[T2]],
                  implicitly[Tag[T3]],
@@ -10300,7 +10320,7 @@ object Tag {
                                                     T5: Tag,
                                                     T6: Tag,
                                                     T7: Tag]
-    : Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7] =
+      : Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7] =
     Tag.CStruct7(implicitly[Tag[T1]],
                  implicitly[Tag[T2]],
                  implicitly[Tag[T3]],
@@ -10317,7 +10337,7 @@ object Tag {
                                                     T6: Tag,
                                                     T7: Tag,
                                                     T8: Tag]
-    : Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] =
+      : Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] =
     Tag.CStruct8(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10338,7 +10358,7 @@ object Tag {
                                                     T7: Tag,
                                                     T8: Tag,
                                                     T9: Tag]
-    : Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] =
+      : Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] =
     Tag.CStruct9(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10361,7 +10381,7 @@ object Tag {
                                                      T8: Tag,
                                                      T9: Tag,
                                                      T10: Tag]
-    : Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] =
+      : Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] =
     Tag.CStruct10(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10386,7 +10406,7 @@ object Tag {
                                                      T9: Tag,
                                                      T10: Tag,
                                                      T11: Tag]
-    : Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] =
+      : Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] =
     Tag.CStruct11(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10413,7 +10433,7 @@ object Tag {
                                                      T10: Tag,
                                                      T11: Tag,
                                                      T12: Tag]
-    : Tag.CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] =
+      : Tag.CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] =
     Tag.CStruct12(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10442,7 +10462,7 @@ object Tag {
                                                      T11: Tag,
                                                      T12: Tag,
                                                      T13: Tag]
-    : Tag.CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] =
+      : Tag.CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] =
     Tag.CStruct13(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10473,20 +10493,20 @@ object Tag {
                                                      T12: Tag,
                                                      T13: Tag,
                                                      T14: Tag]
-    : Tag.CStruct14[T1,
-                    T2,
-                    T3,
-                    T4,
-                    T5,
-                    T6,
-                    T7,
-                    T8,
-                    T9,
-                    T10,
-                    T11,
-                    T12,
-                    T13,
-                    T14] =
+      : Tag.CStruct14[T1,
+                      T2,
+                      T3,
+                      T4,
+                      T5,
+                      T6,
+                      T7,
+                      T8,
+                      T9,
+                      T10,
+                      T11,
+                      T12,
+                      T13,
+                      T14] =
     Tag.CStruct14(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10519,21 +10539,21 @@ object Tag {
                                                      T13: Tag,
                                                      T14: Tag,
                                                      T15: Tag]
-    : Tag.CStruct15[T1,
-                    T2,
-                    T3,
-                    T4,
-                    T5,
-                    T6,
-                    T7,
-                    T8,
-                    T9,
-                    T10,
-                    T11,
-                    T12,
-                    T13,
-                    T14,
-                    T15] =
+      : Tag.CStruct15[T1,
+                      T2,
+                      T3,
+                      T4,
+                      T5,
+                      T6,
+                      T7,
+                      T8,
+                      T9,
+                      T10,
+                      T11,
+                      T12,
+                      T13,
+                      T14,
+                      T15] =
     Tag.CStruct15(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10568,22 +10588,22 @@ object Tag {
                                                      T14: Tag,
                                                      T15: Tag,
                                                      T16: Tag]
-    : Tag.CStruct16[T1,
-                    T2,
-                    T3,
-                    T4,
-                    T5,
-                    T6,
-                    T7,
-                    T8,
-                    T9,
-                    T10,
-                    T11,
-                    T12,
-                    T13,
-                    T14,
-                    T15,
-                    T16] =
+      : Tag.CStruct16[T1,
+                      T2,
+                      T3,
+                      T4,
+                      T5,
+                      T6,
+                      T7,
+                      T8,
+                      T9,
+                      T10,
+                      T11,
+                      T12,
+                      T13,
+                      T14,
+                      T15,
+                      T16] =
     Tag.CStruct16(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10620,23 +10640,23 @@ object Tag {
                                                      T15: Tag,
                                                      T16: Tag,
                                                      T17: Tag]
-    : Tag.CStruct17[T1,
-                    T2,
-                    T3,
-                    T4,
-                    T5,
-                    T6,
-                    T7,
-                    T8,
-                    T9,
-                    T10,
-                    T11,
-                    T12,
-                    T13,
-                    T14,
-                    T15,
-                    T16,
-                    T17] =
+      : Tag.CStruct17[T1,
+                      T2,
+                      T3,
+                      T4,
+                      T5,
+                      T6,
+                      T7,
+                      T8,
+                      T9,
+                      T10,
+                      T11,
+                      T12,
+                      T13,
+                      T14,
+                      T15,
+                      T16,
+                      T17] =
     Tag.CStruct17(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10675,24 +10695,24 @@ object Tag {
                                                      T16: Tag,
                                                      T17: Tag,
                                                      T18: Tag]
-    : Tag.CStruct18[T1,
-                    T2,
-                    T3,
-                    T4,
-                    T5,
-                    T6,
-                    T7,
-                    T8,
-                    T9,
-                    T10,
-                    T11,
-                    T12,
-                    T13,
-                    T14,
-                    T15,
-                    T16,
-                    T17,
-                    T18] =
+      : Tag.CStruct18[T1,
+                      T2,
+                      T3,
+                      T4,
+                      T5,
+                      T6,
+                      T7,
+                      T8,
+                      T9,
+                      T10,
+                      T11,
+                      T12,
+                      T13,
+                      T14,
+                      T15,
+                      T16,
+                      T17,
+                      T18] =
     Tag.CStruct18(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10733,25 +10753,25 @@ object Tag {
                                                      T17: Tag,
                                                      T18: Tag,
                                                      T19: Tag]
-    : Tag.CStruct19[T1,
-                    T2,
-                    T3,
-                    T4,
-                    T5,
-                    T6,
-                    T7,
-                    T8,
-                    T9,
-                    T10,
-                    T11,
-                    T12,
-                    T13,
-                    T14,
-                    T15,
-                    T16,
-                    T17,
-                    T18,
-                    T19] =
+      : Tag.CStruct19[T1,
+                      T2,
+                      T3,
+                      T4,
+                      T5,
+                      T6,
+                      T7,
+                      T8,
+                      T9,
+                      T10,
+                      T11,
+                      T12,
+                      T13,
+                      T14,
+                      T15,
+                      T16,
+                      T17,
+                      T18,
+                      T19] =
     Tag.CStruct19(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10794,26 +10814,26 @@ object Tag {
                                                      T18: Tag,
                                                      T19: Tag,
                                                      T20: Tag]
-    : Tag.CStruct20[T1,
-                    T2,
-                    T3,
-                    T4,
-                    T5,
-                    T6,
-                    T7,
-                    T8,
-                    T9,
-                    T10,
-                    T11,
-                    T12,
-                    T13,
-                    T14,
-                    T15,
-                    T16,
-                    T17,
-                    T18,
-                    T19,
-                    T20] =
+      : Tag.CStruct20[T1,
+                      T2,
+                      T3,
+                      T4,
+                      T5,
+                      T6,
+                      T7,
+                      T8,
+                      T9,
+                      T10,
+                      T11,
+                      T12,
+                      T13,
+                      T14,
+                      T15,
+                      T16,
+                      T17,
+                      T18,
+                      T19,
+                      T20] =
     Tag.CStruct20(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10858,27 +10878,27 @@ object Tag {
                                                      T19: Tag,
                                                      T20: Tag,
                                                      T21: Tag]
-    : Tag.CStruct21[T1,
-                    T2,
-                    T3,
-                    T4,
-                    T5,
-                    T6,
-                    T7,
-                    T8,
-                    T9,
-                    T10,
-                    T11,
-                    T12,
-                    T13,
-                    T14,
-                    T15,
-                    T16,
-                    T17,
-                    T18,
-                    T19,
-                    T20,
-                    T21] =
+      : Tag.CStruct21[T1,
+                      T2,
+                      T3,
+                      T4,
+                      T5,
+                      T6,
+                      T7,
+                      T8,
+                      T9,
+                      T10,
+                      T11,
+                      T12,
+                      T13,
+                      T14,
+                      T15,
+                      T16,
+                      T17,
+                      T18,
+                      T19,
+                      T20,
+                      T21] =
     Tag.CStruct21(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10925,28 +10945,28 @@ object Tag {
                                                      T20: Tag,
                                                      T21: Tag,
                                                      T22: Tag]
-    : Tag.CStruct22[T1,
-                    T2,
-                    T3,
-                    T4,
-                    T5,
-                    T6,
-                    T7,
-                    T8,
-                    T9,
-                    T10,
-                    T11,
-                    T12,
-                    T13,
-                    T14,
-                    T15,
-                    T16,
-                    T17,
-                    T18,
-                    T19,
-                    T20,
-                    T21,
-                    T22] =
+      : Tag.CStruct22[T1,
+                      T2,
+                      T3,
+                      T4,
+                      T5,
+                      T6,
+                      T7,
+                      T8,
+                      T9,
+                      T10,
+                      T11,
+                      T12,
+                      T13,
+                      T14,
+                      T15,
+                      T16,
+                      T17,
+                      T18,
+                      T19,
+                      T20,
+                      T21,
+                      T22] =
     Tag.CStruct22(
       implicitly[Tag[T1]],
       implicitly[Tag[T2]],
@@ -10973,38 +10993,38 @@ object Tag {
     )
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 232)
   @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]
-    : Tag.CArray[T, N] =
+      : Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
   @alwaysinline implicit def materializeCFuncPtr0[R]: Tag[unsafe.CFuncPtr0[R]] =
     Tag.CFuncPtr0.asInstanceOf[Tag[unsafe.CFuncPtr0[R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
   @alwaysinline implicit def materializeCFuncPtr1[T1, R]
-    : Tag[unsafe.CFuncPtr1[T1, R]] =
+      : Tag[unsafe.CFuncPtr1[T1, R]] =
     Tag.CFuncPtr1.asInstanceOf[Tag[unsafe.CFuncPtr1[T1, R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
   @alwaysinline implicit def materializeCFuncPtr2[T1, T2, R]
-    : Tag[unsafe.CFuncPtr2[T1, T2, R]] =
+      : Tag[unsafe.CFuncPtr2[T1, T2, R]] =
     Tag.CFuncPtr2.asInstanceOf[Tag[unsafe.CFuncPtr2[T1, T2, R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
   @alwaysinline implicit def materializeCFuncPtr3[T1, T2, T3, R]
-    : Tag[unsafe.CFuncPtr3[T1, T2, T3, R]] =
+      : Tag[unsafe.CFuncPtr3[T1, T2, T3, R]] =
     Tag.CFuncPtr3.asInstanceOf[Tag[unsafe.CFuncPtr3[T1, T2, T3, R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
   @alwaysinline implicit def materializeCFuncPtr4[T1, T2, T3, T4, R]
-    : Tag[unsafe.CFuncPtr4[T1, T2, T3, T4, R]] =
+      : Tag[unsafe.CFuncPtr4[T1, T2, T3, T4, R]] =
     Tag.CFuncPtr4.asInstanceOf[Tag[unsafe.CFuncPtr4[T1, T2, T3, T4, R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
   @alwaysinline implicit def materializeCFuncPtr5[T1, T2, T3, T4, T5, R]
-    : Tag[unsafe.CFuncPtr5[T1, T2, T3, T4, T5, R]] =
+      : Tag[unsafe.CFuncPtr5[T1, T2, T3, T4, T5, R]] =
     Tag.CFuncPtr5.asInstanceOf[Tag[unsafe.CFuncPtr5[T1, T2, T3, T4, T5, R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
   @alwaysinline implicit def materializeCFuncPtr6[T1, T2, T3, T4, T5, T6, R]
-    : Tag[unsafe.CFuncPtr6[T1, T2, T3, T4, T5, T6, R]] =
+      : Tag[unsafe.CFuncPtr6[T1, T2, T3, T4, T5, T6, R]] =
     Tag.CFuncPtr6.asInstanceOf[Tag[unsafe.CFuncPtr6[T1, T2, T3, T4, T5, T6, R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
   @alwaysinline implicit def materializeCFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]
-    : Tag[unsafe.CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]] =
+      : Tag[unsafe.CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]] =
     Tag.CFuncPtr7
       .asInstanceOf[Tag[unsafe.CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
@@ -11017,7 +11037,7 @@ object Tag {
                                                   T7,
                                                   T8,
                                                   R]
-    : Tag[unsafe.CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]] =
+      : Tag[unsafe.CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]] =
     Tag.CFuncPtr8
       .asInstanceOf[Tag[unsafe.CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
@@ -11031,7 +11051,7 @@ object Tag {
                                                   T8,
                                                   T9,
                                                   R]
-    : Tag[unsafe.CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]] =
+      : Tag[unsafe.CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]] =
     Tag.CFuncPtr9.asInstanceOf[Tag[
       unsafe.CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
@@ -11046,7 +11066,7 @@ object Tag {
                                                    T9,
                                                    T10,
                                                    R]
-    : Tag[unsafe.CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]] =
+      : Tag[unsafe.CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]] =
     Tag.CFuncPtr10.asInstanceOf[Tag[
       unsafe.CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)
@@ -11061,8 +11081,8 @@ object Tag {
                                                    T9,
                                                    T10,
                                                    T11,
-                                                   R]
-    : Tag[unsafe.CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]] =
+                                                   R]: Tag[
+    unsafe.CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]] =
     Tag.CFuncPtr11.asInstanceOf[Tag[
       unsafe.CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]]]
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 236)

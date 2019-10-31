@@ -495,7 +495,7 @@ object DecimalFormat {
       }
 
       def unapply(input: Seq[Char])
-        : Option[(PositivePattern, Option[NegativePattern])] =
+          : Option[(PositivePattern, Option[NegativePattern])] =
         input match {
           case pp ++ rest =>
             rest match {
@@ -606,7 +606,7 @@ object DecimalFormat {
       }
 
       def unapply(input: Seq[Char])
-        : Option[(Integer, Option[Fraction], Option[Exponent])] =
+          : Option[(Integer, Option[Fraction], Option[Exponent])] =
         input match {
           case Integer(max, min, grp) =>
             Some((Integer(max, min, grp), None, None))

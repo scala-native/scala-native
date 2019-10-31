@@ -12,7 +12,7 @@ object DeleteOnExit {
       Zone { implicit z =>
         libc.remove(toCString(f))
       }
-  })
+    })
   def addFile(name: String) = toDelete.synchronized {
     if (toDeleteSet.add(name)) toDelete += name
   }

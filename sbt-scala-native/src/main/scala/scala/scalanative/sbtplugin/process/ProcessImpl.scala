@@ -38,7 +38,9 @@ private object Future {
   def apply[T](f: => T): () => T = {
     val result = new SyncVar[Either[Throwable, T]]
     def run(): Unit =
-      try { result.set(Right(f)) } catch {
+      try {
+        result.set(Right(f))
+      } catch {
         case e: Exception => result.set(Left(e))
       }
     Spawn(run)
@@ -75,9 +77,12 @@ object BasicIO {
   final val BufferSize = 8192
   final val Newline    = System.getProperty("line.separator")
 
-  def close(c: java.io.Closeable) = try { c.close() } catch {
-    case _: java.io.IOException => ()
-  }
+  def close(c: java.io.Closeable) =
+    try {
+      c.close()
+    } catch {
+      case _: java.io.IOException => ()
+    }
   def processFully(buffer: Appendable): InputStream => Unit =
     processFully(appendLine(buffer))
   def processFully(processLine: String => Unit): InputStream => Unit =
@@ -111,7 +116,9 @@ object BasicIO {
   def toStdOut = (in: InputStream) => transferFully(in, System.out)
 
   def transferFully(in: InputStream, out: OutputStream): Unit =
-    try { transferFullyImpl(in, out) } catch {
+    try {
+      transferFullyImpl(in, out)
+    } catch {
       case _: InterruptedException => ()
     }
 
@@ -272,7 +279,9 @@ private abstract class CompoundProcess extends BasicProcess {
 
   protected[this] def runInterruptible[T](action: => T)(
       destroyImpl: => Unit): Option[T] = {
-    try { Some(action) } catch {
+    try {
+      Some(action)
+    } catch {
       case _: InterruptedException => destroyImpl; None
     }
   }
@@ -390,7 +399,9 @@ private class PipeSource(currentSource: SyncVar[Option[InputStream]],
   final override def run(): Unit = {
     currentSource.get match {
       case Some(source) =>
-        try { BasicIO.transferFully(source, pipe) } catch {
+        try {
+          BasicIO.transferFully(source, pipe)
+        } catch {
           case e: IOException =>
             println("I/O error " + e.getMessage + " for process: " + label);
             e.printStackTrace()
@@ -412,7 +423,9 @@ private class PipeSink(pipe: PipedInputStream,
   final override def run(): Unit = {
     currentSink.get match {
       case Some(sink) =>
-        try { BasicIO.transferFully(pipe, sink) } catch {
+        try {
+          BasicIO.transferFully(pipe, sink)
+        } catch {
           case e: IOException =>
             println("I/O error " + e.getMessage + " for process: " + label);
             e.printStackTrace()

@@ -664,7 +664,7 @@ object Lower {
           }
 
           val isNaNL, checkLessThanMinL, lessThanMinL, checkLargerThanMaxL,
-          largerThanMaxL, inBoundsL, resultL = fresh()
+              largerThanMaxL, inBoundsL, resultL = fresh()
 
           val isNaN = comp(Comp.Fne, v.ty, v, v, unwind)
           branch(isNaN, Next(isNaNL), Next(checkLessThanMinL))

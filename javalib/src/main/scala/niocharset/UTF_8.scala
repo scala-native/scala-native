@@ -43,9 +43,9 @@ private[niocharset] object UTF_8
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, // 110yyyyy
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    2, 2, 2, 2, 2, 2, 2, // 1110zzzz
+    2, 2, 2, 2, 2, 2, 2,                            // 1110zzzz
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 11110uuu
-    4, 4, 4, 4, 4, 4, 4, 4, // > 11110111
+    4, 4, 4, 4, 4, 4, 4, 4,                         // > 11110111
     -1, -1, -1, -1, -1, -1, -1, -1
   )
 
@@ -187,7 +187,9 @@ private[niocharset] object UTF_8
               val decoded = {
                 @inline
                 def getOr0(): Int =
-                  if (in.hasRemaining) { bytesRead += 1; in.get() } else 0 // 0 is not a valid next byte
+                  if (in.hasRemaining) {
+                    bytesRead += 1; in.get()
+                  } else 0 // 0 is not a valid next byte
 
                 if (length == 2) decode2(leading, getOr0())
                 else if (length == 3) decode3(leading, getOr0(), getOr0())

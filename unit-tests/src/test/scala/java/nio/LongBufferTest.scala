@@ -96,7 +96,7 @@ abstract class ReadOnlyLongViewOfByteBufferTest(
 
   val factory: BufferFactory.LongBufferFactory = {
     new ByteBufferLongViewFactory(byteBufferFactory, order)
-    with BufferFactory.ReadOnlyBufferFactory
+      with BufferFactory.ReadOnlyBufferFactory
   }
 }
 

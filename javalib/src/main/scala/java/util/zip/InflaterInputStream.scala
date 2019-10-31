@@ -95,7 +95,9 @@ class InflaterInputStream private (in: InputStream,
   protected def fill(): Unit = {
     if (closed) {
       throw new IOException("Stream is closed")
-    } else if ({ len = in.read(buf); len > 0 }) {
+    } else if ({
+      len = in.read(buf); len > 0
+    }) {
       inf.setInput(buf, 0, len)
     }
   }
@@ -110,7 +112,9 @@ class InflaterInputStream private (in: InputStream,
       while (count < nbytes) {
         val x = read(buf,
                      0,
-                     if ({ rem = nbytes - count; rem > buf.length }) buf.length
+                     if ({
+                       rem = nbytes - count; rem > buf.length
+                     }) buf.length
                      else rem.toInt)
         if (x == -1) {
           return count

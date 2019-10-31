@@ -20,7 +20,7 @@ def projectName(project: sbt.ResolvedProject): String = {
 
 // Provide consistent project name pattern.
 lazy val nameSettings = Seq(
-  normalizedName := projectName(thisProject.value), // Maven <artifactId>
+  normalizedName := projectName(thisProject.value),         // Maven <artifactId>
   name := s"Scala Native ${projectName(thisProject.value)}" // Maven <name>
 )
 
@@ -35,7 +35,7 @@ lazy val mimaSettings: Seq[Setting[_]] = Seq(
 
 lazy val baseSettings = Seq(
   organization := "org.scala-native", // Maven <groupId>
-  version := nativeVersion // Maven <version>
+  version := nativeVersion            // Maven <version>
 )
 
 addCommandAlias(

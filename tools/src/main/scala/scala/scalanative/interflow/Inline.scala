@@ -69,11 +69,21 @@ trait Inline { self: Interflow =>
         if (shall) {
           if (shallNot) {
             log(s"not inlining ${name.show}, because:")
-            if (noInline) { log("* has noinline attr") }
-            if (isRecursive) { log("* is recursive") }
-            if (isBlacklisted) { log("* is blacklisted") }
-            if (callerTooBig) { log("* caller is too big") }
-            if (calleeTooBig) { log("* callee is too big") }
+            if (noInline) {
+              log("* has noinline attr")
+            }
+            if (isRecursive) {
+              log("* is recursive")
+            }
+            if (isBlacklisted) {
+              log("* is blacklisted")
+            }
+            if (callerTooBig) {
+              log("* caller is too big")
+            }
+            if (calleeTooBig) {
+              log("* callee is too big")
+            }
           }
         } else {
           log(
