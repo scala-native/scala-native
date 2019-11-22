@@ -3,10 +3,8 @@ import scala.util.Try
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 
-val sbt13Version          = "0.13.18"
-val sbt13ScalaVersion     = "2.10.7"
-val sbt10Version          = "1.2.8"
-val sbt10ScalaVersion     = "2.12.8"
+val sbt10Version          = "1.0.4"
+val sbt10ScalaVersion     = "2.12.10"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
@@ -18,27 +16,6 @@ def convertCamelKebab(name: String): String = {
 // Generate project name from project id.
 def projectName(project: sbt.ResolvedProject): String = {
   convertCamelKebab(project.id)
-}
-
-// Metals settings (next 3 items)
-// Avoid 2.10 for sbt generated root project
-scalaVersion := libScalaVersion
-
-lazy val startupTransition: State => State = { s: State =>
-  Option(System.getenv("METALS_ENABLED")) match {
-    case Some(sb) => if (sb == "true") s"^^$sbt10Version" :: s else s
-    case None     => s
-  }
-}
-
-onLoad in Global := {
-  val sbtCrossVersion = (sbtVersion in pluginCrossBuild).value
-  val old             = (onLoad in Global).value
-  if (sbtCrossVersion != sbt10Version) {
-    startupTransition compose old
-  } else {
-    old
-  }
 }
 
 // Provide consistent project name pattern.
@@ -136,11 +113,11 @@ lazy val setUpTestingCompiler = Def.task {
 }
 
 // to publish plugin (we only need to do this once, it's already done!)
-// follow: http://www.scala-sbt.org/0.13/docs/Bintray-For-Plugins.html
+// follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html
 // then add a new package
 // name: sbt-scala-native, license: BSD-like, version control: git@github.com:scala-native/scala-native.git
 // to be available without a resolver
-// follow: http://www.scala-sbt.org/0.13/docs/Bintray-For-Plugins.html#Linking+your+package+to+the+sbt+organization
+// follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html#Linking+your+package+to+the+sbt+organization
 lazy val bintrayPublishSettings = Seq(
   bintrayRepository := "sbt-plugins",
   bintrayOrganization := Some("scala-native")
@@ -175,7 +152,7 @@ lazy val mavenPublishSettings = Seq(
           "not going to publish a snapshot due to: " +
             s"travis = $travis, pr = $pr, " +
             s"branch = $branch, snapshot = $snapshot")
-        Def.task()
+        Def.task((): Unit)
     }
   }.value,
   credentials ++= {
@@ -232,11 +209,10 @@ lazy val noPublishSettings = Seq(
 lazy val toolSettings =
   baseSettings ++
     Seq(
-      crossSbtVersions := List(sbt13Version, sbt10Version),
+      crossSbtVersions := List(sbt10Version),
       scalaVersion := {
         (sbtBinaryVersion in pluginCrossBuild).value match {
-          case "0.13" => sbt13ScalaVersion
-          case _      => sbt10ScalaVersion
+          case _ => sbt10ScalaVersion
         }
       },
       scalacOptions ++= Seq(
@@ -338,35 +314,34 @@ lazy val nscplugin =
 lazy val sbtPluginSettings =
   toolSettings ++
     bintrayPublishSettings ++
-    ScriptedPlugin.scriptedSettings ++
     Seq(
-      sbtPlugin := true,
-      scriptedLaunchOpts ++=
-        Seq("-Xmx1024M",
-            "-XX:MaxMetaspaceSize=256M",
-            "-Dplugin.version=" + version.value) ++
+      scriptedLaunchOpts := {
+        scriptedLaunchOpts.value ++
+          Seq("-Xmx1024M",
+              "-XX:MaxMetaspaceSize=256M",
+              "-Dplugin.version=" + version.value) ++
           ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=${home}").toSeq
+      }
     )
 
 lazy val sbtScalaNative =
   project
     .in(file("sbt-scala-native"))
+    .enablePlugins(SbtPlugin)
     .settings(sbtPluginSettings)
     .settings(
       crossScalaVersions := libCrossScalaVersions,
-      // fixed in https://github.com/sbt/sbt/pull/3397 (for sbt 0.13.17)
-      sbtBinaryVersion in update := (sbtBinaryVersion in pluginCrossBuild).value,
       addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
       // `testInterfaceSerialization` needs to be available from the sbt plugin,
-      // but it's a Scala Native project (and thus 2.11), and the plugin is 2.10 or 2.12.
+      // but it's a Scala Native project (and thus 2.11), and the plugin is 2.12.
       // We simply add the sources to mimic cross-compilation.
       sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
       // publish the other projects before running scripted tests.
       scripted := scripted
-        .dependsOn(publishLocal in testInterface)
-        .dependsOn(publishLocal in ThisProject)
-        .dependsOn(publishLocal in scalalib)
+        .dependsOn(testInterface / publishLocal)
+        .dependsOn(ThisProject / publishLocal)
+        .dependsOn(scalalib / publishLocal)
         .evaluated,
       publishLocal := publishLocal
         .dependsOn(publishLocal in tools, publishLocal in testRunner)
@@ -566,7 +541,7 @@ lazy val testingCompilerInterface =
     .settings(noPublishSettings)
     .settings(
       crossPaths := false,
-      crossVersion := CrossVersion.Disabled,
+      crossVersion := CrossVersion.disabled,
       autoScalaLibrary := false
     )
 
@@ -631,7 +606,7 @@ lazy val testRunner =
     .settings(mavenPublishSettings)
     .in(file("test-runner"))
     .settings(
-      crossScalaVersions := Seq(sbt13ScalaVersion, sbt10ScalaVersion),
+      crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies += "org.scala-sbt" % "test-interface" % "1.0",
       sources in Compile ++= (sources in testInterfaceSerialization in Compile).value
     )
