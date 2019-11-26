@@ -41,9 +41,15 @@ void scalanative_stat_init(struct stat *stat,
     my_stat->st_uid = stat->st_uid;
     my_stat->st_gid = stat->st_gid;
     my_stat->st_size = stat->st_size;
+#ifdef __APPLE__
+    my_stat->st_atim = stat->st_atimespec;
+    my_stat->st_mtim = stat->st_mtimespec;
+    my_stat->st_ctim = stat->st_ctimespec;
+#else
     my_stat->st_atim = stat->st_atim;
     my_stat->st_mtim = stat->st_mtim;
     my_stat->st_ctim = stat->st_ctim;
+#endif
     my_stat->st_blocks = stat->st_blocks;
     my_stat->st_blksize = stat->st_blksize;
     my_stat->st_nlink = stat->st_nlink;
