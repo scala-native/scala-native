@@ -68,7 +68,7 @@ object Build {
     } else {
       config.logger.warn(
         "Deprecated. Use config.withNativelibs(value: Seq[NativeLib]) as of 0.4.0")
-      Seq(NativeLib(Discover.nativelibId.artifact, config.nativelib))
+      Seq(NativeLib(Discover.nativelibId, config.nativelib))
     }
 
     val unpackedLibs = nativelibs.map(LLVM.unpackNativelib(_, workdir))

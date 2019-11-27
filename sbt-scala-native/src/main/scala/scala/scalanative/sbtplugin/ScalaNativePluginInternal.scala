@@ -98,8 +98,9 @@ object ScalaNativePluginInternal {
       val nativeCodeProject = {
         if (nativeCodeInclude.value) {
           val projName   = name.value
+          val orgName    = organization.value
           val classesDir = crossTarget.value / "classes"
-          Some(NativeLib(projName, classesDir.toPath()))
+          Some(NativeLib(LibId(orgName, projName), classesDir.toPath()))
         } else {
           None
         }

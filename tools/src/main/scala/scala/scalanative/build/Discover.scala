@@ -15,8 +15,15 @@ object Discover {
   /** Library Id for lookup */
   case class LibId(org: String, artifact: String)
 
-  /** Container to hold the artifact and Path to jar, or project name and Path to directory */
-  case class NativeLib(name: String, path: Path)
+  /** Container to hold the artifact (library id) and Path to jar, or project name and Path to directory */
+  case class NativeLib(libId: LibId, path: Path)
+
+  object NativeLib {
+    def dirName(nativeLib: NativeLib): String = {
+      val libId = nativeLib.libId
+      s"${libId.org.replace('.', '_')}_${libId.artifact}"
+    }
+  }
 
   /** Native lib org and artifact */
   val nativelibId = LibId("org.scala-native", "nativelib")
@@ -40,7 +47,7 @@ object Discover {
         val absolute = path.toAbsolutePath.toString
         absolute.contains(libId.org) && absolute.contains(artifact)
       }
-      .flatMap(path => Option(NativeLib(artifact, path)))
+      .flatMap(path => Option(NativeLib(libId, path)))
   }
 
   /** Find the newest compatible clang binary. */

@@ -26,7 +26,7 @@ private[scalanative] object LLVM {
    * @return The location where the nativelib has been unpacked, `workdir/nativelib`.
    */
   def unpackNativelib(nativelib: NativeLib, workdir: Path): Path = {
-    val target      = workdir.resolve(nativelib.name)
+    val target      = workdir.resolve(NativeLib.dirName(nativelib))
     val source      = nativelib.path
     val jarhash     = IO.sha1(source)
     val jarhashPath = target.resolve("jarhash")
@@ -56,7 +56,7 @@ private[scalanative] object LLVM {
   def copyNativeCode(config: Config, workdir: Path): Option[Path] =
     config.nativeCodeProject match {
       case Some(nativelib) => {
-        val target = workdir.resolve(nativelib.name)
+        val target = workdir.resolve(NativeLib.dirName(nativelib))
         val source = nativelib.path
         val files = IO.getAll(source, "glob:**.c") ++
           IO.getAll(source, "glob:**.cpp") ++
