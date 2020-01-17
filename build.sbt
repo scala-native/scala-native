@@ -175,7 +175,7 @@ lazy val mavenPublishSettings = Seq(
           "not going to publish a snapshot due to: " +
             s"travis = $travis, pr = $pr, " +
             s"branch = $branch, snapshot = $snapshot")
-        Def.task()
+        Def.task(())
     }
   }.value,
   credentials ++= {
@@ -338,19 +338,21 @@ lazy val nscplugin =
 lazy val sbtPluginSettings =
   toolSettings ++
     bintrayPublishSettings ++
-    ScriptedPlugin.scriptedSettings ++
     Seq(
       sbtPlugin := true,
-      scriptedLaunchOpts ++=
-        Seq("-Xmx1024M",
-            "-XX:MaxMetaspaceSize=256M",
-            "-Dplugin.version=" + version.value) ++
+      scriptedLaunchOpts := {
+        scriptedLaunchOpts.value ++
+          Seq("-Xmx1024M",
+              "-XX:MaxMetaspaceSize=256M",
+              "-Dplugin.version=" + version.value) ++
           ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=${home}").toSeq
+      }
     )
 
 lazy val sbtScalaNative =
   project
     .in(file("sbt-scala-native"))
+    .enablePlugins(SbtPlugin)
     .settings(sbtPluginSettings)
     .settings(
       crossScalaVersions := libCrossScalaVersions,
@@ -363,11 +365,6 @@ lazy val sbtScalaNative =
       // We simply add the sources to mimic cross-compilation.
       sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
       // publish the other projects before running scripted tests.
-      scripted := scripted
-        .dependsOn(publishLocal in testInterface)
-        .dependsOn(publishLocal in ThisProject)
-        .dependsOn(publishLocal in scalalib)
-        .evaluated,
       publishLocal := publishLocal
         .dependsOn(publishLocal in tools, publishLocal in testRunner)
         .value
@@ -566,7 +563,7 @@ lazy val testingCompilerInterface =
     .settings(noPublishSettings)
     .settings(
       crossPaths := false,
-      crossVersion := CrossVersion.Disabled,
+      crossVersion := CrossVersion.disabled,
       autoScalaLibrary := false
     )
 
