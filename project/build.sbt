@@ -1,4 +1,4 @@
-unmanagedSourceDirectories in Compile ++= {
+Compile / unmanagedSourceDirectories ++= {
   val root = baseDirectory.value.getParentFile
 
   (root / "sbt-scala-native/src/main/scala-sbt-1.0") +:
