@@ -1,4 +1,4 @@
-unmanagedSourceDirectories in Compile ++= {
+Compile / unmanagedSourceDirectories ++= {
   val root = baseDirectory.value.getParentFile
 
   Seq(
