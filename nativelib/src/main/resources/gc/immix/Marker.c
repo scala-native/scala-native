@@ -7,6 +7,7 @@
 #include "datastructures/Stack.h"
 #include "headers/ObjectHeader.h"
 #include "Block.h"
+#include "platform/StackPointers.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -81,17 +82,20 @@ void Marker_markProgramStack(Heap *heap, Stack *stack) {
     jmp_buf regs;
     setjmp(regs);
     word_t *dummy;
+    for (ThreadList *tl = threadList; tl != NULL; tl = tl->next) {
 
-    word_t **current = &dummy;
-    word_t **stackBottom = __stack_bottom;
+        word_t **stackBottom = StackBottom(tl->thread);
+        word_t **current = pthread_equal(pthread_self(), tl->thread)
+                               ? &dummy
+                               : StackTop(tl->context);
 
-    while (current <= stackBottom) {
-
-        word_t *stackObject = *current;
-        if (Heap_IsWordInHeap(heap, stackObject)) {
-            Marker_markConservative(heap, stack, stackObject);
+        while (current <= stackBottom) {
+            word_t *stackObject = *current;
+            if (Heap_IsWordInHeap(heap, stackObject)) {
+                Marker_markConservative(heap, stack, stackObject);
+            }
+            current += 1;
         }
-        current += 1;
     }
 }
 
