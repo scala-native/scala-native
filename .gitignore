@@ -4,6 +4,8 @@ _build/
 *.dot
 *.ppm
 .idea
+.bloop
+.metals
 _build/
 scripts/.coursier
 scripts/.scalafmt*
