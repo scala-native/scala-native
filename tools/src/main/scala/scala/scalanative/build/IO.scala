@@ -160,7 +160,6 @@ private[scalanative] object IO {
           val dest =
             Paths.get(target.toString, source.relativize(dir).toString())
           Files.createDirectories(dest)
-          println(s"Create Dir: ${dir} To: $dest  Target: $target")
           FileVisitResult.CONTINUE
         }
       }
