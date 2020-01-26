@@ -19,3 +19,9 @@ bin/
 .settings/
 .externalToolBuilders/
 .cache*
+
+# Visual Studio Code
+.vscode
+.metals
+.bloop
+lowered.hnir
