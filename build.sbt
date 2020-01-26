@@ -61,6 +61,8 @@ lazy val baseSettings = Seq(
   version := nativeVersion // Maven <version>
 )
 
+lazy val isWindows = System.getProperty("os.name").contains("indows")
+
 addCommandAlias(
   "rebuild",
   Seq(
@@ -119,6 +121,8 @@ lazy val setUpTestingCompiler = Def.task {
   val nativelibjar = (Keys.`package` in nativelib in Compile).value
   val auxlibjar    = (Keys.`package` in auxlib in Compile).value
   val clibjar      = (Keys.`package` in clib in Compile).value
+  val cpplibjar      = (Keys.`package` in cpplib in Compile).value
+  val winlibjar      = (Keys.`package` in winlib in Compile).value
   val posixlibjar  = (Keys.`package` in posixlib in Compile).value
   val scalalibjar  = (Keys.`package` in scalalib in Compile).value
   val javalibjar   = (Keys.`package` in javalib in Compile).value
@@ -130,7 +134,7 @@ lazy val setUpTestingCompiler = Def.task {
   sys.props("scalanative.testingcompiler.cp") =
     (testingcompilercp :+ testingcompilerjar) map (_.getAbsolutePath) mkString pathSeparator
   sys.props("scalanative.nativeruntime.cp") =
-    Seq(nativelibjar, auxlibjar, clibjar, posixlibjar, scalalibjar, javalibjar) mkString pathSeparator
+    Seq(nativelibjar, auxlibjar, clibjar, cpplibjar, posixlibjar, winlib, scalalibjar, javalibjar) mkString pathSeparator
   sys.props("scalanative.nativelib.dir") =
     ((crossTarget in Compile).value / "nativelib").getAbsolutePath
 }
@@ -398,6 +402,30 @@ lazy val clib =
     )
     .dependsOn(nativelib)
 
+lazy val cpplib =
+  project
+    .in(file("cpplib"))
+    .settings(libSettings)
+    .settings(mavenPublishSettings)
+    .settings(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in clib)
+        .value
+    )
+    .dependsOn(clib)
+
+lazy val winlib =
+  project
+    .in(file("winlib"))
+    .settings(libSettings)
+    .settings(mavenPublishSettings)
+    .settings(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in cpplib)
+        .value
+    )
+    .dependsOn(cpplib)
+
 lazy val posixlib =
   project
     .in(file("posixlib"))
@@ -436,11 +464,13 @@ lazy val javalib =
             !path.endsWith(".class")
         }
       },
+      excludeFilter in (Compile, unmanagedSources) := {if (isWindows) "*posix*" else "*windows*"},
+      excludeFilter in (Test, unmanagedSources) := {if (isWindows) "*posix*" else "*windows*"},
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib, publishLocal in posixlib)
+        .dependsOn(publishLocal in nativelib, publishLocal in posixlib, publishLocal in winlib)
         .value
     )
-    .dependsOn(nativelib, posixlib)
+    .dependsOn(nativelib, posixlib, winlib)
 
 lazy val assembleScalaLibrary = taskKey[Unit](
   "Checks out scala standard library from submodules/scala and then applies overrides.")

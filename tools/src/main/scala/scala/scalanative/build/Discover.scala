@@ -108,7 +108,7 @@ object Discover {
     def definesBuiltIn(
         pathToClangBinary: Option[String]): Option[Seq[String]] = {
       def commandLineToListBuiltInDefines(clang: String) =
-        Process(Seq("echo", "")) #| Process(Seq(clang, "-dM", "-E", "-"))
+        /*Process(Seq("echo", "")) #| */Process(Seq(clang, "-dM", "-E", "-"))
       def splitIntoLines(s: String): Array[String] =
         s.split(f"%n")
       def removeLeadingDefine(s: String): String =

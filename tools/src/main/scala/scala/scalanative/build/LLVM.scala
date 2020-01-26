@@ -67,12 +67,23 @@ private[scalanative] object LLVM {
       (gcPath.abs, gcSelPath.abs)
     }
 
+    config.logger.warn(s"targetTriple is ${config.targetTriple}")
+    val isWindows = config.targetTriple.contains("windows")
+
     def include(path: String) = {
       if (path.contains(optPath)) {
         val name = Paths.get(path).toFile.getName.split("\\.").head
         linkerResult.links.map(_.name).contains(name)
       } else if (path.contains(gcPath)) {
         path.contains(gcSelPath)
+      } else if (isWindows && path.contains("__posix__")) {
+        false
+      } else if (isWindows && path.contains("libunwind")) {
+        false
+      } else if (!isWindows && path.contains("__windows__")) {
+        false
+      } else if (!isWindows && path.contains("__cpp__")) {
+        false
       } else {
         true
       }
@@ -94,9 +105,9 @@ private[scalanative] object LLVM {
       if (include(path) && !Files.exists(Paths.get(opath))) {
         val isCpp    = path.endsWith(".cpp")
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
+        val stdflag  = if (isCpp) (if (isWindows) "-std=c++17" else "-std=c++11") else "-std=gnu11"
         val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
-        val compilec = Seq(compiler) ++ flto(config) ++ flags ++ Seq("-c",
+        val compilec = Seq(compiler) ++ flto(config) ++ flags ++ Seq("-D_CRT_SECURE_NO_WARNINGS","-Wdeprecated-declarations", "-c",
                                                                      path,
                                                                      "-o",
                                                                      opath)
@@ -156,17 +167,18 @@ private[scalanative] object LLVM {
            llPaths: Seq[Path],
            nativelib: Path,
            outpath: Path): Path = {
+    val isWindows = config.targetTriple.contains("windows")
     val links = {
       val srclinks = linkerResult.links.map(_.name)
       val gclinks  = config.gc.links
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.
       // * libpthread for process APIs and parallel garbage collection.
-      "pthread" +: "dl" +: srclinks ++: gclinks
+      (if (isWindows) "Dbghelp.lib" else "pthread" +: "dl") +: srclinks ++: gclinks
     }
     val linkopts  = config.linkingOptions ++ links.map("-l" + _)
     val targetopt = Seq("-target", config.targetTriple)
-    val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
+    val flags     = flto(config) ++ Seq(if (!isWindows) "-rdynamic" else "-g", "-o", outpath.abs + ".exe") ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
     val compile   = config.clangPP.abs +: (flags ++ paths ++ linkopts)
