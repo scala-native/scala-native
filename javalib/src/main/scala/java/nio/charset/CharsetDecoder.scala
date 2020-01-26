@@ -84,14 +84,15 @@ abstract class CharsetDecoder protected (cs: Charset,
     @inline
     @tailrec
     def loop(): CoderResult = {
-      val result1 = try {
-        decodeLoop(in, out)
-      } catch {
-        case ex: BufferOverflowException =>
-          throw new CoderMalfunctionError(ex)
-        case ex: BufferUnderflowException =>
-          throw new CoderMalfunctionError(ex)
-      }
+      val result1 =
+        try {
+          decodeLoop(in, out)
+        } catch {
+          case ex: BufferOverflowException =>
+            throw new CoderMalfunctionError(ex)
+          case ex: BufferUnderflowException =>
+            throw new CoderMalfunctionError(ex)
+        }
 
       val result2 = if (result1.isUnderflow) {
         val remaining = in.remaining
