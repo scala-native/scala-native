@@ -1,15 +1,16 @@
+#include <setjmp.h>
 #include <signal.h>
+#include <stdio.h>
 
 #include "ThreadManager.h"
-#include "datastructures/ThreadList.h"
 #include "semaphore/Semaphore.h"
 #include "State.h"
 
 #define SIG_SUSPEND SIGXFSZ
 #define SIG_RESUME SIGXCPU
 
-static ucontext_t *suspendingThreadContext;
-static Semaphore semaphore;
+void *suspendingThreadStackTop;
+Semaphore semaphore;
 
 void ThreadManager_Init() {
     Semaphore_Init(&semaphore, 1);
@@ -17,16 +18,17 @@ void ThreadManager_Init() {
     pthread_mutexattr_init(&mta);
     pthread_mutexattr_settype(&mta, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&mutex, &mta);
+    threadList = NULL;
 }
 
-static void suspend_handler(int sig, siginfo_t *info, void *context) {
+void suspend_handler(int sig) {
     sigset_t sigset;
-    ucontext_t ucontext;
 
-    // Push context on stack
-    ucontext = *(ucontext_t *)context;
+    jmp_buf regs;
+    setjmp(regs);
+    word_t *dummy;
 
-    suspendingThreadContext = &ucontext;
+    suspendingThreadStackTop = &dummy;
 
     sigfillset(&sigset);
     sigdelset(&sigset, SIG_RESUME);
@@ -34,20 +36,17 @@ static void suspend_handler(int sig, siginfo_t *info, void *context) {
     sigsuspend(&sigset);
 }
 
-static void resume_handler(int sig) {}
+void resume_handler(int sig) {}
 
-inline void register_suspend_resume_handlers() {
+void ThreadManager_Register_Thread(void *stackBottom) {
+    // threadList = ThreadList_Cons(pthread_self(), stackBottom, threadList);
+
     struct sigaction action;
     action.sa_flags = 0;
-    action.sa_sigaction = suspend_handler;
-    sigaction(SIG_SUSPEND, &action, (struct sigaction *)0);
+    action.sa_handler = suspend_handler;
+    sigaction(SIG_SUSPEND, &action, NULL);
     action.sa_handler = resume_handler;
-    sigaction(SIG_RESUME, &action, (struct sigaction *)0);
-}
-
-void register_thread() {
-    threadList = ThreadList_Cons(pthread_self(), threadList);
-    register_suspend_resume_handlers();
+    sigaction(SIG_RESUME, &action, NULL);
 }
 
 void suspend_thread(pthread_t thread) {
@@ -56,8 +55,7 @@ void suspend_thread(pthread_t thread) {
     int res = pthread_kill(thread, SIG_SUSPEND);
     if (res == 0) {
         Semaphore_Wait(&semaphore);
-        ThreadList_SetContextForThread(thread, suspendingThreadContext,
-                                       threadList);
+        ThreadList_SetStackTopForThread(thread, suspendingThreadStackTop, threadList);
     } else {
         threadList = ThreadList_Remove(thread, threadList);
     }

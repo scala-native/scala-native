@@ -3,6 +3,10 @@
 
 void ThreadManager_Init();
 
-void register_thread();
+void ThreadManager_Register_Thread(void *stackBottom);
+
+void suspend_all_threads();
+
+void resume_all_threads();
 
 #endif // IMMIX_THREADMANAGER_H

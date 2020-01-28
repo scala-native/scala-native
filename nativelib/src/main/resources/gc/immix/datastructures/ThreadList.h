@@ -2,23 +2,22 @@
 #define IMMIX_THREADLIST_H
 
 #include <pthread.h>
-#define _XOPEN_SOURCE
-#include <ucontext.h>
 
 /**
  * Mutable LinkedList of pthreads.
  */
 typedef struct ThreadList {
     pthread_t thread;
-    ucontext_t *context;
+    void *stackBottom;
+    void *stackTop;
     struct ThreadList *next;
 } ThreadList;
 
 /**
- * Adds @thread as head of @threadList if it is not already present.
+ * Adds @thread with @stackBottom as head of @threadList if it is not already present.
  * Returns the list with prepended element.
  */
-ThreadList *ThreadList_Cons(pthread_t thread, ThreadList *threadList);
+ThreadList *ThreadList_Cons(pthread_t thread, void *stackBottom, ThreadList *threadList);
 
 /**
  * Removes @thread from @threadList.
@@ -35,10 +34,8 @@ ThreadList *ThreadList_Remove(pthread_t thread, ThreadList *threadList);
 void ThreadList_Free(ThreadList *threadList);
 
 /**
- * Frees @threadList.
- * The contained threads are not freed.
+ * Sets @stackTop pointer for @thread in @threadList.
  */
-void ThreadList_SetContextForThread(pthread_t thread, ucontext_t *context,
-                                    ThreadList *threadList);
+void ThreadList_SetStackTopForThread(pthread_t thread, void *stackTop, ThreadList *threadList);
 
 #endif // IMMIX_THREADLIST_H

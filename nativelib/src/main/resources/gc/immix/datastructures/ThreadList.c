@@ -1,7 +1,8 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "ThreadList.h"
 
-ThreadList *ThreadList_Cons(pthread_t thread, ThreadList *threadList) {
+ThreadList *ThreadList_Cons(pthread_t thread, void *stackBottom, ThreadList *threadList) {
     ThreadList *current = threadList;
     while (current != NULL) {
         if (pthread_equal(current->thread, thread)) {
@@ -10,7 +11,9 @@ ThreadList *ThreadList_Cons(pthread_t thread, ThreadList *threadList) {
     }
     ThreadList *res = malloc(sizeof(ThreadList));
     res->thread = thread;
+    res->stackBottom = stackBottom;
     res->next = threadList;
+    return res;
 }
 
 ThreadList *ThreadList_Remove(pthread_t thread, ThreadList *threadList) {
@@ -42,11 +45,10 @@ void ThreadList_Free(ThreadList *threadList) {
     }
 }
 
-void ThreadList_SetContextForThread(pthread_t thread, ucontext_t *context,
-                                    ThreadList *threadList) {
+void ThreadList_SetStackTopForThread(pthread_t thread, void *stackTop, ThreadList *threadList) {
     for (ThreadList *list = threadList; list != NULL; list = list->next) {
         if (pthread_equal(list->thread, thread)) {
-            list->context = context;
+            list->stackTop = stackTop;
             break;
         }
     }
