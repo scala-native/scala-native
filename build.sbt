@@ -303,7 +303,7 @@ lazy val nscplugin =
       crossVersion := CrossVersion.full,
       Compile / unmanagedSourceDirectories ++= Seq(
         (nir / Compile / scalaSource).value,
-        (util / Compile / scalaSource).value,
+        (util / Compile / scalaSource).value
       ),
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
