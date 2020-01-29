@@ -210,11 +210,7 @@ lazy val toolSettings =
   baseSettings ++
     Seq(
       crossSbtVersions := List(sbt10Version),
-      scalaVersion := {
-        (pluginCrossBuild / sbtBinaryVersion).value match {
-          case _ => sbt10ScalaVersion
-        }
-      },
+      scalaVersion := sbt10ScalaVersion,
       scalacOptions ++= Seq(
         "-deprecation",
         "-unchecked",
