@@ -5,7 +5,7 @@ import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable
 import scala.sys.process.Process
 import scalanative.build.IO.RichPath
-import scalanative.nir.{Type, Rt, Sig, Global}
+import scalanative.nir.{Type, Rt, Sig, Global, Defn}
 import scalanative.linker.Link
 import scalanative.codegen.CodeGen
 import scalanative.interflow.Interflow
@@ -142,13 +142,16 @@ private[scalanative] object ScalaNative {
 
   def dump(config: Config, phase: String)(
       linked: scalanative.linker.Result): scalanative.linker.Result = {
+    dumpDefns(config, phase, linked.defns)
+    linked
+  }
+
+  def dumpDefns(config: Config, phase: String, defns: Seq[Defn]): Unit = {
     if (config.dump) {
-      config.logger.time("Dumping intermediate code") {
+      config.logger.time(s"Dumping intermediate code ($phase)") {
         val path = config.workdir.resolve(phase + ".hnir")
-        nir.Show.dump(linked.defns, path.toFile.getAbsolutePath)
+        nir.Show.dump(defns, path.toFile.getAbsolutePath)
       }
     }
-
-    linked
   }
 }

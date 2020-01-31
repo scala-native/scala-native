@@ -11,6 +11,7 @@ import scalanative.io.{VirtualDirectory, withScratchBuffer}
 import scalanative.nir._
 import scalanative.nir.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.util.unreachable
+import scalanative.build.ScalaNative.dumpDefns
 
 object CodeGen {
 
@@ -23,7 +24,7 @@ object CodeGen {
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
     val lowered   = lower(generated)
-    nir.Show.dump(lowered, "lowered.hnir")
+    dumpDefns(config, "lowered", lowered)
     emit(config, lowered)
   }
 
