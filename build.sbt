@@ -209,6 +209,7 @@ lazy val noPublishSettings = Seq(
 lazy val toolSettings =
   baseSettings ++
     Seq(
+      sbtVersion := sbt10Version,
       crossSbtVersions := List(sbt10Version),
       scalaVersion := sbt10ScalaVersion,
       scalacOptions ++= Seq(
