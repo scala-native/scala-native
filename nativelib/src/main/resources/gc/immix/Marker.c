@@ -7,10 +7,10 @@
 #include "datastructures/Stack.h"
 #include "headers/ObjectHeader.h"
 #include "Block.h"
+#include "ThreadManager.h"
 
 extern word_t *__modules;
 extern int __modules_size;
-extern word_t **__stack_bottom;
 
 #define LAST_FIELD_OFFSET -1
 
@@ -81,17 +81,18 @@ void Marker_markProgramStack(Heap *heap, Stack *stack) {
     jmp_buf regs;
     setjmp(regs);
     word_t *dummy;
+    for (ThreadList *tl = threadList; tl != NULL; tl = tl->next) {
+        word_t **stackBottom = tl->stackBottom;
+        word_t **current =
+            pthread_equal(pthread_self(), tl->thread) ? &dummy : tl->stackTop;
 
-    word_t **current = &dummy;
-    word_t **stackBottom = __stack_bottom;
-
-    while (current <= stackBottom) {
-
-        word_t *stackObject = *current;
-        if (Heap_IsWordInHeap(heap, stackObject)) {
-            Marker_markConservative(heap, stack, stackObject);
+        while (current <= stackBottom) {
+            word_t *stackObject = *current;
+            if (Heap_IsWordInHeap(heap, stackObject)) {
+                Marker_markConservative(heap, stack, stackObject);
+            }
+            current += 1;
         }
-        current += 1;
     }
 }
 
@@ -112,10 +113,13 @@ void Marker_markModules(Heap *heap, Stack *stack) {
 }
 
 void Marker_MarkRoots(Heap *heap, Stack *stack) {
+    ThreadManager_SuspendAllThreads();
 
     Marker_markProgramStack(heap, stack);
 
     Marker_markModules(heap, stack);
 
     Marker_Mark(heap, stack);
+
+    ThreadManager_ResumeAllThreads();
 }
