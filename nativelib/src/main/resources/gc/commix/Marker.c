@@ -368,17 +368,18 @@ void Marker_markProgramStack(Heap *heap, Stats *stats, GreyPacket **outHolder) {
     jmp_buf regs;
     setjmp(regs);
     word_t *dummy;
+    for (ThreadList *tl = threadList; tl != NULL; tl = tl->next) {
+        word_t **stackBottom = tl->stackBottom;
+        word_t **current =
+            pthread_equal(pthread_self(), tl->thread) ? &dummy : tl->stackTop;
 
-    word_t **current = &dummy;
-    word_t **stackBottom = __stack_bottom;
-
-    while (current <= stackBottom) {
-
-        word_t *stackObject = *current;
-        if (Heap_IsWordInHeap(heap, stackObject)) {
-            Marker_markConservative(heap, stats, outHolder, stackObject);
+        while (current <= stackBottom) {
+            word_t *stackObject = *current;
+            if (Heap_IsWordInHeap(heap, stackObject)) {
+                Marker_markConservative(heap, stats, outHolder, stackObject);
+            }
+            current += 1;
         }
-        current += 1;
     }
 }
 

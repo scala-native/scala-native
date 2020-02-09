@@ -17,6 +17,7 @@
 #include <memory.h>
 #include <time.h>
 #include <inttypes.h>
+#include "ThreadManager.h"
 
 // Allow read and write
 #define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
@@ -209,6 +210,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 }
 
 void Heap_Collect(Heap *heap) {
+    ThreadManager_SuspendAllThreads();
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
     assert(Sweeper_IsSweepDone(heap));
@@ -223,6 +225,7 @@ void Heap_Collect(Heap *heap) {
     Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
                       heap->mark.currentEnd_ns);
     Phase_StartSweep(heap);
+    ThreadManager_ResumeAllThreads();
 }
 
 bool Heap_shouldGrow(Heap *heap) {
