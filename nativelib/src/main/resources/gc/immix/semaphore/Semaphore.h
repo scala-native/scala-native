@@ -1,3 +1,6 @@
+#ifndef IMMIX_SEMAPHORE_H
+#define IMMIX_SEMAPHORE_H
+
 #ifdef __APPLE__
 #include <dispatch/dispatch.h>
 #else
@@ -44,3 +47,5 @@ static inline void Semaphore_Post(Semaphore *s) {
     sem_post(&s->sem);
 #endif
 }
+
+#endif // IMMIX_SEMAPHORE_H
