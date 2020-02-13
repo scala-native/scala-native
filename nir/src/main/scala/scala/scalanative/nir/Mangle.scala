@@ -51,6 +51,9 @@ object Mangle {
         str("R")
         types.foreach(mangleType)
         str("E")
+      case Sig.Clinit() =>
+        str("A")
+        str("E")
       case Sig.Method(id, types) =>
         str("D")
         mangleIdent(id)
