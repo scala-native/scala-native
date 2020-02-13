@@ -21,6 +21,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val dynimpls      = mutable.Set.empty[Global]
 
   entries.foreach(reachEntry)
+  loader.classesWithEntryPoints().foreach(reachEntry)
 
   def result(): Result = {
     cleanup()
@@ -138,6 +139,10 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
             }
           }
         }
+        val clinit = cls.name.member(Sig.Clinit())
+        if (loaded(cls.name).contains(clinit)) {
+          reachGlobal(clinit)
+        }
       case _ =>
         ()
     }
@@ -218,6 +223,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
                 update(Rt.ScalaHashCodeSig)
                 update(Rt.JavaHashCodeSig)
               case sig if sig.isMethod || sig.isCtor || sig.isGenerated =>
+                update(sig)
+              case sig if sig.isClinit =>
                 update(sig)
               case _ =>
                 ()

@@ -152,6 +152,7 @@ trait NirGenStat { self: NirGenPhase =>
       def parent = genClassParent(sym)
       def traits = genClassInterfaces(sym)
 
+      genReflectiveInstantiation(cd)
       genClassFields(sym)
       genMethods(cd)
       if (sym.isCFuncPtrClass) {
@@ -216,6 +217,36 @@ trait NirGenStat { self: NirGenPhase =>
 
         buf += Defn.Var(attrs, name, ty, Val.Zero(ty))
       }
+    }
+
+    def genReflectiveInstantiation(cd: ClassDef): Unit = {
+      val sym = cd.symbol
+      val enableReflectiveInstantiation = {
+        (sym :: sym.ancestors).exists { ancestor =>
+          ancestor.hasAnnotation(EnableReflectiveInstantiationAnnotation)
+        }
+      }
+
+      if (enableReflectiveInstantiation) {
+        genClinitMethod(cd)
+      }
+    }
+
+    def genClinitMethod(cd: ClassDef): Unit = {
+      val sym   = cd.symbol
+      val owner = genTypeName(sym)
+      val name  = owner.member(nir.Sig.Clinit())
+
+      val fresh   = Fresh()
+      val exprBuf = new ExprBuffer()(fresh)
+
+      exprBuf.label(fresh())
+      exprBuf.ret(Val.Unit)
+
+      buf += Defn.Define(Attrs(),
+                         name,
+                         nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
+                         exprBuf.toSeq)
     }
 
     def genMethods(cd: ClassDef): Unit =
