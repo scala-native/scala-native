@@ -327,5 +327,11 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val AnyRefClassTag  = getDecl(ClassTagModule, TermName("AnyRef"))
     lazy val NothingClassTag = getDecl(ClassTagModule, TermName("Nothing"))
     lazy val NullClassTag    = getDecl(ClassTagModule, TermName("Null"))
+
+    lazy val ReflectModule =
+      getRequiredModule("scala.scalanative.reflect.Reflect")
+    lazy val EnableReflectiveInstantiationAnnotation =
+      getRequiredClass(
+        "scala.scalanative.reflect.annotation.EnableReflectiveInstantiation")
   }
 }
