@@ -12,6 +12,8 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   private val header: Map[Global, Int] = {
     buffer.position(0)
 
+    val hasClInit = getBool
+
     val magic    = getInt
     val compat   = getInt
     val revision = getInt
