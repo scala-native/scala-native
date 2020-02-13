@@ -563,15 +563,15 @@ object CodeGen {
                 c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
                 c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
             value(idx + 1) match {
-              case c @ (''' | '"' | '?') => str(c); loop(idx + 2)
-              case '\\'                  => str("\\\\"); loop(idx + 2)
-              case 'a'                   => str("\\07"); loop(idx + 2)
-              case 'b'                   => str("\\08"); loop(idx + 2)
-              case 'f'                   => str("\\0C"); loop(idx + 2)
-              case 'n'                   => str("\\0A"); loop(idx + 2)
-              case 'r'                   => str("\\0D"); loop(idx + 2)
-              case 't'                   => str("\\09"); loop(idx + 2)
-              case 'v'                   => str("\\0B"); loop(idx + 2)
+              case c @ ('\'' | '"' | '?') => str(c); loop(idx + 2)
+              case '\\'                   => str("\\\\"); loop(idx + 2)
+              case 'a'                    => str("\\07"); loop(idx + 2)
+              case 'b'                    => str("\\08"); loop(idx + 2)
+              case 'f'                    => str("\\0C"); loop(idx + 2)
+              case 'n'                    => str("\\0A"); loop(idx + 2)
+              case 'r'                    => str("\\0D"); loop(idx + 2)
+              case 't'                    => str("\\09"); loop(idx + 2)
+              case 'v'                    => str("\\0B"); loop(idx + 2)
               case d if isOct(d) =>
                 val oct = value.drop(idx + 1).take(3).takeWhile(isOct)
                 val hex =
