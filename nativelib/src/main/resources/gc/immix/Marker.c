@@ -76,12 +76,12 @@ void Marker_Mark(Heap *heap, Stack *stack) {
     }
 }
 
-void Marker_markProgramStack(Heap *heap, Stack *stack) {
+void Marker_markProgramStack(ThreadManager *threadManager, Heap *heap, Stack *stack) {
     // Dumps registers into 'regs' which is on stack
     jmp_buf regs;
     setjmp(regs);
     word_t *dummy;
-    for (ThreadList *tl = threadList; tl != NULL; tl = tl->next) {
+    for (ThreadList *tl = threadManager->threadList; tl != NULL; tl = tl->next) {
         word_t **stackBottom = tl->stackBottom;
         word_t **current =
             pthread_equal(pthread_self(), tl->thread) ? &dummy : tl->stackTop;
@@ -112,14 +112,14 @@ void Marker_markModules(Heap *heap, Stack *stack) {
     }
 }
 
-void Marker_MarkRoots(Heap *heap, Stack *stack) {
-    ThreadManager_SuspendAllThreads();
+void Marker_MarkRoots(ThreadManager *threadManager, Heap *heap, Stack *stack) {
+    ThreadManager_SuspendAllThreads(threadManager);
 
-    Marker_markProgramStack(heap, stack);
+    Marker_markProgramStack(threadManager, heap, stack);
 
     Marker_markModules(heap, stack);
 
     Marker_Mark(heap, stack);
 
-    ThreadManager_ResumeAllThreads();
+    ThreadManager_ResumeAllThreads(threadManager);
 }

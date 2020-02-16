@@ -46,7 +46,7 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize);
 word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize);
 word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize);
 
-void Heap_Collect(Heap *heap, Stack *stack);
+void Heap_Collect(ThreadManager *threadManager, Heap *heap, Stack *stack);
 
 void Heap_Recycle(Heap *heap);
 void Heap_Grow(Heap *heap, uint32_t increment);

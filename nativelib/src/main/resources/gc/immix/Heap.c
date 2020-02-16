@@ -246,7 +246,7 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
     }
 }
 
-void Heap_Collect(Heap *heap, Stack *stack) {
+void Heap_Collect(ThreadManager *threadManager, Heap *heap, Stack *stack) {
     uint64_t start_ns, sweep_start_ns, end_ns;
     Stats *stats = heap->stats;
 #ifdef DEBUG_PRINT
@@ -256,7 +256,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     if (stats != NULL) {
         start_ns = scalanative_nano_time();
     }
-    Marker_MarkRoots(heap, stack);
+    Marker_MarkRoots(threadManager, heap, stack);
     if (stats != NULL) {
         sweep_start_ns = scalanative_nano_time();
     }

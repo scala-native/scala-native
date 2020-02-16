@@ -3,10 +3,17 @@
 #include <stdio.h>
 
 #include "ThreadManager.h"
-#include "State.h"
+#include "GCTypes.h"
+#include "semaphore/Semaphore.h"
 
 #define SIG_SUSPEND SIGXFSZ
 #define SIG_RESUME SIGXCPU
+
+// Signal handlers can't receive parameters.
+// These variables need to be accessed as global variables.
+
+void *suspendingThreadStackTop;
+Semaphore semaphore;
 
 void ThreadManager_suspendHandler(int sig) {
     sigset_t sigset;
@@ -14,7 +21,7 @@ void ThreadManager_suspendHandler(int sig) {
     jmp_buf regs;
     setjmp(regs);
     word_t *dummy;
-
+    
     suspendingThreadStackTop = &dummy;
 
     sigfillset(&sigset);
@@ -25,9 +32,9 @@ void ThreadManager_suspendHandler(int sig) {
 
 void ThreadManager_resumeHandler(int sig) {}
 
-void ThreadManager_Init() {
+void ThreadManager_Init(ThreadManager *threadManager) {
     Semaphore_Init(&semaphore, 0);
-    threadList = NULL;
+    threadManager->threadList = NULL;
 
     struct sigaction suspend_action;
     sigemptyset(&suspend_action.sa_mask);
@@ -43,44 +50,44 @@ void ThreadManager_Init() {
     sigaction(SIG_RESUME, &resume_action, NULL);
 }
 
-void ThreadManager_RegisterThread(void *stackBottom) {
-    threadList = ThreadList_Cons(pthread_self(), stackBottom, threadList);
+void ThreadManager_RegisterThread(ThreadManager *threadManager, void *stackBottom) {
+    threadManager->threadList = ThreadList_Cons(pthread_self(), stackBottom, threadManager->threadList);
 }
 
-void ThreadManager_suspendThread(pthread_t thread) {
+void ThreadManager_suspendThread(ThreadManager *threadManager, pthread_t thread) {
     if (pthread_equal(pthread_self(), thread))
         return;
     int res = pthread_kill(thread, SIG_SUSPEND);
     if (res == 0) {
         Semaphore_Wait(&semaphore);
         ThreadList_SetStackTopForThread(thread, suspendingThreadStackTop,
-                                        threadList);
+                                        threadManager->threadList);
     } else {
-        threadList = ThreadList_Remove(thread, threadList);
+        threadManager->threadList = ThreadList_Remove(thread, threadManager->threadList);
     }
 }
 
-void ThreadManager_resumeThread(pthread_t thread) {
+void ThreadManager_resumeThread(ThreadManager *threadManager, pthread_t thread) {
     if (pthread_equal(pthread_self(), thread))
         return;
     int res = pthread_kill(thread, SIG_RESUME);
     if (res != 0) {
-        threadList = ThreadList_Remove(thread, threadList);
+        threadManager->threadList = ThreadList_Remove(thread, threadManager->threadList);
     }
 }
 
-void ThreadManager_SuspendAllThreads() {
-    ThreadList *current = threadList;
+void ThreadManager_SuspendAllThreads(ThreadManager *threadManager) {
+    ThreadList *current = threadManager->threadList;
     while (current != NULL) {
-        ThreadManager_suspendThread(current->thread);
+        ThreadManager_suspendThread(threadManager, current->thread);
         current = current->next;
     }
 }
 
-void ThreadManager_ResumeAllThreads() {
-    ThreadList *current = threadList;
+void ThreadManager_ResumeAllThreads(ThreadManager *threadManager) {
+    ThreadList *current = threadManager->threadList;
     while (current != NULL) {
-        ThreadManager_resumeThread(current->thread);
+        ThreadManager_resumeThread(threadManager, current->thread);
         current = current->next;
     }
 }

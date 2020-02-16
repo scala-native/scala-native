@@ -1,12 +1,20 @@
 #ifndef IMMIX_THREADMANAGER_H
 #define IMMIX_THREADMANAGER_H
 
-void ThreadManager_Init();
+#include <pthread.h>
+#include "datastructures/ThreadList.h"
 
-void ThreadManager_RegisterThread(void *stackBottom);
+typedef struct {
+    ThreadList *threadList;
+    pthread_mutex_t mutex;
+} ThreadManager;
 
-void ThreadManager_SuspendAllThreads();
+void ThreadManager_Init(ThreadManager *threadManager);
 
-void ThreadManager_ResumeAllThreads();
+void ThreadManager_RegisterThread(ThreadManager *threadManager, void *stackBottom);
+
+void ThreadManager_SuspendAllThreads(ThreadManager *threadManager);
+
+void ThreadManager_ResumeAllThreads(ThreadManager *threadManager);
 
 #endif // IMMIX_THREADMANAGER_H

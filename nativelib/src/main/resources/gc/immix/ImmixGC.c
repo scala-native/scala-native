@@ -25,38 +25,38 @@ void scalanative_afterexit() {
 NOINLINE void scalanative_init() {
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
     Stack_Init(&stack, INITIAL_STACK_SIZE);
-    ThreadManager_Init();
-    ThreadManager_RegisterThread(__stack_bottom);
+    ThreadManager_Init(&threadManager);
+    ThreadManager_RegisterThread(&threadManager, __stack_bottom);
     atexit(scalanative_afterexit);
 }
 
 INLINE void *scalanative_alloc(void *info, size_t size) {
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&threadManager.mutex);
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
     void **alloc = (void **)Heap_Alloc(&heap, size);
     *alloc = info;
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&threadManager.mutex);
     return (void *)alloc;
 }
 
 INLINE void *scalanative_alloc_small(void *info, size_t size) {
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&threadManager.mutex);
     void **alloc = (void **)Heap_AllocSmall(&heap, size);
     *alloc = info;
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&threadManager.mutex);
     return (void *)alloc;
 }
 
 INLINE void *scalanative_alloc_large(void *info, size_t size) {
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&threadManager.mutex);
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
     void **alloc = (void **)Heap_AllocLarge(&heap, size);
     *alloc = info;
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&threadManager.mutex);
     return (void *)alloc;
 }
 
@@ -65,14 +65,14 @@ INLINE void *scalanative_alloc_atomic(void *info, size_t size) {
 }
 
 INLINE void scalanative_collect() {
-    pthread_mutex_lock(&mutex);
-    Heap_Collect(&heap, &stack);
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_lock(&threadManager.mutex);
+    Heap_Collect(&threadManager, &heap, &stack);
+    pthread_mutex_unlock(&threadManager.mutex);
 }
 
 INLINE void scalanative_register_thread() {
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&threadManager.mutex);
     word_t *dummy;
-    ThreadManager_RegisterThread(&dummy);
-    pthread_mutex_unlock(&mutex);
+    ThreadManager_RegisterThread(&threadManager, &dummy);
+    pthread_mutex_unlock(&threadManager.mutex);
 }
