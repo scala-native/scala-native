@@ -213,7 +213,7 @@ word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
     return object;
 }
 
-word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
+word_t *LargeAllocator_Alloc(ThreadManager *threadManager, Heap *heap, uint32_t size) {
 
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size >= MIN_BLOCK_SIZE);
@@ -232,7 +232,7 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
             goto done;
     }
 
-    Heap_Collect(heap);
+    Heap_Collect(threadManager, heap);
 
     object = LargeAllocator_tryAlloc(&largeAllocator, size);
     if (object != NULL)

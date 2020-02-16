@@ -4,7 +4,7 @@
 #include "Heap.h"
 #include "Stats.h"
 
-void Marker_MarkRoots(Heap *heap, Stats *stats);
+void Marker_MarkRoots(ThreadManager *threadManager, Heap *heap, Stats *stats);
 void Marker_Mark(Heap *heap, Stats *stats);
 void Marker_MarkUntilDone(Heap *heap, Stats *stats);
 void Marker_MarkAndScale(Heap *heap, Stats *stats);
