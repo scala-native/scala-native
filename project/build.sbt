@@ -1,7 +1,6 @@
 Compile / unmanagedSourceDirectories ++= {
   val root = baseDirectory.value.getParentFile
 
-<<<<<<< HEAD
   Seq(
     "util",
     "nir",
@@ -10,17 +9,6 @@ Compile / unmanagedSourceDirectories ++= {
     "test-interface-serialization",
     "test-runner"
   ).map(dir => root / s"$dir/src/main/scala")
-=======
-  (root / "sbt-scala-native/src/main/scala-sbt-0.13") +:
-    Seq(
-      "util",
-      "nir",
-      "tools",
-      "sbt-scala-native",
-      "test-interface-serialization",
-      "test-runner"
-    ).map(dir => root / s"$dir/src/main/scala")
->>>>>>> Formatting changes that could not be avoided
 }
 
 libraryDependencies ++= Seq(
