@@ -33,9 +33,9 @@ object TestUtilities {
           case af: AnnotatedFingerprint => af.isModule
           case sf: SubclassFingerprint  => sf.isModule
         }
-
-        val inst =
-          if (isModule) s"_root_.${t.name}" else s"new _root_.${t.name}"
+        val isInAPackage = t.name.contains(".")
+        val fullName     = if (isInAPackage) s"_root_.${t.name}" else t.name
+        val inst         = if (isModule) fullName else s"new $fullName"
         s""""${t.name}" -> $inst"""
       }
       .mkString(", ")
