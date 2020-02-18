@@ -82,6 +82,7 @@ trait NirGenStat { self: NirGenPhase =>
       val body   = cd.impl.body
 
       buf += Defn.Class(attrs, name, None, Seq.empty)
+      genReflectiveInstantiation(cd)
       genMethods(cd)
     }
 
@@ -228,25 +229,49 @@ trait NirGenStat { self: NirGenPhase =>
       }
 
       if (enableReflectiveInstantiation) {
-        genClinitMethod(cd)
+        scoped(
+          curClassSym := cd.symbol,
+          curFresh := Fresh(),
+          curUnwindHandler := None
+        ) {
+          genClinitMethod(cd)
+        }
       }
     }
 
     def genClinitMethod(cd: ClassDef): Unit = {
-      val sym   = cd.symbol
-      val owner = genTypeName(sym)
+      val owner = genTypeName(curClassSym)
       val name  = owner.member(nir.Sig.Clinit())
 
-      val fresh   = Fresh()
-      val exprBuf = new ExprBuffer()(fresh)
+      // For the moment, static initializers just print a diagnostic message
+      val staticInitBody = {
+        val exprBuf = new ExprBuffer()(curFresh)
 
-      exprBuf.label(fresh())
-      exprBuf.ret(Val.Unit)
+        val predefGlobal = Global.Top("scala.Predef$")
+        val objectGlobal = Global.Top("java.lang.Object")
+        val printlnSig =
+          Sig.Method("println", Seq(Type.Ref(objectGlobal), Type.Unit))
+
+        exprBuf.label(curFresh())
+
+        val moduleVal = exprBuf.module(predefGlobal, unwind(curFresh))
+        val methodVal = exprBuf.method(moduleVal, printlnSig, unwind(curFresh))
+
+        exprBuf.call(
+          nir.Type.Function(Seq(Type.Ref(predefGlobal), Type.Ref(objectGlobal)),
+                            Type.Unit),
+          methodVal,
+          Seq(moduleVal, Val.String("Static initializer called")),
+          unwind(curFresh)
+        )
+        exprBuf.ret(Val.Unit)
+        exprBuf.toSeq
+      }
 
       buf += Defn.Define(Attrs(),
                          name,
                          nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
-                         exprBuf.toSeq)
+                         staticInitBody)
     }
 
     def genMethods(cd: ClassDef): Unit =
