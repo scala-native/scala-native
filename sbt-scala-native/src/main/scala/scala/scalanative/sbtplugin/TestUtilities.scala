@@ -17,7 +17,7 @@ object TestUtilities {
     }
     val testsMap = makeTestsMap(tests)
 
-    s"""object TestMain extends scala.scalanative.testinterface.TestMainBase {
+    s"""object ScalaNativeTestMain extends scala.scalanative.testinterface.TestMainBase {
        |  override val frameworks = $frameworksList
        |  override val tests = Map[String, AnyRef]($testsMap)
        |  def main(args: Array[String]): Unit =
@@ -33,7 +33,7 @@ object TestUtilities {
           case sf: SubclassFingerprint  => sf.isModule
         }
         val fullName = fullClassName(t.name)
-        val inst         = if (isModule) fullName else s"new $fullName"
+        val inst     = if (isModule) fullName else s"new $fullName"
         s""""${t.name}" -> $inst"""
       }
       .mkString(", ")
