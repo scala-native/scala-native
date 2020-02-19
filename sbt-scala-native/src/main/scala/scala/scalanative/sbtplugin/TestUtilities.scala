@@ -12,8 +12,8 @@ object TestUtilities {
       "Nil"
     } else {
       frameworks
-        .map(_.getClass.getName)
-        .mkString("List(new _root_.", ", new _root_.", ")")
+        .map(f => s"new ${fullClassName(f.getClass.getName)}")
+        .mkString("List(", ", ", ")")
     }
     val testsMap = makeTestsMap(tests)
 
@@ -32,10 +32,14 @@ object TestUtilities {
           case af: AnnotatedFingerprint => af.isModule
           case sf: SubclassFingerprint  => sf.isModule
         }
-        val isInAPackage = t.name.contains(".")
-        val fullName     = if (isInAPackage) s"_root_.${t.name}" else t.name
+        val fullName = fullClassName(t.name)
         val inst         = if (isModule) fullName else s"new $fullName"
         s""""${t.name}" -> $inst"""
       }
       .mkString(", ")
+
+  private def fullClassName(name: String): String = {
+    val isInAPackage = name.contains(".")
+    if (isInAPackage) s"_root_.$name" else name
+  }
 }
