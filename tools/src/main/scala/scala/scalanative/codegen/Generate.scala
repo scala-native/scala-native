@@ -138,6 +138,8 @@ object Generate {
         Next.Unwind(exc, Next.Label(handler, Seq(exc)))
       }
 
+      lazy val clinitCalls = genClinitCalls(unwind)
+
       buf += Defn.Define(
         Attrs.None,
         MainName,
@@ -155,17 +157,31 @@ object Generate {
           Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
           Inst.Let(arr.name,
                    Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
-                   unwind),
-          Inst.Let(module.name, Op.Module(entry.top), unwind),
-          Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr)), unwind),
-          Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(module)), unwind),
-          Inst.Ret(Val.Int(0)),
-          Inst.Label(handler, Seq(exc)),
-          Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
-                   Next.None),
-          Inst.Ret(Val.Int(1))
+                   unwind)
         )
+          ++ clinitCalls // call the class initializers before calling main
+          ++ Seq(
+            Inst.Let(module.name, Op.Module(entry.top), unwind),
+            Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr)), unwind),
+            Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(module)), unwind),
+            Inst.Ret(Val.Int(0)),
+            Inst.Label(handler, Seq(exc)),
+            Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
+                     Next.None),
+            Inst.Ret(Val.Int(1))
+          )
       )
+    }
+
+    def genClinitCalls(unwind: => Next.Unwind)(
+        implicit fresh: Fresh): Seq[Inst] = {
+      defns.collect {
+        case Defn.Define(_, name: Global.Member, _, _) if name.sig.isClinit =>
+          Inst.Let(Op.Call(Type.Function(Seq(), Type.Unit),
+                           Val.Global(name, Type.Ref(name)),
+                           Seq()),
+                   unwind)
+      }
     }
 
     def genStackBottom(): Unit =
