@@ -17,8 +17,7 @@ object TestUtilities {
     }
     val testsMap = makeTestsMap(tests)
 
-    s"""package scala.scalanative.testinterface
-       |object TestMain extends TestMainBase {
+    s"""object TestMain extends scala.scalanative.testinterface.TestMainBase {
        |  override val frameworks = $frameworksList
        |  override val tests = Map[String, AnyRef]($testsMap)
        |  def main(args: Array[String]): Unit =
