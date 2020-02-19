@@ -261,7 +261,7 @@ trait NirGenStat { self: NirGenPhase =>
           nir.Type.Function(Seq(Type.Ref(predefGlobal), Type.Ref(objectGlobal)),
                             Type.Unit),
           methodVal,
-          Seq(moduleVal, Val.String("Static initializer called")),
+          Seq(moduleVal, Val.String(s"${cd.name}: static initializer called")),
           unwind(curFresh)
         )
         exprBuf.ret(Val.Unit)
