@@ -8,13 +8,10 @@ object TestUtilities {
 
   def makeTestMain(frameworks: Seq[Framework],
                    tests: Seq[TestDefinition]): String = {
-    val frameworksList = if (frameworks.isEmpty) {
-      "Nil"
-    } else {
-      frameworks
-        .map(f => s"new ${fullClassName(f.getClass.getName)}")
-        .mkString("List(", ", ", ")")
-    }
+    val frameworksList = frameworks
+      .map(f => s"new ${fullClassName(f.getClass.getName)}")
+      .mkString("List(", ", ", ")")
+
     val testsMap = makeTestsMap(tests)
 
     s"""object ScalaNativeTestMain extends scala.scalanative.testinterface.TestMainBase {
