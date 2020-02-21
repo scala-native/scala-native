@@ -456,7 +456,7 @@ class Properties(protected val defaults: Properties)
       else hexChar += '0'
       index -= 1
       hexChars(index) = hexChar.toChar
-    } while ({ copyOfCh >>>= 4; copyOfCh != 0})
+    } while ({ copyOfCh >>>= 4; copyOfCh != 0 })
     hexChars
   }
 
