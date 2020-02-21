@@ -215,7 +215,7 @@ in your build file::
 
 The code can be put in directories as desired inside the `resources` directory.
 
-This feature can be used in combination with the feature above to include 
+This feature can be used in combination with the feature above to include
 3rd party libraries with native code.
 
 Cross compilation
