@@ -38,6 +38,8 @@ abstract class NirGenPhase
   protected val curUnwindHandler  = new util.ScopedVar[Option[nir.Local]]
   protected val curStatBuffer     = new util.ScopedVar[StatBuffer]
 
+  protected val reflectiveInstInfo = new util.ScopedVar[ReflectiveInstantiationInfo]
+
   protected def unwind(implicit fresh: Fresh): Next =
     curUnwindHandler.get.fold[Next](Next.None) { handler =>
       val exc = Val.Local(fresh(), nir.Rt.Object)
@@ -58,6 +60,8 @@ abstract class NirGenPhase
       val classDefs = mutable.UnrolledBuffer.empty[ClassDef]
       val files     = mutable.UnrolledBuffer.empty[(Path, Seq[nir.Defn])]
 
+      val reflectiveInstantiationInfo = new ReflectiveInstantiationInfo
+
       def collectClassDefs(tree: Tree): Unit = tree match {
         case EmptyTree =>
           ()
@@ -77,7 +81,8 @@ abstract class NirGenPhase
         val buffer = new StatBuffer
 
         scoped(
-          curStatBuffer := buffer
+          curStatBuffer := buffer,
+          reflectiveInstInfo := reflectiveInstantiationInfo
         ) {
           buffer.genClass(cd)
           files += ((path, buffer.toSeq))
@@ -86,6 +91,12 @@ abstract class NirGenPhase
 
       collectClassDefs(cunit.body)
       classDefs.foreach(genClass)
+
+      if (reflectiveInstantiationInfo.nonEmpty) {
+        val path = genPathFor(cunit, reflectiveInstantiationInfo.name.id)
+        files += ((path, reflectiveInstantiationInfo.toSeqCompleted))
+      }
+
       files.par.foreach {
         case (path, stats) =>
           genIRFile(path, stats)

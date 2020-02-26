@@ -65,6 +65,13 @@ trait NirGenStat { self: NirGenPhase =>
     private val buf          = mutable.UnrolledBuffer.empty[nir.Defn]
     def toSeq: Seq[nir.Defn] = buf
 
+    def +=(defn: nir.Defn): Unit = {
+      buf += defn
+    }
+
+    def isEmpty  = buf.isEmpty
+    def nonEmpty = buf.nonEmpty
+
     def genClass(cd: ClassDef): Unit = {
       scoped(
         curClassSym := cd.symbol
@@ -220,6 +227,11 @@ trait NirGenStat { self: NirGenPhase =>
       }
     }
 
+    def withFreshExprBuffer[R](f: ExprBuffer => R): R = {
+      val exprBuffer = new ExprBuffer()(curFresh)
+      f(exprBuffer)
+    }
+
     def genReflectiveInstantiation(cd: ClassDef): Unit = {
       val sym = cd.symbol
       val enableReflectiveInstantiation = {
@@ -234,44 +246,97 @@ trait NirGenStat { self: NirGenPhase =>
           curFresh := Fresh(),
           curUnwindHandler := None
         ) {
-          genClinitMethod(cd)
+          genRegisterReflectiveInstantiation(cd)
         }
       }
     }
 
-    def genClinitMethod(cd: ClassDef): Unit = {
+    def genRegisterReflectiveInstantiation(cd: ClassDef): Unit = {
       val owner = genTypeName(curClassSym)
       val name  = owner.member(nir.Sig.Clinit())
 
-      // For the moment, static initializers just print a diagnostic message
-      val staticInitBody = {
-        val exprBuf = new ExprBuffer()(curFresh)
+      def isStaticModule(sym: Symbol) =
+        sym.isModuleClass && !sym.isImplClass && !sym.isLifted
 
-        val predefGlobal = Global.Top("scala.Predef$")
-        val objectGlobal = Global.Top("java.lang.Object")
-        val printlnSig =
-          Sig.Method("println", Seq(Type.Ref(objectGlobal), Type.Unit))
+      val staticInitBody =
+        if (isStaticModule(curClassSym))
+          Some(genRegisterReflectiveInstantiationForModuleClass(cd))
+        else if (curClassSym.isModuleClass)
+          None // see: https://github.com/scala-js/scala-js/issues/3228
+        else if (curClassSym.isLifted && !curClassSym.originalOwner.isClass)
+          None // see: https://github.com/scala-js/scala-js/issues/3227
+        else
+          Some(genRegisterReflectiveInstantiationForNormalClass(cd))
 
-        exprBuf.label(curFresh())
+      staticInitBody.map { body =>
+        buf += Defn.Define(Attrs(),
+                           name,
+                           nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
+                           body)
+      }
+    }
 
-        val moduleVal = exprBuf.module(predefGlobal, unwind(curFresh))
-        val methodVal = exprBuf.method(moduleVal, printlnSig, unwind(curFresh))
+    def genRegisterReflectiveInstantiationForModuleClass(
+        cd: ClassDef): Seq[Inst] = {
+      val reflInstInfo = reflectiveInstInfo.get
+      val fqSymId      = s"${curClassSym.fullName}$$"
+      val fqSymName    = Global.Top(fqSymId)
+
+      def genLazyModuleLoaderMethod(exprBuf: ExprBuffer): Val = {
+        val methodSig =
+          Sig.Method(s"lazyLoad${fqSymId}", Seq(Type.Ref(fqSymName)))
+
+        // Generate the module lazy loader function
+        withFreshExprBuffer { exprBuf =>
+          val body = {
+            scoped(
+              curFresh := Fresh()
+            ) {
+              val m = exprBuf.module(fqSymName, unwind(curFresh))
+              exprBuf.ret(m)
+              exprBuf.toSeq
+            }
+          }
+
+          reflInstInfo += Defn.Define(
+            Attrs(),
+            reflInstInfo.name.member(methodSig),
+            nir.Type.Function(Seq(), Type.Ref(fqSymName)),
+            body)
+        }
+
+        // Generate the call to the module lazy loader function
+        val moduleVal = exprBuf.module(reflInstInfo.name, unwind(curFresh))
+        val methodVal = exprBuf.method(moduleVal, methodSig, unwind(curFresh))
 
         exprBuf.call(
-          nir.Type.Function(Seq(Type.Ref(predefGlobal), Type.Ref(objectGlobal)),
-                            Type.Unit),
+          nir.Type.Function(Seq(), Type.Unit),
           methodVal,
-          Seq(moduleVal, Val.String(s"${cd.name}: static initializer called")),
+          Seq(),
           unwind(curFresh)
         )
+      }
+
+      withFreshExprBuffer { exprBuf =>
+        val fqcnArg = Val.String(fqSymId)
+        val runtimeClassArg =
+          exprBuf.genBoxClass(Val.Global(Global.Top(fqSymId), Type.Ptr))
+
+        val loadModuleFunArg = genLazyModuleLoaderMethod(exprBuf)
+
+        exprBuf.genApplyModuleMethod(
+          ReflectModule,
+          Reflect_registerLoadableModuleClass,
+          Seq(fqcnArg, runtimeClassArg, loadModuleFunArg).map(ValTree(_)))
+
         exprBuf.ret(Val.Unit)
         exprBuf.toSeq
       }
+    }
 
-      buf += Defn.Define(Attrs(),
-                         name,
-                         nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
-                         staticInitBody)
+    def genRegisterReflectiveInstantiationForNormalClass(
+        cd: ClassDef): Seq[Inst] = {
+      unsupported(cd)
     }
 
     def genMethods(cd: ClassDef): Unit =
