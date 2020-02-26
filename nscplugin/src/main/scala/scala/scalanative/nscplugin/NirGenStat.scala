@@ -336,6 +336,14 @@ trait NirGenStat { self: NirGenPhase =>
 
     def genRegisterReflectiveInstantiationForNormalClass(
         cd: ClassDef): Seq[Inst] = {
+      val ctors =
+        if (curClassSym.isAbstractClass) Nil
+        else
+          curClassSym.info
+            .member(nme.CONSTRUCTOR)
+            .alternatives
+            .filter(_.isPublic)
+
       unsupported(cd)
     }
 

@@ -38,7 +38,8 @@ abstract class NirGenPhase
   protected val curUnwindHandler  = new util.ScopedVar[Option[nir.Local]]
   protected val curStatBuffer     = new util.ScopedVar[StatBuffer]
 
-  protected val reflectiveInstInfo = new util.ScopedVar[ReflectiveInstantiationInfo]
+  protected val reflectiveInstInfo =
+    new util.ScopedVar[ReflectiveInstantiationInfo]
 
   protected def unwind(implicit fresh: Fresh): Next =
     curUnwindHandler.get.fold[Next](Next.None) { handler =>

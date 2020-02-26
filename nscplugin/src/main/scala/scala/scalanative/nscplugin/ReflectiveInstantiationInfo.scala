@@ -6,18 +6,18 @@ import scala.collection.mutable
 import scala.scalanative.nir._
 
 class ReflectiveInstantiationInfo {
-    private val buf = mutable.UnrolledBuffer.empty[nir.Defn]
+  private val buf = mutable.UnrolledBuffer.empty[nir.Defn]
 
-    def +=(defn: nir.Defn): Unit = {
-        buf += defn
-    }
+  def +=(defn: nir.Defn): Unit = {
+    buf += defn
+  }
 
-    val name = nir.Global.Top("SN$LazyModuleLoaders__$")
+  val name = nir.Global.Top("SN$LazyModuleLoaders__$")
 
-    def nonEmpty = buf.nonEmpty
-    def toSeq = buf.toSeq
+  def nonEmpty = buf.nonEmpty
+  def toSeq    = buf.toSeq
 
-    def toSeqCompleted: Seq[nir.Defn] = {
-        buf :+ nir.Defn.Module(Attrs(), name, None, Seq())
-    }
+  def toSeqCompleted: Seq[nir.Defn] = {
+    buf :+ nir.Defn.Module(Attrs(), name, None, Seq())
+  }
 }

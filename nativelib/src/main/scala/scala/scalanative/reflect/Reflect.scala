@@ -6,6 +6,7 @@ final class LoadableModuleClass private[reflect] (
     val runtimeClass: Class[_],
     loadModuleFun: Function0[Any]
 ) {
+
   /** Loads the module instance and returns it. */
   def loadModule(): Any = loadModuleFun()
 }
@@ -14,6 +15,7 @@ final class InstantiatableClass private[reflect] (
     val runtimeClass: Class[_],
     val declaredConstructors: List[InvokableConstructor]
 ) {
+
   /** Instantiates a new instance of this class using the zero-argument
    *  constructor.
    *
@@ -24,7 +26,7 @@ final class InstantiatableClass private[reflect] (
   def newInstance(): Any = {
     getConstructor().fold[Any] {
       throw new InstantiationException(runtimeClass.getName).initCause(
-          new NoSuchMethodException(runtimeClass.getName + ".<init>()"))
+        new NoSuchMethodException(runtimeClass.getName + ".<init>()"))
     } { ctor =>
       ctor.newInstance()
     }
@@ -39,9 +41,9 @@ final class InstantiatableClass private[reflect] (
     declaredConstructors.find(_.parameterTypes.sameElements(parameterTypes))
 }
 
-final class InvokableConstructor private[reflect]  (
+final class InvokableConstructor private[reflect] (
     val parameterTypes: List[Class[_]],
-    newInstanceFun: Any  // TODO: replace Any with Function
+    newInstanceFun: Any // TODO: replace Any with Function
 ) {
   def newInstance(args: Any*): Any = {
     /* Check the number of actual arguments. We let the casts and unbox
@@ -63,7 +65,8 @@ object Reflect {
 
   // `protected[reflect]` makes it public in the IR
   protected[reflect] def registerLoadableModuleClass[T](
-      fqcn: String, runtimeClass: Class[T],
+      fqcn: String,
+      runtimeClass: Class[T],
       loadModuleFun: Function0[T]): Unit = {
     println("+++ registerLoadableModuleClass called")
     loadableModuleClasses(fqcn) =
@@ -71,8 +74,10 @@ object Reflect {
   }
 
   protected[reflect] def registerInstantiatableClass[T](
-      fqcn: String, runtimeClass: Class[T],
-      constructors: Seq[(Seq[Class[_]], Any)]): Unit = {  // TODO: replace Any with Function
+      fqcn: String,
+      runtimeClass: Class[T],
+      constructors: Seq[(Seq[Class[_]], Any)]) // TODO: replace Any with Function
+    : Unit = {
     val invokableConstructors = constructors.map { c =>
       new InvokableConstructor(c._1.toList, c._2)
     }
