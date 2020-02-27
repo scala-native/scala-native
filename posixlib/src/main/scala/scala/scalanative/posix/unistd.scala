@@ -17,6 +17,7 @@ object unistd {
   def dup2(fildes: CInt, fildesnew: CInt): CInt   = extern
   def execve(path: CString, argv: Ptr[CString], envp: Ptr[CString]): CInt =
     extern
+  def execvp(file: CString, argv: Ptr[CString]): CInt             = extern
   def fork(): CInt                                                = extern
   def fsync(fildes: CInt): CInt                                   = extern
   def ftruncate(fildes: CInt, length: off_t): CInt                = extern

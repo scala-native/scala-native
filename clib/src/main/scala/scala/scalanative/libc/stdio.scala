@@ -9,6 +9,7 @@ object stdio {
   // File access
 
   def fopen(filename: CString, mode: CString): Ptr[FILE]  = extern
+  def fdopen(filedes: CInt, mode: CString): Ptr[FILE]     = extern
   def fclose(stream: Ptr[FILE]): CInt                     = extern
   def fflush(stream: Ptr[FILE]): CInt                     = extern
   def setbuf(stream: Ptr[FILE], buffer: Ptr[CChar]): Unit = extern

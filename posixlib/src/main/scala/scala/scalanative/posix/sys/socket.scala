@@ -185,6 +185,8 @@ object socket {
 
   @name("scalanative_shutdown")
   def shutdown(socket: CInt, how: CInt): CInt = extern
+
+  def gai_strerror(ecode: CInt): CString = extern
 }
 
 object socketOps {
