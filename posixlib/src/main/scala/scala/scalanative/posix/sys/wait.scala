@@ -6,6 +6,6 @@ import scala.scalanative.unsafe._
 object wait {
   type pid_t = CInt
 
-  def wait(stat_loc: Ptr[CInt]): pid_t                          = extern
-  def waitpid(pid: pid_t, stat_loc: CInt, options: CInt): pid_t = extern
+  def wait(stat_loc: Ptr[CInt]): pid_t                               = extern
+  def waitpid(pid: pid_t, stat_loc: Ptr[CInt], options: CInt): pid_t = extern
 }
