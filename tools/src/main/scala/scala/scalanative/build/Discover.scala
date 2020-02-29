@@ -136,8 +136,10 @@ object Discover {
 
   /** Versions of clang which are known to work with Scala Native. */
   private[scalanative] val clangVersions =
-    Seq(("8", ""),
-        ("8", "0"),
+    Seq(
+        ("10", ""),
+        ("9", ""),
+        ("8", ""),
         ("7", ""),
         ("7", "0"), // LLVM changed version numbering scheme, try both.
         ("6", "0"),
