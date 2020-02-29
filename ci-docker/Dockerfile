@@ -23,7 +23,7 @@ RUN sed -i -e "s/deb http/deb [arch=$HOST_ARCHITECTURE] http/g" /etc/apt/host-so
 RUN apt-get update && apt-get install -y openjdk-8-jdk-headless:$HOST_ARCHITECTURE
 ENV PATH "/usr/lib/jvm/java-8-openjdk-$HOST_ARCHITECTURE/bin:$PATH"
 
-ENV SBT_LAUNCHER_VERSION 1.3.7
+ENV SBT_LAUNCHER_VERSION 1.3.8
 
 RUN apt-get install -y curl
 
