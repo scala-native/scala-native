@@ -43,14 +43,14 @@ final class InstantiatableClass private[reflect] (
 
 final class InvokableConstructor private[reflect] (
     val parameterTypes: List[Class[_]],
-    newInstanceFun: Any // TODO: replace Any with Function
+    newInstanceFun: Function0[Any]
 ) {
   def newInstance(args: Any*): Any = {
     /* Check the number of actual arguments. We let the casts and unbox
      * operations inside `newInstanceFun` take care of the rest.
      */
     require(args.size == parameterTypes.size)
-    ???
+    ???  // TODO: Implement
     // newInstanceFun.asInstanceOf[js.Dynamic].apply(
     //     args.asInstanceOf[Seq[js.Any]]: _*)
   }
@@ -68,7 +68,6 @@ object Reflect {
       fqcn: String,
       runtimeClass: Class[T],
       loadModuleFun: Function0[T]): Unit = {
-    println("+++ registerLoadableModuleClass called")
     loadableModuleClasses(fqcn) =
       new LoadableModuleClass(runtimeClass, loadModuleFun)
   }
@@ -76,7 +75,7 @@ object Reflect {
   protected[reflect] def registerInstantiatableClass[T](
       fqcn: String,
       runtimeClass: Class[T],
-      constructors: Seq[(Seq[Class[_]], Any)]) // TODO: replace Any with Function
+      constructors: Seq[(Seq[Class[_]], Function0[Any])])
     : Unit = {
     val invokableConstructors = constructors.map { c =>
       new InvokableConstructor(c._1.toList, c._2)

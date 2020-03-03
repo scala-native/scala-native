@@ -5,19 +5,15 @@ package nscplugin
 import scala.collection.mutable
 import scala.scalanative.nir._
 
-class ReflectiveInstantiationInfo {
+class ReflectiveInstantiationBuffer(val fqcn: String) {
   private val buf = mutable.UnrolledBuffer.empty[nir.Defn]
 
   def +=(defn: nir.Defn): Unit = {
     buf += defn
   }
 
-  val name = nir.Global.Top("SN$LazyModuleLoaders__$")
+  val name = nir.Global.Top("SN$ReflectivelyInstantiate$" + fqcn)
 
   def nonEmpty = buf.nonEmpty
   def toSeq    = buf.toSeq
-
-  def toSeqCompleted: Seq[nir.Defn] = {
-    buf :+ nir.Defn.Module(Attrs(), name, None, Seq())
-  }
 }

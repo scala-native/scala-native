@@ -228,8 +228,12 @@ trait NirGenStat { self: NirGenPhase =>
     }
 
     def withFreshExprBuffer[R](f: ExprBuffer => R): R = {
-      val exprBuffer = new ExprBuffer()(curFresh)
-      f(exprBuffer)
+      scoped(
+        curFresh := Fresh()
+      ) {
+        val exprBuffer = new ExprBuffer()(curFresh)
+        f(exprBuffer)
+      }
     }
 
     def genReflectiveInstantiation(cd: ClassDef): Unit = {
@@ -278,50 +282,87 @@ trait NirGenStat { self: NirGenPhase =>
 
     def genRegisterReflectiveInstantiationForModuleClass(
         cd: ClassDef): Seq[Inst] = {
-      val reflInstInfo = reflectiveInstInfo.get
-      val fqSymId      = s"${curClassSym.fullName}$$"
-      val fqSymName    = Global.Top(fqSymId)
+      val reflInstBuffer = curReflectiveInstBuffer.get
+      val fqSymId        = curClassSym.fullName + "$"
+      val fqSymName      = Global.Top(fqSymId)
+
+      val jlObjectName = Global.Top("java.lang.Object")
+      val srAbstractFunction0Name = Global.Top("scala.runtime.AbstractFunction0")
 
       def genLazyModuleLoaderMethod(exprBuf: ExprBuffer): Val = {
         val methodSig =
-          Sig.Method(s"lazyLoad${fqSymId}", Seq(Type.Ref(fqSymName)))
+          Sig.Method("apply", Seq(Type.Ref(jlObjectName)))
 
-        // Generate the module lazy loader function
+        // Generate the module loader class. The generated class extends
+        // the CFuncPtr0[Any] trait, i.e. has an apply method, which loads the module.
+        // We need a fresh ExprBuffer for this, since it is different scope.
         withFreshExprBuffer { exprBuf =>
           val body = {
-            scoped(
-              curFresh := Fresh()
-            ) {
-              val m = exprBuf.module(fqSymName, unwind(curFresh))
-              exprBuf.ret(m)
-              exprBuf.toSeq
-            }
+            // first argument is this
+            val thisArg = Val.Local(curFresh(), Type.Ref(reflInstBuffer.name))
+            exprBuf.label(curFresh(), Seq(thisArg))
+
+            val m = exprBuf.module(fqSymName, unwind(curFresh))
+            exprBuf.ret(m)
+            exprBuf.toSeq
           }
 
-          reflInstInfo += Defn.Define(
+          reflInstBuffer += Defn.Define(
             Attrs(),
-            reflInstInfo.name.member(methodSig),
-            nir.Type.Function(Seq(), Type.Ref(fqSymName)),
+            reflInstBuffer.name.member(methodSig),
+            nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Ref(jlObjectName)),
             body)
         }
 
-        // Generate the call to the module lazy loader function
-        val moduleVal = exprBuf.module(reflInstInfo.name, unwind(curFresh))
-        val methodVal = exprBuf.method(moduleVal, methodSig, unwind(curFresh))
+        // Generate the module loader class constructor.
+        // We need a fresh ExprBuffer for this, since it is different scope.
+        withFreshExprBuffer { exprBuf => 
+          val body = {
+            // first argument is this
+            val thisArg = Val.Local(curFresh(), Type.Ref(reflInstBuffer.name))
+            exprBuf.label(curFresh(), Seq(thisArg))
 
+            // call to super constructor
+            exprBuf.call(
+              Type.Function(Seq(Type.Ref(srAbstractFunction0Name)), Type.Unit),
+              Val.Global(srAbstractFunction0Name.member(Sig.Ctor(Seq())), Type.Ptr),
+              Seq(thisArg),
+              unwind(curFresh)
+            )
+
+            exprBuf.ret(Val.Unit)
+            exprBuf.toSeq
+          }
+
+          reflInstBuffer += Defn.Define(
+            Attrs(),
+            reflInstBuffer.name.member(Sig.Ctor(Seq())),
+            nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
+            body
+          )
+        }
+
+        reflInstBuffer += Defn.Class(
+          Attrs(),
+          reflInstBuffer.name,
+          Some(Global.Top("scala.runtime.AbstractFunction0")),
+          Seq(Global.Top("scala.Serializable")))
+
+        // Allocate and return an instance of the generated class.
+        val alloc = exprBuf.classalloc(reflInstBuffer.name, unwind(curFresh))
         exprBuf.call(
-          nir.Type.Function(Seq(), Type.Unit),
-          methodVal,
-          Seq(),
+          Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
+          Val.Global(reflInstBuffer.name.member(Sig.Ctor(Seq())), Type.Ptr),
+          Seq(alloc),
           unwind(curFresh)
         )
+        alloc
       }
 
       withFreshExprBuffer { exprBuf =>
         val fqcnArg = Val.String(fqSymId)
         val runtimeClassArg =
           exprBuf.genBoxClass(Val.Global(Global.Top(fqSymId), Type.Ptr))
-
         val loadModuleFunArg = genLazyModuleLoaderMethod(exprBuf)
 
         exprBuf.genApplyModuleMethod(

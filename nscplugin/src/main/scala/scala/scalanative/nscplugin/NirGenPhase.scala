@@ -38,8 +38,8 @@ abstract class NirGenPhase
   protected val curUnwindHandler  = new util.ScopedVar[Option[nir.Local]]
   protected val curStatBuffer     = new util.ScopedVar[StatBuffer]
 
-  protected val reflectiveInstInfo =
-    new util.ScopedVar[ReflectiveInstantiationInfo]
+  protected val curReflectiveInstBuffer =
+    new util.ScopedVar[ReflectiveInstantiationBuffer]
 
   protected def unwind(implicit fresh: Fresh): Next =
     curUnwindHandler.get.fold[Next](Next.None) { handler =>
@@ -61,8 +61,6 @@ abstract class NirGenPhase
       val classDefs = mutable.UnrolledBuffer.empty[ClassDef]
       val files     = mutable.UnrolledBuffer.empty[(Path, Seq[nir.Defn])]
 
-      val reflectiveInstantiationInfo = new ReflectiveInstantiationInfo
-
       def collectClassDefs(tree: Tree): Unit = tree match {
         case EmptyTree =>
           ()
@@ -83,20 +81,20 @@ abstract class NirGenPhase
 
         scoped(
           curStatBuffer := buffer,
-          reflectiveInstInfo := reflectiveInstantiationInfo
+          curReflectiveInstBuffer := new ReflectiveInstantiationBuffer(cd.symbol.fullNameString)
         ) {
           buffer.genClass(cd)
           files += ((path, buffer.toSeq))
+          // Add the reflective instantiation loaders to the file list
+          if (curReflectiveInstBuffer.get.nonEmpty) {
+            val path = genPathFor(cunit, curReflectiveInstBuffer.get.name.id)
+            files += ((path, curReflectiveInstBuffer.get.toSeq))
+          }
         }
       }
 
       collectClassDefs(cunit.body)
       classDefs.foreach(genClass)
-
-      if (reflectiveInstantiationInfo.nonEmpty) {
-        val path = genPathFor(cunit, reflectiveInstantiationInfo.name.id)
-        files += ((path, reflectiveInstantiationInfo.toSeqCompleted))
-      }
 
       files.par.foreach {
         case (path, stats) =>
