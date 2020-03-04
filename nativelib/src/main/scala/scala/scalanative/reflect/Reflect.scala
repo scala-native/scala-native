@@ -43,7 +43,7 @@ final class InstantiatableClass private[reflect] (
 
 final class InvokableConstructor private[reflect] (
     val parameterTypes: List[Class[_]],
-    newInstanceFun: Function0[Any]
+    newInstanceFun: Function1[Any, Any]
 ) {
   def newInstance(args: Any*): Any = {
     /* Check the number of actual arguments. We let the casts and unbox
@@ -75,7 +75,7 @@ object Reflect {
   protected[reflect] def registerInstantiatableClass[T](
       fqcn: String,
       runtimeClass: Class[T],
-      constructors: Seq[(Seq[Class[_]], Function1[Any])]): Unit = {
+      constructors: Seq[(Seq[Class[_]], Function1[Any, Any])]): Unit = {
     val invokableConstructors = constructors.map { c =>
       new InvokableConstructor(c._1.toList, c._2)
     }
