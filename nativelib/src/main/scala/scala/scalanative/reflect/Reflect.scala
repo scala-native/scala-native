@@ -50,7 +50,7 @@ final class InvokableConstructor private[reflect] (
      * operations inside `newInstanceFun` take care of the rest.
      */
     require(args.size == parameterTypes.size)
-    ???  // TODO: Implement
+    ??? // TODO: Implement
     // newInstanceFun.asInstanceOf[js.Dynamic].apply(
     //     args.asInstanceOf[Seq[js.Any]]: _*)
   }
@@ -75,8 +75,7 @@ object Reflect {
   protected[reflect] def registerInstantiatableClass[T](
       fqcn: String,
       runtimeClass: Class[T],
-      constructors: Seq[(Seq[Class[_]], Function0[Any])])
-    : Unit = {
+      constructors: Seq[(Seq[Class[_]], Function1[Any])]): Unit = {
     val invokableConstructors = constructors.map { c =>
       new InvokableConstructor(c._1.toList, c._2)
     }

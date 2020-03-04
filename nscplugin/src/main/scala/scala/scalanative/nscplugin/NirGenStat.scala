@@ -287,7 +287,8 @@ trait NirGenStat { self: NirGenPhase =>
       val fqSymName      = Global.Top(fqSymId)
 
       val jlObjectName = Global.Top("java.lang.Object")
-      val srAbstractFunction0Name = Global.Top("scala.runtime.AbstractFunction0")
+      val srAbstractFunction0Name =
+        Global.Top("scala.runtime.AbstractFunction0")
 
       def genLazyModuleLoaderMethod(exprBuf: ExprBuffer): Val = {
         val methodSig =
@@ -310,13 +311,14 @@ trait NirGenStat { self: NirGenPhase =>
           reflInstBuffer += Defn.Define(
             Attrs(),
             reflInstBuffer.name.member(methodSig),
-            nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Ref(jlObjectName)),
+            nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)),
+                              Type.Ref(jlObjectName)),
             body)
         }
 
         // Generate the module loader class constructor.
         // We need a fresh ExprBuffer for this, since it is different scope.
-        withFreshExprBuffer { exprBuf => 
+        withFreshExprBuffer { exprBuf =>
           val body = {
             // first argument is this
             val thisArg = Val.Local(curFresh(), Type.Ref(reflInstBuffer.name))
@@ -325,7 +327,8 @@ trait NirGenStat { self: NirGenPhase =>
             // call to super constructor
             exprBuf.call(
               Type.Function(Seq(Type.Ref(srAbstractFunction0Name)), Type.Unit),
-              Val.Global(srAbstractFunction0Name.member(Sig.Ctor(Seq())), Type.Ptr),
+              Val.Global(srAbstractFunction0Name.member(Sig.Ctor(Seq())),
+                         Type.Ptr),
               Seq(thisArg),
               unwind(curFresh)
             )
