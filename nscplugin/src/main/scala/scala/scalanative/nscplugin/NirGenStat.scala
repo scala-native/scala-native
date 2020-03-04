@@ -16,6 +16,9 @@ trait NirGenStat { self: NirGenPhase =>
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
 
+  def isStaticModule(sym: Symbol) =
+    sym.isModuleClass && !sym.isImplClass && !sym.isLifted
+
   class MethodEnv(val fresh: Fresh) {
     private val env = mutable.Map.empty[Symbol, Val]
 
@@ -258,9 +261,6 @@ trait NirGenStat { self: NirGenPhase =>
     def genRegisterReflectiveInstantiation(cd: ClassDef): Unit = {
       val owner = genTypeName(curClassSym)
       val name  = owner.member(nir.Sig.Clinit())
-
-      def isStaticModule(sym: Symbol) =
-        sym.isModuleClass && !sym.isImplClass && !sym.isLifted
 
       val staticInitBody =
         if (isStaticModule(curClassSym))

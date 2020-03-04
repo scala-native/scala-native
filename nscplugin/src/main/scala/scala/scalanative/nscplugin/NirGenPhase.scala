@@ -82,7 +82,8 @@ abstract class NirGenPhase
         scoped(
           curStatBuffer := buffer,
           curReflectiveInstBuffer := new ReflectiveInstantiationBuffer(
-            cd.symbol.fullNameString)
+            cd.symbol.fullNameString + (if (isStaticModule(cd.symbol)) "$"
+                                        else ""))
         ) {
           buffer.genClass(cd)
           files += ((path, buffer.toSeq))
