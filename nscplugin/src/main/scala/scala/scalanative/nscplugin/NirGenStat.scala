@@ -282,7 +282,6 @@ trait NirGenStat { self: NirGenPhase =>
 
     def genRegisterReflectiveInstantiationForModuleClass(
         cd: ClassDef): Seq[Inst] = {
-      val reflInstBuffer = curReflectiveInstBuffer.get
       val fqSymId        = curClassSym.fullName + "$"
       val fqSymName      = Global.Top(fqSymId)
 
@@ -290,8 +289,11 @@ trait NirGenStat { self: NirGenPhase =>
       val srAbstractFunction0Name =
         Global.Top("scala.runtime.AbstractFunction0")
 
+      ReflectiveInstantiationInfo += new ReflectiveInstantiationBuffer(fqSymId)
+      val reflInstBuffer = ReflectiveInstantiationInfo.last
+
       def genLazyModuleLoaderMethod(exprBuf: ExprBuffer): Val = {
-        val methodSig =
+        val applyMethodSig =
           Sig.Method("apply", Seq(Type.Ref(jlObjectName)))
 
         // Generate the module loader class. The generated class extends
@@ -310,7 +312,7 @@ trait NirGenStat { self: NirGenPhase =>
 
           reflInstBuffer += Defn.Define(
             Attrs(),
-            reflInstBuffer.name.member(methodSig),
+            reflInstBuffer.name.member(applyMethodSig),
             nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)),
                               Type.Ref(jlObjectName)),
             body)
@@ -363,6 +365,8 @@ trait NirGenStat { self: NirGenPhase =>
       }
 
       withFreshExprBuffer { exprBuf =>
+        exprBuf.label(curFresh(), Seq())
+
         val fqcnArg = Val.String(fqSymId)
         val runtimeClassArg =
           exprBuf.genBoxClass(Val.Global(Global.Top(fqSymId), Type.Ptr))

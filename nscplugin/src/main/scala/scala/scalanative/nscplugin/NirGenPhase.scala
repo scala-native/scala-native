@@ -38,9 +38,6 @@ abstract class NirGenPhase
   protected val curUnwindHandler  = new util.ScopedVar[Option[nir.Local]]
   protected val curStatBuffer     = new util.ScopedVar[StatBuffer]
 
-  protected val curReflectiveInstBuffer =
-    new util.ScopedVar[ReflectiveInstantiationBuffer]
-
   protected def unwind(implicit fresh: Fresh): Next =
     curUnwindHandler.get.fold[Next](Next.None) { handler =>
       val exc = Val.Local(fresh(), nir.Rt.Object)
@@ -80,23 +77,21 @@ abstract class NirGenPhase
         val buffer = new StatBuffer
 
         scoped(
-          curStatBuffer := buffer,
-          curReflectiveInstBuffer := new ReflectiveInstantiationBuffer(
-            cd.symbol.fullNameString + (if (isStaticModule(cd.symbol)) "$"
-                                        else ""))
+          curStatBuffer := buffer
         ) {
           buffer.genClass(cd)
           files += ((path, buffer.toSeq))
-          // Add the reflective instantiation loaders to the file list
-          if (curReflectiveInstBuffer.get.nonEmpty) {
-            val path = genPathFor(cunit, curReflectiveInstBuffer.get.name.id)
-            files += ((path, curReflectiveInstBuffer.get.toSeq))
-          }
         }
       }
 
       collectClassDefs(cunit.body)
       classDefs.foreach(genClass)
+
+      // Add the reflective instantiation loaders to the file list
+      ReflectiveInstantiationInfo.foreach { reflInstBuf =>
+        val path = genPathFor(cunit, reflInstBuf.name.id)
+        files += ((path, reflInstBuf.toSeq))
+      }
 
       files.par.foreach {
         case (path, stats) =>
