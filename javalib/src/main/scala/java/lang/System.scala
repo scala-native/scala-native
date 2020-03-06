@@ -61,7 +61,8 @@ object System {
         sysProps.setProperty("user.language", userLang)
         sysProps.setProperty("user.country", userCountry)
       }
-      sysProps.setProperty("user.home", getenv("HOME"))
+      val home = getenv("HOME")
+      if (home != null) sysProps.setProperty("user.home", home)
       val buf = stackalloc[scala.Byte](1024)
       unistd.getcwd(buf, 1024) match {
         case null =>
