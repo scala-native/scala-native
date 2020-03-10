@@ -280,10 +280,42 @@ trait NirGenStat { self: NirGenPhase =>
       }
     }
 
+    // Generate the constructor for the class instantiator class,
+    // which is expected to extend one of scala.runtime.AbstractFunctionX.
+    def genReflectiveInstantiationConstructor(
+        reflInstBuffer: ReflectiveInstantiationBuffer,
+        superClass: Global): Unit = {
+      withFreshExprBuffer { exprBuf =>
+        val body = {
+          // first argument is this
+          val thisArg = Val.Local(curFresh(), Type.Ref(reflInstBuffer.name))
+          exprBuf.label(curFresh(), Seq(thisArg))
+
+          // call to super constructor
+          exprBuf.call(
+            Type.Function(Seq(Type.Ref(superClass)), Type.Unit),
+            Val.Global(superClass.member(Sig.Ctor(Seq())), Type.Ptr),
+            Seq(thisArg),
+            unwind(curFresh)
+          )
+
+          exprBuf.ret(Val.Unit)
+          exprBuf.toSeq
+        }
+
+        reflInstBuffer += Defn.Define(
+          Attrs(),
+          reflInstBuffer.name.member(Sig.Ctor(Seq())),
+          nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
+          body
+        )
+      }
+    }
+
     def genRegisterReflectiveInstantiationForModuleClass(
         cd: ClassDef): Seq[Inst] = {
-      val fqSymId        = curClassSym.fullName + "$"
-      val fqSymName      = Global.Top(fqSymId)
+      val fqSymId   = curClassSym.fullName + "$"
+      val fqSymName = Global.Top(fqSymId)
 
       val jlObjectName = Global.Top("java.lang.Object")
       val srAbstractFunction0Name =
@@ -319,33 +351,8 @@ trait NirGenStat { self: NirGenPhase =>
         }
 
         // Generate the module loader class constructor.
-        // We need a fresh ExprBuffer for this, since it is different scope.
-        withFreshExprBuffer { exprBuf =>
-          val body = {
-            // first argument is this
-            val thisArg = Val.Local(curFresh(), Type.Ref(reflInstBuffer.name))
-            exprBuf.label(curFresh(), Seq(thisArg))
-
-            // call to super constructor
-            exprBuf.call(
-              Type.Function(Seq(Type.Ref(srAbstractFunction0Name)), Type.Unit),
-              Val.Global(srAbstractFunction0Name.member(Sig.Ctor(Seq())),
-                         Type.Ptr),
-              Seq(thisArg),
-              unwind(curFresh)
-            )
-
-            exprBuf.ret(Val.Unit)
-            exprBuf.toSeq
-          }
-
-          reflInstBuffer += Defn.Define(
-            Attrs(),
-            reflInstBuffer.name.member(Sig.Ctor(Seq())),
-            nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
-            body
-          )
-        }
+        genReflectiveInstantiationConstructor(reflInstBuffer,
+                                              srAbstractFunction0Name)
 
         reflInstBuffer += Defn.Class(
           Attrs(),
