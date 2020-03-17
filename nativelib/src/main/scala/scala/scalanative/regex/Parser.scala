@@ -1501,13 +1501,9 @@ object Parser {
                 max == -2 || max > 1000 || max >= 0 && min > max) {
               // Numbers were negative or too big,
               // or max is present and min > max.
-              throw new PatternSyntaxException(
-                ERR_INVALID_REPEAT_SIZE,
-//                                               t.from(start),
-//                                               0)
-                t.from(start),
-                t.pos
-              )
+              throw new PatternSyntaxException(ERR_INVALID_REPEAT_SIZE,
+                                               t.from(start),
+                                               0)
             }
 
             result = (min << 16) | (max & 0xffff) // success

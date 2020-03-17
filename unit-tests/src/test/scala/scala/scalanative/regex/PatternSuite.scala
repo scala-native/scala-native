@@ -432,9 +432,9 @@ object PatternSuite extends tests.Suite {
   private def syntax(pattern: String, description: String, index: Int): Unit = {
     assertThrowsAnd[PatternSyntaxException](Pattern.compile(pattern))(
       e => {
-        e.getDescription == description &&
-        e.getPattern == pattern &&
-        e.getIndex == index
+        (e.getDescription == description) &&
+        (e.getPattern == pattern) &&
+        (e.getIndex == index)
       }
     )
   }

@@ -617,7 +617,7 @@ object PatternSuite extends tests.Suite {
       e => {
         (e.getDescription == description) &&
         (e.getPattern == pattern) &&
-        (e.getIndex) == (index)
+        (e.getIndex == index)
       }
     )
   }
