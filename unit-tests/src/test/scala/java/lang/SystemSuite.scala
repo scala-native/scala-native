@@ -64,7 +64,7 @@ object SystemSuite extends tests.Suite {
     assert(delta <= tolerance)
   }
 
-  test("Property user.home should be set if env variable is set") {
+  test("Property user.home should be set") {
     assertEquals(System.getProperty("user.home"), System.getenv("HOME"))
   }
 
