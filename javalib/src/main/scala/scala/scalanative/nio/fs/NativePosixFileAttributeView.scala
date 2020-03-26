@@ -4,7 +4,6 @@ import java.util.{HashMap, HashSet, Set}
 import java.util.concurrent.TimeUnit
 import java.nio.file.{LinkOption, Path}
 import java.nio.file.attribute._
-import java.io.IOException
 
 import scalanative.unsigned._
 import scalanative.unsafe._
@@ -101,10 +100,10 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
         st_mode = buf._13
       }
 
-      private def filePasswd()(implicit z: Zone) =
+      private def filePasswd() =
         getPasswd(st_uid)
 
-      private def fileGroup()(implicit z: Zone) =
+      private def fileGroup() =
         getGroup(st_gid)
 
       override def fileKey = st_ino.asInstanceOf[Object]
@@ -207,28 +206,28 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     else throwIOException()
   }
 
-  private def getGroup(name: CString)(implicit z: Zone): Ptr[grp.group] = {
+  private def getGroup(name: CString): Ptr[grp.group] = {
     val res = grp.getgrnam(name)
 
     if (res != null) res
     else throwIOException()
   }
 
-  private def getGroup(gid: stat.gid_t)(implicit z: Zone): Ptr[grp.group] = {
+  private def getGroup(gid: stat.gid_t): Ptr[grp.group] = {
     val res = grp.getgrgid(gid)
 
     if (res != null) res
     else throwIOException()
   }
 
-  private def getPasswd(name: CString)(implicit z: Zone): Ptr[pwd.passwd] = {
+  private def getPasswd(name: CString): Ptr[pwd.passwd] = {
     val res = pwd.getpwnam(name)
 
     if (res != null) res
     else throwIOException()
   }
 
-  private def getPasswd(uid: stat.uid_t)(implicit z: Zone): Ptr[pwd.passwd] = {
+  private def getPasswd(uid: stat.uid_t): Ptr[pwd.passwd] = {
     val res = pwd.getpwuid(uid)
 
     if (res != null) res
