@@ -8,7 +8,7 @@ import java.nio.file.attribute._
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
-import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
+import scalanative.posix.{grp, pwd, unistd, time, utime}
 import scalanative.posix.sys.stat
 
 final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
