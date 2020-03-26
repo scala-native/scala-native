@@ -21,10 +21,8 @@ object statvfs {
                            CUnsignedLong, // f_flag
                            CUnsignedLong] // f_namemax
 
-  @name("scalanative_statvfs")
   def statvfs(path: CString, buf: Ptr[statvfs]): CInt = extern
 
-  @name("scalanative_fstatvfs")
   def fstatvfs(fd: CInt, buf: Ptr[statvfs]): CInt = extern
 
   @name("scalanative_st_rdonly")

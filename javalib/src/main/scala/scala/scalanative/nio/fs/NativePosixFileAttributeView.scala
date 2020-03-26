@@ -208,34 +208,30 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
   }
 
   private def getGroup(name: CString)(implicit z: Zone): Ptr[grp.group] = {
-    val buf = alloc[grp.group]
-    val err = grp.getgrnam(name, buf)
+    val res = grp.getgrnam(name)
 
-    if (err == 0) buf
+    if (res != null) res
     else throwIOException()
   }
 
   private def getGroup(gid: stat.gid_t)(implicit z: Zone): Ptr[grp.group] = {
-    val buf = alloc[grp.group]
-    val err = grp.getgrgid(gid, buf)
+    val res = grp.getgrgid(gid)
 
-    if (err == 0) buf
+    if (res != null) res
     else throwIOException()
   }
 
   private def getPasswd(name: CString)(implicit z: Zone): Ptr[pwd.passwd] = {
-    val buf = alloc[pwd.passwd]
-    val err = pwd.getpwnam(name, buf)
+    val res = pwd.getpwnam(name)
 
-    if (err == 0) buf
+    if (res != null) res
     else throwIOException()
   }
 
   private def getPasswd(uid: stat.uid_t)(implicit z: Zone): Ptr[pwd.passwd] = {
-    val buf = alloc[pwd.passwd]
-    val err = pwd.getpwuid(uid, buf)
+    val res = pwd.getpwuid(uid)
 
-    if (err == 0) buf
+    if (res != null) res
     else throwIOException()
   }
 

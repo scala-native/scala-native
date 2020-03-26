@@ -10,9 +10,7 @@ object grp {
                         gid_t, // gr_gid
                         Ptr[CString]] // gr_mem
 
-  @name("scalanative_getgrgid")
-  def getgrgid(gid: gid_t, buf: Ptr[group]): CInt = extern
+  def getgrgid(gid: gid_t): Ptr[group] = extern
 
-  @name("scalanative_getgrnam")
-  def getgrnam(name: CString, buf: Ptr[group]): CInt = extern
+  def getgrnam(name: CString): Ptr[group] = extern
 }
