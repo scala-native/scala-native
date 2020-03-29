@@ -536,49 +536,51 @@ object CodeGen {
     def genChars(value: String): Unit = {
       // `value` should contain a content of a CString literal as is in its source file
       // malformed literals are assumed absent
-      str("c\"")
-      @tailrec def loop(from: Int): Unit =
-        value.indexOf('\\', from) match {
-          case -1 => str(value.substring(from))
-          case idx =>
-            str(value.substring(from, idx))
-            import Character.isDigit
-            def isOct(c: Char): Boolean = isDigit(c) && c != '8' && c != '9'
-            def isHex(c: Char): Boolean =
-              isDigit(c) ||
-                c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
-                c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
-            value(idx + 1) match {
-              case c @ ('\'' | '"' | '?') => str(c); loop(idx + 2)
-              case '\\'                   => str("\\\\"); loop(idx + 2)
-              case 'a'                    => str("\\07"); loop(idx + 2)
-              case 'b'                    => str("\\08"); loop(idx + 2)
-              case 'f'                    => str("\\0C"); loop(idx + 2)
-              case 'n'                    => str("\\0A"); loop(idx + 2)
-              case 'r'                    => str("\\0D"); loop(idx + 2)
-              case 't'                    => str("\\09"); loop(idx + 2)
-              case 'v'                    => str("\\0B"); loop(idx + 2)
-              case d if isOct(d) =>
-                val oct = value.drop(idx + 1).take(3).takeWhile(isOct)
-                val hex =
-                  Integer.toHexString(Integer.parseInt(oct, 8)).toUpperCase
-                str {
-                  if (hex.length < 2) "\\0" + hex
-                  else "\\" + hex
-                }
-                loop(idx + 1 + oct.length)
-              case 'x' =>
-                val hex = value.drop(idx + 2).takeWhile(isHex).toUpperCase
-                str {
-                  if (hex.length < 2) "\\0" + hex
-                  else "\\" + hex
-                }
-                loop(idx + 2 + hex.length)
-              case unknown =>
-                // clang warns but allows unknown escape sequences, while java emits errors
-                str(unknown); loop(idx + 2)
-            }
+      def isOct(c: Char): Boolean = Character.isDigit(c) && c != '8' && c != '9'
+      def isHex(c: Char): Boolean =
+        Character.isDigit(c) ||
+          c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
+          c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
+      def escapedHex(hex: String) =
+        if (hex.length < 2) s"\\0$hex" else s"\\$hex"
+      @tailrec def loop(idx: Int, escaping: Boolean = false): Unit = {
+        if (idx < value.length) {
+          value(idx) match {
+            case '"' => str("\\22"); loop(idx + 1)
+            case c if escaping =>
+              c match {
+                case '\'' | '?' => str(c); loop(idx + 1)
+                case '\\'       => str("\\\\"); loop(idx + 1)
+                case 'a'        => str("\\07"); loop(idx + 1)
+                case 'b'        => str("\\08"); loop(idx + 1)
+                case 'f'        => str("\\0C"); loop(idx + 1)
+                case 'n'        => str("\\0A"); loop(idx + 1)
+                case 'r'        => str("\\0D"); loop(idx + 1)
+                case 't'        => str("\\09"); loop(idx + 1)
+                case 'v'        => str("\\0B"); loop(idx + 1)
+                case d if isOct(d) =>
+                  val oct = value.drop(idx).take(3).takeWhile(isOct)
+                  val hex =
+                    Integer.toHexString(Integer.parseInt(oct, 8)).toUpperCase
+                  str(escapedHex(hex))
+                  loop(idx + oct.length)
+                case 'x' =>
+                  val hex = value.drop(idx + 1).takeWhile(isHex).toUpperCase
+                  str(escapedHex(hex))
+                  loop(idx + 1 + hex.length)
+                case unknown =>
+                  // clang warns but allows unknown escape sequences, while java emits errors
+                  str(unknown); loop(idx + 1)
+              }
+            case '\\' =>
+              loop(idx + 1, escaping = true)
+            case c =>
+              str(c); loop(idx + 1)
+          }
         }
+      }
+
+      str("c\"")
       loop(0)
       str("\\00\"")
     }
