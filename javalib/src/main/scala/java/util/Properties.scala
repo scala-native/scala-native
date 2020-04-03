@@ -35,7 +35,7 @@ class Properties(protected val defaults: Properties)
       throw new NullPointerException()
     }
     val stream = new BufferedInputStream(inStream)
-    stream.mark(Int.MaxValue)
+    stream.mark(8192) // default buffer size
 
     val _isEbcdic = isEbcdic(stream)
     stream.reset()
@@ -101,8 +101,7 @@ class Properties(protected val defaults: Properties)
   }
 
   def list(out: PrintStream): Unit = {
-    out.println("-- listing properties --")
-    entrySet().asScala.foreach { entry => out.println(format(entry)) }
+    list(new PrintWriter(new OutputStreamWriter(out), true))
   }
 
   def list(out: PrintWriter): Unit = {
@@ -363,46 +362,6 @@ class Properties(protected val defaults: Properties)
     }
     writer.write(System.lineSeparator)
   }
-
-  // private def dumpString2(buffer: StringBuilder,
-  //                         string: String,
-  //                         isKey: Boolean,
-  //                         convertHexaDecimal: Boolean): Unit = {
-  //   var index  = 0
-  //   val length = string.length
-  //   if (!isKey && index < length && string.charAt(index) == ' ') {
-  //     buffer.append("\\ ")
-  //     index += 1
-  //   }
-
-  //   while (index < length) {
-  //     val ch = string.charAt(index)
-  //     (ch: @switch) match {
-  //       case '\t' =>
-  //         buffer.append("\\t")
-  //       case '\n' =>
-  //         buffer.append("\\n")
-  //       case '\f' =>
-  //         buffer.append("\\f")
-  //       case '\r' =>
-  //         buffer.append("\\r")
-  //       case _ =>
-  //         if ("\\#!=:".indexOf(ch) >= 0 || (isKey && ch == ' ')) {
-  //           buffer.append('\\')
-  //         }
-  //         if (ch >= ' ' && ch <= '~') {
-  //           buffer.append(ch)
-  //         } else {
-  //           if (convertHexaDecimal) {
-  //             buffer.append(unicodeToHexaDecimal(ch))
-  //           } else {
-  //             buffer.append(ch)
-  //           }
-  //         }
-  //     }
-  //     index += 1
-  //   }
-  // }
 
   private def dumpString(buffer: StringBuilder,
                          string: String,
