@@ -681,7 +681,19 @@ object CodeGen {
           ()
 
         case call: Op.Call =>
-          genCall(genBind, call, unwind)
+          val withGeneratedExtern = call match {
+            case Op.Call(ty, Val.Global(g @ Global.Member(_, sig), valty), args)
+                if sig.isExtern =>
+              deps.collectFirst {
+                case gg @ Global.Member(_, `sig`) => gg
+              } match {
+                case Some(gg) => Op.Call(ty, Val.Global(gg, valty), args)
+                case None     => call
+              }
+            case _ =>
+              call
+          }
+          genCall(genBind, withGeneratedExtern, unwind)
 
         case Op.Load(ty, ptr) =>
           val pointee = fresh()
