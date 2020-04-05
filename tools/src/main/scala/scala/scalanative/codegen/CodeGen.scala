@@ -687,8 +687,9 @@ object CodeGen {
               deps.collectFirst {
                 case gg @ Global.Member(_, `sig`) => gg
               } match {
-                case Some(gg) => Op.Call(ty, Val.Global(gg, valty), args)
-                case None     => call
+                case Some(gg) if gg != g =>
+                  Op.Call(ty, Val.Global(gg, valty), args)
+                case _ => call
               }
             case _ =>
               call
