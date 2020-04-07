@@ -538,7 +538,7 @@ lazy val tests =
 lazy val sandbox =
   project
     .in(file("sandbox"))
-    .settings(projectSettings) 
+    .settings(projectSettings)
     .settings(scalacOptions -= "-Xfatal-warnings")
     .settings(noPublishSettings)
     .settings(
