@@ -57,6 +57,8 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
         result.raise(v, mergeUnwind(unwind))
       case Inst.Unreachable(unwind) =>
         result.unreachable(mergeUnwind(unwind))
+      case unknown =>
+        throw BailOut("MergeUnwind unknown Inst: ${unknown.show}")
     }
     result.toSeq
   }

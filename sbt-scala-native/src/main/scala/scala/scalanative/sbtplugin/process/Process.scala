@@ -17,6 +17,8 @@ import java.io.{
 }
 import java.net.URL
 
+import scala.language.implicitConversions
+
 trait ProcessExtra {
   import Process._
   implicit def builderToProcess(builder: JProcessBuilder): ProcessBuilder =
@@ -101,7 +103,7 @@ object Process extends ProcessExtra {
   }
 }
 
-trait SourcePartialBuilder extends NotNull {
+trait SourcePartialBuilder {
 
   /** Writes the output stream of this process to the given file. */
   def #>(f: File): ProcessBuilder = toFile(f, false)
@@ -122,7 +124,8 @@ trait SourcePartialBuilder extends NotNull {
   def cat                                      = toSource
   protected def toSource: ProcessBuilder
 }
-trait SinkPartialBuilder extends NotNull {
+
+trait SinkPartialBuilder {
 
   /** Reads the given file into the input stream of this process. */
   def #<(f: File): ProcessBuilder = #<(new FileInput(f))
@@ -153,7 +156,7 @@ trait FilePartialBuilder extends SinkPartialBuilder with SourcePartialBuilder {
  * Represents a process that is running or has finished running.
  * It may be a compound process with several underlying native processes (such as 'a #&& b`).
  */
-trait Process extends NotNull {
+trait Process {
 
   /** Blocks until this process exits and returns the exit code.*/
   def exitValue(): Int
@@ -276,8 +279,7 @@ trait ProcessBuilder extends SourcePartialBuilder with SinkPartialBuilder {
 final class ProcessIO(val writeInput: OutputStream => Unit,
                       val processOutput: InputStream => Unit,
                       val processError: InputStream => Unit,
-                      val inheritInput: JProcessBuilder => Boolean)
-    extends NotNull {
+                      val inheritInput: JProcessBuilder => Boolean) {
   def withOutput(process: InputStream => Unit): ProcessIO =
     new ProcessIO(writeInput, process, processError, inheritInput)
   def withError(process: InputStream => Unit): ProcessIO =

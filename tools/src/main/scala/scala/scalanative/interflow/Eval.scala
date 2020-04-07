@@ -90,6 +90,7 @@ trait Eval { self: Interflow =>
             throw BailOut("try-catch")
           }
           return Inst.Unreachable(Next.None)
+        case _ => BailOut
       }
     }
 

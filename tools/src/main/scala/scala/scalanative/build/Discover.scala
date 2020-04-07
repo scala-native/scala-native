@@ -45,7 +45,7 @@ object Discover {
   def compileOptions(): Seq[String] = {
     val includes = {
       val includedir =
-        Try(Process("llvm-config --includedir").lines_!.toSeq)
+        Try(Process("llvm-config --includedir").lineStream_!.toSeq)
           .getOrElse(Seq.empty)
       ("/usr/local/include" +: includedir).map(s => s"-I$s")
     }
@@ -56,7 +56,7 @@ object Discover {
   def linkingOptions(): Seq[String] = {
     val libs = {
       val libdir =
-        Try(Process("llvm-config --libdir").lines_!.toSeq)
+        Try(Process("llvm-config --libdir").lineStream_!.toSeq)
           .getOrElse(Seq.empty)
       ("/usr/local/lib" +: libdir).map(s => s"-L$s")
     }
@@ -171,7 +171,7 @@ object Discover {
         } :+ binaryName
 
         Process("which" +: binaryNames)
-          .lines_!(silentLogger())
+          .lineStream_!(silentLogger())
           .map(Paths.get(_))
           .headOption
           .getOrElse {

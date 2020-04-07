@@ -20,7 +20,15 @@ object AsInstanceOfSuite extends tests.Suite {
   }
 
   test("null.asInstanceOf[Null]") {
-    assert(anyNull.asInstanceOf[Null] == null)
+//    (anyNull.asInstanceOf[Null] == null) and
+//    (anyNull.asInstanceOf[Null] eq null) are _compile_ time tests and
+//    will always be true. How do I know? Scalac tells me so...
+//    Wrapping in an Option gives a somewhat convoluted runtime test.
+//    If something is massively wrong with anyNull.asInstanceOf[Null]
+//    the Option will hold a Some(), of some kind, rather than the expected
+//    None. I (LeeTibbert) am not sure what value this test adds beyond
+//    symmetry & completeness.
+    assert(Option(anyNull.asInstanceOf[Null]).isEmpty)
   }
 
   test("null.asInstanceOf[Nothing]") {
