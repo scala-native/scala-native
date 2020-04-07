@@ -232,10 +232,9 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
   }
 
   private def getPasswd(uid: stat.uid_t)(implicit z: Zone): Ptr[pwd.passwd] = {
-    val buf = alloc[pwd.passwd]
-    val err = pwd.getpwuid(uid, buf)
+    val pw = pwd.getpwuid(uid)
 
-    if (err == 0) buf
+    if (pw != null) pw
     else throwIOException()
   }
 

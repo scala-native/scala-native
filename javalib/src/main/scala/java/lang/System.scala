@@ -3,6 +3,7 @@ package java.lang
 import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.unsafe._
+import scala.scalanative.posix.pwd
 import scala.scalanative.posix.unistd
 import scala.scalanative.posix.sys.utsname._
 import scala.scalanative.posix.sys.uname._
@@ -61,7 +62,15 @@ object System {
         sysProps.setProperty("user.language", userLang)
         sysProps.setProperty("user.country", userCountry)
       }
-      sysProps.setProperty("user.home", getenv("HOME"))
+      {
+        val uid = unistd.getuid()
+        val res = pwd.getpwuid(uid)
+        if (res._4 != null) {
+          Zone { implicit z =>
+            sysProps.setProperty("user.home", fromCString(res._4))
+          }
+        }
+      }
       val buf = stackalloc[scala.Byte](1024)
       unistd.getcwd(buf, 1024) match {
         case null =>

@@ -23,6 +23,7 @@ object unistd {
   def getcwd(buf: CString, size: CSize): CString                  = extern
   def gethostname(name: CString, len: CSize): CInt                = extern
   def getpid(): CInt                                              = extern
+  def getuid(): uid_t                                             = extern
   def lseek(fildes: CInt, offset: off_t, whence: CInt): off_t     = extern
   def pipe(fildes: Ptr[CInt]): CInt                               = extern
   def read(fildes: CInt, buf: Ptr[_], nbyte: CSize): CInt         = extern

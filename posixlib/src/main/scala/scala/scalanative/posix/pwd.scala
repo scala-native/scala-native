@@ -13,8 +13,10 @@ object pwd {
                          CString, // pw_dir
                          CString] // pw_shell
 
-  @name("scalanative_getpwuid")
-  def getpwuid(uid: uid_t, buf: Ptr[passwd]): CInt = extern
+  def getpwuid(uid: uid_t): Ptr[passwd] = extern
+
+  // @name("scalanative_getpwuid")
+  // def getpwuid(uid: uid_t, buf: Ptr[passwd]): CInt = extern
 
   @name("scalanative_getpwnam")
   def getpwnam(name: CString, buf: Ptr[passwd]): CInt = extern
