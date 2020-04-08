@@ -391,6 +391,73 @@ trait NirGenStat { self: NirGenPhase =>
 
     def genRegisterReflectiveInstantiationForNormalClass(
         cd: ClassDef): Seq[Inst] = {
+      val fqSymId   = curClassSym.fullName
+      val fqSymName = Global.Top(fqSymId)
+
+      val jlObjectName = Global.Top("java.lang.Object")
+      val srAbstractFunction1Name =
+        Global.Top("scala.runtime.AbstractFunction1")
+
+      def genLazyClassInstantiationMethod(exprBuf: ExprBuffer,
+                                          ctors: Seq[global.Symbol]): Val = {
+        val applyMethodSig =
+          Sig.Method("apply",
+                     Seq(Type.Ref(jlObjectName), Type.Ref(jlObjectName)))
+
+        // For each (public) constructor C, generate a lambda responsible for
+        // initialising and returning an instance of the class, using C.
+        for (ctor <- ctors) {
+          val ctorArgsSig = genMethodSig(ctor).args.map(_.mangle).mkString
+
+          ReflectiveInstantiationInfo += new ReflectiveInstantiationBuffer(
+            fqSymId + ctorArgsSig)
+          val reflInstBuffer = ReflectiveInstantiationInfo.last
+
+          // Lambda generation consists of generating a class which extends
+          // scala.runtime.AbstractFunction1, with an apply method that accepts
+          // the list of arguments, instantiates an instance of the class by
+          // forwarding the arguments to C, and returns the instance.
+          withFreshExprBuffer { exprBuf =>
+            val body = {
+              // first argument is this
+              val thisArg = Val.Local(curFresh(), Type.Ref(reflInstBuffer.name))
+              // second argument is argument sequence
+              val argsArg = Val.Local(curFresh(), Type.Ref(jlObjectName))
+              exprBuf.label(curFresh(), Seq(thisArg, argsArg))
+
+              // TODO: Build constructor infos value
+
+              exprBuf.ret(Val.Unit)
+              exprBuf.toSeq
+            }
+          }
+
+          // Generate the class instantiator constructor.
+          genReflectiveInstantiationConstructor(reflInstBuffer,
+                                                srAbstractFunction1Name)
+
+          reflInstBuffer += Defn.Class(
+            Attrs(),
+            reflInstBuffer.name,
+            Some(Global.Top("scala.runtime.AbstractFunction1")),
+            Seq(Global.Top("scala.Serializable")))
+
+          // Allocate an instance of the generated class.
+          val alloc = exprBuf.classalloc(reflInstBuffer.name, unwind(curFresh))
+          exprBuf.call(
+            Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
+            Val.Global(reflInstBuffer.name.member(Sig.Ctor(Seq())), Type.Ptr),
+            Seq(alloc),
+            unwind(curFresh)
+          )
+
+        }
+
+        // TODO: Build constructor infos value
+        Val.Unit
+      }
+
+      // Collect public constructors.
       val ctors =
         if (curClassSym.isAbstractClass) Nil
         else
@@ -399,7 +466,23 @@ trait NirGenStat { self: NirGenPhase =>
             .alternatives
             .filter(_.isPublic)
 
-      unsupported(cd)
+      withFreshExprBuffer { exprBuf =>
+        exprBuf.label(curFresh(), Seq())
+
+        val fqcnArg = Val.String(fqSymId)
+        val runtimeClassArg =
+          exprBuf.genBoxClass(Val.Global(fqSymName, Type.Ptr))
+        val instantiateClassFunArg =
+          genLazyClassInstantiationMethod(exprBuf, ctors)
+
+        exprBuf.genApplyModuleMethod(
+          ReflectModule,
+          Reflect_registerInstantiatableClass,
+          Seq(fqcnArg, runtimeClassArg, instantiateClassFunArg).map(ValTree(_)))
+
+        exprBuf.ret(Val.Unit)
+        exprBuf.toSeq
+      }
     }
 
     def genMethods(cd: ClassDef): Unit =

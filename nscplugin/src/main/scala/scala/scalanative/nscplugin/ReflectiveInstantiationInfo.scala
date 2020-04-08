@@ -28,7 +28,7 @@ object ReflectiveInstantiationInfo {
 
   def nonEmpty = bufs.nonEmpty
   def toSeq    = bufs.toSeq
-  def last = bufs.last
+  def last     = bufs.last
 
   def foreach(f: ReflectiveInstantiationBuffer => Unit): Unit = {
     bufs.foreach(f)
