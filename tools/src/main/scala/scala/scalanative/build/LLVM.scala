@@ -96,10 +96,8 @@ private[scalanative] object LLVM {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
         val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
-        val compilec = Seq(compiler) ++ flto(config) ++ flags ++ Seq("-c",
-                                                                     path,
-                                                                     "-o",
-                                                                     opath)
+        val compilec =
+          Seq(compiler) ++ flto(config) ++ flags ++ Seq("-c", path, "-o", opath)
 
         config.logger.running(compilec)
         val result = Process(compilec, config.workdir.toFile) ! Logger
@@ -127,11 +125,11 @@ private[scalanative] object LLVM {
       .map { ll =>
         val apppath = ll.abs
         val outpath = apppath + ".o"
-        val compile = Seq(config.clang.abs) ++ flto(config) ++ Seq(
-          "-c",
-          apppath,
-          "-o",
-          outpath) ++ opts
+        val compile =
+          Seq(config.clang.abs) ++ flto(config) ++ Seq("-c",
+                                                       apppath,
+                                                       "-o",
+                                                       outpath) ++ opts
         config.logger.running(compile)
         Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
           config.logger)
@@ -192,7 +190,5 @@ private[scalanative] object LLVM {
   private def flto(config: Config): Seq[String] =
     lto(config).fold[Seq[String]] {
       Seq()
-    } { name =>
-      Seq(s"-flto=$name")
-    }
+    } { name => Seq(s"-flto=$name") }
 }

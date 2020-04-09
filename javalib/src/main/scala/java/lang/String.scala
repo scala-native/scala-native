@@ -486,7 +486,8 @@ final class _String()
           }
           var o1 = offset + i
           var o2 = subOffset
-          while ({ o2 += 1; o2 } < end && value({ o1 += 1; o1 }) == target(o2)) ()
+          while ({ o2 += 1; o2 } < end && value({ o1 += 1; o1 }) == target(o2))
+            ()
           if (o2 == end) {
             return i
           }

@@ -145,15 +145,12 @@ class UnixFileSystemProvider extends FileSystemProvider {
       : SMap[Class[_ <: FileAttributeView],
              (Path, Array[LinkOption]) => FileAttributeView] =
     SMap(
-      classOf[BasicFileAttributeView] -> (
-          (p,
-           l) => new NativePosixFileAttributeView(p, l)),
-      classOf[PosixFileAttributeView] -> (
-          (p,
-           l) => new NativePosixFileAttributeView(p, l)),
-      classOf[FileOwnerAttributeView] -> (
-          (p,
-           l) => new NativePosixFileAttributeView(p, l))
+      classOf[BasicFileAttributeView] -> ((p, l) =>
+        new NativePosixFileAttributeView(p, l)),
+      classOf[PosixFileAttributeView] -> ((p, l) =>
+        new NativePosixFileAttributeView(p, l)),
+      classOf[FileOwnerAttributeView] -> ((p, l) =>
+        new NativePosixFileAttributeView(p, l))
     )
 
 }

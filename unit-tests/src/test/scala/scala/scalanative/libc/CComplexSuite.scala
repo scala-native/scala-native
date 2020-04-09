@@ -147,9 +147,7 @@ object CComplexSuite extends tests.Suite {
     }
   }
   test("cabsf") {
-    Zone { implicit z =>
-      assertEquals(cabsf(tf), sqrt2.toFloat)
-    }
+    Zone { implicit z => assertEquals(cabsf(tf), sqrt2.toFloat) }
   }
   test("cpowf") {
     Zone { implicit z =>
@@ -164,14 +162,10 @@ object CComplexSuite extends tests.Suite {
     }
   }
   test("cargf") {
-    Zone { implicit z =>
-      assertEquals(cargf(tf), qtrPI.toFloat)
-    }
+    Zone { implicit z => assertEquals(cargf(tf), qtrPI.toFloat) }
   }
   test("cimagf") {
-    Zone { implicit z =>
-      assertEquals(cimagf(tf), imag)
-    }
+    Zone { implicit z => assertEquals(cimagf(tf), imag) }
   }
   test("conjf") {
     Zone { implicit z =>
@@ -179,14 +173,10 @@ object CComplexSuite extends tests.Suite {
     }
   }
   test("cprojf") {
-    Zone { implicit z =>
-      assertEqualsComplexF(cprojf(tf, buff), tf)
-    }
+    Zone { implicit z => assertEqualsComplexF(cprojf(tf, buff), tf) }
   }
   test("crealf") {
-    Zone { implicit z =>
-      assertEquals(crealf(tf), real)
-    }
+    Zone { implicit z => assertEquals(crealf(tf), real) }
   }
 
   // double complex helper fcns
@@ -326,9 +316,7 @@ object CComplexSuite extends tests.Suite {
     }
   }
   test("cabs") {
-    Zone { implicit z =>
-      assertEquals(cabs(td), sqrt2)
-    }
+    Zone { implicit z => assertEquals(cabs(td), sqrt2) }
   }
   test("cpow") {
     Zone { implicit z =>
@@ -345,29 +333,19 @@ object CComplexSuite extends tests.Suite {
     }
   }
   test("carg") {
-    Zone { implicit z =>
-      assertEquals(carg(td), qtrPI)
-    }
+    Zone { implicit z => assertEquals(carg(td), qtrPI) }
   }
   test("cimag") {
-    Zone { implicit z =>
-      assertEquals(cimag(td), imag)
-    }
+    Zone { implicit z => assertEquals(cimag(td), imag) }
   }
   test("conj") {
-    Zone { implicit z =>
-      assertEqualsComplexD(conj(td, buf), res(real, -imag))
-    }
+    Zone { implicit z => assertEqualsComplexD(conj(td, buf), res(real, -imag)) }
   }
   test("cproj") {
-    Zone { implicit z =>
-      assertEqualsComplexD(cproj(td, buf), td)
-    }
+    Zone { implicit z => assertEqualsComplexD(cproj(td, buf), td) }
   }
   test("creal") {
-    Zone { implicit z =>
-      assertEquals(creal(td), real)
-    }
+    Zone { implicit z => assertEquals(creal(td), real) }
   }
 }
 

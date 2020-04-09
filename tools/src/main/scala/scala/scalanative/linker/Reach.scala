@@ -67,9 +67,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
           unavailable += owner
         } { defns =>
           val scope = mutable.Map.empty[Global, Defn]
-          defns.foreach { defn =>
-            scope(defn.name) = defn
-          }
+          defns.foreach { defn => scope(defn.name) = defn }
           loaded(owner) = scope
         }
     }
@@ -263,9 +261,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       }
       info.parent.foreach(loopParent)
       info.traits.foreach(loopTraits)
-      calls.foreach { sig =>
-        info.responds.get(sig).foreach(reachGlobal)
-      }
+      calls.foreach { sig => info.responds.get(sig).foreach(reachGlobal) }
 
       // 1. Handle all dynamic methods on this class.
       //    Any method that implements a known dynamic

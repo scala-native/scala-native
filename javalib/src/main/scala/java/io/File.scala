@@ -41,19 +41,13 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def canExecute(): Boolean =
-    Zone { implicit z =>
-      access(toCString(path), fcntl.X_OK) == 0
-    }
+    Zone { implicit z => access(toCString(path), fcntl.X_OK) == 0 }
 
   def canRead(): Boolean =
-    Zone { implicit z =>
-      access(toCString(path), fcntl.R_OK) == 0
-    }
+    Zone { implicit z => access(toCString(path), fcntl.R_OK) == 0 }
 
   def canWrite(): Boolean =
-    Zone { implicit z =>
-      access(toCString(path), fcntl.W_OK) == 0
-    }
+    Zone { implicit z => access(toCString(path), fcntl.W_OK) == 0 }
 
   def setExecutable(executable: Boolean): Boolean =
     setExecutable(executable, ownerOnly = true)
@@ -92,9 +86,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   def exists(): Boolean =
-    Zone { implicit z =>
-      access(toCString(path), fcntl.F_OK) == 0
-    }
+    Zone { implicit z => access(toCString(path), fcntl.F_OK) == 0 }
 
   def toPath(): Path =
     FileSystems.getDefault().getPath(this.getPath(), Array.empty)
@@ -109,14 +101,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   private def deleteDirImpl(): Boolean =
-    Zone { implicit z =>
-      remove(toCString(path)) == 0
-    }
+    Zone { implicit z => remove(toCString(path)) == 0 }
 
   private def deleteFileImpl(): Boolean =
-    Zone { implicit z =>
-      unlink(toCString(path)) == 0
-    }
+    Zone { implicit z => unlink(toCString(path)) == 0 }
 
   override def equals(that: Any): Boolean =
     that match {
@@ -199,14 +187,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
     File.isAbsolute(path)
 
   def isDirectory(): Boolean =
-    Zone { implicit z =>
-      stat.S_ISDIR(accessMode()) != 0
-    }
+    Zone { implicit z => stat.S_ISDIR(accessMode()) != 0 }
 
   def isFile(): Boolean =
-    Zone { implicit z =>
-      stat.S_ISREG(accessMode()) != 0
-    }
+    Zone { implicit z => stat.S_ISREG(accessMode()) != 0 }
 
   def isHidden(): Boolean =
     getName().startsWith(".")
@@ -249,7 +233,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
   def setReadOnly(): Boolean =
     Zone { implicit z =>
       import stat._
-      val mask    = S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
+      val mask =
+        S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
       val newMode = accessMode() & mask
       chmod(toCString(path), newMode) == 0
     }

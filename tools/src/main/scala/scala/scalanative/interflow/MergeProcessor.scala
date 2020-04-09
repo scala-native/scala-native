@@ -19,9 +19,7 @@ final class MergeProcessor(insts: Array[Inst],
   var todo   = mutable.Set.empty[Local]
 
   def currentSize(): Int =
-    blocks.values.map { b =>
-      if (b.end == null) 0 else b.end.emit.size
-    }.sum
+    blocks.values.map { b => if (b.end == null) 0 else b.end.emit.size }.sum
 
   def findMergeBlock(name: Local): MergeBlock = {
     def newMergeBlock = {
@@ -113,9 +111,7 @@ final class MergeProcessor(insts: Array[Inst],
           // 2. Merge heap
 
           def includeAddr(addr: Addr): Boolean =
-            states.forall { state =>
-              state.heap.contains(addr)
-            }
+            states.forall { state => state.heap.contains(addr) }
           def escapes(addr: Addr): Boolean =
             states.exists(_.hasEscaped(addr))
           val addrs = {
@@ -166,9 +162,7 @@ final class MergeProcessor(insts: Array[Inst],
           // 4. Merge delayed ops
 
           def includeDelayedOp(op: Op, v: Val): Boolean = {
-            states.forall { s =>
-              s.delayed.contains(op) && s.delayed(op) == v
-            }
+            states.forall { s => s.delayed.contains(op) && s.delayed(op) == v }
           }
           states.head.delayed.foreach {
             case (op, v) =>
@@ -180,9 +174,7 @@ final class MergeProcessor(insts: Array[Inst],
           // 4. Merge emitted ops
 
           def includeEmittedOp(op: Op, v: Val): Boolean = {
-            states.forall { s =>
-              s.emitted.contains(op) && s.emitted(op) == v
-            }
+            states.forall { s => s.emitted.contains(op) && s.emitted(op) == v }
           }
           states.head.emitted.foreach {
             case (op, v) =>
@@ -386,9 +378,7 @@ final class MergeProcessor(insts: Array[Inst],
 
   def toSeq(): Seq[MergeBlock] = {
     val sortedBlocks = blocks.values.toSeq
-      .sortBy { block =>
-        offsets(block.label.name)
-      }
+      .sortBy { block => offsets(block.label.name) }
       .filter(_.cf != null)
 
     val retMergeBlocks = sortedBlocks.collect {

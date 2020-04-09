@@ -132,16 +132,12 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
       override def group = new GroupPrincipal {
         override val getName =
-          Zone { implicit z =>
-            fromCString(fileGroup()._1)
-          }
+          Zone { implicit z => fromCString(fileGroup()._1) }
       }
 
       override def owner = new UserPrincipal {
         override val getName =
-          Zone { implicit z =>
-            fromCString(filePasswd()._1)
-          }
+          Zone { implicit z => fromCString(filePasswd()._1) }
       }
 
       override def permissions = {

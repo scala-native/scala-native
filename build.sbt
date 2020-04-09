@@ -125,9 +125,7 @@ lazy val bintrayPublishSettings = Seq(
 
 lazy val mavenPublishSettings = Seq(
   publishMavenStyle := true,
-  pomIncludeRepository := { x =>
-    false
-  },
+  pomIncludeRepository := { x => false },
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (version.value.trim.endsWith("SNAPSHOT"))

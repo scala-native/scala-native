@@ -495,7 +495,9 @@ private class SimpleProcess(p: JProcess, outputThreads: List[Thread])
     } catch {
       case _: InterruptedException => p.destroy()
     }
-    outputThreads.foreach(_.join()) // this ensures that all output is complete before returning (waitFor does not ensure this)
+    outputThreads.foreach(
+      _.join()
+    ) // this ensures that all output is complete before returning (waitFor does not ensure this)
     p.exitValue()
   }
   override def destroy() = p.destroy()

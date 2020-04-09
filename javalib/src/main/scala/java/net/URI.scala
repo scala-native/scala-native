@@ -534,35 +534,35 @@ final class URI private () extends Comparable[URI] with Serializable {
               return false
             }
           case '.' => { numberOfPeriods += 1; numberOfPeriods - 1 }
-          if (numberOfPeriods > 3) {
-            return false
-          }
-          if (!isValidIP4Word(word)) {
-            return false
-          }
-          if (numberOfColons != 6 && !doubleColon) {
-            return false
-          }
-          if (numberOfColons == 7 && ipAddress.charAt(0 + offset) != ':' &&
-              ipAddress.charAt(1 + offset) != ':') {
-            return false
-          }
-          word = ""
-        case ':' => { numberOfColons += 1; numberOfColons - 1 }
-          if (numberOfColons > 7) {
-            return false
-          }
-          if (numberOfPeriods > 0) {
-            return false
-          }
-          if (prevChar == ':') {
-            if (doubleColon) {
+            if (numberOfPeriods > 3) {
               return false
             }
-            doubleColon = true
-          }
-          word = ""
-        case _ =>
+            if (!isValidIP4Word(word)) {
+              return false
+            }
+            if (numberOfColons != 6 && !doubleColon) {
+              return false
+            }
+            if (numberOfColons == 7 && ipAddress.charAt(0 + offset) != ':' &&
+                ipAddress.charAt(1 + offset) != ':') {
+              return false
+            }
+            word = ""
+          case ':' => { numberOfColons += 1; numberOfColons - 1 }
+            if (numberOfColons > 7) {
+              return false
+            }
+            if (numberOfPeriods > 0) {
+              return false
+            }
+            if (prevChar == ':') {
+              if (doubleColon) {
+                return false
+              }
+              doubleColon = true
+            }
+            word = ""
+          case _ =>
             if (word.length > 3) {
               return false
             }

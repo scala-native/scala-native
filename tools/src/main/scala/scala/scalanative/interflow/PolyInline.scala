@@ -24,9 +24,7 @@ trait PolyInline { self: Interflow =>
         val targets = mutable.UnrolledBuffer.empty[(Class, Global)]
         scope.implementors.foreach { cls =>
           if (cls.allocated) {
-            cls.resolve(sig).foreach { g =>
-              targets += ((cls, g))
-            }
+            cls.resolve(sig).foreach { g => targets += ((cls, g)) }
           }
         }
         targets

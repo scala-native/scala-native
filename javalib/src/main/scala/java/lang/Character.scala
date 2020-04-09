@@ -2070,9 +2070,7 @@ object Character {
         .get(blockName)
         .fold {
           throw new IllegalArgumentException()
-        } { value =>
-          value
-        }
+        } { value => value }
     }
 
     def of(c: scala.Char): UnicodeBlock = of(c.toInt)
