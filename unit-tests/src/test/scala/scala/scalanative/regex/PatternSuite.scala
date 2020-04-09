@@ -25,7 +25,8 @@ object PatternSuite extends tests.Suite {
   }
 
   test("quote") {
-    assert(Pattern.quote("1.5-2.0?") == "1\\.5-2\\.0\\?") // TODO: taken from re2j, behaviour might differ jdk
+    // TODO: taken from re2j, behaviour might differ jdk
+    assert(Pattern.quote("1.5-2.0?") == "1\\.5-2\\.0\\?")
   }
 
   test("characters") {
@@ -428,13 +429,11 @@ object PatternSuite extends tests.Suite {
   }
 
   private def syntax(pattern: String, description: String, index: Int): Unit = {
-    assertThrowsAnd[PatternSyntaxException](Pattern.compile(pattern))(
-      e => {
-        (e.getDescription == description) &&
+    assertThrowsAnd[PatternSyntaxException](Pattern.compile(pattern))(e => {
+      (e.getDescription == description) &&
         (e.getPattern == pattern) &&
         (e.getIndex == index)
-      }
-    )
+    })
   }
 
   private def pass(pattern: String, input: String): Unit =
