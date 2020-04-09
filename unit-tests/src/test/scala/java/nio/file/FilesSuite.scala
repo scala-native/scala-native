@@ -1,7 +1,6 @@
 package java.nio.file
 
 import java.nio.ByteBuffer
-import java.nio.file._
 import java.io.{
   BufferedWriter,
   ByteArrayInputStream,

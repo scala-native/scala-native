@@ -3,8 +3,6 @@ package interflow
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.linker._
-import scalanative.util.ScopedVar
 import java.util.function.Supplier
 
 class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)

@@ -1,7 +1,6 @@
 package scala.scalanative
 package codegen
 
-import PerfectHashMap._
 import org.scalacheck.Properties
 import org.scalacheck.Prop.forAll
 

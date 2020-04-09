@@ -28,7 +28,6 @@ import scalanative.unsafe._
  */
 @extern
 object complex {
-  import Nat._2
   type CFloatComplex  = CStruct2[CFloat, CFloat]
   type CDoubleComplex = CStruct2[CDouble, CDouble]
 

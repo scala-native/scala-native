@@ -4,7 +4,6 @@ package regex
 import java.util.regex.PatternSyntaxException
 
 import ScalaTestCompat._
-import TestUtils._
 
 object PatternSuite extends tests.Suite {
 

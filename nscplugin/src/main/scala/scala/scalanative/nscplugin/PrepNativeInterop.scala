@@ -4,7 +4,6 @@ package nscplugin
 import scala.tools.nsc
 import nsc._
 
-import scala.collection.immutable.ListMap
 import scala.collection.mutable.Buffer
 
 /**
@@ -25,7 +24,6 @@ abstract class PrepNativeInterop
   import global._
   import nirAddons.nirDefinitions._
   import definitions._
-  import rootMirror._
 
   val phaseName: String            = "nativeinterop"
   override def description: String = "prepare ASTs for Native interop"
@@ -307,7 +305,6 @@ abstract class PrepNativeInterop
 
 object PrepNativeInterop {
   private final class OwnerKind(val baseKinds: Int) extends AnyVal {
-    import OwnerKind._
 
     @inline def isBaseKind: Boolean =
       Integer.lowestOneBit(baseKinds) == baseKinds && baseKinds != 0 // exactly 1 bit on

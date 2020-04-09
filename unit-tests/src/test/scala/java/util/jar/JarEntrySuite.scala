@@ -2,7 +2,6 @@ package java.util.jar
 
 // Ported from Apache Harmony
 
-import java.nio.file.{Files, Paths}
 import JarBytes._
 
 object JarEntrySuite extends tests.Suite {

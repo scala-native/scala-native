@@ -35,8 +35,6 @@ package scala.scalanative
 package runtime
 package ieee754tostring.ryu
 
-import RyuRoundingMode._
-
 object RyuFloat {
 
   final val FLOAT_MANTISSA_BITS = 23

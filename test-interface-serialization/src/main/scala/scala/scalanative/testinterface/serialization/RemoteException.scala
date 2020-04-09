@@ -2,8 +2,6 @@ package scala.scalanative
 package testinterface
 package serialization
 
-import scala.compat.Platform.EOL
-
 final class RemoteException(msg: String,
                             _toString: String,
                             cause: Throwable,

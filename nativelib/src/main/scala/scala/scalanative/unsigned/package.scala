@@ -1,10 +1,5 @@
 package scala.scalanative
 
-import java.nio.charset.Charset
-import scala.language.experimental.macros
-import scalanative.runtime.{libc, intrinsic, fromRawPtr}
-import scalanative.runtime.Intrinsics.{castIntToRawPtr, castLongToRawPtr}
-
 package object unsigned {
 
   /** Scala Native unsigned extensions to the standard Byte. */

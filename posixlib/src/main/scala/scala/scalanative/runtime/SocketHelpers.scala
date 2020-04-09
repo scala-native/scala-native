@@ -6,7 +6,6 @@ import scala.scalanative.unsafe._
 import scala.scalanative.libc._
 import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
 import scala.scalanative.posix.arpa.inet._
-import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.sys.select._
 import scala.scalanative.posix.unistd.close

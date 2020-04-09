@@ -1,8 +1,6 @@
 package scala.scalanative
 package nscplugin
 
-import util._
-
 trait NirGenType { self: NirGenPhase =>
   import global._
   import definitions._
@@ -10,7 +8,27 @@ trait NirGenType { self: NirGenPhase =>
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
 
-  final case class SimpleType(sym: Symbol, targs: Seq[SimpleType] = Seq.empty) {
+  // The code as originally written made this class 'final'.
+  // Unfortunately a pattern matching bug dating from years before
+  // and present in Scala 2.11
+  // (https://github.com/scala/bug/issues/4440,
+  //  https://github.com/scalameta/scalameta/issues/900)
+  // causes the Scala compiler to give the warning:
+  //   "The outer reference in this type test cannot be checked at run time".
+  //
+  // Agreed that removing 'final' allows users to override methods within.
+  // All or almost all of those users are within the Scala Native build itself
+  // and within the control of SN developers.
+  //
+  // A hypothetical other user could override, but the override itself
+  // states that user is taking the blade guards off on purpose and playing
+  // with sharp edges: A persona damna inde secuta actus suos ("A person
+  // bears the consequences of their own actions").
+  //
+  // 'final' can & should be restored once SN is compiled with Scala >= 2.12.
+
+  /* final */
+  case class SimpleType(sym: Symbol, targs: Seq[SimpleType] = Seq.empty) {
     def isInterface: Boolean =
       sym.isInterface
 

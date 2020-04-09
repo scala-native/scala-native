@@ -2,7 +2,7 @@ package java.util.zip
 
 // Ported from Apache Harmony
 
-import java.io.{ByteArrayInputStream, IOException}
+import java.io.ByteArrayInputStream
 
 object CheckedInputStreamSuite extends tests.Suite {
 

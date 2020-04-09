@@ -3,8 +3,6 @@ package build
 
 import java.nio.file.{Path, Paths}
 
-import nir.Global
-
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait Config {
 

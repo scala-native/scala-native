@@ -5,7 +5,7 @@ import java.nio.file.spi.FileSystemProvider
 import java.net.URI
 import java.util.{HashMap, Map}
 
-import scala.scalanative.nio.fs.{UnixFileSystem, UnixFileSystemProvider}
+import scala.scalanative.nio.fs.UnixFileSystemProvider
 
 object FileSystems {
   private lazy val fs =

@@ -3,8 +3,6 @@ package build
 
 import java.nio.file.{Files, Path, Paths}
 import java.util.Arrays
-import scala.collection.JavaConverters._
-import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath
 

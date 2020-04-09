@@ -2,8 +2,7 @@ package java.io
 
 import scalanative.annotation.stub
 import scalanative.unsigned._
-import scalanative.unsafe._
-import scalanative.libc._, stdlib._, stdio._, string._
+import scalanative.libc._, stdio._
 import scalanative.nio.fs.UnixException
 import scalanative.posix.{fcntl, unistd}, unistd._
 import scalanative.runtime

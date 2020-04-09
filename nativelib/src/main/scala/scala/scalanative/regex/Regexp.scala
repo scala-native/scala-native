@@ -8,8 +8,6 @@
 package scala.scalanative
 package regex
 
-import java.util.Arrays
-
 // Regular expression abstract syntax tree.
 // Produced by parser, used by compiler.
 // NB, this corresponds to {@code syntax.regexp} in the Go implementation

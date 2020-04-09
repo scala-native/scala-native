@@ -1,8 +1,6 @@
 package scala.scalanative
 package nscplugin
 
-import scala.tools.nsc._
-
 trait NirDefinitions { self: NirGlobalAddons =>
   import global._
   import definitions._

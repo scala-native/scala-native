@@ -2,7 +2,7 @@ package scala.scalanative
 package posix
 package sys
 
-import scalanative.unsafe.{CInt, CLong, CLongInt, CStruct2, Ptr, extern}
+import scalanative.unsafe.{CInt, CStruct2, Ptr, extern}
 import scalanative.posix.sys.types.{suseconds_t, time_t}
 
 @extern

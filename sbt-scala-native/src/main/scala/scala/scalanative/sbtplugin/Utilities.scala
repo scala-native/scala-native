@@ -3,11 +3,9 @@ package sbtplugin
 
 import java.lang.System.{lineSeparator => nl}
 
-import scala.language.postfixOps
-
 import sbt._
 
-import scalanative.sbtplugin.SBTCompat.{Process, ProcessLogger, _}
+import scalanative.sbtplugin.SBTCompat.ProcessLogger
 
 object Utilities {
 

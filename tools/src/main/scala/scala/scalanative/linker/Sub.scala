@@ -1,7 +1,6 @@
 package scala.scalanative
 package linker
 
-import scala.collection.mutable
 import scalanative.nir._
 import scalanative.util.unreachable
 

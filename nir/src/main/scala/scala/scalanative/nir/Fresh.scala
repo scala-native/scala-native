@@ -1,8 +1,6 @@
 package scala.scalanative
 package nir
 
-import java.util.concurrent.atomic.AtomicInteger
-
 final class Fresh private (private var start: Long) {
   def apply(): Local = {
     start += 1

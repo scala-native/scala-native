@@ -1,8 +1,6 @@
 package scala.scalanative
 package sbtplugin
 
-import java.lang.System.{lineSeparator => nl}
-import java.io.ByteArrayInputStream
 import java.nio.file.Files
 
 import scala.util.Try
@@ -10,17 +8,13 @@ import scala.util.Try
 import sbt._
 import sbt.Keys._
 import sbt.complete.DefaultParsers._
-import sbt.testing.Framework
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
-import scalanative.nir
 import scalanative.build.{Build, Discover, BuildException}
-import scalanative.io.VirtualDirectory
-import scalanative.util.{Scope => ResourceScope}
 import scalanative.sbtplugin.Utilities._
 import scalanative.sbtplugin.TestUtilities._
 import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
-import scalanative.sbtplugin.SBTCompat.{Process, _}
+import scalanative.sbtplugin.SBTCompat.Process
 import scalanative.testinterface.ScalaNativeFramework
 
 object ScalaNativePluginInternal {

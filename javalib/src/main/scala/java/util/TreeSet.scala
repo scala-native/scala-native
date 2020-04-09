@@ -1,6 +1,5 @@
 package java.util
 
-import java.lang.Comparable
 import scala.collection.mutable
 import scala.math.Ordering
 

@@ -1,10 +1,8 @@
 package scala.scalanative
 
-import scala.reflect.ClassTag
 import scalanative.annotation.alwaysinline
 import scalanative.unsafe._
 import scalanative.runtime.Intrinsics._
-import scalanative.runtime.LLVMIntrinsics._
 
 package object runtime {
 

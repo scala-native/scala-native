@@ -2,9 +2,8 @@ package scala.scalanative
 package nscplugin
 
 import java.nio.file.{Path, Paths}
-import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
-import scalanative.nir.serialization.{serializeText, serializeBinary}
+import scalanative.nir.serialization.serializeBinary
 import scalanative.io.withScratchBuffer
 import scalanative.io.VirtualDirectory
 

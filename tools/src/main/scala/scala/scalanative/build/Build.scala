@@ -2,7 +2,6 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Path, Files}
-import scalanative.nir.Global
 
 /** Utility methods for building code using Scala Native. */
 object Build {

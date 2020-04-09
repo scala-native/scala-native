@@ -2,7 +2,6 @@ package java.nio.file
 
 import java.io.Closeable
 import java.lang.Iterable
-import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.file.spi.FileSystemProvider
 import java.util.Set
 

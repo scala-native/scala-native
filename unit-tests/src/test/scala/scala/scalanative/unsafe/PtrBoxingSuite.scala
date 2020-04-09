@@ -1,7 +1,6 @@
 package scala.scalanative
 package unsafe
 
-import scalanative.runtime.toRawPtr
 import scalanative.libc.stdlib.malloc
 import java.lang.Long.toHexString
 

@@ -1,6 +1,5 @@
 package java.nio.file
 
-import scala.collection.{Iterator => SIterator}
 import java.util.Iterator
 import java.util.function.Predicate
 import java.util.stream.Stream

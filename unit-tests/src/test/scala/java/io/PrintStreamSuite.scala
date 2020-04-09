@@ -1,7 +1,5 @@
 package java.io
 
-import java.nio.charset._
-
 object PrintStreamSuite extends tests.Suite {
 
   test("PrintStream(OutputStream, String) with unsupported encoding") {

@@ -1,7 +1,7 @@
 package scala.scalanative
 package runtime
 
-import scala.scalanative.unsafe.{CInt, CString, CFuncPtr2, Ptr, extern, name}
+import scala.scalanative.unsafe.{CString, CFuncPtr2, extern, name}
 
 @extern
 object Platform {

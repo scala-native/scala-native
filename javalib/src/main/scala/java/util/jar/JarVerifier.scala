@@ -2,20 +2,14 @@ package java.util.jar
 
 // Ported from Apache Harmony
 
-import java.io.{
-  ByteArrayInputStream,
-  InputStream,
-  IOException,
-  OutputStream,
-  UnsupportedEncodingException
-}
+import java.io.{IOException, OutputStream}
 import java.security.{
   GeneralSecurityException,
   MessageDigest,
   NoSuchAlgorithmException
 }
 import java.security.cert.Certificate
-import java.util.{Map, HashMap, Iterator, StringTokenizer}
+import java.util.{Map, HashMap, StringTokenizer}
 
 import scala.collection.mutable.ArrayBuffer
 

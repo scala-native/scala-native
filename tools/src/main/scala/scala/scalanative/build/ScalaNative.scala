@@ -1,14 +1,11 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.Path
 import scala.collection.mutable
-import scala.sys.process.Process
-import scalanative.build.IO.RichPath
 import scalanative.nir.{Type, Rt, Sig, Global, Defn}
 import scalanative.linker.Link
 import scalanative.codegen.CodeGen
-import scalanative.interflow.Interflow
 import scalanative.checker.Check
 
 /** Internal utilities to instrument Scala Native linker, otimizer and codegen. */

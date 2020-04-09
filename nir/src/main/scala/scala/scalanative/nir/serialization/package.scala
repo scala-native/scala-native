@@ -2,8 +2,6 @@ package scala.scalanative
 package nir
 
 import java.nio._
-import java.nio.file.{StandardOpenOption => OpenOpt, _}
-import java.nio.channels._
 
 package object serialization {
   def serializeText(defns: Seq[Defn], buffer: ByteBuffer): Unit = {

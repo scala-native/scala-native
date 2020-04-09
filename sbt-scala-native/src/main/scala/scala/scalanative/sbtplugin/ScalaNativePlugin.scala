@@ -1,8 +1,6 @@
 package scala.scalanative
 package sbtplugin
 
-import ScalaNativePluginInternal._
-
 import sbt._
 
 object ScalaNativePlugin extends AutoPlugin {

@@ -1,6 +1,6 @@
 package java.net
 
-import java.io.{InputStream, OutputStream, IOException, Closeable}
+import java.io.Closeable
 
 class ServerSocket(private var port: Int,
                    private var backlog: Int,

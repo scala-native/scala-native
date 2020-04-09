@@ -2,7 +2,7 @@ package scala.scalanative
 package linker
 
 import scalanative.nir._
-import scalanative.util.{Stats, Scope}
+import scalanative.util.Scope
 
 object Link {
 

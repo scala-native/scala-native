@@ -3,7 +3,6 @@ package linker
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.codegen.Metadata
 
 class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val unavailable = mutable.Set.empty[Global]

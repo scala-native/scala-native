@@ -2,7 +2,6 @@ package scala.scalanative
 package codegen
 
 import scalanative.nir._
-import scalanative.linker.Method
 
 /**
  *

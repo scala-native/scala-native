@@ -2,8 +2,7 @@ package scala.scalanative
 package unsafe
 
 import scalanative.unsigned._
-import scalanative.unsafe._
-import scalanative.libc.{stdio, stdlib, string}
+import scalanative.libc.stdio
 
 object CVarArgListSuite extends tests.Suite {
   def vatest(

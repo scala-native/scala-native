@@ -1,6 +1,5 @@
 package java.net
 
-import scala.scalanative.unsafe._
 import scala.scalanative.runtime.SocketHelpers
 import scala.collection.mutable.ArrayBuffer
 

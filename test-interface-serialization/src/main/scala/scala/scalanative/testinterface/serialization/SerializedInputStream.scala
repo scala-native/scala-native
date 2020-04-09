@@ -2,12 +2,7 @@ package scala.scalanative
 package testinterface
 package serialization
 
-import java.io.{
-  ByteArrayInputStream,
-  ByteArrayOutputStream,
-  DataInputStream,
-  InputStream
-}
+import java.io.{ByteArrayInputStream, DataInputStream, InputStream}
 
 import sbt.testing._
 

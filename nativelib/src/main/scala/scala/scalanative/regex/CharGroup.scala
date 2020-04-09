@@ -1,8 +1,6 @@
 package scala.scalanative
 package regex
 
-import java.util.HashMap
-
 class CharGroup(val sign: Int, val cls: Array[Int])
 
 object CharGroup {

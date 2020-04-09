@@ -2,8 +2,6 @@ package scala.scalanative
 package testinterface
 package serialization
 
-import scala.compat.Platform.EOL
-
 import sbt.testing.{Event => SbtEvent, _}
 
 sealed trait Message

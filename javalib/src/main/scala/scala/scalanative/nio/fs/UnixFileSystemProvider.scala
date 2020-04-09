@@ -4,16 +4,11 @@ import scala.scalanative.unsafe.{CChar, fromCString, stackalloc}
 import scala.scalanative.posix.unistd
 import scala.collection.immutable.{Map => SMap}
 
-import java.nio.channels.{
-  AsynchronousFileChannel,
-  FileChannel,
-  SeekableByteChannel
-}
+import java.nio.channels.FileChannel
 import java.nio.file._
 import java.nio.file.attribute._
 import java.nio.file.spi.FileSystemProvider
 import java.net.URI
-import java.util.concurrent.ExecutorService
 import java.util.{Map, Set}
 
 class UnixFileSystemProvider extends FileSystemProvider {

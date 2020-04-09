@@ -13,7 +13,6 @@ import java.nio.file.{
 }
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.EnumSet
-import java.util.zip.{ZipEntry, ZipInputStream}
 import java.security.{DigestInputStream, MessageDigest}
 
 /** Internal I/O utilities. */

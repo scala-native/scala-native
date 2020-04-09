@@ -11,17 +11,9 @@ import java.nio.file.{
   WatchService
 }
 import java.nio.file.spi.FileSystemProvider
-import java.nio.file.attribute.UserPrincipalLookupService
 import java.util.{LinkedList, Set}
 
-import scala.scalanative.unsafe.{
-  CUnsignedLong,
-  Ptr,
-  sizeof,
-  toCString,
-  Zone,
-  alloc
-}
+import scala.scalanative.unsafe.{Ptr, toCString, Zone, alloc}
 
 import scala.scalanative.posix.sys.statvfs
 

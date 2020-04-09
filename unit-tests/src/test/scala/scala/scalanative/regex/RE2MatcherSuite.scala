@@ -1,8 +1,6 @@
 package scala.scalanative
 package regex
 
-import ApiTestUtils._
-
 import ScalaTestCompat._
 
 object RE2MatcherSuite extends tests.Suite {

@@ -2,7 +2,6 @@ package java.net
 
 // Ported from Apache Harmony
 
-import java.io.IOException
 import java.io.Serializable
 import java.io.UnsupportedEncodingException
 import java.util.StringTokenizer

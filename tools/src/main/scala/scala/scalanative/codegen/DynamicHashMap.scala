@@ -2,7 +2,7 @@ package scala.scalanative
 package codegen
 
 import scalanative.nir._
-import scalanative.linker.{Class, Method}
+import scalanative.linker.Class
 
 class DynamicHashMap(meta: Metadata, cls: Class, proxies: Seq[Defn]) {
   val methods: Seq[Global.Member] = {

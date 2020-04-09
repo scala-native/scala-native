@@ -1,7 +1,6 @@
 package java.lang
 
 import scala.scalanative.unsafe._
-import scala.scalanative.runtime, runtime.ClassTypeOps
 import scala.scalanative.runtime
 import scala.scalanative.runtime.libc
 import scala.scalanative.runtime.Intrinsics._

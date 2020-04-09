@@ -7,7 +7,6 @@ import scalanative.nir._
 import scalanative.linker.{
   Class,
   Trait,
-  Ref,
   ScopeRef,
   ClassRef,
   TraitRef,
@@ -89,7 +88,6 @@ object Lower {
     override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
       val buf      = new nir.Buffer()(fresh)
       val handlers = new nir.Buffer()(fresh)
-      import buf._
 
       buf += insts.head
 

@@ -1,7 +1,6 @@
 package scala.scalanative
 package unsafe
 
-import scalanative.libc.stdio._
 import scalanative.libc.string._
 
 object CStringSuite extends tests.Suite {
@@ -57,7 +56,7 @@ object CStringSuite extends tests.Suite {
       assert(cstrTo(2) == 'c'.toByte)
       assert(cstrTo(3) == 'd'.toByte)
       assert(cstrTo(4) == 'e'.toByte)
-      assert(cstrTo(5) == '\0'.toByte)
+      assert(cstrTo(5) == '\u0000'.toByte)
     }
   }
 }

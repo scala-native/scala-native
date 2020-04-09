@@ -129,7 +129,6 @@ object IssuesSuite extends tests.Suite {
   test("#382") {
     /// that gave NPE
 
-    import scala.scalanative.unsafe._
     intIdent(fptr())
     assert(fptr() == 1)
 

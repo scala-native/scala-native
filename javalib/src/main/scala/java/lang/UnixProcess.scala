@@ -4,23 +4,18 @@ package lang
 import java.io.{File, IOException, InputStream, OutputStream}
 import java.util.concurrent.TimeUnit
 
-import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.{errno => err, signal => sig, _}
+import scala.scalanative.libc.{errno => err, signal => sig}
 import sig._
 import err.errno
-import scala.scalanative.posix.{fcntl, pthread, sys, unistd, errno => e, time}
+import scala.scalanative.posix.{fcntl, sys, unistd, errno => e, time}
 import time._
 import sys.time._
 import e.ETIMEDOUT
 import UnixProcess._
 import java.lang.ProcessBuilder.Redirect
-
-import pthread._
-import scala.collection.mutable
-import scala.scalanative.posix.sys.types.{pthread_cond_t, pthread_mutex_t}
 
 private[lang] class UnixProcess private (
     pid: CInt,

@@ -2,7 +2,6 @@ package scala.scalanative
 package nscplugin
 
 import scala.collection.mutable
-import scala.reflect.internal.Flags._
 import scalanative.nir._
 import scalanative.util.unsupported
 import scalanative.util.ScopedVar.scoped
@@ -1083,7 +1082,6 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genArrayOp(app: Apply, code: Int): Val = {
-      import scalaPrimitives._
 
       val Apply(Select(arrayp, _), argsp) = app
 

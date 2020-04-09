@@ -5,11 +5,8 @@ package java.util.zip
 import java.io.{
   ByteArrayInputStream,
   ByteArrayOutputStream,
-  EOFException,
   IOException,
-  InputStream,
-  File,
-  FileInputStream
+  InputStream
 }
 
 object InflaterInputStreamSuite extends tests.Suite {

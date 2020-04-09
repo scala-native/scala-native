@@ -3,7 +3,6 @@ package interflow
 
 import scalanative.codegen.Lower
 
-import java.util.Arrays
 import scalanative.nir._
 import scalanative.linker._
 

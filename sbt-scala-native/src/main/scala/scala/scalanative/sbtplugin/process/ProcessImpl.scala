@@ -8,12 +8,10 @@ package process
 import java.lang.{Process => JProcess, ProcessBuilder => JProcessBuilder}
 import java.io.{
   BufferedReader,
-  Closeable,
   InputStream,
   InputStreamReader,
   IOException,
-  OutputStream,
-  PrintStream
+  OutputStream
 }
 import java.io.{
   FilterInputStream,
@@ -556,4 +554,3 @@ private object Streamed {
 private final class Streamed[T](val process: T => Unit,
                                 val done: Int => Unit,
                                 val stream: () => Stream[T])
-    extends NotNull

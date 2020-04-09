@@ -1,13 +1,12 @@
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
 package scala.scalanative
 package runtime
 
 import scala.runtime.BoxedUnit
 import scalanative.unsafe._
 import scalanative.runtime.Intrinsics._
-import scalanative.runtime.LLVMIntrinsics._
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 11)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 10)
 
 sealed abstract class Array[T]
     extends java.io.Serializable
@@ -130,14 +129,13 @@ object Array {
   }
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 137)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 136)
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 139)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 138)
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 143)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
 final class CharArray private () extends Array[Char] {
-  import Array._
 
   @inline def stride: CSize =
     2
@@ -156,9 +154,9 @@ final class CharArray private () extends Array[Char] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 2 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 163)
       loadChar(ith)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 169)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 167)
     }
 
   @inline def update(i: Int, value: Char): Unit =
@@ -167,9 +165,9 @@ final class CharArray private () extends Array[Char] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 2 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 178)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 176)
       storeChar(ith, value)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 182)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 180)
     }
 
   @inline override def clone(): CharArray = {
@@ -183,7 +181,6 @@ final class CharArray private () extends Array[Char] {
 }
 
 object CharArray {
-  import Array._
 
   @inline def alloc(length: Int): CharArray = {
     val arrty   = toRawType(classOf[CharArray])
@@ -203,12 +200,11 @@ object CharArray {
     arr
   }
 }
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 139)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 138)
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 143)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
 final class ObjectArray private () extends Array[Object] {
-  import Array._
 
   @inline def stride: CSize =
     8
@@ -227,9 +223,9 @@ final class ObjectArray private () extends Array[Object] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 8 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 163)
       loadObject(ith)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 169)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 167)
     }
 
   @inline def update(i: Int, value: Object): Unit =
@@ -238,9 +234,9 @@ final class ObjectArray private () extends Array[Object] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 8 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 178)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 176)
       storeObject(ith, value)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 182)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 180)
     }
 
   @inline override def clone(): ObjectArray = {
@@ -254,7 +250,6 @@ final class ObjectArray private () extends Array[Object] {
 }
 
 object ObjectArray {
-  import Array._
 
   @inline def alloc(length: Int): ObjectArray = {
     val arrty   = toRawType(classOf[ObjectArray])
@@ -274,12 +269,11 @@ object ObjectArray {
     arr
   }
 }
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 139)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 138)
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 143)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
 final class BoxedUnitArray private () extends Array[BoxedUnit] {
-  import Array._
 
   @inline def stride: CSize =
     8
@@ -298,9 +292,9 @@ final class BoxedUnitArray private () extends Array[BoxedUnit] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 8 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 167)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
       loadObject(ith).asInstanceOf[BoxedUnit]
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 169)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 167)
     }
 
   @inline def update(i: Int, value: BoxedUnit): Unit =
@@ -309,9 +303,9 @@ final class BoxedUnitArray private () extends Array[BoxedUnit] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 8 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 180)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 178)
       storeObject(ith, value.asInstanceOf[Object])
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 182)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 180)
     }
 
   @inline override def clone(): BoxedUnitArray = {
@@ -325,7 +319,6 @@ final class BoxedUnitArray private () extends Array[BoxedUnit] {
 }
 
 object BoxedUnitArray {
-  import Array._
 
   @inline def alloc(length: Int): BoxedUnitArray = {
     val arrty   = toRawType(classOf[BoxedUnitArray])
@@ -345,12 +338,11 @@ object BoxedUnitArray {
     arr
   }
 }
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 139)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 138)
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 143)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
 final class ShortArray private () extends Array[Short] {
-  import Array._
 
   @inline def stride: CSize =
     2
@@ -369,9 +361,9 @@ final class ShortArray private () extends Array[Short] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 2 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 163)
       loadShort(ith)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 169)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 167)
     }
 
   @inline def update(i: Int, value: Short): Unit =
@@ -380,9 +372,9 @@ final class ShortArray private () extends Array[Short] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 2 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 178)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 176)
       storeShort(ith, value)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 182)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 180)
     }
 
   @inline override def clone(): ShortArray = {
@@ -396,7 +388,6 @@ final class ShortArray private () extends Array[Short] {
 }
 
 object ShortArray {
-  import Array._
 
   @inline def alloc(length: Int): ShortArray = {
     val arrty   = toRawType(classOf[ShortArray])
@@ -416,12 +407,11 @@ object ShortArray {
     arr
   }
 }
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 139)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 138)
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 143)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
 final class IntArray private () extends Array[Int] {
-  import Array._
 
   @inline def stride: CSize =
     4
@@ -440,9 +430,9 @@ final class IntArray private () extends Array[Int] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 4 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 163)
       loadInt(ith)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 169)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 167)
     }
 
   @inline def update(i: Int, value: Int): Unit =
@@ -451,9 +441,9 @@ final class IntArray private () extends Array[Int] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 4 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 178)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 176)
       storeInt(ith, value)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 182)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 180)
     }
 
   @inline override def clone(): IntArray = {
@@ -467,7 +457,6 @@ final class IntArray private () extends Array[Int] {
 }
 
 object IntArray {
-  import Array._
 
   @inline def alloc(length: Int): IntArray = {
     val arrty   = toRawType(classOf[IntArray])
@@ -487,12 +476,11 @@ object IntArray {
     arr
   }
 }
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 139)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 138)
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 143)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
 final class DoubleArray private () extends Array[Double] {
-  import Array._
 
   @inline def stride: CSize =
     8
@@ -511,9 +499,9 @@ final class DoubleArray private () extends Array[Double] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 8 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 163)
       loadDouble(ith)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 169)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 167)
     }
 
   @inline def update(i: Int, value: Double): Unit =
@@ -522,9 +510,9 @@ final class DoubleArray private () extends Array[Double] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 8 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 178)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 176)
       storeDouble(ith, value)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 182)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 180)
     }
 
   @inline override def clone(): DoubleArray = {
@@ -538,7 +526,6 @@ final class DoubleArray private () extends Array[Double] {
 }
 
 object DoubleArray {
-  import Array._
 
   @inline def alloc(length: Int): DoubleArray = {
     val arrty   = toRawType(classOf[DoubleArray])
@@ -558,12 +545,11 @@ object DoubleArray {
     arr
   }
 }
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 139)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 138)
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 143)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
 final class ByteArray private () extends Array[Byte] {
-  import Array._
 
   @inline def stride: CSize =
     1
@@ -582,9 +568,9 @@ final class ByteArray private () extends Array[Byte] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 1 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 163)
       loadByte(ith)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 169)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 167)
     }
 
   @inline def update(i: Int, value: Byte): Unit =
@@ -593,9 +579,9 @@ final class ByteArray private () extends Array[Byte] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 1 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 178)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 176)
       storeByte(ith, value)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 182)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 180)
     }
 
   @inline override def clone(): ByteArray = {
@@ -609,7 +595,6 @@ final class ByteArray private () extends Array[Byte] {
 }
 
 object ByteArray {
-  import Array._
 
   @inline def alloc(length: Int): ByteArray = {
     val arrty   = toRawType(classOf[ByteArray])
@@ -629,12 +614,11 @@ object ByteArray {
     arr
   }
 }
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 139)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 138)
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 143)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
 final class FloatArray private () extends Array[Float] {
-  import Array._
 
   @inline def stride: CSize =
     4
@@ -653,9 +637,9 @@ final class FloatArray private () extends Array[Float] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 4 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 163)
       loadFloat(ith)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 169)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 167)
     }
 
   @inline def update(i: Int, value: Float): Unit =
@@ -664,9 +648,9 @@ final class FloatArray private () extends Array[Float] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 4 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 178)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 176)
       storeFloat(ith, value)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 182)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 180)
     }
 
   @inline override def clone(): FloatArray = {
@@ -680,7 +664,6 @@ final class FloatArray private () extends Array[Float] {
 }
 
 object FloatArray {
-  import Array._
 
   @inline def alloc(length: Int): FloatArray = {
     val arrty   = toRawType(classOf[FloatArray])
@@ -700,12 +683,11 @@ object FloatArray {
     arr
   }
 }
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 139)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 138)
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 143)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
 final class LongArray private () extends Array[Long] {
-  import Array._
 
   @inline def stride: CSize =
     8
@@ -724,9 +706,9 @@ final class LongArray private () extends Array[Long] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 8 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 163)
       loadLong(ith)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 169)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 167)
     }
 
   @inline def update(i: Int, value: Long): Unit =
@@ -735,9 +717,9 @@ final class LongArray private () extends Array[Long] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 8 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 178)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 176)
       storeLong(ith, value)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 182)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 180)
     }
 
   @inline override def clone(): LongArray = {
@@ -751,7 +733,6 @@ final class LongArray private () extends Array[Long] {
 }
 
 object LongArray {
-  import Array._
 
   @inline def alloc(length: Int): LongArray = {
     val arrty   = toRawType(classOf[LongArray])
@@ -771,12 +752,11 @@ object LongArray {
     arr
   }
 }
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 139)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 138)
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 143)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
 final class BooleanArray private () extends Array[Boolean] {
-  import Array._
 
   @inline def stride: CSize =
     1
@@ -795,9 +775,9 @@ final class BooleanArray private () extends Array[Boolean] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 1 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 163)
       loadBoolean(ith)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 169)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 167)
     }
 
   @inline def update(i: Int, value: Boolean): Unit =
@@ -806,9 +786,9 @@ final class BooleanArray private () extends Array[Boolean] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, 16 + 1 * i)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 178)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 176)
       storeBoolean(ith, value)
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 182)
+// ###sourceLocation(file: "/mnt/QuincyQHdd1/lee49/DevoHdd1/scala_native/Devo_1/PR_build_warnunusedimports_1753/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 180)
     }
 
   @inline override def clone(): BooleanArray = {
@@ -822,7 +802,6 @@ final class BooleanArray private () extends Array[Boolean] {
 }
 
 object BooleanArray {
-  import Array._
 
   @inline def alloc(length: Int): BooleanArray = {
     val arrty   = toRawType(classOf[BooleanArray])

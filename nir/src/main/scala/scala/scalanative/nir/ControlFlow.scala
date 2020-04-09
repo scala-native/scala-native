@@ -3,7 +3,6 @@ package nir
 
 import scala.collection.mutable
 import util.unsupported
-import nir._
 
 /** Analysis that's used to answer following questions:
  *

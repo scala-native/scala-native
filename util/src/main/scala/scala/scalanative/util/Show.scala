@@ -1,8 +1,6 @@
 package scala.scalanative
 package util
 
-import scala.language.implicitConversions
-
 final class ShowBuilder {
   private var sb          = new java.lang.StringBuilder
   private var indentation = 0

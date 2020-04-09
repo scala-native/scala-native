@@ -17,20 +17,10 @@ import java.io.{
 
 import java.nio.file.attribute._
 import java.nio.charset.{Charset, StandardCharsets}
-import java.nio.channels.{FileChannel, SeekableByteChannel}
+import java.nio.channels.SeekableByteChannel
 
-import java.util.concurrent.TimeUnit
 import java.util.function.BiPredicate
-import java.util.{
-  EnumSet,
-  HashMap,
-  HashSet,
-  Iterator,
-  LinkedList,
-  List,
-  Map,
-  Set
-}
+import java.util.{EnumSet, HashMap, HashSet, LinkedList, List, Map, Set}
 import java.util.stream.{Stream, WrappedScalaStream}
 
 import scalanative.unsigned._

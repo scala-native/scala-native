@@ -5,7 +5,6 @@ import scala.collection.mutable
 import scalanative.nir.Type.RefKind
 import scalanative.nir.{Type, Val}
 import scalanative.util.unsupported
-import scalanative.codegen.MemoryLayout.PositionedType
 
 final case class MemoryLayout(size: Long,
                               tys: Seq[MemoryLayout.PositionedType]) {

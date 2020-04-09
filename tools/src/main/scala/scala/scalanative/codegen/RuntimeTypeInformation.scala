@@ -1,7 +1,6 @@
 package scala.scalanative
 package codegen
 
-import scalanative.util.unreachable
 import scalanative.nir._
 import scalanative.linker.{ScopeInfo, Class, Trait}
 

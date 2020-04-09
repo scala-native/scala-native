@@ -1,7 +1,5 @@
 package java.util
 
-import scala.reflect.ClassTag
-
 object Objects {
 
   @inline

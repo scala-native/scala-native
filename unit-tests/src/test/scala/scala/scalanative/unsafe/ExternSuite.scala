@@ -1,9 +1,6 @@
 package scala.scalanative
 package unsafe
 
-import scalanative.unsafe._
-import scalanative.libc.{stdio, stdlib, string}
-
 object ExternSuite extends tests.Suite {
   test("extern variable read and assign") {
     import scala.scalanative.posix.getopt

@@ -8,7 +8,7 @@
 
 package niocharset
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.tailrec
 
 import java.nio._
 import java.nio.charset._

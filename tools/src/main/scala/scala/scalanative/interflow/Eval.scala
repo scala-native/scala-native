@@ -10,7 +10,7 @@ import scalanative.util.{unreachable, And}
 trait Eval { self: Interflow =>
   def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local)(
       implicit state: State): Inst.Cf = {
-    import state.{materialize, delay}
+    import state.materialize
 
     var pc = offsets(from) + 1
 
@@ -90,6 +90,7 @@ trait Eval { self: Interflow =>
             throw BailOut("try-catch")
           }
           return Inst.Unreachable(Next.None)
+        case _ => BailOut
       }
     }
 

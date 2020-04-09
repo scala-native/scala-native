@@ -8,8 +8,6 @@
 
 package niocharset
 
-import java.nio.charset._
-
 private[niocharset] object UTF_16BE
     extends UTF_16_Common(
       // scalastyle:ignore

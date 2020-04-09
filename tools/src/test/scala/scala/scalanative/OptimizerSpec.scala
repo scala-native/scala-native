@@ -1,6 +1,6 @@
 package scala.scalanative
 
-import build.{ScalaNative, Config, Mode}
+import build.{ScalaNative, Config}
 
 /** Base class to test the optimizer */
 abstract class OptimizerSpec extends LinkerSpec {

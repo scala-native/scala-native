@@ -1,6 +1,5 @@
 package java.util
 
-import scala.math.Ordering
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 

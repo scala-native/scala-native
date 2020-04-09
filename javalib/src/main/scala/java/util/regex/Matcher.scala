@@ -1,7 +1,6 @@
 package java.util
 package regex
 
-import scalanative.regex.RE2
 import scalanative.regex.{Matcher => rMatcher}
 
 // Inspired & informed by:

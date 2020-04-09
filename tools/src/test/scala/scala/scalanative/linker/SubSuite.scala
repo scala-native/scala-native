@@ -3,8 +3,6 @@ package linker
 
 import scalanative.nir._
 
-import org.scalatest._
-
 class SubSuite extends ReachabilitySuite {
 
   val source = """

@@ -1,6 +1,5 @@
 package scala.scalanative
 import scalanative.unsafe._
-import scalanative.libc.stdio
 
 package object libc {
   implicit class StdioHelpers(val _stdio: libc.stdio.type) extends AnyVal {

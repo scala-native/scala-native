@@ -9,7 +9,6 @@ package scala.scalanative
 package regex
 
 import java.util.ArrayList
-import java.util.List
 
 import Inst.{Op => IOP}
 

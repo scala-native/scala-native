@@ -1,12 +1,12 @@
 package java.nio.file
 package spi
 
-import java.util.{HashSet, LinkedList, List, Map, Set}
+import java.util.{LinkedList, List, Map, Set}
 import java.util.concurrent.ExecutorService
 
 import java.net.URI
 
-import java.io.{FileInputStream, InputStream, OutputStream}
+import java.io.{InputStream, OutputStream}
 import java.nio.ByteBuffer
 import java.nio.file.attribute.{
   BasicFileAttributes,

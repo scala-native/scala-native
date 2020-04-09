@@ -5,9 +5,8 @@ import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
-import scalanative.build.{ScalaNative, Config, Mode}
+import scalanative.build.{ScalaNative, Config}
 import scalanative.util.Scope
-import scalanative.nir.Global
 
 import org.scalatest.FlatSpec
 

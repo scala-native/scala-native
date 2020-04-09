@@ -1,12 +1,9 @@
 package java.lang
 
-import java.util.{ArrayList, List}
+import java.util.List
 import java.util.Map
-import java.io.{File, IOException}
-import java.util
+import java.io.File
 import java.util.Arrays
-import scala.scalanative.unsafe._
-import scala.scalanative.posix.unistd
 import scala.scalanative.runtime.Platform
 import ProcessBuilder.Redirect
 

@@ -387,7 +387,7 @@ trait Combine { self: Interflow =>
 
   def combine(comp: Comp, ty: Type, l: Val, r: Val)(
       implicit state: State): Val = {
-    import state.{materialize, delay, emit}
+    import state.delay
 
     (comp, l, r) match {
       // Two virtual allocations will compare equal if
@@ -551,7 +551,7 @@ trait Combine { self: Interflow =>
   }
 
   def combine(conv: Conv, ty: Type, value: Val)(implicit state: State): Val = {
-    import state.{materialize, delay, emit}
+    import state.delay
 
     (conv, ty, value) match {
       // trunc[iN] (trunc[iM] x) ==> trunc[iN] x if N < M

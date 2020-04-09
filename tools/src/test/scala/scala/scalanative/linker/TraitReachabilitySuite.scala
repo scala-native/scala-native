@@ -1,7 +1,6 @@
 package scala.scalanative.linker
 
-import org.scalatest._
-import scalanative.nir.{Type, Sig, Global}
+import scalanative.nir.{Type, Sig}
 
 class TraitReachabilitySuite extends ReachabilitySuite {
   val Parent      = g("Parent")

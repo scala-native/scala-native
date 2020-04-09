@@ -7,7 +7,6 @@ import scalanative.unsafe.{
   CInt,
   CLong,
   CStruct7,
-  Nat,
   Ptr,
   extern,
   name

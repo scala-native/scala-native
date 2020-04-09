@@ -11,7 +11,6 @@ package regex
 import java.util.ArrayList
 import java.util.Arrays
 import java.util.List
-import scala.util.control.Breaks._
 
 import Inst.{Op => IOP}
 

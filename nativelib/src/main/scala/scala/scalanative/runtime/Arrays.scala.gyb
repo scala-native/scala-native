@@ -4,7 +4,6 @@ package runtime
 import scala.runtime.BoxedUnit
 import scalanative.unsafe._
 import scalanative.runtime.Intrinsics._
-import scalanative.runtime.LLVMIntrinsics._
 
 % sizePtr = 8
 % sizeHeader = 16
@@ -142,7 +141,6 @@ object Array {
 }%
 
 final class ${T}Array private () extends Array[${T}] {
-  import Array._
 
   @inline def stride: CSize =
     ${sizeT}
@@ -192,7 +190,6 @@ final class ${T}Array private () extends Array[${T}] {
 }
 
 object ${T}Array {
-  import Array._
 
   @inline def alloc(length: Int): ${T}Array = {
     val arrty   = toRawType(classOf[${T}Array])
