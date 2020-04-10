@@ -240,7 +240,7 @@ lazy val projectSettings =
     resolvers := Nil,
     nativeCheck := true,
     nativeDump := true
-  )
+  ) ++ baseScalacSettings
 
 lazy val util =
   project
@@ -514,7 +514,6 @@ lazy val tests =
   project
     .in(file("unit-tests"))
     .settings(projectSettings)
-    .settings(baseScalacSettings)
     .settings(noPublishSettings)
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
