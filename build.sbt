@@ -225,7 +225,14 @@ lazy val toolSettings =
 
 lazy val dottyToolSettings =
   toolSettings ++
-    Seq( crossScalaVersions := List(sbt10ScalaVersion, dottyVersion) )
+    Seq(
+      crossScalaVersions := List(sbt10ScalaVersion, dottyVersion),
+      libraryDependencies ++= (if (scalaVersion.value == dottyVersion)
+                                 List(
+                                   "org.scala-lang.modules" % "scala-parallel-collections_2.13" % "0.2.0")
+                               else
+                                 Nil)
+    )
 
 lazy val libSettings =
   (baseSettings ++ ScalaNativePlugin.projectSettings.tail) ++ Seq(
@@ -252,7 +259,7 @@ lazy val util =
 lazy val nir =
   project
     .in(file("nir"))
-    .settings(toolSettings)
+    .settings(dottyToolSettings)
     .settings(mavenPublishSettings)
     .dependsOn(util)
 
@@ -303,10 +310,23 @@ lazy val nscplugin =
       scalaVersion := libScalaVersion,
       crossScalaVersions := libCrossScalaVersions,
       crossVersion := CrossVersion.full,
-      Compile / unmanagedSourceDirectories ++= Seq(
-        (nir / Compile / scalaSource).value,
-        (util / Compile / scalaSource).value
-      ),
+      Compile / unmanagedSourceDirectories ++= {
+        val root = baseDirectory.value.getParentFile
+
+        val modules = Seq(
+          "util",
+          "nir"
+        )
+        val extraSources =
+          (CrossVersion.partialVersion(scalaVersion.value) match {
+            case Some((min, patch)) =>
+              modules.map(dir => root / s"$dir/src/main/scala-$min.$patch")
+            case _ =>
+              Nil
+          })
+
+        modules.map(dir => root / s"$dir/src/main/scala") ++ extraSources
+      },
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value

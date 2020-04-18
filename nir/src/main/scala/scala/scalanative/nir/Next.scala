@@ -7,7 +7,7 @@ sealed abstract class Next {
   final def show: String = nir.Show(this)
 }
 object Next {
-  final case object None extends Next {
+  case object None extends Next {
     def name: Local =
       throw new UnsupportedOperationException
   }

@@ -1,14 +1,17 @@
 Compile / unmanagedSourceDirectories ++= {
   val root = baseDirectory.value.getParentFile
 
-  Seq(
+  val modules = Seq(
     "util",
     "nir",
     "tools",
     "sbt-scala-native",
     "test-interface-serialization",
     "test-runner"
-  ).map(dir => root / s"$dir/src/main/scala")
+  )
+
+  modules.map(dir => root / s"$dir/src/main/scala") ++
+    modules.map(dir => root / s"$dir/src/main/scala-2.12")
 }
 
 libraryDependencies ++= Seq(

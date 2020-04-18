@@ -51,17 +51,17 @@ sealed abstract class Val {
   }
 
   final def isZero: Boolean = this match {
-    case Val.Zero(_)    => true
-    case Val.False      => true
-    case Val.Char('\0') => true
-    case Val.Byte(0)    => true
-    case Val.Short(0)   => true
-    case Val.Int(0)     => true
-    case Val.Long(0L)   => true
-    case Val.Float(0F)  => true
-    case Val.Double(0D) => true
-    case Val.Null       => true
-    case _              => false
+    case Val.Zero(_)        => true
+    case Val.False          => true
+    case Val.Char('\u0000') => true
+    case Val.Byte(0)        => true
+    case Val.Short(0)       => true
+    case Val.Int(0)         => true
+    case Val.Long(0L)       => true
+    case Val.Float(0F)      => true
+    case Val.Double(0D)     => true
+    case Val.Null           => true
+    case _                  => false
   }
 
   final def isOne: Boolean = this match {
@@ -115,7 +115,7 @@ sealed abstract class Val {
     case Val.Zero(Type.Bool) =>
       Val.False
     case Val.Zero(Type.Char) =>
-      Val.Char('\0')
+      Val.Char('\u0000')
     case Val.Zero(Type.Byte) =>
       Val.Byte(0.toByte)
     case Val.Zero(Type.Short) =>
@@ -136,8 +136,8 @@ sealed abstract class Val {
 }
 object Val {
   // low-level
-  final case object True  extends Val
-  final case object False extends Val
+  case object True  extends Val
+  case object False extends Val
   object Bool extends (Boolean => Val) {
     def apply(value: Boolean): Val =
       if (value) True else False
@@ -147,7 +147,7 @@ object Val {
       case _     => scala.None
     }
   }
-  final case object Null                     extends Val
+  case object Null                           extends Val
   final case class Zero(of: nir.Type)        extends Val
   final case class Char(value: scala.Char)   extends Val
   final case class Byte(value: scala.Byte)   extends Val
@@ -233,7 +233,7 @@ object Val {
   final case class Global(name: nir.Global, valty: nir.Type) extends Val
 
   // high-level
-  final case object Unit                           extends Val
+  case object Unit                                 extends Val
   final case class Const(value: Val)               extends Val
   final case class String(value: java.lang.String) extends Val
   final case class Virtual(key: scala.Long)        extends Val

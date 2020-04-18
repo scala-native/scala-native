@@ -1,6 +1,8 @@
 package scala.scalanative
 package nir
 
+import scala.language.implicitConversions
+
 object Unmangle {
   def unmangleGlobal(s: String): Global     = (new Impl(s)).readGlobal()
   def unmangleType(s: String): Type         = (new Impl(s)).readType()
@@ -135,7 +137,7 @@ object Unmangle {
         buf += readType()
       }
       next()
-      buf
+      buf.toSeq
     }
 
     def readIdent(): String = {

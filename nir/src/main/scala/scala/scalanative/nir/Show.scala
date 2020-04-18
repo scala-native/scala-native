@@ -3,6 +3,7 @@ package nir
 
 import scala.collection.mutable
 import scalanative.util.{unreachable, ShowBuilder}
+import scala.collection.parallel.CollectionConverters._
 
 object Show {
   def newBuilder: NirShowBuilder = new NirShowBuilder(new ShowBuilder)
