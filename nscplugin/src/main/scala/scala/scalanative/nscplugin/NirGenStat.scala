@@ -395,19 +395,31 @@ trait NirGenStat { self: NirGenPhase =>
       val fqSymName = Global.Top(fqSymId)
 
       val jlObjectName = Global.Top("java.lang.Object")
+      val jlObjectType = Type.Ref(jlObjectName)
       val srAbstractFunction1Name =
         Global.Top("scala.runtime.AbstractFunction1")
 
       def genLazyClassInstantiationMethod(exprBuf: ExprBuffer,
                                           ctors: Seq[global.Symbol]): Val = {
         val applyMethodSig =
-          Sig.Method("apply",
-                     Seq(Type.Ref(jlObjectName), Type.Ref(jlObjectName)))
+          Sig.Method("apply", Seq(Type.Array(jlObjectType), jlObjectType))
+
+        val tuple2Name = Global.Top("scala.Tuple2")
+        val tuple2Type = Type.Ref(tuple2Name)
+
+        // Constructors info is an array of Tuple2 (tpes, inst), where:
+        // - tpes is an array with the runtime classes of the constructor arguments.
+        // - inst is a function, which accepts an array with tpes and returns a new
+        //   instance of the class.
+        val ctorsInfo = exprBuf.arrayalloc(Type.Array(tuple2Type),
+                                           Val.Int(ctors.length),
+                                           unwind(curFresh))
 
         // For each (public) constructor C, generate a lambda responsible for
         // initialising and returning an instance of the class, using C.
-        for (ctor <- ctors) {
-          val ctorArgsSig = genMethodSig(ctor).args.map(_.mangle).mkString
+        for ((ctor, ctorIdx) <- ctors.zipWithIndex) {
+          val ctorSig     = genMethodSig(ctor)
+          val ctorArgsSig = ctorSig.args.map(_.mangle).mkString
 
           ReflectiveInstantiationInfo += new ReflectiveInstantiationBuffer(
             fqSymId + ctorArgsSig)
@@ -421,15 +433,26 @@ trait NirGenStat { self: NirGenPhase =>
             val body = {
               // first argument is this
               val thisArg = Val.Local(curFresh(), Type.Ref(reflInstBuffer.name))
-              // second argument is argument sequence
-              val argsArg = Val.Local(curFresh(), Type.Ref(jlObjectName))
+              // second argument is parameters sequence
+              val argsArg = Val.Local(curFresh(), Type.Array(jlObjectType))
               exprBuf.label(curFresh(), Seq(thisArg, argsArg))
 
-              // TODO: Build constructor infos value
+              for (arg <- ctorSig.args) {
+                // TODO: Extract and cast arguments to proper types
+              }
 
+              // TODO: Instantiate an object based on C.
               exprBuf.ret(Val.Unit)
               exprBuf.toSeq
             }
+
+            reflInstBuffer += Defn.Define(
+              Attrs(),
+              reflInstBuffer.name.member(applyMethodSig),
+              nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name),
+                                    Type.Array(jlObjectType)),
+                                jlObjectType),
+              body)
           }
 
           // Generate the class instantiator constructor.
@@ -443,18 +466,62 @@ trait NirGenStat { self: NirGenPhase =>
             Seq(Global.Top("scala.Serializable")))
 
           // Allocate an instance of the generated class.
-          val alloc = exprBuf.classalloc(reflInstBuffer.name, unwind(curFresh))
+          val instantiator =
+            exprBuf.classalloc(reflInstBuffer.name, unwind(curFresh))
           exprBuf.call(
             Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
             Val.Global(reflInstBuffer.name.member(Sig.Ctor(Seq())), Type.Ptr),
-            Seq(alloc),
+            Seq(instantiator),
             unwind(curFresh)
           )
 
+          // Create the current constructor's info. We need:
+          // - an array with the runtime classes of the ctor parameters.
+          // - the instantiator function created above (instantiator).
+          val getClassMethod = exprBuf.method(
+            Val.Global(jlObjectName, Type.Ref(jlObjectName)),
+            Sig.Method("getClass", Seq(exprBuf.jlClass)),
+            unwind(curFresh))
+          val rtClasses = exprBuf.arrayalloc(exprBuf.jlClass,
+                                             Val.Int(ctorSig.args.length),
+                                             unwind(curFresh))
+          ctorSig.args.zipWithIndex.map {
+            case (arg, idx) =>
+              // Extract the argument type name.
+              val Type.Ref(typename, _, _) = Type.box.getOrElse(arg, arg)
+              // Allocate and instantiate a java.lang.Class object for the arg.
+              val co = exprBuf.classalloc(exprBuf.jlClassName, unwind(curFresh))
+              exprBuf.call(
+                Type.Function(Seq(exprBuf.jlClass, Type.Ptr), Type.Unit),
+                Val.Global(exprBuf.jlClassName.member(Sig.Ctor(Seq(Type.Ptr))),
+                           Type.Ptr),
+                Seq(co, Val.Global(typename, Type.Ptr)),
+                unwind(curFresh)
+              )
+              // Store the runtime class in the array.
+              exprBuf.arraystore(exprBuf.jlClass,
+                                 rtClasses,
+                                 Val.Int(idx),
+                                 co,
+                                 unwind(curFresh))
+          }
+
+          // Allocate a tuple to store the current constructor's info
+          val to = exprBuf.classalloc(tuple2Name, unwind(curFresh))
+          exprBuf.call(
+            Type.Function(Seq(tuple2Type, jlObjectType, jlObjectType),
+                          Type.Unit),
+            Val.Global(
+              tuple2Name.member(Sig.Ctor(Seq(jlObjectType, jlObjectType))),
+              Type.Ptr),
+            Seq(to, rtClasses, instantiator),
+            unwind(curFresh)
+          )
+
+          exprBuf.arraystore(tuple2Type, ctorsInfo, Val.Int(ctorIdx), to, unwind(curFresh))
         }
 
-        // TODO: Build constructor infos value
-        Val.Unit
+        ctorsInfo
       }
 
       // Collect public constructors.
