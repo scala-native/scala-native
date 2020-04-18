@@ -7,6 +7,7 @@ val sbt10Version          = "1.1.6"
 val sbt10ScalaVersion     = "2.12.10"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
+val dottyVersion          = "0.23.0-RC1"
 
 // Convert "SomeName" to "some-name".
 def convertCamelKebab(name: String): String = {
@@ -222,6 +223,10 @@ lazy val toolSettings =
       javacOptions ++= Seq("-encoding", "utf8")
     )
 
+lazy val dottyToolSettings =
+  toolSettings ++
+    Seq( crossScalaVersions := List(sbt10ScalaVersion, dottyVersion) )
+
 lazy val libSettings =
   (baseSettings ++ ScalaNativePlugin.projectSettings.tail) ++ Seq(
     scalaVersion := libScalaVersion,
@@ -241,7 +246,7 @@ lazy val projectSettings =
 lazy val util =
   project
     .in(file("util"))
-    .settings(toolSettings)
+    .settings(dottyToolSettings)
     .settings(mavenPublishSettings)
 
 lazy val nir =

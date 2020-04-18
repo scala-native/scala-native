@@ -16,7 +16,7 @@ final class ByteBufferPool {
 
   def claim(): ByteBuffer = synchronized {
     if (buffers.isEmpty)
-      alloc
+      alloc()
     else {
       val buffer = buffers.head
       buffers = buffers.tail

@@ -3,6 +3,7 @@ package scala.scalanative
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import scala.collection.JavaConverters._
+import scala.language.implicitConversions
 
 package object io {
   // We allocate a pool of direct buffers. Due to virtual memory

@@ -8,6 +8,7 @@ import java.nio.ByteBuffer
 import java.nio.file._
 import java.nio.channels._
 import scalanative.util.{acquire, defer, Scope}
+import scala.language.implicitConversions
 
 sealed trait VirtualDirectory {
 
@@ -120,7 +121,7 @@ object VirtualDirectory {
     }
   }
 
-  private final object EmptyDirectory extends VirtualDirectory {
+  private object EmptyDirectory extends VirtualDirectory {
     override def files = Seq.empty
 
     override def read(path: Path): ByteBuffer =
