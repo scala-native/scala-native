@@ -485,25 +485,24 @@ trait NirGenStat { self: NirGenPhase =>
           val rtClasses = exprBuf.arrayalloc(exprBuf.jlClass,
                                              Val.Int(ctorSig.args.length),
                                              unwind(curFresh))
-          ctorSig.args.zipWithIndex.map {
-            case (arg, idx) =>
-              // Extract the argument type name.
-              val Type.Ref(typename, _, _) = Type.box.getOrElse(arg, arg)
-              // Allocate and instantiate a java.lang.Class object for the arg.
-              val co = exprBuf.classalloc(exprBuf.jlClassName, unwind(curFresh))
-              exprBuf.call(
-                Type.Function(Seq(exprBuf.jlClass, Type.Ptr), Type.Unit),
-                Val.Global(exprBuf.jlClassName.member(Sig.Ctor(Seq(Type.Ptr))),
-                           Type.Ptr),
-                Seq(co, Val.Global(typename, Type.Ptr)),
-                unwind(curFresh)
-              )
-              // Store the runtime class in the array.
-              exprBuf.arraystore(exprBuf.jlClass,
-                                 rtClasses,
-                                 Val.Int(idx),
-                                 co,
-                                 unwind(curFresh))
+          for ((arg, argIdx) <- ctorSig.args.zipWithIndex) {
+            // Extract the argument type name.
+            val Type.Ref(typename, _, _) = Type.box.getOrElse(arg, arg)
+            // Allocate and instantiate a java.lang.Class object for the arg.
+            val co = exprBuf.classalloc(exprBuf.jlClassName, unwind(curFresh))
+            exprBuf.call(
+              Type.Function(Seq(exprBuf.jlClass, Type.Ptr), Type.Unit),
+              Val.Global(exprBuf.jlClassName.member(Sig.Ctor(Seq(Type.Ptr))),
+                         Type.Ptr),
+              Seq(co, Val.Global(typename, Type.Ptr)),
+              unwind(curFresh)
+            )
+            // Store the runtime class in the array.
+            exprBuf.arraystore(exprBuf.jlClass,
+                               rtClasses,
+                               Val.Int(argIdx),
+                               co,
+                               unwind(curFresh))
           }
 
           // Allocate a tuple to store the current constructor's info
@@ -518,7 +517,11 @@ trait NirGenStat { self: NirGenPhase =>
             unwind(curFresh)
           )
 
-          exprBuf.arraystore(tuple2Type, ctorsInfo, Val.Int(ctorIdx), to, unwind(curFresh))
+          exprBuf.arraystore(tuple2Type,
+                             ctorsInfo,
+                             Val.Int(ctorIdx),
+                             to,
+                             unwind(curFresh))
         }
 
         ctorsInfo
