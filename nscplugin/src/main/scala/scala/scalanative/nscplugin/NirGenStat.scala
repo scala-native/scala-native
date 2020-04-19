@@ -402,7 +402,7 @@ trait NirGenStat { self: NirGenPhase =>
       def genLazyClassInstantiationMethod(exprBuf: ExprBuffer,
                                           ctors: Seq[global.Symbol]): Val = {
         val applyMethodSig =
-          Sig.Method("apply", Seq(Type.Array(jlObjectType), jlObjectType))
+          Sig.Method("apply", Seq(jlObjectType, jlObjectType))
 
         val tuple2Name = Global.Top("scala.Tuple2")
         val tuple2Type = Type.Ref(tuple2Name)
@@ -452,7 +452,8 @@ trait NirGenStat { self: NirGenPhase =>
               nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name),
                                     Type.Array(jlObjectType)),
                                 jlObjectType),
-              body)
+              body
+            )
           }
 
           // Generate the class instantiator constructor.
