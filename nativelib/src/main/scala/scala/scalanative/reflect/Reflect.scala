@@ -42,17 +42,32 @@ final class InstantiatableClass private[reflect] (
 }
 
 final class InvokableConstructor private[reflect] (
-    val parameterTypes: List[Class[_]],
-    newInstanceFun: Function1[Any, Any]
+    val parameterTypes: Array[Class[_]],
+    newInstanceFun: Function1[Array[Any], Any]
 ) {
   def newInstance(args: Any*): Any = {
     /* Check the number of actual arguments. We let the casts and unbox
      * operations inside `newInstanceFun` take care of the rest.
      */
-    require(args.size == parameterTypes.size)
-    ??? // TODO: Implement
-    // newInstanceFun.asInstanceOf[js.Dynamic].apply(
-    //     args.asInstanceOf[Seq[js.Any]]: _*)
+    require(
+      args.size == parameterTypes.size,
+      "Reflect: wrong number of arguments for InvokableConstructor"
+    )
+    newInstanceFun.apply(args.toArray)
+  }
+
+  override def toString: String = {
+    val builder = new mutable.StringBuilder("InvokableContructor")
+    builder.append("(")
+    for (tpe <- parameterTypes) {
+      builder.append(tpe.getName)
+      builder.append(", ")
+    }
+    if (parameterTypes.length > 0) {
+      builder.setLength(builder.length - 2)
+    }
+    builder.append(")")
+    builder.toString
   }
 }
 
@@ -75,9 +90,10 @@ object Reflect {
   protected[reflect] def registerInstantiatableClass[T](
       fqcn: String,
       runtimeClass: Class[T],
-      constructors: Seq[(Seq[Class[_]], Function1[Any, Any])]): Unit = {
+      constructors: Array[(Array[Class[_]], Function1[Array[Any], Any])])
+    : Unit = {
     val invokableConstructors = constructors.map { c =>
-      new InvokableConstructor(c._1.toList, c._2)
+      new InvokableConstructor(c._1, c._2)
     }
     instantiatableClasses(fqcn) =
       new InstantiatableClass(runtimeClass, invokableConstructors.toList)
