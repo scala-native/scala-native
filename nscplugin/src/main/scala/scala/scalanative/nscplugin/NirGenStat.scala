@@ -437,7 +437,7 @@ trait NirGenStat { self: NirGenPhase =>
               val argsArg = Val.Local(curFresh(), Type.Array(jlObjectType))
               exprBuf.label(curFresh(), Seq(thisArg, argsArg))
 
-              // Extract and cast arguments to proper types
+              // Extract and cast arguments to proper types.
               val argsVals =
                 (for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) yield {
                   exprBuf.arrayload(Type.box.getOrElse(arg, arg),
@@ -446,9 +446,15 @@ trait NirGenStat { self: NirGenPhase =>
                                     unwind(curFresh))
                 })
 
+              // Allocate a new instance and call C.
               val alloc = exprBuf.classalloc(fqSymName, unwind(curFresh))
-              // TODO: Instantiate an object based on C.
-              // TODO: Call constructor.
+              exprBuf.call(
+                Type.Function(ctorSig.args, Type.Unit),
+                Val.Global(fqSymName.member(Sig.Ctor(ctorSig.args.tail)),
+                           Type.Ptr),
+                alloc +: argsVals,
+                unwind(curFresh)
+              )
 
               exprBuf.ret(alloc)
               exprBuf.toSeq
