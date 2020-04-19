@@ -437,7 +437,7 @@ trait NirGenStat { self: NirGenPhase =>
               val argsArg = Val.Local(curFresh(), Type.Array(jlObjectType))
               exprBuf.label(curFresh(), Seq(thisArg, argsArg))
 
-              for (arg <- ctorSig.args) {
+              for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
                 // TODO: Extract and cast arguments to proper types
               }
 
@@ -483,9 +483,9 @@ trait NirGenStat { self: NirGenPhase =>
             Sig.Method("getClass", Seq(exprBuf.jlClass)),
             unwind(curFresh))
           val rtClasses = exprBuf.arrayalloc(exprBuf.jlClass,
-                                             Val.Int(ctorSig.args.length),
+                                             Val.Int(ctorSig.args.tail.length),
                                              unwind(curFresh))
-          for ((arg, argIdx) <- ctorSig.args.zipWithIndex) {
+          for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
             // Extract the argument type name.
             val Type.Ref(typename, _, _) = Type.box.getOrElse(arg, arg)
             // Allocate and instantiate a java.lang.Class object for the arg.
