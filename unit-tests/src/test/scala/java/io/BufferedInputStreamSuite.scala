@@ -2,23 +2,21 @@ package java.io
 
 object BufferedInputStreamSuite extends tests.Suite {
 
+  val exampleBytes0 =
+    List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
+
   test("creating a buffer of negative size throws IllegalArgumentException") {
     assertThrows[IllegalArgumentException] {
-      val inputArray =
-        List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
 
-      val arrayIn = new ByteArrayInputStream(inputArray, 0, 10)
+      val arrayIn = new ByteArrayInputStream(exampleBytes0, 0, 10)
 
-      val in = new BufferedInputStream(arrayIn, -1)
+      new BufferedInputStream(arrayIn, -1)
     }
   }
 
   test("simple reads") {
 
-    val inputArray =
-      List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, 10)
+    val arrayIn = new ByteArrayInputStream(exampleBytes0, 0, 10)
 
     val in = new BufferedInputStream(arrayIn)
 
@@ -27,9 +25,17 @@ object BufferedInputStreamSuite extends tests.Suite {
     assert(in.read() == 1)
 
     assert(in.read() == 2)
+  }
+
+  test("simple array reads") {
+
+    val arrayIn = new ByteArrayInputStream(exampleBytes0, 0, 10)
+
+    val in = new BufferedInputStream(arrayIn)
 
     val a = new Array[Byte](7)
 
+    in.skip(3)
     assert(in.read(a, 0, 7) == 7)
 
     assert(
@@ -40,10 +46,7 @@ object BufferedInputStreamSuite extends tests.Suite {
 
   test("read to closed buffer throws IOException") {
 
-    val inputArray =
-      List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, 10)
+    val arrayIn = new ByteArrayInputStream(exampleBytes0, 0, 10)
 
     val in = new BufferedInputStream(arrayIn)
 
@@ -72,28 +75,28 @@ object BufferedInputStreamSuite extends tests.Suite {
 
     assertThrows[java.lang.IndexOutOfBoundsException] { in.read(a, -1, 7) }
 
+    assertThrows[java.lang.IndexOutOfBoundsException] { in.read(a, 0, 11) }
   }
 
   test(
-    "read into array behaves correctly when asking more elements that are in the buffer") {
-    val inputArray =
-      List(0, 1, 2).map(_.toByte).toArray[Byte]
+    "read into array behaves correctly when asking more elements than are in the buffer") {
 
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, 10)
+    val arrayIn = new ByteArrayInputStream(exampleBytes0, 0, 10)
 
-    val in = new BufferedInputStream(arrayIn)
+    // start with buffer of size 2 to force multiple refills of the buffer
+    val in = new BufferedInputStream(arrayIn, 2)
 
     val a = new Array[Byte](10)
 
-    assertThrows[java.lang.IndexOutOfBoundsException] { in.read(a, 0, 10) }
-
+    in.read(a, 0, 10)
+    assert(a.toSeq == exampleBytes0.toSeq)
   }
 
-  test("mark and reset behave correctly") {
-    val inputArray =
-      List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, 10)
+  /* interestingly... failing is not technically required according to the InputStream or
+   *  BufferedInputStream spec.
+   */
+  test("reset throws IOException if no prior mark") {
+    val arrayIn = new ByteArrayInputStream(exampleBytes0, 0, 10)
 
     val in = new BufferedInputStream(arrayIn)
 
@@ -102,29 +105,75 @@ object BufferedInputStreamSuite extends tests.Suite {
     in.read()
 
     assertThrows[IOException](in.reset())
+  }
 
-    in.mark(3)
+  test("reset moves position to mark - no buffer resize") {
+    val arrayIn = new ByteArrayInputStream(exampleBytes0, 0, 10)
 
-    assert(in.read() == 3)
-    assert(in.read() == 4)
-    assert(in.read() == 5)
+    val in = new BufferedInputStream(arrayIn, 10)
+    in.mark(Int.MaxValue)
+
+    assert(in.read() == 0)
+    assert(in.read() == 1)
+    assert(in.read() == 2)
 
     in.reset()
 
-    assert(in.read() == 3)
-    assert(in.read() == 4)
-    assert(in.read() == 5)
-    assert(in.read() == 6)
-    assert(in.read() == 7)
-    assert(in.read() == 8)
-    assert(in.read() == 9)
-
+    assert(in.read() == 0)
+    assert(in.read() == 1)
+    assert(in.read() == 2)
   }
 
-  test("available behave correctly") {
+  test("reset moves position to mark - with buffer resize") {
+    val arrayIn = new ByteArrayInputStream(exampleBytes0, 0, 10)
 
-    val inputArray = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte)
-    val in         = new BufferedInputStream(new ByteArrayInputStream(inputArray))
+    val in = new BufferedInputStream(arrayIn, 2)
+    in.mark(Int.MaxValue)
+
+    assert(in.read() == 0)
+    assert(in.read() == 1)
+    assert(in.read() == 2)
+
+    in.reset()
+
+    assert(in.read() == 0)
+    assert(in.read() == 1)
+    assert(in.read() == 2)
+  }
+
+  // there is no requirement in the spec that the mark is invalidated
+  // exactly when read limit bytes exceeded: the exception "might be thrown"
+  test("mark is invalidated after read limit bytes and buffer exceeded") {
+    val arrayIn = new ByteArrayInputStream(exampleBytes0, 0, 10)
+
+    val in = new BufferedInputStream(arrayIn, 2)
+
+    in.mark(2)
+
+    assert(in.read() == 0)
+    assert(in.read() == 1)
+
+    in.reset()
+
+    // read enough to definitely invalidate mark
+    for (_ <- 0 until 5) in.read()
+
+    assertThrows[IOException](in.reset())
+  }
+
+  test("available after close throws IOException") {
+
+    val arrayIn = new ByteArrayInputStream(exampleBytes0, 0, 10)
+
+    val in = new BufferedInputStream(arrayIn)
+
+    in.close()
+    assertThrows[IOException](in.available())
+  }
+
+  test("available behaves correctly") {
+
+    val in = new BufferedInputStream(new ByteArrayInputStream(exampleBytes0))
 
     assert(in.available() > 0)
 
