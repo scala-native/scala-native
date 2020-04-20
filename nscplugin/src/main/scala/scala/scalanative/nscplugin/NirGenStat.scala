@@ -282,7 +282,7 @@ trait NirGenStat { self: NirGenPhase =>
 
     // Generate the constructor for the class instantiator class,
     // which is expected to extend one of scala.runtime.AbstractFunctionX.
-    def genReflectiveInstantiationConstructor(
+    private def genReflectiveInstantiationConstructor(
         reflInstBuffer: ReflectiveInstantiationBuffer,
         superClass: Global): Unit = {
       withFreshExprBuffer { exprBuf =>
@@ -310,6 +310,21 @@ trait NirGenStat { self: NirGenPhase =>
           body
         )
       }
+    }
+
+    // Allocate and construct an object, using the provided ExprBuffer.
+    private def allocAndConstruct(exprBuf: ExprBuffer,
+                                  name: Global,
+                                  argTypes: Seq[nir.Type],
+                                  args: Seq[Val]): Val = {
+      val alloc = exprBuf.classalloc(name, unwind(curFresh))
+      exprBuf.call(
+        Type.Function(Type.Ref(name) +: argTypes, Type.Unit),
+        Val.Global(name.member(Sig.Ctor(argTypes)), Type.Ptr),
+        alloc +: args,
+        unwind(curFresh)
+      )
+      alloc
     }
 
     def genRegisterReflectiveInstantiationForModuleClass(
@@ -361,14 +376,7 @@ trait NirGenStat { self: NirGenPhase =>
           Seq(Global.Top("scala.Serializable")))
 
         // Allocate and return an instance of the generated class.
-        val alloc = exprBuf.classalloc(reflInstBuffer.name, unwind(curFresh))
-        exprBuf.call(
-          Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
-          Val.Global(reflInstBuffer.name.member(Sig.Ctor(Seq())), Type.Ptr),
-          Seq(alloc),
-          unwind(curFresh)
-        )
-        alloc
+        allocAndConstruct(exprBuf, reflInstBuffer.name, Seq(), Seq())
       }
 
       withFreshExprBuffer { exprBuf =>
@@ -399,13 +407,21 @@ trait NirGenStat { self: NirGenPhase =>
       val srAbstractFunction1Name =
         Global.Top("scala.runtime.AbstractFunction1")
 
+      val tuple2Name = Global.Top("scala.Tuple2")
+      val tuple2Type = Type.Ref(tuple2Name)
+
+      // Create a new Tuple2 and initialise it with the provided values.
+      def createTuple2(exprBuf: ExprBuffer, _1: Val, _2: Val): Val = {
+        allocAndConstruct(exprBuf,
+                          tuple2Name,
+                          Seq(jlObjectType, jlObjectType),
+                          Seq(_1, _2))
+      }
+
       def genLazyClassInstantiationMethod(exprBuf: ExprBuffer,
                                           ctors: Seq[global.Symbol]): Val = {
         val applyMethodSig =
           Sig.Method("apply", Seq(jlObjectType, jlObjectType))
-
-        val tuple2Name = Global.Top("scala.Tuple2")
-        val tuple2Type = Type.Ref(tuple2Name)
 
         // Constructors info is an array of Tuple2 (tpes, inst), where:
         // - tpes is an array with the runtime classes of the constructor arguments.
@@ -456,14 +472,10 @@ trait NirGenStat { self: NirGenPhase =>
                 })
 
               // Allocate a new instance and call C.
-              val alloc = exprBuf.classalloc(fqSymName, unwind(curFresh))
-              exprBuf.call(
-                Type.Function(ctorSig.args, Type.Unit),
-                Val.Global(fqSymName.member(Sig.Ctor(ctorSig.args.tail)),
-                           Type.Ptr),
-                alloc +: argsVals,
-                unwind(curFresh)
-              )
+              val alloc = allocAndConstruct(exprBuf,
+                                            fqSymName,
+                                            ctorSig.args.tail,
+                                            argsVals)
 
               exprBuf.ret(alloc)
               exprBuf.toSeq
@@ -491,13 +503,7 @@ trait NirGenStat { self: NirGenPhase =>
 
           // Allocate an instance of the generated class.
           val instantiator =
-            exprBuf.classalloc(reflInstBuffer.name, unwind(curFresh))
-          exprBuf.call(
-            Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
-            Val.Global(reflInstBuffer.name.member(Sig.Ctor(Seq())), Type.Ptr),
-            Seq(instantiator),
-            unwind(curFresh)
-          )
+            allocAndConstruct(exprBuf, reflInstBuffer.name, Seq(), Seq())
 
           // Create the current constructor's info. We need:
           // - an array with the runtime classes of the ctor parameters.
@@ -513,13 +519,11 @@ trait NirGenStat { self: NirGenPhase =>
             // Extract the argument type name.
             val Type.Ref(typename, _, _) = Type.box.getOrElse(arg, arg)
             // Allocate and instantiate a java.lang.Class object for the arg.
-            val co = exprBuf.classalloc(exprBuf.jlClassName, unwind(curFresh))
-            exprBuf.call(
-              Type.Function(Seq(exprBuf.jlClass, Type.Ptr), Type.Unit),
-              Val.Global(exprBuf.jlClassName.member(Sig.Ctor(Seq(Type.Ptr))),
-                         Type.Ptr),
-              Seq(co, Val.Global(typename, Type.Ptr)),
-              unwind(curFresh)
+            val co = allocAndConstruct(
+              exprBuf,
+              exprBuf.jlClassName,
+              Seq(Type.Ptr),
+              Seq(Val.Global(typename, Type.Ptr))
             )
             // Store the runtime class in the array.
             exprBuf.arraystore(exprBuf.jlClass,
@@ -530,16 +534,7 @@ trait NirGenStat { self: NirGenPhase =>
           }
 
           // Allocate a tuple to store the current constructor's info
-          val to = exprBuf.classalloc(tuple2Name, unwind(curFresh))
-          exprBuf.call(
-            Type.Function(Seq(tuple2Type, jlObjectType, jlObjectType),
-                          Type.Unit),
-            Val.Global(
-              tuple2Name.member(Sig.Ctor(Seq(jlObjectType, jlObjectType))),
-              Type.Ptr),
-            Seq(to, rtClasses, instantiator),
-            unwind(curFresh)
-          )
+          val to = createTuple2(exprBuf, rtClasses, instantiator)
 
           exprBuf.arraystore(tuple2Type,
                              ctorsInfo,
