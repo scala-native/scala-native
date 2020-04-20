@@ -440,10 +440,19 @@ trait NirGenStat { self: NirGenPhase =>
               // Extract and cast arguments to proper types.
               val argsVals =
                 (for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) yield {
-                  exprBuf.arrayload(Type.box.getOrElse(arg, arg),
-                                    argsArg,
-                                    Val.Int(argIdx),
-                                    unwind(curFresh))
+                  val elem =
+                    exprBuf.arrayload(Type.box.getOrElse(arg, arg),
+                                      argsArg,
+                                      Val.Int(argIdx),
+                                      unwind(curFresh))
+                  // If the actual argument type can be boxed (i.e. is a primitive
+                  // type), then we need to unbox it before passing it to C.
+                  Type.box.get(arg) match {
+                    case Some(bt) =>
+                      exprBuf.unbox(bt, elem, unwind(curFresh))
+                    case None =>
+                      elem
+                  }
                 })
 
               // Allocate a new instance and call C.
