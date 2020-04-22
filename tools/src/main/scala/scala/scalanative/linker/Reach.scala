@@ -21,7 +21,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val dynimpls      = mutable.Set.empty[Global]
 
   entries.foreach(reachEntry)
-  loader.classesWithEntryPoints().foreach(reachEntry)
+  loader.classesWithEntryPoints.foreach(reachEntry)
 
   def result(): Result = {
     cleanup()
