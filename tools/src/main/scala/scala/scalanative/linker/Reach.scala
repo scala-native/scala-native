@@ -222,9 +222,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
               case Rt.JavaHashCodeSig =>
                 update(Rt.ScalaHashCodeSig)
                 update(Rt.JavaHashCodeSig)
-              case sig if sig.isMethod || sig.isCtor || sig.isGenerated =>
-                update(sig)
-              case sig if sig.isClinit =>
+              case sig
+                  if sig.isMethod || sig.isCtor || sig.isClinit || sig.isGenerated =>
                 update(sig)
               case _ =>
                 ()
