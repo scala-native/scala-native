@@ -21,7 +21,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val dynimpls      = mutable.Set.empty[Global]
 
   entries.foreach(reachEntry)
-  loader.classesWithEntryPoints.foreach(reachEntry)
+  loader.classesWithEntryPoints.foreach(reachClinit)
 
   def result(): Result = {
     cleanup()
@@ -139,12 +139,18 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
             }
           }
         }
-        val clinit = cls.name.member(Sig.Clinit())
-        if (loaded(cls.name).contains(clinit)) {
-          reachGlobal(clinit)
-        }
       case _ =>
         ()
+    }
+  }
+
+  def reachClinit(name: Global): Unit = {
+    reachGlobalNow(name)
+    infos.get(name).map { cls =>
+      val clinit = cls.name.member(Sig.Clinit())
+      if (loaded(cls.name).contains(clinit)) {
+        reachGlobal(clinit)
+      }
     }
   }
 
