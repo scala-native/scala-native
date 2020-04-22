@@ -92,7 +92,6 @@ trait NirGenStat { self: NirGenPhase =>
       val body   = cd.impl.body
 
       buf += Defn.Class(attrs, name, None, Seq.empty)
-      genReflectiveInstantiation(cd)
       genMethods(cd)
     }
 
