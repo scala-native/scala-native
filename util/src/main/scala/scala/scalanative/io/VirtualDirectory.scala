@@ -80,8 +80,10 @@ object VirtualDirectory {
     override def read(path: Path, len: Int): ByteBuffer = {
       val stream = Files.newInputStream(resolve(path))
       val bytes  = new Array[Byte](len)
-      stream.read(bytes)
-      ByteBuffer.wrap(bytes)
+      val read   = stream.read(bytes)
+      val buffer = ByteBuffer.wrap(bytes).limit(read)
+      // we need to cast in case JDK 8 is used for the compiler
+      buffer.asInstanceOf[ByteBuffer]
     }
 
     override def write(path: Path, buffer: ByteBuffer): Unit = {
