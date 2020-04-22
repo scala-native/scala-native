@@ -27,7 +27,7 @@ final class Sig(val mangle: String) {
 
   final def isField: Boolean     = mangle(0) == 'F'
   final def isCtor: Boolean      = mangle(0) == 'R'
-  final def isClinit: Boolean    = mangle(0) == 'A'
+  final def isClinit: Boolean    = mangle(0) == 'I'
   final def isImplCtor: Boolean  = mangle.startsWith("M6$init$")
   final def isMethod: Boolean    = mangle(0) == 'D'
   final def isProxy: Boolean     = mangle(0) == 'P'
