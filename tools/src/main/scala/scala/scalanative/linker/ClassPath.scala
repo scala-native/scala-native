@@ -7,8 +7,6 @@ import nir.serialization.deserializeBinary
 import java.nio.file.{FileSystems, Path}
 import scalanative.io.VirtualDirectory
 import scalanative.util.Scope
-import java.io.FileInputStream
-import java.nio.ByteBuffer
 
 sealed trait ClassPath {
 
