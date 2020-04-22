@@ -13,13 +13,13 @@ final class BinarySerializer(buffer: ByteBuffer) {
     val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
-    val hasClInit = defns.exists {
+    val hasEntryPoint = defns.exists {
       case defn: Defn.Define =>
         val Global.Member(_, sig) = defn.name
         sig.isClinit
       case _ => false
     }
-    putBool(hasClInit)
+    putBool(hasEntryPoint)
 
     putInt(Versions.magic)
     putInt(Versions.compat)
