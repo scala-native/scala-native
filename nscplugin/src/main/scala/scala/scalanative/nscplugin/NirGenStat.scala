@@ -271,11 +271,13 @@ trait NirGenStat { self: NirGenPhase =>
         else
           Some(genRegisterReflectiveInstantiationForNormalClass(cd))
 
-      staticInitBody.map { body =>
-        buf += Defn.Define(Attrs(),
-                           name,
-                           nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
-                           body)
+      staticInitBody.map {
+        case body if body.nonEmpty =>
+          buf += Defn.Define(Attrs(),
+                             name,
+                             nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
+                             body)
+        case _ => ()
       }
     }
 
@@ -563,23 +565,27 @@ trait NirGenStat { self: NirGenPhase =>
             .alternatives
             .filter(_.isPublic)
 
-      withFreshExprBuffer { exprBuf =>
-        exprBuf.label(curFresh(), Seq())
+      if (ctors.isEmpty)
+        Seq.empty
+      else
+        withFreshExprBuffer { exprBuf =>
+          exprBuf.label(curFresh(), Seq())
 
-        val fqcnArg = Val.String(fqSymId)
-        val runtimeClassArg =
-          exprBuf.genBoxClass(Val.Global(fqSymName, Type.Ptr))
-        val instantiateClassFunArg =
-          genLazyClassInstantiationMethod(exprBuf, ctors)
+          val fqcnArg = Val.String(fqSymId)
+          val runtimeClassArg =
+            exprBuf.genBoxClass(Val.Global(fqSymName, Type.Ptr))
+          val instantiateClassFunArg =
+            genLazyClassInstantiationMethod(exprBuf, ctors)
 
-        exprBuf.genApplyModuleMethod(
-          ReflectModule,
-          Reflect_registerInstantiatableClass,
-          Seq(fqcnArg, runtimeClassArg, instantiateClassFunArg).map(ValTree(_)))
+          exprBuf.genApplyModuleMethod(
+            ReflectModule,
+            Reflect_registerInstantiatableClass,
+            Seq(fqcnArg, runtimeClassArg, instantiateClassFunArg).map(
+              ValTree(_)))
 
-        exprBuf.ret(Val.Unit)
-        exprBuf.toSeq
-      }
+          exprBuf.ret(Val.Unit)
+          exprBuf.toSeq
+        }
     }
 
     def genMethods(cd: ClassDef): Unit =
