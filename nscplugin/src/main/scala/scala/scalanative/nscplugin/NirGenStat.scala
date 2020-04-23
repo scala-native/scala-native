@@ -403,6 +403,10 @@ trait NirGenStat { self: NirGenPhase =>
 
       val jlObjectName = Global.Top("java.lang.Object")
       val jlObjectType = Type.Ref(jlObjectName)
+
+      val jlNumberName = Global.Top("java.lang.Number")
+      val jlNumberType = Type.Ref(jlNumberName)
+
       val srAbstractFunction1Name =
         Global.Top("scala.runtime.AbstractFunction1")
 
@@ -456,17 +460,24 @@ trait NirGenStat { self: NirGenPhase =>
               val argsVals =
                 (for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) yield {
                   val elem =
-                    exprBuf.arrayload(Type.box.getOrElse(arg, arg),
+                    exprBuf.arrayload(jlObjectType,
                                       argsArg,
                                       Val.Int(argIdx),
                                       unwind(curFresh))
-                  // If the actual argument type can be boxed (i.e. is a primitive
+                  // If the expected argument type can be boxed (i.e. is a primitive
                   // type), then we need to unbox it before passing it to C.
                   Type.box.get(arg) match {
-                    case Some(bt) =>
-                      exprBuf.unbox(bt, elem, unwind(curFresh))
+                    case Some(_) =>
+                      val num = exprBuf.as(jlNumberType, elem, unwind(curFresh))
+                      val conv = exprBuf.method(num,
+                                                Type.primConvSig(arg),
+                                                unwind(curFresh))
+                      exprBuf.call(Type.Function(Seq(jlNumberType), arg),
+                                   conv,
+                                   Seq(num),
+                                   unwind(curFresh))
                     case None =>
-                      elem
+                      exprBuf.as(arg, elem, unwind(curFresh))
                   }
                 })
 
@@ -515,14 +526,12 @@ trait NirGenStat { self: NirGenPhase =>
                                              Val.Int(ctorSig.args.tail.length),
                                              unwind(curFresh))
           for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
-            // Extract the argument type name.
-            val Type.Ref(typename, _, _) = Type.box.getOrElse(arg, arg)
             // Allocate and instantiate a java.lang.Class object for the arg.
             val co = allocAndConstruct(
               exprBuf,
               exprBuf.jlClassName,
               Seq(Type.Ptr),
-              Seq(Val.Global(typename, Type.Ptr))
+              Seq(Val.Global(Type.typeToName(arg), Type.Ptr))
             )
             // Store the runtime class in the array.
             exprBuf.arraystore(exprBuf.jlClass,
