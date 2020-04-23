@@ -27,7 +27,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
 
   private final val NameInnerClass = {
     Prefix + "ClassWithInnerClassWithEnableReflectiveInstantiation$" +
-    "InnerClassWithEnableReflectiveInstantiation"
+      "InnerClassWithEnableReflectiveInstantiation"
   }
 
   private final val NameClassEnableIndirect =
@@ -52,13 +52,15 @@ object ReflectiveInstantiationSuite extends tests.Suite {
 
   private final val NameInnerObject = {
     Prefix + "ClassWithInnerObjectWithEnableReflectiveInstantiation$" +
-    "InnerObjectWithEnableReflectiveInstantiation"
+      "InnerObjectWithEnableReflectiveInstantiation"
   }
 
   test("testClassRuntimeClass") {
     for {
-      name <- Seq(NameClassEnableDirect, NameClassEnableDirectNoZeroArgCtor,
-          NameClassEnableIndirect, NameClassEnableIndirectNoZeroArgCtor)
+      name <- Seq(NameClassEnableDirect,
+                  NameClassEnableDirectNoZeroArgCtor,
+                  NameClassEnableIndirect,
+                  NameClassEnableIndirectNoZeroArgCtor)
     } {
       val optClassData = Reflect.lookupInstantiatableClass(name)
       assertTrue(optClassData.isDefined)
@@ -84,29 +86,44 @@ object ReflectiveInstantiationSuite extends tests.Suite {
 
   test("testClassCannotBeFound") {
     for {
-      name <- Seq(NameObjectEnableDirect, NameTraitEnableDirect,
-          NameAbstractClassEnableDirect,
-          NameClassNoPublicConstructorEnableDirect, NameObjectEnableIndirect,
-          NameTraitEnableIndirect, NameAbstractClassEnableIndirect,
-          NameClassNoPublicConstructorEnableIndirect, NameClassDisable,
-          NameObjectDisable, NameTraitDisable)
+      name <- Seq(
+        NameObjectEnableDirect,
+        NameTraitEnableDirect,
+        NameAbstractClassEnableDirect,
+        NameClassNoPublicConstructorEnableDirect,
+        NameObjectEnableIndirect,
+        NameTraitEnableIndirect,
+        NameAbstractClassEnableIndirect,
+        NameClassNoPublicConstructorEnableIndirect,
+        NameClassDisable,
+        NameObjectDisable,
+        NameTraitDisable
+      )
     } {
       assertFalse(s"$name should not be found",
-          Reflect.lookupInstantiatableClass(name).isDefined)
+                  Reflect.lookupInstantiatableClass(name).isDefined)
     }
   }
 
   test("testObjectCannotBeFound") {
     for {
-      name <- Seq(NameClassEnableDirect, NameClassEnableDirectNoZeroArgCtor,
-          NameTraitEnableDirect, NameAbstractClassEnableDirect,
-          NameClassNoPublicConstructorEnableDirect, NameClassEnableIndirect,
-          NameTraitEnableIndirect, NameAbstractClassEnableIndirect,
-          NameClassNoPublicConstructorEnableIndirect, NameClassDisable,
-          NameObjectDisable, NameTraitDisable)
+      name <- Seq(
+        NameClassEnableDirect,
+        NameClassEnableDirectNoZeroArgCtor,
+        NameTraitEnableDirect,
+        NameAbstractClassEnableDirect,
+        NameClassNoPublicConstructorEnableDirect,
+        NameClassEnableIndirect,
+        NameTraitEnableIndirect,
+        NameAbstractClassEnableIndirect,
+        NameClassNoPublicConstructorEnableIndirect,
+        NameClassDisable,
+        NameObjectDisable,
+        NameTraitDisable
+      )
     } {
       assertFalse(s"$name should not be found",
-          Reflect.lookupLoadableModuleClass(name).isDefined)
+                  Reflect.lookupLoadableModuleClass(name).isDefined)
     }
   }
 
@@ -124,7 +141,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
 
   test("testClassNoArgCtorErrorCase") {
     for (name <- Seq(NameClassEnableDirectNoZeroArgCtor,
-        NameClassEnableIndirectNoZeroArgCtor)) {
+                     NameClassEnableIndirectNoZeroArgCtor)) {
       val optClassData = Reflect.lookupInstantiatableClass(name)
       assertTrue(optClassData.isDefined)
       val classData = optClassData.get
@@ -136,8 +153,10 @@ object ReflectiveInstantiationSuite extends tests.Suite {
   }
 
   test("testClassCtorWithArgs") {
-    for (name <- Seq(NameClassEnableDirect, NameClassEnableDirectNoZeroArgCtor,
-        NameClassEnableIndirect, NameClassEnableIndirectNoZeroArgCtor)) {
+    for (name <- Seq(NameClassEnableDirect,
+                     NameClassEnableDirectNoZeroArgCtor,
+                     NameClassEnableIndirect,
+                     NameClassEnableIndirectNoZeroArgCtor)) {
       val optClassData = Reflect.lookupInstantiatableClass(name)
       assertTrue(optClassData.isDefined)
       val classData = optClassData.get
@@ -199,7 +218,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
 
     val fqcn = classOf[LocalClassWithEnableReflectiveInstantiation].getName
     assertFalse(s"$fqcn should not be found",
-        Reflect.lookupInstantiatableClass(fqcn).isDefined)
+                Reflect.lookupInstantiatableClass(fqcn).isDefined)
   }
 
   test("testObjectLoad") {
@@ -302,7 +321,8 @@ object ReflectTest {
   trait EnablingTrait
 
   class ClassEnableIndirect(val x: Int, val y: String)
-      extends EnablingTrait with Accessors {
+      extends EnablingTrait
+      with Accessors {
 
     def this(x: Int) = this(x, "ClassEnableIndirect")
     def this() = this(-1)
@@ -313,7 +333,8 @@ object ReflectTest {
   }
 
   class ClassEnableIndirectNoZeroArgCtor(val x: Int, val y: String)
-      extends EnablingTrait with Accessors {
+      extends EnablingTrait
+      with Accessors {
     def this(x: Int) = this(x, "ClassEnableIndirectNoZeroArgCtor")
     def this(vc: VC) = this(vc.self.toInt * 2)
 
@@ -329,7 +350,8 @@ object ReflectTest {
   trait TraitEnableIndirect extends EnablingTrait with Accessors
 
   abstract class AbstractClassEnableIndirect(val x: Int, val y: String)
-      extends EnablingTrait with Accessors {
+      extends EnablingTrait
+      with Accessors {
 
     def this(x: Int) = this(x, "AbstractClassEnableIndirect")
     def this() = this(-1)
@@ -339,9 +361,10 @@ object ReflectTest {
     private def this(d: Double) = this(d.toInt)
   }
 
-  class ClassNoPublicConstructorEnableIndirect private (
-      val x: Int, val y: String)
-      extends EnablingTrait with Accessors {
+  class ClassNoPublicConstructorEnableIndirect private (val x: Int,
+                                                        val y: String)
+      extends EnablingTrait
+      with Accessors {
 
     protected def this(y: String) = this(-5, y)
   }

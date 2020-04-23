@@ -6,21 +6,20 @@ import scala.scalanative.nir.Type
 object NirGenSymbols {
   val serializable = Global.Top("scala.Serializable")
 
-  val jlClass = Global.Top("java.lang.Class")
+  val jlClass    = Global.Top("java.lang.Class")
   val jlClassRef = Type.Ref(jlClass)
 
-  val jlObject = Global.Top("java.lang.Object")
+  val jlObject    = Global.Top("java.lang.Object")
   val jlObjectRef = Type.Ref(jlObject)
 
-  val jlNumber = Global.Top("java.lang.Number")
+  val jlNumber    = Global.Top("java.lang.Number")
   val jlNumberRef = Type.Ref(jlNumber)
 
-  val tuple2 = Global.Top("scala.Tuple2")
+  val tuple2    = Global.Top("scala.Tuple2")
   val tuple2Ref = Type.Ref(tuple2)
 
   val srAbstractFunction0 =
     Global.Top("scala.runtime.AbstractFunction0")
-
   val srAbstractFunction1 =
     Global.Top("scala.runtime.AbstractFunction1")
 }
