@@ -185,7 +185,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
       val optCtorShort = classData.getConstructor(classOf[Short])
       assertTrue(optCtorShort.isDefined)
       val instanceShort =
-        optCtorShort.get.newInstance(21).asInstanceOf[Accessors]
+        optCtorShort.get.newInstance(21.toShort).asInstanceOf[Accessors]
       assertEquals(42, instanceShort.x)
       assertEquals(name.stripPrefix(Prefix), instanceShort.y)
 

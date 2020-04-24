@@ -53,7 +53,62 @@ final class InvokableConstructor private[reflect] (
       args.size == parameterTypes.size,
       "Reflect: wrong number of arguments for InvokableConstructor"
     )
-    newInstanceFun.apply(args.toArray)
+    val adaptedArgs = (args zip parameterTypes).map {
+      case (arg, tpe) => wideningPrimConversionIfRequired(arg, tpe)
+    }
+    newInstanceFun.apply(adaptedArgs.toArray)
+  }
+
+  /** Perform a widening primitive conversion if required.
+   *
+   *  According to
+   *  https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.1.2
+   */
+  private def wideningPrimConversionIfRequired(arg: Any,
+                                               paramType: Class[_]): Any = {
+    paramType match {
+      case java.lang.Short.TYPE =>
+        arg match {
+          case arg: Byte => arg.toShort
+          case _         => arg
+        }
+      case java.lang.Integer.TYPE =>
+        arg match {
+          case arg: Byte  => arg.toInt
+          case arg: Short => arg.toInt
+          case arg: Char  => arg.toInt
+          case _          => arg
+        }
+      case java.lang.Long.TYPE =>
+        arg match {
+          case arg: Byte  => arg.toLong
+          case arg: Short => arg.toLong
+          case arg: Int   => arg.toLong
+          case arg: Char  => arg.toLong
+          case _          => arg
+        }
+      case java.lang.Float.TYPE =>
+        arg match {
+          case arg: Byte  => arg.toFloat
+          case arg: Short => arg.toFloat
+          case arg: Int   => arg.toFloat
+          case arg: Long  => arg.toFloat
+          case arg: Char  => arg.toFloat
+          case _          => arg
+        }
+      case java.lang.Double.TYPE =>
+        arg match {
+          case arg: Byte  => arg.toDouble
+          case arg: Short => arg.toDouble
+          case arg: Int   => arg.toDouble
+          case arg: Long  => arg.toDouble
+          case arg: Float => arg.toDouble
+          case arg: Char  => arg.toDouble
+          case _          => arg
+        }
+      case _ =>
+        arg
+    }
   }
 
   override def toString: String = {

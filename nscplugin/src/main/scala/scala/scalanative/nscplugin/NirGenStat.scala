@@ -458,19 +458,8 @@ trait NirGenStat { self: NirGenPhase =>
                   // If the expected argument type can be boxed (i.e. is a primitive
                   // type), then we need to unbox it before passing it to C.
                   Type.box.get(arg) match {
-                    case Some(_) =>
-                      // first, cast the primitive type to java.lang.Number
-                      val num = exprBuf.as(jlNumberRef, elem, unwind(curFresh))
-                      // then, convert to the desired type
-                      val conv = exprBuf.method(num,
-                                                Type.primConvSig(arg),
-                                                unwind(curFresh))
-                      exprBuf.call(Type.Function(Seq(jlNumberRef), arg),
-                                   conv,
-                                   Seq(num),
-                                   unwind(curFresh))
-                    // we need to do the above, because we cannot directly
-                    // cast e.g. from Integer to Short
+                    case Some(bt) =>
+                      exprBuf.unbox(bt, elem, unwind(curFresh))
                     case None =>
                       exprBuf.as(arg, elem, unwind(curFresh))
                   }
