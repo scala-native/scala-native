@@ -88,7 +88,7 @@ abstract class NirGenPhase
       classDefs.foreach(genClass)
 
       // Add the reflective instantiation loaders to the file list
-      ReflectiveInstantiationInfo.foreach { reflInstBuf =>
+      reflectiveInstantiationInfo.foreach { reflInstBuf =>
         val path = genPathFor(cunit, reflInstBuf.name.id)
         files += ((path, reflInstBuf.toSeq))
       }

@@ -16,6 +16,9 @@ trait NirGenStat { self: NirGenPhase =>
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
 
+  val reflectiveInstantiationInfo =
+    mutable.UnrolledBuffer.empty[ReflectiveInstantiationBuffer]
+
   def isStaticModule(sym: Symbol): Boolean =
     sym.isModuleClass && !sym.isImplClass && !sym.isLifted
 
@@ -335,8 +338,8 @@ trait NirGenStat { self: NirGenPhase =>
       val fqSymId   = curClassSym.fullName + "$"
       val fqSymName = Global.Top(fqSymId)
 
-      ReflectiveInstantiationInfo += new ReflectiveInstantiationBuffer(fqSymId)
-      val reflInstBuffer = ReflectiveInstantiationInfo.last
+      reflectiveInstantiationInfo += ReflectiveInstantiationBuffer(fqSymId)
+      val reflInstBuffer = reflectiveInstantiationInfo.last
 
       def genModuleLoaderAnonFun(exprBuf: ExprBuffer): Val = {
         val applyMethodSig =
@@ -428,9 +431,9 @@ trait NirGenStat { self: NirGenPhase =>
           val ctorSig     = genMethodSig(ctor)
           val ctorArgsSig = ctorSig.args.map(_.mangle).mkString
 
-          ReflectiveInstantiationInfo += new ReflectiveInstantiationBuffer(
+          reflectiveInstantiationInfo += ReflectiveInstantiationBuffer(
             fqSymId + ctorArgsSig)
-          val reflInstBuffer = ReflectiveInstantiationInfo.last
+          val reflInstBuffer = reflectiveInstantiationInfo.last
 
           // Lambda generation consists of generating a class which extends
           // scala.runtime.AbstractFunction1, with an apply method that accepts

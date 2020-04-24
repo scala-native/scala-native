@@ -18,19 +18,6 @@ class ReflectiveInstantiationBuffer(val fqcn: String) {
   def toSeq    = buf.toSeq
 }
 
-object ReflectiveInstantiationInfo {
-  private val bufs =
-    mutable.UnrolledBuffer.empty[ReflectiveInstantiationBuffer]
-
-  def +=(buf: ReflectiveInstantiationBuffer): Unit = {
-    bufs += buf
-  }
-
-  def nonEmpty = bufs.nonEmpty
-  def toSeq    = bufs.toSeq
-  def last     = bufs.last
-
-  def foreach(f: ReflectiveInstantiationBuffer => Unit): Unit = {
-    bufs.foreach(f)
-  }
+object ReflectiveInstantiationBuffer {
+  def apply(fqcn: String) = new ReflectiveInstantiationBuffer(fqcn)
 }
