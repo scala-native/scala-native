@@ -6,9 +6,11 @@ package reflect
 
 import scala.scalanative.reflect._
 import scala.scalanative.reflect.annotation._
+import scala.scalanative.unsafe._
+import java.nio.file.AccessMode
 
 object ReflectiveInstantiationSuite extends tests.Suite {
-  import ReflectTest.{Accessors, VC}
+  import ReflectTest.{Accessors, PtrAccessors, VC}
 
   private final val Prefix = "scala.scalanative.reflect.ReflectTest$"
 
@@ -53,6 +55,10 @@ object ReflectiveInstantiationSuite extends tests.Suite {
   private final val NameInnerObject = {
     Prefix + "ClassWithInnerObjectWithEnableReflectiveInstantiation$" +
       "InnerObjectWithEnableReflectiveInstantiation"
+  }
+
+  private final val NameClassWithPtrArg = {
+    Prefix + "ClassWithPtrArg"
   }
 
   test("testClassRuntimeClass") {
@@ -194,6 +200,35 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     }
   }
 
+  test("testClassCtorWthPtrArg") {
+    import ReflectTest.ClassWithPtrArg
+
+    val optClassData = Reflect.lookupInstantiatableClass(NameClassWithPtrArg)
+    assertTrue(optClassData.isDefined)
+    val classData = optClassData.get
+
+    val optCtorPtrInt =
+      classData.getConstructor(classOf[Ptr[Byte]], classOf[Int])
+    assertTrue(optCtorPtrInt.isDefined)
+
+    Zone { implicit z =>
+      val size   = 64
+      val buffer = alloc[Byte](size)
+
+      for (i <- 0 until size) {
+        buffer(i) = (size - i).toByte
+      }
+
+      val instance =
+        optCtorPtrInt.get.newInstance(buffer, size).asInstanceOf[PtrAccessors]
+      assertEquals(64, instance.n)
+
+      for (i <- 0 until size) {
+        assertEquals(size - i, instance.p(i))
+      }
+    }
+  }
+
   test("testInnerClass") {
     import ReflectTest.ClassWithInnerClassWithEnableReflectiveInstantiation
 
@@ -254,9 +289,21 @@ object ReflectTest {
     val y: String
   }
 
+  trait PtrAccessors {
+    val p: Ptr[Byte]
+    val n: Int
+  }
+
   final class VC(val self: Short) extends AnyVal
 
   // Entities with directly enabled reflection
+
+  @EnableReflectiveInstantiation
+  class ClassWithPtrArg(val p: Ptr[Byte], val n: Int) extends PtrAccessors {
+    def this() = {
+      this(null, 0)
+    }
+  }
 
   @EnableReflectiveInstantiation
   class ClassEnableDirect(val x: Int, val y: String) extends Accessors {
