@@ -7,7 +7,6 @@ package reflect
 import scala.scalanative.reflect._
 import scala.scalanative.reflect.annotation._
 import scala.scalanative.unsafe._
-import java.nio.file.AccessMode
 
 object ReflectiveInstantiationSuite extends tests.Suite {
   import ReflectTest.{Accessors, PtrAccessors, VC}
@@ -219,13 +218,17 @@ object ReflectiveInstantiationSuite extends tests.Suite {
         buffer(i) = (size - i).toByte
       }
 
-      val instance =
+      val instance1 =
         optCtorPtrInt.get.newInstance(buffer, size).asInstanceOf[PtrAccessors]
-      assertEquals(64, instance.n)
+      assertEquals(64, instance1.n)
 
       for (i <- 0 until size) {
-        assertEquals(size - i, instance.p(i))
+        assertEquals(size - i, instance1.p(i))
       }
+
+      val instance2 = classData.newInstance().asInstanceOf[PtrAccessors]
+      assertEquals(0, instance2.n)
+      assertEquals(null, instance2.p)
     }
   }
 
