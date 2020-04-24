@@ -57,7 +57,7 @@ object ClassPath {
       files.filter {
         case (top, file) =>
           val buffer = directory.read(file, len = 1)
-          buffer.get != 0
+          buffer.get() != 0
       }.keySet
     }
   }

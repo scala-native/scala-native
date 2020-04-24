@@ -146,7 +146,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachClinit(name: Global): Unit = {
     reachGlobalNow(name)
-    infos.get(name).map { cls =>
+    infos.get(name).foreach { cls =>
       val clinit = cls.name.member(Sig.Clinit())
       if (loaded(cls.name).contains(clinit)) {
         reachGlobal(clinit)

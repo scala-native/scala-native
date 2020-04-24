@@ -16,7 +16,7 @@ trait NirGenStat { self: NirGenPhase =>
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
 
-  def isStaticModule(sym: Symbol) =
+  def isStaticModule(sym: Symbol): Boolean =
     sym.isModuleClass && !sym.isImplClass && !sym.isLifted
 
   class MethodEnv(val fresh: Fresh) {
@@ -271,7 +271,7 @@ trait NirGenStat { self: NirGenPhase =>
         else
           Some(genRegisterReflectiveInstantiationForNormalClass(cd))
 
-      staticInitBody.map {
+      staticInitBody.foreach {
         case body if body.nonEmpty =>
           buf += Defn.Define(Attrs(),
                              name,
@@ -338,12 +338,12 @@ trait NirGenStat { self: NirGenPhase =>
       ReflectiveInstantiationInfo += new ReflectiveInstantiationBuffer(fqSymId)
       val reflInstBuffer = ReflectiveInstantiationInfo.last
 
-      def genLazyModuleLoaderMethod(exprBuf: ExprBuffer): Val = {
+      def genModuleLoaderAnonFun(exprBuf: ExprBuffer): Val = {
         val applyMethodSig =
           Sig.Method("apply", Seq(jlObjectRef))
 
         // Generate the module loader class. The generated class extends
-        // the CFuncPtr0[Any] trait, i.e. has an apply method, which loads the module.
+        // AbstractFunction0[Any], i.e. has an apply method, which loads the module.
         // We need a fresh ExprBuffer for this, since it is different scope.
         withFreshExprBuffer { exprBuf =>
           val body = {
@@ -382,7 +382,7 @@ trait NirGenStat { self: NirGenPhase =>
         val fqcnArg = Val.String(fqSymId)
         val runtimeClassArg =
           exprBuf.genBoxClass(Val.Global(Global.Top(fqSymId), Type.Ptr))
-        val loadModuleFunArg = genLazyModuleLoaderMethod(exprBuf)
+        val loadModuleFunArg = genModuleLoaderAnonFun(exprBuf)
 
         exprBuf.genApplyModuleMethod(
           ReflectModule,
@@ -409,8 +409,8 @@ trait NirGenStat { self: NirGenPhase =>
                           Seq(_1, _2))
       }
 
-      def genLazyClassInstantiationMethod(exprBuf: ExprBuffer,
-                                          ctors: Seq[global.Symbol]): Val = {
+      def genClassConstructorsInfo(exprBuf: ExprBuffer,
+                                   ctors: Seq[global.Symbol]): Val = {
         val applyMethodSig =
           Sig.Method("apply", Seq(jlObjectRef, jlObjectRef))
 
@@ -509,10 +509,6 @@ trait NirGenStat { self: NirGenPhase =>
           // Create the current constructor's info. We need:
           // - an array with the runtime classes of the ctor parameters.
           // - the instantiator function created above (instantiator).
-          val getClassMethod = exprBuf.method(
-            Val.Global(jlObject, Type.Ref(jlObject)),
-            Sig.Method("getClass", Seq(jlClassRef)),
-            unwind(curFresh))
           val rtClasses = exprBuf.arrayalloc(jlClassRef,
                                              Val.Int(ctorSig.args.tail.length),
                                              unwind(curFresh))
@@ -564,7 +560,7 @@ trait NirGenStat { self: NirGenPhase =>
           val runtimeClassArg =
             exprBuf.genBoxClass(Val.Global(fqSymName, Type.Ptr))
           val instantiateClassFunArg =
-            genLazyClassInstantiationMethod(exprBuf, ctors)
+            genClassConstructorsInfo(exprBuf, ctors)
 
           exprBuf.genApplyModuleMethod(
             ReflectModule,

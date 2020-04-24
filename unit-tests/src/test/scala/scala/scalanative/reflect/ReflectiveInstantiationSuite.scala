@@ -211,12 +211,10 @@ object ReflectiveInstantiationSuite extends tests.Suite {
       val size   = 64
       val buffer = alloc[Byte](size)
 
-      val fn = { idx: Int =>
-        size - idx
-      }
+      def fn(idx: Int) = size - idx
 
       for (i <- 0 until size) {
-        buffer(i) = (fn(i)).toByte
+        buffer(i) = fn(i).toByte
       }
 
       val optCtorPtrInt =

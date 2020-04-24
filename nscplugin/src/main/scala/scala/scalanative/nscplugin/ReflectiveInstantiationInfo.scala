@@ -12,7 +12,7 @@ class ReflectiveInstantiationBuffer(val fqcn: String) {
     buf += defn
   }
 
-  val name = nir.Global.Top("SN$ReflectivelyInstantiate$" + fqcn)
+  val name = nir.Global.Top(fqcn + "$SN$ReflectivelyInstantiate$")
 
   def nonEmpty = buf.nonEmpty
   def toSeq    = buf.toSeq

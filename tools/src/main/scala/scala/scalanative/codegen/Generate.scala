@@ -151,8 +151,7 @@ object Generate {
                             Val.Global(stackBottomName, Type.Ptr),
                             stackBottom),
                    unwind),
-          Inst.Let(Op.Call(InitSig, Init, Seq()), unwind),
-          Inst.Let(rt.name, Op.Module(Runtime.name), unwind)
+          Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
         )
           ++ // generate the class initialisers
             defns.collect {
@@ -164,6 +163,7 @@ object Generate {
                          unwind)
             }
           ++ Seq(
+            Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
             Inst.Let(arr.name,
                      Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
                      unwind),
