@@ -206,30 +206,36 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     assertTrue(optClassData.isDefined)
     val classData = optClassData.get
 
-    val optCtorPtrInt =
-      classData.getConstructor(classOf[Ptr[Byte]], classOf[Int])
-    assertTrue(optCtorPtrInt.isDefined)
-
+    // test with array of bytes
     Zone { implicit z =>
       val size   = 64
       val buffer = alloc[Byte](size)
 
-      for (i <- 0 until size) {
-        buffer(i) = (size - i).toByte
+      val fn = { idx: Int =>
+        size - idx
       }
 
-      val instance1 =
+      for (i <- 0 until size) {
+        buffer(i) = (fn(i)).toByte
+      }
+
+      val optCtorPtrInt =
+        classData.getConstructor(classOf[Ptr[Byte]], classOf[Int])
+      assertTrue(optCtorPtrInt.isDefined)
+
+      val instance =
         optCtorPtrInt.get.newInstance(buffer, size).asInstanceOf[PtrAccessors]
-      assertEquals(64, instance1.n)
+      assertEquals(64, instance.n)
 
       for (i <- 0 until size) {
-        assertEquals(size - i, instance1.p(i))
+        assertEquals(fn(i), instance.p(i))
       }
-
-      val instance2 = classData.newInstance().asInstanceOf[PtrAccessors]
-      assertEquals(0, instance2.n)
-      assertEquals(null, instance2.p)
     }
+
+    // test with null pointer
+    val instance = classData.newInstance().asInstanceOf[PtrAccessors]
+    assertEquals(-1, instance.n)
+    assertEquals(null, instance.p)
   }
 
   test("testInnerClass") {
@@ -304,7 +310,7 @@ object ReflectTest {
   @EnableReflectiveInstantiation
   class ClassWithPtrArg(val p: Ptr[Byte], val n: Int) extends PtrAccessors {
     def this() = {
-      this(null, 0)
+      this(null, -1)
     }
   }
 
