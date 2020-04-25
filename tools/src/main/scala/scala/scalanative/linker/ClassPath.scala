@@ -15,6 +15,8 @@ sealed trait ClassPath {
 
   /** Load given global and info about its dependencies. */
   private[scalanative] def load(name: Global): Option[Seq[Defn]]
+
+  private[scalanative] def classesWithEntryPoints: Iterable[Global.Top]
 }
 
 object ClassPath {
@@ -50,5 +52,13 @@ object ClassPath {
           deserializeBinary(directory.read(file))
         }
       })
+
+    lazy val classesWithEntryPoints: Iterable[Global.Top] = {
+      files.filter {
+        case (top, file) =>
+          val buffer = directory.read(file, len = 1)
+          buffer.get() != 0
+      }.keySet
+    }
   }
 }

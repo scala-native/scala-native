@@ -24,6 +24,8 @@ object Unmangle {
         Sig.Field(readIdent())
       case 'R' =>
         Sig.Ctor(readTypes())
+      case 'I' =>
+        Sig.Clinit()
       case 'D' =>
         Sig.Method(readIdent(), readTypes())
       case 'P' =>

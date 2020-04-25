@@ -33,6 +33,11 @@ abstract class Suite {
       throw AssertionFailed(s"condition is true")
     }
 
+  def assertFalse(message: String, cond: Boolean): Unit =
+    if (cond) {
+      throw AssertionFailed(message)
+    }
+
   def assertNull[A](a: A): Unit =
     if (a != null) {
       throw AssertionFailed(s"$a != null")
