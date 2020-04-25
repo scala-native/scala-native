@@ -12,9 +12,6 @@ object NirGenSymbols {
   val jlObject    = Global.Top("java.lang.Object")
   val jlObjectRef = Type.Ref(jlObject)
 
-  val jlNumber    = Global.Top("java.lang.Number")
-  val jlNumberRef = Type.Ref(jlNumber)
-
   val tuple2    = Global.Top("scala.Tuple2")
   val tuple2Ref = Type.Ref(tuple2)
 
