@@ -120,9 +120,7 @@ abstract class Suite {
 
       val stacktrace = writer.toString
         .split('\n')
-        .map { line =>
-          s"\n${color}${indentSpaces}${line}"
-        }
+        .map { line => s"\n${color}${indentSpaces}${line}" }
         .mkString("")
 
       s"\n${color}${indentSpaces}${info}" + stacktrace

@@ -11,9 +11,7 @@ object CArrayOpsSuite extends tests.Suite {
     val ptr   = alloc.asInstanceOf[Ptr[Int]]
 
     assert(ptr == carr.at(0))
-    (1 to 100).foreach { i =>
-      assert((ptr + i) == carr.at(i))
-    }
+    (1 to 100).foreach { i => assert((ptr + i) == carr.at(i)) }
   }
 
   test("apply/update") {

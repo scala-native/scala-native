@@ -4,7 +4,7 @@ import java.util.{HashSet, Set}
 
 object PosixFilePermissions {
   def asFileAttribute(perms: Set[PosixFilePermission])
-    : FileAttribute[Set[PosixFilePermission]] =
+      : FileAttribute[Set[PosixFilePermission]] =
     new FileAttribute[Set[PosixFilePermission]] {
       override def name(): String                    = "posix:permissions"
       override def value(): Set[PosixFilePermission] = perms

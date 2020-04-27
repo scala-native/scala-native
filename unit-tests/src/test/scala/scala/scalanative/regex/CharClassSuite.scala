@@ -81,7 +81,7 @@ object CharClassSuite extends tests.Suite {
     // [MAX_FOLD...] needs no folding
     assertClass(cc(Array.emptyIntArray).appendFoldedRange(0x10400, 0x104f0),
                 Array(0x10450, 0x104f0, 0x10400, 0x10426, // lowercase Deseret
-                  0x10426, 0x1044f)) // uppercase Deseret, abutting.
+                  0x10426, 0x1044f))                      // uppercase Deseret, abutting.
   }
 
   test("AppendClass") {

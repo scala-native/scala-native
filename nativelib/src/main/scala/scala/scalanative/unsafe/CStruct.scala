@@ -1197,7 +1197,7 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     "CStruct10@" + java.lang.Long.toHexString(castRawPtrToLong(rawptr))
 
   @alwaysinline def toPtr
-    : Ptr[CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]] =
+      : Ptr[CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]] =
     fromRawPtr[CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]](rawptr)
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CStruct.scala.gyb", line: 32)
@@ -1205,13 +1205,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T1] =
+      : Ptr[T1] =
     new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T1 = {
+      : T1 = {
     val ptr = new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
     ptr.unary_!(tag._1)
   }
@@ -1219,7 +1219,7 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 1. */
   @alwaysinline def _1_=(value: T1)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
     ptr.`unary_!_=`(value)(tag._1)
   }
@@ -1229,13 +1229,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T2] =
+      : Ptr[T2] =
     new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T2 = {
+      : T2 = {
     val ptr = new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
     ptr.unary_!(tag._2)
   }
@@ -1243,7 +1243,7 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 2. */
   @alwaysinline def _2_=(value: T2)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
     ptr.`unary_!_=`(value)(tag._2)
   }
@@ -1253,13 +1253,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T3] =
+      : Ptr[T3] =
     new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T3 = {
+      : T3 = {
     val ptr = new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
     ptr.unary_!(tag._3)
   }
@@ -1267,7 +1267,7 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 3. */
   @alwaysinline def _3_=(value: T3)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
     ptr.`unary_!_=`(value)(tag._3)
   }
@@ -1277,13 +1277,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T4] =
+      : Ptr[T4] =
     new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T4 = {
+      : T4 = {
     val ptr = new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
     ptr.unary_!(tag._4)
   }
@@ -1291,7 +1291,7 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 4. */
   @alwaysinline def _4_=(value: T4)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
     ptr.`unary_!_=`(value)(tag._4)
   }
@@ -1301,13 +1301,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T5] =
+      : Ptr[T5] =
     new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T5 = {
+      : T5 = {
     val ptr = new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
     ptr.unary_!(tag._5)
   }
@@ -1315,7 +1315,7 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 5. */
   @alwaysinline def _5_=(value: T5)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
     ptr.`unary_!_=`(value)(tag._5)
   }
@@ -1325,13 +1325,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T6] =
+      : Ptr[T6] =
     new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T6 = {
+      : T6 = {
     val ptr = new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
     ptr.unary_!(tag._6)
   }
@@ -1339,7 +1339,7 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 6. */
   @alwaysinline def _6_=(value: T6)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
     ptr.`unary_!_=`(value)(tag._6)
   }
@@ -1349,13 +1349,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T7] =
+      : Ptr[T7] =
     new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T7 = {
+      : T7 = {
     val ptr = new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
     ptr.unary_!(tag._7)
   }
@@ -1363,7 +1363,7 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 7. */
   @alwaysinline def _7_=(value: T7)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
     ptr.`unary_!_=`(value)(tag._7)
   }
@@ -1373,13 +1373,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T8] =
+      : Ptr[T8] =
     new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T8 = {
+      : T8 = {
     val ptr = new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
     ptr.unary_!(tag._8)
   }
@@ -1387,7 +1387,7 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 8. */
   @alwaysinline def _8_=(value: T8)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
     ptr.`unary_!_=`(value)(tag._8)
   }
@@ -1397,13 +1397,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T9] =
+      : Ptr[T9] =
     new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T9 = {
+      : T9 = {
     val ptr = new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
     ptr.unary_!(tag._9)
   }
@@ -1411,7 +1411,7 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 9. */
   @alwaysinline def _9_=(value: T9)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
     ptr.`unary_!_=`(value)(tag._9)
   }
@@ -1421,13 +1421,13 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T10] =
+      : Ptr[T10] =
     new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T10 = {
+      : T10 = {
     val ptr = new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
     ptr.unary_!(tag._10)
   }
@@ -1435,7 +1435,7 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 10. */
   @alwaysinline def _10_=(value: T10)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
     ptr.`unary_!_=`(value)(tag._10)
   }
@@ -1463,7 +1463,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     "CStruct11@" + java.lang.Long.toHexString(castRawPtrToLong(rawptr))
 
   @alwaysinline def toPtr
-    : Ptr[CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]] =
+      : Ptr[CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]] =
     fromRawPtr[CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]](rawptr)
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CStruct.scala.gyb", line: 32)
@@ -1471,13 +1471,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T1] =
+      : Ptr[T1] =
     new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T1 = {
+      : T1 = {
     val ptr = new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
     ptr.unary_!(tag._1)
   }
@@ -1485,7 +1485,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 1. */
   @alwaysinline def _1_=(value: T1)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T1](elemRawPtr(rawptr, tag.offset(0)))
     ptr.`unary_!_=`(value)(tag._1)
   }
@@ -1495,13 +1495,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T2] =
+      : Ptr[T2] =
     new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T2 = {
+      : T2 = {
     val ptr = new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
     ptr.unary_!(tag._2)
   }
@@ -1509,7 +1509,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 2. */
   @alwaysinline def _2_=(value: T2)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T2](elemRawPtr(rawptr, tag.offset(1)))
     ptr.`unary_!_=`(value)(tag._2)
   }
@@ -1519,13 +1519,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T3] =
+      : Ptr[T3] =
     new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T3 = {
+      : T3 = {
     val ptr = new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
     ptr.unary_!(tag._3)
   }
@@ -1533,7 +1533,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 3. */
   @alwaysinline def _3_=(value: T3)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T3](elemRawPtr(rawptr, tag.offset(2)))
     ptr.`unary_!_=`(value)(tag._3)
   }
@@ -1543,13 +1543,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T4] =
+      : Ptr[T4] =
     new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T4 = {
+      : T4 = {
     val ptr = new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
     ptr.unary_!(tag._4)
   }
@@ -1557,7 +1557,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 4. */
   @alwaysinline def _4_=(value: T4)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T4](elemRawPtr(rawptr, tag.offset(3)))
     ptr.`unary_!_=`(value)(tag._4)
   }
@@ -1567,13 +1567,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T5] =
+      : Ptr[T5] =
     new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T5 = {
+      : T5 = {
     val ptr = new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
     ptr.unary_!(tag._5)
   }
@@ -1581,7 +1581,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 5. */
   @alwaysinline def _5_=(value: T5)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T5](elemRawPtr(rawptr, tag.offset(4)))
     ptr.`unary_!_=`(value)(tag._5)
   }
@@ -1591,13 +1591,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T6] =
+      : Ptr[T6] =
     new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T6 = {
+      : T6 = {
     val ptr = new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
     ptr.unary_!(tag._6)
   }
@@ -1605,7 +1605,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 6. */
   @alwaysinline def _6_=(value: T6)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T6](elemRawPtr(rawptr, tag.offset(5)))
     ptr.`unary_!_=`(value)(tag._6)
   }
@@ -1615,13 +1615,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T7] =
+      : Ptr[T7] =
     new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T7 = {
+      : T7 = {
     val ptr = new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
     ptr.unary_!(tag._7)
   }
@@ -1629,7 +1629,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 7. */
   @alwaysinline def _7_=(value: T7)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T7](elemRawPtr(rawptr, tag.offset(6)))
     ptr.`unary_!_=`(value)(tag._7)
   }
@@ -1639,13 +1639,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T8] =
+      : Ptr[T8] =
     new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T8 = {
+      : T8 = {
     val ptr = new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
     ptr.unary_!(tag._8)
   }
@@ -1653,7 +1653,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 8. */
   @alwaysinline def _8_=(value: T8)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T8](elemRawPtr(rawptr, tag.offset(7)))
     ptr.`unary_!_=`(value)(tag._8)
   }
@@ -1663,13 +1663,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T9] =
+      : Ptr[T9] =
     new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T9 = {
+      : T9 = {
     val ptr = new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
     ptr.unary_!(tag._9)
   }
@@ -1677,7 +1677,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 9. */
   @alwaysinline def _9_=(value: T9)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T9](elemRawPtr(rawptr, tag.offset(8)))
     ptr.`unary_!_=`(value)(tag._9)
   }
@@ -1687,13 +1687,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T10] =
+      : Ptr[T10] =
     new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T10 = {
+      : T10 = {
     val ptr = new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
     ptr.unary_!(tag._10)
   }
@@ -1701,7 +1701,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 10. */
   @alwaysinline def _10_=(value: T10)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T10](elemRawPtr(rawptr, tag.offset(9)))
     ptr.`unary_!_=`(value)(tag._10)
   }
@@ -1711,13 +1711,13 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T11] =
+      : Ptr[T11] =
     new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T11 = {
+      : T11 = {
     val ptr = new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
     ptr.unary_!(tag._11)
   }
@@ -1725,7 +1725,7 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 11. */
   @alwaysinline def _11_=(value: T11)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T11](elemRawPtr(rawptr, tag.offset(10)))
     ptr.`unary_!_=`(value)(tag._11)
   }
@@ -1753,7 +1753,7 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     "CStruct12@" + java.lang.Long.toHexString(castRawPtrToLong(rawptr))
 
   @alwaysinline def toPtr
-    : Ptr[CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]] =
+      : Ptr[CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]] =
     fromRawPtr[CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]](
       rawptr)
 
@@ -2419,7 +2419,7 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     "CStruct13@" + java.lang.Long.toHexString(castRawPtrToLong(rawptr))
 
   @alwaysinline def toPtr
-    : Ptr[CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]] =
+      : Ptr[CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]] =
     fromRawPtr[
       CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]](rawptr)
 

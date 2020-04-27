@@ -27,9 +27,7 @@ final class InstantiatableClass private[reflect] (
     getConstructor().fold[Any] {
       throw new InstantiationException(runtimeClass.getName).initCause(
         new NoSuchMethodException(runtimeClass.getName + ".<init>()"))
-    } { ctor =>
-      ctor.newInstance()
-    }
+    } { ctor => ctor.newInstance() }
   }
 
   /** Looks up a public constructor identified by the types of its formal
@@ -146,7 +144,7 @@ object Reflect {
       fqcn: String,
       runtimeClass: Class[T],
       constructors: Array[(Array[Class[_]], Function1[Array[Any], Any])])
-    : Unit = {
+      : Unit = {
     val invokableConstructors = constructors.map { c =>
       new InvokableConstructor(c._1, c._2)
     }

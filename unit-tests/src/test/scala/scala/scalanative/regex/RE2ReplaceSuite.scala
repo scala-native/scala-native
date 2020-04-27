@@ -7,12 +7,14 @@ import ScalaTestCompat.fail
 
 object RE2ReplaceSuite extends tests.Suite {
 
-  private val REPLACE_TESTS = Array( // Test empty input and/or replacement,
+  private val REPLACE_TESTS = Array(
+    // Test empty input and/or replacement,
     // with pattern that matches the empty string.
     Array("", "", "", "", "false"),
     Array("", "x", "", "x", "false"),
     Array("", "", "abc", "abc", "false"),
-    Array("", "x", "abc", "xaxbxcx", "false"), // with pattern that does not match the empty string.
+    // with pattern that does not match the empty string.
+    Array("", "x", "abc", "xaxbxcx", "false"),
     Array("b", "", "", "", "false"),
     Array("b", "x", "", "", "false"),
     Array("b", "", "abc", "ac", "false"),
@@ -20,10 +22,12 @@ object RE2ReplaceSuite extends tests.Suite {
     Array("y", "", "", "", "false"),
     Array("y", "x", "", "", "false"),
     Array("y", "", "abc", "abc", "false"),
-    Array("y", "x", "abc", "abc", "false"), // Multibyte characters -- verify that we don't try to match in the middle
-    // of a character.
+    // Multibyte characters -- verify that we don't try to match
+    // in the middle of a character.
+    Array("y", "x", "abc", "abc", "false"),
     Array("[a-c]*", "x", "\u65e5", "x\u65e5x", "false"),
-    Array("[^\u65e5]", "x", "abc\u65e5def", "xxx\u65e5xxx", "false"), // Start and end of a string.
+    // Start and end of a string.
+    Array("[^\u65e5]", "x", "abc\u65e5def", "xxx\u65e5xxx", "false"),
     Array("^[a-c]*", "x", "abcdabc", "xdabc", "false"),
     Array("[a-c]*$", "x", "abcdabc", "abcdx", "false"),
     Array("^[a-c]*$", "x", "abcdabc", "abcdabc", "false"),

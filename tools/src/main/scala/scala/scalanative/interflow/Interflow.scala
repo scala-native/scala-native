@@ -19,9 +19,7 @@ class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
     with Log {
   private val originals = {
     val out = mutable.Map.empty[Global, Defn]
-    linked.defns.foreach { defn =>
-      out(defn.name) = defn
-    }
+    linked.defns.foreach { defn => out(defn.name) = defn }
     out
   }
 
