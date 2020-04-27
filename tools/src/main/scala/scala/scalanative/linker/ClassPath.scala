@@ -2,11 +2,12 @@ package scala.scalanative
 package linker
 
 import scala.collection.mutable
-import nir.{Global, Dep, Attr, Defn}
+import nir.{Attr, Defn, Dep, Global}
 import nir.serialization.deserializeBinary
 import java.nio.file.{FileSystems, Path}
+
 import scalanative.io.VirtualDirectory
-import scalanative.util.Scope
+import scalanative.util.{NirPrelude, Scope}
 
 sealed trait ClassPath {
 
@@ -55,9 +56,9 @@ object ClassPath {
 
     lazy val classesWithEntryPoints: Iterable[Global.Top] = {
       files.filter {
-        case (top, file) =>
-          val buffer = directory.read(file, len = 1)
-          buffer.get() != 0
+        case (_, file) =>
+          val buffer = directory.read(file, len = 16)
+          NirPrelude.readFrom(buffer).hasEntryPoints
       }.keySet
     }
   }

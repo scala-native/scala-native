@@ -3,8 +3,10 @@ package nir
 package serialization
 
 import java.nio.ByteBuffer
+
 import scala.collection.mutable
 import nir.serialization.{Tags => T}
+import scala.scalanative.util.NirPrelude
 
 final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
@@ -13,17 +15,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
     val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
-    val hasEntryPoint = defns.exists {
-      case defn: Defn.Define =>
-        val Global.Member(_, sig) = defn.name
-        sig.isClinit
-      case _ => false
-    }
-    putBool(hasEntryPoint)
-
-    putInt(Versions.magic)
-    putInt(Versions.compat)
-    putInt(Versions.revision)
+    NirPrelude.writeTo(buffer,
+                       NirPrelude(Versions.magic,
+                                  Versions.compat,
+                                  Versions.revision,
+                                  Defn.existsEntryPoint(defns)))
 
     putSeq(names) { n =>
       putGlobal(n)
