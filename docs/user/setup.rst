@@ -97,6 +97,17 @@ installation of FreeBSD.
     $ wget https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/scala-native.nix
     $ nix-shell scala-native.nix -A clangEnv
 
+IntelliJ IDEA
+-------------
+
+First, check "use sbt shell for import and build" when opening the SN project.
+Then, once the project is imported, you have to fix some dependencies:
+
+ * first, remove or mark as ignored the ``scalalib`` module. It is not required for the SN compilation itself, only for runtime. IntelliJ gets confused when ``scalalib`` is present, because it thinks that it should use that as the source of the scala library.
+ * then, add some dependencies to the ``nscplugin`` module: go to project structure, select ``nscplugin`` and then "Dependencies". Add "JARs or directories" and select the ``scala-native/nir`` directory. Repeat and select the ``scala-native/util`` directory.
+
+At some point, the process could be automated for IDEA in the same way that ``scala/scala`` does (i.e. with an SBT task that generates the proper project definition).
+
 Continue to :ref:`sbt`.
 
 
