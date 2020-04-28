@@ -9,6 +9,8 @@ case class NirPrelude(magic: Int,
                       hasEntryPoints: Boolean)
 
 object NirPrelude {
+  val length = 13
+
   def readFrom(buffer: ByteBuffer): NirPrelude = {
     val magic    = buffer.getInt()
     val compat   = buffer.getInt()

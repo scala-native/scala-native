@@ -57,7 +57,7 @@ object ClassPath {
     lazy val classesWithEntryPoints: Iterable[Global.Top] = {
       files.filter {
         case (_, file) =>
-          val buffer = directory.read(file, len = 16)
+          val buffer = directory.read(file, len = NirPrelude.length)
           NirPrelude.readFrom(buffer).hasEntryPoints
       }.keySet
     }
