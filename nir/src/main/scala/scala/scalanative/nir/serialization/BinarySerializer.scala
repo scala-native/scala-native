@@ -5,8 +5,7 @@ package serialization
 import java.nio.ByteBuffer
 
 import scala.collection.mutable
-import nir.serialization.{Tags => T}
-import scala.scalanative.util.NirPrelude
+import scala.scalanative.nir.serialization.{Tags => T}
 
 final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
@@ -15,11 +14,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
     val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
-    NirPrelude.writeTo(buffer,
-                       NirPrelude(Versions.magic,
-                                  Versions.compat,
-                                  Versions.revision,
-                                  Defn.existsEntryPoint(defns)))
+    Prelude.writeTo(buffer,
+                    Prelude(Versions.magic,
+                            Versions.compat,
+                            Versions.revision,
+                            Defn.existsEntryPoint(defns)))
 
     putSeq(names) { n =>
       putGlobal(n)

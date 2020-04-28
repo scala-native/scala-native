@@ -5,8 +5,7 @@ package serialization
 import java.nio.ByteBuffer
 
 import scala.collection.mutable
-import scala.scalanative.util.NirPrelude
-import scalanative.nir.serialization.{Tags => T}
+import scala.scalanative.nir.serialization.{Tags => T}
 
 final class BinaryDeserializer(buffer: ByteBuffer) {
   import buffer._
@@ -14,11 +13,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   private val header: Map[Global, Int] = {
     buffer.position(0)
 
-    val NirPrelude(magic, compat, revision, _) = NirPrelude.readFrom(buffer)
-
-    assert(magic == Versions.magic, "Can't read non-NIR file.")
-    assert(compat == Versions.compat && revision <= Versions.revision,
-           "Can't read binary-incompatible version of NIR.")
+    Prelude.readFrom(buffer)
 
     val pairs = getSeq((getGlobal, getInt))
     val map   = pairs.toMap

@@ -1,13 +1,12 @@
 package scala.scalanative
 package linker
 
-import scala.collection.mutable
-import nir.{Attr, Defn, Dep, Global}
-import nir.serialization.deserializeBinary
-import java.nio.file.{FileSystems, Path}
+import java.nio.file.Path
 
-import scalanative.io.VirtualDirectory
-import scalanative.util.{NirPrelude, Scope}
+import scala.collection.mutable
+import scala.scalanative.io.VirtualDirectory
+import scala.scalanative.nir.serialization.deserializeBinary
+import scala.scalanative.nir.{Defn, Global, Prelude => NirPrelude}
 
 sealed trait ClassPath {
 

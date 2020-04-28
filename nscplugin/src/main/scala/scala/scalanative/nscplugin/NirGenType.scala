@@ -58,7 +58,7 @@ trait NirGenType { self: NirGenPhase =>
   def genArrayCode(st: SimpleType): Char =
     genPrimCode(st.targs.head)
 
-  def genBoxType(st: SimpleType): nir.Type = st.sym match {
+  def genBoxType(st: SimpleType): scala.scalanative.nir.Type = st.sym match {
     case CharClass    => genType(BoxedCharacterClass)
     case BooleanClass => genType(BoxedBooleanClass)
     case ByteClass    => genType(BoxedByteClass)
@@ -70,17 +70,18 @@ trait NirGenType { self: NirGenPhase =>
     case _            => genType(st)
   }
 
-  def genExternType(st: SimpleType): nir.Type =
+  def genExternType(st: SimpleType): scala.scalanative.nir.Type =
     genType(st) match {
       case _ if st.isCFuncPtrClass =>
         nir.Type.Ptr
-      case refty: nir.Type.Ref if nir.Type.boxClasses.contains(refty.name) =>
+      case refty: scala.scalanative.nir.Type.Ref
+          if nir.Type.boxClasses.contains(refty.name) =>
         nir.Type.unbox(nir.Type.Ref(refty.name))
       case ty =>
         ty
     }
 
-  def genType(st: SimpleType): nir.Type = st.sym match {
+  def genType(st: SimpleType): scala.scalanative.nir.Type = st.sym match {
     case CharClass    => nir.Type.Char
     case BooleanClass => nir.Type.Bool
     case ByteClass    => nir.Type.Byte
@@ -95,7 +96,7 @@ trait NirGenType { self: NirGenPhase =>
     case _            => genRefType(st)
   }
 
-  def genRefType(st: SimpleType): nir.Type = st.sym match {
+  def genRefType(st: SimpleType): scala.scalanative.nir.Type = st.sym match {
     case ObjectClass      => nir.Rt.Object
     case UnitClass        => nir.Type.Unit
     case BoxedUnitClass   => nir.Rt.BoxedUnit
@@ -105,7 +106,7 @@ trait NirGenType { self: NirGenPhase =>
     case _                => nir.Type.Ref(genTypeName(st.sym))
   }
 
-  def genTypeValue(st: SimpleType): nir.Val =
+  def genTypeValue(st: SimpleType): scala.scalanative.nir.Val =
     genPrimCode(st.sym) match {
       case _ if st.sym == UnitClass =>
         genTypeValue(RuntimePrimitive('U'))
@@ -117,7 +118,7 @@ trait NirGenType { self: NirGenPhase =>
         genTypeValue(RuntimePrimitive(code))
     }
 
-  def genStructFields(st: SimpleType): Seq[nir.Type] = {
+  def genStructFields(st: SimpleType): Seq[scala.scalanative.nir.Type] = {
     for {
       f <- st.sym.info.decls if f.isField
     } yield {
@@ -125,7 +126,7 @@ trait NirGenType { self: NirGenPhase =>
     }
   }.toSeq
 
-  def genStruct(st: SimpleType): nir.Type = {
+  def genStruct(st: SimpleType): scala.scalanative.nir.Type = {
     val fields = genStructFields(st)
 
     nir.Type.StructValue(fields)
@@ -143,14 +144,15 @@ trait NirGenType { self: NirGenPhase =>
     case _            => 'O'
   }
 
-  def genMethodSig(sym: Symbol): nir.Type.Function =
+  def genMethodSig(sym: Symbol): scala.scalanative.nir.Type.Function =
     genMethodSigImpl(sym, isExtern = false)
 
-  def genExternMethodSig(sym: Symbol): nir.Type.Function =
+  def genExternMethodSig(sym: Symbol): scala.scalanative.nir.Type.Function =
     genMethodSigImpl(sym, isExtern = true)
 
-  private def genMethodSigImpl(sym: Symbol,
-                               isExtern: Boolean): nir.Type.Function = {
+  private def genMethodSigImpl(
+      sym: Symbol,
+      isExtern: Boolean): scala.scalanative.nir.Type.Function = {
     require(sym.isMethod || sym.isStaticMember)
 
     val tpe      = sym.tpe
@@ -167,8 +169,9 @@ trait NirGenType { self: NirGenPhase =>
     nir.Type.Function(selfty ++: paramtys, retty)
   }
 
-  private def genMethodSigParamsImpl(sym: Symbol,
-                                     isExtern: Boolean): Seq[nir.Type] = {
+  private def genMethodSigParamsImpl(
+      sym: Symbol,
+      isExtern: Boolean): Seq[scala.scalanative.nir.Type] = {
     val wereRepeated = exitingPhase(currentRun.typerPhase) {
       for {
         params <- sym.tpe.paramss
