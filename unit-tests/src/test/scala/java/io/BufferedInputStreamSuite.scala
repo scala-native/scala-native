@@ -35,7 +35,7 @@ object BufferedInputStreamSuite extends tests.Suite {
 
     val a = new Array[Byte](7)
 
-    in.skip(3)
+    assert(in.skip(3) == 3)
     assert(in.read(a, 0, 7) == 7)
 
     assert(
