@@ -29,7 +29,7 @@ object ClassLoader {
       classpath.flatMap(_.classesWithEntryPoints)
     }
 
-    def load(global: Global) =
+    def load(global: Global): Option[Seq[Defn]] =
       classpath.collectFirst {
         case path if path.contains(global) =>
           path.load(global)
@@ -49,13 +49,7 @@ object ClassLoader {
 
     lazy val classesWithEntryPoints: Iterable[Global] = {
       scopes.filter {
-        case (top, defns) =>
-          defns.exists {
-            case defn: Defn.Define =>
-              val Global.Member(_, sig) = defn.name
-              sig.isClinit
-            case _ => false
-          }
+        case (_, defns) => Defn.existsEntryPoint(defns)
       }.keySet
     }
 
