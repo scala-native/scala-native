@@ -20,7 +20,7 @@ def projectName(project: sbt.ResolvedProject): String = {
 
 // Provide consistent project name pattern.
 lazy val nameSettings = Seq(
-  normalizedName := projectName(thisProject.value), // Maven <artifactId>
+  normalizedName := projectName(thisProject.value),         // Maven <artifactId>
   name := s"Scala Native ${projectName(thisProject.value)}" // Maven <name>
 )
 
@@ -33,23 +33,25 @@ lazy val mimaSettings: Seq[Setting[_]] = Seq(
   }
 )
 
-// Common start but individual sub-projects may add or remove scalacOptions.
-lazy val baseScalacSettings = {
-  scalacOptions ++= Seq(
-    "-deprecation",
-    "-encoding",
-    "utf8",
-    "-feature",
-    "-target:jvm-1.8",
-    "-unchecked",
-    "-Xfatal-warnings"
-  )
-}
-
 lazy val baseSettings = Seq(
   organization := "org.scala-native", // Maven <groupId>
-  version := nativeVersion // Maven <version>
-) ++ baseScalacSettings
+  version := nativeVersion            // Maven <version>
+)
+
+// Common start but individual sub-projects may add or remove scalacOptions.
+// project/build.sbt uses a less stringent set to bootstrap.
+inThisBuild(
+  Def.settings(
+    scalacOptions ++= Seq(
+      "-deprecation",
+      "-encoding",
+      "utf8",
+      "-feature",
+      "-target:jvm-1.8",
+      "-unchecked",
+      "-Xfatal-warnings"
+    )
+  ))
 
 addCommandAlias(
   "rebuild",
@@ -138,9 +140,7 @@ lazy val bintrayPublishSettings = Seq(
 
 lazy val mavenPublishSettings = Seq(
   publishMavenStyle := true,
-  pomIncludeRepository := { x =>
-    false
-  },
+  pomIncludeRepository := { x => false },
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (version.value.trim.endsWith("SNAPSHOT"))
@@ -240,7 +240,7 @@ lazy val projectSettings =
     resolvers := Nil,
     nativeCheck := true,
     nativeDump := true
-  ) ++ baseScalacSettings
+  )
 
 lazy val util =
   project
