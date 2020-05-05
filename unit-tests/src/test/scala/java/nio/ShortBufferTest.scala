@@ -96,7 +96,7 @@ abstract class ReadOnlyShortViewOfByteBufferTest(
 
   val factory: BufferFactory.ShortBufferFactory = {
     new ByteBufferShortViewFactory(byteBufferFactory, order)
-    with BufferFactory.ReadOnlyBufferFactory
+      with BufferFactory.ReadOnlyBufferFactory
   }
 }
 

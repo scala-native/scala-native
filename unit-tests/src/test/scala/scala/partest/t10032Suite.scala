@@ -33,19 +33,35 @@ object t10032Suite extends tests.Suite {
   def t2: Int = {
     println("t2")
     try {
-      try { return i1 } finally { a1() }
+      try {
+        return i1
+      } finally {
+        a1()
+      }
     } finally {
-      try { a2() } finally { a3() }
+      try {
+        a2()
+      } finally {
+        a3()
+      }
     }
   }
 
   def t3(i: => Int): Int = {
     println("t3")
     try {
-      try { return i } finally { a1() }
+      try {
+        return i
+      } finally {
+        a1()
+      }
     } catch {
       case _: Throwable =>
-        try { i2 } finally { a2() } // no cleanup version
+        try {
+          i2
+        } finally {
+          a2()
+        } // no cleanup version
     } finally {
       a3()
     }
@@ -64,7 +80,11 @@ object t10032Suite extends tests.Suite {
     println("t5")
     try {
       try {
-        try { return i } finally { a1() }
+        try {
+          return i
+        } finally {
+          a1()
+        }
       } catch {
         case _: Throwable => i2
       }
@@ -76,7 +96,11 @@ object t10032Suite extends tests.Suite {
   def t6(i: => Int): Int = {
     println("t6")
     try {
-      try { return i } finally { return i2 }
+      try {
+        return i
+      } finally {
+        return i2
+      }
     } finally {
       return i3
     }
@@ -84,7 +108,9 @@ object t10032Suite extends tests.Suite {
 
   def t7(i: => Int): Int = {
     println("t7")
-    try { i } catch {
+    try {
+      i
+    } catch {
       case _: Throwable =>
         return i2
     } finally {
@@ -95,8 +121,14 @@ object t10032Suite extends tests.Suite {
   def t8(i: => Int): Int = {
     println("t8")
     try {
-      try { i } finally { // no cleanup version
-        try { return i2 } finally { a1() } // cleanup version required
+      try {
+        i
+      } finally { // no cleanup version
+        try {
+          return i2
+        } finally {
+          a1()
+        } // cleanup version required
       }
     } finally { // cleanup version required
       a2()
@@ -108,7 +140,11 @@ object t10032Suite extends tests.Suite {
     try {
       return i
     } finally {
-      try { return i2 } finally { a1() }
+      try {
+        return i2
+      } finally {
+        a1()
+      }
     }
   }
 
@@ -117,7 +153,11 @@ object t10032Suite extends tests.Suite {
     try {
       return i
     } finally {
-      try { return i2 } finally { return i3 }
+      try {
+        return i2
+      } finally {
+        return i3
+      }
     }
   }
 
@@ -125,7 +165,11 @@ object t10032Suite extends tests.Suite {
   def t11(i: => Int): Int = {
     println("t11")
     try {
-      try { return i } finally { return i2 }
+      try {
+        return i
+      } finally {
+        return i2
+      }
     } finally {
       a1()
     }

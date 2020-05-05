@@ -110,9 +110,7 @@ object ControlFlow {
             edge(node, block(next2.name), next2)
           case Inst.Switch(_, default, cases) =>
             edge(node, block(default.name), default)
-            cases.foreach { case_ =>
-              edge(node, block(case_.name), case_)
-            }
+            cases.foreach { case_ => edge(node, block(case_.name), case_) }
           case Inst.Throw(_, next) =>
             if (next ne Next.None) {
               edge(node, block(next.name), next)

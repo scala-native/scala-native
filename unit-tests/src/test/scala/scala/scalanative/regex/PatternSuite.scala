@@ -25,7 +25,8 @@ object PatternSuite extends tests.Suite {
   }
 
   test("quote") {
-    assert(Pattern.quote("1.5-2.0?") == "1\\.5-2\\.0\\?") // TODO: taken from re2j, behaviour might differ jdk
+    // TODO: taken from re2j, behaviour might differ jdk
+    assert(Pattern.quote("1.5-2.0?") == "1\\.5-2\\.0\\?")
   }
 
   test("characters") {
@@ -381,35 +382,58 @@ object PatternSuite extends tests.Suite {
 
   test("syntax exceptions") {
 
-    assertThrowsAnd[PatternSyntaxException](Pattern.compile("foo\\L"))(
-      e => {
-        e.getDescription == "Illegal/unsupported escape sequence" &&
+    assertThrowsAnd[PatternSyntaxException](Pattern.compile("foo\\L"))(e => {
+      e.getDescription == "Illegal/unsupported escape sequence" &&
         e.getIndex == 4 &&
         e.getPattern == "foo\\L" &&
         e.getMessage ==
           """|Illegal/unsupported escape sequence near index 4
 	     |foo\L
 	     |    ^""".stripMargin
-      }
-    )
+    })
 
-    syntax("foo\\Lbar", "Illegal/unsupported escape sequence", 4)
-    syntax("foo[bar", "Unclosed character class", 6)
-    syntax("foo\\", "Trailing Backslash", 4)
-    syntax("[a-0]", "Illegal character range", 3)
+    /// Ordered alphabetical by description (second arg).
+    /// Helps ensuring that each scalanative/regex Parser description
+    /// matches its JVM equivalent.
+    ///
+    /// These are _not_ all the JVM parser PatternSyntaxExceptions available.
+    /// They are only the cases reported by scalanative.regex.Parser.scala
+    ///
+    /// Some tests are marked MISSING because I (LeeT.) have not yet
+    /// figured out a pattern which will trigger the error.
+
+    // MISSING: Test scalanative.regex ERR_INVALID_NAMED_CAPTURE
+    //          "Bad named capture group"
+
+    // There are two conditions which currently yield the same description.
+    // ERR_MISSING_REPEAT_ARGUMENT matches the JVM.
+    // Trigger for ERR_MISSING_REPEAT_ARGUMENT  not yet found.
+
+    // Test scalanative.regex ERR_MISSING_REPEAT_ARGUMENT
     syntax("*", "Dangling meta character '*'", 0)
-    syntax("foo(bar(foo)baz", "Missing parenthesis", 15)
-    syntax("foo(foo)bar)baz", "Missing parenthesis", 10)
+
+    // MISSING: Test scalanative.regex ERR_MISSING_REPEAT_ARGUMENT
+    //          "Dangling meta character '*'"
+
+    syntax("[a-0]", "Illegal character range", 3)
+    syntax("foo\\Lbar", "Illegal/unsupported escape sequence", 4)
+
+    // MISSING: Test scalanative.regex ERR_INVALID_REPEAT_OP
+    //          "invalid nested repetition operator"
+
+    syntax("foo\\", "Trailing Backslash", 4)
+    syntax("foo[bar", "Unclosed character class", 6)
+    syntax("foo(bar(foo)baz", "Unclosed group", 15)
+    syntax("(?q)", "Unknown inline modifier", 2) // bad perl operator
+    syntax("foo(foo)bar)baz", "Unmatched closing ')'", 10)
   }
 
   private def syntax(pattern: String, description: String, index: Int): Unit = {
-    assertThrowsAnd[PatternSyntaxException](Pattern.compile(pattern))(
-      e => {
-        e.getDescription == description &&
-        e.getPattern == pattern
-        e.getIndex == index
-      }
-    )
+    assertThrowsAnd[PatternSyntaxException](Pattern.compile(pattern))(e => {
+      (e.getDescription == description) &&
+        (e.getPattern == pattern) &&
+        (e.getIndex == index)
+    })
   }
 
   private def pass(pattern: String, input: String): Unit =

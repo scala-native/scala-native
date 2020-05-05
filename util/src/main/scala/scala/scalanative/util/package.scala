@@ -53,7 +53,5 @@ package object util {
 
   def partitionBy[T](elems: Seq[T], batches: Int)(
       f: T => Any): Map[Int, Seq[T]] =
-    elems.groupBy { elem =>
-      Math.abs(f(elem).##) % batches
-    }
+    elems.groupBy { elem => Math.abs(f(elem).##) % batches }
 }

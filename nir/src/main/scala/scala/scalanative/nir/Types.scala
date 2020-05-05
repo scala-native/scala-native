@@ -153,4 +153,28 @@ object Type {
     isArray(clsTy.name)
   def isArray(clsName: Global): Boolean =
     arrayToType.contains(clsName)
+
+  def typeToName(tpe: Type): Global = tpe match {
+    case Rt.BoxedUnit       => Global.Top("scala.scalanative.runtime.PrimitiveUnit")
+    case Bool               => Global.Top("scala.scalanative.runtime.PrimitiveBoolean")
+    case Char               => Global.Top("scala.scalanative.runtime.PrimitiveChar")
+    case Byte               => Global.Top("scala.scalanative.runtime.PrimitiveByte")
+    case Short              => Global.Top("scala.scalanative.runtime.PrimitiveShort")
+    case Int                => Global.Top("scala.scalanative.runtime.PrimitiveInt")
+    case Long               => Global.Top("scala.scalanative.runtime.PrimitiveLong")
+    case Float              => Global.Top("scala.scalanative.runtime.PrimitiveFloat")
+    case Double             => Global.Top("scala.scalanative.runtime.PrimitiveDouble")
+    case Ref(name, _, _)    => name
+    case Array(tpe, _)      => toArrayClass(tpe)
+    case ArrayValue(tpe, _) => toArrayClass(tpe)
+    case Function(args, _)  => Global.Top(s"scala.Function${args.length}")
+  }
+
+  def primConvSig(tpe: Type): Sig.Method = tpe match {
+    case Short  => Sig.Method("shortValue", Seq(tpe))
+    case Int    => Sig.Method("intValue", Seq(tpe))
+    case Long   => Sig.Method("longValue", Seq(tpe))
+    case Float  => Sig.Method("floatValue", Seq(tpe))
+    case Double => Sig.Method("doubleValue", Seq(tpe))
+  }
 }

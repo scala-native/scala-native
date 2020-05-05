@@ -18,35 +18,35 @@ object zlib {
   type z_off_t    = CLong
 
   type z_stream = CStruct14[Ptr[Bytef], // next_in
-                            uInt, // avail_in
-                            uLong, // total_in,
+                            uInt,       // avail_in
+                            uLong,      // total_in,
                             Ptr[Bytef], // next_out
-                            uInt, // avail_out
-                            uLong, // total_out
-                            CString, // msg
-                            voidpf, // (internal) state
+                            uInt,       // avail_out
+                            uLong,      // total_out
+                            CString,    // msg
+                            voidpf,     // (internal) state
                             alloc_func, // zalloc
-                            free_func, // zfree
-                            voidpf, // opaque
-                            CInt, // data_type
-                            uLong, // adler
-                            uLong] // future
+                            free_func,  // zfree
+                            voidpf,     // opaque
+                            CInt,       // data_type
+                            uLong,      // adler
+                            uLong]      // future
 
   type z_streamp = Ptr[z_stream]
 
   type gz_header = CStruct13[CInt, // text
-                             uLong, // time
-                             CInt, // xflags
-                             CInt, // os
+                             uLong,      // time
+                             CInt,       // xflags
+                             CInt,       // os
                              Ptr[Bytef], // extra
-                             uInt, // extra_len
-                             uInt, // extra_max
+                             uInt,       // extra_len
+                             uInt,       // extra_max
                              Ptr[Bytef], // name
-                             uInt, // name_max
+                             uInt,       // name_max
                              Ptr[Bytef], // comment
-                             uInt, // comm_max
-                             CInt, // gcrc
-                             CInt] // done
+                             uInt,       // comm_max
+                             CInt,       // gcrc
+                             CInt]       // done
 
   type gz_headerp = Ptr[gz_header]
 
