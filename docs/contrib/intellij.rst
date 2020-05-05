@@ -1,6 +1,6 @@
 .. _intellij:
 
-IntelliJ IDEA setup
+IntelliJ IDEA
 ===================
 
 First, check "use sbt shell for import and build" when opening the SN project.
