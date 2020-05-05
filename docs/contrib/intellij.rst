@@ -3,9 +3,6 @@
 IntelliJ IDEA
 ===================
 
-First, check "use sbt shell for import and build" when opening the SN project.
-Then, once the project is imported, you have to fix some dependencies:
-
 * Select "Create project from existing sources" and choose the ``build.sbt`` file. When prompted, select "Open as project". Make sure you select the "Use sbt shell" for both import and build.
 
 * When the import is complete, we need to fix some module dependencies:
