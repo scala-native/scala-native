@@ -30,11 +30,12 @@ object time {
   def localtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
   @name("scalanative_mktime")
   def mktime(time: Ptr[tm]): time_t = extern
-  @name("scalanative_strftime")
   def strftime(str: Ptr[CChar],
                count: CSize,
                format: CString,
                time: Ptr[tm]): CSize = extern
+  def strptime(str: Ptr[CChar], format: CString, time: Ptr[tm]): CString =
+    extern
   def time(arg: Ptr[time_t]): time_t = extern
   def tzset(): Unit                  = extern
   @name("scalanative_daylight")

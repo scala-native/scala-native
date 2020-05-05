@@ -7,6 +7,8 @@ import scalanative.io.VirtualDirectory
 import scalanative.util.Scope
 
 sealed abstract class ClassLoader {
+  def classesWithEntryPoints: Iterable[Global]
+
   def load(global: Global): Option[Seq[Defn]]
 }
 
@@ -23,7 +25,11 @@ object ClassLoader {
     new FromMemory(defns)
 
   final class FromDisk(classpath: Seq[ClassPath]) extends ClassLoader {
-    def load(global: Global) =
+    lazy val classesWithEntryPoints: Iterable[Global] = {
+      classpath.flatMap(_.classesWithEntryPoints)
+    }
+
+    def load(global: Global): Option[Seq[Defn]] =
       classpath.collectFirst {
         case path if path.contains(global) =>
           path.load(global)
@@ -39,6 +45,12 @@ object ClassLoader {
         buf += defn
       }
       out
+    }
+
+    lazy val classesWithEntryPoints: Iterable[Global] = {
+      scopes.filter {
+        case (_, defns) => Defn.existsEntryPoint(defns)
+      }.keySet
     }
 
     def load(global: Global): Option[Seq[Defn]] =

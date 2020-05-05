@@ -11,6 +11,7 @@ import scalanative.io.{VirtualDirectory, withScratchBuffer}
 import scalanative.nir._
 import scalanative.nir.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.util.unreachable
+import scalanative.build.ScalaNative.dumpDefns
 
 object CodeGen {
 
@@ -23,7 +24,7 @@ object CodeGen {
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
     val lowered   = lower(generated)
-    nir.Show.dump(lowered, "lowered.hnir")
+    dumpDefns(config, "lowered", lowered)
     emit(config, lowered)
   }
 
@@ -36,9 +37,7 @@ object CodeGen {
           Lower(defns)
       }
       .seq
-      .foreach { defns =>
-        buf ++= defns
-      }
+      .foreach { defns => buf ++= defns }
 
     buf
   }
@@ -157,18 +156,12 @@ object CodeGen {
         }
       }
 
-      defns.foreach { defn =>
-        if (defn.isInstanceOf[Defn.Const]) onDefn(defn)
-      }
-      defns.foreach { defn =>
-        if (defn.isInstanceOf[Defn.Var]) onDefn(defn)
-      }
+      defns.foreach { defn => if (defn.isInstanceOf[Defn.Const]) onDefn(defn) }
+      defns.foreach { defn => if (defn.isInstanceOf[Defn.Var]) onDefn(defn) }
       defns.foreach { defn =>
         if (defn.isInstanceOf[Defn.Declare]) onDefn(defn)
       }
-      defns.foreach { defn =>
-        if (defn.isInstanceOf[Defn.Define]) onDefn(defn)
-      }
+      defns.foreach { defn => if (defn.isInstanceOf[Defn.Define]) onDefn(defn) }
     }
 
     def genPrelude(): Unit = {
@@ -275,12 +268,8 @@ object CodeGen {
         }
 
         val cfg = CFG(insts)
-        cfg.all.foreach { block =>
-          genBlock(block)(cfg, fresh)
-        }
-        cfg.all.foreach { block =>
-          genBlockLandingPads(block)(cfg, fresh)
-        }
+        cfg.all.foreach { block => genBlock(block)(cfg, fresh) }
+        cfg.all.foreach { block => genBlockLandingPads(block)(cfg, fresh) }
         newline()
 
         str("}")
@@ -346,9 +335,7 @@ object CodeGen {
       genBlockHeader()
       indent()
       genBlockPrologue(block)
-      rep(insts) { inst =>
-        genInst(inst)
-      }
+      rep(insts) { inst => genInst(inst) }
       unindent()
     }
 
@@ -562,15 +549,15 @@ object CodeGen {
                 c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
                 c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
             value(idx + 1) match {
-              case c @ (''' | '"' | '?') => str(c); loop(idx + 2)
-              case '\\'                  => str("\\\\"); loop(idx + 2)
-              case 'a'                   => str("\\07"); loop(idx + 2)
-              case 'b'                   => str("\\08"); loop(idx + 2)
-              case 'f'                   => str("\\0C"); loop(idx + 2)
-              case 'n'                   => str("\\0A"); loop(idx + 2)
-              case 'r'                   => str("\\0D"); loop(idx + 2)
-              case 't'                   => str("\\09"); loop(idx + 2)
-              case 'v'                   => str("\\0B"); loop(idx + 2)
+              case c @ ('\'' | '"' | '?') => str(c); loop(idx + 2)
+              case '\\'                   => str("\\\\"); loop(idx + 2)
+              case 'a'                    => str("\\07"); loop(idx + 2)
+              case 'b'                    => str("\\08"); loop(idx + 2)
+              case 'f'                    => str("\\0C"); loop(idx + 2)
+              case 'n'                    => str("\\0A"); loop(idx + 2)
+              case 'r'                    => str("\\0D"); loop(idx + 2)
+              case 't'                    => str("\\09"); loop(idx + 2)
+              case 'v'                    => str("\\0B"); loop(idx + 2)
               case d if isOct(d) =>
                 val oct = value.drop(idx + 1).take(3).takeWhile(isOct)
                 val hex =

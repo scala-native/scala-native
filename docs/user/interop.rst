@@ -191,28 +191,28 @@ example given the following signature in C:
 
     void test(void (* f)(char *));
 
-One can declare it as following in Scala Native:
+One can declare it as follows in Scala Native:
 
 .. code-block:: scala
 
     def test(f: unsafe.CFuncPtr1[CString, Unit]): Unit = unsafe.extern
 
-`CFuncPtrN` types are a SAM (single abstract method) traits. You
+`CFuncPtrN` types are SAM (single abstract method) traits. You
 can define them by creating a class that inherits from the corresponding
 trait:
 
 .. code-block:: scala
 
-   val myfuncptr = new unsafe.FuncPtr0[Unit] {
+   val myfuncptr = new unsafe.CFuncPtr0[Unit] {
      def apply(): Unit = println("hi there!")
    }
 
-On Scala 2.12 or newer, Scala language automatically coverts
-from clsoures to SAM types:
+On Scala 2.12 or newer, the Scala language automatically converts
+from closures to SAM types:
 
 .. code-block:: scala
 
-   val myfuncptr: unsafe.FuncPtr0[Unit] = () => println("hi there!")
+   val myfuncptr: unsafe.CFuncPtr0[Unit] = () => println("hi there!")
 
 Memory management
 `````````````````

@@ -1,7 +1,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdio.h>
-#include <sys/errno.h>
+#include <errno.h>
 
 #define NAME_MAX 255
 

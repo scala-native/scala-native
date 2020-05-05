@@ -19,3 +19,8 @@ bin/
 .settings/
 .externalToolBuilders/
 .cache*
+
+# metals
+/.bloop/
+/.metals/
+/project/metals.sbt

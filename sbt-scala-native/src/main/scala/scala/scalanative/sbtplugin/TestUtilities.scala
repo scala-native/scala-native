@@ -8,17 +8,13 @@ object TestUtilities {
 
   def makeTestMain(frameworks: Seq[Framework],
                    tests: Seq[TestDefinition]): String = {
-    val frameworksList = if (frameworks.isEmpty) {
-      "Nil"
-    } else {
-      frameworks
-        .map(_.getClass.getName)
-        .mkString("List(new _root_.", ", new _root_.", ")")
-    }
+    val frameworksList = frameworks
+      .map(f => s"new ${fullClassName(f.getClass.getName)}")
+      .mkString("List(", ", ", ")")
+
     val testsMap = makeTestsMap(tests)
 
-    s"""package scala.scalanative.testinterface
-       |object TestMain extends TestMainBase {
+    s"""object ScalaNativeTestMain extends scala.scalanative.testinterface.TestMainBase {
        |  override val frameworks = $frameworksList
        |  override val tests = Map[String, AnyRef]($testsMap)
        |  def main(args: Array[String]): Unit =
@@ -33,10 +29,14 @@ object TestUtilities {
           case af: AnnotatedFingerprint => af.isModule
           case sf: SubclassFingerprint  => sf.isModule
         }
-
-        val inst =
-          if (isModule) s"_root_.${t.name}" else s"new _root_.${t.name}"
+        val fullName = fullClassName(t.name)
+        val inst     = if (isModule) fullName else s"new $fullName"
         s""""${t.name}" -> $inst"""
       }
       .mkString(", ")
+
+  private def fullClassName(name: String): String = {
+    val isInAPackage = name.contains(".")
+    if (isInAPackage) s"_root_.$name" else name
+  }
 }
