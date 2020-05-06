@@ -571,4 +571,3 @@ private object Streamed {
 private final class Streamed[T](val process: T => Unit,
                                 val done: Int => Unit,
                                 val stream: () => Stream[T])
-    extends NotNull

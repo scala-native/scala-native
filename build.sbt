@@ -38,6 +38,21 @@ lazy val baseSettings = Seq(
   version := nativeVersion            // Maven <version>
 )
 
+// Common start but individual sub-projects may add or remove scalacOptions.
+// project/build.sbt uses a less stringent set to bootstrap.
+inThisBuild(
+  Def.settings(
+    scalacOptions ++= Seq(
+      "-deprecation",
+      "-encoding",
+      "utf8",
+      "-feature",
+      "-target:jvm-1.8",
+      "-unchecked",
+      "-Xfatal-warnings"
+    )
+  ))
+
 addCommandAlias(
   "rebuild",
   Seq(
@@ -210,28 +225,19 @@ lazy val toolSettings =
       sbtVersion := sbt10Version,
       crossSbtVersions := List(sbt10Version),
       scalaVersion := sbt10ScalaVersion,
-      scalacOptions ++= Seq(
-        "-deprecation",
-        "-unchecked",
-        "-feature",
-        "-encoding",
-        "utf8"
-      ),
       javacOptions ++= Seq("-encoding", "utf8")
     )
 
 lazy val libSettings =
   (baseSettings ++ ScalaNativePlugin.projectSettings.tail) ++ Seq(
     scalaVersion := libScalaVersion,
-    resolvers := Nil,
-    scalacOptions ++= Seq("-encoding", "utf8")
+    resolvers := Nil
   )
 
 lazy val projectSettings =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil,
-    scalacOptions ++= Seq("-target:jvm-1.8"),
     nativeCheck := true,
     nativeDump := true
   )
@@ -305,6 +311,7 @@ lazy val nscplugin =
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
       )
     )
+    .settings(scalacOptions += "-Xno-patmat-analysis")
 
 lazy val sbtPluginSettings =
   toolSettings ++
@@ -431,6 +438,16 @@ lazy val scalalib =
   project
     .in(file("scalalib"))
     .settings(libSettings)
+    .settings(
+      // This build uses libScalaVersion, which is currently 2.11.12
+      // to compile what appears to be 2.11.0 sources. This yields 114
+      // deprecations. Editing those sources is not an option (long story),
+      // so do not spend compile time looking for the deprecations.
+      // Keep the log file clean so that real issues stand out.
+      // This futzing can probably removed for scala >= 2.12.
+      scalacOptions -= "-deprecation",
+      scalacOptions += "-deprecation:false"
+    )
     .settings(mavenPublishSettings)
     .settings(
       assembleScalaLibrary := {
@@ -497,6 +514,10 @@ lazy val tests =
   project
     .in(file("unit-tests"))
     .settings(projectSettings)
+    .settings(
+      scalacOptions -= "-deprecation",
+      scalacOptions += "-deprecation:false"
+    )
     .settings(noPublishSettings)
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
@@ -521,6 +542,7 @@ lazy val sandbox =
   project
     .in(file("sandbox"))
     .settings(projectSettings)
+    .settings(scalacOptions -= "-Xfatal-warnings")
     .settings(noPublishSettings)
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(

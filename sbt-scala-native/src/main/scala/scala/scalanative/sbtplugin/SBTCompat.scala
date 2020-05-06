@@ -1,6 +1,8 @@
 package scala.scalanative
 package sbtplugin
 
+import scala.language.implicitConversions
+
 import sbt._
 
 // https://github.com/scala-js/scala-js/blob/v0.6.20/sbt-plugin/src/main/scala-sbt-1.0/org/scalajs/sbtplugin/SBTCompat.scala
@@ -10,7 +12,8 @@ private[sbtplugin] object SBTCompat {
   def crossVersionAddPlatformPart(cross: CrossVersion,
                                   part: String): CrossVersion = {
     cross match {
-      case CrossVersion.Disabled =>
+      // .Disabled reference https://github.com/sbt/librarymanagement/pull/316
+      case _: sbt.librarymanagement.Disabled =>
         CrossVersion.constant(part)
       case cross: sbt.librarymanagement.Constant =>
         cross.withValue(part + "_" + cross.value)

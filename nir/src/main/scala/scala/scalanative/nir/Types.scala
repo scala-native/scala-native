@@ -168,13 +168,7 @@ object Type {
     case Array(tpe, _)      => toArrayClass(tpe)
     case ArrayValue(tpe, _) => toArrayClass(tpe)
     case Function(args, _)  => Global.Top(s"scala.Function${args.length}")
-  }
-
-  def primConvSig(tpe: Type): Sig.Method = tpe match {
-    case Short  => Sig.Method("shortValue", Seq(tpe))
-    case Int    => Sig.Method("intValue", Seq(tpe))
-    case Long   => Sig.Method("longValue", Seq(tpe))
-    case Float  => Sig.Method("floatValue", Seq(tpe))
-    case Double => Sig.Method("doubleValue", Seq(tpe))
+    case _ =>
+      throw new Exception(s"typeToName: unexpected type ${tpe.show}")
   }
 }

@@ -51,17 +51,17 @@ sealed abstract class Val {
   }
 
   final def isZero: Boolean = this match {
-    case Val.Zero(_)    => true
-    case Val.False      => true
-    case Val.Char('\0') => true
-    case Val.Byte(0)    => true
-    case Val.Short(0)   => true
-    case Val.Int(0)     => true
-    case Val.Long(0L)   => true
-    case Val.Float(0F)  => true
-    case Val.Double(0D) => true
-    case Val.Null       => true
-    case _              => false
+    case Val.Zero(_)        => true
+    case Val.False          => true
+    case Val.Char('\u0000') => true
+    case Val.Byte(0)        => true
+    case Val.Short(0)       => true
+    case Val.Int(0)         => true
+    case Val.Long(0L)       => true
+    case Val.Float(0F)      => true
+    case Val.Double(0D)     => true
+    case Val.Null           => true
+    case _                  => false
   }
 
   final def isOne: Boolean = this match {
@@ -115,7 +115,7 @@ sealed abstract class Val {
     case Val.Zero(Type.Bool) =>
       Val.False
     case Val.Zero(Type.Char) =>
-      Val.Char('\0')
+      Val.Char('\u0000')
     case Val.Zero(Type.Byte) =>
       Val.Byte(0.toByte)
     case Val.Zero(Type.Short) =>

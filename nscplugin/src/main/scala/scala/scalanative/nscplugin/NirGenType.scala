@@ -8,7 +8,8 @@ trait NirGenType { self: NirGenPhase =>
   import nirAddons._
   import nirDefinitions._
 
-  final case class SimpleType(sym: Symbol, targs: Seq[SimpleType] = Seq.empty) {
+  sealed case class SimpleType(sym: Symbol,
+                               targs: Seq[SimpleType] = Seq.empty) {
     def isInterface: Boolean =
       sym.isInterface
 
