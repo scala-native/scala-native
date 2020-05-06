@@ -514,7 +514,10 @@ lazy val tests =
   project
     .in(file("unit-tests"))
     .settings(projectSettings)
-    .settings(scalacOptions -= "-deprecation")
+    .settings(
+      scalacOptions -= "-deprecation",
+      scalacOptions += "-deprecation:false"
+    )
     .settings(noPublishSettings)
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
