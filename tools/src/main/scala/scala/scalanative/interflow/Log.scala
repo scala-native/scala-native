@@ -6,13 +6,17 @@ trait Log { self: Interflow =>
     false
 
   def in[T](msg: String)(f: => T): T = {
-    if (show) { log(msg) }
+    if (show) {
+      log(msg)
+    }
     pushContext(msg)
     try {
       val start = System.nanoTime
       val res   = f
       val end   = System.nanoTime
-      if (show) { log(s"done $msg (${(end - start) / 1000000D})") }
+      if (show) {
+        log(s"done $msg (${(end - start) / 1000000D})")
+      }
       res
     } catch {
       case e: Throwable =>

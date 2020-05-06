@@ -262,7 +262,8 @@ private object UnixPath {
     else {
       str.indexOf("//") match {
         case -1 =>
-          if (str.endsWith("/")) str.substring(0, str.length - 1) else str //length > 1
+          if (str.endsWith("/")) str.substring(0, str.length - 1)
+          else str //length > 1
         case idx =>
           val buffer: StringBuffer = new StringBuffer(str)
           var previous             = '/'

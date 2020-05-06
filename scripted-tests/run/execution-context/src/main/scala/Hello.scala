@@ -15,9 +15,7 @@ object Test {
         println("future 3")
         x + 4
       }
-      .foreach { res =>
-        println("result: " + res)
-      }
+      .foreach { res => println("result: " + res) }
     println("end main")
   }
 }

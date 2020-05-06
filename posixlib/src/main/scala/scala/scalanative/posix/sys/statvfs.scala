@@ -11,12 +11,12 @@ object statvfs {
   type fsfilcnt_t = CUnsignedLong
   type statvfs = CStruct11[CUnsignedLong, // f_bsize
                            CUnsignedLong, // f_frsize
-                           fsblkcnt_t, // f_blocks
-                           fsblkcnt_t, // f_bfree
-                           fsblkcnt_t, // f_bavail
-                           fsfilcnt_t, // f_files
-                           fsfilcnt_t, // f_ffree
-                           fsfilcnt_t, // f_favail
+                           fsblkcnt_t,    // f_blocks
+                           fsblkcnt_t,    // f_bfree
+                           fsblkcnt_t,    // f_bavail
+                           fsfilcnt_t,    // f_files
+                           fsfilcnt_t,    // f_ffree
+                           fsfilcnt_t,    // f_favail
                            CUnsignedLong, // f_fsid
                            CUnsignedLong, // f_flag
                            CUnsignedLong] // f_namemax

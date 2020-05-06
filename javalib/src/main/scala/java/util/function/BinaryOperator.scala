@@ -2,8 +2,7 @@ package java.util.function
 
 import java.util.{Comparator, Objects}
 
-trait BinaryOperator[T] extends BiFunction[T, T, T] { self =>
-}
+trait BinaryOperator[T] extends BiFunction[T, T, T] { self => }
 
 object BinaryOperator {
 

@@ -114,9 +114,7 @@ class JarEntry(private val ze: ZipEntry) extends ZipEntry(ze) {
       ()
     } else {
       val certPath = scala.util.Try(factory.generateCertPath(list)).toOption
-      certPath.foreach { cert =>
-        asigners.add(new CodeSigner(cert, null))
-      }
+      certPath.foreach { cert => asigners.add(new CodeSigner(cert, null)) }
     }
   }
 }

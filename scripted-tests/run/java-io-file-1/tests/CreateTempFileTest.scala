@@ -29,7 +29,9 @@ object CreateTempFileTest {
     assert(tmp3.getParentFile == existingTempTarget)
 
     val exceptionThrown =
-      try { File.createTempFile("foo", "bar", nonexistingTempTarget); false } catch {
+      try {
+        File.createTempFile("foo", "bar", nonexistingTempTarget); false
+      } catch {
         case _: IOException => true
       }
     assert(exceptionThrown)

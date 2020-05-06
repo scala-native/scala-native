@@ -5,9 +5,7 @@ import scalanative.libc.stdio
 package object libc {
   implicit class StdioHelpers(val _stdio: libc.stdio.type) extends AnyVal {
     def printf(format: CString, args: CVarArg*): CInt =
-      Zone { implicit z =>
-        stdio.vprintf(format, toCVarArgList(args.toSeq))
-      }
+      Zone { implicit z => stdio.vprintf(format, toCVarArgList(args.toSeq)) }
 
     def sprintf(s: CString, format: CString, args: CVarArg*): CInt =
       Zone { implicit z =>
@@ -25,19 +23,13 @@ package object libc {
       }
 
     def scanf(format: CString, args: CVarArg*): CInt =
-      Zone { implicit z =>
-        stdio.vscanf(format, toCVarArgList(args.toSeq))
-      }
+      Zone { implicit z => stdio.vscanf(format, toCVarArgList(args.toSeq)) }
 
     def sscanf(s: CString, format: CString, args: CVarArg*): CInt =
-      Zone { implicit z =>
-        stdio.vsscanf(s, format, toCVarArgList(args.toSeq))
-      }
+      Zone { implicit z => stdio.vsscanf(s, format, toCVarArgList(args.toSeq)) }
 
     def fscanf(f: Ptr[stdio.FILE], format: CString, args: CVarArg*): CInt =
-      Zone { implicit z =>
-        stdio.vfscanf(f, format, toCVarArgList(args.toSeq))
-      }
+      Zone { implicit z => stdio.vfscanf(f, format, toCVarArgList(args.toSeq)) }
 
   }
 }

@@ -361,9 +361,9 @@ class Parser(wholeRegexp: String, _flags: Int) {
       // In the comments we'll use the logical notation of go slices,
       // e.g. sub[i] even though the Java code will read array[s + i].
 
-      var s      = 0 // offset of first |sub| within array.
+      var s      = 0            // offset of first |sub| within array.
       var lensub = array.length // = len(sub)
-      var lenout = 0 // = len(out)
+      var lenout = 0            // = len(out)
 
       // Round 1: Factor out common literal prefixes.
       // Note: (str, strlen) and (istr, istrlen) are like Go slices
@@ -1470,7 +1470,7 @@ object Parser {
 
         case StateTwo =>
           state = StateThree
-          t.skip(1) // '{'
+          t.skip(1)         // '{'
           min = parseInt(t) // (can be -2)
           if ((min == -1) || (!t.more())) {
             state = StateDone
@@ -1548,7 +1548,7 @@ object Parser {
 
     if (n.isEmpty() ||
         n.length() > 1 && n.charAt(0) == '0') { // disallow leading zeros
-      -1 // bad format
+      -1                                        // bad format
     } else if (n.length() > 8) {
       -2 // overflow
     } else {

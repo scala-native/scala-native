@@ -110,8 +110,10 @@ class InflaterInputStream private (in: InputStream,
       while (count < nbytes) {
         val x = read(buf,
                      0,
-                     if ({ rem = nbytes - count; rem > buf.length }) buf.length
-                     else rem.toInt)
+                     if ({ rem = nbytes - count; rem > buf.length })
+                       buf.length
+                     else
+                       rem.toInt)
         if (x == -1) {
           return count
         }

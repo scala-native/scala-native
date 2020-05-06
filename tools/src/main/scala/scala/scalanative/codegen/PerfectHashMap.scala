@@ -30,7 +30,7 @@ object PerfectHashMap {
             bucketMap.get(i) match {
               case Some(set) => set.toSeq
               case None      => Seq()
-          })
+            })
           .toList
       }
 
@@ -44,7 +44,7 @@ object PerfectHashMap {
       def placeBuckets(buckets: List[Seq[K]],
                        keys: Map[Int, Int],
                        values: Map[Int, Option[V]])
-        : Option[(Map[Int, Int], Map[Int, Option[V]])] = buckets match {
+          : Option[(Map[Int, Int], Map[Int, Option[V]])] = buckets match {
         case bucket :: tail if bucket.size > 1 =>
           /**
            * Finds slots for all element of a bucket.
