@@ -3,8 +3,8 @@ import scala.util.Try
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 
-val sbt10Version          = "1.1.6"
-val sbt10ScalaVersion     = "2.12.10"
+val sbt10Version          = "1.1.6" // minimum version
+val sbt10ScalaVersion     = "2.12.11"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
@@ -255,6 +255,9 @@ lazy val nir =
     .settings(mavenPublishSettings)
     .dependsOn(util)
 
+lazy val scalacheckDep = "org.scalacheck" %% "scalacheck" % "1.14.3" % "test"
+lazy val scalatestDep  = "org.scalatest"  %% "scalatest"  % "3.1.1"  % "test"
+
 lazy val nirparser =
   project
     .in(file("nirparser"))
@@ -264,10 +267,8 @@ lazy val nirparser =
       libraryDependencies ++= Seq(
         "com.lihaoyi" %% "fastparse"  % "1.0.0",
         "com.lihaoyi" %% "scalaparse" % "1.0.0",
-        compilerPlugin(
-          "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-        "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-        "org.scalatest"  %% "scalatest"  % "3.0.0"  % "test"
+        scalacheckDep,
+        scalatestDep
       )
     )
     .dependsOn(nir)
@@ -279,8 +280,8 @@ lazy val tools =
     .settings(mavenPublishSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-        "org.scalatest"  %% "scalatest"  % "3.0.0"  % "test"
+        scalacheckDep,
+        scalatestDep
       ),
       Test / fullClasspath := ((Test / fullClasspath) dependsOn setUpTestingCompiler).value,
       publishLocal := publishLocal

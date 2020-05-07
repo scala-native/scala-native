@@ -3,8 +3,9 @@ package nir
 
 import fastparse.all.Parsed
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class InstParserTest extends FunSuite {
+class InstParserTest extends AnyFunSuite {
   val local  = Local(1)
   val next   = Next(local)
   val noTpe  = Type.Unit

@@ -3,8 +3,9 @@ package nir
 
 import fastparse.all.Parsed
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class AttrParserTest extends FunSuite {
+class AttrParserTest extends AnyFunSuite {
   Seq[Attr](
     Attr.MayInline,
     Attr.InlineHint,

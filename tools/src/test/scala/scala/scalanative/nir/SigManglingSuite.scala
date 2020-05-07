@@ -2,8 +2,9 @@ package scala.scalanative
 package nir
 
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class SigManglingSuite extends FunSuite {
+class SigManglingSuite extends AnyFunSuite {
   Seq(
     Sig.Field("f"),
     Sig.Field("len"),
