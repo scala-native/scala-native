@@ -255,6 +255,9 @@ lazy val nir =
     .settings(mavenPublishSettings)
     .dependsOn(util)
 
+lazy val scalacheckDep = "org.scalacheck" %% "scalacheck" % "1.14.3" % "test"
+lazy val scalatestDep  = "org.scalatest"  %% "scalatest"  % "3.1.1"  % "test"
+
 lazy val nirparser =
   project
     .in(file("nirparser"))
@@ -265,9 +268,9 @@ lazy val nirparser =
         "com.lihaoyi" %% "fastparse"  % "1.0.0",
         "com.lihaoyi" %% "scalaparse" % "1.0.0",
         compilerPlugin(
-          "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-        "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-        "org.scalatest"  %% "scalatest"  % "3.0.0"  % "test"
+          "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
+        scalacheckDep,
+        scalatestDep
       )
     )
     .dependsOn(nir)
@@ -279,8 +282,8 @@ lazy val tools =
     .settings(mavenPublishSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-        "org.scalatest"  %% "scalatest"  % "3.0.0"  % "test"
+        scalacheckDep,
+        scalatestDep
       ),
       Test / fullClasspath := ((Test / fullClasspath) dependsOn setUpTestingCompiler).value,
       publishLocal := publishLocal

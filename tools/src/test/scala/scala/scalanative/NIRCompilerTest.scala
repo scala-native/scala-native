@@ -3,10 +3,12 @@ package scala.scalanative
 import java.nio.file.Files
 
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.scalanative.api.CompilationFailedException
 
-class NIRCompilerTest extends FlatSpec with Matchers with Inspectors {
+class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
 
   "The compiler" should "return products of compilation" in {
     val files =

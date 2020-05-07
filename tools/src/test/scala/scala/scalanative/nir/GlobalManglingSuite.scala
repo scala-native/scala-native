@@ -2,8 +2,9 @@ package scala.scalanative
 package nir
 
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class GlobalManglingSuite extends FunSuite {
+class GlobalManglingSuite extends AnyFunSuite {
   Seq(
     Global.Top("foo"),
     Global.Top("foo.bar.Baz"),

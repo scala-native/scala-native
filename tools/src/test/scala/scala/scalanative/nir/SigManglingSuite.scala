@@ -3,7 +3,7 @@ package nir
 
 import org.scalatest._
 
-class SigManglingSuite extends FunSuite {
+class SigManglingSuite extends funsuite.AnyFunSuite {
   Seq(
     Sig.Field("f"),
     Sig.Field("len"),
