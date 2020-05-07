@@ -9,5 +9,5 @@ object Attrs extends Base[nir.Attrs] {
   import Base.IgnoreWhitespace._
 
   override val parser: P[nir.Attrs] =
-    P(Attr.parser.rep map (nir.Attrs.fromSeq(_)))
+    P(Attr.parser.rep.map(nir.Attrs.fromSeq(_)))
 }
