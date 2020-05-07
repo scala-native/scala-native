@@ -594,13 +594,19 @@ object Show {
       case Type.Var(ty) => str("var["); type_(ty); str("]")
       case Type.Unit    => str("unit")
       case Type.Array(ty, nullable) =>
-        if (!nullable) { str("?") }
+        if (!nullable) {
+          str("?")
+        }
         str("array[")
         type_(ty)
         str("]")
       case Type.Ref(name, exact, nullable) =>
-        if (exact) { str("!") }
-        if (!nullable) { str("?") }
+        if (exact) {
+          str("!")
+        }
+        if (!nullable) {
+          str("?")
+        }
         global_(name)
     }
 

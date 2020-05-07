@@ -225,7 +225,9 @@ object Files {
     }
 
   def deleteIfExists(path: Path): Boolean =
-    try { delete(path); true } catch { case _: NoSuchFileException => false }
+    try {
+      delete(path); true
+    } catch { case _: NoSuchFileException => false }
 
   def exists(path: Path, options: Array[LinkOption]): Boolean =
     if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
@@ -732,8 +734,8 @@ object Files {
     }
 
   private val attributesClassesToViews
-    : SMap[Class[_ <: BasicFileAttributes],
-           Class[_ <: BasicFileAttributeView]] =
+      : SMap[Class[_ <: BasicFileAttributes],
+             Class[_ <: BasicFileAttributeView]] =
     SMap(
       classOf[BasicFileAttributes] -> classOf[BasicFileAttributeView],
       classOf[DosFileAttributes]   -> classOf[DosFileAttributeView],

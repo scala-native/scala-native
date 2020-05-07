@@ -21,10 +21,13 @@ addSbtPlugin("org.foundweekends"  % "sbt-bintray"       % "0.5.4")
 addSbtPlugin("com.jsuereth"       % "sbt-pgp"           % "2.0.0")
 addSbtPlugin("com.typesafe"       % "sbt-mima-plugin"   % "0.6.1")
 
+// scalacOptions used to bootstrap to sbt prompt.
+// In particular, no "-Xfatal-warnings"
+// A stricter set of Options is used in the project root build.sbt.
 scalacOptions ++= Seq(
   "-deprecation",
-  "-unchecked",
-  "-feature",
   "-encoding",
-  "utf8"
+  "utf8",
+  "-feature",
+  "-unchecked"
 )

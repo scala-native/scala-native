@@ -94,9 +94,7 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
       .find(_.getKey === key)
       .fold[V] {
         null.asInstanceOf[V]
-      } { entry =>
-        entry.getValue
-      }
+      } { entry => entry.getValue }
   }
 
   def put(key: K, value: V): V =
@@ -180,9 +178,7 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
 
   override def toString(): String = {
     entrySet.iterator.asScala
-      .map(
-        e => s"${e.getKey}=${e.getValue}"
-      )
+      .map(e => s"${e.getKey}=${e.getValue}")
       .mkString("{", ", ", "}")
   }
 }

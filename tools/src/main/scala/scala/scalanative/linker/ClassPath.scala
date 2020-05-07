@@ -1,11 +1,13 @@
 package scala.scalanative
 package linker
 
-import scala.collection.mutable
-import nir.{Global, Defn}
-import nir.serialization.deserializeBinary
 import java.nio.file.Path
-import scalanative.io.VirtualDirectory
+
+import scala.collection.mutable
+
+import scala.scalanative.io.VirtualDirectory
+import scala.scalanative.nir.serialization.deserializeBinary
+import scala.scalanative.nir.{Defn, Global, Prelude => NirPrelude}
 
 sealed trait ClassPath {
 
@@ -14,6 +16,8 @@ sealed trait ClassPath {
 
   /** Load given global and info about its dependencies. */
   private[scalanative] def load(name: Global): Option[Seq[Defn]]
+
+  private[scalanative] def classesWithEntryPoints: Iterable[Global.Top]
 }
 
 object ClassPath {
@@ -49,5 +53,13 @@ object ClassPath {
           deserializeBinary(directory.read(file))
         }
       })
+
+    lazy val classesWithEntryPoints: Iterable[Global.Top] = {
+      files.filter {
+        case (_, file) =>
+          val buffer = directory.read(file, len = NirPrelude.length)
+          NirPrelude.readFrom(buffer).hasEntryPoints
+      }.keySet
+    }
   }
 }

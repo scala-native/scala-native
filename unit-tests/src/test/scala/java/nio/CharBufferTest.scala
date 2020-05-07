@@ -164,7 +164,7 @@ abstract class ReadOnlyCharViewOfByteBufferTest(
     extends CharBufferTest {
   val factory: CharBufferFactory =
     new ByteBufferCharViewFactory(byteBufferFactory, order)
-    with BufferFactory.ReadOnlyBufferFactory
+      with BufferFactory.ReadOnlyBufferFactory
 
 }
 

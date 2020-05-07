@@ -96,7 +96,7 @@ abstract class ReadOnlyDoubleViewOfByteBufferTest(
 
   val factory: BufferFactory.DoubleBufferFactory = {
     new ByteBufferDoubleViewFactory(byteBufferFactory, order)
-    with BufferFactory.ReadOnlyBufferFactory
+      with BufferFactory.ReadOnlyBufferFactory
   }
 }
 

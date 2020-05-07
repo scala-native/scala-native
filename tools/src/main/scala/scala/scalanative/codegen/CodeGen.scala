@@ -37,9 +37,7 @@ object CodeGen {
           Lower(defns)
       }
       .seq
-      .foreach { defns =>
-        buf ++= defns
-      }
+      .foreach { defns => buf ++= defns }
 
     buf
   }
@@ -158,18 +156,12 @@ object CodeGen {
         }
       }
 
-      defns.foreach { defn =>
-        if (defn.isInstanceOf[Defn.Const]) onDefn(defn)
-      }
-      defns.foreach { defn =>
-        if (defn.isInstanceOf[Defn.Var]) onDefn(defn)
-      }
+      defns.foreach { defn => if (defn.isInstanceOf[Defn.Const]) onDefn(defn) }
+      defns.foreach { defn => if (defn.isInstanceOf[Defn.Var]) onDefn(defn) }
       defns.foreach { defn =>
         if (defn.isInstanceOf[Defn.Declare]) onDefn(defn)
       }
-      defns.foreach { defn =>
-        if (defn.isInstanceOf[Defn.Define]) onDefn(defn)
-      }
+      defns.foreach { defn => if (defn.isInstanceOf[Defn.Define]) onDefn(defn) }
     }
 
     def genPrelude(): Unit = {
@@ -276,12 +268,8 @@ object CodeGen {
         }
 
         val cfg = CFG(insts)
-        cfg.all.foreach { block =>
-          genBlock(block)(cfg, fresh)
-        }
-        cfg.all.foreach { block =>
-          genBlockLandingPads(block)(cfg, fresh)
-        }
+        cfg.all.foreach { block => genBlock(block)(cfg, fresh) }
+        cfg.all.foreach { block => genBlockLandingPads(block)(cfg, fresh) }
         newline()
 
         str("}")
@@ -347,9 +335,7 @@ object CodeGen {
       genBlockHeader()
       indent()
       genBlockPrologue(block)
-      rep(insts) { inst =>
-        genInst(inst)
-      }
+      rep(insts) { inst => genInst(inst) }
       unindent()
     }
 

@@ -120,8 +120,8 @@ object URISuite extends tests.Suite {
       // octet form, should throw an
       // exception
       "http://host/a%path#frag", // invalid escape sequence in path
-      "http://host/a%#frag", // incomplete escape sequence in path
-      "http://host#a frag",  // space char in fragment, not in
+      "http://host/a%#frag",     // incomplete escape sequence in path
+      "http://host#a frag",      // space char in fragment, not in
       // escaped octet form, no path
       "http://host/a#fr#ag", // illegal char in fragment
       "http:///path#fr%ag",  // invalid escape sequence in fragment,
@@ -139,8 +139,8 @@ object URISuite extends tests.Suite {
       "http://user@[3ffe:2x00:100:7031::1]:80/test", // malformed
       // IPv6 authority
       "http://[ipv6address]/apath#frag", // malformed ipv6 address
-      "http://[ipv6address/apath#frag", // malformed ipv6 address
-      "http://ipv6address]/apath#frag", // illegal char in host name
+      "http://[ipv6address/apath#frag",  // malformed ipv6 address
+      "http://ipv6address]/apath#frag",  // illegal char in host name
       "http://ipv6[address/apath#frag",
       "http://ipv6addr]ess/apath#frag",
       "http://ipv6address[]/apath#frag",
@@ -151,12 +151,12 @@ object URISuite extends tests.Suite {
       "http://host^name#fragment", // illegal char in authority
       "telnet://us er@hostname/",  // illegal char in authority
       // missing components
-      "//", // Authority expected
+      "//",         // Authority expected
       "ascheme://", // Authority expected
       "ascheme:",   // Scheme-specific part expected
       // scheme validation
-      "a scheme://reg/", // illegal char
-      "1scheme://reg/", // non alpha char as 1st char
+      "a scheme://reg/",   // illegal char
+      "1scheme://reg/",    // non alpha char as 1st char
       "asche\u00dfme:ssp", // unicode char , not USASCII
       "asc%20heme:ssp"
     )
@@ -170,25 +170,25 @@ object URISuite extends tests.Suite {
     val uris = Array(
       "http://user@www.google.com:45/search?q=helpinfo#somefragment",
       // http with authority, query and fragment
-      "ftp://ftp.is.co.za/rfc/rfc1808.txt", // ftp
+      "ftp://ftp.is.co.za/rfc/rfc1808.txt",                                   // ftp
       "gopher://spinaltap.micro.umn.edu/00/Weather/California/Los%20Angeles", // gopher
-      "mailto:mduerst@ifi.unizh.ch", // mailto
-      "news:comp.infosystems.www.servers.unix", // news
-      "telnet://melvyl.ucop.edu/", // telnet
-      "http://123.24.17.98/test", // IPv4 authority
-      "http://www.google.com:80/test", // domain name authority
+      "mailto:mduerst@ifi.unizh.ch",                                          // mailto
+      "news:comp.infosystems.www.servers.unix",                               // news
+      "telnet://melvyl.ucop.edu/",                                            // telnet
+      "http://123.24.17.98/test",                                             // IPv4 authority
+      "http://www.google.com:80/test",                                        // domain name authority
       "http://joe@[3ffe:2a00:100:7031::1]:80/test",
       // IPv6 authority, with userinfo and port
-      "/relative", // relative starting with /
-      "//relative", // relative starting with //
-      "relative", // relative with no /
-      "#fragment", // relative just with fragment
+      "/relative",           // relative starting with /
+      "//relative",          // relative starting with //
+      "relative",            // relative with no /
+      "#fragment",           // relative just with fragment
       "http://user@host:80", // UI, host,port
-      "http://user@host", // ui, host
-      "http://host", // host
-      "http://host:80", // host,port
-      "http://joe@:80", // ui, port (becomes registry-based)
-      "file:///foo/bar", // empty authority, non empty path
+      "http://user@host",    // ui, host
+      "http://host",         // host
+      "http://host:80",      // host,port
+      "http://joe@:80",      // ui, port (becomes registry-based)
+      "file:///foo/bar",     // empty authority, non empty path
       "ht?tp://hoe@host:80", // miscellaneous tests
       "mai/lto:hey?joe#man",
       "http://host/a%20path#frag",

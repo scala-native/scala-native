@@ -68,16 +68,12 @@ class Properties(protected val defaults: Properties)
 
   def list(out: PrintStream): Unit = {
     out.println("-- listing properties --")
-    entrySet().asScala.foreach { entry =>
-      out.println(format(entry))
-    }
+    entrySet().asScala.foreach { entry => out.println(format(entry)) }
   }
 
   def list(out: PrintWriter): Unit = {
     out.println("-- listing properties --")
-    entrySet().asScala.foreach { entry =>
-      out.println(format(entry))
-    }
+    entrySet().asScala.foreach { entry => out.println(format(entry)) }
   }
 
   // TODO:

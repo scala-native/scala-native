@@ -20,6 +20,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val dynimpls      = mutable.Set.empty[Global]
 
   entries.foreach(reachEntry)
+  loader.classesWithEntryPoints.foreach(reachClinit)
 
   def result(): Result = {
     cleanup()
@@ -65,9 +66,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
           unavailable += owner
         } { defns =>
           val scope = mutable.Map.empty[Global, Defn]
-          defns.foreach { defn =>
-            scope(defn.name) = defn
-          }
+          defns.foreach { defn => scope(defn.name) = defn }
           loaded(owner) = scope
         }
     }
@@ -139,6 +138,16 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         }
       case _ =>
         ()
+    }
+  }
+
+  def reachClinit(name: Global): Unit = {
+    reachGlobalNow(name)
+    infos.get(name).foreach { cls =>
+      val clinit = cls.name.member(Sig.Clinit())
+      if (loaded(cls.name).contains(clinit)) {
+        reachGlobal(clinit)
+      }
     }
   }
 
@@ -216,7 +225,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
               case Rt.JavaHashCodeSig =>
                 update(Rt.ScalaHashCodeSig)
                 update(Rt.JavaHashCodeSig)
-              case sig if sig.isMethod || sig.isCtor || sig.isGenerated =>
+              case sig
+                  if sig.isMethod || sig.isCtor || sig.isClinit || sig.isGenerated =>
                 update(sig)
               case _ =>
                 ()
@@ -250,9 +260,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       }
       info.parent.foreach(loopParent)
       info.traits.foreach(loopTraits)
-      calls.foreach { sig =>
-        info.responds.get(sig).foreach(reachGlobal)
-      }
+      calls.foreach { sig => info.responds.get(sig).foreach(reachGlobal) }
 
       // 1. Handle all dynamic methods on this class.
       //    Any method that implements a known dynamic

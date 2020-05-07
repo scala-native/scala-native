@@ -67,12 +67,12 @@ object GenerateReflectiveProxies {
     val callParams =
       params.head ::
         unboxes
-        .zip(params.tail)
-        .map {
-          case (let, local) =>
-            Val.Local(let.name, Type.unbox.getOrElse(local.ty, local.ty))
-        }
-        .toList
+          .zip(params.tail)
+          .map {
+            case (let, local) =>
+              Val.Local(let.name, Type.unbox.getOrElse(local.ty, local.ty))
+          }
+          .toList
 
     Inst.Let(Op.Call(defnTy, Val.Local(method.name, Type.Ptr), callParams),
              Next.None)

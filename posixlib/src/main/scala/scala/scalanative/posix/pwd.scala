@@ -8,8 +8,8 @@ import scalanative.posix.sys.stat.{uid_t, gid_t}
 object pwd {
 
   type passwd = CStruct5[CString, // pw_name
-                         uid_t, // pw_uid
-                         gid_t, // pw_gid
+                         uid_t,   // pw_uid
+                         gid_t,   // pw_gid
                          CString, // pw_dir
                          CString] // pw_shell
 

@@ -572,7 +572,8 @@ object FindSuiteHelper {
     Test("(.)", "abc", 3, 0, 1, 0, 1, 1, 2, 1, 2, 2, 3, 2, 3),
     Test(".(.)", "abcd", 2, 0, 2, 1, 2, 2, 4, 3, 4),
     Test("ab*", "abbaab", 3, 0, 3, 3, 4, 4, 6),
-    Test("a(b*)", "abbaab", 3, 0, 3, 1, 3, 3, 4, 4, 4, 4, 6, 5, 6), // fixed bugs
+    // fixed bugs
+    Test("a(b*)", "abbaab", 3, 0, 3, 1, 3, 3, 4, 4, 4, 4, 6, 5, 6),
     Test("ab$", "cab", 1, 1, 3),
     Test("axxb$", "axxcb", 0),
     Test("data", "daXY data", 1, 5, 9),

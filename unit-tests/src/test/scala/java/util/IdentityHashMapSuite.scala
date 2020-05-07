@@ -73,10 +73,12 @@ object IdentityHashMapSuite extends MapSuite {
     map.put("key1", "value1")
     map.put("key2", "value2")
     map.remove("key1")
-    assertTrue(!map.containsKey("key1"))                                 // Did not remove key1
-    assertTrue(!map.containsValue("value1"))                             // Did not remove the value for key
-    assertTrue(map.get("key2") != null && (map.get("key2") eq "value2")) // Modified key2
-    assertNull(map.get(null))                                            // Modified null entry
+    assertTrue(!map.containsKey("key1"))     // Did not remove key1
+    assertTrue(!map.containsValue("value1")) // Did not remove the value for key
+    assertTrue(
+      map.get("key2") != null && (map.get("key2") eq "value2")
+    )                         // Modified key2
+    assertNull(map.get(null)) // Modified null entry
   }
 
   test("Regression for HARMONY-37") {
@@ -87,7 +89,10 @@ object IdentityHashMapSuite extends MapSuite {
     assertEquals(0, map.size()) // Size is incorrect
     map.put("key", "value")
     map.remove("key")
-    assertEquals(0, map.size()) // After removing non-null element size is incorrect
+    assertEquals(
+      0,
+      map.size()
+    ) // After removing non-null element size is incorrect
     map.put(null, null)
     assertEquals(1, map.size()) // adding literal null failed
     map.remove(null)

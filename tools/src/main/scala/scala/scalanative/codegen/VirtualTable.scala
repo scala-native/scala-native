@@ -9,9 +9,7 @@ class VirtualTable(meta: Metadata, cls: linker.Class) {
   private val slots: mutable.UnrolledBuffer[Sig] =
     cls.parent.fold {
       mutable.UnrolledBuffer.empty[Sig]
-    } { parent =>
-      meta.vtable(parent).slots.clone
-    }
+    } { parent => meta.vtable(parent).slots.clone }
   private val impls: mutable.Map[Sig, Val] =
     mutable.Map.empty[Sig, Val]
   locally {
@@ -25,9 +23,7 @@ class VirtualTable(meta: Metadata, cls: linker.Class) {
         cls.resolve(sig).map(Val.Global(_, Type.Ptr)).getOrElse(Val.Null)
       impls(sig) = impl
     }
-    slots.foreach { sig =>
-      addImpl(sig)
-    }
+    slots.foreach { sig => addImpl(sig) }
     cls.calls.foreach { sig =>
       if (cls.targets(sig).size > 1) {
         if (!impls.contains(sig)) {

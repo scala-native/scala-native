@@ -27,6 +27,7 @@ final class Sig(val mangle: String) {
 
   final def isField: Boolean     = mangle(0) == 'F'
   final def isCtor: Boolean      = mangle(0) == 'R'
+  final def isClinit: Boolean    = mangle(0) == 'I'
   final def isImplCtor: Boolean  = mangle.startsWith("M6$init$")
   final def isMethod: Boolean    = mangle(0) == 'D'
   final def isProxy: Boolean     = mangle(0) == 'P'
@@ -40,6 +41,7 @@ object Sig {
   }
   final case class Field(id: String)                    extends Unmangled
   final case class Ctor(types: Seq[Type])               extends Unmangled
+  final case class Clinit()                             extends Unmangled
   final case class Method(id: String, types: Seq[Type]) extends Unmangled
   final case class Proxy(id: String, types: Seq[Type])  extends Unmangled
   final case class Extern(id: String)                   extends Unmangled

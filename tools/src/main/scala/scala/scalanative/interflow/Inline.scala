@@ -69,11 +69,21 @@ trait Inline { self: Interflow =>
         if (shall) {
           if (shallNot) {
             log(s"not inlining ${name.show}, because:")
-            if (noInline) { log("* has noinline attr") }
-            if (isRecursive) { log("* is recursive") }
-            if (isBlacklisted) { log("* is blacklisted") }
-            if (callerTooBig) { log("* caller is too big") }
-            if (calleeTooBig) { log("* callee is too big") }
+            if (noInline) {
+              log("* has noinline attr")
+            }
+            if (isRecursive) {
+              log("* is recursive")
+            }
+            if (isBlacklisted) {
+              log("* is blacklisted")
+            }
+            if (callerTooBig) {
+              log("* caller is too big")
+            }
+            if (calleeTooBig) {
+              log("* callee is too big")
+            }
           }
         } else {
           log(
@@ -104,9 +114,7 @@ trait Inline { self: Interflow =>
     val expected = argtys match {
       case inittys :+ Type.Vararg =>
         val nonvarargs = args.take(inittys.size).zip(inittys)
-        val varargs = args.drop(inittys.size).map { arg =>
-          (arg, Type.Vararg)
-        }
+        val varargs    = args.drop(inittys.size).map { arg => (arg, Type.Vararg) }
         nonvarargs ++ varargs
       case _ =>
         args.zip(argtys)

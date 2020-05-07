@@ -2,6 +2,7 @@ package scala.scalanative
 package unsafe
 
 import scala.language.implicitConversions
+
 import scalanative.annotation.alwaysinline
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
