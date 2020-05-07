@@ -3,8 +3,8 @@ import scala.util.Try
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 
-val sbt10Version          = "1.1.6"
-val sbt10ScalaVersion     = "2.12.10"
+val sbt10Version          = "1.1.6" // minimum version
+val sbt10ScalaVersion     = "2.12.11"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
