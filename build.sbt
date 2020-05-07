@@ -1,4 +1,5 @@
 import java.io.File.pathSeparator
+
 import scala.util.Try
 
 val sbt10Version          = "1.1.6" // minimum version
