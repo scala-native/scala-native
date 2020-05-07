@@ -3,6 +3,8 @@ import scala.util.Try
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 
+Global / onChangedBuildSource := ReloadOnSourceChanges
+
 val sbt10Version          = "1.1.6"
 val sbt10ScalaVersion     = "2.12.10"
 val libScalaVersion       = "2.11.12"
