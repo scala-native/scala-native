@@ -267,8 +267,6 @@ lazy val nirparser =
       libraryDependencies ++= Seq(
         "com.lihaoyi" %% "fastparse"  % "1.0.0",
         "com.lihaoyi" %% "scalaparse" % "1.0.0",
-        compilerPlugin(
-          "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
         scalacheckDep,
         scalatestDep
       )
