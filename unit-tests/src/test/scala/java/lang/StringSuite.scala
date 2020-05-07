@@ -257,8 +257,42 @@ object StringSuite extends tests.Suite {
 
   test("getBytes") {
     val b = new Array[scala.Byte](4)
+    // This form of getBytes() has been depricated since JDK 1.1
     "This is a test".getBytes(10, 14, b, 0)
     assert(new String(b) equals "test")
+  }
+
+  test("getBytes(\"UTF-8\")") {
+
+    // Try to break getBytes, test with difficult characters.
+    // \u00DF Greek lowercase beta; expect 2 output bytes
+    // \u4E66 Han Character 'book, letter, document; writings' ; 3 output bytes
+    // \u1F50A emoji 'speaker with three sound waves'; 4 output bytes.
+    //
+    // Reference: http://stn.audible.com/abcs-of-unicode/
+    //		       // replace 4E66 with hex string of interest
+    //		  http://www.fileformat.info/info/unicode/char/4E66/index.htm
+
+    val text = "\u0000\t\nAZaz09@~\u00DF\u4E66\u1F50A"
+
+    // sanity check on character escapes, missing backslash or 'u', etc.
+    assertEquals(text.length, 15)
+
+    val bytes = text.getBytes("UTF-8")
+
+// format: off
+    val expectedInts =
+      Seq(0, 9, 10, 65, 90, 97, 122, 48, 57, 64, 126,	// one byte unicode
+	  -61, -97,					// two byte unicode
+	  -28, -71, -90,				// three byte unicode
+	  -31, -67, -112, 65				// four byte unicode
+	)
+// format: on
+
+    val expectedBytes = expectedInts.map(i => java.lang.Byte.valueOf(i.toByte))
+    val expected      = Array[Byte](expectedBytes: _*)
+
+    assert(bytes.sameElements(expected), s"result != expected")
   }
 
   test("getBytes unsupported encoding") {
