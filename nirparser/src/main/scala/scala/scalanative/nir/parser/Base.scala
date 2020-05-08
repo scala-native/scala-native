@@ -9,8 +9,8 @@ import NoWhitespace._
 trait Base[T] {
   def parser[_: P]: P[T]
 
-  final def apply(nir: String) =
-    parser.parse(nir)
+  final def apply[_: P](nir: String) =
+    parser.input.formatted(nir)
 }
 
 object Base {
