@@ -8,10 +8,10 @@ import java.nio.file.{Files, Path, Paths}
 import scalanative.build.{ScalaNative, Config}
 import scalanative.util.Scope
 
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 
 /** Base class to test the linker. */
-abstract class LinkerSpec extends FlatSpec {
+abstract class LinkerSpec extends AnyFlatSpec {
 
   /**
    * Runs the linker using `driver` with `entry` as entry point on `sources`,

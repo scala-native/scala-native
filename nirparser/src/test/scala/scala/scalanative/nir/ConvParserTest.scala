@@ -3,8 +3,9 @@ package nir
 
 import fastparse.all.Parsed
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class ConvParserTest extends FunSuite {
+class ConvParserTest extends AnyFunSuite {
   import Conv._
 
   Seq[Conv](Trunc,

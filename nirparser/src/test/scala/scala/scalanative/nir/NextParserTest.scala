@@ -3,8 +3,9 @@ package nir
 
 import fastparse.all.Parsed
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class NextParserTest extends FunSuite {
+class NextParserTest extends AnyFunSuite {
   val local = Local(1)
   val value = Val.Int(42)
   val exc   = Val.Local(local, nir.Rt.Object)

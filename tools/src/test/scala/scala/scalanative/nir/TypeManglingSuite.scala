@@ -2,8 +2,9 @@ package scala.scalanative
 package nir
 
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class TypeManglingSuite extends FunSuite {
+class TypeManglingSuite extends AnyFunSuite {
   Seq(
     Type.Vararg,
     Type.Ptr,

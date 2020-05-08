@@ -255,8 +255,14 @@ object StringSuite extends tests.Suite {
     splitTest("ab", splitExpr = Some("(ab)"))
   }
 
-  test("getBytes(\"UTF-8\")") {
+  test("getBytes") {
+    val b = new Array[scala.Byte](4)
+    // This form of getBytes() has been depricated since JDK 1.1
+    "This is a test".getBytes(10, 14, b, 0)
+    assert(new String(b) equals "test")
+  }
 
+  test("getBytes(\"UTF-8\")") {
     // Try to break getBytes, test with difficult characters.
     // \u00DF Greek lowercase beta; expect 2 output bytes
     // \u4E66 Han Character 'book, letter, document; writings' ; 3 output bytes
@@ -276,9 +282,9 @@ object StringSuite extends tests.Suite {
 // format: off
     val expectedInts =
       Seq(0, 9, 10, 65, 90, 97, 122, 48, 57, 64, 126,	// one byte unicode
-	  -61, -97,					// two byte unicode
-	  -28, -71, -90,				// three byte unicode
-	  -31, -67, -112, 65				// four byte unicode
+	        -61, -97,					                          // two byte unicode
+	        -28, -71, -90,				                      // three byte unicode
+	        -31, -67, -112, 65				                  // four byte unicode
 	)
 // format: on
 

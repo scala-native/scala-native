@@ -2,13 +2,14 @@ package scala.scalanative
 package linker
 
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
 import scalanative.nir.{Sig, Global}
 import scalanative.build.ScalaNative
 
-trait ReachabilitySuite extends FunSuite {
+trait ReachabilitySuite extends AnyFunSuite {
 
   def g(top: String): Global =
     Global.Top(top)
