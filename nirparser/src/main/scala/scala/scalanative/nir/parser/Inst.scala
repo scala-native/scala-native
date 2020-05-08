@@ -2,38 +2,39 @@ package scala.scalanative
 package nir
 package parser
 
-import fastparse.all._
+import fastparse._
+import NoWhitespace._
 
 object Inst extends Base[nir.Inst] {
-  import Base.IgnoreWhitespace._
+  //import Base.IgnoreWhitespace._
 
-  private val unwind: P[Next] =
+  private def unwind[_: P]: P[Next] =
     P(Next.parser.?).map(_.getOrElse(nir.Next.None))
 
-  val Label =
+  def Label[_: P] =
     P(Local.parser ~ ("(" ~ Val.Local.rep(sep = ",") ~ ")").? ~ ":" map {
       case (name, params) => nir.Inst.Label(name, params getOrElse Seq())
     })
-  val Let =
+  def Let[_: P] =
     P(Local.parser ~ "=" ~ Op.parser ~ unwind map {
       case (name, op, unwind) => nir.Inst.Let(name, op, unwind)
     })
-  val Ret  = P("ret" ~ Val.parser.map(nir.Inst.Ret(_)))
-  val Jump = P("jump" ~ Next.parser.map(nir.Inst.Jump(_)))
-  val If =
+  def Ret[_: P]  = P("ret" ~ Val.parser.map(nir.Inst.Ret(_)))
+  def Jump[_: P] = P("jump" ~ Next.parser.map(nir.Inst.Jump(_)))
+  def If[_: P] =
     P("if" ~ Val.parser ~ "then" ~ Next.parser ~ "else" ~ Next.parser map {
       case (cond, thenp, elsep) => nir.Inst.If(cond, thenp, elsep)
     })
-  val Switch =
+  def Switch[_: P] =
     P("switch" ~ Val.parser ~ "{" ~ Next.parser.rep ~ "default" ~ "=>" ~ Next.parser ~ "}" map {
       case (scrut, cases, default) => nir.Inst.Switch(scrut, default, cases)
     })
-  val Throw = P("throw" ~ Val.parser ~ unwind).map {
+  def Throw[_: P] = P("throw" ~ Val.parser ~ unwind).map {
     case (value, unwind) => nir.Inst.Throw(value, unwind)
   }
-  val Unreachable =
+  def Unreachable[_: P] =
     P("unreachable" ~ unwind.map(nir.Inst.Unreachable(_)))
 
-  override val parser: P[nir.Inst] =
+  override def parser[_: P]: P[nir.Inst] =
     Label | Let | Ret | Jump | If | Switch | Throw | Unreachable
 }

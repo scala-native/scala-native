@@ -2,11 +2,12 @@ package scala.scalanative
 package nir
 package parser
 
-import fastparse.WhitespaceApi
-import fastparse.all._
+//import fastparse.WhitespaceApi
+import fastparse._
+import NoWhitespace._
 
 trait Base[T] {
-  def parser: P[T]
+  def parser[_: P]: P[T]
 
   final def apply(nir: String) =
     parser.parse(nir)
@@ -14,10 +15,10 @@ trait Base[T] {
 
 object Base {
 
-  val IgnoreWhitespace = WhitespaceApi.Wrapper {
-    import fastparse.all._
-    NoTrace(CharIn(Seq(' ', '\n')).rep)
-  }
+  // val IgnoreWhitespace = WhitespaceApi.Wrapper {
+  //   import fastparse._
+  //   NoTrace(CharIn(Seq(' ', '\n')).rep)
+  // }
 
   import scalaparse.syntax.Basic.{DecNum, HexNum, Lower, Upper, OpChar}
   import scalaparse.syntax.Identifiers.{
@@ -26,10 +27,10 @@ object Base {
     VarId0 => _,
     _
   }
-  private def VarId0(dollar: Boolean) = P(Lower ~ IdRest(dollar))
-  private val VarId                   = VarId0(true)
+  private def VarId0[_: P](dollar: Boolean) = P(Lower ~ IdRest(dollar))
+  private def VarId[_: P]                   = VarId0(true)
 
-  val mangledId: P[String] = {
+  def mangledId[_: P]: P[String] = {
     val mangledIdPart: P[String] =
       P(
         (Upper ~ IdRest(true)) | VarId | (Operator ~ (!OpChar | &(
@@ -39,7 +40,7 @@ object Base {
     }
   }
 
-  val qualifiedId: P[String] = {
+  def qualifiedId[_: P]: P[String] = {
     def PlainId: P[String] =
       P(
         ((Upper ~ IdRest(true)) | VarId | (Operator ~ (!OpChar | &(
@@ -59,26 +60,25 @@ object Base {
   }
 
   object Literals extends scalaparse.syntax.Literals {
-    override def Block: P0   = Fail
-    override def Pattern: P0 = Fail
+    override def Block[_: P]: P0   = Fail
+    override def Pattern[_: P]: P0 = Fail
   }
 
-  val int: P[Int] = Literals.Literals.NoInterp.Literal.!.map(_.toInt)
-  def neg(p: P[String]): P[String] = "-".!.? ~ p map {
+  def int[_: P]: P[Int] = Literals.Literals.NoInterp.Literal.!.map(_.toInt)
+  def neg[_: P](p: P[String]): P[String] = "-".!.? ~ p map {
     case (a, b) => a.getOrElse("") + b
   }
-  val Byte: P[Byte]       = neg(DecNum.!).map(_.toByte)
-  val Short: P[Short]     = neg((HexNum | DecNum).!).map(_.toInt.toShort)
-  val Int: P[Int]         = neg((HexNum | DecNum).!).map(_.toInt)
-  val Long: P[Long]       = neg((HexNum | DecNum).!).map(_.toLong)
-  val Infinity: P[String] = P("Infinityf".!).map(_.init)
-  val Float: P[Float] =
+  def Byte[_: P]: P[Byte]       = neg(DecNum.!).map(_.toByte)
+  def Short[_: P]: P[Short]     = neg((HexNum | DecNum).!).map(_.toInt.toShort)
+  def Int[_: P]: P[Int]         = neg((HexNum | DecNum).!).map(_.toInt)
+  def Long[_: P]: P[Long]       = neg((HexNum | DecNum).!).map(_.toLong)
+  def Infinity[_: P]: P[String] = P("Infinityf".!).map(_.init)
+  def Float[_: P]: P[Float] =
     neg(Infinity | Literals.Literals.Float.!).map(_.toFloat)
-  val Double: P[Double] =
+  def Double[_: P]: P[Double] =
     neg(Infinity | Literals.Literals.Float.!).map(_.toDouble)
-  val stringLit: P[String] = P(Literals.Literals.NoInterp.String.!.map { x =>
-    unquote(x.init.tail)
-  })
+  def stringLit[_: P]: P[String] =
+    P(Literals.Literals.NoInterp.String.!.map { x => unquote(x.init.tail) })
 
   private def unquote(s: String): String = s.replace("\\\"", "\"")
 }

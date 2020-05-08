@@ -2,13 +2,14 @@ package scala.scalanative
 package nir
 package parser
 
-import fastparse.all._
+import fastparse._
+import NoWhitespace._
 
 object NirParser extends Base[Seq[nir.Defn]] {
 
-  import Base.IgnoreWhitespace._
+  //import Base.IgnoreWhitespace._
 
-  override val parser: P[Seq[nir.Defn]] =
+  override def parser[_: P]: P[Seq[nir.Defn]] =
     Defn.parser.rep ~ End
 
 }

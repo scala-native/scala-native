@@ -207,8 +207,8 @@ lazy val nirparser =
     .settings(noPublishSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "com.lihaoyi" %% "fastparse"  % "1.0.0",
-        "com.lihaoyi" %% "scalaparse" % "1.0.0",
+        "com.lihaoyi" %% "fastparse"  % "2.3.0",
+        "com.lihaoyi" %% "scalaparse" % "2.3.0",
         scalacheckDep,
         scalatestDep
       )

@@ -2,39 +2,40 @@ package scala.scalanative
 package nir
 package parser
 
-import fastparse.all._
+import fastparse._
+import NoWhitespace._
 
 object Defn extends Base[nir.Defn] {
 
-  import Base.IgnoreWhitespace._
+  //import Base.IgnoreWhitespace._
 
-  val Var =
+  def Var[_: P] =
     P(Attrs.parser ~ "var" ~ Global.parser ~ ":" ~ Type.parser ~ "=" ~ Val.parser map {
       case (attrs, name, ty, v) =>
         nir.Defn.Var(attrs, name, ty, v)
     })
-  val Const =
+  def Const[_: P] =
     P(Attrs.parser ~ "const" ~ Global.parser ~ ":" ~ Type.parser ~ "=" ~ Val.parser map {
       case (attrs, name, ty, v) =>
         nir.Defn.Const(attrs, name, ty, v)
     })
-  val Declare =
+  def Declare[_: P] =
     P(Attrs.parser ~ "decl" ~ Global.parser ~ ":" ~ Type.parser map {
       case (attrs, name, ty) => nir.Defn.Declare(attrs, name, ty)
     })
-  val Define =
+  def Define[_: P] =
     P(Attrs.parser ~ "def" ~ Global.parser ~ ":" ~ Type.parser ~ "{" ~ Inst.parser.rep ~ "}" map {
       case (attrs, name, ty, insts) =>
         nir.Defn.Define(attrs, name, ty, insts)
     })
-  val Trait =
+  def Trait[_: P] =
     P(
       Attrs.parser ~ "trait" ~ Global.parser ~ (":" ~ Global.parser.rep(
         sep = ",")).? map {
         case (attrs, name, ifaces) =>
           nir.Defn.Trait(attrs, name, ifaces getOrElse Seq())
       })
-  val Class =
+  def Class[_: P] =
     P(
       Attrs.parser ~ "class" ~ Global.parser ~ (":" ~ Global.parser.rep(
         sep = ",")).? map {
@@ -43,7 +44,7 @@ object Defn extends Base[nir.Defn] {
         case (attrs, name, Some(inherits)) =>
           nir.Defn.Class(attrs, name, inherits.headOption, inherits.tail)
       })
-  val Module =
+  def Module[_: P] =
     P(
       Attrs.parser ~ "module" ~ Global.parser ~ (":" ~ Global.parser.rep(
         sep = ",")).? map {
@@ -52,6 +53,6 @@ object Defn extends Base[nir.Defn] {
         case (attrs, name, Some(inherits)) =>
           nir.Defn.Module(attrs, name, inherits.headOption, inherits.tail)
       })
-  override val parser: P[nir.Defn] =
+  override def parser[_: P]: P[nir.Defn] =
     Var | Const | Define | Declare | Trait | Class | Module
 }
