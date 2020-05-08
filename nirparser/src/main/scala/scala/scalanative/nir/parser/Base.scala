@@ -4,7 +4,6 @@ package parser
 
 //import fastparse.WhitespaceApi
 import fastparse._
-import NoWhitespace._
 
 trait Base[T] {
   def parser[_: P]: P[T]
@@ -14,7 +13,14 @@ trait Base[T] {
 }
 
 object Base {
+  // added for 2.3.0
+  import MultiLineWhitespace._
 
+  // Possible start or not needed?
+  def IgnoreWhitespace[_: P] = fastparse.MultiLineWhitespace.whitespace {
+    NoTrace(CharIn(" ", "\n").rep)
+  }
+  // Original - imports to use scattered about
   // val IgnoreWhitespace = WhitespaceApi.Wrapper {
   //   import fastparse._
   //   NoTrace(CharIn(Seq(' ', '\n')).rep)
@@ -65,7 +71,7 @@ object Base {
   }
 
   def int[_: P]: P[Int] = Literals.Literals.NoInterp.Literal.!.map(_.toInt)
-  def neg[_: P](p: P[String]): P[String] = "-".!.? ~ p map {
+  def neg[_: P](p: P[String]): P[String] = "-".!.? ~ P(p) map {
     case (a, b) => a.getOrElse("") + b
   }
   def Byte[_: P]: P[Byte]       = neg(DecNum.!).map(_.toByte)

@@ -7,7 +7,8 @@ import NoWhitespace._
 
 object Type extends Base[nir.Type] {
 
-  import Base._
+  import Base.int
+  import MultiLineWhitespace._
   //import IgnoreWhitespace._
 
   def Vararg[_: P] = P("...".!.map(_ => nir.Type.Vararg))

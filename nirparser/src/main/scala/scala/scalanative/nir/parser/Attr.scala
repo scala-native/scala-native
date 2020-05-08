@@ -3,11 +3,11 @@ package nir
 package parser
 
 import fastparse._
-import NoWhitespace._
 
 object Attr extends Base[nir.Attr] {
 
-  import Base._
+  import Base.stringLit
+  import MultiLineWhitespace._
   //import IgnoreWhitespace._
 
   def MayInline[_: P]    = P("mayinline".!.map(_ => nir.Attr.MayInline))

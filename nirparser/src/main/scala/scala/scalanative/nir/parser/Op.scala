@@ -3,11 +3,11 @@ package nir
 package parser
 
 import fastparse._
-import NoWhitespace._
 import Base._
 
 object Op extends Base[nir.Op] {
 
+  import MultiLineWhitespace._
   //import Base.IgnoreWhitespace._
 
   def Call[_: P] =

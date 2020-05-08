@@ -3,10 +3,10 @@ package nir
 package parser
 
 import fastparse._
-import NoWhitespace._
 
 object Next extends Base[nir.Next] {
 
+  import MultiLineWhitespace._
   //import Base.IgnoreWhitespace._
 
   def Label[_: P] =

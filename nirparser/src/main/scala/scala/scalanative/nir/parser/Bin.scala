@@ -3,7 +3,6 @@ package nir
 package parser
 
 import fastparse._
-import NoWhitespace._
 
 object Bin extends Base[nir.Bin] {
 

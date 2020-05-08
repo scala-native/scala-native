@@ -3,10 +3,10 @@ package nir
 package parser
 
 import fastparse._
-import NoWhitespace._
 
 object Defn extends Base[nir.Defn] {
 
+  import MultiLineWhitespace._
   //import Base.IgnoreWhitespace._
 
   def Var[_: P] =

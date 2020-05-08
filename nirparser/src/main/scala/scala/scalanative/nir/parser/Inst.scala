@@ -3,9 +3,10 @@ package nir
 package parser
 
 import fastparse._
-import NoWhitespace._
 
 object Inst extends Base[nir.Inst] {
+
+  import MultiLineWhitespace._
   //import Base.IgnoreWhitespace._
 
   private def unwind[_: P]: P[Next] =

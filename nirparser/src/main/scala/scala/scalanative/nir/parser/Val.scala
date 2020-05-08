@@ -3,11 +3,11 @@ package nir
 package parser
 
 import fastparse._
-import NoWhitespace._
 
 object Val extends Base[nir.Val] {
 
-  import Base._
+  import Base.stringLit
+  import MultiLineWhitespace._
   //import IgnoreWhitespace._
 
   def Char[_: P]   = P("char" ~ Base.Int.map(i => nir.Val.Char(i.toChar)))
