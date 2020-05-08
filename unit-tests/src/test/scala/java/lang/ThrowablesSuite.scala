@@ -63,7 +63,6 @@ object ThrowablesSuite extends tests.Suite {
                                expectedMessage: String,
                                expectedCause: Throwable,
                                expectedSuppressedLength: Int): Unit = {
-
     checkMessage(throwable, expectedMessage)
     checkCause(throwable, expectedCause)
     checkSuppressed(throwable, 0)
@@ -80,7 +79,6 @@ object ThrowablesSuite extends tests.Suite {
     val throwable = new Throwable(expectedMessage, expectedCause, false, false)
 
     checkConstructed(throwable, expectedMessage, expectedCause, 0)
-
   }
 
   test("Throwable(message)") {
@@ -90,7 +88,6 @@ object ThrowablesSuite extends tests.Suite {
     val throwable = new Throwable(expectedMessage)
 
     checkConstructed(throwable, expectedMessage, expectedCause, 0)
-
   }
 
   test("Throwable(cause)") {
@@ -102,7 +99,6 @@ object ThrowablesSuite extends tests.Suite {
     val throwable = new Throwable(expectedCause)
 
     checkConstructed(throwable, expectedMessage, expectedCause, 0)
-
   }
 
   test("Throwable()") {
@@ -112,15 +108,13 @@ object ThrowablesSuite extends tests.Suite {
     val throwable = new Throwable()
 
     checkConstructed(throwable, expectedMessage, expectedCause, 0)
-
   }
 
   // Thirteen public methods are documented for class Throwable.
   //
   // Five (5) methods: fillinStackTrace(), getCause(), getMessage(),
   // getSuppressed(), printStackTrace(PrintWriter), have been exercised by
-  // constructor tests above and do not need separate tests. This is the
-  // Thetis problem.
+  // constructor tests above and do not need separate tests.
   //
   // Six methods are exercised below. getStackTrace() does not have a
   // test of its own. It gets exercised by setStackTrace().
@@ -136,7 +130,6 @@ object ThrowablesSuite extends tests.Suite {
   // This accounts for all thirteen methods.
 
   test("addSuppressed(exception) - invalid arguments") {
-
     assertThrows[java.lang.NullPointerException] {
       val throwable = new Throwable()
       throwable.addSuppressed(null)
@@ -146,7 +139,6 @@ object ThrowablesSuite extends tests.Suite {
       val throwable = new Throwable("Expect IllegalArgumentException")
       throwable.addSuppressed(throwable)
     }
-
   }
 
   test("addSuppressed(exception) - enabled == true") {
@@ -186,11 +178,9 @@ object ThrowablesSuite extends tests.Suite {
     throwable.addSuppressed(suppressed2)
     val sl2 = throwable.getSuppressed().length
     assert(sl2 == 0, s"second suppressed length: ${sl2} != expected: 0")
-
   }
 
   test("initCause(cause) - cases which throw an Exception") {
-
     assertThrows[java.lang.IllegalArgumentException] {
       val throwable = new Throwable()
       throwable.initCause(throwable)
@@ -213,11 +203,9 @@ object ThrowablesSuite extends tests.Suite {
         throwable.initCause(new Throwable("Jor-El"))
       }
     }
-
   }
 
   test("initCause(cause)") {
-
     val throwable = new Throwable()
     // Constructor test above has already verified that initial cause is null.
 
@@ -243,11 +231,9 @@ object ThrowablesSuite extends tests.Suite {
     throwable.printStackTrace(ps)
 
     checkStackTraceString(baos.toString(encoding))
-
   }
 
   test("setStackTrace(stackTrace) - invalid arguments") {
-
     assertThrows[java.lang.NullPointerException] {
       val throwable = new Throwable()
       throwable.setStackTrace(null)
@@ -264,11 +250,9 @@ object ThrowablesSuite extends tests.Suite {
 
       throwable.setStackTrace(newStackTrace)
     }
-
   }
 
   test("setStackTrace(stackTrace) - writable == true") {
-
     val throwable = new Throwable(null, null, true, true)
 
     val newStackTrace = Array(
@@ -292,7 +276,6 @@ object ThrowablesSuite extends tests.Suite {
   }
 
   test("setStackTrace(stackTrace) - writable == false") {
-
     val throwable = new Throwable(null, null, true, false)
 
     val newStackTrace = Array(
@@ -310,7 +293,6 @@ object ThrowablesSuite extends tests.Suite {
 
     assert(afterStackTrace.sameElements(beforeStackTrace),
            s"stackTrace elements of non-writable stack differ")
-
   }
 
   test("setStackTrace(stackTrace) - write to returned stack") {
@@ -327,11 +309,9 @@ object ThrowablesSuite extends tests.Suite {
 
     assert(trace1(0) == null,
            s"second getStackTrace() should not change first result")
-
   }
 
   test("toString()") {
-
     val expectedClassName = "java.lang.Throwable"
 
     locally {
@@ -350,7 +330,5 @@ object ThrowablesSuite extends tests.Suite {
       val result   = throwable.toString
       assert(result == expected, s"result: ${result} != expected: ${expected}")
     }
-
   }
-
 }

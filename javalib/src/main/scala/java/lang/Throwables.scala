@@ -10,15 +10,16 @@ private[lang] object StackTrace {
 
   private def makeStackTraceElement(
       cursor: Ptr[scala.Byte]): StackTraceElement = {
-    val name   = stackalloc[CChar](1024)
-    val offset = stackalloc[scala.Byte](8)
+    val nameMax = 1024
+    val name    = stackalloc[CChar](nameMax)
+    val offset  = stackalloc[scala.Byte](8)
 
     unwind.get_proc_name(cursor, name, 1024, offset)
 
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's
     // behavior is not defined for non-zero-terminated strings.
-    name(1023) = 0
+    name(nameMax - 1) = 0
 
     StackTraceElement.fromSymbol(name)
   }
@@ -75,14 +76,12 @@ class Throwable protected (s: String,
   private[this] var suppressed: Array[Throwable] = _
 
   final def addSuppressed(exception: Throwable): Unit = {
-
-    if (exception == null) {
-      // Yes, JVM message uses 'cannot' (sic) & has terminal period/full_stop!
+    if (exception eq null) {
       throw new java.lang.NullPointerException(
         "Cannot suppress a null exception.")
     }
 
-    if (exception == this) {
+    if (exception eq this) {
       throw new java.lang.IllegalArgumentException(
         "Self-suppression not permitted")
     }
@@ -131,8 +130,8 @@ class Throwable protected (s: String,
     // been called in the constructor. If the stack is not writable, then
     // it can not be filled in.
 
-    if (stackTrace == null) {
-      Array.empty[StackTraceElement] // as specified by Java 8.
+    if (stackTrace eq null) {
+      new Array[StackTraceElement](0) // as specified by Java 8.
     } else
       this.synchronized {
         stackTrace.clone
@@ -140,27 +139,26 @@ class Throwable protected (s: String,
   }
 
   final def getSuppressed(): Array[Throwable] = {
-    if (suppressed == null) {
-      Array.empty[Throwable]
-    } else
-      this.synchronized {
+    this.synchronized { // workaround SN Issue #1091
+      if (suppressed eq null) {
+        new Array[Throwable](0)
+      } else {
         suppressed.clone()
       }
+    }
   }
 
   def initCause(cause: Throwable): Throwable = {
     // Java 8 spec says initCause has "at-most-once" semantics,
     // where implied use in a constructor counts.
-
-    if (cause == this) {
+    if (cause eq this) {
       throw new java.lang.IllegalArgumentException(
         "Self-causation not permitted")
     }
 
     this.synchronized {
       if (e != null) {
-        // Yes, JVM uses contraction "Can't"
-        val msg = if (cause == null) "a null" else cause.toString
+        val msg = if (cause eq null) "a null" else cause.toString
         throw new java.lang.IllegalStateException(
           s"Can't overwrite cause with ${msg}")
       } else {
@@ -181,7 +179,6 @@ class Throwable protected (s: String,
     printStackTrace(pw.println(_: String))
 
   private def printStackTrace(println: String => Unit): Unit = {
-
     val trace = getStackTrace()
 
     // Print current stack trace
@@ -241,22 +238,15 @@ class Throwable protected (s: String,
   }
 
   def setStackTrace(stackTrace: Array[StackTraceElement]): Unit = {
-
-    if (stackTrace eq null) {
-      throw new java.lang.NullPointerException()
-    }
-
-    for (i <- 0 until stackTrace.length) {
-      if (stackTrace(i) eq null) {
-        throw new java.lang.NullPointerException()
+    if (writableStackTrace) this.synchronized {
+      var i = 0
+      while (i < stackTrace.length) {
+        if (stackTrace(i) eq null)
+          throw new NullPointerException()
+        i += 1
       }
-    }
-
-    if (writableStackTrace) {
-      // store of a pointer/address/array should be thread-safe on its own.
       this.stackTrace = stackTrace.clone()
     }
-
   }
 
   override def toString(): String = {
