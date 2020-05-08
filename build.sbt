@@ -201,11 +201,12 @@ lazy val publishSettings: Seq[Setting[_]] = Seq(
       browseUrl = url("https://github.com/scala-native/scala-native"),
       connection = "scm:git:git@github.com:scala-native/scala-native.git"
     )),
-  pomExtra :=
+  pomExtra := (
     <issueManagement>
       <system>GitHub Issues</system>
       <url>https://github.com/scala-native/scala-native/issues</url>
     </issueManagement>
+  )
 ) ++ nameSettings
 
 lazy val noPublishSettings: Seq[Setting[_]] = Seq(
