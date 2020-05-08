@@ -1,7 +1,6 @@
 import java.io.File.pathSeparator
+
 import scala.util.Try
-import scalanative.sbtplugin.ScalaNativePluginInternal._
-import scalanative.io.packageNameFromPath
 
 val sbt10Version          = "1.1.6" // minimum version
 val sbt10ScalaVersion     = "2.12.11"
@@ -19,7 +18,7 @@ def projectName(project: sbt.ResolvedProject): String = {
 }
 
 // Provide consistent project name pattern.
-lazy val nameSettings = Seq(
+lazy val nameSettings: Seq[Setting[_]] = Seq(
   normalizedName := projectName(thisProject.value),         // Maven <artifactId>
   name := s"Scala Native ${projectName(thisProject.value)}" // Maven <name>
 )
@@ -33,7 +32,7 @@ lazy val mimaSettings: Seq[Setting[_]] = Seq(
   }
 )
 
-lazy val baseSettings = Seq(
+lazy val baseSettings: Seq[Setting[_]] = Seq(
   organization := "org.scala-native", // Maven <groupId>
   version := nativeVersion            // Maven <version>
 )
@@ -133,12 +132,12 @@ lazy val setUpTestingCompiler = Def.task {
 // name: sbt-scala-native, license: BSD-like, version control: git@github.com:scala-native/scala-native.git
 // to be available without a resolver
 // follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html#Linking+your+package+to+the+sbt+organization
-lazy val bintrayPublishSettings = Seq(
+lazy val bintrayPublishSettings: Seq[Setting[_]] = Seq(
   bintrayRepository := "sbt-plugins",
   bintrayOrganization := Some("scala-native")
 ) ++ publishSettings
 
-lazy val mavenPublishSettings = Seq(
+lazy val mavenPublishSettings: Seq[Setting[_]] = Seq(
   publishMavenStyle := true,
   pomIncludeRepository := { x => false },
   publishTo := {
@@ -180,7 +179,7 @@ lazy val mavenPublishSettings = Seq(
   }.toSeq
 ) ++ publishSettings
 
-lazy val publishSettings = Seq(
+lazy val publishSettings: Seq[Setting[_]] = Seq(
   Compile / publishArtifact := true,
   Test / publishArtifact := false,
   Compile / packageDoc / publishArtifact :=
@@ -210,7 +209,7 @@ lazy val publishSettings = Seq(
   )
 ) ++ nameSettings
 
-lazy val noPublishSettings = Seq(
+lazy val noPublishSettings: Seq[Setting[_]] = Seq(
   publishArtifact := false,
   packagedArtifacts := Map.empty,
   publish := {},
@@ -219,7 +218,7 @@ lazy val noPublishSettings = Seq(
   publish / skip := true
 ) ++ nameSettings
 
-lazy val toolSettings =
+lazy val toolSettings: Seq[Setting[_]] =
   baseSettings ++
     Seq(
       sbtVersion := sbt10Version,
@@ -228,13 +227,13 @@ lazy val toolSettings =
       javacOptions ++= Seq("-encoding", "utf8")
     )
 
-lazy val libSettings =
+lazy val libSettings: Seq[Setting[_]] =
   (baseSettings ++ ScalaNativePlugin.projectSettings.tail) ++ Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil
   )
 
-lazy val projectSettings =
+lazy val projectSettings: Seq[Setting[_]] =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil,
@@ -314,7 +313,7 @@ lazy val nscplugin =
     )
     .settings(scalacOptions += "-Xno-patmat-analysis")
 
-lazy val sbtPluginSettings =
+lazy val sbtPluginSettings: Seq[Setting[_]] =
   toolSettings ++
     bintrayPublishSettings ++
     Seq(
@@ -402,7 +401,7 @@ lazy val javalib =
         val previous = (Compile / scalacOptions).value
         val javaBootClasspath =
           scala.tools.util.PathResolver.Environment.javaBootClassPath
-        val classDir  = (Compile / classDirectory).value.getAbsolutePath()
+        val classDir  = (Compile / classDirectory).value.getAbsolutePath
         val separator = sys.props("path.separator")
         "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
       },
@@ -410,7 +409,7 @@ lazy val javalib =
       Compile / packageBin / mappings := {
         val previous = (Compile / packageBin / mappings).value
         previous.filter {
-          case (file, path) =>
+          case (_, path) =>
             !path.endsWith(".class")
         }
       },
@@ -456,9 +455,8 @@ lazy val scalalib =
 
         val s      = streams.value
         val trgDir = target.value / "scalaSources" / scalaVersion.value
-        val scalaRepo = sys.env
-          .get("SCALANATIVE_SCALAREPO")
-          .getOrElse("https://github.com/scala/scala.git")
+        val scalaRepo = sys.env.getOrElse("SCALANATIVE_SCALAREPO",
+                                          "https://github.com/scala/scala.git")
 
         if (!trgDir.exists) {
           s.log.info(
