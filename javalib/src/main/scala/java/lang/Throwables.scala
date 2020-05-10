@@ -132,10 +132,10 @@ class Throwable protected (s: String,
 
     if (stackTrace eq null) {
       new Array[StackTraceElement](0) // as specified by Java 8.
-    } else
-      this.synchronized {
-        stackTrace.clone
-      }
+    } else {
+      // stackTrace is read-only at this point, no synchronized necessary.
+      stackTrace.clone
+    }
   }
 
   final def getSuppressed(): Array[Throwable] = {
