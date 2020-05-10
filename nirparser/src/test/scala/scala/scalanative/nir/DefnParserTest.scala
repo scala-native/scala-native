@@ -1,7 +1,7 @@
 package scala.scalanative
 package nir
 
-import fastparse.all.Parsed
+import fastparse._
 import org.scalatest._
 import org.scalatest.funsuite.AnyFunSuite
 

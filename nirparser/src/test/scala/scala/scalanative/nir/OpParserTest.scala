@@ -1,8 +1,7 @@
 package scala.scalanative
 package nir
 
-import fastparse.all.Parsed
-import org.scalatest._
+import fastparse._
 import org.scalatest.funsuite.AnyFunSuite
 
 class OpParserTest extends AnyFunSuite {

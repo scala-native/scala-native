@@ -9,17 +9,21 @@ trait Base[T] {
   def parser[_: P]: P[T]
 
   final def apply[_: P](nir: String) =
-    parser.input.formatted(nir)
+    parser.input.+(nir)
 }
 
 object Base {
   // added for 2.3.0
   import MultiLineWhitespace._
 
-  // Possible start or not needed?
+  // Compiles but see "from docs" below
   def IgnoreWhitespace[_: P] = fastparse.MultiLineWhitespace.whitespace {
     NoTrace(CharIn(" ", "\n").rep)
   }
+  // from docs
+  // implicit val whitespace = { implicit ctx: ParsingRun[_] =>
+  //   CharsWhileIn(" \t", 0)
+  // }
   // Original - imports to use scattered about
   // val IgnoreWhitespace = WhitespaceApi.Wrapper {
   //   import fastparse._
