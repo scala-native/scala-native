@@ -1,5 +1,8 @@
 import java.io.File.pathSeparator
 
+import sbt.Keys.sources
+
+import scala.collection.mutable
 import scala.util.Try
 
 val sbt10Version          = "1.1.6" // minimum version
@@ -230,13 +233,13 @@ lazy val toolSettings: Seq[Setting[_]] =
 lazy val libSettings: Seq[Setting[_]] =
   (baseSettings ++ ScalaNativePlugin.projectSettings.tail) ++ Seq(
     scalaVersion := libScalaVersion,
-    resolvers := Nil
+    resolvers := Seq(Resolver.defaultLocal)
   )
 
 lazy val projectSettings: Seq[Setting[_]] =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
-    resolvers := Nil,
+    resolvers := Seq(Resolver.defaultLocal),
     nativeCheck := true,
     nativeDump := true
   )
@@ -360,7 +363,8 @@ lazy val nativelib =
       libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       publishLocal := publishLocal
         .dependsOn(nscplugin / publishLocal)
-        .value
+        .value,
+      update := update.dependsOn(nscplugin / publishLocal).value
     )
 
 lazy val clib =
@@ -419,9 +423,6 @@ lazy val javalib =
     )
     .dependsOn(nativelib, posixlib)
 
-lazy val assembleScalaLibrary = taskKey[Unit](
-  "Checks out scala standard library from submodules/scala and then applies overrides.")
-
 lazy val auxlib =
   project
     .in(file("auxlib"))
@@ -434,6 +435,9 @@ lazy val auxlib =
     )
     .dependsOn(nativelib)
 
+import Build.fetchScalaSource
+
+//TODO with MultiScalaProject support, see scala-js/scala-js/project/Build.scala
 lazy val scalalib =
   project
     .in(file("scalalib"))
@@ -450,52 +454,116 @@ lazy val scalalib =
     )
     .settings(mavenPublishSettings)
     .settings(
-      assembleScalaLibrary := {
-        import org.eclipse.jgit.api._
+      //copy from scala-js/scala-js/project/Build.scala
+      libraryDependencies +=
+        "org.scala-lang" % "scala-library" % scalaVersion.value classifier "sources",
+      artifactPath in fetchScalaSource := target.value / "scalaSources" / scalaVersion.value,
+      /* Work around for #2649. We would like to always use `update`, but
+       * that fails if the scalaVersion we're looking for happens to be the
+       * version of Scala used by sbt itself. This is clearly a bug in sbt,
+       * which we work around here by using `updateClassifiers` instead in
+       * that case.
+       */
+      update in fetchScalaSource := Def.taskDyn {
+        if (scalaVersion.value == scala.util.Properties.versionNumberString)
+          updateClassifiers
+        else
+          update
+      }.value,
+      fetchScalaSource := {
+        val s        = streams.value
+        val cacheDir = s.cacheDirectory
+        val ver      = scalaVersion.value
+        val trgDir   = (artifactPath in fetchScalaSource).value
 
-        val s      = streams.value
-        val trgDir = target.value / "scalaSources" / scalaVersion.value
-        val scalaRepo = sys.env.getOrElse("SCALANATIVE_SCALAREPO",
-                                          "https://github.com/scala/scala.git")
+        val report = (update in fetchScalaSource).value
+        val scalaLibSourcesJar = report
+          .select(configuration = configurationFilter("compile"),
+                  module = moduleFilter(name = "scala-library"),
+                  artifact = artifactFilter(classifier = "sources"))
+          .headOption
+          .getOrElse {
+            throw new Exception(
+              s"Could not fetch scala-library sources for version $ver")
+          }
 
-        if (!trgDir.exists) {
-          s.log.info(
-            s"Fetching Scala source version ${scalaVersion.value} from $scalaRepo")
+        FileFunction.cached(cacheDir / s"fetchScalaSource-$ver",
+                            FilesInfo.lastModified,
+                            FilesInfo.exists) { dependencies =>
+          s.log.info(s"Unpacking Scala library sources to $trgDir...")
 
-          // Make parent dirs and stuff
+          if (trgDir.exists)
+            IO.delete(trgDir)
           IO.createDirectory(trgDir)
+          IO.unzip(scalaLibSourcesJar, trgDir)
+        }(Set(scalaLibSourcesJar))
 
-          // Clone scala source code
-          new CloneCommand()
-            .setDirectory(trgDir)
-            .setURI(scalaRepo)
-            .call()
-            .close()
+        trgDir
+      },
+      unmanagedSourceDirectories in Compile := {
+        // Calculates all prefixes of the current Scala version
+        // (including the empty prefix) to construct override
+        // directories like the following:
+        // - override-2.13.0-RC1
+        // - override-2.13.0
+        // - override-2.13
+        // - override-2
+        // - override
+        val ver   = scalaVersion.value
+        val base  = baseDirectory.value.getParentFile
+        val parts = ver.split(Array('.', '-'))
+        val verList = parts.inits.map { ps =>
+          val len = ps.mkString(".").length
+          // re-read version, since we lost '.' and '-'
+          ver.substring(0, len)
         }
-
-        // Checkout proper ref. We do this anyway so we fail if
-        // something is wrong
-        val git = Git.open(trgDir)
-        s.log.info(s"Checking out Scala source version ${scalaVersion.value}")
-        git.checkout().setName(s"v${scalaVersion.value}").call()
-
-        IO.delete(file("scalalib/src/main/scala"))
-        IO.copyDirectory(trgDir / "src" / "library" / "scala",
-                         file("scalalib/src/main/scala/scala"))
-
-        val epoch :: major :: _ = scalaVersion.value.split("\\.").toList
-        IO.copyDirectory(file(s"scalalib/overrides-$epoch.$major/scala"),
-                         file("scalalib/src/main/scala/scala"),
-                         overwrite = true)
-
-        // Remove all java code, as it's not going to be available
-        // in the NIR anyway. This also resolves issues wrt overrides
-        // of code that was previously in Java but is in Scala now.
-        (file("scalalib/src/main/scala") ** "*.java").get.foreach(IO.delete)
+        def dirStr(v: String) =
+          if (v.isEmpty) "overrides" else s"overrides-$v"
+        val dirs = verList.map(base / dirStr(_)).filter(_.exists)
+        dirs.toSeq // most specific shadow less specific
       },
       Compile / compile := (Compile / compile)
-        .dependsOn(assembleScalaLibrary)
+        .dependsOn(fetchScalaSource)
         .value,
+      // Compute sources
+      // Files in earlier src dirs shadow files in later dirs
+      sources in Compile := {
+        // Sources coming from the sources of Scala
+        val scalaSrcDir = fetchScalaSource.value
+
+        // All source directories (overrides shadow scalaSrcDir)
+        val sourceDirectories =
+          (unmanagedSourceDirectories in Compile).value :+ scalaSrcDir
+
+        // Filter sources with overrides
+        def normPath(f: File): String =
+          f.getPath.replace(java.io.File.separator, "/")
+
+        val sources = mutable.ListBuffer.empty[File]
+        val paths   = mutable.Set.empty[String]
+
+        val s = streams.value
+
+        for {
+          srcDir <- sourceDirectories
+          normSrcDir = normPath(srcDir)
+          src <- (srcDir ** "*.scala").get
+        } {
+          val normSrc = normPath(src)
+          val path    = normSrc.substring(normSrcDir.length)
+          val useless =
+            path.contains("/scala/collection/parallel/") ||
+              path.contains("/scala/util/parsing/")
+          if (!useless) {
+            if (paths.add(path))
+              sources += src
+            else
+              s.log.debug(s"not including $src")
+          }
+        }
+
+        sources.result()
+      },
       // Don't include classfiles for scalalib in the packaged jar.
       Compile / packageBin / mappings := {
         val previous = (Compile / packageBin / mappings).value
@@ -505,7 +573,7 @@ lazy val scalalib =
         }
       },
       publishLocal := publishLocal
-        .dependsOn(assembleScalaLibrary, auxlib / publishLocal)
+        .dependsOn(fetchScalaSource, auxlib / publishLocal)
         .value
     )
     .dependsOn(auxlib, nativelib, javalib)
