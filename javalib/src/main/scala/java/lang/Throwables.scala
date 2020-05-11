@@ -14,7 +14,7 @@ private[lang] object StackTrace {
     val name    = stackalloc[CChar](nameMax)
     val offset  = stackalloc[scala.Byte](8)
 
-    unwind.get_proc_name(cursor, name, 1024, offset)
+    unwind.get_proc_name(cursor, name, nameMax, offset)
 
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's
