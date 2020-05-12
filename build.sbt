@@ -470,6 +470,7 @@ lazy val scalalib =
             .setDirectory(trgDir)
             .setURI(scalaRepo)
             .call()
+            .close()
         }
 
         // Checkout proper ref. We do this anyway so we fail if
