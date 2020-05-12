@@ -2,8 +2,12 @@
 #define IMMIX_LOG_H
 
 #ifndef DEBUG_ASSERT
+
+#ifndef NDEBUG
 #define NDEBUG
-#endif
+#endif // NDEBUG
+
+#endif // DEBUG_ASSERT
 
 #include <assert.h>
 #include <inttypes.h>
