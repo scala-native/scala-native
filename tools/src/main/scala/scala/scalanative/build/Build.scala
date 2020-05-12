@@ -63,12 +63,12 @@ object Build {
     val generated = IO.getAll(workdir, "glob:**.ll")
 
     // deprecation compatibility
-    val nativelibs = if (config.nativelib.toString().isEmpty()) {
+    val nativelibs = if (config.internalNativelib.toString().isEmpty()) {
       config.nativelibs
     } else {
       config.logger.warn(
         "Deprecated. Use config.withNativelibs(value: Seq[NativeLib]) as of 0.4.0")
-      Seq(NativeLib(Discover.nativelibId, config.nativelib))
+      Seq(NativeLib(Discover.nativelibId, config.internalNativelib))
     }
 
     val unpackedLibs = nativelibs.map(LLVM.unpackNativelib(_, workdir))

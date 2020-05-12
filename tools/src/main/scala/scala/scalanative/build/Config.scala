@@ -36,6 +36,8 @@ sealed trait Config {
   @deprecated("Use nativelibs: Seq[NativeLib]", "0.4.0")
   def nativelib: Path
 
+  private[build] def internalNativelib: Path
+
   /** Sequence of NativeLib, name and path to jars. */
   def nativelibs: Seq[NativeLib]
 
@@ -125,6 +127,7 @@ object Config {
   def empty: Config =
     Impl(
       nativelib = Paths.get(""),
+      internalNativelib = Paths.get(""),
       nativelibs = Seq.empty,
       mainClass = "",
       classPath = Seq.empty,
@@ -145,6 +148,7 @@ object Config {
     )
 
   private final case class Impl(nativelib: Path,
+                                internalNativelib: Path,
                                 nativelibs: Seq[NativeLib],
                                 mainClass: String,
                                 classPath: Seq[Path],
@@ -164,7 +168,7 @@ object Config {
                                 optimize: Boolean)
       extends Config {
     def withNativelib(value: Path): Config =
-      copy(nativelib = value)
+      copy(nativelib = value, internalNativelib = value)
 
     def withNativelibs(value: Seq[NativeLib]): Config =
       copy(nativelibs = value)
