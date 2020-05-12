@@ -28,7 +28,7 @@ which makes it fast to iterate and inspect the output of the compilation.
 
 To compile the sandbox project run the following in the sbt shell::
 
-    sbt> ;sandbox/clean;sandbox/nativeLink
+    sbt> sandbox/clean;sandbox/nativeLink
 
 If the example code for the new intrinsic requires you to change APIs in ``nativelib``,
 then remember to also publish the changes with ``nativelib/publishLocal``.
@@ -42,7 +42,7 @@ you get more familiar with the `LLVM assembly language <http://llvm.org/docs/Lan
 When working on the compile plugin you'll need to publish it and reload each time
 you want to recompile the sandbox project. This can be achieved with::
 
-    sbt> ;nscplugin/publishLocal;reload;sandbox/clean;sandbox/run
+    sbt> nscplugin/publishLocal;reload;sandbox/clean;sandbox/run
 
 Certain intrinsics might require adding new primitives to the compiler plugin.
 This can be done in ``NirPrimitives`` with an accompanying definition in
