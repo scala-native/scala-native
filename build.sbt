@@ -451,25 +451,22 @@ lazy val scalalib =
     )
     .settings(mavenPublishSettings)
     .settings(
-      // code to fetch scala sources adapted, with gratitude, from
-      // Scala.js Build.scala, lines 1125 to 1233, at the suggestion of
-      // @sjrd.
+      // Code to fetch scala sources adapted, with gratitude, from
+      // Scala.js Build.scala at the suggestion of @sjrd.
+      // https://github.com/scala-js/scala-js/blob/\
+      //    1761f94ee31902b61c579d5cb121117c9dc08295/\
+      //    project/Build.scala#L1125-L1233
       //
-      // By intent, the content is intended to be as similar as feasible.
-      // The forced differences are:
-      //   1) Scala Native build.sbt uses a slightly different baseDirectory
-      //      than Scala.js. See commented starting with "SN Port:" below.
-      //      This is the only intended change with meaning between the two.
-      //   2) This file is sbt, Scala.js uses a .scala file. Trailing commas
-      //      may differ.
-      //   3) The project scalafmt configuration differs between Scala Native
-      //      and the Scala.js so there are annoying but not meaningful
-      //      format differences.
+      // By intent, the Scala Native code below is as identical as feasible.
+      // Scala Native build.sbt uses a slightly different baseDirectory
+      // than Scala.js. See commented starting with "SN Port:" below.
       libraryDependencies +=
         "org.scala-lang" % "scala-library" % scalaVersion.value classifier "sources",
       artifactPath in fetchScalaSource :=
         target.value / "scalaSources" / scalaVersion.value,
-      /* Work around for #2649. We would like to always use `update`, but
+      // Scala.js original comment modified to clarify issue is Scala.js.
+      /* Work around for https://github.com/scala-js/scala-js/issues/2649
+       * We would like to always use `update`, but
        * that fails if the scalaVersion we're looking for happens to be the
        * version of Scala used by sbt itself. This is clearly a bug in sbt,
        * which we work around here by using `updateClassifiers` instead in
