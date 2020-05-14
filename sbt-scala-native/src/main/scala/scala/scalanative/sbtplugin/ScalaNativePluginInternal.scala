@@ -11,7 +11,6 @@ import sbt.complete.DefaultParsers._
 import scala.scalanative.build.{Build, BuildException, Discover}
 import scala.scalanative.sbtplugin.SBTCompat.Process
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
-import scala.scalanative.sbtplugin.TestUtilities._
 import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.ScalaNativeFramework
 import scala.util.Try
