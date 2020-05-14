@@ -1,5 +1,6 @@
 import java.io.File.pathSeparator
 
+import scala.collection.mutable
 import scala.util.Try
 
 val sbt10Version          = "1.1.6" // minimum version
@@ -358,7 +359,7 @@ lazy val nativelib =
     .settings(mavenPublishSettings)
     .settings(
       libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      publishLocal := publishLocal
+      update := update
         .dependsOn(nscplugin / publishLocal)
         .value
     )
@@ -419,8 +420,8 @@ lazy val javalib =
     )
     .dependsOn(nativelib, posixlib)
 
-lazy val assembleScalaLibrary = taskKey[Unit](
-  "Checks out scala standard library from submodules/scala and then applies overrides.")
+val fetchScalaSource =
+  taskKey[File]("Fetches the scala source for the current scala version")
 
 lazy val auxlib =
   project
@@ -450,52 +451,127 @@ lazy val scalalib =
     )
     .settings(mavenPublishSettings)
     .settings(
-      assembleScalaLibrary := {
-        import org.eclipse.jgit.api._
+      // Code to fetch scala sources adapted, with gratitude, from
+      // Scala.js Build.scala at the suggestion of @sjrd.
+      // https://github.com/scala-js/scala-js/blob/\
+      //    1761f94ee31902b61c579d5cb121117c9dc08295/\
+      //    project/Build.scala#L1125-L1233
+      //
+      // By intent, the Scala Native code below is as identical as feasible.
+      // Scala Native build.sbt uses a slightly different baseDirectory
+      // than Scala.js. See commented starting with "SN Port:" below.
+      libraryDependencies +=
+        "org.scala-lang" % "scala-library" % scalaVersion.value classifier "sources",
+      artifactPath in fetchScalaSource :=
+        target.value / "scalaSources" / scalaVersion.value,
+      // Scala.js original comment modified to clarify issue is Scala.js.
+      /* Work around for https://github.com/scala-js/scala-js/issues/2649
+       * We would like to always use `update`, but
+       * that fails if the scalaVersion we're looking for happens to be the
+       * version of Scala used by sbt itself. This is clearly a bug in sbt,
+       * which we work around here by using `updateClassifiers` instead in
+       * that case.
+       */
+      update in fetchScalaSource := Def.taskDyn {
+        if (scalaVersion.value == scala.util.Properties.versionNumberString)
+          updateClassifiers
+        else
+          update
+      }.value,
+      fetchScalaSource := {
+        val s        = streams.value
+        val cacheDir = s.cacheDirectory
+        val ver      = scalaVersion.value
+        val trgDir   = (artifactPath in fetchScalaSource).value
 
-        val s      = streams.value
-        val trgDir = target.value / "scalaSources" / scalaVersion.value
-        val scalaRepo = sys.env.getOrElse("SCALANATIVE_SCALAREPO",
-                                          "https://github.com/scala/scala.git")
+        val report = (update in fetchScalaSource).value
+        val scalaLibSourcesJar = report
+          .select(configuration = configurationFilter("compile"),
+                  module = moduleFilter(name = "scala-library"),
+                  artifact = artifactFilter(classifier = "sources"))
+          .headOption
+          .getOrElse {
+            throw new Exception(
+              s"Could not fetch scala-library sources for version $ver")
+          }
 
-        if (!trgDir.exists) {
-          s.log.info(
-            s"Fetching Scala source version ${scalaVersion.value} from $scalaRepo")
+        FileFunction.cached(cacheDir / s"fetchScalaSource-$ver",
+                            FilesInfo.lastModified,
+                            FilesInfo.exists) { dependencies =>
+          s.log.info(s"Unpacking Scala library sources to $trgDir...")
 
-          // Make parent dirs and stuff
+          if (trgDir.exists)
+            IO.delete(trgDir)
           IO.createDirectory(trgDir)
+          IO.unzip(scalaLibSourcesJar, trgDir)
+        }(Set(scalaLibSourcesJar))
 
-          // Clone scala source code
-          new CloneCommand()
-            .setDirectory(trgDir)
-            .setURI(scalaRepo)
-            .call()
-            .close()
+        trgDir
+      },
+      unmanagedSourceDirectories in Compile := {
+        // Calculates all prefixes of the current Scala version
+        // (including the empty prefix) to construct override
+        // directories like the following:
+        // - override-2.13.0-RC1
+        // - override-2.13.0
+        // - override-2.13
+        // - override-2
+        // - override
+
+        val ver = scalaVersion.value
+
+        // SN Port: sjs uses baseDirectory.value.getParentFile here.
+        val base  = baseDirectory.value
+        val parts = ver.split(Array('.', '-'))
+        val verList = parts.inits.map { ps =>
+          val len = ps.mkString(".").length
+          // re-read version, since we lost '.' and '-'
+          ver.substring(0, len)
+        }
+        def dirStr(v: String) =
+          if (v.isEmpty) "overrides" else s"overrides-$v"
+        val dirs = verList.map(base / dirStr(_)).filter(_.exists)
+        dirs.toSeq // most specific shadow less specific
+      },
+      // Compute sources
+      // Files in earlier src dirs shadow files in later dirs
+      sources in Compile := {
+        // Sources coming from the sources of Scala
+        val scalaSrcDir = fetchScalaSource.value
+
+        // All source directories (overrides shadow scalaSrcDir)
+        val sourceDirectories =
+          (unmanagedSourceDirectories in Compile).value :+ scalaSrcDir
+
+        // Filter sources with overrides
+        def normPath(f: File): String =
+          f.getPath.replace(java.io.File.separator, "/")
+
+        val sources = mutable.ListBuffer.empty[File]
+        val paths   = mutable.Set.empty[String]
+
+        val s = streams.value
+
+        for {
+          srcDir <- sourceDirectories
+          normSrcDir = normPath(srcDir)
+          src <- (srcDir ** "*.scala").get
+        } {
+          val normSrc = normPath(src)
+          val path    = normSrc.substring(normSrcDir.length)
+          val useless =
+            path.contains("/scala/collection/parallel/") ||
+              path.contains("/scala/util/parsing/")
+          if (!useless) {
+            if (paths.add(path))
+              sources += src
+            else
+              s.log.debug(s"not including $src")
+          }
         }
 
-        // Checkout proper ref. We do this anyway so we fail if
-        // something is wrong
-        val git = Git.open(trgDir)
-        s.log.info(s"Checking out Scala source version ${scalaVersion.value}")
-        git.checkout().setName(s"v${scalaVersion.value}").call()
-
-        IO.delete(file("scalalib/src/main/scala"))
-        IO.copyDirectory(trgDir / "src" / "library" / "scala",
-                         file("scalalib/src/main/scala/scala"))
-
-        val epoch :: major :: _ = scalaVersion.value.split("\\.").toList
-        IO.copyDirectory(file(s"scalalib/overrides-$epoch.$major/scala"),
-                         file("scalalib/src/main/scala/scala"),
-                         overwrite = true)
-
-        // Remove all java code, as it's not going to be available
-        // in the NIR anyway. This also resolves issues wrt overrides
-        // of code that was previously in Java but is in Scala now.
-        (file("scalalib/src/main/scala") ** "*.java").get.foreach(IO.delete)
+        sources.result()
       },
-      Compile / compile := (Compile / compile)
-        .dependsOn(assembleScalaLibrary)
-        .value,
       // Don't include classfiles for scalalib in the packaged jar.
       Compile / packageBin / mappings := {
         val previous = (Compile / packageBin / mappings).value
@@ -505,7 +581,7 @@ lazy val scalalib =
         }
       },
       publishLocal := publishLocal
-        .dependsOn(assembleScalaLibrary, auxlib / publishLocal)
+        .dependsOn(auxlib / publishLocal)
         .value
     )
     .dependsOn(auxlib, nativelib, javalib)
@@ -577,10 +653,10 @@ lazy val testingCompiler =
 
 lazy val testInterface =
   project
+    .in(file("test-interface"))
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
     .settings(mavenPublishSettings)
-    .in(file("test-interface"))
     .settings(
       libraryDependencies += "org.scala-sbt"    % "test-interface"   % "1.0",
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
@@ -593,10 +669,10 @@ lazy val testInterface =
 
 lazy val testInterfaceSerialization =
   project
+    .in(file("test-interface-serialization"))
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
     .settings(mavenPublishSettings)
-    .in(file("test-interface-serialization"))
     .settings(
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
       publishLocal := publishLocal
@@ -608,10 +684,10 @@ lazy val testInterfaceSerialization =
 
 lazy val testInterfaceSbtDefs =
   project
+    .in(file("test-interface-sbt-defs"))
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
     .settings(mavenPublishSettings)
-    .in(file("test-interface-sbt-defs"))
     .settings(
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
     )
@@ -619,9 +695,9 @@ lazy val testInterfaceSbtDefs =
 
 lazy val testRunner =
   project
+    .in(file("test-runner"))
     .settings(toolSettings)
     .settings(mavenPublishSettings)
-    .in(file("test-runner"))
     .settings(
       crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies += "org.scala-sbt" % "test-interface" % "1.0",

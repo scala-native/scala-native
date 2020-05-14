@@ -11,10 +11,6 @@ Compile / unmanagedSourceDirectories ++= {
   ).map(dir => root / s"$dir/src/main/scala")
 }
 
-libraryDependencies ++= Seq(
-  "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "5.5.1.201910021850-r"
-)
-
 addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0")
 addSbtPlugin("com.eed3si9n"       % "sbt-dirty-money"   % "0.2.0")
 addSbtPlugin("org.foundweekends"  % "sbt-bintray"       % "0.5.4")
