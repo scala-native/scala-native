@@ -4,7 +4,7 @@ import scala.collection.mutable
 
 final class LoadableModuleClass private[reflect] (
     val runtimeClass: Class[_],
-    loadModuleFun: Function0[Any]
+    loadModuleFun: () => Any
 ) {
 
   /** Loads the module instance and returns it. */
@@ -41,14 +41,14 @@ final class InstantiatableClass private[reflect] (
 
 final class InvokableConstructor private[reflect] (
     val parameterTypes: Array[Class[_]],
-    newInstanceFun: Function1[Array[Any], Any]
+    newInstanceFun: Array[Any] => Any
 ) {
   def newInstance(args: Any*): Any = {
     /* Check the number of actual arguments. We let the casts and unbox
      * operations inside `newInstanceFun` take care of the rest.
      */
     require(
-      args.size == parameterTypes.size,
+      args.length == parameterTypes.length,
       "Reflect: wrong number of arguments for InvokableConstructor"
     )
     val adaptedArgs = (args zip parameterTypes).map {
@@ -110,7 +110,7 @@ final class InvokableConstructor private[reflect] (
   }
 
   override def toString: String = {
-    val builder = new mutable.StringBuilder("InvokableContructor")
+    val builder = new mutable.StringBuilder("InvokableConstructor")
     builder.append("(")
     for (tpe <- parameterTypes) {
       builder.append(tpe.getName)
@@ -135,7 +135,7 @@ object Reflect {
   protected[reflect] def registerLoadableModuleClass[T](
       fqcn: String,
       runtimeClass: Class[T],
-      loadModuleFun: Function0[T]): Unit = {
+      loadModuleFun: () => T): Unit = {
     loadableModuleClasses(fqcn) =
       new LoadableModuleClass(runtimeClass, loadModuleFun)
   }
@@ -143,8 +143,7 @@ object Reflect {
   protected[reflect] def registerInstantiatableClass[T](
       fqcn: String,
       runtimeClass: Class[T],
-      constructors: Array[(Array[Class[_]], Function1[Array[Any], Any])])
-      : Unit = {
+      constructors: Array[(Array[Class[_]], Array[Any] => Any)]): Unit = {
     val invokableConstructors = constructors.map { c =>
       new InvokableConstructor(c._1, c._2)
     }
@@ -157,7 +156,7 @@ object Reflect {
    *  A module class is the technical term referring to the class of a Scala
    *  `object`. The object or one of its super types (classes or traits) must
    *  be annotated with
-   *  [[scala.scalajs.reflect.annotation.EnableReflectiveInstantiation @EnableReflectiveInstantiation]].
+   *  [[scala.scalanative.reflect.annotation.EnableReflectiveInstantiation @EnableReflectiveInstantiation]].
    *  Moreover, the object must be "static", i.e., declared at the top-level of
    *  a package or inside a static object.
    *
@@ -175,7 +174,7 @@ object Reflect {
    *
    *  The class or one of its super types (classes or traits) must be annotated
    *  with
-   *  [[scala.scalajs.reflect.annotation.EnableReflectiveInstantiation @EnableReflectiveInstantiation]].
+   *  [[scala.scalanative.reflect.annotation.EnableReflectiveInstantiation @EnableReflectiveInstantiation]].
    *  Moreover, the class must not be abstract, nor be a local class (i.e., a
    *  class defined inside a `def`). Inner classes (defined inside another
    *  class) are supported.

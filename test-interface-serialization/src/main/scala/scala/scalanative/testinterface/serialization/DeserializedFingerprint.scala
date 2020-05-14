@@ -1,5 +1,6 @@
 package scala.scalanative
 package testinterface
+package serialization
 
 import sbt.testing.{AnnotatedFingerprint, SubclassFingerprint}
 

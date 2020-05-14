@@ -1,7 +1,7 @@
 package sbt.testing
 
-import java.util.Arrays
 import java.io.Serializable
+import java.util
 
 /** A bundle of information used to request a <code>Task</code> from a test
  *  framework.
@@ -49,13 +49,13 @@ import java.io.Serializable
  *  A test framework may "reject" a requested task by returning no
  *  <code>Task</code> for that <code>TaskDef</code>.
  *
- *  @param fullyQualifiedName the fully qualified name of the test class to be
+ *  @param _fullyQualifiedName the fully qualified name of the test class to be
  *            run by the requested task
- *  @param fingerprint indicates how the test suite was identified as a test
+ *  @param _fingerprint indicates how the test suite was identified as a test
  *            suite
- *  @param explicitlySpecified indicates whether the test class was explicitly
+ *  @param _explicitlySpecified indicates whether the test class was explicitly
  *            specified by user.
- *  @param selectors a possibly empty array of <code>Selectors</code>
+ *  @param _selectors a possibly empty array of <code>Selectors</code>
  *            determining suites and tests to run
  */
 final class TaskDef(_fullyQualifiedName: String,
@@ -104,8 +104,8 @@ final class TaskDef(_fullyQualifiedName: String,
       this.fullyQualifiedName == that.fullyQualifiedName &&
         this.fingerprint == that.fingerprint &&
         this.explicitlySpecified == that.explicitlySpecified &&
-        Arrays.equals(this.selectors.asInstanceOf[Array[AnyRef]],
-                      that.selectors.asInstanceOf[Array[AnyRef]])
+        util.Arrays.equals(this.selectors().asInstanceOf[Array[AnyRef]],
+                           that.selectors().asInstanceOf[Array[AnyRef]])
     case _ => false
   }
 
@@ -115,7 +115,7 @@ final class TaskDef(_fullyQualifiedName: String,
     retVal = 31 * retVal + _fingerprint.hashCode()
     retVal = 31 * retVal + (if (_explicitlySpecified) 1 else 0)
     retVal =
-      31 * retVal + Arrays.hashCode(_selectors.asInstanceOf[Array[AnyRef]])
+      31 * retVal + util.Arrays.hashCode(_selectors.asInstanceOf[Array[AnyRef]])
     retVal
   }
 

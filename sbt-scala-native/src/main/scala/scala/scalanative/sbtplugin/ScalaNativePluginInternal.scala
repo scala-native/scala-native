@@ -1,27 +1,20 @@
 package scala.scalanative
 package sbtplugin
 
-import java.lang.System.{lineSeparator => nl}
-import java.io.ByteArrayInputStream
 import java.nio.file.Files
 
-import scala.util.Try
-
-import sbt._
-import sbt.Keys._
-import sbt.complete.DefaultParsers._
-import sbt.testing.Framework
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+import sbt.Keys._
+import sbt._
+import sbt.complete.DefaultParsers._
 
-import scalanative.nir
-import scalanative.build.{Build, Discover, BuildException}
-import scalanative.io.VirtualDirectory
-import scalanative.util.{Scope => ResourceScope}
-import scalanative.sbtplugin.Utilities._
-import scalanative.sbtplugin.TestUtilities._
-import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
-import scalanative.sbtplugin.SBTCompat.{Process, _}
-import scalanative.testinterface.ScalaNativeFramework
+import scala.scalanative.build.{Build, BuildException, Discover}
+import scala.scalanative.sbtplugin.SBTCompat.Process
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import scala.scalanative.sbtplugin.TestUtilities._
+import scala.scalanative.sbtplugin.Utilities._
+import scala.scalanative.testinterface.ScalaNativeFramework
+import scala.util.Try
 
 object ScalaNativePluginInternal {
 
@@ -113,7 +106,7 @@ object ScalaNativePluginInternal {
       val nativelib = Discover.nativelib(classpath).getOrElse {
         throw new MessageOnlyException("Could not find nativelib on classpath.")
       }
-      val maincls = mainClass.toString + "$"
+      val maincls = mainClass + "$"
       val cwd     = nativeWorkdir.value.toPath
       val clang   = nativeClang.value.toPath
       val clangpp = nativeClangPP.value.toPath
@@ -155,7 +148,7 @@ object ScalaNativePluginInternal {
       logger.running(binary +: args)
       val exitCode = Process(binary +: args, None, env: _*)
         .run(connectInput = true)
-        .exitValue
+        .exitValue()
 
       val message =
         if (exitCode == 0) None
@@ -180,22 +173,20 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeNativeTestSettings: Seq[Setting[_]] =
     Defaults.testSettings ++
       scalaNativeConfigSettings ++ Seq(
+      mainClass := Some("scala.scalanative.testinterface.TestMain"),
       classDirectory := (classDirectory in Test).value,
       dependencyClasspath := (dependencyClasspath in Test).value,
+      definedTests := {
+        println(s"definedTests = ${(definedTests in Test).value}")
+        (definedTests in Test).value
+      },
       parallelExecution in test := false,
-      sourceGenerators += Def.task {
-        val frameworks = (loadedTestFrameworks in Test).value.map(_._2).toSeq
-        val tests      = (definedTests in Test).value
-        val output     = sourceManaged.value / "FrameworksMap.scala"
-        IO.write(output, makeTestMain(frameworks, tests))
-        Seq(output)
-      }.taskValue,
       loadedTestFrameworks := {
         val frameworks = (loadedTestFrameworks in Test).value
         val logger     = streams.value.log
         val testBinary = nativeLink.value
         val envVars    = (Keys.envVars in (Test, test)).value
-        (frameworks.zipWithIndex).map {
+        frameworks.zipWithIndex.map {
           case ((tf, f), id) =>
             (tf,
              new ScalaNativeFramework(f,
@@ -204,8 +195,7 @@ object ScalaNativePluginInternal {
                                       testBinary,
                                       envVars))
         }
-      },
-      definedTests := (definedTests in Test).value
+      }
     )
 
   lazy val scalaNativeProjectSettings: Seq[Setting[_]] =

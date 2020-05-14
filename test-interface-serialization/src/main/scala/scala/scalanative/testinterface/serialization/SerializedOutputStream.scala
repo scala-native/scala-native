@@ -12,7 +12,7 @@ object SerializedOutputStream {
   def apply(out: DataOutputStream)(fn: SerializedOutputStream => Unit): Unit = {
     val bos = new ByteArrayOutputStream()
     fn(new SerializedOutputStream(bos))
-    val bytes = bos.toByteArray()
+    val bytes = bos.toByteArray
 
     out.writeInt(bytes.length)
     out.write(bytes)
@@ -23,7 +23,7 @@ object SerializedOutputStream {
 class SerializedOutputStream private (out: OutputStream)
     extends DataOutputStream(out) {
 
-  val T = Tags
+  val T: Tags.type = Tags
 
   def writeSeq[T](seq: Seq[T])(writeT: T => Unit): Unit = {
     writeInt(seq.length)
@@ -42,11 +42,11 @@ class SerializedOutputStream private (out: OutputStream)
   def writeFingerprint(fingerprint: Fingerprint): Unit = fingerprint match {
     case af: AnnotatedFingerprint =>
       writeInt(T.AnnotatedFingerprint)
-      writeBoolean(af.isModule)
+      writeBoolean(af.isModule())
       writeString(af.annotationName())
     case sf: SubclassFingerprint =>
       writeInt(T.SubclassFingerprint)
-      writeBoolean(sf.isModule)
+      writeBoolean(sf.isModule())
       writeString(sf.superclassName())
       writeBoolean(sf.requireNoArgConstructor())
   }
@@ -173,6 +173,6 @@ class SerializedOutputStream private (out: OutputStream)
   }
 
   def writeTaskInfos(v: TaskInfos): Unit =
-    writeSeq(v.infos)(writeTaskInfo _)
+    writeSeq(v.infos)(writeTaskInfo)
 
 }

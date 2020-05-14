@@ -9,25 +9,23 @@ import java.io.{
 }
 import java.net.Socket
 
-import scala.scalanative.unsafe._
-import scala.scalanative.runtime.ByteArray
 import sbt.testing.{Event => SbtEvent, _}
 
-import scala.scalanative.testinterface.serialization._
 import scala.annotation.tailrec
+import scala.scalanative.testinterface.serialization._
 
-abstract class TestMainBase {
+object TestMain {
 
-  /** All the frameworks reported in `loadedTestFrameworks` in sbt. */
-  def frameworks: Seq[Framework]
+  /* The supported testing frameworks. */
+  lazy val frameworks: Seq[Framework] = Seq(
+    FrameworkLoader.loadFramework("tests.NativeFramework")
+  )
 
-  /** A mapping from class name to instantiated test object. */
-  def tests: Map[String, AnyRef]
-
-  /** Actual main method of the test runner. */
-  def testMain(args: Array[String]): Unit = {
+  /** Main method of the test runner. */
+  def main(args: Array[String]): Unit = {
     val serverPort   = args.head.toInt
     val clientSocket = new Socket("127.0.0.1", serverPort)
+
     testRunner(Array.empty, null, clientSocket)
   }
 
@@ -44,9 +42,8 @@ abstract class TestMainBase {
     val stream = new DataInputStream(clientSocket.getInputStream)
     receive(stream) match {
       case Command.NewRunner(id, args, remoteArgs) =>
-        val runner = frameworks(id).runner(args.toArray,
-                                           remoteArgs.toArray,
-                                           new PreloadedClassLoader(tests))
+        val runner =
+          frameworks(id).runner(args.toArray, remoteArgs.toArray, null)
         testRunner(tasks, runner, clientSocket)
 
       case Command.SendInfo(id, None) =>
@@ -59,7 +56,7 @@ abstract class TestMainBase {
       case Command.Tasks(newTasks) =>
         val ts = runner.tasks(newTasks.toArray)
         val taskInfos = TaskInfos(ts.zipWithIndex.toSeq.map {
-          case (t, id) => task2TaskInfo(id, t, runner)
+          case (t, id) => task2TaskInfo(id, t)
         })
         send(clientSocket)(taskInfos)
         testRunner(tasks ++ ts, runner, clientSocket)
@@ -78,7 +75,7 @@ abstract class TestMainBase {
 
         // Convert the tasks to `TaskInfo` before sending to sbt. Keep task numbers correct.
         val taskInfos = newTasks.zipWithIndex.map {
-          case (t, id) => task2TaskInfo(id + origSize, t, runner)
+          case (t, id) => task2TaskInfo(id + origSize, t)
         }
         send(clientSocket)(TaskInfos(taskInfos))
         testRunner(tasks ++ newTasks, runner, clientSocket)
@@ -93,7 +90,7 @@ abstract class TestMainBase {
     }
   }
 
-  private def task2TaskInfo(id: Int, task: Task, runner: Runner) =
+  private def task2TaskInfo(id: Int, task: Task) =
     TaskInfo(id, task.taskDef, task.tags)
 
   /** Receives a message from `client`. */
@@ -112,11 +109,11 @@ abstract class TestMainBase {
   private def send[T](client: Socket)(msg: Message): Unit = {
     val bos = new ByteArrayOutputStream()
     SerializedOutputStream(new DataOutputStream(bos))(_.writeMessage(msg))
-    val data = bos.toByteArray()
+    val data = bos.toByteArray
 
     val out = client.getOutputStream
     out.write(data)
-    out.flush
+    out.flush()
   }
 
   private class RemoteEventHandler(client: Socket) extends EventHandler {

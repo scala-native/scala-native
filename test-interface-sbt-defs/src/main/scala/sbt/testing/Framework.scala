@@ -1,6 +1,9 @@
 package sbt.testing
 
+import scala.scalanative.reflect.annotation.EnableReflectiveInstantiation
+
 /** Interface implemented by test frameworks. */
+@EnableReflectiveInstantiation
 trait Framework {
 
   /** A human-friendly name of the test framework that this object represents.

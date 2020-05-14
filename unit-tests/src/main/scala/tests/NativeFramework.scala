@@ -1,8 +1,10 @@
 package tests
 
 import sbt.testing.{Fingerprint, Framework, Runner}
-import scala.scalanative.testinterface.PreloadedClassLoader
 
+import scala.scalanative.reflect.annotation.EnableReflectiveInstantiation
+
+@EnableReflectiveInstantiation
 class NativeFramework extends Framework {
   override def name(): String = "Native Test Framework"
 
@@ -12,10 +14,5 @@ class NativeFramework extends Framework {
   override def runner(args: Array[String],
                       remoteArgs: Array[String],
                       testClassLoader: ClassLoader): Runner =
-    testClassLoader match {
-      case pcl: PreloadedClassLoader =>
-        new NativeRunner(args, remoteArgs, pcl)
-      case _ =>
-        throw new Exception("This test framework cannot be used on the JVM.")
-    }
+    new NativeRunner(args, remoteArgs)
 }
