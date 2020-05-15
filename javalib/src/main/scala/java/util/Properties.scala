@@ -3,24 +3,12 @@
  */
 package java.util
 
-import java.io.{
-  BufferedInputStream,
-  BufferedReader,
-  InputStream,
-  InputStreamReader,
-  OutputStream,
-  OutputStreamWriter,
-  PrintStream,
-  PrintWriter,
-  Reader,
-  Writer
-}
+import java.io._
 import java.{util => ju}
 
 import scala.annotation.{switch, tailrec}
 import scala.collection.immutable.{Map => SMap}
 import scala.collection.JavaConverters._
-import scala.util.control.Breaks._
 
 class Properties(protected val defaults: Properties)
     extends ju.Hashtable[AnyRef, AnyRef] {
@@ -31,28 +19,12 @@ class Properties(protected val defaults: Properties)
     put(key, value)
 
   def load(inStream: InputStream): Unit = {
-    if (inStream == null) {
-      throw new NullPointerException()
-    }
     val stream = new BufferedInputStream(inStream)
-    stream.mark(8192) // default buffer size
-
-    val _isEbcdic = isEbcdic(stream)
-    stream.reset()
-
-    if (!_isEbcdic) {
-      loadImpl(new InputStreamReader(stream, "ISO8859-1"))
-    } else {
-      loadImpl(new InputStreamReader(stream))
-    }
+    loadImpl(new InputStreamReader(stream, "ISO8859-1"))
   }
 
-  def load(reader: Reader): Unit = {
-    if (reader == null) {
-      throw new NullPointerException()
-    }
+  def load(reader: Reader): Unit =
     loadImpl(reader)
-  }
 
   def getProperty(key: String): String =
     getProperty(key, defaultValue = null)
@@ -100,29 +72,24 @@ class Properties(protected val defaults: Properties)
       s"$key=$value"
   }
 
+  private val listStr = "-- listing properties --"
+
   def list(out: PrintStream): Unit = {
-    list(new PrintWriter(new OutputStreamWriter(out), true))
+    out.println(listStr)
+    entrySet().asScala.foreach { entry => out.println(format(entry)) }
   }
 
   def list(out: PrintWriter): Unit = {
-    out.println("-- listing properties --")
+    out.println(listStr)
     entrySet().asScala.foreach { entry => out.println(format(entry)) }
   }
 
   def store(out: OutputStream, comments: String): Unit = {
-    if (out == null) {
-      throw new NullPointerException()
-    }
-    // https://docs.oracle.com/javase/8/docs/api/java/util/Properties.html#load-java.io.InputStream-
     val writer = new OutputStreamWriter(out, "ISO8859_1")
     store(writer, comments)
   }
 
   def store(writer: Writer, comments: String): Unit = {
-    if (writer == null) {
-      throw new NullPointerException()
-    }
-
     if (comments != null) {
       writeComments(writer, comments)
     }
@@ -131,20 +98,18 @@ class Properties(protected val defaults: Properties)
     writer.write(new Date().toString)
     writer.write(System.lineSeparator)
 
-    val buffer = new StringBuilder(200)
     entrySet().asScala.foreach { entry =>
-      val key = entry.getKey.asInstanceOf[String]
-      dumpString(buffer, key, true, false)
-      buffer.append('=')
-      dumpString(buffer, entry.getValue.asInstanceOf[String], false, false)
-      buffer.append(System.lineSeparator)
-      writer.write(buffer.toString)
-      buffer.setLength(0)
+      writer.write(encodeString(entry.getKey.asInstanceOf[String], true, false))
+      writer.write('=')
+      writer.write(
+        encodeString(entry.getValue.asInstanceOf[String], false, false))
+      writer.write(System.lineSeparator)
     }
     writer.flush()
   }
 
-  @deprecated("", "") def save(out: OutputStream, comments: String): Unit =
+  @deprecated("", "")
+  def save(out: OutputStream, comments: String): Unit =
     store(out, comments)
 
   private val NONE     = 0
@@ -155,22 +120,6 @@ class Properties(protected val defaults: Properties)
   private val IGNORE   = 5
   private lazy val nextCharMap =
     SMap('b' -> '\b', 'f' -> '\f', 'n' -> '\n', 'r' -> '\r', 't' -> '\t')
-
-  private def isEbcdic(in: BufferedInputStream): Boolean = {
-    var b: Byte = 0
-    while ({ b = in.read.toByte; b != -1 }) {
-      if (b == 0x23 || b == 0x0a || b == 0x3d) { // ascii: newline/#/=
-        return false
-      }
-      if (b == 0x15) { // EBCDIC newline
-        return true
-      }
-    }
-    //we found no ascii newline, '#', neither '=', relative safe to consider it
-    //as non-ascii, the only exception will be a single line with only key(no value and '=')
-    //in this case, it should be no harm to read it in default charset
-    false
-  }
 
   private def loadImpl(reader: Reader): Unit = {
     var mode           = NONE
@@ -363,10 +312,10 @@ class Properties(protected val defaults: Properties)
     writer.write(System.lineSeparator)
   }
 
-  private def dumpString(buffer: StringBuilder,
-                         string: String,
-                         isKey: Boolean,
-                         toHexaDecimal: Boolean): Unit = {
+  private def encodeString(string: String,
+                           isKey: Boolean,
+                           toHexaDecimal: Boolean): String = {
+    val buffer = new StringBuilder(200)
     var index  = 0
     val length = string.length
     if (!isKey && index < length && string.charAt(index) == ' ') {
@@ -386,15 +335,13 @@ class Properties(protected val defaults: Properties)
         case '\r' =>
           buffer.append("\\r")
         case '\b' =>
-          // On JVM \b get printed like \u0008 - See the following:
+          // On JVM \b gets printed like \u0008 - See the following:
           // https://docs.oracle.com/javase/8/docs/api/java/util/Properties.html#load-java.io.Reader-
           buffer.appendAll(unicodeToHexaDecimal(ch))
         case _ =>
           if ("\\#!=:".indexOf(ch) >= 0 || (isKey && ch == ' '))
             buffer.append('\\')
-          if (ch >= ' ' && ch <= '~') {
-            buffer.append(ch)
-          } else if (toHexaDecimal) {
+          if (toHexaDecimal && (ch < ' ' || ch > '~')) {
             buffer.appendAll(unicodeToHexaDecimal(ch))
           } else {
             buffer.append(ch)
@@ -402,21 +349,20 @@ class Properties(protected val defaults: Properties)
       }
       index += 1
     }
+    buffer.toString()
   }
 
   private def unicodeToHexaDecimal(ch: Int): Array[Char] = {
-    val hexChars = Array('\\', 'u', '0', '0', '0', '0')
-    var hexChar  = 0
-    var index    = hexChars.length
-    var copyOfCh = ch
-    do {
-      hexChar = copyOfCh & 15
-      if (hexChar > 9) hexChar = hexChar - 10 + 'A'
-      else hexChar += '0'
-      index -= 1
-      hexChars(index) = hexChar.toChar
-    } while ({ copyOfCh >>>= 4; copyOfCh != 0 })
-    hexChars
+    def hexChar(x: Int): Char =
+      if (x > 9) (x - 10 + 'A').toChar
+      else (x + '0').toChar
+
+    Array('\\',
+          'u',
+          hexChar((ch >>> 12) & 15),
+          hexChar((ch >>> 8) & 15),
+          hexChar((ch >>> 4) & 15),
+          hexChar(ch & 15))
   }
 
   // TODO:
