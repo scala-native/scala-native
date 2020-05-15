@@ -96,7 +96,7 @@ class Properties(protected val defaults: Properties)
                         comments: String,
                         encode: Boolean): Unit = {
     if (comments != null) {
-      writeComments(writer, comments)
+      writeComments(writer, comments, encode)
     }
 
     writer.write('#')
@@ -284,7 +284,9 @@ class Properties(protected val defaults: Properties)
 
   }
 
-  private def writeComments(writer: Writer, comments: String): Unit = {
+  private def writeComments(writer: Writer,
+                            comments: String,
+                            encode: Boolean): Unit = {
     writer.write('#')
     val chars = comments.toCharArray
     var index = 0
@@ -311,7 +313,11 @@ class Properties(protected val defaults: Properties)
           writer.write(chars(index))
         }
       } else {
-        writer.write(unicodeToHexaDecimal(chars(index)))
+        if (encode) {
+          writer.write(unicodeToHexaDecimal(chars(index)))
+        } else {
+          writer.write(chars(index))
+        }
       }
       index += 1
     }
