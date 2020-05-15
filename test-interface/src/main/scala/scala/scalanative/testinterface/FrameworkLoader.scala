@@ -4,7 +4,7 @@ import sbt.testing.Framework
 
 import scala.scalanative.reflect.Reflect
 
-object FrameworkLoader {
+private[testinterface] object FrameworkLoader {
   def loadFramework(frameworkName: String): Framework = {
     Reflect
       .lookupInstantiatableClass(frameworkName)
