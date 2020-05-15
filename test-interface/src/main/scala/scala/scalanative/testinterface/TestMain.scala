@@ -26,6 +26,13 @@ object TestMain {
       |
       |arguments:
       |  server_port - the sbt test server port to use (required)
+      |
+      |*** Warning - dragons ahead ***
+      |
+      |This binary is meant to be executed by the Scala Native
+      |testing framework and not standalone.
+      |
+      |Execute at your own risk!
       |""".stripMargin
   }
 
