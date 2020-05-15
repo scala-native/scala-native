@@ -60,7 +60,7 @@ addCommandAlias(
     "cleanCache",
     "cleanLocal",
     "dirty-rebuild"
-  ).mkString(";", ";", "")
+  ).mkString(";")
 )
 
 addCommandAlias(
@@ -70,7 +70,7 @@ addCommandAlias(
     "testRunner/publishLocal",
     "sbtScalaNative/publishLocal",
     "testInterface/publishLocal"
-  ).mkString(";", ";", "")
+  ).mkString(";")
 )
 
 addCommandAlias(
@@ -82,7 +82,7 @@ addCommandAlias(
     "nirparser/test",
     "sbtScalaNative/scripted",
     "tools/mimaReportBinaryIssues"
-  ).mkString(";", ";", "")
+  ).mkString(";")
 )
 
 addCommandAlias(
@@ -91,7 +91,7 @@ addCommandAlias(
     "tools/test",
     "nirparser/test",
     "tools/mimaReportBinaryIssues"
-  ).mkString(";", ";", "")
+  ).mkString(";")
 )
 
 addCommandAlias(
@@ -100,7 +100,7 @@ addCommandAlias(
     "sandbox/run",
     "tests/test",
     "sbtScalaNative/scripted"
-  ).mkString(";", ";", "")
+  ).mkString(";")
 )
 
 lazy val publishSnapshot =
