@@ -94,9 +94,9 @@ class Properties(protected val defaults: Properties)
 
   private def storeImpl(writer: Writer,
                         comments: String,
-                        encode: Boolean): Unit = {
+                        toHex: Boolean): Unit = {
     if (comments != null) {
-      writeComments(writer, comments, encode)
+      writeComments(writer, comments, toHex)
     }
 
     writer.write('#')
@@ -104,11 +104,10 @@ class Properties(protected val defaults: Properties)
     writer.write(System.lineSeparator)
 
     entrySet().asScala.foreach { entry =>
-      writer.write(
-        encodeString(entry.getKey.asInstanceOf[String], true, encode))
+      writer.write(encodeString(entry.getKey.asInstanceOf[String], true, toHex))
       writer.write('=')
       writer.write(
-        encodeString(entry.getValue.asInstanceOf[String], false, encode))
+        encodeString(entry.getValue.asInstanceOf[String], false, toHex))
       writer.write(System.lineSeparator)
     }
     writer.flush()
@@ -286,7 +285,7 @@ class Properties(protected val defaults: Properties)
 
   private def writeComments(writer: Writer,
                             comments: String,
-                            encode: Boolean): Unit = {
+                            toHex: Boolean): Unit = {
     writer.write('#')
     val chars = comments.toCharArray
     var index = 0
@@ -313,7 +312,7 @@ class Properties(protected val defaults: Properties)
           writer.write(chars(index))
         }
       } else {
-        if (encode) {
+        if (toHex) {
           writer.write(unicodeToHexaDecimal(chars(index)))
         } else {
           writer.write(chars(index))
@@ -326,11 +325,12 @@ class Properties(protected val defaults: Properties)
 
   private def encodeString(string: String,
                            isKey: Boolean,
-                           toHexaDecimal: Boolean): String = {
+                           toHex: Boolean): String = {
     val buffer = new StringBuilder(200)
     var index  = 0
     val length = string.length
-    if (!isKey && index < length && string.charAt(index) == ' ') {
+    // leading element (value) spaces are escaped
+    while (!isKey && index < length && string.charAt(index) == ' ') {
       buffer.append("\\ ")
       index += 1
     }
@@ -346,14 +346,13 @@ class Properties(protected val defaults: Properties)
           buffer.append("\\f")
         case '\r' =>
           buffer.append("\\r")
-        case '\b' =>
-          // On JVM \b gets printed like \u0008 - See the following:
-          // https://docs.oracle.com/javase/8/docs/api/java/util/Properties.html#load-java.io.Reader-
-          buffer.appendAll(unicodeToHexaDecimal(ch))
+        case '\\' | '#' | '!' | '=' | ':' =>
+          buffer.append('\\')
+          buffer.append(ch)
+        case ' ' if isKey =>
+          buffer.append("\\ ")
         case _ =>
-          if ("\\#!=:".indexOf(ch) >= 0 || (isKey && ch == ' '))
-            buffer.append('\\')
-          if (toHexaDecimal && (ch < ' ' || ch > '~')) {
+          if (toHex && (ch < ' ' || ch > '~')) {
             buffer.appendAll(unicodeToHexaDecimal(ch))
           } else {
             buffer.append(ch)
