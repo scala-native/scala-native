@@ -86,10 +86,15 @@ class Properties(protected val defaults: Properties)
 
   def store(out: OutputStream, comments: String): Unit = {
     val writer = new OutputStreamWriter(out, "ISO8859_1")
-    store(writer, comments)
+    storeImpl(writer, comments, true)
   }
 
-  def store(writer: Writer, comments: String): Unit = {
+  def store(writer: Writer, comments: String): Unit =
+    storeImpl(writer, comments, false)
+
+  private def storeImpl(writer: Writer,
+                        comments: String,
+                        encode: Boolean): Unit = {
     if (comments != null) {
       writeComments(writer, comments)
     }
@@ -99,10 +104,11 @@ class Properties(protected val defaults: Properties)
     writer.write(System.lineSeparator)
 
     entrySet().asScala.foreach { entry =>
-      writer.write(encodeString(entry.getKey.asInstanceOf[String], true, false))
+      writer.write(
+        encodeString(entry.getKey.asInstanceOf[String], true, encode))
       writer.write('=')
       writer.write(
-        encodeString(entry.getValue.asInstanceOf[String], false, false))
+        encodeString(entry.getValue.asInstanceOf[String], false, encode))
       writer.write(System.lineSeparator)
     }
     writer.flush()
