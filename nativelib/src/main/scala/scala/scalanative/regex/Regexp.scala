@@ -19,8 +19,8 @@ import scala.annotation.switch
 class Regexp {
   import Regexp._
 
-  var op: Op              = _ // operator
-  var flags: Int          = _ // bitmap of parse flags
+  var op: Op              = _          // operator
+  var flags: Int          = _          // bitmap of parse flags
   var subs: Array[Regexp] = EMPTY_SUBS // subexpressions, if any.  Never null.
   // subs[0] is used as the freelist.
   var runes: Array[Int] = _ // matched runes, for LITERAL, CHAR_CLASS
