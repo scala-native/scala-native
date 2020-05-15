@@ -3,14 +3,14 @@ package testinterface
 
 import sbt.testing.{EventHandler, Logger, Task, TaskDef}
 
-import scalanative.build.BuildException
-import scalanative.testinterface.serialization.{
+import scala.annotation.tailrec
+import scala.scalanative.build.BuildException
+import scala.scalanative.testinterface.serialization.{
   Command,
   Event,
   TaskInfo,
   TaskInfos
 }
-import scala.annotation.tailrec
 
 final case class ScalaNativeTask private (
     runner: ScalaNativeRunner,
@@ -28,7 +28,7 @@ final case class ScalaNativeTask private (
 
     @tailrec
     def receive(): Array[Task] =
-      runner.receive match {
+      runner.receive() match {
         case TaskInfos(infos) =>
           infos.map(ScalaNativeTask.fromInfo(runner, _)).toArray
         case ev: Event =>

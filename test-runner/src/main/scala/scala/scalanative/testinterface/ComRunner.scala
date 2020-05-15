@@ -6,11 +6,10 @@ import java.net.{ServerSocket, SocketTimeoutException}
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
+import scala.scalanative.build.{BuildException, Logger}
+import scala.scalanative.testinterface.serialization.Log.Level
+import scala.scalanative.testinterface.serialization._
 import scala.sys.process._
-
-import scalanative.build.{BuildException, Logger}
-import scalanative.testinterface.serialization.Log.Level
-import scalanative.testinterface.serialization._
 
 /**
  * Represents a distant program with whom we communicate over the network.
@@ -69,7 +68,7 @@ class ComRunner(bin: File,
   def receive(timeout: Duration = Duration.Inf): Message =
     synchronized {
       in.mark(Int.MaxValue)
-      val savedSoTimeout = socket.getSoTimeout()
+      val savedSoTimeout = socket.getSoTimeout
       try {
         val deadLineMs = if (timeout.isFinite()) timeout.toMillis else 0L
         socket.setSoTimeout((deadLineMs min Int.MaxValue).toInt)

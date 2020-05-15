@@ -5,8 +5,8 @@ import java.io.File
 
 import sbt.testing.{Fingerprint, Framework, Runner}
 
-import scalanative.build.Logger
-import scalanative.testinterface.serialization.{Command, FrameworkInfo}
+import scala.scalanative.build.Logger
+import scala.scalanative.testinterface.serialization.{Command, FrameworkInfo}
 
 class ScalaNativeFramework(val framework: Framework,
                            val id: Int,
@@ -16,7 +16,7 @@ class ScalaNativeFramework(val framework: Framework,
     extends Framework {
 
   private[this] lazy val frameworkInfo         = fetchFrameworkInfo()
-  private[this] var _runner: ScalaNativeRunner = null
+  private[this] var _runner: ScalaNativeRunner = _
 
   override def name(): String = frameworkInfo.name
   override def fingerprints(): Array[Fingerprint] =

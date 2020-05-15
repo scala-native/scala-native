@@ -45,27 +45,17 @@ object ScalaNativePluginInternal {
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
     nativeClang := interceptBuildException(Discover.clang().toFile),
-    NativeTest / nativeClang := (Test / nativeClang).value,
     nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
-    NativeTest / nativeClangPP := (Test / nativeClangPP).value,
     nativeCompileOptions := Discover.compileOptions(),
-    NativeTest / nativeCompileOptions := (Test / nativeCompileOptions).value,
     nativeLinkingOptions := Discover.linkingOptions(),
-    NativeTest / nativeLinkingOptions := (Test / nativeLinkingOptions).value,
     nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
       .getOrElse(build.Mode.default.name),
-    NativeTest / nativeMode := (Test / nativeMode).value,
     nativeLinkStubs := false,
-    NativeTest / nativeLinkStubs := (Test / nativeLinkStubs).value,
     nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
       .getOrElse(build.GC.default.name),
-    NativeTest / nativeGC := (Test / nativeGC).value,
     nativeLTO := Discover.LTO(),
-    NativeTest / nativeLTO := (Test / nativeLTO).value,
     nativeCheck := false,
-    NativeTest / nativeCheck := (Test / nativeCheck).value,
-    nativeDump := false,
-    NativeTest / nativeDump := (Test / nativeDump).value
+    nativeDump := false
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -161,23 +151,10 @@ object ScalaNativePluginInternal {
     scalaNativeConfigSettings
 
   lazy val scalaNativeTestSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings ++ Seq(
-      test := (NativeTest / test).value,
-      testOnly := (NativeTest / testOnly).evaluated,
-      testQuick := (NativeTest / testQuick).evaluated
-    )
-
-  lazy val NativeTest = config("nativetest").extend(Test).hide
-
-  lazy val scalaNativeNativeTestSettings: Seq[Setting[_]] =
     Defaults.testSettings ++
       scalaNativeConfigSettings ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
-        classDirectory := (Test / classDirectory).value,
-        dependencyClasspath := (Test / dependencyClasspath).value,
-        definedTests := (Test / definedTests).value,
-        test / parallelExecution := false,
         loadedTestFrameworks := {
           val frameworks = (Test / loadedTestFrameworks).value
           val logger     = streams.value.log
@@ -199,8 +176,7 @@ object ScalaNativePluginInternal {
     scalaNativeDependencySettings ++
       scalaNativeBaseSettings ++
       inConfig(Compile)(scalaNativeCompileSettings) ++
-      inConfig(Test)(scalaNativeTestSettings) ++
-      inConfig(NativeTest)(scalaNativeNativeTestSettings)
+      inConfig(Test)(scalaNativeTestSettings)
 
   /** Run `op`, rethrows `BuildException`s as `MessageOnlyException`s. */
   private def interceptBuildException[T](op: => T): T = {
