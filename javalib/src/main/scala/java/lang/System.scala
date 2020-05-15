@@ -63,7 +63,7 @@ object System {
         sysProps.setProperty("user.language", userLang)
         sysProps.setProperty("user.country", userCountry)
       }
-      {
+      locally {
         val buf = stackalloc[pwd.passwd]
         val uid = unistd.getuid()
         val res = pwd.getpwuid(uid, buf)
@@ -71,10 +71,13 @@ object System {
           sysProps.setProperty("user.home", fromCString(buf.pw_dir))
         }
       }
-      val buf = stackalloc[scala.Byte](1024)
-      unistd.getcwd(buf, 1024) match {
-        case null =>
-        case b    => sysProps.setProperty("user.dir", fromCString(b))
+      locally {
+        val bufSize = 1024
+        val buf     = stackalloc[scala.Byte](bufSize)
+        val cwd     = unistd.getcwd(buf, bufSize)
+        if (cwd != null) {
+          sysProps.setProperty("user.dir", fromCString(cwd))
+        }
       }
     }
 
