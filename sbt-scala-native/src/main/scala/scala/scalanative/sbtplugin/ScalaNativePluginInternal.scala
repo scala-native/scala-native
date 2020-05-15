@@ -45,27 +45,27 @@ object ScalaNativePluginInternal {
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
     nativeClang := interceptBuildException(Discover.clang().toFile),
-    nativeClang in NativeTest := (nativeClang in Test).value,
+    NativeTest / nativeClang := (Test / nativeClang).value,
     nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
-    nativeClangPP in NativeTest := (nativeClangPP in Test).value,
+    NativeTest / nativeClangPP := (Test / nativeClangPP).value,
     nativeCompileOptions := Discover.compileOptions(),
-    nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
+    NativeTest / nativeCompileOptions := (Test / nativeCompileOptions).value,
     nativeLinkingOptions := Discover.linkingOptions(),
-    nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
+    NativeTest / nativeLinkingOptions := (Test / nativeLinkingOptions).value,
     nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
       .getOrElse(build.Mode.default.name),
-    nativeMode in NativeTest := (nativeMode in Test).value,
+    NativeTest / nativeMode := (Test / nativeMode).value,
     nativeLinkStubs := false,
-    nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
+    NativeTest / nativeLinkStubs := (Test / nativeLinkStubs).value,
     nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
       .getOrElse(build.GC.default.name),
-    nativeGC in NativeTest := (nativeGC in Test).value,
+    NativeTest / nativeGC := (Test / nativeGC).value,
     nativeLTO := Discover.LTO(),
-    nativeLTO in NativeTest := (nativeLTO in Test).value,
+    NativeTest / nativeLTO := (Test / nativeLTO).value,
     nativeCheck := false,
-    nativeCheck in NativeTest := (nativeCheck in Test).value,
+    NativeTest / nativeCheck := (Test / nativeCheck).value,
     nativeDump := false,
-    nativeDump in NativeTest := (nativeDump in Test).value
+    NativeTest / nativeDump := (Test / nativeDump).value
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -86,7 +86,7 @@ object ScalaNativePluginInternal {
       val clang = nativeClang.value.toPath
       Discover.targetTriple(clang, cwd)
     },
-    artifactPath in nativeLink := {
+    nativeLink / artifactPath := {
       crossTarget.value / (moduleName.value + "-out")
     },
     nativeWorkdir := {
@@ -132,14 +132,14 @@ object ScalaNativePluginInternal {
     nativeLink := {
       val logger  = streams.value.log.toLogger
       val config  = nativeConfig.value.withLogger(logger)
-      val outpath = (artifactPath in nativeLink).value
+      val outpath = (nativeLink / artifactPath).value
 
       interceptBuildException(Build.build(config, outpath.toPath))
 
       outpath
     },
     run := {
-      val env    = (envVars in run).value.toSeq
+      val env    = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = nativeLink.value.abs
       val args   = spaceDelimited("<arg>").parsed
@@ -162,40 +162,38 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeTestSettings: Seq[Setting[_]] =
     scalaNativeConfigSettings ++ Seq(
-      test := (test in NativeTest).value,
-      testOnly := (testOnly in NativeTest).evaluated,
-      testQuick := (testQuick in NativeTest).evaluated
+      test := (NativeTest / test).value,
+      testOnly := (NativeTest / testOnly).evaluated,
+      testQuick := (NativeTest / testQuick).evaluated
     )
 
   lazy val NativeTest = config("nativetest").extend(Test).hide
 
   lazy val scalaNativeNativeTestSettings: Seq[Setting[_]] =
     Defaults.testSettings ++
-      scalaNativeConfigSettings ++ Seq(
-      mainClass := Some("scala.scalanative.testinterface.TestMain"),
-      classDirectory := (classDirectory in Test).value,
-      dependencyClasspath := (dependencyClasspath in Test).value,
-      definedTests := {
-        println(s"definedTests = ${(definedTests in Test).value}")
-        (definedTests in Test).value
-      },
-      parallelExecution in test := false,
-      loadedTestFrameworks := {
-        val frameworks = (loadedTestFrameworks in Test).value
-        val logger     = streams.value.log
-        val testBinary = nativeLink.value
-        val envVars    = (Keys.envVars in (Test, test)).value
-        frameworks.zipWithIndex.map {
-          case ((tf, f), id) =>
-            (tf,
-             new ScalaNativeFramework(f,
-                                      id,
-                                      logger.toLogger,
-                                      testBinary,
-                                      envVars))
+      scalaNativeConfigSettings ++
+      Seq(
+        mainClass := Some("scala.scalanative.testinterface.TestMain"),
+        classDirectory := (Test / classDirectory).value,
+        dependencyClasspath := (Test / dependencyClasspath).value,
+        definedTests := (Test / definedTests).value,
+        test / parallelExecution := false,
+        loadedTestFrameworks := {
+          val frameworks = (Test / loadedTestFrameworks).value
+          val logger     = streams.value.log
+          val testBinary = nativeLink.value
+          val envVars    = (Test / test / Keys.`envVars`).value
+          frameworks.zipWithIndex.map {
+            case ((tf, f), id) =>
+              (tf,
+               new ScalaNativeFramework(f,
+                                        id,
+                                        logger.toLogger,
+                                        testBinary,
+                                        envVars))
+          }
         }
-      }
-    )
+      )
 
   lazy val scalaNativeProjectSettings: Seq[Setting[_]] =
     scalaNativeDependencySettings ++
