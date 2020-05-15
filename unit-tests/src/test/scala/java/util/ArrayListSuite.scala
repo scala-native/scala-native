@@ -394,4 +394,14 @@ object ArrayListSuite extends tests.Suite {
     assert(!al.contains(5))
   }
 
+  test("toString()") {
+    val al = new ArrayList[Int](Seq(1, 2, 3, 2).asJava)
+
+    // Note well the space/blank after the commas. This matches Scala JVM.
+    val expected = "[1, 2, 3, 2]"
+
+    val result = al.toString
+    assert(result == expected, s"result: ${result} != expected: ${expected}")
+  }
+
 }
