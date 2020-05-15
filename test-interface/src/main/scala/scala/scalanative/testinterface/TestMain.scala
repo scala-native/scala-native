@@ -21,9 +21,22 @@ object TestMain {
     FrameworkLoader.loadFramework("tests.NativeFramework")
   )
 
+  val usage: String = {
+    """usage: test-main <server_port>
+      |
+      |arguments:
+      |  server_port - the sbt test server port to use (required)
+      |""".stripMargin
+  }
+
   /** Main method of the test runner. */
   def main(args: Array[String]): Unit = {
-    val serverPort   = args.head.toInt
+    val serverPort = args.headOption match {
+      case None =>
+        System.err.println(usage)
+        throw new IllegalArgumentException("missing arguments")
+      case Some(port) => port.toInt
+    }
     val clientSocket = new Socket("127.0.0.1", serverPort)
 
     testRunner(Array.empty, null, clientSocket)
