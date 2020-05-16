@@ -2462,9 +2462,9 @@ trait UnicodeTableData {
 
   lazy final val Z = generateUnicodeTable(
     Seq(
-      Character.LINE_SEPARATOR, // Zl
+      Character.LINE_SEPARATOR,      // Zl
       Character.PARAGRAPH_SEPARATOR, // Zp
-      Character.SPACE_SEPARATOR // Zs
+      Character.SPACE_SEPARATOR      // Zs
     )
   )
 
