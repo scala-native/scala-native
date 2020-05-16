@@ -117,6 +117,50 @@ class Properties(protected val defaults: Properties)
   def save(out: OutputStream, comments: String): Unit =
     store(out, comments)
 
+  private def loadImpl2(reader: Reader): Unit = {
+    val br           = new BufferedReader(reader)
+    var line: String = null
+    while ({ line = br.readLine().trim(); line != null }) {
+      var i: Int = 0
+      println(line.length())
+
+      def parseUnicodeEscape(): Char = ???
+
+      def parseKey(): String = {
+        val buf = new StringBuilder()
+        while (!(line.charAt(i) == '=' || line.charAt(i) == ':')) {
+          buf.append(line.charAt(i))
+          i += 1
+        }
+        buf.toString
+      }
+
+      def parseValue(): String = {
+        val buf = new StringBuilder()
+        while (i < line.length) {
+          buf.append(line.charAt(i))
+          i += 1
+        }
+        buf.toString
+      }
+
+      def isComment(): Boolean =
+        line.startsWith("#") || line.startsWith("!")
+
+      def valueContinues(): Boolean =
+        line.endsWith("\\")
+
+      if (!isComment()) {
+        println(s"value continues: $valueContinues")
+        val key = parseKey()
+        i += 1 // the '='
+        val value = parseValue()
+        setProperty(key, value)
+      }
+    }
+    br.close()
+  }
+
   private val NONE     = 0
   private val SLASH    = 1
   private val UNICODE  = 2
@@ -293,15 +337,17 @@ class Properties(protected val defaults: Properties)
       if (chars(index) < 256) {
         if (chars(index) == '\r' || chars(index) == '\n') {
           def indexPlusOne = index + 1
+          // "\r\n"
           if (chars(index) == '\r'
               && indexPlusOne < chars.length
-              && chars(indexPlusOne) == '\n') { // "\r\n"
+              && chars(indexPlusOne) == '\n') {
             index += 1
           }
           writer.write(System.lineSeparator)
+          // return char with either '#' or '!' afterward
           if (indexPlusOne < chars.length
               && (chars(indexPlusOne) == '#'
-              || chars(indexPlusOne) == '!')) { // return char with either '#' or '!' afterward
+              || chars(indexPlusOne) == '!')) {
             writer.write(chars(indexPlusOne))
             index += 1
           } else {
