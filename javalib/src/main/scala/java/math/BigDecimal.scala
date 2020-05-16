@@ -1284,6 +1284,10 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
     }
   }
 
+  @inline override def __scala_==(other: _Object): scala.Boolean = {
+    this.equals(other)
+  }
+
   override def equals(x: Any): Boolean = x match {
     case that: BigDecimal =>
       that._scale == this._scale &&
