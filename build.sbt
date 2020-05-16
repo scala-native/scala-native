@@ -604,7 +604,7 @@ lazy val tests =
       testFrameworks += new TestFramework("tests.NativeFramework"),
       Test / test / envVars ++= Map(
         "USER"                           -> "scala-native",
-        "HOME"                           -> baseDirectory.value.getAbsolutePath,
+        "HOME"                           -> System.getProperty("user.home"),
         "SCALA_NATIVE_ENV_WITH_EQUALS"   -> "1+1=2",
         "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
         "SCALA_NATIVE_ENV_WITH_UNICODE"  -> 0x2192.toChar.toString,
