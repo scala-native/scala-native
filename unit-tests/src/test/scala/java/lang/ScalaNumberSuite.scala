@@ -27,7 +27,7 @@ object ScalaNumberSuite extends tests.Suite {
   }
 
   test("BigDecimal == BigDecimal") {
-    val token                   = 2046.5
+    val token                       = 2046.5
     val sbd1: scala.math.BigDecimal = scala.math.BigDecimal(token)
     val sbd2: scala.math.BigDecimal = scala.math.BigDecimal(token)
 
@@ -35,7 +35,7 @@ object ScalaNumberSuite extends tests.Suite {
   }
 
   test("BigDecimal.equals(BigDecimal)") {
-    val token                   = 2046.5
+    val token                       = 2046.5
     val sbd1: scala.math.BigDecimal = scala.math.BigDecimal(token)
     val sbd2: scala.math.BigDecimal = scala.math.BigDecimal(token)
 

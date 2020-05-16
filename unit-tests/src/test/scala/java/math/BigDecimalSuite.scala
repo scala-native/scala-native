@@ -4,7 +4,7 @@ object BigDecimalSuite extends tests.Suite {
 //   __scala_==
 
   test("BigDecimal == BigDecimal") {
-    val token                   = 2046.5
+    val token                      = 2046.5
     val jbd1: java.math.BigDecimal = java.math.BigDecimal.valueOf(token)
     val jbd2: java.math.BigDecimal = java.math.BigDecimal.valueOf(token)
 
@@ -13,7 +13,7 @@ object BigDecimalSuite extends tests.Suite {
   }
 
   test("BigDecimal.equals(BigDecimal)") {
-    val token                   = 2046.5
+    val token                      = 2046.5
     val jbd1: java.math.BigDecimal = java.math.BigDecimal.valueOf(token)
     val jbd2: java.math.BigDecimal = java.math.BigDecimal.valueOf(token)
 
