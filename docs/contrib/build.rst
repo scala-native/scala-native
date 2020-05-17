@@ -8,70 +8,6 @@ This section gives some basic information and tips about the build system. The
 components of Scala Native. The ``build.sbt`` file is at the root of the project
 along with the sub-projects that make up the system.
 
-Overview
---------------------------------
-In order to effectively work with Scala Native, a knowledge of the build system
-is very helpful. In general the code is built and published to your local Ivy
-repository using the `sbt` `publishLocal` command so that other components in the
-system can depend on each other via normal `sbt` dependencies. Although the
-``build.sbt`` file and other code in the system is the way to learn the system
-thoroughly, the following sections will give information that should be helpful
-to get started.
-
-The build has roughly four groups of sub-projects as follows:
-
-1.  The Native Scala Compiler plugin and libraries. Each of these projects depend
-    on the next project in the list.
-
-    - `nscplugin`
-
-    - `nativelib`
-
-    - `clib`
-
-    - `posixlib`
-
-    - `javalib`
-
-    - `auxlib`
-
-    - `scalalib`
-
-2.  The Scala Native plugin and dependencies (directory names are in parentheses).
-
-    - `sbtScalaNative (sbt-scala-native)`
-
-    - `tools`
-
-    - `nir`, `util`
-
-    - `nirparser`
-
-3.  The Scala Native test interface and dependencies.
-
-    - `testInterface (test-interface)`
-
-    - `testInterfaceSerialization (test-interface-serialization)`
-
-    - `testInterfaceSbtDefs (test-interface-sbt-defs)`
-
-4.  Tests and benchmarks (no dependencies on each other).
-
-    - `tests (unit-tests)`
-
-    - `tools` This has tests within the project
-
-    - `(scripted-tests)`
-
-    - `benchmarks`
-
-Each of the groups above also depend on the previous group being compiled and
-published locally. The sbt plugin ``sbtScalaNative`` is used inside Scala Native
-exactly as it is used in a project using Scala Native. The plugin is needed
-by the `testInterface` and also the `tests` that use the `testInterface`
-to compile native code. Please refer to the `build.sbt` file as the final
-authority.
-
 Building Scala Native
 ---------------------
 Once you have cloned Scala Native from git, `cd` into the base directory. Inside
@@ -114,6 +50,9 @@ Some additional tips are as follows.
 - If you change `nscplugin`, `rebuild` is the only option. This is because
   the Scala compiler uses this plugin to generate the code that Scala Native uses.
 
+- There is also a `dirty-rebuild` which avoids a full clean which can be used
+  in most cases if you work on more than one project at a time.
+
 Build settings via environment variables
 --------------------------------------------------
 Two build settings, ``nativeGC`` and ``nativeMode`` can be changed via
@@ -145,7 +84,8 @@ and then restarting `sbt`.
 The `nativeMode` setting is controlled via the `SCALANATIVE_MODE` environment
 variable. The default mode, `debug` is designed to optimize but compile fast
 whereas the `release` mode performs additional optimizations and takes longer
-to compile.
+to compile. The `release-fast` mode builds faster, performs less optimizations,
+but may perform better than `release`.
 
 Setting the GC setting via `sbt`
 --------------------------------
@@ -171,6 +111,75 @@ The following shows how to set ``nativeGC`` on all the projects.
 
 The same process above will work for setting `nativeMode`.
 
+Detailed build information
+--------------------------------
+Knowledge of the Scala Native build system is very helpful for many tasks.
+In general the code is built and published to your local Ivy repository
+using the `sbt` `publishLocal` command so that other components in the
+system can depend on each other via normal `sbt` dependencies. Although the
+``build.sbt`` file and other code in the system is the way to learn the system
+thoroughly, the following sections will give information that should be helpful
+to get started.
+
+The build has roughly four groups of sub-projects as follows:
+
+1.  The Native Scala Compiler plugin and libraries. This first list is in
+    reverse dependency order.
+
+    When we do a `rebuild` or `dirty-rebuild` the alias calls
+    `scalalib/publishLocal` first. The `scalalib` project depends on all the
+    projects above it in the following list. This means that the `nscplugin`
+    must be built and published locally first. The `nscplugin` project contains
+    the Scala compiler plugin which is normal Scala (JVM). The plugin compiles
+    Scala code into NIR which is needed for all the Scala Native libraries
+    lower in the list below.
+
+    - `nscplugin`
+
+    - `nativelib`
+
+    - `clib`
+
+    - `posixlib`
+
+    - `javalib`
+
+    - `auxlib`
+
+    - `scalalib`
+
+2.  The Scala Native plugin and dependencies (directory names are in parentheses).
+
+    - `sbtScalaNative (sbt-scala-native)`
+
+    - `tools`
+
+    - `nir`, `util`
+
+    - `nirparser`
+
+3.  The Scala Native test interface and dependencies.
+
+    - `testInterface (test-interface)`
+
+    - `testInterfaceSerialization (test-interface-serialization)`
+
+    - `testInterfaceSbtDefs (test-interface-sbt-defs)`
+
+4.  Tests and benchmarks (no dependencies on each other).
+
+    - `tests (unit-tests)`
+
+    - `tools` This has tests within the project
+
+    - `(scripted-tests)`
+
+Each of the groups above also depend on the previous group being compiled and
+published locally. The sbt plugin ``sbtScalaNative`` is used inside Scala Native
+exactly as it is used in a project using Scala Native. The plugin is needed
+by the `testInterface` and also the `tests` that use the `testInterface`
+to compile native code. Please refer to the `build.sbt` file as the final
+authority.
 
 The next section has more build and development information for those wanting
 to work on :ref:`compiler`.
