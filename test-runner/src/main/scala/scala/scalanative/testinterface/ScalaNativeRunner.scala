@@ -5,12 +5,8 @@ import java.io.File
 
 import sbt.testing.{Runner, Task, TaskDef}
 
-import scala.scalanative.build.Logger
-import scala.scalanative.testinterface.serialization.{
-  Command,
-  Message,
-  TaskInfos
-}
+import scalanative.build.Logger
+import scalanative.testinterface.serialization.{Command, Message, TaskInfos}
 
 class ScalaNativeRunner(val framework: ScalaNativeFramework,
                         bin: File,
@@ -20,7 +16,7 @@ class ScalaNativeRunner(val framework: ScalaNativeFramework,
                         val remoteArgs: Array[String])
     extends Runner {
 
-  private var master: ComRunner = _
+  private var master: ComRunner = null
 
   createRemoteRunner()
 

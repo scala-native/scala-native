@@ -4,6 +4,7 @@ package reflect
 
 // Ported from Scala.js.
 
+import scala.scalanative.reflect._
 import scala.scalanative.reflect.annotation._
 import scala.scalanative.unsafe._
 
@@ -199,6 +200,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
   }
 
   test("testClassCtorWthPtrArg") {
+    import ReflectTest.ClassWithPtrArg
 
     val optClassData = Reflect.lookupInstantiatableClass(NameClassWithPtrArg)
     assertTrue(optClassData.isDefined)
