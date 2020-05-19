@@ -33,4 +33,24 @@ class ScalaNativeFramework(val framework: Framework,
   }
 
   private[testinterface] def runDone(): Unit = _runner = null
+
+  /**
+   * Temporarily commented out.
+   *
+   * The name and fingerprints are no longer obtained via the Runner,
+   * but via the enclosed Framework object (which is a NativeFramework).
+   * This is required, since we removed the NativeTest SBT configuration
+   * (it is now basically just the Test configuration) and the Runner is
+   * not available at the moment the above attributes are requested.
+   *
+   * So, we use the NativeFramework from the JVM to obtain them.
+   * This is not very elegant, but does the job for the time being.
+   * We should refactor this in a less ugly solution, similar to what
+   * Scala.js does with its testing adapter.
+   */
+  //private def fetchFrameworkInfo(): FrameworkInfo = {
+  //  _runner.send(Command.SendInfo(id, None))
+  //  val Command.SendInfo(_, Some(infos)) = _runner.receive()
+  //  infos
+  //}
 }
