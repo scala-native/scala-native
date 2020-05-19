@@ -151,15 +151,14 @@ object ScalaNativePluginInternal {
     scalaNativeConfigSettings
 
   lazy val scalaNativeTestSettings: Seq[Setting[_]] =
-    Defaults.testSettings ++
-      scalaNativeConfigSettings ++
+    scalaNativeConfigSettings ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
         loadedTestFrameworks := {
-          val frameworks = (Test / loadedTestFrameworks).value
+          val frameworks = (loadedTestFrameworks).value
           val logger     = streams.value.log
           val testBinary = nativeLink.value
-          val envVars    = (Test / test / Keys.`envVars`).value
+          val envVars    = (test / Keys.`envVars`).value
           frameworks.zipWithIndex.map {
             case ((tf, f), id) =>
               (tf,
