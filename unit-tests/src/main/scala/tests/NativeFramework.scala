@@ -2,9 +2,6 @@ package tests
 
 import sbt.testing.{Fingerprint, Framework, Runner}
 
-import scala.scalanative.reflect.annotation.EnableReflectiveInstantiation
-
-@EnableReflectiveInstantiation
 class NativeFramework extends Framework {
   override def name(): String = "Native Test Framework"
 
