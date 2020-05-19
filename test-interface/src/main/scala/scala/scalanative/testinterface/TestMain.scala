@@ -63,7 +63,9 @@ object TestMain {
     receive(stream) match {
       case Command.NewRunner(id, args, remoteArgs) =>
         val runner =
-          frameworks(id).runner(args.toArray, remoteArgs.toArray, null)
+          frameworks(id).runner(args.toArray,
+                                remoteArgs.toArray,
+                                new ScalaNativeClassLoader)
         testRunner(tasks, runner, clientSocket)
 
       case Command.SendInfo(id, None) =>
