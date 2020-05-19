@@ -76,7 +76,7 @@ object ScalaNativePluginInternal {
       val clang = nativeClang.value.toPath
       Discover.targetTriple(clang, cwd)
     },
-    nativeLink / artifactPath := {
+    artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
     },
     nativeWorkdir := {
@@ -95,7 +95,7 @@ object ScalaNativePluginInternal {
       val nativelib = Discover.nativelib(classpath).getOrElse {
         throw new MessageOnlyException("Could not find nativelib on classpath.")
       }
-      val maincls = mainClass + "$"
+      val maincls = mainClass.toString + "$"
       val cwd     = nativeWorkdir.value.toPath
       val clang   = nativeClang.value.toPath
       val clangpp = nativeClangPP.value.toPath
@@ -122,14 +122,14 @@ object ScalaNativePluginInternal {
     nativeLink := {
       val logger  = streams.value.log.toLogger
       val config  = nativeConfig.value.withLogger(logger)
-      val outpath = (nativeLink / artifactPath).value
+      val outpath = (artifactPath in nativeLink).value
 
       interceptBuildException(Build.build(config, outpath.toPath))
 
       outpath
     },
     run := {
-      val env    = (run / envVars).value.toSeq
+      val env    = (envVars in run).value.toSeq
       val logger = streams.value.log
       val binary = nativeLink.value.abs
       val args   = spaceDelimited("<arg>").parsed
@@ -137,7 +137,7 @@ object ScalaNativePluginInternal {
       logger.running(binary +: args)
       val exitCode = Process(binary +: args, None, env: _*)
         .run(connectInput = true)
-        .exitValue()
+        .exitValue
 
       val message =
         if (exitCode == 0) None
