@@ -17,11 +17,11 @@ import scala.scalanative.testinterface.serialization._
 object TestMain {
 
   /* The supported testing frameworks. */
-  lazy val frameworks: Seq[Framework] = Seq(
+  private lazy val frameworks: Seq[Framework] = Seq(
     FrameworkLoader.loadFramework("tests.NativeFramework")
   )
 
-  val usage: String = {
+  private val usage: String = {
     """usage: test-main <server_port>
       |
       |arguments:
