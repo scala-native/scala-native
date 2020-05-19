@@ -359,7 +359,7 @@ lazy val nativelib =
     .settings(mavenPublishSettings)
     .settings(
       libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      update := update
+      publishLocal := publishLocal
         .dependsOn(nscplugin / publishLocal)
         .value
     )
