@@ -9,7 +9,7 @@ object TestUtils {
 
   def newInstance(fqcn: String, loader: ClassLoader)(
       args: Seq[AnyRef]): AnyRef =
-    newInstance(name, loader, Seq.fill(args.length)(null))(args)
+    newInstance(fqcn, loader, Seq.fill(args.length)(null))(args)
 
   def newInstance(fqcn: String, loader: ClassLoader, paramTypes: Seq[Class[_]])(
       args: Seq[Any]): AnyRef = {
