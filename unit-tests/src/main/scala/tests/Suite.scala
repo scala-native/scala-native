@@ -4,6 +4,7 @@ import sbt.testing.{EventHandler, Logger, Status}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import scala.scalanative.reflect.annotation.EnableReflectiveInstantiation
 
 final case class AssertionFailed(msg: String) extends Exception(msg)
 
@@ -11,6 +12,7 @@ final case class TestResult(status: Boolean, thrown: Option[Throwable])
 
 final case class Test(name: String, run: () => TestResult)
 
+@EnableReflectiveInstantiation
 abstract class Suite {
   private val tests = new mutable.UnrolledBuffer[Test]
 

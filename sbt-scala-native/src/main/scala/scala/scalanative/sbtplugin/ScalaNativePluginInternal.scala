@@ -1,27 +1,19 @@
 package scala.scalanative
 package sbtplugin
 
-import java.lang.System.{lineSeparator => nl}
-import java.io.ByteArrayInputStream
 import java.nio.file.Files
 
-import scala.util.Try
-
-import sbt._
-import sbt.Keys._
-import sbt.complete.DefaultParsers._
-import sbt.testing.Framework
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+import sbt.Keys._
+import sbt._
+import sbt.complete.DefaultParsers._
 
-import scalanative.nir
-import scalanative.build.{Build, Discover, BuildException}
-import scalanative.io.VirtualDirectory
-import scalanative.util.{Scope => ResourceScope}
-import scalanative.sbtplugin.Utilities._
-import scalanative.sbtplugin.TestUtilities._
-import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
-import scalanative.sbtplugin.SBTCompat.{Process, _}
-import scalanative.testinterface.ScalaNativeFramework
+import scala.scalanative.build.{Build, BuildException, Discover}
+import scala.scalanative.sbtplugin.SBTCompat.Process
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import scala.scalanative.sbtplugin.Utilities._
+import scala.scalanative.testinterface.ScalaNativeFramework
+import scala.util.Try
 
 object ScalaNativePluginInternal {
 
@@ -53,27 +45,17 @@ object ScalaNativePluginInternal {
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
     nativeClang := interceptBuildException(Discover.clang().toFile),
-    nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
-    nativeClangPP in NativeTest := (nativeClangPP in Test).value,
     nativeCompileOptions := Discover.compileOptions(),
-    nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
     nativeLinkingOptions := Discover.linkingOptions(),
-    nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
       .getOrElse(build.Mode.default.name),
-    nativeMode in NativeTest := (nativeMode in Test).value,
     nativeLinkStubs := false,
-    nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
     nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
       .getOrElse(build.GC.default.name),
-    nativeGC in NativeTest := (nativeGC in Test).value,
     nativeLTO := Discover.LTO(),
-    nativeLTO in NativeTest := (nativeLTO in Test).value,
     nativeCheck := false,
-    nativeCheck in NativeTest := (nativeCheck in Test).value,
-    nativeDump := false,
-    nativeDump in NativeTest := (nativeDump in Test).value
+    nativeDump := false
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -169,51 +151,31 @@ object ScalaNativePluginInternal {
     scalaNativeConfigSettings
 
   lazy val scalaNativeTestSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings ++ Seq(
-      test := (test in NativeTest).value,
-      testOnly := (testOnly in NativeTest).evaluated,
-      testQuick := (testQuick in NativeTest).evaluated
-    )
-
-  lazy val NativeTest = config("nativetest").extend(Test).hide
-
-  lazy val scalaNativeNativeTestSettings: Seq[Setting[_]] =
-    Defaults.testSettings ++
-      scalaNativeConfigSettings ++ Seq(
-      classDirectory := (classDirectory in Test).value,
-      dependencyClasspath := (dependencyClasspath in Test).value,
-      parallelExecution in test := false,
-      sourceGenerators += Def.task {
-        val frameworks = (loadedTestFrameworks in Test).value.map(_._2).toSeq
-        val tests      = (definedTests in Test).value
-        val output     = sourceManaged.value / "FrameworksMap.scala"
-        IO.write(output, makeTestMain(frameworks, tests))
-        Seq(output)
-      }.taskValue,
-      loadedTestFrameworks := {
-        val frameworks = (loadedTestFrameworks in Test).value
-        val logger     = streams.value.log
-        val testBinary = nativeLink.value
-        val envVars    = (Keys.envVars in (Test, test)).value
-        (frameworks.zipWithIndex).map {
-          case ((tf, f), id) =>
-            (tf,
-             new ScalaNativeFramework(f,
-                                      id,
-                                      logger.toLogger,
-                                      testBinary,
-                                      envVars))
+    scalaNativeConfigSettings ++
+      Seq(
+        mainClass := Some("scala.scalanative.testinterface.TestMain"),
+        loadedTestFrameworks := {
+          val frameworks = loadedTestFrameworks.value
+          val logger     = streams.value.log
+          val testBinary = nativeLink.value
+          val envVars    = (test / Keys.envVars).value
+          frameworks.zipWithIndex.map {
+            case ((tf, f), id) =>
+              (tf,
+               new ScalaNativeFramework(f,
+                                        id,
+                                        logger.toLogger,
+                                        testBinary,
+                                        envVars))
+          }
         }
-      },
-      definedTests := (definedTests in Test).value
-    )
+      )
 
   lazy val scalaNativeProjectSettings: Seq[Setting[_]] =
     scalaNativeDependencySettings ++
       scalaNativeBaseSettings ++
       inConfig(Compile)(scalaNativeCompileSettings) ++
-      inConfig(Test)(scalaNativeTestSettings) ++
-      inConfig(NativeTest)(scalaNativeNativeTestSettings)
+      inConfig(Test)(scalaNativeTestSettings)
 
   /** Run `op`, rethrows `BuildException`s as `MessageOnlyException`s. */
   private def interceptBuildException[T](op: => T): T = {

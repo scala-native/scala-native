@@ -235,7 +235,7 @@ lazy val libSettings: Seq[Setting[_]] =
   )
 
 lazy val projectSettings: Seq[Setting[_]] =
-  ScalaNativePlugin.projectSettings ++ Seq(
+  Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil,
     nativeCheck := true,
@@ -658,7 +658,6 @@ lazy val testInterface =
     .settings(scalaVersion := libScalaVersion)
     .settings(mavenPublishSettings)
     .settings(
-      libraryDependencies += "org.scala-sbt"    % "test-interface"   % "1.0",
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
       publishLocal := publishLocal
         .dependsOn(testInterfaceSerialization / publishLocal)

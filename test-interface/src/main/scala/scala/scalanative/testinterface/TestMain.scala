@@ -9,25 +9,47 @@ import java.io.{
 }
 import java.net.Socket
 
-import scala.scalanative.unsafe._
-import scala.scalanative.runtime.ByteArray
 import sbt.testing.{Event => SbtEvent, _}
 
-import scala.scalanative.testinterface.serialization._
 import scala.annotation.tailrec
+import scala.scalanative.testinterface.serialization._
 
-abstract class TestMainBase {
+object TestMain {
 
-  /** All the frameworks reported in `loadedTestFrameworks` in sbt. */
-  def frameworks: Seq[Framework]
+  /* The supported testing frameworks. */
+  private var frameworks: Seq[Framework] = _
 
-  /** A mapping from class name to instantiated test object. */
-  def tests: Map[String, AnyRef]
+  private val usage: String = {
+    """usage: test-main <server_port> <testing_framework_name>
+      |
+      |arguments:
+      |  server_port             -  the sbt test server port to use (required)
+      |  testing_framework_name  -  the testing framework name to use
+      |                             (fully qualified, required)
+      |
+      |*** Warning - dragons ahead ***
+      |
+      |This binary is meant to be executed by the Scala Native
+      |testing framework and not standalone.
+      |
+      |Execute at your own risk!
+      |""".stripMargin
+  }
 
-  /** Actual main method of the test runner. */
-  def testMain(args: Array[String]): Unit = {
-    val serverPort   = args.head.toInt
+  /** Main method of the test runner. */
+  def main(args: Array[String]): Unit = {
+    if (args.length < 2) {
+      System.err.println(usage)
+      throw new IllegalArgumentException("missing arguments")
+    }
+
+    val serverPort    = args(0).toInt
+    val frameworkName = args(1)
+
+    frameworks = Seq(frameworkName).map(FrameworkLoader.loadFramework)
+
     val clientSocket = new Socket("127.0.0.1", serverPort)
+
     testRunner(Array.empty, null, clientSocket)
   }
 
@@ -44,9 +66,10 @@ abstract class TestMainBase {
     val stream = new DataInputStream(clientSocket.getInputStream)
     receive(stream) match {
       case Command.NewRunner(id, args, remoteArgs) =>
-        val runner = frameworks(id).runner(args.toArray,
-                                           remoteArgs.toArray,
-                                           new PreloadedClassLoader(tests))
+        val runner =
+          frameworks(id).runner(args.toArray,
+                                remoteArgs.toArray,
+                                new ScalaNativeClassLoader)
         testRunner(tasks, runner, clientSocket)
 
       case Command.SendInfo(id, None) =>
@@ -59,7 +82,7 @@ abstract class TestMainBase {
       case Command.Tasks(newTasks) =>
         val ts = runner.tasks(newTasks.toArray)
         val taskInfos = TaskInfos(ts.zipWithIndex.toSeq.map {
-          case (t, id) => task2TaskInfo(id, t, runner)
+          case (t, id) => task2TaskInfo(id, t)
         })
         send(clientSocket)(taskInfos)
         testRunner(tasks ++ ts, runner, clientSocket)
@@ -78,7 +101,7 @@ abstract class TestMainBase {
 
         // Convert the tasks to `TaskInfo` before sending to sbt. Keep task numbers correct.
         val taskInfos = newTasks.zipWithIndex.map {
-          case (t, id) => task2TaskInfo(id + origSize, t, runner)
+          case (t, id) => task2TaskInfo(id + origSize, t)
         }
         send(clientSocket)(TaskInfos(taskInfos))
         testRunner(tasks ++ newTasks, runner, clientSocket)
@@ -93,7 +116,7 @@ abstract class TestMainBase {
     }
   }
 
-  private def task2TaskInfo(id: Int, task: Task, runner: Runner) =
+  private def task2TaskInfo(id: Int, task: Task) =
     TaskInfo(id, task.taskDef, task.tags)
 
   /** Receives a message from `client`. */
@@ -112,11 +135,11 @@ abstract class TestMainBase {
   private def send[T](client: Socket)(msg: Message): Unit = {
     val bos = new ByteArrayOutputStream()
     SerializedOutputStream(new DataOutputStream(bos))(_.writeMessage(msg))
-    val data = bos.toByteArray()
+    val data = bos.toByteArray
 
     val out = client.getOutputStream
     out.write(data)
-    out.flush
+    out.flush()
   }
 
   private class RemoteEventHandler(client: Socket) extends EventHandler {
