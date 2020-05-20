@@ -7,11 +7,12 @@ import scala.scalanative.reflect.Reflect
             since = "0.4.0")
 object TestUtils {
 
-  def newInstance(name: String, loader: ClassLoader)(args: Seq[AnyRef]): Any =
+  def newInstance(fqcn: String, loader: ClassLoader)(
+      args: Seq[AnyRef]): AnyVal =
     newInstance(name, loader, Seq.fill(args.length)(null))(args)
 
   def newInstance(fqcn: String, loader: ClassLoader, paramTypes: Seq[Class[_]])(
-      args: Seq[Any]): Any = {
+      args: Seq[Any]): AnyVal = {
     require(args.size == paramTypes.size, "argument count mismatch")
 
     Reflect
@@ -22,7 +23,7 @@ object TestUtils {
       .newInstance(args: _*)
   }
 
-  def loadModule(fqcn: String, loader: ClassLoader): Any = {
+  def loadModule(fqcn: String, loader: ClassLoader): AnyVal = {
     Reflect
       .lookupLoadableModuleClass(fqcn)
       .getOrElse(throw new Exception(""))
