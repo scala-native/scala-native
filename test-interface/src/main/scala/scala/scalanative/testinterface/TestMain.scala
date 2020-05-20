@@ -17,15 +17,15 @@ import scala.scalanative.testinterface.serialization._
 object TestMain {
 
   /* The supported testing frameworks. */
-  private lazy val frameworks: Seq[Framework] = Seq(
-    FrameworkLoader.loadFramework("tests.NativeFramework")
-  )
+  private var frameworks: Seq[Framework] = _
 
   private val usage: String = {
-    """usage: test-main <server_port>
+    """usage: test-main <server_port> <testing_framework_name>
       |
       |arguments:
-      |  server_port - the sbt test server port to use (required)
+      |  server_port             -  the sbt test server port to use (required)
+      |  testing_framework_name  -  the testing framework name to use
+      |                             (fully qualified, required)
       |
       |*** Warning - dragons ahead ***
       |
@@ -38,12 +38,16 @@ object TestMain {
 
   /** Main method of the test runner. */
   def main(args: Array[String]): Unit = {
-    val serverPort = args.headOption match {
-      case None =>
-        System.err.println(usage)
-        throw new IllegalArgumentException("missing arguments")
-      case Some(port) => port.toInt
+    if (args.length != 2) {
+      System.err.println(usage)
+      throw new IllegalArgumentException("missing arguments")
     }
+
+    val serverPort    = args(0).toInt
+    val frameworkName = args(1)
+
+    frameworks = Seq(frameworkName).map(FrameworkLoader.loadFramework)
+
     val clientSocket = new Socket("127.0.0.1", serverPort)
 
     testRunner(Array.empty, null, clientSocket)

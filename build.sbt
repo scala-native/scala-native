@@ -235,7 +235,7 @@ lazy val libSettings: Seq[Setting[_]] =
   )
 
 lazy val projectSettings: Seq[Setting[_]] =
-  ScalaNativePlugin.projectSettings ++ Seq(
+  Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil,
     nativeCheck := true,

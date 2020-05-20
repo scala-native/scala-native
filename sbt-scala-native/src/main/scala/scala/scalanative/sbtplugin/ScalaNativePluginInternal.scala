@@ -155,7 +155,7 @@ object ScalaNativePluginInternal {
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
         loadedTestFrameworks := {
-          val frameworks = (loadedTestFrameworks).value
+          val frameworks = loadedTestFrameworks.value
           val logger     = streams.value.log
           val testBinary = nativeLink.value
           val envVars    = (test / Keys.`envVars`).value
