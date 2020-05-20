@@ -158,7 +158,7 @@ object ScalaNativePluginInternal {
           val frameworks = loadedTestFrameworks.value
           val logger     = streams.value.log
           val testBinary = nativeLink.value
-          val envVars    = (test / Keys.`envVars`).value
+          val envVars    = (test / Keys.envVars).value
           frameworks.zipWithIndex.map {
             case ((tf, f), id) =>
               (tf,
