@@ -21,6 +21,7 @@ object TestUtils {
       .getConstructor(paramTypes: _*)
       .getOrElse(throw new Exception(s"constructor not found: $paramTypes"))
       .newInstance(args: _*)
+      .asInstanceOf[AnyRef]
   }
 
   def loadModule(fqcn: String, loader: ClassLoader): AnyRef = {
@@ -28,5 +29,6 @@ object TestUtils {
       .lookupLoadableModuleClass(fqcn)
       .getOrElse(throw new Exception(""))
       .loadModule()
+      .asInstanceOf[AnyRef]
   }
 }
