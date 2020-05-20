@@ -1,4 +1,4 @@
-package scala.scalajs
+package org.scalajs
 package testinterface
 
 import scala.scalanative.reflect.Reflect
