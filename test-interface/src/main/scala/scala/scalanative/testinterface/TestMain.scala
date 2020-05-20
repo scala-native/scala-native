@@ -38,7 +38,7 @@ object TestMain {
 
   /** Main method of the test runner. */
   def main(args: Array[String]): Unit = {
-    if (args.length != 2) {
+    if (args.length < 2) {
       System.err.println(usage)
       throw new IllegalArgumentException("missing arguments")
     }
