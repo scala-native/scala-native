@@ -35,7 +35,7 @@ class ComRunner(bin: File,
   private[this] var serverSocket: ServerSocket = _
   private[this] val socket =
     try {
-      serverSocket = new ServerSocket(0)
+      serverSocket = new ServerSocket( /* port = */ 0, /* backlog = */ 1)
 
       runner.start()
 
