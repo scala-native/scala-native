@@ -462,7 +462,7 @@ lazy val scalalib =
       // than Scala.js. See commented starting with "SN Port:" below.
       libraryDependencies +=
         "org.scala-lang" % "scala-library" % scalaVersion.value classifier "sources",
-      artifactPath in fetchScalaSource :=
+      fetchScalaSource / artifactPath :=
         target.value / "scalaSources" / scalaVersion.value,
       // Scala.js original comment modified to clarify issue is Scala.js.
       /* Work around for https://github.com/scala-js/scala-js/issues/2649
@@ -472,7 +472,7 @@ lazy val scalalib =
        * which we work around here by using `updateClassifiers` instead in
        * that case.
        */
-      update in fetchScalaSource := Def.taskDyn {
+      fetchScalaSource / update := Def.taskDyn {
         if (scalaVersion.value == scala.util.Properties.versionNumberString)
           updateClassifiers
         else
@@ -482,9 +482,9 @@ lazy val scalalib =
         val s        = streams.value
         val cacheDir = s.cacheDirectory
         val ver      = scalaVersion.value
-        val trgDir   = (artifactPath in fetchScalaSource).value
+        val trgDir   = (fetchScalaSource / artifactPath).value
 
-        val report = (update in fetchScalaSource).value
+        val report = (fetchScalaSource / update).value
         val scalaLibSourcesJar = report
           .select(configuration = configurationFilter("compile"),
                   module = moduleFilter(name = "scala-library"),
@@ -508,7 +508,7 @@ lazy val scalalib =
 
         trgDir
       },
-      unmanagedSourceDirectories in Compile := {
+      Compile / unmanagedSourceDirectories := {
         // Calculates all prefixes of the current Scala version
         // (including the empty prefix) to construct override
         // directories like the following:
@@ -535,13 +535,13 @@ lazy val scalalib =
       },
       // Compute sources
       // Files in earlier src dirs shadow files in later dirs
-      sources in Compile := {
+      Compile / sources := {
         // Sources coming from the sources of Scala
         val scalaSrcDir = fetchScalaSource.value
 
         // All source directories (overrides shadow scalaSrcDir)
         val sourceDirectories =
-          (unmanagedSourceDirectories in Compile).value :+ scalaSrcDir
+          (Compile / unmanagedSourceDirectories).value :+ scalaSrcDir
 
         // Filter sources with overrides
         def normPath(f: File): String =
