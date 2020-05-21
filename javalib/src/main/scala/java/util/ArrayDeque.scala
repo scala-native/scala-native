@@ -1,40 +1,29 @@
-/*
- * Scala.js (https://www.scala-js.org/)
- *
- * Copyright EPFL.
- *
- * Licensed under Apache License 2.0
- * (https://www.apache.org/licenses/LICENSE-2.0).
- *
- * See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
- */
-
-// Contains original work for ScalaNative which falls under the Scala Native
-// license.
+// Ported from Scala.js.
+// Also contains original work for Scala Native.
 
 package java.util
 
 /// ScalaNative Porting Note:
 ///
-///     * Ported, with thanks & gratitude, from ScalaJS ArrayDeque.scala
+///     * Ported, with thanks & gratitude, from Scala.js ArrayDeque.scala
 ///       commit 9DC4D5b, dated 2018-10-12.
+///       Also contains original work for Scala Native.
 ///
-///     * ScalaNative ArrayList is the inner type, rather than js.Array.
+///     * Changes in Scala.js original commit E07F99D, dated 2019-07-30
+///       were considered on 2020-05-19. The Scala.js change to
+///       ArrayDeque.scala were to Objects.equals() in a 3 places,
+///       contains(), removeFirstOccurrence(), removeLastOccurrence().
+///       Existing unit-tests for those three methods show that no
+///       corresponding change is needed here.  indexOf() and contains()
+///       are documented as defined in terms of "==". That operator should
+///       do and is doing a comparison equivalent to Object.equals().
 ///
-///     * equals() & hashcode() are not implemented so comparing ArrayDeque
-///       instances ad1 == ad2 is bit of a pain. It gives object equality
-///       not the more useful contents equality. Someday...
-///           https://alvinalexander.com/scala/ \
-///           how-to-define-equals-hashcode-methods-in-scala-object-equality
-///
-///     * spliterator() is implemented but commented out because the
-///       ArrayList.spliterator it delegates to is not yet implemented.
+///     * ArrayList is the inner type, rather than js.Array.
 ///
 ///     * The order of method declarations is not alphabetical to reduce
-///       churn versus ScalaJs original.
+///       churn versus Scala.js original.
 
-class ArrayDeque[E] private (private var inner: ArrayList[E])
+class ArrayDeque[E] private (private val inner: ArrayList[E])
     extends AbstractCollection[E]
     with Deque[E]
     with Cloneable
@@ -116,7 +105,11 @@ class ArrayDeque[E] private (private var inner: ArrayList[E])
 
   def pollLast(): E = {
     if (inner.isEmpty) null.asInstanceOf[E]
-    else inner.remove(inner.size - 1)
+    else {
+      val res = inner.remove(inner.size - 1)
+      status += 1
+      res
+    }
   }
 
   def getFirst(): E = {
@@ -181,9 +174,10 @@ class ArrayDeque[E] private (private var inner: ArrayList[E])
 
   private def failFastIterator(startIndex: Int, nex: (Int) => Int) = {
     new Iterator[E] {
-      private def checkStatus() =
+      private def checkStatus() = {
         if (self.status != actualStatus)
           throw new ConcurrentModificationException()
+      }
 
       private val actualStatus = self.status
 
@@ -227,15 +221,11 @@ class ArrayDeque[E] private (private var inner: ArrayList[E])
     inner.clear()
   }
 
-  // ArrayList.spliterator is not yet implemented.
-  // def spliterator(): Spliterator[E] = inner.spliterator()
-
   override def toArray(): Array[AnyRef] = {
-    inner.toArray(new Array[AnyRef](size))
+    inner.toArray()
   }
 
   override def toArray[T](a: Array[T]): Array[T] = {
     inner.toArray(a)
   }
-
 }

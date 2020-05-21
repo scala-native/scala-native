@@ -5,7 +5,6 @@ import scala.collection.JavaConverters._
 object ArrayDequeSuite extends tests.Suite {
 
   test("ArrayDeque()") {
-
     val ad = new ArrayDeque()
 
     assert(ad != null, s"Constructor returned null")
@@ -38,7 +37,6 @@ object ArrayDequeSuite extends tests.Suite {
   }
 
   test("ArrayDeque(initialCapacity) - capacity < 0") {
-
     // This test basically tests that no exception is thrown
     // when the initialCapacity is negative, implementing JVM behavior.
 
@@ -107,11 +105,9 @@ object ArrayDequeSuite extends tests.Suite {
       val expected = e
       assert(result == expected, s"element: ${result} != expected: ${expected}")
     }
-
   }
 
   test(s"addFirst(e)") {
-
     locally {
       type E = Float
       val ad = new ArrayDeque[E]()
@@ -138,7 +134,6 @@ object ArrayDequeSuite extends tests.Suite {
   }
 
   test(s"addLast(e)") {
-
     locally {
       type E = Long
       val ad = new ArrayDeque[E]()
@@ -169,7 +164,6 @@ object ArrayDequeSuite extends tests.Suite {
     assert(ad1.isEmpty())
     // makes sure that clear()ing an already empty list is safe.
     ad1.clear()
-
   }
 
   test(s"clone()") {
@@ -194,11 +188,9 @@ object ArrayDequeSuite extends tests.Suite {
 
     val result = ad.contains(needle)
     assert(result, s"'${ad.toString}' does not contain '${needle}'")
-
   }
 
   test(s"descendingIterator()") {
-
     // No good way on single threaded ScalaNative to test for
     // ConcurrentModificationException
 
@@ -239,7 +231,6 @@ object ArrayDequeSuite extends tests.Suite {
   }
 
   test(s"getFirst()") {
-
     locally {
       val ad = new ArrayDeque()
 
@@ -266,7 +257,6 @@ object ArrayDequeSuite extends tests.Suite {
   }
 
   test(s"getLast()") {
-
     locally {
       val ad = new ArrayDeque()
 
@@ -309,7 +299,6 @@ object ArrayDequeSuite extends tests.Suite {
   }
 
   test(s"offer(e: E)") {
-
     locally {
       type E = Long
       val ad = new ArrayDeque[E]()
@@ -332,11 +321,9 @@ object ArrayDequeSuite extends tests.Suite {
              s"result: ${ad.toString} != " +
                s"expected: ${expected.mkString("[", ", ", "]")}")
     }
-
   }
 
   test(s"offerFirst(e: E)") {
-
     locally {
       type E = Float
       val ad = new ArrayDeque[E]()
@@ -360,7 +347,6 @@ object ArrayDequeSuite extends tests.Suite {
              s"result: ${ad.toString} != " +
                s"expected: ${expected.mkString("[", ", ", "]")}")
     }
-
   }
 
   test(s"offerLast(e: E)") {
@@ -386,7 +372,6 @@ object ArrayDequeSuite extends tests.Suite {
              s"result: ${ad.toString} != " +
                s"expected: ${expected.mkString("[", ", ", "]")}")
     }
-
   }
 
   test(s"peek()") {
@@ -412,7 +397,6 @@ object ArrayDequeSuite extends tests.Suite {
       assert(afterSize == expectedSize,
              s"after size: ${afterSize} != expected: ${expectedSize}")
     }
-
   }
 
   test(s"peekFirst()") {
@@ -438,11 +422,9 @@ object ArrayDequeSuite extends tests.Suite {
       assert(afterSize == expectedSize,
              s"after size: ${afterSize} != expected: ${expectedSize}")
     }
-
   }
 
   test(s"peekLast()") {
-
     locally {
       val ad = new ArrayDeque()
 
@@ -465,7 +447,6 @@ object ArrayDequeSuite extends tests.Suite {
       assert(afterSize == expectedSize,
              s"after size: ${afterSize} != expected: ${expectedSize}")
     }
-
   }
 
   test(s"poll()") {
@@ -491,7 +472,6 @@ object ArrayDequeSuite extends tests.Suite {
       assert(afterSize == expectedSize,
              s"after size: ${afterSize} != expected: ${expectedSize}")
     }
-
   }
 
   test(s"pollFirst()") {
@@ -520,7 +500,6 @@ object ArrayDequeSuite extends tests.Suite {
   }
 
   test(s"pollLast()") {
-
     locally {
       val ad = new ArrayDeque()
       assert(ad.pollLast == null,
@@ -568,11 +547,9 @@ object ArrayDequeSuite extends tests.Suite {
       assert(afterSize == expectedSize,
              s"after size: ${afterSize} != expected: ${expectedSize}")
     }
-
   }
 
   test(s"push(e: E)") {
-
     locally {
       type E = Double
       val ad = new ArrayDeque[E]()
@@ -596,7 +573,6 @@ object ArrayDequeSuite extends tests.Suite {
              s"result: ${ad.toString} != " +
                s"expected: ${expected.mkString("[", ", ", "]")}")
     }
-
   }
 
   test(s"remove()") {
@@ -623,11 +599,9 @@ object ArrayDequeSuite extends tests.Suite {
       assert(afterSize == expectedSize,
              s"after size: ${afterSize} != expected: ${expectedSize}")
     }
-
   }
 
   test(s"remove(o: Any)") {
-
     val haystack = "Looking for a needle in a haystack"
     val words    = haystack.split(" ").toSeq
     val ad       = new ArrayDeque(words.asJava)
@@ -706,7 +680,6 @@ object ArrayDequeSuite extends tests.Suite {
       assert(afterSize == expectedSize,
              s"after size: ${afterSize} != expected: ${expectedSize}")
     }
-
   }
 
   test(s"removeFirstOccurrence(o: Any)") {
@@ -764,11 +737,9 @@ object ArrayDequeSuite extends tests.Suite {
                "deque(${i}): ${result} != expected: '${expected}'")
       }
     }
-
   }
 
   test(s"removeLast()") {
-
     locally {
       val ad = new ArrayDeque()
 
@@ -792,7 +763,6 @@ object ArrayDequeSuite extends tests.Suite {
       assert(afterSize == expectedSize,
              s"after size: ${afterSize} != expected: ${expectedSize}")
     }
-
   }
 
   test(s"removeLastOccurrence(o: Any)") {
@@ -850,7 +820,6 @@ object ArrayDequeSuite extends tests.Suite {
                "deque(${i}): ${result} != expected: '${expected}'")
       }
     }
-
   }
 
   test("size()") {
@@ -894,7 +863,6 @@ object ArrayDequeSuite extends tests.Suite {
   testFails("toArray(a: Array[T]) - throws ArrayStoreException when not " +
               "T >: E",
             1694) {
-
     class NotSuperClass
     class SubClass
 
@@ -912,7 +880,5 @@ object ArrayDequeSuite extends tests.Suite {
         ad.toArray(Array.empty[NotSuperClass])
       }
     }
-
   }
-
 }
