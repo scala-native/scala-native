@@ -50,6 +50,8 @@ class ComRunner(bin: File,
       serverSocket.close()
     }
 
+  private[this] var socketCurrentSoTimeout = 0
+
   private[this] val in = new DataInputStream(
     new BufferedInputStream(socket.getInputStream))
   private[this] val out = new DataOutputStream(
@@ -68,24 +70,32 @@ class ComRunner(bin: File,
   /** Wait for a message to arrive from the distant program. */
   def receive(timeout: Duration = Duration.Inf): Message =
     synchronized {
-      in.mark(Int.MaxValue)
       val savedSoTimeout = socket.getSoTimeout()
+
       try {
-        val deadLineMs = if (timeout.isFinite()) timeout.toMillis else 0L
-        socket.setSoTimeout((deadLineMs min Int.MaxValue).toInt)
+        // Java sockets only handle non-negative Int timeouts.
+        // Silently truncate timouts greater than Int.MaxValue.
+        val deadLineMs = if (!timeout.isFinite()) {
+          0
+        } else {
+          timeout.toMillis.toInt
+        }
 
-        val result =
+        if (socketCurrentSoTimeout != deadLineMs) {
+          socket.setSoTimeout(deadLineMs)
+          socketCurrentSoTimeout = deadLineMs
+        }
+
+        var result: Message = new Log(0, "Dummy", None, Level.Info)
+
+        while (result.isInstanceOf[Log]) {
           SerializedInputStream.next(in)(_.readMessage()) match {
-            case logMsg: Log =>
-              log(logMsg)
-              receive(timeout)
-            case other =>
-              other
+            case logMsg: Log => log(logMsg)
+            case other       => result = other
           }
+        }
 
-        in.mark(0)
         result
-
       } catch {
         case _: EOFException =>
           close()
@@ -97,8 +107,6 @@ class ComRunner(bin: File,
         case ex: Throwable =>
           close()
           throw ex
-      } finally {
-        socket.setSoTimeout(savedSoTimeout)
       }
     }
 
@@ -121,5 +129,4 @@ class ComRunner(bin: File,
         }
       case Level.Debug => logger.debug(message.message)
     }
-
 }
