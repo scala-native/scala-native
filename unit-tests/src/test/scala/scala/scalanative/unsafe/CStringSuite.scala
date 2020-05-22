@@ -37,7 +37,7 @@ object CStringSuite extends tests.Suite {
 
   // Issue 1796
   test("fromCString(null)") {
-    val szTo     = fromCString(null.asInstanceOf[CString])
+    val szTo = fromCString(null.asInstanceOf[CString])
     assertEquals(szTo, null.asInstanceOf[String])
   }
 
