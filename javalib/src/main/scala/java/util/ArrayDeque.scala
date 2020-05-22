@@ -10,13 +10,14 @@ package java.util
 ///       Also contains original work for Scala Native.
 ///
 ///     * Changes in Scala.js original commit E07F99D, dated 2019-07-30
-///       were considered on 2020-05-19. The Scala.js change to
-///       ArrayDeque.scala were to Objects.equals() in a 3 places,
-///       contains(), removeFirstOccurrence(), removeLastOccurrence().
-///       Existing unit-tests for those three methods show that no
-///       corresponding change is needed here.  indexOf() and contains()
-///       are documented as defined in terms of "==". That operator should
-///       do and is doing a comparison equivalent to Object.equals().
+///       were considered on 2020-05-19. The Scala.js changes to
+///       ArrayDeque.scala were to use Objects.equals() in 3 places:
+///       contains(), removeFirstOccurrence(), & removeLastOccurrence().
+///       No corresponding change is needed here because the above
+///       methods of this class are defined in terms of
+///       inner.{contains,indexOf,lastIndexOf}. inner is a
+///       java.util.ArrayList, whose methods already use the semantics of
+///       Object.equals().
 ///
 ///     * ArrayList is the inner type, rather than js.Array.
 ///
