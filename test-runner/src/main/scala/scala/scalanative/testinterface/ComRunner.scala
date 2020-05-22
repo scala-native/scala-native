@@ -102,10 +102,14 @@ class ComRunner(bin: File,
       }
     }
 
+  private[this] var runnerIsClosed = false
+  def isClosed                     = runnerIsClosed
+
   def close(): Unit = {
     in.close()
     out.close()
     socket.close()
+    runnerIsClosed = true
   }
 
   private def log(message: Log): Unit =
@@ -121,5 +125,4 @@ class ComRunner(bin: File,
         }
       case Level.Debug => logger.debug(message.message)
     }
-
 }

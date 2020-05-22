@@ -35,6 +35,12 @@ object CStringSuite extends tests.Suite {
     assertEquals("\u0020\u0020\u0061\u0062", fromCString(c"\040\40\141\x62"))
   }
 
+  // Issue 1796
+  test("fromCString(null)") {
+    val szTo     = fromCString(null.asInstanceOf[CString])
+    assertEquals(szTo, null.asInstanceOf[String])
+  }
+
   test("fromCString") {
     val cstrFrom = c"1234"
     val szTo     = fromCString(cstrFrom)
@@ -44,6 +50,14 @@ object CStringSuite extends tests.Suite {
     assert(szTo.charAt(1) == '2')
     assert(szTo.charAt(2) == '3')
     assert(szTo.charAt(3) == '4')
+  }
+
+  // Issue 1796
+  test("toCString(null)") {
+    Zone { implicit z =>
+      val cstrTo = toCString(null.asInstanceOf[String])
+      assertEquals(cstrTo, null.asInstanceOf[CString])
+    }
   }
 
   test("toCString") {

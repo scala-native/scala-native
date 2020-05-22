@@ -51,9 +51,17 @@ class ScalaNativeRunner(val framework: ScalaNativeFramework,
   }
 
   override def done(): String = {
-    send(Command.RunnerDone(""))
-    val Command.RunnerDone(summary) = receive()
-    master.close()
-    summary
+// 2020-05-22 LeeT - note to reviewers, not for final PR.
+// this.ensureNotDone has its own set of problems, so do not use it here.
+
+    if (master.isClosed) {
+      throw new IllegalStateException(
+        "Premature end of ComRunner, not all tests may have been run.")
+    } else {
+      send(Command.RunnerDone(""))
+      val Command.RunnerDone(summary) = receive()
+      master.close()
+      summary
+    }
   }
 }
