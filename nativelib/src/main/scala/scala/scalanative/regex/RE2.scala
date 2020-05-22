@@ -102,7 +102,7 @@ class RE2 private {
   // machine cache if possible, to avoid unnecessary allocation.
 
   def get(): Machine = {
-    /// SN: Having a return statement in the middle of the code is an
+    /// Scala Native: Having a return statement in the middle of the code is an
     /// eyesore that comes directly from the re2j base code.
     /// Its saving grace is that it _vastly_ simplifies the mutual
     /// exclusion logic.
