@@ -91,8 +91,7 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
   private case object ScalaNative
       extends CompilerPlugin(jarPath = sys props "scalanative.nscplugin.jar",
                              classpath = List(
-                               sys props "scalanative.testingcompiler.cp",
-                               sys props "scalanative.nscplugin.jar"))
+                               sys props "scalanative.nativeruntime.cp"))
 
   /**
    * Returns an instance of `Global` configured according to the given options.
