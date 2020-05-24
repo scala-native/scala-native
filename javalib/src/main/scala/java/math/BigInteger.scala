@@ -462,10 +462,6 @@ class BigInteger extends Number with Comparable[BigInteger] {
   override def doubleValue(): Double =
     java.lang.Double.parseDouble(this.toString)
 
-  @inline override def __scala_==(other: _Object): scala.Boolean = {
-    this.equals(other)
-  }
-
   override def equals(x: Any): Boolean = x match {
     case that: BigInteger =>
       this.sign == that.sign && this.numberLength == that.numberLength &&
