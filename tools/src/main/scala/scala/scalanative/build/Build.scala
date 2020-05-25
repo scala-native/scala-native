@@ -17,16 +17,16 @@ object Build {
    *
    *  {{{
    *  val classpath: Seq[Path] = ...
+   *  val nativelib: Path      = ...
    *  val workdir: Path        = ...
    *  val main: String         = ...
    *
-   *  val clang     = Discover.clang()
-   *  val clangpp   = Discover.clangpp()
-   *  val linkopts  = Discover.linkingOptions()
-   *  val compopts  = Discover.compileOptions()
-   *  val triple    = Discover.targetTriple(clang, workdir)
-   *  val nativelib = Discover.nativelib(classpath).get
-   *  val outpath   = workdir.resolve("out")
+   *  val clang    = Discover.clang()
+   *  val clangpp  = Discover.clangpp()
+   *  val linkopts = Discover.linkingOptions()
+   *  val compopts = Discover.compileOptions()
+   *  val triple   = Discover.targetTriple(clang, workdir)
+   *  val outpath  = workdir.resolve("out")
    *
    *  val config =
    *    Config.empty

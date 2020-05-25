@@ -20,13 +20,6 @@ object Discover {
   def LTO(): String =
     getenv("SCALANATIVE_LTO").getOrElse("none")
 
-  /** Find nativelib jar on the classpath. */
-  def nativelib(classpath: Seq[Path]): Option[Path] =
-    classpath.find { path =>
-      val absolute = path.toAbsolutePath.toString
-      absolute.contains("scala-native") && absolute.contains("nativelib")
-    }
-
   /** Find the newest compatible clang binary. */
   def clang(): Path = {
     val path = discover("clang", clangVersions)
