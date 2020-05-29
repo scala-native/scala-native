@@ -633,3 +633,14 @@ lazy val testRunner =
       Compile / sources ++= (testInterfaceSerialization / Compile / sources).value
     )
     .dependsOn(tools)
+
+lazy val jUnitPlugin =
+  project
+    .in(file("junit-plugin"))
+    .settings(mavenPublishSettings)
+    .settings(
+      crossScalaVersions := libCrossScalaVersions,
+      crossVersion := CrossVersion.full,
+      libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+      exportJars := true
+    )
