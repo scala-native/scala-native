@@ -634,6 +634,22 @@ lazy val testRunner =
     )
     .dependsOn(tools)
 
+lazy val jUnitRuntime =
+  project
+    .in(file("junit-runtime"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(mavenPublishSettings)
+    .settings(
+      crossVersion := CrossVersion.binary,
+      Compile / headerSources ~= { srcs =>
+        srcs.filter { src =>
+          val path = src.getPath.replace('\\', '/')
+          !path.contains("/org/junit/") && !path.contains("/org/hamcrest/")
+        }
+      }
+    )
+    .dependsOn(nscplugin % "plugin", testInterface)
+
 lazy val jUnitPlugin =
   project
     .in(file("junit-plugin"))
