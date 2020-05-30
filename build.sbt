@@ -184,6 +184,11 @@ lazy val toolSettings: Seq[Setting[_]] =
     javacOptions ++= Seq("-encoding", "utf8")
   )
 
+lazy val root =
+  project
+    .in(file("."))
+    .settings(noPublishSettings)
+
 lazy val util =
   project
     .in(file("util"))
