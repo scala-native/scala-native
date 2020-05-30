@@ -4,7 +4,7 @@
 package org.hamcrest
 
 import java.io.IOException
-import java.lang.StringBuilder
+import java.{lang => jl}
 
 object StringDescription {
   def toString(selfDescribing: SelfDescribing): String =
@@ -14,7 +14,7 @@ object StringDescription {
     toString(selfDescribing)
 }
 
-class StringDescription(out: Appendable = new StringBuilder())
+class StringDescription(out: Appendable = new jl.StringBuilder())
     extends BaseDescription {
   override protected def append(str: String): Unit = {
     try {

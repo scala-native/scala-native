@@ -18,7 +18,7 @@ class ArrayComparisonFailure(message: String, cause: AssertionError, index: Int)
     fIndices = index :: fIndices
   }
 
-  override def getMessage(): String = {
+  override def getMessage: String = {
     val msg = if (message != null) message else ""
     val indices =
       if (fIndices == null) s"[$index]" // see #3148
@@ -27,5 +27,5 @@ class ArrayComparisonFailure(message: String, cause: AssertionError, index: Int)
     s"${msg}arrays first differed at element $indices; $causeMessage"
   }
 
-  override def toString(): String = getMessage
+  override def toString: String = getMessage
 }

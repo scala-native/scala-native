@@ -51,7 +51,7 @@ private[junit] final class Reporter(eventHandler: EventHandler,
                    method: Option[String],
                    timeInSeconds: Double,
                    errors: List[Throwable]): Unit = {
-    def emit(t: Throwable) = {
+    def emit(t: Throwable): Unit = {
       logTestException(_.error, prefix, method, t, timeInSeconds)
       trace(t)
     }
@@ -126,7 +126,7 @@ private[junit] final class Reporter(eventHandler: EventHandler,
   }
 
   private lazy val formattedTestClass =
-    formatClass(taskDef.fullyQualifiedName, Ansi.YELLOW)
+    formatClass(taskDef.fullyQualifiedName(), Ansi.YELLOW)
 
   private def formatClass(fullName: String, color: String): String = {
     val (prefix, name) = fullName.splitAt(fullName.lastIndexOf(".") + 1)
@@ -134,8 +134,8 @@ private[junit] final class Reporter(eventHandler: EventHandler,
   }
 
   private def emitEvent(method: Option[String], status: Status): Unit = {
-    val testName = method.fold(taskDef.fullyQualifiedName)(method =>
-      taskDef.fullyQualifiedName + "." + settings.decodeName(method))
+    val testName = method.fold(taskDef.fullyQualifiedName())(method =>
+      taskDef.fullyQualifiedName() + "." + settings.decodeName(method))
     val selector = new TestSelector(testName)
     eventHandler.handle(new JUnitEvent(taskDef, status, selector))
   }
@@ -264,5 +264,5 @@ private[junit] final class Reporter(eventHandler: EventHandler,
 }
 
 private[junit] object Reporter {
-  type Level = Logger => (String => Unit)
+  type Level = Logger => String => Unit
 }

@@ -2,7 +2,7 @@ package org.junit.runners
 
 import org.junit.runners.model.FrameworkMethod
 
-/* In the Scala.js JUnit framework (com.novocode.junit.JUnitFramework) there
+/* In the Scala Native JUnit framework (com.novocode.junit.JUnitFramework) there
  * is a custom runner that executes the tests. Therefore the implementation of
  * the original runner is not used. But we still want to be able the compile a
  * class that explicitly specifies the default runner using @RunWith(JUnit4).

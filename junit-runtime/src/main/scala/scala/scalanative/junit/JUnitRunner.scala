@@ -16,7 +16,7 @@ private[junit] final class JUnitRunner(val args: Array[String],
   def done(): String = ""
 
   def serializeTask(task: Task, serializer: TaskDef => String): String =
-    serializer(task.taskDef)
+    serializer(task.taskDef())
 
   def deserializeTask(task: String, deserializer: String => TaskDef): Task =
     new JUnitTask(deserializer(task), runSettings)

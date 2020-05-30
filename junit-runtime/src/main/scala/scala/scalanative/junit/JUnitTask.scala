@@ -18,7 +18,7 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
                                      runSettings: RunSettings)
     extends Task {
 
-  def tags: Array[String] = Array.empty
+  def tags(): Array[String] = Array.empty
 
   def execute(eventHandler: EventHandler,
               loggers: Array[Logger],
@@ -62,7 +62,7 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
     val result = runTestLifecycle {
       Success(())
     } { _ => catchAll(bootstrapper.beforeClass()) } { _ =>
-      runTests(bootstrapper.tests.toList)
+      runTests(bootstrapper.tests().toList)
     } { _ => catchAll(bootstrapper.afterClass()) }
 
     for {
@@ -127,7 +127,7 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
 
   private def loadBootstrapper(reporter: Reporter): Option[Bootstrapper] = {
     val bootstrapperName =
-      taskDef.fullyQualifiedName + "$scalajs$junit$bootstrapper$"
+      taskDef.fullyQualifiedName + "$scalanative$junit$bootstrapper$"
 
     try {
       val b = Reflect

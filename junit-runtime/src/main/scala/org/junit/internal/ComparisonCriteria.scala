@@ -8,7 +8,7 @@ import org.junit.Assert
 abstract class ComparisonCriteria {
 
   def arrayEquals(message: String, expecteds: AnyRef, actuals: AnyRef): Unit =
-    arrayEquals(message, expecteds, actuals, true)
+    arrayEquals(message, expecteds, actuals, outer = true)
 
   private def arrayEquals(message: String,
                           expecteds: AnyRef,
@@ -29,7 +29,7 @@ abstract class ComparisonCriteria {
 
         if (isArray(expected) && isArray(actual)) {
           try {
-            arrayEquals(message, expected, actual, false)
+            arrayEquals(message, expected, actual, outer = false)
           } catch {
             case e: ArrayComparisonFailure =>
               e.addDimension(i)

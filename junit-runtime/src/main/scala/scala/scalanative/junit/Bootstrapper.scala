@@ -4,10 +4,10 @@ package junit
 // Ported from Scala.js
 
 import scala.concurrent.Future
-import scala.scalajs.reflect.annotation._
+import scala.scalanative.reflect.annotation._
 import scala.util.Try
 
-/** Scala.js internal JUnit bootstrapper.
+/** Scala Native internal JUnit bootstrapper.
  *
  *  This class is public due to implementation details. Only the junit compiler
  *  plugin may generate classes inheriting from it.
@@ -27,7 +27,7 @@ trait Bootstrapper {
   def newInstance(): AnyRef
 }
 
-/** Scala.js internal JUnit test metadata
+/** Scala Native internal JUnit test metadata
  *
  *  This class is public due to implementation details. Only the junit compiler
  *  plugin may create instances of it.

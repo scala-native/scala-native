@@ -3,7 +3,7 @@
  */
 package org.hamcrest
 
-import java.util.Arrays
+import java.{util => ju}
 
 import org.hamcrest.internal.{ArrayIterator, SelfDescribingValueIterator}
 
@@ -57,7 +57,7 @@ abstract class BaseDescription extends Description {
                                   separator: String,
                                   end: String,
                                   values: T*): Description = {
-    appendValueList(start, separator, end, Arrays.asList(values))
+    appendValueList(start, separator, end, ju.Arrays.asList(values))
   }
 
   override def appendValueList[T](

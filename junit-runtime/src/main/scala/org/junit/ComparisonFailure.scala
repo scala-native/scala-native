@@ -88,12 +88,12 @@ class ComparisonFailure(message: String, fExpected: String, fActual: String)
 
   import ComparisonFailure._
 
-  override def getMessage(): String = {
+  override def getMessage: String = {
     val cc = new ComparisonCompactor(fExpected, fActual)
     cc.compact(super.getMessage)
   }
 
-  def getActual(): String = fActual
+  def getActual: String = fActual
 
-  def getExpected(): String = fExpected
+  def getExpected: String = fExpected
 }
