@@ -1,7 +1,9 @@
-.. _intellij:
+.. _ides:
+
+Be sure to execute ``sbt rebuild`` so that artifacts are published and the IDEs can resolve them.
 
 IntelliJ IDEA
-===================
+=============
 
 * Select "Create project from existing sources" and choose the ``build.sbt`` file. When prompted, select "Open as project". Make sure you select the "Use sbt shell" for both import and build.
 
@@ -12,3 +14,7 @@ IntelliJ IDEA
   * ``native-build``: We need to add the ``sbt-scala-native`` module as a dependency. Go go Project Structure -> Modules -> ``native-build`` -> Dependencies and click the + icon. Select "Module Dependency" and select the ``sbt-scala-native`` module.
 
 The above is not an exhaustive list, but it is the bare minimum to have the build working. Please keep in mind that you will have to repeat the above steps, in case you reload (re-import) the SBT build. This will need to happen if you change some SBT-related file (e.g. ``build.sbt``).
+
+Metals
+======
+Metals import should work out of the box for most of the modules.
