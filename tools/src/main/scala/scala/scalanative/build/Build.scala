@@ -62,15 +62,7 @@ object Build {
     ScalaNative.codegen(config, optimized)
     val generated = IO.getAll(workdir, "glob:**.ll")
 
-    // deprecation compatibility
-    val nativelibs = if (config.internalNativelib.toString().isEmpty()) {
-      config.nativelibs
-    } else {
-      config.logger.warn(
-        "Deprecated. Use config.withNativelibs(value: Seq[NativeLib]) as of 0.4.0")
-      Seq(NativeLib(Discover.nativelibId, config.internalNativelib))
-    }
-
+    val nativelibs   = Discover.findNativeLibs(config.classPath)
     val unpackedLibs = nativelibs.map(LLVM.unpackNativelib(_, workdir))
     val allDirs      = unpackedLibs ++ LLVM.copyNativeCode(config, workdir)
     val objectFiles = config.logger.time("Compiling to native code") {
