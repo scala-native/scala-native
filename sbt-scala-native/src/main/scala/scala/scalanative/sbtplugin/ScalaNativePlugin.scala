@@ -52,10 +52,6 @@ object ScalaNativePlugin extends AutoPlugin {
       settingKey[Boolean](
         "Shall native toolchain dump intermediate NIR to disk during linking?")
 
-    val nativeLibraryDependencies =
-      settingKey[Seq[ModuleID]](
-        "The subset of your library dependencies that contain C or C++ code")
-
     val nativeCodeInclude =
       settingKey[Boolean]("The project contains C or C++ code")
   }
