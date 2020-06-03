@@ -58,7 +58,6 @@ object ScalaNativePluginInternal {
     nativeLTO := Discover.LTO(),
     nativeCheck := false,
     nativeDump := false,
-    nativeLibraryDependencies := Seq(),
     nativeCodeInclude := false
   )
 
@@ -106,31 +105,16 @@ object ScalaNativePluginInternal {
         }
       }
 
-      def createLibIds(nativeDeps: Seq[ModuleID]): Seq[LibId] = {
-        nativeDeps.map(dep => Discover.LibId(dep.organization, dep.name))
-      }
-
-      def findNativeLibs(libIds: Seq[LibId],
-                         classpath: Seq[Path]): Seq[NativeLib] =
-        libIds.map { libId =>
-          Discover.nativelib(classpath, libId).getOrElse {
-            throw new MessageOnlyException(
-              s"""Could not find "${libId.org}" %%% "${libId.artifact}" ... on the classpath.""")
-          }
-        }
-
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
-      val libIds = createLibIds(nativeLibraryDependencies.value)
-      // nativelib needs to be first for compiling gc and optional
-      val nativelibs = findNativeLibs(Discover.nativelibId +: libIds, classpath)
 
-      val maincls = mainClass.toString + "$"
-      val cwd     = nativeWorkdir.value.toPath
-      val clang   = nativeClang.value.toPath
-      val clangpp = nativeClangPP.value.toPath
-      val gc      = build.GC(nativeGC.value)
-      val mode    = build.Mode(nativeMode.value)
+      val nativelibs = Discover.findNativeLibs(classpath)
+      val maincls    = mainClass.toString + "$"
+      val cwd        = nativeWorkdir.value.toPath
+      val clang      = nativeClang.value.toPath
+      val clangpp    = nativeClangPP.value.toPath
+      val gc         = build.GC(nativeGC.value)
+      val mode       = build.Mode(nativeMode.value)
 
       build.Config.empty
         .withNativelibs(nativelibs)

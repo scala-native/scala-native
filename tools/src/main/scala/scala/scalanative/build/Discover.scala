@@ -18,15 +18,25 @@ object Discover {
   /** Container to hold the artifact (library id) and Path to jar, or project name and Path to directory */
   case class NativeLib(libId: LibId, path: Path)
 
+  /** Native lib org and artifact */
+  val nativelibId = LibId("org.scala-native", "nativelib")
+
   object NativeLib {
+
+    /** Example: nativelib */
+    val specTitle = "Specification-Title"
+
+    /** Example: org.scala-native */
+    val specVendor = "Specification-Vendor"
+
     def dirName(nativeLib: NativeLib): String = {
       val libId = nativeLib.libId
       s"${libId.org.replace('.', '_')}_${libId.artifact}"
     }
+
   }
 
-  /** Native lib org and artifact */
-  val nativelibId = LibId("org.scala-native", "nativelib")
+  import NativeLib._
 
   /** Compilation mode name that takes SCALANATIVE_MODE into account or default otherwise. */
   def mode(): String =
@@ -39,15 +49,34 @@ object Discover {
   def LTO(): String =
     getenv("SCALANATIVE_LTO").getOrElse("none")
 
-  /** Find nativelib jar on the classpath. */
-  def nativelib(classpath: Seq[Path], libId: LibId): Option[NativeLib] = {
-    val artifact = libId.artifact
-    classpath
-      .find { path =>
-        val absolute = path.toAbsolutePath.toString
-        absolute.contains(libId.org) && absolute.contains(artifact)
-      }
-      .flatMap(path => Option(NativeLib(libId, path)))
+  /** nativelib needs to be first for compiling gc and optional */
+  def findNativeLibs(classpath: Seq[Path]): Seq[NativeLib] = {
+    val jarPaths   = classpath.filter(path => path.toString.endsWith(".jar"))
+    val nativeLibs = jarPaths.flatMap(path => readJar(path))
+    nativeLibs
+  }
+
+  private def isNativeFile(name: String): Boolean =
+    name.endsWith(".c") || name.endsWith(".cpp") || name.endsWith(".S")
+
+  private def readJar(path: Path): Option[NativeLib] = {
+    import java.util.zip.ZipFile
+    import java.util.Properties
+    val zf            = new ZipFile(path.toFile)
+    val it            = zf.entries().asScala
+    val hasNativeCode = it.exists(e => isNativeFile(e.getName))
+    if (hasNativeCode) {
+      val me    = zf.getEntry("META-INF/MANIFEST.MF")
+      val is    = zf.getInputStream(me)
+      val props = new Properties()
+      props.load(is)
+      val artifact = props.getProperty(specTitle)
+      val org      = props.getProperty(specVendor)
+      is.close()
+      Some(NativeLib(LibId(org, artifact), path))
+    } else {
+      None
+    }
   }
 
   /** Find the newest compatible clang binary. */
