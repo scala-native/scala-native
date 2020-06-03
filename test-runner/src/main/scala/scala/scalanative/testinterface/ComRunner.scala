@@ -55,42 +55,38 @@ class ComRunner(bin: File,
     new BufferedOutputStream(socket.getOutputStream))
 
   /** Send message `msg` to the distant program. */
-  def send(msg: Message): Unit = {
-    synchronized { // Here, not at def, to workaround SN Issue #1091.
-      try SerializedOutputStream(out)(_.writeMessage(msg))
-      catch {
-        case ex: Throwable =>
-          close()
-          throw ex
-      }
+  def send(msg: Message): Unit = synchronized {
+    try SerializedOutputStream(out)(_.writeMessage(msg))
+    catch {
+      case ex: Throwable =>
+        close()
+        throw ex
     }
   }
 
   /** Wait for a message to arrive from the distant program. */
-  def receive(): Message = {
-    @tailrec
-    def loop(): Message = {
-      SerializedInputStream.next(in)(_.readMessage()) match {
-        case logMsg: Log =>
-          log(logMsg)
-          loop()
-        case other =>
-          other
+  def receive(): Message = synchronized {
+    try {
+      @tailrec
+      def loop(): Message = {
+        SerializedInputStream.next(in)(_.readMessage()) match {
+          case logMsg: Log =>
+            log(logMsg)
+            loop()
+          case other =>
+            other
+        }
       }
-    }
 
-    synchronized { // Here, not at def, to workaround SN Issue #1091.
-      try {
-        loop()
-      } catch {
-        case _: EOFException =>
-          close()
-          throw new BuildException(
-            s"EOF on connection with remote runner on port ${serverSocket.getLocalPort}")
-        case ex: Throwable =>
-          close()
-          throw ex
-      }
+      loop()
+    } catch {
+      case _: EOFException =>
+        close()
+        throw new BuildException(
+          s"EOF on connection with remote runner on port ${serverSocket.getLocalPort}")
+      case ex: Throwable =>
+        close()
+        throw ex
     }
   }
 
@@ -113,5 +109,4 @@ class ComRunner(bin: File,
         }
       case Level.Debug => logger.debug(message.message)
     }
-
 }
