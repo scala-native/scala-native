@@ -107,17 +107,14 @@ object ScalaNativePluginInternal {
 
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
-
-      val nativelibs = Discover.findNativeLibs(classpath)
-      val maincls    = mainClass.toString + "$"
-      val cwd        = nativeWorkdir.value.toPath
-      val clang      = nativeClang.value.toPath
-      val clangpp    = nativeClangPP.value.toPath
-      val gc         = build.GC(nativeGC.value)
-      val mode       = build.Mode(nativeMode.value)
+      val maincls = mainClass.toString + "$"
+      val cwd     = nativeWorkdir.value.toPath
+      val clang   = nativeClang.value.toPath
+      val clangpp = nativeClangPP.value.toPath
+      val gc      = build.GC(nativeGC.value)
+      val mode    = build.Mode(nativeMode.value)
 
       build.Config.empty
-        .withNativelibs(nativelibs)
         .withMainClass(maincls)
         .withClassPath(classpath)
         .withWorkdir(cwd)

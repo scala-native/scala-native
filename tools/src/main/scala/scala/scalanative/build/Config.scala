@@ -33,13 +33,8 @@ sealed trait Config {
   def workdir: Path
 
   /** Path to the nativelib jar. */
-  @deprecated("Use nativelibs: Seq[NativeLib]", "0.4.0")
+  @deprecated("Not needed: discovery is internal", "0.4.0")
   def nativelib: Path
-
-  private[build] def internalNativelib: Path
-
-  /** Sequence of NativeLib, name and path to jars. */
-  def nativelibs: Seq[NativeLib]
 
   /** Entry point for linking. */
   def mainClass: String
@@ -93,9 +88,6 @@ sealed trait Config {
   @deprecated("Use withNativelibs(value: Seq[NativeLib])", "0.4.0")
   def withNativelib(value: Path): Config
 
-  /** Create a new config with a Map of name to paths for the nativelibs. */
-  def withNativelibs(value: Seq[NativeLib]): Config
-
   /** Create new config with given mainClass point. */
   def withMainClass(value: String): Config
 
@@ -127,8 +119,6 @@ object Config {
   def empty: Config =
     Impl(
       nativelib = Paths.get(""),
-      internalNativelib = Paths.get(""),
-      nativelibs = Seq.empty,
       mainClass = "",
       classPath = Seq.empty,
       workdir = Paths.get(""),
@@ -148,8 +138,6 @@ object Config {
     )
 
   private final case class Impl(nativelib: Path,
-                                internalNativelib: Path,
-                                nativelibs: Seq[NativeLib],
                                 mainClass: String,
                                 classPath: Seq[Path],
                                 workdir: Path,
@@ -168,10 +156,7 @@ object Config {
                                 optimize: Boolean)
       extends Config {
     def withNativelib(value: Path): Config =
-      copy(nativelib = value, internalNativelib = value)
-
-    def withNativelibs(value: Seq[NativeLib]): Config =
-      copy(nativelibs = value)
+      copy(nativelib = value)
 
     def withMainClass(value: String): Config =
       copy(mainClass = value)
