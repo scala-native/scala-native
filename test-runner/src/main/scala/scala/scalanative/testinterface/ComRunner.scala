@@ -4,8 +4,7 @@ package testinterface
 import java.io._
 import java.net.{ServerSocket, SocketTimeoutException}
 
-import scala.concurrent.TimeoutException
-import scala.concurrent.duration.Duration
+import scala.annotation.tailrec
 import scala.sys.process._
 
 import scalanative.build.{BuildException, Logger}
@@ -27,7 +26,9 @@ class ComRunner(bin: File,
     override def run(): Unit = {
       val port = serverSocket.getLocalPort
       logger.info(s"Starting process '$bin' on port '$port'.")
-      Process(bin.toString +: port.toString +: args, None, envVars.toSeq: _*) ! Logger
+      Process(bin.toString +: port.toString +: args,
+              None,
+              envVars.toSeq: _*) ! Logger
         .toProcessLogger(logger)
     }
   }
@@ -50,65 +51,50 @@ class ComRunner(bin: File,
       serverSocket.close()
     }
 
-  private[this] var socketCurrentSoTimeout = 0
-
   private[this] val in = new DataInputStream(
     new BufferedInputStream(socket.getInputStream))
   private[this] val out = new DataOutputStream(
     new BufferedOutputStream(socket.getOutputStream))
 
   /** Send message `msg` to the distant program. */
-  def send(msg: Message): Unit = synchronized {
-    try SerializedOutputStream(out)(_.writeMessage(msg))
-    catch {
-      case ex: Throwable =>
-        close()
-        throw ex
-    }
-  }
-
-  /** Wait for a message to arrive from the distant program. */
-  def receive(timeout: Duration = Duration.Inf): Message =
-    synchronized {
-      val savedSoTimeout = socket.getSoTimeout()
-
-      try {
-        // Java sockets only handle non-negative Int timeouts.
-        // Silently truncate timouts greater than Int.MaxValue.
-        val deadLineMs = if (!timeout.isFinite()) {
-          0
-        } else {
-          timeout.toMillis.toInt
-        }
-
-        if (socketCurrentSoTimeout != deadLineMs) {
-          socket.setSoTimeout(deadLineMs)
-          socketCurrentSoTimeout = deadLineMs
-        }
-
-        var result: Message = new Log(0, "Dummy", None, Level.Info)
-
-        while (result.isInstanceOf[Log]) {
-          SerializedInputStream.next(in)(_.readMessage()) match {
-            case logMsg: Log => log(logMsg)
-            case other       => result = other
-          }
-        }
-
-        result
-      } catch {
-        case _: EOFException =>
-          close()
-          throw new BuildException(
-            s"EOF on connection with remote runner on port ${serverSocket.getLocalPort}")
-        case _: SocketTimeoutException =>
-          close()
-          throw new TimeoutException("Timeout expired")
+  def send(msg: Message): Unit = {
+    synchronized { // Here, not at def, to workaround SN Issue #1091.
+      try SerializedOutputStream(out)(_.writeMessage(msg))
+      catch {
         case ex: Throwable =>
           close()
           throw ex
       }
     }
+  }
+
+  /** Wait for a message to arrive from the distant program. */
+  def receive(): Message = {
+    @tailrec
+    def loop(): Message = {
+      SerializedInputStream.next(in)(_.readMessage()) match {
+        case logMsg: Log =>
+          log(logMsg)
+          loop()
+        case other =>
+          other
+      }
+    }
+
+    synchronized { // Here, not at def, to workaround SN Issue #1091.
+      try {
+        loop()
+      } catch {
+        case _: EOFException =>
+          close()
+          throw new BuildException(
+            s"EOF on connection with remote runner on port ${serverSocket.getLocalPort}")
+        case ex: Throwable =>
+          close()
+          throw ex
+      }
+    }
+  }
 
   def close(): Unit = {
     in.close()
@@ -129,4 +115,5 @@ class ComRunner(bin: File,
         }
       case Level.Debug => logger.debug(message.message)
     }
+
 }
