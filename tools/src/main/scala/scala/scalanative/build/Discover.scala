@@ -51,9 +51,16 @@ object Discover {
 
   /** nativelib needs to be first for compiling gc and optional */
   def findNativeLibs(classpath: Seq[Path]): Seq[NativeLib] = {
-    val jarPaths   = classpath.filter(path => path.toString.endsWith(".jar"))
-    val nativeLibs = jarPaths.flatMap(path => readJar(path))
-    nativeLibs
+    val jarPaths = classpath.filter(path => path.toString.endsWith(".jar"))
+    val nativeLibs = jarPaths.flatMap(path => readJar(path)).sortWith {
+      (a, _) =>
+        (a.libId.org >= nativelibId.org &&
+        a.libId.artifact >= nativelibId.artifact)
+    }
+    if (nativeLibs.isEmpty || nativeLibs.head.libId != nativelibId)
+      throw new BuildException(s"Native Library not found: $classpath")
+    else
+      nativeLibs
   }
 
   private def isNativeFile(name: String): Boolean =
