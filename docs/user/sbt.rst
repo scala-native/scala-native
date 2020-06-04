@@ -20,7 +20,7 @@ This generates the following files:
 
 * ``project/build.properties`` to specify the sbt version::
 
-    sbt.version = 1.3.10
+    sbt.version = 1.3.12
 
 * ``build.sbt`` to enable the plugin and specify Scala version::
 
