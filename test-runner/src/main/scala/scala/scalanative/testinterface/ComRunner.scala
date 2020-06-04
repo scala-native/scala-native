@@ -4,8 +4,7 @@ package testinterface
 import java.io._
 import java.net.{ServerSocket, SocketTimeoutException}
 
-import scala.concurrent.TimeoutException
-import scala.concurrent.duration.Duration
+import scala.annotation.tailrec
 import scala.sys.process._
 
 import scalanative.build.{BuildException, Logger}
@@ -66,41 +65,30 @@ class ComRunner(bin: File,
   }
 
   /** Wait for a message to arrive from the distant program. */
-  def receive(timeout: Duration = Duration.Inf): Message =
-    synchronized {
-      in.mark(Int.MaxValue)
-      val savedSoTimeout = socket.getSoTimeout()
-      try {
-        val deadLineMs = if (timeout.isFinite()) timeout.toMillis else 0L
-        socket.setSoTimeout((deadLineMs min Int.MaxValue).toInt)
-
-        val result =
-          SerializedInputStream.next(in)(_.readMessage()) match {
-            case logMsg: Log =>
-              log(logMsg)
-              receive(timeout)
-            case other =>
-              other
-          }
-
-        in.mark(0)
-        result
-
-      } catch {
-        case _: EOFException =>
-          close()
-          throw new BuildException(
-            s"EOF on connection with remote runner on port ${serverSocket.getLocalPort}")
-        case _: SocketTimeoutException =>
-          close()
-          throw new TimeoutException("Timeout expired")
-        case ex: Throwable =>
-          close()
-          throw ex
-      } finally {
-        socket.setSoTimeout(savedSoTimeout)
+  def receive(): Message = synchronized {
+    try {
+      @tailrec
+      def loop(): Message = {
+        SerializedInputStream.next(in)(_.readMessage()) match {
+          case logMsg: Log =>
+            log(logMsg)
+            loop()
+          case other =>
+            other
+        }
       }
+
+      loop()
+    } catch {
+      case _: EOFException =>
+        close()
+        throw new BuildException(
+          s"EOF on connection with remote runner on port ${serverSocket.getLocalPort}")
+      case ex: Throwable =>
+        close()
+        throw ex
     }
+  }
 
   def close(): Unit = {
     in.close()
@@ -121,5 +109,4 @@ class ComRunner(bin: File,
         }
       case Level.Debug => logger.debug(message.message)
     }
-
 }
