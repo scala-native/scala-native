@@ -47,25 +47,25 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
       new ScalaNativeJUnitPluginTransformer
 
     private object JUnitAnnots {
-      val Test        = getRequiredClass("org.junit.Test")
-      val Before      = getRequiredClass("org.junit.Before")
-      val After       = getRequiredClass("org.junit.After")
-      val BeforeClass = getRequiredClass("org.junit.BeforeClass")
-      val AfterClass  = getRequiredClass("org.junit.AfterClass")
-      val Ignore      = getRequiredClass("org.junit.Ignore")
+      val Test: ClassSymbol        = getRequiredClass("org.junit.Test")
+      val Before: ClassSymbol      = getRequiredClass("org.junit.Before")
+      val After: ClassSymbol       = getRequiredClass("org.junit.After")
+      val BeforeClass: ClassSymbol = getRequiredClass("org.junit.BeforeClass")
+      val AfterClass: ClassSymbol  = getRequiredClass("org.junit.AfterClass")
+      val Ignore: ClassSymbol      = getRequiredClass("org.junit.Ignore")
     }
 
     private object Names {
-      val beforeClass = newTermName("beforeClass")
-      val afterClass  = newTermName("afterClass")
-      val before      = newTermName("before")
-      val after       = newTermName("after")
-      val tests       = newTermName("tests")
-      val invokeTest  = newTermName("invokeTest")
-      val newInstance = newTermName("newInstance")
+      val beforeClass: TermName = newTermName("beforeClass")
+      val afterClass: TermName  = newTermName("afterClass")
+      val before: TermName      = newTermName("before")
+      val after: TermName       = newTermName("after")
+      val tests: TermName       = newTermName("tests")
+      val invokeTest: TermName  = newTermName("invokeTest")
+      val newInstance: TermName = newTermName("newInstance")
 
-      val instance = newTermName("instance")
-      val name     = newTermName("name")
+      val instance: TermName = newTermName("instance")
+      val name: TermName     = newTermName("name")
     }
 
     private lazy val BootstrapperClass =

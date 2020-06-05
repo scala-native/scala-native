@@ -20,16 +20,15 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
 
   def tags(): Array[String] = Array.empty
 
-  def execute(eventHandler: EventHandler,
-              loggers: Array[Logger],
-              continuation: Array[Task] => Unit): Unit = {
+  override def execute(eventHandler: EventHandler,
+                       loggers: Array[Logger]): Array[Task] = {
     val reporter = new Reporter(eventHandler, loggers, runSettings, taskDef)
 
-    val result = loadBootstrapper(reporter).fold {
+    val f = loadBootstrapper(reporter).fold {
       Future.successful(())
     } { bootstrapper => executeTests(bootstrapper, reporter) }
 
-    result.foreach(_ => continuation(Array()))
+    Array.empty
   }
 
   private def executeTests(bootstrapper: Bootstrapper,
@@ -154,7 +153,7 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
   }
 
   private def handleExpected(expectedException: Class[_ <: Throwable])(
-      body: => Future[Try[Unit]]) = {
+      body: => Future[Try[Unit]]): Future[Try[Unit]] = {
     val wantException = expectedException != classOf[org.junit.Test.None]
 
     if (wantException) {
@@ -221,7 +220,4 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
       case t: Throwable => Failure(t)
     }
   }
-
-  def execute(eventHandler: EventHandler, loggers: Array[Logger]): Array[Task] =
-    throw new UnsupportedOperationException("Supports JS only")
 }

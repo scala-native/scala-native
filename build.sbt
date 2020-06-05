@@ -1,5 +1,7 @@
 import java.io.File.pathSeparator
 
+import sbt.Keys.libraryDependencies
+
 import scala.collection.mutable
 import scala.util.Try
 
@@ -553,7 +555,10 @@ lazy val tests =
       //   crossTarget.value),
       // nativeLinkerReporter := LinkerReporter.toFile(
       //   target.value / "out.dot"),
-      testFrameworks += new TestFramework("tests.NativeFramework"),
+      testFrameworks ++= Seq(
+        new TestFramework("tests.NativeFramework"),
+        new TestFramework("scala.scalanative.junit.JUnitFramework")
+      ),
       Test / test / envVars ++= Map(
         "USER"                           -> "scala-native",
         "HOME"                           -> System.getProperty("user.home"),
@@ -634,6 +639,8 @@ lazy val testRunner =
     )
     .dependsOn(tools)
 
+// JUnit modules and settings ------------------------------------------------
+
 lazy val jUnitRuntime =
   project
     .in(file("junit-runtime"))
@@ -648,7 +655,10 @@ lazy val jUnitRuntime =
         }
       }
     )
-    .dependsOn(nscplugin % "plugin", testInterface)
+    .dependsOn(
+      nscplugin % "plugin",
+      testInterface
+    )
 
 lazy val jUnitPlugin =
   project
@@ -659,4 +669,70 @@ lazy val jUnitPlugin =
       crossVersion := CrossVersion.full,
       libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       exportJars := true
+    )
+
+val commonJUnitTestOutputsSettings = Def.settings(
+  nameSettings,
+  Compile / publishArtifact := false,
+  Test / parallelExecution := false,
+  Test / unmanagedSourceDirectories +=
+    baseDirectory.value.getParentFile / "shared/src/test/scala",
+  Test / testOptions ++= Seq(
+    Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
+    Tests.Filter(_.endsWith("Assertions"))
+  ),
+  Test / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
+  Test / logBuffered := false
+)
+
+lazy val jUnitTestOutputsNative =
+  project
+    .in(file("junit-test/output-native"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(
+      commonJUnitTestOutputsSettings,
+      name := "Tests for Scala Native JUnit in native",
+      Test / scalacOptions ++= {
+        val jar = (jUnitPlugin / Compile / packageBin).value
+        Seq(s"-Xplugin:$jar")
+      }
+    )
+    .dependsOn(
+      nscplugin        % "plugin",
+      jUnitRuntime     % "test",
+      testInterface    % "test",
+      jUnitAsyncNative % "test"
+    )
+
+lazy val jUnitTestOutputsJVM =
+  project
+    .in(file("junit-test/output-jvm"))
+    .settings(
+      commonJUnitTestOutputsSettings,
+      name := "Tests for Scala Native JUnit in JVM",
+      libraryDependencies ++= Seq(
+        "org.scala-sbt" % "test-interface"  % "1.0"  % "test",
+        "com.novocode"  % "junit-interface" % "0.11" % "test"
+      )
+    )
+    .dependsOn(jUnitAsyncJVM % "test")
+
+lazy val jUnitAsyncNative =
+  project
+    .in(file("junit-async/native"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(
+      nameSettings,
+      name := "Scala Native internal JUnit async Native support",
+      Compile / publishArtifact := false
+    )
+    .dependsOn(nscplugin % "plugin", allCoreLibs)
+
+lazy val jUnitAsyncJVM =
+  project
+    .in(file("junit-async/jvm"))
+    .settings(
+      nameSettings,
+      name := "Scala Native internal JUnit async JVM support",
+      Compile / publishArtifact := false
     )
