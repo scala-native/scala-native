@@ -64,12 +64,13 @@ object Build {
 
     val nativelibs   = Discover.findNativeLibs(config.classPath)
     val unpackedLibs = nativelibs.map(LLVM.unpackNativelib(_, workdir))
+    val nativelib    = Discover.findNativeLib(unpackedLibs)
     val allDirs      = unpackedLibs ++ LLVM.copyNativeCode(config, workdir)
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
         config.withCompileOptions("-O2" +: config.compileOptions)
       // head needs to be the nativelib which is required
-      LLVM.compileNativelib(nativelibConfig, linked, unpackedLibs.head)
+      LLVM.compileNativelib(nativelibConfig, linked, nativelib)
       LLVM.compile(config, generated)
     }
 

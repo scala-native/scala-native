@@ -7,7 +7,7 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath
-import scalanative.build.Discover.NativeLib
+import scalanative.build.Discover._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -26,7 +26,8 @@ private[scalanative] object LLVM {
    * @return The location where the nativelib has been unpacked, `workdir/nativelib`.
    */
   def unpackNativelib(nativelib: NativeLib, workdir: Path): Path = {
-    val target      = workdir.resolve(NativeLib.dirName(nativelib))
+    val dirName     = LibId.dirName(nativelib.libId)
+    val target      = workdir.resolve(dirName)
     val source      = nativelib.path
     val jarhash     = IO.sha1(source)
     val jarhashPath = target.resolve("jarhash")
@@ -56,8 +57,9 @@ private[scalanative] object LLVM {
   def copyNativeCode(config: Config, workdir: Path): Option[Path] =
     config.nativeCodeProject match {
       case Some(nativelib) => {
-        val target = workdir.resolve(NativeLib.dirName(nativelib))
-        val source = nativelib.path
+        val dirName = LibId.dirName(nativelib.libId)
+        val target  = workdir.resolve(dirName)
+        val source  = nativelib.path
         val files = IO.getAll(source, "glob:**.c") ++
           IO.getAll(source, "glob:**.cpp") ++
           IO.getAll(source, "glob:**.S")
