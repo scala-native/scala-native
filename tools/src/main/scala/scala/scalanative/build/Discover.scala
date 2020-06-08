@@ -21,7 +21,7 @@ object Discover {
   /** Native lib org and artifact */
   val nativelibId = LibId("org.scala-native", "nativelib")
 
-  object NativeLib {
+  object LibId {
 
     /** Example: nativelib */
     val specTitle = "Specification-Title"
@@ -29,14 +29,11 @@ object Discover {
     /** Example: org.scala-native */
     val specVendor = "Specification-Vendor"
 
-    def dirName(nativeLib: NativeLib): String = {
-      val libId = nativeLib.libId
+    def dirName(libId: LibId): String = {
       s"${libId.org.replace('.', '_')}_${libId.artifact}"
     }
 
   }
-
-  import NativeLib._
 
   /** Compilation mode name that takes SCALANATIVE_MODE into account or default otherwise. */
   def mode(): String =
@@ -49,19 +46,21 @@ object Discover {
   def LTO(): String =
     getenv("SCALANATIVE_LTO").getOrElse("none")
 
-  /** nativelib needs to be first for compiling gc and optional */
-  def findNativeLibs(classpath: Seq[Path]): Seq[NativeLib] = {
-    val jarPaths = classpath.filter(path => path.toString.endsWith(".jar"))
-    val nativeLibs = jarPaths.flatMap(path => readJar(path)).sortWith {
-      (a, _) =>
-        (a.libId.org >= nativelibId.org &&
-        a.libId.artifact >= nativelibId.artifact)
-    }
-    if (nativeLibs.isEmpty || nativeLibs.head.libId != nativelibId)
+  private[build] def findNativeLibs(classpath: Seq[Path]): Seq[NativeLib] = {
+    val jarPaths   = classpath.filter(path => path.toString.endsWith(".jar"))
+    val nativeLibs = jarPaths.flatMap(path => readJar(path))
+    if (nativeLibs.isEmpty)
       throw new BuildException(s"Native Library not found: $classpath")
     else
       nativeLibs
   }
+
+  private[build] def findNativeLib(nativeLibs: Seq[Path]): Path =
+    nativeLibs.find(_.endsWith(LibId.dirName(nativelibId))) match {
+      case Some(nl) => nl.path
+      case None =>
+        throw new BuildException(s"Native Library not found: $nativeLibs")
+    }
 
   private def isNativeFile(name: String): Boolean =
     name.endsWith(".c") || name.endsWith(".cpp") || name.endsWith(".S")
@@ -77,8 +76,8 @@ object Discover {
       val is    = zf.getInputStream(me)
       val props = new Properties()
       props.load(is)
-      val artifact = props.getProperty(specTitle)
-      val org      = props.getProperty(specVendor)
+      val artifact = props.getProperty(LibId.specTitle)
+      val org      = props.getProperty(LibId.specVendor)
       is.close()
       Some(NativeLib(LibId(org, artifact), path))
     } else {
