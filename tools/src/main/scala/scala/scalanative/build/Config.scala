@@ -85,7 +85,7 @@ sealed trait Config {
   def withWorkdir(value: Path): Config
 
   /** Create a new config with given path to nativelib. */
-  @deprecated("Use withNativelibs(value: Seq[NativeLib])", "0.4.0")
+  @deprecated("Not needed: discovery is internal", "0.4.0")
   def withNativelib(value: Path): Config
 
   /** Create new config with given mainClass point. */
