@@ -17,7 +17,6 @@ object Build {
    *
    *  {{{
    *  val classpath: Seq[Path] = ...
-   *  val nativelib: Path      = ...
    *  val workdir: Path        = ...
    *  val main: String         = ...
    *
@@ -26,7 +25,6 @@ object Build {
    *  val linkopts  = Discover.linkingOptions()
    *  val compopts  = Discover.compileOptions()
    *  val triple    = Discover.targetTriple(clang, workdir)
-   *  val nativelib = Discover.nativelib(classpath, Discover.nativelibId).get
    *  val outpath   = workdir.resolve("out")
    *
    *  val config =
@@ -38,7 +36,6 @@ object Build {
    *      .withLinkingOptions(linkopts)
    *      .withCompileOptions(compopts)
    *      .withTargetTriple(triple)
-   *      .withNativelibs(Seq(nativelib))
    *      .withMainClass(main)
    *      .withClassPath(classpath)
    *      .withLinkStubs(true)
