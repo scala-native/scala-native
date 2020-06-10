@@ -50,15 +50,12 @@ object ScalaNativePluginInternal {
     nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
     nativeCompileOptions := Discover.compileOptions(),
     nativeLinkingOptions := Discover.linkingOptions(),
-    nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
-      .getOrElse(build.Mode.default.name),
+    nativeMode := Discover.mode(),
     nativeLinkStubs := false,
-    nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
-      .getOrElse(build.GC.default.name),
+    nativeGC := Discover.GC(),
     nativeLTO := Discover.LTO(),
     nativeCheck := false,
-    nativeDump := false,
-    nativeCodeInclude := false
+    nativeDump := false
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(

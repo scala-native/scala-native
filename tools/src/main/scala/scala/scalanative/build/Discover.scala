@@ -35,16 +35,20 @@ object Discover {
 
   }
 
-  /** Compilation mode name that takes SCALANATIVE_MODE into account or default otherwise. */
+  /** Compilation mode name from SCALANATIVE_MODE env var or default. */
   def mode(): String =
     getenv("SCALANATIVE_MODE").getOrElse(build.Mode.default.name)
 
   def optimize(): Boolean =
     getenv("SCALANATIVE_OPTIMIZE").forall(_.toBoolean)
 
-  /** LTO variant used for release mode. */
+  /** LTO variant used for release mode from SCALANATIVE_LTO env var or default. */
   def LTO(): String =
     getenv("SCALANATIVE_LTO").getOrElse("none")
+
+  /** GC variant used from SCALANATIVE_GC env var or default. */
+  def GC(): String =
+    getenv("SCALANATIVE_GC").getOrElse(build.GC.default.name)
 
   private[build] def findNativeLibs(classpath: Seq[Path]): Seq[NativeLib] = {
     val jarPaths   = classpath.filter(path => path.toString.endsWith(".jar"))

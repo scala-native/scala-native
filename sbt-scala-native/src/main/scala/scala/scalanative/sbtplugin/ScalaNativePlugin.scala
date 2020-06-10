@@ -51,9 +51,6 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeDump =
       settingKey[Boolean](
         "Shall native toolchain dump intermediate NIR to disk during linking?")
-
-    val nativeCodeInclude =
-      settingKey[Boolean]("The project contains C or C++ code")
   }
 
   @deprecated("use autoImport instead", "0.3.7")
