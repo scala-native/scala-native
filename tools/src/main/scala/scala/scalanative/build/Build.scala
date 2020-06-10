@@ -62,7 +62,6 @@ object Build {
     val nativelibs   = Discover.findNativeLibs(config.classPath)
     val unpackedLibs = nativelibs.map(LLVM.unpackNativelib(_, workdir))
     val nativelib    = Discover.findNativeLib(unpackedLibs)
-    val allDirs      = unpackedLibs ++ LLVM.copyNativeCode(config, workdir)
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
         config.withCompileOptions("-O2" +: config.compileOptions)
@@ -71,6 +70,6 @@ object Build {
       LLVM.compile(config, generated)
     }
 
-    LLVM.link(config, linked, objectFiles, allDirs, outpath)
+    LLVM.link(config, linked, objectFiles, unpackedLibs, outpath)
   }
 }

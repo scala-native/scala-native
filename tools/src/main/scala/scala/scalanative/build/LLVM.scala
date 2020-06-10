@@ -48,37 +48,33 @@ private[scalanative] object LLVM {
   /**
    * Copy project code from project `myproj` to `workdir/myproj`
    * where is can be compiled and linked.
+   * Not used. Saved here in case non jar based is desired.
    *
-   * @param config    The config that may contain `nativeCodeProject`.
+   * @param nativelib    The native lib directory with native code.
    * @param workdir   The working directory as described above.
    * @return An Option with a Path to the `nativeCodeProject` work dir
    *         or None if there is `NativeCodeProject is not configured.
    */
-  def copyNativeCode(config: Config, workdir: Path): Option[Path] =
-    config.nativeCodeProject match {
-      case Some(nativelib) => {
-        val dirName = LibId.dirName(nativelib.libId)
-        val target  = workdir.resolve(dirName)
-        val source  = nativelib.path
-        val files = IO.getAll(source, "glob:**.c") ++
-          IO.getAll(source, "glob:**.cpp") ++
-          IO.getAll(source, "glob:**.S")
-        val fileshash     = IO.sha1files(files)
-        val fileshashPath = target.resolve("fileshash")
-        def copied =
-          Files.exists(target) &&
-            Files.exists(fileshashPath) &&
-            Arrays.equals(fileshash, Files.readAllBytes(fileshashPath))
-        if (!copied) {
-          IO.deleteRecursive(target)
-          IO.copyDirectory(source, target)
-          IO.write(fileshashPath, fileshash)
-        }
-
-        Some(target)
-      }
-      case None => None
+  def copyNativeCode(nativelib: NativeLib, workdir: Path): Path = {
+    val dirName = LibId.dirName(nativelib.libId)
+    val target  = workdir.resolve(dirName)
+    val source  = nativelib.path
+    val files = IO.getAll(source, "glob:**.c") ++
+      IO.getAll(source, "glob:**.cpp") ++
+      IO.getAll(source, "glob:**.S")
+    val fileshash     = IO.sha1files(files)
+    val fileshashPath = target.resolve("fileshash")
+    def copied =
+      Files.exists(target) &&
+        Files.exists(fileshashPath) &&
+        Arrays.equals(fileshash, Files.readAllBytes(fileshashPath))
+    if (!copied) {
+      IO.deleteRecursive(target)
+      IO.copyDirectory(source, target)
+      IO.write(fileshashPath, fileshash)
     }
+    target
+  }
 
   /**
    * Compile the native lib to `.o` files

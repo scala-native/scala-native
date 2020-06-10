@@ -94,17 +94,6 @@ object ScalaNativePluginInternal {
         throw new MessageOnlyException("No main class detected.")
       }
 
-      val nativeCodeProject = {
-        if (nativeCodeInclude.value) {
-          val projName   = name.value
-          val orgName    = organization.value
-          val classesDir = crossTarget.value / "classes"
-          Some(NativeLib(LibId(orgName, projName), classesDir.toPath()))
-        } else {
-          None
-        }
-      }
-
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
       val maincls = mainClass.toString + "$"

@@ -73,7 +73,6 @@ Since Name                          Type               Description
 0.4.0 ``nativeLTO``                 ``String``         One of ``"none"``, ``"full"`` or ``"thin"`` (4)
 0.4.0 ``nativeCheck``               ``Boolean``        Shall the linker check intermediate results for correctness?
 0.4.0 ``nativeDump``                ``Boolean``        Shall the linker dump intermediate results to disk?
-0.4.0 ``nativeCodeInclude``         ``Boolean``        Does the project contain C/C++ code that needs compiling?
 ===== ============================= ================== =================================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
@@ -189,7 +188,7 @@ following procedure.
 Add C code into `src/main/resources` and if using `sbt` include the following
 in your build file::
 
-    nativeCodeInclude := true
+    exportJars := true
 
 The code can be put in directories as desired inside the `resources` directory.
 
