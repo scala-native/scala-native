@@ -55,25 +55,25 @@ Scala Native Version       Scala Versions
 Sbt settings and tasks
 ----------------------
 
-===== ============================= ================== =================================================================
-Since Name                          Type               Description
-===== ============================= ================== =================================================================
-0.1   ``compile``                   ``Analysis``       Compile Scala code to NIR
-0.1   ``run``                       ``Unit``           Compile, link and run the generated binary
-0.1   ``package``                   ``File``           Similar to standard package with addition of NIR
-0.1   ``publish``                   ``Unit``           Similar to standard publish with addition of NIR (1)
-0.1   ``nativeLink``                ``File``           Link NIR and generate native binary
-0.1   ``nativeClang``               ``File``           Path to ``clang`` command
-0.1   ``nativeClangPP``             ``File``           Path to ``clang++`` command
-0.1   ``nativeCompileOptions``      ``Seq[String]``    Extra options passed to clang verbatim during compilation
-0.1   ``nativeLinkingOptions``      ``Seq[String]``    Extra options passed to clang verbatim during linking
-0.1   ``nativeMode``                ``String``         One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
-0.2   ``nativeGC``                  ``String``         One of ``"none"``, ``"boehm"`` or ``"immix"`` (3)
-0.3.3 ``nativeLinkStubs``           ``Boolean``        Whether to link ``@stub`` definitions, or to ignore them
-0.4.0 ``nativeLTO``                 ``String``         One of ``"none"``, ``"full"`` or ``"thin"`` (4)
-0.4.0 ``nativeCheck``               ``Boolean``        Shall the linker check intermediate results for correctness?
-0.4.0 ``nativeDump``                ``Boolean``        Shall the linker dump intermediate results to disk?
-===== ============================= ================== =================================================================
+===== ======================== =============== =========================================================
+Since Name                     Type            Description
+===== ======================== =============== =========================================================
+0.1   ``compile``              ``Analysis``    Compile Scala code to NIR
+0.1   ``run``                  ``Unit``        Compile, link and run the generated binary
+0.1   ``package``              ``File``        Similar to standard package with addition of NIR
+0.1   ``publish``              ``Unit``        Similar to standard publish with addition of NIR (1)
+0.1   ``nativeLink``           ``File``        Link NIR and generate native binary
+0.1   ``nativeClang``          ``File``        Path to ``clang`` command
+0.1   ``nativeClangPP``        ``File``        Path to ``clang++`` command
+0.1   ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim during compilation
+0.1   ``nativeLinkingOptions`` ``Seq[String]`` Extra options passed to clang verbatim during linking
+0.1   ``nativeMode``           ``String``      One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
+0.2   ``nativeGC``             ``String``      One of ``"none"``, ``"boehm"`` or ``"immix"`` (3)
+0.3.3 ``nativeLinkStubs``      ``Boolean``     Whether to link ``@stub`` definitions, or to ignore them
+0.4.0 ``nativeLTO``            ``String``      One of ``"none"``, ``"full"`` or ``"thin"`` (4)
+0.4.0 ``nativeCheck``          ``Boolean``     Shall the linker check intermediate results for correctness?
+0.4.0 ``nativeDump``           ``Boolean``     Shall the linker dump intermediate results to disk? 
+===== ======================== =============== =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
 2. See `Compilation modes`_ for details.
