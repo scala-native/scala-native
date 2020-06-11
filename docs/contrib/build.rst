@@ -44,17 +44,6 @@ You can run only the test of interest by using one of the following commands:
     > tests/testOnly java.lang.StringSuite
     > tests/testOnly *StringSuite
 
-Scripted tests are used when you need to interact with the file system,
-networking, or the build system that cannot be done with a unit test. They
-are located in the `scripted-tests` directory.
-
-Run all the scripted tests or just one using the following examples respectively:
-
-.. code-block:: text
-
-    > sbtScalaNative/scripted
-    > sbtScalaNative/scripted run/native-code-include
-
 Some additional tips are as follows.
 
 - If you modify the ``nscplugin``, you will need to ``clean`` the project that
