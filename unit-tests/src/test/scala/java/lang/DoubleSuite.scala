@@ -196,30 +196,32 @@ object DoubleSuite extends tests.Suite {
     assert(Double.parseDouble("-Infinity") == Double.NEGATIVE_INFINITY)
     assert(Double.isNaN(Double.parseDouble("NaN")))
 
-    val epsilon = 0.0001
-    assert(Math.abs(Double.parseDouble("6.66D") - 6.66) < epsilon, "a8")
+    assert(Double.parseDouble("6.66D") == 6.66, "a8")
 
-    // Java allows trailing whitespace, including tabs.
-    assert(Math.abs(Double.parseDouble("6.66D\t ") - 6.66) < epsilon, "a9")
+    // Java allows trailing whitespace, including tabs & nulls.
+    assert(Double.parseDouble("6.66D\t ") == 6.66, "a9")
+    assert(Double.parseDouble("6.66D\u0000") == 6.66, "a9a")
 
-    assert(Math.abs(Double.parseDouble("6.66d") - 6.66) < epsilon, "a10")
+    assert(Double.parseDouble("6.66d") == 6.66, "a10")
 
-    assert(Math.abs(Double.parseDouble("7.77F") - 7.77) < epsilon, "a11")
-    assert(Math.abs(Double.parseDouble("7.77f") - 7.77) < epsilon, "a12")
+    assert(Double.parseDouble("7.77F") == 7.77, "a11")
+    assert(Double.parseDouble("7.77f") == 7.77, "a12")
 
     // Does not parse characters beyond IEEE754 spec.
-    assert(Math.abs(
-             Double.parseDouble("1.7976931348623157999999999")
-               - 1.7976931348623157) < epsilon,
+    assert(Double.parseDouble("1.7976931348623157999999999")
+             == 1.7976931348623157,
            "a13")
 
     assertThrows[NumberFormatException](Double.parseDouble(""))
+    assertThrows[NumberFormatException](Double.parseDouble("D"))
     assertThrows[NumberFormatException](Double.parseDouble("potato"))
     assertThrows[NumberFormatException](Double.parseDouble("0.0potato"))
     assertThrows[NumberFormatException](Double.parseDouble("0.potato"))
 
     assertThrows[NumberFormatException](Double.parseDouble("6.66 D"))
     assertThrows[NumberFormatException](Double.parseDouble("6.66D  Bad  "))
+    assertThrows[NumberFormatException](Double.parseDouble("6.66D\u0000a"))
+    assertThrows[NumberFormatException](Double.parseDouble("6.66D \u0100"))
 
     // Out of IEE754 range handling
 
@@ -237,16 +239,13 @@ object DoubleSuite extends tests.Suite {
     assert(Double.parseDouble("4.9E-325") == 0.0, "a22")
 
     // Hexadecimal strings
-    assert(Math.abs(Double.parseDouble("0x0p1") - 0.0f) < epsilon, "a30")
-    assert(Math.abs(Double.parseDouble("0x1p0") - 1.0f) < epsilon, "a31")
+    assert(Double.parseDouble("0x0p1") == 0.0f, "a30")
+    assert(Double.parseDouble("0x1p0") == 1.0f, "a31")
 
-    assert(Math.abs(Double.parseDouble("0x1p1F") - 2.0f) < epsilon, "a32")
+    assert(Double.parseDouble("0x1p1F") == 2.0f, "a32")
 
-    assert(Math.abs(Double.parseDouble("0x1.8eae14p6") - 99.67f) < epsilon,
-           "a33")
-    assert(Math.abs(Double.parseDouble("-0x1.8eae14p6") - -99.67f) < epsilon,
-           "a34")
-
+    assert(Double.parseDouble("0x1.8eae14p6") == 99.67f, "a33")
+    assert(Double.parseDouble("-0x1.8eae14p6") == -99.67f, "a34")
   }
 
   // scala.Double passes -0.0d without change. j.l.Double gets forced to +0.0.

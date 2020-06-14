@@ -183,8 +183,6 @@ object FloatSuite extends tests.Suite {
   }
 
   test("parseFloat") {
-    val epsilon = 0.0001
-
     assert(Float.parseFloat("1.0") == 1.0f)
     assert(Float.parseFloat("-1.0") == -1.0f)
     assert(Float.parseFloat("0.0") == 0.0f)
@@ -193,33 +191,36 @@ object FloatSuite extends tests.Suite {
     assert(Float.parseFloat("-Infinity") == Float.NEGATIVE_INFINITY)
     assert(Float.isNaN(Float.parseFloat("NaN")))
 
-    assert(Math.abs(Float.parseFloat("6.66D") - 6.66f) < epsilon, "a8")
+    assert(Float.parseFloat("6.66D") == 6.66f, "a8")
 
-    // Java allows trailing whitespace, including tabs.
-    assert(Math.abs(Float.parseFloat("6.66D\t ") - 6.66f) < epsilon, "a9")
+    // Java allows trailing whitespace, including tabs & nulls.
+    assert(Float.parseFloat("6.66D\t ") == 6.66f, "a9")
+    assert(Float.parseFloat("6.66D\u0000") == 6.66f, "a9a")
 
-    assert(Math.abs(Float.parseFloat("6.66d") - 6.66f) < epsilon, "a10")
+    assert(Float.parseFloat("6.66d") == 6.66f, "a10")
 
-    assert(Math.abs(Float.parseFloat("7.77F") - 7.77f) < epsilon, "a11")
-    assert(Math.abs(Float.parseFloat("7.77f") - 7.77f) < epsilon, "a12")
+    assert(Float.parseFloat("7.77F") == 7.77f, "a11")
+    assert(Float.parseFloat("7.77f") == 7.77f, "a12")
 
     // Does not parse characters beyond IEEE754 spec.
-    assert(Math.abs(
-             Double.parseDouble("1.7976931348623157999999999")
-               - 1.7976931348623157f) < epsilon,
-           "a13")
+    assert(
+      Float.parseFloat("1.7976931348623157999999999") == 1.7976931348623157f,
+      "a13")
 
     assertThrows[NumberFormatException](Float.parseFloat(""))
+    assertThrows[NumberFormatException](Float.parseFloat("F"))
     assertThrows[NumberFormatException](Float.parseFloat("potato"))
     assertThrows[NumberFormatException](Float.parseFloat("0.0potato"))
     assertThrows[NumberFormatException](Float.parseFloat("0.potato"))
 
-    assertThrows[NumberFormatException](Float.parseFloat("6.66 D"))
-    assertThrows[NumberFormatException](Float.parseFloat("6.66D  Bad  "))
+    assertThrows[NumberFormatException](Float.parseFloat("6.66 F"))
+    assertThrows[NumberFormatException](Float.parseFloat("6.66F  Bad  "))
+    assertThrows[NumberFormatException](Float.parseFloat("6.66F\u0000a"))
+    assertThrows[NumberFormatException](Float.parseFloat("6.66F \u0100"))
 
-    // Out of range errors
+    // Out of IEE754 range handling
+
     //   Too big - java.lang.Float.MAX_VALUE times 10
-
     assert(Float.parseFloat("3.4028235E39") ==
              Float.POSITIVE_INFINITY,
            "a20")
@@ -233,13 +234,12 @@ object FloatSuite extends tests.Suite {
     assert(Float.parseFloat("1.4E-46") == 0.0f, "a22")
 
     // Hexadecimal strings
-    assert(Math.abs(Float.parseFloat("0x0p1") - 0.0f) < epsilon, "a30")
-    assert(Math.abs(Float.parseFloat("0x1p0") - 1.0f) < epsilon, "a31")
-    assert(Math.abs(Float.parseFloat("0x1p1D") - 2.0f) < epsilon, "a32")
+    assert(Float.parseFloat("0x0p1") == 0.0f, "a30")
+    assert(Float.parseFloat("0x1p0") == 1.0f, "a31")
+    assert(Float.parseFloat("0x1p1D") == 2.0f, "a32")
 
-    assert(Math.abs(Float.parseFloat("0x1.8eae14p6") - 99.67f) < epsilon, "a33")
-    assert(Math.abs(Float.parseFloat("-0x1.8eae14p6") - -99.67f) < epsilon,
-           "a34")
+    assert(Float.parseFloat("0x1.8eae14p6") == 99.67f, "a33")
+    assert(Float.parseFloat("-0x1.8eae14p6") == -99.67f, "a34")
   }
 
   // scala.Float passes -0.0F without change. j.l.Double forced to +0.0.
