@@ -12,6 +12,10 @@ import scalanative.build.Discover._
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
 
+  def unpackNativeCode(nativelib: NativeLib): Path =
+    if (NativeLib.isJar(nativelib)) unpackNativeJar(nativelib)
+    else copyNativeDir(nativelib)
+
   /**
    * Unpack the `nativelib` to `workdir/nativelib` where
    * `nativelib` is the Scala Native lib or the name of
@@ -25,10 +29,9 @@ private[scalanative] object LLVM {
    *                  to `workdir/nativelib`.
    * @return The location where the nativelib has been unpacked, `workdir/nativelib`.
    */
-  def unpackNativelib(nativelib: NativeLib, workdir: Path): Path = {
-    val dirName     = LibId.dirName(nativelib.libId)
-    val target      = workdir.resolve(dirName)
-    val source      = nativelib.path
+  private def unpackNativeJar(nativelib: NativeLib): Path = {
+    val target      = nativelib.dest
+    val source      = nativelib.src
     val jarhash     = IO.sha1(source)
     val jarhashPath = target.resolve("jarhash")
     def unpacked =
@@ -55,10 +58,9 @@ private[scalanative] object LLVM {
    * @return An Option with a Path to the `nativeCodeProject` work dir
    *         or None if there is `NativeCodeProject is not configured.
    */
-  def copyNativeCode(nativelib: NativeLib, workdir: Path): Path = {
-    val dirName = LibId.dirName(nativelib.libId)
-    val target  = workdir.resolve(dirName)
-    val source  = nativelib.path
+  private def copyNativeDir(nativelib: NativeLib): Path = {
+    val target = nativelib.dest
+    val source = nativelib.src
     val files = IO.getAll(source, "glob:**.c") ++
       IO.getAll(source, "glob:**.cpp") ++
       IO.getAll(source, "glob:**.S")

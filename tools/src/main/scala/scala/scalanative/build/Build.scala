@@ -59,9 +59,10 @@ object Build {
     ScalaNative.codegen(config, optimized)
     val generated = IO.getAll(workdir, "glob:**.ll")
 
-    val nativelibs   = Discover.findNativeLibs(config.classPath)
-    val unpackedLibs = nativelibs.map(LLVM.unpackNativelib(_, workdir))
-    val nativelib    = Discover.findNativeLib(unpackedLibs)
+    val nativelibs   = Discover.findNativeLibs(config.classPath, workdir)
+    val nativelib    = Discover.findNativeLib(nativelibs)
+    val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
+
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
         config.withCompileOptions("-O2" +: config.compileOptions)

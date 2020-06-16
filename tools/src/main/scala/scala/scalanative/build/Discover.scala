@@ -12,27 +12,23 @@ import scalanative.build.IO.RichPath
  */
 object Discover {
 
-  /** Library Id for lookup */
-  case class LibId(org: String, artifact: String)
+  /** List of source patterns used */
+  val jarExtension  = ".jar"
+  val srcExtensions = Seq(".c", ".cpp", ".S")
+  val srcPatterns   = srcExtensions.mkString("glob:**{", ",", "}")
 
-  /** Container to hold the artifact (library id) and Path to jar, or project name and Path to directory */
-  case class NativeLib(libId: LibId, path: Path)
+  /** Original jar or dir path and generated dir path for native code */
+  case class NativeLib(src: Path, dest: Path)
 
-  /** Native lib org and artifact */
-  val nativelibId = LibId("org.scala-native", "nativelib")
+  /** To positively identify nativelib */
+  val nativeLibMarkerFile = "org_scala-native_nativelib.txt"
 
-  object LibId {
+  private lazy val dirMarkerFilePattern = "glob:**" + nativeLibMarkerFile
 
-    /** Example: nativelib */
-    val specTitle = "Specification-Title"
+  def isJar(path: Path): Boolean = path.toString().endsWith(jarExtension)
 
-    /** Example: org.scala-native */
-    val specVendor = "Specification-Vendor"
-
-    def dirName(libId: LibId): String = {
-      s"${libId.org.replace('.', '_')}_${libId.artifact}"
-    }
-
+  object NativeLib {
+    def isJar(nativelib: NativeLib): Boolean = Discover.isJar(nativelib.src)
   }
 
   /** Compilation mode name from SCALANATIVE_MODE env var or default. */
@@ -50,44 +46,62 @@ object Discover {
   def GC(): String =
     getenv("SCALANATIVE_GC").getOrElse(build.GC.default.name)
 
-  private[build] def findNativeLibs(classpath: Seq[Path]): Seq[NativeLib] = {
-    val jarPaths   = classpath.filter(path => path.toString.endsWith(".jar"))
-    val nativeLibs = jarPaths.flatMap(path => readJar(path))
-    if (nativeLibs.isEmpty)
-      throw new BuildException(s"Native Library not found: $classpath")
+  private[build] def findNativeLibs(classpath: Seq[Path],
+                                    workdir: Path): Seq[NativeLib] = {
+    val nativeLibPaths = classpath.flatMap { path =>
+      if (isJar(path)) readJar(path)
+      else readDir(path)
+    }
+
+    val extractPaths =
+      for ((path, index) <- nativeLibPaths.zipWithIndex) yield {
+        val name =
+          path
+            .getName(path.getNameCount() - 1)
+            .toString()
+            .stripSuffix(jarExtension)
+        NativeLib(src = path,
+                  dest = workdir.resolve(s"native-code-$name-$index"))
+      }
+
+    if (extractPaths.isEmpty)
+      throw new BuildException(s"No Native Libraries found: $classpath")
     else
-      nativeLibs
+      extractPaths
   }
 
-  private[build] def findNativeLib(nativeLibs: Seq[Path]): Path =
-    nativeLibs.find(_.endsWith(LibId.dirName(nativelibId))) match {
-      case Some(nl) => nl.path
+  private[build] def findNativeLib(nativeLibs: Seq[NativeLib]): Path = {
+    val nativeLib = nativeLibs.find { nl =>
+      val srcPath = nl.src
+      if (isJar(srcPath))
+        IO.existsInJar(srcPath, hasMarkerFileInJar)
+      else
+        IO.existsInDir(srcPath, dirMarkerFilePattern)
+    }
+    nativeLib match {
+      case Some(nl) => nl.dest
       case None =>
         throw new BuildException(s"Native Library not found: $nativeLibs")
     }
+  }
 
   private def isNativeFile(name: String): Boolean =
-    name.endsWith(".c") || name.endsWith(".cpp") || name.endsWith(".S")
+    srcExtensions.map(name.endsWith(_)).exists(identity)
 
-  private def readJar(path: Path): Option[NativeLib] = {
-    import java.util.zip.ZipFile
-    import java.util.Properties
-    val zf            = new ZipFile(path.toFile)
-    val it            = zf.entries().asScala
-    val hasNativeCode = it.exists(e => isNativeFile(e.getName))
-    if (hasNativeCode) {
-      val me    = zf.getEntry("META-INF/MANIFEST.MF")
-      val is    = zf.getInputStream(me)
-      val props = new Properties()
-      props.load(is)
-      val artifact = props.getProperty(LibId.specTitle)
-      val org      = props.getProperty(LibId.specVendor)
-      is.close()
-      Some(NativeLib(LibId(org, artifact), path))
-    } else {
-      None
+  private def hasMarkerFileInJar(name: String): Boolean =
+    name.endsWith(nativeLibMarkerFile)
+
+  private def readDir(path: Path): Option[Path] =
+    IO.existsInDir(path, srcPatterns) match {
+      case true  => Some(path)
+      case false => None
     }
-  }
+
+  private def readJar(path: Path): Option[Path] =
+    IO.existsInJar(path, isNativeFile) match {
+      case true  => Some(path)
+      case false => None
+    }
 
   /** Find the newest compatible clang binary. */
   def clang(): Path = {

@@ -29,7 +29,7 @@ private[scalanative] object IO {
     Files.write(file, bytes)
   }
 
-  /** Finds all files in `base` that match `pattern`. */
+  /** Finds all files starting in `base` that match `pattern`. */
   def getAll(base: Path, pattern: String): Seq[Path] = {
     val out     = collection.mutable.ArrayBuffer.empty[Path]
     val matcher = FileSystems.getDefault.getPathMatcher(pattern)
@@ -59,6 +59,51 @@ private[scalanative] object IO {
                        Int.MaxValue,
                        visitor)
     out
+  }
+
+  /** Does a `pattern` match starting at base? */
+  def existsInDir(base: Path, pattern: String): Boolean = {
+    var out     = false
+    val matcher = FileSystems.getDefault.getPathMatcher(pattern)
+    val visitor = new SimpleFileVisitor[Path] {
+      override def preVisitDirectory(
+          directory: Path,
+          attributes: BasicFileAttributes): FileVisitResult =
+        FileVisitResult.CONTINUE
+
+      override def postVisitDirectory(directory: Path,
+                                      exception: IOException): FileVisitResult =
+        FileVisitResult.CONTINUE
+
+      override def visitFile(
+          file: Path,
+          attributes: BasicFileAttributes): FileVisitResult = {
+        if (matcher.matches(file)) {
+          out = true
+          FileVisitResult.TERMINATE
+        } else {
+          FileVisitResult.CONTINUE
+        }
+      }
+
+      override def visitFileFailed(file: Path,
+                                   exception: IOException): FileVisitResult =
+        FileVisitResult.CONTINUE
+    }
+    Files.walkFileTree(base,
+                       EnumSet.of(FileVisitOption.FOLLOW_LINKS),
+                       Int.MaxValue,
+                       visitor)
+    out
+  }
+
+  /** Look for a zip entry path string using a matcher function */
+  def existsInJar(path: Path, matcher: String => Boolean): Boolean = {
+    import java.util.zip.ZipFile
+    import scala.collection.JavaConverters._
+    val zf = new ZipFile(path.toFile)
+    val it = zf.entries().asScala
+    it.exists(e => matcher(e.getName))
   }
 
   /** Deletes recursively `directory` and all its content. */
@@ -129,7 +174,6 @@ private[scalanative] object IO {
   /** Copy source directory and contents to target directory. */
   def copyDirectory(source: Path, target: Path): Unit = {
     Files.createDirectories(target)
-    println(s"Create Target Dir: $target")
     copyRecursive(source, target)
   }
 
