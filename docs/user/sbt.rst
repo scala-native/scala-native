@@ -185,12 +185,8 @@ Including Native Code in your Project
 In order to create standalone native projects with native code use the
 following procedure.
 
-Add C code into `src/main/resources` and if using `sbt` include the following
-in your build file::
-
-    exportJars := true
-
-The code can be put in directories as desired inside the `resources` directory.
+Add C code into `src/main/resources`. The code can be put in directories as
+desired inside the `resources` directory.
 
 This feature can be used in combination with the feature above to include
 3rd party libraries with native code.
