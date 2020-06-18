@@ -15,45 +15,34 @@ class ScalaNativeRunner(val framework: ScalaNativeFramework,
                         val args: Array[String],
                         val remoteArgs: Array[String])
     extends Runner {
+  private val comRunner: ComRunner =
+    new ComRunner(bin,
+                  envVars,
+                  Seq(framework.framework.getClass.getName),
+                  logger)
 
-  private var master: ComRunner = null
+  this.send(Command.NewRunner(framework.id, args, remoteArgs))
 
-  createRemoteRunner()
+  private[testinterface] def send(msg: Message): Unit = comRunner.send(msg)
+
+  private[testinterface] def receive(): Message = comRunner.receive()
 
   override def tasks(taskDefs: Array[TaskDef]): Array[Task] = {
-    ensureNotDone()
-    val command = Command.Tasks(taskDefs.toSeq)
-    send(command)
+    send(Command.Tasks(taskDefs.toSeq))
 
     val TaskInfos(infos) = receive()
     infos.map(ScalaNativeTask.fromInfo(this, _)).toArray
   }
 
-  private[testinterface] def send(msg: Message): Unit =
-    master.send(msg)
-
-  private[testinterface] def receive(): Message =
-    master.receive()
-
-  private def ensureNotDone(): Unit = {
-    if (master == null)
-      throw new IllegalStateException("Runner is already done")
-  }
-
-  private[this] def createRemoteRunner(): ComRunner = {
-    master = new ComRunner(bin,
-                           envVars,
-                           Seq(framework.framework.getClass.getName),
-                           logger)
-    val command = Command.NewRunner(framework.id, args, remoteArgs)
-    send(command)
-    master
-  }
+  // BEWARE: If allowed to get that far, ScalaNativeRunner#done is
+  // called unconditionally, success or Exception, by:
+  // https://github.com/sbt/sbt/blob/develop/main/src/main/scala/sbt/\
+  //     Defaults.scala#L1297
 
   override def done(): String = {
     send(Command.RunnerDone(""))
     val Command.RunnerDone(summary) = receive()
-    master.close()
+    comRunner.close()
     summary
   }
 }
