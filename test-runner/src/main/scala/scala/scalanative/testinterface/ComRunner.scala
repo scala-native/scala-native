@@ -49,18 +49,26 @@ class ComRunner(bin: File,
       // through fatalError() below and terminate the partner, if necessary.
     }
 
-    def exitCode(timeoutSeconds: Int = 14): Option[Int] = {
+    def exitCode(): Option[Int] = {
       // exitCode is valuable enough that it is worthwhile waiting
       // a decent, but not infinite, interval for it to become available.
-      Thread.`yield`()
+
+      // Fibonacci backoff, slightly modified.
+      // (step * fib.sum) give a maximum planned timeout of 8 seconds.
+      // If process has not gracefully exited by then, it probably is
+      // never go. Of course, whenever using Thread.sleep() the times
+      // actually slept are not guaranteed to be exact.
+      // The granularity is close enough for here.
+
       process.flatMap(p => {
-        val step  = 500 // milliseconds
-        var count = timeoutSeconds * 1000
-        while ((count > 0) && p.isAlive()) {
-          Thread.sleep(step)
-          count -= step
+        val step  = 250L // milliseconds
+        val fib   = Array(1, 2, 3, 5, 8, 13) // skip initial 0 and 1.
+        var count = 0
+        while ((count < fib.length) && p.isAlive()) {
+          Thread.sleep(step * fib(count))
+          count += 1
         }
-        if (count <= 0) None else Some(p.exitValue())
+        if (count >= fib.length) None else Some(p.exitValue())
       })
     }
 
@@ -83,7 +91,7 @@ class ComRunner(bin: File,
               // strerror() to translate errno code to text. The
               // downshifted errno as a hint of what went wrong has
               // a sporting chance of being better than nothing at all.
-              logger.error(s"May be Unix fatal error signal: ${c - 128}")
+              logger.error(s"May be Unix signal: ${c - 128}")
             }
           }
       }
