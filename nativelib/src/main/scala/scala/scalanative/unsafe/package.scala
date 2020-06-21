@@ -140,6 +140,10 @@ package object unsafe {
   /** Convert a CString to a String using given charset. */
   def fromCString(cstr: CString,
                   charset: Charset = Charset.defaultCharset()): String = {
+    // guard libc.strlen(null). It will raise uncatchable C signal not throw.
+    if (cstr == null)
+      throw new NullPointerException()
+
     val len   = libc.strlen(cstr).toInt
     val bytes = new Array[Byte](len)
 
