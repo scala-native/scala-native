@@ -539,6 +539,24 @@ lazy val scalalib =
 lazy val allCoreLibs: Project =
   scalalib // scalalib transitively depends on all the other core libraries
 
+// "tests" in the Sbt environment can refer to both Suites and
+// the tests within them. The argument here refers to Suites.
+//
+// "test." packages, such as "test.Suite" are primitives.
+// If any such packages are in the list, test them first.
+// Other Suites are run in alphabetical order. The order of tests
+// within a Suite is the order of declaration within that Suite.
+
+def orderTests(tests: Seq[TestDefinition]) = {
+  if (tests.length == 1) {
+    tests
+  } else {
+    val sortedTests = tests.sortWith(_.name < _.name)
+    val head        = sortedTests.filter(_.name.split("\\.")(0) == "tests")
+    if (head.length == 0) sortedTests else (head ++ sortedTests.diff(head))
+  }
+}
+
 lazy val tests =
   project
     .in(file("unit-tests"))
@@ -562,6 +580,9 @@ lazy val tests =
         "SCALA_NATIVE_ENV_WITH_UNICODE"  -> 0x2192.toChar.toString,
         "SCALA_NATIVE_USER_DIR"          -> System.getProperty("user.dir")
       ),
+      Test / parallelExecution := false, // TestMain is monothreaded.
+      // Ordered tests requires parallelExecution := false above.
+      Test / definedTests := orderTests((Test / definedTests).value),
       nativeLinkStubs := true
     )
     .dependsOn(nscplugin % "plugin", allCoreLibs, testInterface)
