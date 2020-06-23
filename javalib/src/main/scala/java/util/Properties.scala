@@ -206,7 +206,7 @@ class Properties(protected val defaults: Properties)
 
       def parseKey(): String = {
         val buf = new jl.StringBuilder()
-        // remove leading whitespace
+        // ignore leading whitespace
         while (i < line.length && isWhitespace(ch)) {
           ch = getNextChar
         }
@@ -215,11 +215,11 @@ class Properties(protected val defaults: Properties)
           processChar(buf)
           ch = getNextChar
         }
-        // remove trailing whitespace
+        // ignore trailing whitespace
         while (i < line.length && isWhitespace(ch)) {
           ch = getNextChar
         }
-        // remove non-space key separator
+        // ignore non-space key separator
         if (i < line.length && isTokenKeySeparator(ch)) {
           ch = getNextChar
         }
@@ -228,7 +228,7 @@ class Properties(protected val defaults: Properties)
       }
 
       def parseValue(): String = {
-        // remove leading whitespace
+        // ignore leading whitespace
         while (i < line.length && isWhitespace(ch)) {
           ch = getNextChar
         }
