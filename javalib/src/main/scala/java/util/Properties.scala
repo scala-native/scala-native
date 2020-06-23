@@ -173,7 +173,8 @@ class Properties(protected val defaults: Properties)
       def isComment(): Boolean =
         line.startsWith("#") || line.startsWith("!")
 
-      def oddBackslash(m: Matcher): Boolean = {
+      def oddBackslash(): Boolean = {
+        val m = trailingBackspace.matcher(line)
         if (m.find()) {
           val num   = m.end(1) - m.start
           val isOdd = num % 2 != 0
@@ -184,16 +185,12 @@ class Properties(protected val defaults: Properties)
       }
 
       def rightTrimLine(): Unit = {
-        val m = trailingBackspace.matcher(line)
-        if (oddBackslash(m)) {
+        if (oddBackslash()) {
           line = line.substring(0, line.lastIndexOf("\\") + 1)
         }
       }
 
-      def valueContinues(): Boolean = {
-        val m = trailingBackspace.matcher(line)
-        oddBackslash(m)
-      }
+      def valueContinues(): Boolean = oddBackslash()
 
       def processChar(buf: jl.StringBuilder): Unit =
         if (ch == '\\') {
