@@ -120,8 +120,7 @@ class Properties(protected val defaults: Properties)
 
   private def loadImpl(reader: Reader): Unit = {
     import java.util.regex._
-    val bs      = """(\\)+$"""
-    val pattern = Pattern.compile(bs)
+    val trailingBackspace = Pattern.compile("""(\\)+(\s)*$""")
     lazy val chMap =
       SMap('b' -> '\b', 'f' -> '\f', 'n' -> '\n', 'r' -> '\r', 't' -> '\t')
     val br                = new BufferedReader(reader)
@@ -144,7 +143,7 @@ class Properties(protected val defaults: Properties)
           ch
       }
 
-      def parseUnicodeEscape(line: String): Char = {
+      def parseUnicodeEscape(): Char = {
         val sb = new jl.StringBuilder()
         var j  = 0
         while (j < 4) {
@@ -174,12 +173,9 @@ class Properties(protected val defaults: Properties)
       def isComment(): Boolean =
         line.startsWith("#") || line.startsWith("!")
 
-      def valueContinues(): Boolean = {
-        // odd number of backslashes at end of line
-        // trailing space could be a problem
-        val pm = pattern.matcher(line)
-        if (pm.find()) {
-          val num   = pm.end - pm.start
+      def oddBackslash(m: Matcher): Boolean = {
+        if (m.find()) {
+          val num   = m.end(1) - m.start
           val isOdd = num % 2 != 0
           isOdd
         } else {
@@ -187,12 +183,24 @@ class Properties(protected val defaults: Properties)
         }
       }
 
+      def rightTrimLine(): Unit = {
+        val m = trailingBackspace.matcher(line)
+        if (oddBackslash(m)) {
+          line = line.substring(0, line.lastIndexOf("\\") + 1)
+        }
+      }
+
+      def valueContinues(): Boolean = {
+        val m = trailingBackspace.matcher(line)
+        oddBackslash(m)
+      }
+
       def processChar(buf: jl.StringBuilder): Unit =
         if (ch == '\\') {
           ch = getNextChar
           if (ch == 'u') {
             getNextChar // advance
-            val uch = parseUnicodeEscape(line)
+            val uch = parseUnicodeEscape()
             buf.append(uch)
           } else if (ch == 't' || ch == 'f' || ch == 'r' || ch == 'n' || ch == 'b') {
             val mch = chMap(ch)
@@ -253,6 +261,7 @@ class Properties(protected val defaults: Properties)
 
       // run the parsing
       if (!(isComment() || isEmpty())) {
+        rightTrimLine()
         ch = getNextChar
         if (!isKeyParsed) {
           valBuf = new jl.StringBuilder()

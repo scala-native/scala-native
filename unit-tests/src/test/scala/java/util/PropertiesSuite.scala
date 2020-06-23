@@ -116,14 +116,7 @@ object PropertiesSuite extends tests.Suite {
     assertEquals("1", prop.get("fred"))
   }
 
-  test("load(InputStream) with file input") {
-    val file =
-      new File("unit-tests/src/test/resources/properties-load-test.properties")
-    val is: InputStream = new FileInputStream(file)
-    val prop            = new Properties()
-    prop.load(is)
-    is.close()
-
+  def checkLoadFromFile(prop: Properties): Unit = {
     assertEquals("\n \t \f", prop.getProperty(" \r"))
     assertEquals("a", prop.getProperty("a"))
     assertEquals("bb as,dn   ", prop.getProperty("b"))
@@ -137,6 +130,18 @@ object PropertiesSuite extends tests.Suite {
     assertEquals("   j", prop.getProperty("j"))
     assertEquals("   c", prop.getProperty("space"))
     assertEquals("\\", prop.getProperty("dblbackslash"))
+    assertEquals("foo, bar", prop.getProperty("trailing"))
+    assertEquals("""baz \  """, prop.getProperty("notrailing"))
+  }
+
+  test("load(InputStream) with file input") {
+    val file =
+      new File("unit-tests/src/test/resources/properties-load-test.properties")
+    val is: InputStream = new FileInputStream(file)
+    val prop            = new Properties()
+    prop.load(is)
+    is.close()
+    checkLoadFromFile(prop)
   }
 
   test("load(Reader) with null input") {
@@ -180,19 +185,7 @@ object PropertiesSuite extends tests.Suite {
     prop.load(new InputStreamReader(is))
     is.close()
 
-    assertEquals("\n \t \f", prop.getProperty(" \r"))
-    assertEquals("a", prop.getProperty("a"))
-    assertEquals("bb as,dn   ", prop.getProperty("b"))
-    assertEquals(":: cu", prop.getProperty("c\r \t\nu"))
-    assertEquals("bu", prop.getProperty("bu"))
-    assertEquals("d\r\ne=e", prop.getProperty("d"))
-    assertEquals("fff", prop.getProperty("f"))
-    assertEquals("g", prop.getProperty("g"))
-    assertEquals("", prop.getProperty("h h"))
-    assertEquals("i=i", prop.getProperty(" "))
-    assertEquals("   j", prop.getProperty("j"))
-    assertEquals("   c", prop.getProperty("space"))
-    assertEquals("\\", prop.getProperty("dblbackslash"))
+    checkLoadFromFile(prop)
   }
 
   test("store(OutputStream, comments) with null input") {
