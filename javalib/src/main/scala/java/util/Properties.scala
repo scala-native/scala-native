@@ -4,6 +4,7 @@
 package java.util
 
 import java.io._
+import java.{lang => jl}
 import java.{util => ju}
 
 import scala.annotation.{switch, tailrec}
@@ -117,48 +118,173 @@ class Properties(protected val defaults: Properties)
   def save(out: OutputStream, comments: String): Unit =
     store(out, comments)
 
-  private def loadImpl2(reader: Reader): Unit = {
-    val br           = new BufferedReader(reader)
-    var line: String = null
-    while ({ line = br.readLine().trim(); line != null }) {
-      var i: Int = 0
-      println(line.length())
+  private def loadImpl(reader: Reader): Unit = {
+    import java.util.regex._
+    val bs      = """(\\)+$"""
+    val pattern = Pattern.compile(bs)
+    lazy val chMap =
+      SMap('b' -> '\b', 'f' -> '\f', 'n' -> '\n', 'r' -> '\r', 't' -> '\t')
+    val br                = new BufferedReader(reader)
+    var valBuf            = new jl.StringBuilder()
+    var prevValueContinue = false
+    var isKeyParsed       = false
+    var key: String       = null
+    var line: String      = null
 
-      def parseUnicodeEscape(): Char = ???
+    while ({ line = br.readLine(); line != null }) {
+      var i: Int   = -1
+      var ch: Char = Char.MinValue
 
-      def parseKey(): String = {
-        val buf = new StringBuilder()
-        while (!(line.charAt(i) == '=' || line.charAt(i) == ':')) {
-          buf.append(line.charAt(i))
-          i += 1
-        }
-        buf.toString
+      def getNextChar: Char = {
+        i += 1
+        // avoid out of bounds if value is empty
+        if (i < line.length())
+          line.charAt(i)
+        else
+          ch
       }
 
-      def parseValue(): String = {
-        val buf = new StringBuilder()
-        while (i < line.length) {
-          buf.append(line.charAt(i))
-          i += 1
+      def parseUnicodeEscape(line: String): Char = {
+        val sb = new jl.StringBuilder()
+        var j  = 0
+        while (j < 4) {
+          sb.append(line.charAt(i))
+          if (j < 3) {
+            // don't advance past the last char used
+            i += 1
+          }
+          j += 1
         }
-        buf.toString
+        val ch = Integer.parseInt(sb.toString(), 16).toChar
+        ch
       }
+
+      def isWhitespace(char: Char): Boolean =
+        char == ' ' || char == '\t' || char == '\f'
+
+      def isTokenKeySeparator(char: Char): Boolean =
+        char == '=' || char == ':'
+
+      def isKeySeparator(char: Char): Boolean =
+        isTokenKeySeparator(char) || isWhitespace(char)
+
+      def isEmpty(): Boolean =
+        line.isEmpty() // trim removes all whitespace
 
       def isComment(): Boolean =
         line.startsWith("#") || line.startsWith("!")
 
-      def valueContinues(): Boolean =
-        line.endsWith("\\")
+      def valueContinues(): Boolean = {
+        // odd number of backslashes at end of line
+        // trailing space could be a problem
+        val pm = pattern.matcher(line)
+        if (pm.find()) {
+          val num   = pm.end - pm.start
+          val isOdd = num % 2 != 0
+          isOdd
+        } else {
+          false
+        }
+      }
 
-      if (!isComment()) {
-        println(s"value continues: $valueContinues")
-        val key = parseKey()
-        i += 1 // the '='
-        val value = parseValue()
-        setProperty(key, value)
+      def parseKey(): String = {
+        val buf = new jl.StringBuilder()
+        // remove leading whitespace
+        while (i < line.length && isWhitespace(ch)) {
+          ch = getNextChar
+        }
+        // key sep or empty value
+        while (!isKeySeparator(ch) && i < line.length()) {
+          if (ch == '\\') {
+            ch = getNextChar
+            if (ch == 'u') {
+              getNextChar // advance
+              val uch = parseUnicodeEscape(line)
+              buf.append(uch)
+            } else if (ch == 't' || ch == 'f' || ch == 'r' || ch == 'n' || ch == 'b') {
+              val mch = chMap(ch)
+              buf.append(mch)
+            } else {
+              buf.append(ch)
+            }
+          } else {
+            buf.append(ch)
+          }
+          ch = getNextChar
+        }
+        // remove trailing whitespace
+        while (i < line.length && isWhitespace(ch)) {
+          ch = getNextChar
+        }
+        // remove non-space key separator
+        if (i < line.length && isTokenKeySeparator(ch)) {
+          ch = getNextChar
+        }
+        isKeyParsed = true
+        buf.toString()
+      }
+
+      def parseValue(): String = {
+        // remove leading whitespace
+        while (i < line.length && isWhitespace(ch)) {
+          ch = getNextChar
+        }
+
+        // nothing but line continuation
+        if (valueContinues() && i == line.length() - 1) {
+          // ignore the final backslash
+          ch = getNextChar
+        }
+
+        while (i < line.length) {
+          if (valueContinues() && i == line.length() - 1) {
+            // ignore the final backslash
+            ch = getNextChar
+          } else {
+            if (ch == '\\') {
+              ch = getNextChar
+              if (ch == 'u') {
+                getNextChar // advance
+                val uch = parseUnicodeEscape(line)
+                valBuf.append(uch)
+              } else if (ch == 't' || ch == 'f' || ch == 'r' || ch == 'n' || ch == 'b') {
+                val mch = chMap(ch)
+                valBuf.append(mch)
+              } else {
+                valBuf.append(ch)
+              }
+            } else {
+              valBuf.append(ch)
+            }
+          }
+          ch = getNextChar
+        }
+        valBuf.toString()
+      }
+
+      // run the parsing
+      if (!(isComment() || isEmpty())) {
+        ch = getNextChar
+        if (!isKeyParsed) {
+          valBuf = new jl.StringBuilder()
+          key = parseKey()
+          val value = parseValue()
+          prevValueContinue = valueContinues()
+          if (!prevValueContinue) {
+            setProperty(key, value)
+            isKeyParsed = false
+          }
+        } else if (prevValueContinue && valueContinues()) {
+          val value = parseValue()
+          prevValueContinue = valueContinues()
+        } else {
+          val value = parseValue()
+          setProperty(key, value)
+          isKeyParsed = false
+          prevValueContinue = false
+        }
       }
     }
-    br.close()
   }
 
   private val NONE     = 0
@@ -170,7 +296,7 @@ class Properties(protected val defaults: Properties)
   private lazy val nextCharMap =
     SMap('b' -> '\b', 'f' -> '\f', 'n' -> '\n', 'r' -> '\r', 't' -> '\t')
 
-  private def loadImpl(reader: Reader): Unit = {
+  private def loadImpl2(reader: Reader): Unit = {
     var mode           = NONE
     var unicode        = 0
     var count          = 0
@@ -372,7 +498,7 @@ class Properties(protected val defaults: Properties)
   private def encodeString(string: String,
                            isKey: Boolean,
                            toHex: Boolean): String = {
-    val buffer = new StringBuilder(200)
+    val buffer = new jl.StringBuilder(200)
     var index  = 0
     val length = string.length
     // leading element (value) spaces are escaped
@@ -399,7 +525,7 @@ class Properties(protected val defaults: Properties)
           buffer.append("\\ ")
         case _ =>
           if (toHex && (ch < ' ' || ch > '~')) {
-            buffer.appendAll(unicodeToHexaDecimal(ch))
+            buffer.append(unicodeToHexaDecimal(ch))
           } else {
             buffer.append(ch)
           }
