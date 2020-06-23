@@ -290,38 +290,4 @@ object PropertiesSuite extends tests.Suite {
       assertEquals(prop2.getProperty(nextKey), prop1.getProperty(nextKey))
     }
   }
-  // memory version of properties file
-  lazy val filestr =
-    """|
-       |
-       |
-       |
-       |   \ \r \n \t \f
-       |
-       |
-       |! dshfjklahfjkldashgjl;as
-       |     #jdfagdfjagkdjfghksdajfd
-       |
-       |!!properties
-       |
-       |a=a
-       |b bb as,dn   
-       |c\r\ \t\nu =:: cu
-       |bu= b\
-       |		u
-       |d=d\r\ne=e
-       |f   :f\
-       |f\
-       |			f
-       |g		g
-       |h\ h
-       |\   i=i
-       |j=\   j
-       |space=\   c
-       |
-       |dblbackslash=\\
-       |
-       |
-       |
-    """.stripMargin
 }
