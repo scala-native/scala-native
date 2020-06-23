@@ -187,6 +187,23 @@ class Properties(protected val defaults: Properties)
         }
       }
 
+      def processChar(buf: jl.StringBuilder): Unit =
+        if (ch == '\\') {
+          ch = getNextChar
+          if (ch == 'u') {
+            getNextChar // advance
+            val uch = parseUnicodeEscape(line)
+            buf.append(uch)
+          } else if (ch == 't' || ch == 'f' || ch == 'r' || ch == 'n' || ch == 'b') {
+            val mch = chMap(ch)
+            buf.append(mch)
+          } else {
+            buf.append(ch)
+          }
+        } else {
+          buf.append(ch)
+        }
+
       def parseKey(): String = {
         val buf = new jl.StringBuilder()
         // remove leading whitespace
@@ -195,21 +212,7 @@ class Properties(protected val defaults: Properties)
         }
         // key sep or empty value
         while (!isKeySeparator(ch) && i < line.length()) {
-          if (ch == '\\') {
-            ch = getNextChar
-            if (ch == 'u') {
-              getNextChar // advance
-              val uch = parseUnicodeEscape(line)
-              buf.append(uch)
-            } else if (ch == 't' || ch == 'f' || ch == 'r' || ch == 'n' || ch == 'b') {
-              val mch = chMap(ch)
-              buf.append(mch)
-            } else {
-              buf.append(ch)
-            }
-          } else {
-            buf.append(ch)
-          }
+          processChar(buf)
           ch = getNextChar
         }
         // remove trailing whitespace
@@ -241,23 +244,9 @@ class Properties(protected val defaults: Properties)
             // ignore the final backslash
             ch = getNextChar
           } else {
-            if (ch == '\\') {
-              ch = getNextChar
-              if (ch == 'u') {
-                getNextChar // advance
-                val uch = parseUnicodeEscape(line)
-                valBuf.append(uch)
-              } else if (ch == 't' || ch == 'f' || ch == 'r' || ch == 'n' || ch == 'b') {
-                val mch = chMap(ch)
-                valBuf.append(mch)
-              } else {
-                valBuf.append(ch)
-              }
-            } else {
-              valBuf.append(ch)
-            }
+            processChar(valBuf)
+            ch = getNextChar
           }
-          ch = getNextChar
         }
         valBuf.toString()
       }
