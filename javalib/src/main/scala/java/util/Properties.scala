@@ -7,7 +7,7 @@ import java.io._
 import java.{lang => jl}
 import java.{util => ju}
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.switch
 import scala.collection.immutable.{Map => SMap}
 import scala.collection.JavaConverters._
 
