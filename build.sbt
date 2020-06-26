@@ -678,7 +678,7 @@ val commonJUnitTestOutputsSettings = Def.settings(
   Test / unmanagedSourceDirectories +=
     baseDirectory.value.getParentFile / "shared/src/test/scala",
   Test / testOptions ++= Seq(
-    Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
+    Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v"),
     Tests.Filter(_.endsWith("Assertions"))
   ),
   Test / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
