@@ -24,7 +24,7 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
                        loggers: Array[Logger]): Array[Task] = {
     val reporter = new Reporter(eventHandler, loggers, runSettings, taskDef)
 
-    val f = loadBootstrapper(reporter).fold {
+    loadBootstrapper(reporter).fold {
       Future.successful(())
     } { bootstrapper => executeTests(bootstrapper, reporter) }
 
