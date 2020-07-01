@@ -1,7 +1,5 @@
 .. _ides:
 
-Be sure to execute ``sbt rebuild`` so that artifacts are published and the IDEs can resolve them.
-
 IntelliJ IDEA
 =============
 
