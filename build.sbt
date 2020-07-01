@@ -61,7 +61,9 @@ addCommandAlias(
     "tools/test",
     "nirparser/test",
     "sbtScalaNative/scripted",
-    "tools/mimaReportBinaryIssues"
+    "tools/mimaReportBinaryIssues",
+    "jUnitTestOutputsJVM/test",
+    "jUnitTestOutputsNative/test"
   ).mkString(";")
 )
 
@@ -79,7 +81,9 @@ addCommandAlias(
   Seq(
     "sandbox/run",
     "tests/test",
-    "sbtScalaNative/scripted"
+    "sbtScalaNative/scripted",
+    "jUnitTestOutputsJVM/test",
+    "jUnitTestOutputsNative/test"
   ).mkString(";")
 )
 
