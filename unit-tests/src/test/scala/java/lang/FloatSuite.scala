@@ -233,6 +233,15 @@ object FloatSuite extends tests.Suite {
     //   Too close to 0 - java.lang.Float.MIN_VALUE divided by 10
     assert(Float.parseFloat("1.4E-46") == 0.0f, "a22")
 
+    // Scala Native Issue #1836, a string Too Big reported from the wild.
+    val a = "274672389457236457826542634627345697228374687236476867674746" +
+      "2342342342342342342342323423423423423423426767456345745293762384756" +
+      "2384756345634568456345689345683475863465786485764785684564576348756" +
+      "7384567845678658734587364576745683475674576345786348576847567846578" +
+      "3456702897830296720476846578634576384567845678346573465786457863"
+
+    assert(Float.parseFloat(a) == Float.POSITIVE_INFINITY, "a23")
+
     // Hexadecimal strings
     assert(Float.parseFloat("0x0p1") == 0.0f, "a30")
     assert(Float.parseFloat("0x1p0") == 1.0f, "a31")
