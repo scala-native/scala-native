@@ -190,10 +190,65 @@ object FloatSuite extends tests.Suite {
     assert(Float.parseFloat("Infinity") == Float.POSITIVE_INFINITY)
     assert(Float.parseFloat("-Infinity") == Float.NEGATIVE_INFINITY)
     assert(Float.isNaN(Float.parseFloat("NaN")))
+
+    assert(Float.parseFloat("6.66D") == 6.66f, "a8")
+
+    // Java allows trailing whitespace, including tabs & nulls.
+    assert(Float.parseFloat("6.66D\t ") == 6.66f, "a9")
+    assert(Float.parseFloat("6.66D\u0000") == 6.66f, "a9a")
+
+    assert(Float.parseFloat("6.66d") == 6.66f, "a10")
+
+    assert(Float.parseFloat("7.77F") == 7.77f, "a11")
+    assert(Float.parseFloat("7.77f") == 7.77f, "a12")
+
+    // Does not parse characters beyond IEEE754 spec.
+    assert(
+      Float.parseFloat("1.7976931348623157999999999") == 1.7976931348623157f,
+      "a13")
+
     assertThrows[NumberFormatException](Float.parseFloat(""))
+    assertThrows[NumberFormatException](Float.parseFloat("F"))
     assertThrows[NumberFormatException](Float.parseFloat("potato"))
     assertThrows[NumberFormatException](Float.parseFloat("0.0potato"))
     assertThrows[NumberFormatException](Float.parseFloat("0.potato"))
+
+    assertThrows[NumberFormatException](Float.parseFloat("6.66 F"))
+    assertThrows[NumberFormatException](Float.parseFloat("6.66F  Bad  "))
+    assertThrows[NumberFormatException](Float.parseFloat("6.66F\u0000a"))
+    assertThrows[NumberFormatException](Float.parseFloat("6.66F \u0100"))
+
+    // Out of IEE754 range handling
+
+    //   Too big - java.lang.Float.MAX_VALUE times 10
+    assert(Float.parseFloat("3.4028235E39") ==
+             Float.POSITIVE_INFINITY,
+           "a20")
+
+    //   Too big - Negative java.lang.Float.MAX_VALUE times 10
+    assert(Float.parseFloat("-3.4028235E39") ==
+             Float.NEGATIVE_INFINITY,
+           "a21")
+
+    //   Too close to 0 - java.lang.Float.MIN_VALUE divided by 10
+    assert(Float.parseFloat("1.4E-46") == 0.0f, "a22")
+
+    // Scala Native Issue #1836, a string Too Big reported from the wild.
+    val a = "274672389457236457826542634627345697228374687236476867674746" +
+      "2342342342342342342342323423423423423423426767456345745293762384756" +
+      "2384756345634568456345689345683475863465786485764785684564576348756" +
+      "7384567845678658734587364576745683475674576345786348576847567846578" +
+      "3456702897830296720476846578634576384567845678346573465786457863"
+
+    assert(Float.parseFloat(a) == Float.POSITIVE_INFINITY, "a23")
+
+    // Hexadecimal strings
+    assert(Float.parseFloat("0x0p1") == 0.0f, "a30")
+    assert(Float.parseFloat("0x1p0") == 1.0f, "a31")
+    assert(Float.parseFloat("0x1p1D") == 2.0f, "a32")
+
+    assert(Float.parseFloat("0x1.8eae14p6") == 99.67f, "a33")
+    assert(Float.parseFloat("-0x1.8eae14p6") == -99.67f, "a34")
   }
 
   // scala.Float passes -0.0F without change. j.l.Double forced to +0.0.

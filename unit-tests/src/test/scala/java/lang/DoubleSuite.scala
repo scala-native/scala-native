@@ -195,10 +195,66 @@ object DoubleSuite extends tests.Suite {
     assert(Double.parseDouble("Infinity") == Double.POSITIVE_INFINITY)
     assert(Double.parseDouble("-Infinity") == Double.NEGATIVE_INFINITY)
     assert(Double.isNaN(Double.parseDouble("NaN")))
+
+    assert(Double.parseDouble("6.66D") == 6.66, "a8")
+
+    // Java allows trailing whitespace, including tabs & nulls.
+    assert(Double.parseDouble("6.66D\t ") == 6.66, "a9")
+    assert(Double.parseDouble("6.66D\u0000") == 6.66, "a9a")
+
+    assert(Double.parseDouble("6.66d") == 6.66, "a10")
+
+    assert(Double.parseDouble("7.77F") == 7.77, "a11")
+    assert(Double.parseDouble("7.77f") == 7.77, "a12")
+
+    // Does not parse characters beyond IEEE754 spec.
+    assert(Double.parseDouble("1.7976931348623157999999999")
+             == 1.7976931348623157,
+           "a13")
+
     assertThrows[NumberFormatException](Double.parseDouble(""))
+    assertThrows[NumberFormatException](Double.parseDouble("D"))
     assertThrows[NumberFormatException](Double.parseDouble("potato"))
     assertThrows[NumberFormatException](Double.parseDouble("0.0potato"))
     assertThrows[NumberFormatException](Double.parseDouble("0.potato"))
+
+    assertThrows[NumberFormatException](Double.parseDouble("6.66 D"))
+    assertThrows[NumberFormatException](Double.parseDouble("6.66D  Bad  "))
+    assertThrows[NumberFormatException](Double.parseDouble("6.66D\u0000a"))
+    assertThrows[NumberFormatException](Double.parseDouble("6.66D \u0100"))
+
+    // Out of IEE754 range handling
+
+    //   Too big - java.lang.Double.MAX_VALUE times 10
+    assert(Double.parseDouble("1.7976931348623157E309") ==
+             Double.POSITIVE_INFINITY,
+           "a20")
+
+    //   Too big - Negative java.lang.Double.MAX_VALUE times 10
+    assert(Double.parseDouble("-1.7976931348623157E309") ==
+             Double.NEGATIVE_INFINITY,
+           "a21")
+
+    //   Too close to 0 - java.lang.Double.MIN_VALUE divided by 10
+    assert(Double.parseDouble("4.9E-325") == 0.0, "a22")
+
+    // Scala Native Issue #1836, a string Too Big reported from the wild.
+    val a = "-274672389457236457826542634627345697228374687236476867674746" +
+      "2342342342342342342342323423423423423423426767456345745293762384756" +
+      "2384756345634568456345689345683475863465786485764785684564576348756" +
+      "7384567845678658734587364576745683475674576345786348576847567846578" +
+      "3456702897830296720476846578634576384567845678346573465786457863"
+
+    assert(Double.parseDouble(a) == Double.NEGATIVE_INFINITY, "a23")
+
+    // Hexadecimal strings
+    assert(Double.parseDouble("0x0p1") == 0.0f, "a30")
+    assert(Double.parseDouble("0x1p0") == 1.0f, "a31")
+
+    assert(Double.parseDouble("0x1p1F") == 2.0f, "a32")
+
+    assert(Double.parseDouble("0x1.8eae14p6") == 99.67f, "a33")
+    assert(Double.parseDouble("-0x1.8eae14p6") == -99.67f, "a34")
   }
 
   // scala.Double passes -0.0d without change. j.l.Double gets forced to +0.0.
