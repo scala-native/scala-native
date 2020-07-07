@@ -561,7 +561,7 @@ lazy val tests =
       //   target.value / "out.dot"),
       testFrameworks ++= Seq(
         new TestFramework("tests.NativeFramework"),
-        new TestFramework("scala.scalanative.junit.JUnitFramework")
+        new TestFramework("com.novocode.junit.JUnitFramework")
       ),
       Test / test / envVars ++= Map(
         "USER"                           -> "scala-native",
