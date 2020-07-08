@@ -585,28 +585,34 @@ object Files {
                    currentDepth: Int,
                    options: Array[FileVisitOption],
                    visited: SSet[Path]): SStream[Path] = {
-    start #:: FileHelpers
-      .list(start.toString, (n, t) => (n, t))
-      .toStream
-      .flatMap {
-        case (name, tpe)
-            if tpe == DT_LNK && options.contains(
-              FileVisitOption.FOLLOW_LINKS) =>
-          val path       = start.resolve(name)
-          val newVisited = visited + path
-          val target     = readSymbolicLink(path)
-          if (newVisited.contains(target))
-            throw new FileSystemLoopException(path.toString)
-          else walk(path, maxDepth, currentDepth + 1, options, newVisited)
-        case (name, tpe) if tpe == DT_DIR && currentDepth < maxDepth =>
-          val path = start.resolve(name)
-          val newVisited =
-            if (options.contains(FileVisitOption.FOLLOW_LINKS)) visited + path
-            else visited
-          walk(path, maxDepth, currentDepth + 1, options, newVisited)
-        case (name, _) =>
-          start.resolve(name) #:: SStream.Empty
-      }
+    start #:: {
+      if (!isDirectory(start, Array.empty)) SStream.empty
+      else
+        FileHelpers
+          .list(start.toString, (n, t) => (n, t))
+          .toStream
+          .flatMap {
+            case (name, tpe)
+                if tpe == DT_LNK && options.contains(
+                  FileVisitOption.FOLLOW_LINKS) =>
+              val path       = start.resolve(name)
+              val newVisited = visited + path
+              val target     = readSymbolicLink(path)
+              if (newVisited.contains(target))
+                throw new FileSystemLoopException(path.toString)
+              else walk(path, maxDepth, currentDepth + 1, options, newVisited)
+            case (name, tpe) if tpe == DT_DIR && currentDepth < maxDepth =>
+              val path = start.resolve(name)
+              val newVisited =
+                if (options.contains(FileVisitOption.FOLLOW_LINKS))
+                  visited + path
+                else visited
+              walk(path, maxDepth, currentDepth + 1, options, newVisited)
+            case (name, _) =>
+              start.resolve(name) #:: SStream.Empty
+          }
+    }
+
   }
 
   def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path =
