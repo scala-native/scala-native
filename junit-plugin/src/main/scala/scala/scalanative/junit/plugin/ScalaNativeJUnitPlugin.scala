@@ -74,11 +74,8 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
     private lazy val TestMetadataClass =
       getRequiredClass("scala.scalanative.junit.TestMetadata")
 
-    private lazy val FutureClass =
-      getRequiredClass("scala.concurrent.Future")
-
-    private lazy val FutureModule_successful =
-      getMemberMethod(FutureClass.companionModule, newTermName("successful"))
+    private lazy val TryClass =
+      getRequiredClass("scala.util.Try")
 
     private lazy val SuccessModule_apply =
       getMemberMethod(getRequiredClass("scala.util.Success").companionModule,
@@ -234,7 +231,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
 
         sym.setInfo(
           MethodType(List(instanceParam, nameParam),
-                     FutureClass.toTypeConstructor))
+                     TryClass.toTypeConstructor))
 
         val instance = castParam(instanceParam, testClass)
         val rhs = tests.foldRight[Tree] {
@@ -258,18 +255,12 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
         sym.tpe.resultType.typeSymbol match {
           case UnitClass =>
             val boxedUnit = gen.mkAttributedRef(definitions.BoxedUnit_UNIT)
-            val newSuccess =
-              gen.mkMethodCall(SuccessModule_apply, List(boxedUnit))
             Block(
               gen.mkMethodCall(instance, sym, Nil, Nil),
-              gen.mkMethodCall(FutureModule_successful, List(newSuccess))
+              gen.mkMethodCall(SuccessModule_apply, List(boxedUnit))
             )
 
-          case FutureClass =>
-            gen.mkMethodCall(instance, sym, Nil, Nil)
-
           case _ =>
-            // We lie in the error message to not expose that we support async testing.
             reporter.error(sym.pos, "JUnit test must have Unit return type")
             EmptyTree
         }

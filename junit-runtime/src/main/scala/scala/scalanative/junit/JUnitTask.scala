@@ -3,17 +3,9 @@ package junit
 
 import sbt.testing._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.scalanative.reflect.Reflect
 import scala.util.{Failure, Success, Try}
 
-/* Implementation note: In JUnitTask we use Future[Try[Unit]] instead of simply
- * Future[Unit]. This is to prevent Scala's Future implementation to box/wrap
- * fatal errors (most importantly AssertionError) in ExecutionExceptions. We
- * need to prevent the wrapping in order to hide the fact that we use async
- * under the hood and stay consistent with JVM JUnit.
- */
 private[junit] final class JUnitTask(val taskDef: TaskDef,
                                      runSettings: RunSettings)
     extends Task {
@@ -24,22 +16,22 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
                        loggers: Array[Logger]): Array[Task] = {
     val reporter = new Reporter(eventHandler, loggers, runSettings, taskDef)
 
-    loadBootstrapper(reporter).fold {
-      Future.successful(())
-    } { bootstrapper => executeTests(bootstrapper, reporter) }
+    loadBootstrapper(reporter).foreach { bootstrapper =>
+      executeTests(bootstrapper, reporter)
+    }
 
     Array.empty
   }
 
   private def executeTests(bootstrapper: Bootstrapper,
-                           reporter: Reporter): Future[Unit] = {
+                           reporter: Reporter): Unit = {
     reporter.reportRunStarted()
 
     var failed  = 0
     var ignored = 0
     var total   = 0
 
-    def runTests(tests: List[TestMetadata]): Future[Try[Unit]] = {
+    def runTests(tests: List[TestMetadata]): Try[Unit] = {
       val (nextIgnored, other) = tests.span(_.ignored)
 
       nextIgnored.foreach(t => reporter.reportIgnored(Some(t.name)))
@@ -48,13 +40,13 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
       other match {
         case t :: ts =>
           total += 1
-          executeTestMethod(bootstrapper, t, reporter).flatMap { fc =>
-            failed += fc
-            runTests(ts)
-          }
+
+          val fc = executeTestMethod(bootstrapper, t, reporter)
+          failed += fc
+          runTests(ts)
 
         case Nil =>
-          Future.successful(Success(()))
+          Success(())
       }
     }
 
@@ -64,26 +56,24 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
       runTests(bootstrapper.tests().toList)
     } { _ => catchAll(bootstrapper.afterClass()) }
 
-    for {
-      (errors, timeInSeconds) <- result
-    } yield {
-      errors match {
-        case e :: Nil if isAssumptionViolation(e) =>
-          reporter.reportIgnored(None)
-          ignored += 1
+    val (errors, timeInSeconds) = result
 
-        case es =>
-          failed += es.size
-          reporter.reportErrors("Test ", None, timeInSeconds, es)
-      }
+    errors match {
+      case e :: Nil if isAssumptionViolation(e) =>
+        reporter.reportIgnored(None)
+        ignored += 1
 
-      reporter.reportRunFinished(failed, ignored, total, timeInSeconds)
+      case es =>
+        failed += es.size
+        reporter.reportErrors("Test ", None, timeInSeconds, es)
     }
+
+    reporter.reportRunFinished(failed, ignored, total, timeInSeconds)
   }
 
   private[this] def executeTestMethod(bootstrapper: Bootstrapper,
                                       test: TestMetadata,
-                                      reporter: Reporter): Future[Int] = {
+                                      reporter: Reporter): Int = {
     reporter.reportTestStarted(test.name)
 
     val result = runTestLifecycle {
@@ -92,36 +82,26 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
       handleExpected(test.annotation.expected) {
         catchAll(bootstrapper.invokeTest(instance, test.name)) match {
           case Success(f) => f.recover { case t => Failure(t) }
-          case Failure(t) => Future.successful(Failure(t))
+          case Failure(t) => Failure(t)
         }
       }
     } { instance => catchAll(bootstrapper.after(instance)) }
 
-    for {
-      (errors, timeInSeconds) <- result
-    } yield {
-      val failed = errors match {
-        case e :: Nil if isAssumptionViolation(e) =>
-          reporter.reportAssumptionViolation(test.name, timeInSeconds, e)
-          0
+    val (errors, timeInSeconds) = result
 
-        case es =>
-          reporter.reportErrors("Test ", Some(test.name), timeInSeconds, es)
-          es.size
-      }
+    val failed = errors match {
+      case e :: Nil if isAssumptionViolation(e) =>
+        reporter.reportAssumptionViolation(test.name, timeInSeconds, e)
+        0
 
-      reporter.reportTestFinished(test.name, errors.isEmpty, timeInSeconds)
-
-      // Scala.js-specific: timeouts are warnings only, after the fact
-      val timeout = test.annotation.timeout
-      if (timeout != 0 && timeout <= timeInSeconds) {
-        reporter.log(_.warn,
-                     "Timeout: took " + timeInSeconds + " sec, expected " +
-                       (timeout.toDouble / 1000) + " sec")
-      }
-
-      failed
+      case es =>
+        reporter.reportErrors("Test ", Some(test.name), timeInSeconds, es)
+        es.size
     }
+
+    reporter.reportTestFinished(test.name, errors.isEmpty, timeInSeconds)
+
+    failed
   }
 
   private def loadBootstrapper(reporter: Reporter): Option[Bootstrapper] = {
@@ -153,28 +133,26 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
   }
 
   private def handleExpected(expectedException: Class[_ <: Throwable])(
-      body: => Future[Try[Unit]]): Future[Try[Unit]] = {
+      body: => Try[Unit]): Try[Unit] = {
     val wantException = expectedException != classOf[org.junit.Test.None]
 
     if (wantException) {
-      for (r <- body) yield {
-        r match {
-          case Success(_) =>
-            Failure(
-              new AssertionError(
-                "Expected exception: " + expectedException.getName))
+      body match {
+        case Success(_) =>
+          Failure(
+            new AssertionError(
+              "Expected exception: " + expectedException.getName))
 
-          case Failure(t) if expectedException.isInstance(t) =>
-            Success(())
+        case Failure(t) if expectedException.isInstance(t) =>
+          Success(())
 
-          case Failure(t) =>
-            val expName = expectedException.getName
-            val gotName = t.getClass.getName
-            Failure(
-              new Exception(
-                s"Unexpected exception, expected<$expName> but was<$gotName>",
-                t))
-        }
+        case Failure(t) =>
+          val expName = expectedException.getName
+          val gotName = t.getClass.getName
+          Failure(
+            new Exception(
+              s"Unexpected exception, expected<$expName> but was<$gotName>",
+              t))
       }
     } else {
       body
@@ -182,30 +160,26 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
   }
 
   private def runTestLifecycle[T](build: => Try[T])(before: T => Try[Unit])(
-      body: T => Future[Try[Unit]])(
-      after: T => Try[Unit]): Future[(List[Throwable], Double)] = {
+      body: T => Try[Unit])(
+      after: T => Try[Unit]): (List[Throwable], Double) = {
     val startTime = System.nanoTime
 
-    val exceptions: Future[List[Throwable]] = build match {
+    val exceptions: List[Throwable] = build match {
       case Success(x) =>
-        val bodyFuture = before(x) match {
+        val bodyResult = before(x) match {
           case Success(()) => body(x)
-          case Failure(t)  => Future.successful(Failure(t))
+          case Failure(t)  => Failure(t)
         }
 
-        for (bodyResult <- bodyFuture) yield {
-          val afterException = after(x).failed.toOption
-          bodyResult.failed.toOption.toList ++ afterException.toList
-        }
+        val afterException = after(x).failed.toOption
+        bodyResult.failed.toOption.toList ++ afterException.toList
 
       case Failure(t) =>
-        Future.successful(List(t))
+        List(t)
     }
 
-    for (es <- exceptions) yield {
-      val timeInSeconds = (System.nanoTime - startTime).toDouble / 1000000000
-      (es, timeInSeconds)
-    }
+    val timeInSeconds = (System.nanoTime - startTime).toDouble / 1000000000
+    (exceptions, timeInSeconds)
   }
 
   private def isAssumptionViolation(ex: Throwable): Boolean = {

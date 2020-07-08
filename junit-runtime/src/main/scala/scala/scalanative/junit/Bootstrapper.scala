@@ -3,7 +3,6 @@ package junit
 
 // Ported from Scala.js
 
-import scala.concurrent.Future
 import scala.scalanative.reflect.annotation._
 import scala.util.Try
 
@@ -22,7 +21,7 @@ trait Bootstrapper {
   def after(instance: AnyRef): Unit
 
   def tests(): Array[TestMetadata]
-  def invokeTest(instance: AnyRef, name: String): Future[Try[Unit]]
+  def invokeTest(instance: AnyRef, name: String): Try[Unit]
 
   def newInstance(): AnyRef
 }
