@@ -16,8 +16,8 @@ import scala.scalanative.testinterface.serialization._
 
 object TestMain {
 
-  /* The supported testing frameworks. */
-  private var frameworks: Seq[Framework] = _
+  /* The supported testing framework for this TestMain instance. */
+  private var framework: Framework = _
 
   private val usage: String = {
     """usage: test-main <server_port> <testing_framework_name>
@@ -46,7 +46,7 @@ object TestMain {
     val serverPort    = args(0).toInt
     val frameworkName = args(1)
 
-    frameworks = Seq(frameworkName).map(FrameworkLoader.loadFramework)
+    framework = FrameworkLoader.loadFramework(frameworkName)
 
     val clientSocket = new Socket("127.0.0.1", serverPort)
 
@@ -65,16 +65,16 @@ object TestMain {
                          clientSocket: Socket): Unit = {
     val stream = new DataInputStream(clientSocket.getInputStream)
     receive(stream) match {
-      case Command.NewRunner(id, args, remoteArgs) =>
+      case Command.NewRunner(_, args, remoteArgs) =>
         val runner =
-          frameworks(id).runner(args.toArray,
-                                remoteArgs.toArray,
-                                new ScalaNativeClassLoader)
+          framework.runner(args.toArray,
+                           remoteArgs.toArray,
+                           new ScalaNativeClassLoader)
         testRunner(tasks, runner, clientSocket)
 
       case Command.SendInfo(id, None) =>
-        val fps  = frameworks(id).fingerprints()
-        val name = frameworks(id).name()
+        val fps  = framework.fingerprints()
+        val name = framework.name()
         val info = Command.SendInfo(id, Some(FrameworkInfo(name, fps.toSeq)))
         send(clientSocket)(info)
         testRunner(tasks, runner, clientSocket)
