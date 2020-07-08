@@ -8,6 +8,8 @@ class GlobalManglingSuite extends AnyFunSuite {
   Seq(
     Global.Top("foo"),
     Global.Top("foo.bar.Baz"),
+    Global.Top("1"),
+    Global.Member(Global.Top("1"), Sig.Field("2")),
     Global.Member(Global.Top("foo"), Sig.Field("field")),
     Global.Member(Global.Top("foo"), Sig.Ctor(Seq.empty)),
     Global.Member(Global.Top("foo"), Sig.Ctor(Seq(Type.Int))),

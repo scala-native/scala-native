@@ -9,6 +9,8 @@ class SigManglingSuite extends AnyFunSuite {
     Sig.Field("f"),
     Sig.Field("len"),
     Sig.Field("field"),
+    Sig.Field("$field"),
+    Sig.Field("2"),
     Sig.Ctor(Seq.empty),
     Sig.Ctor(Seq(Type.Int)),
     Sig.Ctor(Seq(Rt.Object, Type.Int)),
