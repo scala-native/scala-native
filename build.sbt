@@ -563,6 +563,11 @@ lazy val tests =
         new TestFramework("tests.NativeFramework"),
         new TestFramework("com.novocode.junit.JUnitFramework")
       ),
+      Test / testOptions ++= Seq(
+        Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+      ),
+      Test / parallelExecution := false,
+      Test / logBuffered := false,
       Test / test / envVars ++= Map(
         "USER"                           -> "scala-native",
         "HOME"                           -> System.getProperty("user.home"),
@@ -573,7 +578,11 @@ lazy val tests =
       ),
       nativeLinkStubs := true
     )
-    .dependsOn(nscplugin % "plugin", allCoreLibs, testInterface)
+    .dependsOn(nscplugin   % "plugin",
+               jUnitPlugin % "plugin",
+               allCoreLibs,
+               testInterface,
+               jUnitRuntime)
 
 lazy val sandbox =
   project
@@ -639,7 +648,9 @@ lazy val testRunner =
     .settings(
       crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies += "org.scala-sbt" % "test-interface" % "1.0",
-      Compile / sources ++= (testInterfaceSerialization / Compile / sources).value
+      Compile / unmanagedSourceDirectories ++= Seq(
+        (testInterfaceSerialization / Compile / scalaSource).value
+      )
     )
     .dependsOn(tools)
 
