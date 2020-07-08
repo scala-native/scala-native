@@ -3,6 +3,7 @@ package junit
 
 import sbt.testing._
 
+import scala.annotation.tailrec
 import scala.scalanative.reflect.Reflect
 import scala.util.{Failure, Success, Try}
 
@@ -31,6 +32,7 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
     var ignored = 0
     var total   = 0
 
+    @tailrec
     def runTests(tests: List[TestMetadata]): Try[Unit] = {
       val (nextIgnored, other) = tests.span(_.ignored)
 
