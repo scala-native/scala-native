@@ -580,7 +580,7 @@ object Files {
                    visited: SSet[Path]): SStream[Path] = {
     start #:: {
       if (!isDirectory(start, linkOptsFromFileVisitOpts(options))) SStream.empty
-      else
+      else {
         FileHelpers
           .list(start.toString, (n, t) => (n, t))
           .toStream
@@ -604,6 +604,7 @@ object Files {
             case (name, _) =>
               start.resolve(name) #:: SStream.Empty
           }
+      }
     }
 
   }
