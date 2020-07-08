@@ -79,9 +79,11 @@ object VirtualDirectory {
 
     override def read(path: Path, len: Int): ByteBuffer = {
       val stream = Files.newInputStream(resolve(path))
-      val bytes  = new Array[Byte](len)
-      val read   = stream.read(bytes)
-      ByteBuffer.wrap(bytes, 0, read)
+      try {
+        val bytes = new Array[Byte](len)
+        val read  = stream.read(bytes)
+        ByteBuffer.wrap(bytes, 0, read)
+      } finally stream.close()
     }
 
     override def write(path: Path, buffer: ByteBuffer): Unit = {
