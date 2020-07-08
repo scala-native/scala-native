@@ -638,7 +638,7 @@ object Files {
                             options: Set[FileVisitOption],
                             maxDepth: Int,
                             visitor: FileVisitor[_ >: Path]): Path = {
-    val optsArray  = options.toArray.asInstanceOf[Array[FileVisitOption]]
+    val optsArray  = options.toArray(new Array[FileVisitOption](options.size()))
     val stream     = walk(start, maxDepth, 0, optsArray, SSet.empty)
     val dirsToSkip = scala.collection.mutable.Set.empty[Path]
     val openDirs   = scala.collection.mutable.Stack.empty[Path]
