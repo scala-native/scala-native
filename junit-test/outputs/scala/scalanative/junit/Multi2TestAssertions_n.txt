@@ -1,0 +1,18 @@
+ldTest run started
+ldTest scala.scalanative.junit.Multi2Test.multiTest1 started
+ldTest scala.scalanative.junit.Multi2Test.multiTest1 finished, took <TIME>
+e0scala.scalanative.junit.Multi2Test.multiTest1
+ldTest scala.scalanative.junit.Multi2Test.multiTest2 started
+ldTest scala.scalanative.junit.Multi2Test.multiTest2 finished, took <TIME>
+e0scala.scalanative.junit.Multi2Test.multiTest2
+ldTest scala.scalanative.junit.Multi2Test.multiTest3 started
+ldTest scala.scalanative.junit.Multi2Test.multiTest3 finished, took <TIME>
+e0scala.scalanative.junit.Multi2Test.multiTest3
+ldTest scala.scalanative.junit.Multi2Test.multiTest4 started
+ldTest scala.scalanative.junit.Multi2Test.multiTest4 finished, took <TIME>
+e0scala.scalanative.junit.Multi2Test.multiTest4
+ldTest scala.scalanative.junit.Multi2Test.multiTest5 started
+ldTest scala.scalanative.junit.Multi2Test.multiTest5 finished, took <TIME>
+e0scala.scalanative.junit.Multi2Test.multiTest5
+ldTest run finished: 0 failed, 0 ignored, 5 total, <TIME>
+d

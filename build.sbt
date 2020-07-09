@@ -59,7 +59,9 @@ addCommandAlias(
     "tools/test",
     "nirparser/test",
     "sbtScalaNative/scripted",
-    "tools/mimaReportBinaryIssues"
+    "tools/mimaReportBinaryIssues",
+    "junitTestOutputsJVM/test",
+    "junitTestOutputsNative/test"
   ).mkString(";")
 )
 
@@ -77,7 +79,9 @@ addCommandAlias(
   Seq(
     "sandbox/run",
     "tests/test",
-    "sbtScalaNative/scripted"
+    "sbtScalaNative/scripted",
+    "junitTestOutputsJVM/test",
+    "junitTestOutputsNative/test"
   ).mkString(";")
 )
 
@@ -297,6 +301,7 @@ lazy val sbtScalaNative =
           .dependsOn(
             // Compiler plugins
             nscplugin / publishLocal,
+            junitPlugin / publishLocal,
             // Scala Native libraries
             nativelib / publishLocal,
             clib / publishLocal,
@@ -307,6 +312,7 @@ lazy val sbtScalaNative =
             testInterfaceSbtDefs / publishLocal,
             testInterfaceSerialization / publishLocal,
             testInterface / publishLocal,
+            junitRuntime / publishLocal,
             // JVM libraries
             util / publishLocal,
             nir / publishLocal,
@@ -553,7 +559,13 @@ lazy val tests =
       //   crossTarget.value),
       // nativeLinkerReporter := LinkerReporter.toFile(
       //   target.value / "out.dot"),
-      testFrameworks += new TestFramework("tests.NativeFramework"),
+      testFrameworks ++= Seq(
+        new TestFramework("tests.NativeFramework"),
+        new TestFramework("com.novocode.junit.JUnitFramework")
+      ),
+      Test / testOptions ++= Seq(
+        Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+      ),
       Test / test / envVars ++= Map(
         "USER"                           -> "scala-native",
         "HOME"                           -> System.getProperty("user.home"),
@@ -564,7 +576,11 @@ lazy val tests =
       ),
       nativeLinkStubs := true
     )
-    .dependsOn(nscplugin % "plugin", allCoreLibs, testInterface)
+    .dependsOn(nscplugin   % "plugin",
+               junitPlugin % "plugin",
+               allCoreLibs,
+               testInterface,
+               junitRuntime)
 
 lazy val sandbox =
   project
@@ -633,3 +649,87 @@ lazy val testRunner =
       Compile / sources ++= (testInterfaceSerialization / Compile / sources).value
     )
     .dependsOn(tools)
+
+// JUnit modules and settings ------------------------------------------------
+
+lazy val junitRuntime =
+  project
+    .in(file("junit-runtime"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(mavenPublishSettings)
+    .settings(nameSettings)
+    .dependsOn(
+      nscplugin % "plugin",
+      testInterface
+    )
+
+lazy val junitPlugin =
+  project
+    .in(file("junit-plugin"))
+    .settings(mavenPublishSettings)
+    .settings(
+      crossScalaVersions := libCrossScalaVersions,
+      crossVersion := CrossVersion.full,
+      libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+      exportJars := true
+    )
+
+val commonJUnitTestOutputsSettings = Def.settings(
+  nameSettings,
+  Compile / publishArtifact := false,
+  Test / parallelExecution := false,
+  Test / unmanagedSourceDirectories +=
+    baseDirectory.value.getParentFile / "shared/src/test/scala",
+  Test / testOptions ++= Seq(
+    Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v"),
+    Tests.Filter(_.endsWith("Assertions"))
+  ),
+  Test / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
+  Test / scalacOptions += "-deprecation:false"
+)
+
+lazy val junitTestOutputsNative =
+  project
+    .in(file("junit-test/output-native"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(
+      commonJUnitTestOutputsSettings,
+      Test / scalacOptions ++= {
+        val jar = (junitPlugin / Compile / packageBin).value
+        Seq(s"-Xplugin:$jar")
+      }
+    )
+    .dependsOn(
+      nscplugin        % "plugin",
+      junitRuntime     % "test",
+      junitAsyncNative % "test"
+    )
+
+lazy val junitTestOutputsJVM =
+  project
+    .in(file("junit-test/output-jvm"))
+    .settings(
+      commonJUnitTestOutputsSettings,
+      libraryDependencies ++= Seq(
+        "com.novocode" % "junit-interface" % "0.11" % "test"
+      )
+    )
+    .dependsOn(junitAsyncJVM % "test")
+
+lazy val junitAsyncNative =
+  project
+    .in(file("junit-async/native"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(
+      nameSettings,
+      Compile / publishArtifact := false
+    )
+    .dependsOn(nscplugin % "plugin", allCoreLibs)
+
+lazy val junitAsyncJVM =
+  project
+    .in(file("junit-async/jvm"))
+    .settings(
+      nameSettings,
+      Compile / publishArtifact := false
+    )

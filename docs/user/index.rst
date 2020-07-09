@@ -10,3 +10,4 @@ User's Guide
   sbt
   lang
   interop
+  testing
