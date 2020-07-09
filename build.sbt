@@ -1,7 +1,5 @@
 import java.io.File.pathSeparator
 
-import sbt.Keys.libraryDependencies
-
 import scala.collection.mutable
 import scala.util.Try
 
