@@ -317,7 +317,10 @@ lazy val sbtScalaNative =
             util / publishLocal,
             nir / publishLocal,
             tools / publishLocal,
-            testRunner / publishLocal
+            testRunner / publishLocal,
+            // JUnit
+            jUnitPlugin / publishLocal,
+            jUnitRuntime / publishLocal
           )
           .value
       }
@@ -662,7 +665,7 @@ lazy val jUnitRuntime =
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
     .settings(
-      crossVersion := CrossVersion.binary,
+      nameSettings,
       Compile / headerSources ~= { srcs =>
         srcs.filter { src =>
           val path = src.getPath.replace('\\', '/')
