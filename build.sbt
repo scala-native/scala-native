@@ -62,8 +62,8 @@ addCommandAlias(
     "nirparser/test",
     "sbtScalaNative/scripted",
     "tools/mimaReportBinaryIssues",
-    "jUnitTestOutputsJVM/test",
-    "jUnitTestOutputsNative/test"
+    "junitTestOutputsJVM/test",
+    "junitTestOutputsNative/test"
   ).mkString(";")
 )
 
@@ -82,8 +82,8 @@ addCommandAlias(
     "sandbox/run",
     "tests/test",
     "sbtScalaNative/scripted",
-    "jUnitTestOutputsJVM/test",
-    "jUnitTestOutputsNative/test"
+    "junitTestOutputsJVM/test",
+    "junitTestOutputsNative/test"
   ).mkString(";")
 )
 
