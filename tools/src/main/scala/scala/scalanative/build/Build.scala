@@ -20,12 +20,12 @@ object Build {
    *  val workdir: Path        = ...
    *  val main: String         = ...
    *
-   *  val clang     = Discover.clang()
-   *  val clangpp   = Discover.clangpp()
-   *  val linkopts  = Discover.linkingOptions()
-   *  val compopts  = Discover.compileOptions()
-   *  val triple    = Discover.targetTriple(clang, workdir)
-   *  val outpath   = workdir.resolve("out")
+   *  val clang    = Discover.clang()
+   *  val clangpp  = Discover.clangpp()
+   *  val linkopts = Discover.linkingOptions()
+   *  val compopts = Discover.compileOptions()
+   *  val triple   = Discover.targetTriple(clang, workdir)
+   *  val outpath  = workdir.resolve("out")
    *
    *  val config =
    *    Config.empty
