@@ -5,6 +5,6 @@ import org.junit.Test
 
 class JUnitExampleTest {
   @Test def exampleTest(): Unit = {
-    assertTrue("This assertion should pass", condition = true)
+    assertTrue("This assertion should pass", true)
   }
 }
