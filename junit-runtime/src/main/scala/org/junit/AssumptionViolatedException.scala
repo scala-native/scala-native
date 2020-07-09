@@ -30,6 +30,7 @@ class AssumptionViolatedException protected (fAssumption: String,
     this(message, false, null, null)
 
 //  Commented out, as this constructor triggers an unknown runtime error in Scala Native.
+//  See: https://github.com/scala-native/scala-native/issues/1843
 //  def this(assumption: String, t: Throwable) = {
 //    this(assumption, false, null, null)
 //    initCause(t)
