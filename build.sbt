@@ -661,15 +661,7 @@ lazy val junitRuntime =
     .in(file("junit-runtime"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
-    .settings(
-      nameSettings,
-      Compile / headerSources ~= { srcs =>
-        srcs.filter { src =>
-          val path = src.getPath.replace('\\', '/')
-          !path.contains("/org/junit/") && !path.contains("/org/hamcrest/")
-        }
-      }
-    )
+    .settings(nameSettings)
     .dependsOn(
       nscplugin % "plugin",
       testInterface
