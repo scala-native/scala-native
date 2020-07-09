@@ -648,9 +648,7 @@ lazy val testRunner =
     .settings(
       crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies += "org.scala-sbt" % "test-interface" % "1.0",
-      Compile / unmanagedSourceDirectories ++= Seq(
-        (testInterfaceSerialization / Compile / scalaSource).value
-      )
+      Compile / sources ++= (testInterfaceSerialization / Compile / sources).value
     )
     .dependsOn(tools)
 
