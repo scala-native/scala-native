@@ -66,7 +66,6 @@ object Build {
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
         config.withCompileOptions("-O2" +: config.compileOptions)
-      // head needs to be the nativelib which is required
       LLVM.compileNativelib(nativelibConfig, linked, nativelib)
       LLVM.compile(config, generated)
     }
