@@ -6,8 +6,8 @@ package org.hamcrest
 import org.hamcrest.core._
 
 object CoreMatchers {
-  // Commented matchers where implemented using reflexion. It is possible that
-  // some of them could be reimplemented from scratch without using reflexion.
+  // Commented matchers where implemented using reflection. It is possible that
+  // some of them could be reimplemented from scratch without using reflection.
 
   //  def allOf[T](matchers: java.lang.Iterable[Matcher[T]]): Matcher[T] =
   //    AllOf.allOf(matchers)
