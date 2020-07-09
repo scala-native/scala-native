@@ -86,7 +86,7 @@ object Discover {
   }
 
   private def isNativeFile(name: String): Boolean =
-    srcExtensions.map(name.endsWith(_)).exists(identity)
+    srcExtensions.exists(name.endsWith(_))
 
   private def hasMarkerFileInJar(name: String): Boolean =
     name.endsWith(nativeLibMarkerFile)
