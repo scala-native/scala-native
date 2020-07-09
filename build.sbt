@@ -303,6 +303,7 @@ lazy val sbtScalaNative =
           .dependsOn(
             // Compiler plugins
             nscplugin / publishLocal,
+            junitPlugin / publishLocal,
             // Scala Native libraries
             nativelib / publishLocal,
             clib / publishLocal,
@@ -313,14 +314,12 @@ lazy val sbtScalaNative =
             testInterfaceSbtDefs / publishLocal,
             testInterfaceSerialization / publishLocal,
             testInterface / publishLocal,
+            junitRuntime / publishLocal,
             // JVM libraries
             util / publishLocal,
             nir / publishLocal,
             tools / publishLocal,
-            testRunner / publishLocal,
-            // JUnit
-            junitPlugin / publishLocal,
-            junitRuntime / publishLocal
+            testRunner / publishLocal
           )
           .value
       }
@@ -569,8 +568,6 @@ lazy val tests =
       Test / testOptions ++= Seq(
         Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
       ),
-      Test / parallelExecution := false,
-      Test / logBuffered := false,
       Test / test / envVars ++= Map(
         "USER"                           -> "scala-native",
         "HOME"                           -> System.getProperty("user.home"),
@@ -700,8 +697,7 @@ val commonJUnitTestOutputsSettings = Def.settings(
     Tests.Filter(_.endsWith("Assertions"))
   ),
   Test / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
-  Test / scalacOptions += "-deprecation:false",
-  Test / logBuffered := false
+  Test / scalacOptions += "-deprecation:false"
 )
 
 lazy val junitTestOutputsNative =
@@ -718,7 +714,6 @@ lazy val junitTestOutputsNative =
     .dependsOn(
       nscplugin        % "plugin",
       junitRuntime     % "test",
-      testInterface    % "test",
       junitAsyncNative % "test"
     )
 
@@ -728,8 +723,7 @@ lazy val junitTestOutputsJVM =
     .settings(
       commonJUnitTestOutputsSettings,
       libraryDependencies ++= Seq(
-        "org.scala-sbt" % "test-interface"  % "1.0"  % "test",
-        "com.novocode"  % "junit-interface" % "0.11" % "test"
+        "com.novocode" % "junit-interface" % "0.11" % "test"
       )
     )
     .dependsOn(junitAsyncJVM % "test")

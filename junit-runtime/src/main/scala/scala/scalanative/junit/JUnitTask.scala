@@ -83,7 +83,7 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
     } { instance => catchAll(bootstrapper.before(instance)) } { instance =>
       handleExpected(test.annotation.expected) {
         catchAll(bootstrapper.invokeTest(instance, test.name)) match {
-          case Success(f) => f.recover { case t => Failure(t) }
+          case Success(f) => f.value.get.flatten
           case Failure(t) => Failure(t)
         }
       }

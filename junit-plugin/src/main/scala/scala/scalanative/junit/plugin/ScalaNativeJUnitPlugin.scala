@@ -1,10 +1,8 @@
-package scala.scalanative
-package junit.plugin
+package scala.scalanative.junit.plugin
 
 // Ported from Scala.js
 
 import scala.annotation.tailrec
-import scala.language.reflectiveCalls
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{
   Plugin => NscPlugin,
@@ -31,8 +29,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
 
   object ScalaNativeJUnitPluginComponent
       extends plugins.PluginComponent
-      with transform.Transform
-      with CompatComponent {
+      with transform.Transform {
 
     val global: Global = ScalaNativeJUnitPlugin.this.global
     import global._
@@ -74,8 +71,11 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
     private lazy val TestMetadataClass =
       getRequiredClass("scala.scalanative.junit.TestMetadata")
 
-    private lazy val TryClass =
-      getRequiredClass("scala.util.Try")
+    private lazy val FutureClass =
+      getRequiredClass("scala.concurrent.Future")
+
+    private lazy val FutureModule_successful =
+      getMemberMethod(FutureClass.companionModule, newTermName("successful"))
 
     private lazy val SuccessModule_apply =
       getMemberMethod(getRequiredClass("scala.util.Success").companionModule,
@@ -231,7 +231,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
 
         sym.setInfo(
           MethodType(List(instanceParam, nameParam),
-                     TryClass.toTypeConstructor))
+                     FutureClass.toTypeConstructor))
 
         val instance = castParam(instanceParam, testClass)
         val rhs = tests.foldRight[Tree] {
@@ -255,9 +255,11 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
         sym.tpe.resultType.typeSymbol match {
           case UnitClass =>
             val boxedUnit = gen.mkAttributedRef(definitions.BoxedUnit_UNIT)
+            val newSuccess =
+              gen.mkMethodCall(SuccessModule_apply, List(boxedUnit))
             Block(
               gen.mkMethodCall(instance, sym, Nil, Nil),
-              gen.mkMethodCall(SuccessModule_apply, List(boxedUnit))
+              gen.mkMethodCall(FutureModule_successful, List(newSuccess))
             )
 
           case _ =>

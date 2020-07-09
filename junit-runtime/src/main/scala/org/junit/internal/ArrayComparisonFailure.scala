@@ -10,10 +10,6 @@ class ArrayComparisonFailure(message: String, cause: AssertionError, index: Int)
 
   private var fIndices: List[Int] = index :: Nil
 
-  @deprecated("This constructor is not used and will be removed", "0.6.21")
-  def this(fMessage: String) =
-    this(fMessage, new AssertionError, 0)
-
   def addDimension(index: Int): Unit = {
     fIndices = index :: fIndices
   }
@@ -21,7 +17,7 @@ class ArrayComparisonFailure(message: String, cause: AssertionError, index: Int)
   override def getMessage: String = {
     val msg = if (message != null) message else ""
     val indices =
-      if (fIndices == null) s"[$index]" // see #3148
+      if (fIndices == null) s"[$index]" // see scala-js/scala-js#3148
       else fIndices.map(index => s"[$index]").mkString
     val causeMessage = getCause.getMessage
     s"${msg}arrays first differed at element $indices; $causeMessage"
