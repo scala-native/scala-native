@@ -15,6 +15,7 @@ import java.nio.file.spi.FileSystemProvider
 import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.{Map, Set}
+import scala.scalanative.libc.errno
 
 class UnixFileSystemProvider extends FileSystemProvider {
 
@@ -137,7 +138,8 @@ class UnixFileSystemProvider extends FileSystemProvider {
 
   private def getUserDir(): String = {
     val buff = stackalloc[CChar](4096)
-    val res  = unistd.getcwd(buff, 4095)
+    val res = unistd.getcwd(buff, 4095)
+    if (res == null) throw UnixException("Could not determine current working directory", errno.errno)
     fromCString(res)
   }
 
