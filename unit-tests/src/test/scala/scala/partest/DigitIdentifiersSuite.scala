@@ -3,7 +3,7 @@ package scala.partest
 object DigitIdentifiersSuite extends tests.Suite {
 
   object `1Test` {
-    val `1S` = "One"
+    val `1S`  = "One"
     val `-1L` = -1L
 
     sealed abstract class `0` {
