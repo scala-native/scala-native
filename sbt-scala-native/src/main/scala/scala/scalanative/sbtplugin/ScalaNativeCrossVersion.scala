@@ -12,11 +12,10 @@ object ScalaNativeCrossVersion {
 
   val currentBinaryVersion = binaryVersion(Versions.current)
 
-  def binaryVersion(full: String): String =
-    full match {
-      case ReleaseVersion(major, minor, _) => s"$major.$minor"
-      case _                               => full
-    }
+  def binaryVersion(full: String): String = full match {
+    case ReleaseVersion(major, minor, _) => s"$major.$minor"
+    case _                               => full
+  }
 
   private[this] def crossVersionAddPlatformPart(cross: CrossVersion,
                                                 part: String): CrossVersion = {
