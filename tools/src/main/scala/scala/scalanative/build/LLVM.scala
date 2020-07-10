@@ -17,17 +17,15 @@ private[scalanative] object LLVM {
     else copyNativeDir(nativelib)
 
   /**
-   * Unpack the `nativelib` to `workdir/nativelib` where
-   * `nativelib` is the Scala Native lib or the name of
-   * a third party library that includes native code.
+   * Unpack the `src` Jar Path to `workdir/dest` where `dest`
+   * is the generated directory where the Scala Native lib or
+   * a third party library that includes native code is copied.
    *
    * If the same archive has already been unpacked to this location, this
    * call has no effects.
    *
-   * @param nativelib The JAR to unpack.
-   * @param workdir   The working directory. The nativelib will be unpacked
-   *                  to `workdir/nativelib`.
-   * @return The location where the nativelib has been unpacked, `workdir/nativelib`.
+   * @param nativelib The NativeLib to unpack.
+   * @return The Path where the nativelib has been unpacked, `workdir/dest`.
    */
   private def unpackNativeJar(nativelib: NativeLib): Path = {
     val target      = nativelib.dest
@@ -49,14 +47,11 @@ private[scalanative] object LLVM {
   }
 
   /**
-   * Copy project code from project `myproj` to `workdir/myproj`
-   * where is can be compiled and linked.
-   * Not used. Saved here in case non jar based is desired.
+   * Copy project code from project `src` Path to `workdir/dest`
+   * Path where it can be compiled and linked.
    *
-   * @param nativelib    The native lib directory with native code.
-   * @param workdir   The working directory as described above.
-   * @return An Option with a Path to the `nativeCodeProject` work dir
-   *         or None if there is `NativeCodeProject is not configured.
+   * @param nativelib The NativeLib to copy.
+   * @return The Path where the code was copied, `workdir/dest`.
    */
   private def copyNativeDir(nativelib: NativeLib): Path = {
     val target = nativelib.dest
