@@ -48,6 +48,7 @@ USER scala-native
 WORKDIR /home/scala-native/scala-native
 
 CMD sbt -no-colors \
+  "-J-XX:GCTimeRatio=29" \
   "-J-XX:+PrintCommandLineFlags" \
   "set scriptedBufferLog in sbtScalaNative := false" \
   "$TEST_COMMAND"
