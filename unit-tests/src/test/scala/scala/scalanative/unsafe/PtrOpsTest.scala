@@ -28,22 +28,15 @@ class PtrOpsTest {
     }
   }
 
-  test("cast to CFuncPtr") {
-    type ExpectedFnType = CFuncPtr0[CInt]
-    type OtherFnType    = CFuncPtr1[CInt, CString]
-    val funcPtr: Ptr[Byte] = new ExpectedFnType {
-      override def apply(): CInt = stdlib.rand()
-    }.toPtr
+  val fn1: CFuncPtr0[CInt] = new CFuncPtr0[CInt] {
+    override def apply(): CInt = 1
+  }
 
-    assertTrue {
-      Ptr
-        .ptrToCFuncPtr[ExpectedFnType](funcPtr)
-        .isInstanceOf[ExpectedFnType]
-    }
-    assertTrue {
-      Ptr
-        .ptrToCFuncPtr[OtherFnType](funcPtr)
-        .isInstanceOf[OtherFnType]
-    }
+  testFails("casts Ptr[Byte] to CFuncPtr", 1850) {
+    val fnPtr          = Ptr.cFuncPtrToPtr(fn1)
+    val x              = Ptr.ptrToCFuncPtr[CFuncPtr0[CInt]](fnPtr)
+    val expectedResult = 1
+    assertEquals(expectedResult, fn1())
+    assertEquals(expectedResult, x())
   }
 }
