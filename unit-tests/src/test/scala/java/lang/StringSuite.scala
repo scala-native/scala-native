@@ -394,44 +394,4 @@ object StringSuite extends tests.Suite {
         .toLowerCase equals "scala native")
   }
 
-  test("strip") {
-    assert("".strip() equals "")
-    assert("   hallo".stripLeading() equals "hallo")
-    assert("hallo   ".stripTrailing() equals "hallo")
-    assert("   hallo   ".strip() equals "hallo")
-    assert("\t\t\t  hallo\nwelt\r\n  \t".strip() equals "hallo\nwelt")
-  }
-
-  test("isBlank") {
-    assert("".isBlank equals true)
-    assert(" \t\n\u000B\f\r\u001C\u001D\u001E\u001F".isBlank equals true)
-    assert(" \t\n\u000B\f\r\u001C a \u001D\u001E\u001F".isBlank equals false)
-  }
-
-  test("lines") {
-    import scala.collection.JavaConverters._
-    assert("".lines.iterator.asScala.toSeq equals Seq(""))
-    assert(
-      "hallo\r\nwelt".lines.iterator.asScala.toSeq equals Seq("hallo", "welt"))
-    assert(
-      "hallo\rwelt".lines.iterator.asScala.toSeq equals Seq("hallo", "welt"))
-    assert(
-      "hallo\nwelt".lines.iterator.asScala.toSeq equals Seq("hallo", "welt"))
-    assert(
-      "hallo\rschöne\nwelt".lines.iterator.asScala.toSeq equals Seq("hallo",
-                                                                    "schöne",
-                                                                    "welt"))
-    assert(
-      "hallo\rschöne\r\ngroße\nwelt".lines.iterator.asScala.toSeq equals Seq(
-        "hallo",
-        "schöne",
-        "große",
-        "welt"))
-  }
-
-  test("repeat") {
-    assert("".repeat(10) equals "")
-    assert("hallo".repeat(0) equals "")
-    assert("foo".repeat(3) equals "foofoofoo")
-  }
 }

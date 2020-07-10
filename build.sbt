@@ -574,7 +574,13 @@ lazy val tests =
         "SCALA_NATIVE_ENV_WITH_UNICODE"  -> 0x2192.toChar.toString,
         "SCALA_NATIVE_USER_DIR"          -> System.getProperty("user.dir")
       ),
-      nativeLinkStubs := true
+      nativeLinkStubs := true,
+      Test / unmanagedSourceDirectories ++= {
+        if (System.getProperty("java.specification.version") >= "11")
+          Seq(baseDirectory.value / "src/test-jdk11/scala")
+        else
+          Seq.empty
+      }
     )
     .dependsOn(nscplugin   % "plugin",
                junitPlugin % "plugin",
