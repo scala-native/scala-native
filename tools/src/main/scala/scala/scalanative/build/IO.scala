@@ -61,7 +61,7 @@ private[scalanative] object IO {
     out
   }
 
-  /** Does a `pattern` match starting at base? */
+  /** Does a `pattern` match starting at base */
   def existsInDir(base: Path, pattern: String): Boolean = {
     var out     = false
     val matcher = FileSystems.getDefault.getPathMatcher(pattern)
