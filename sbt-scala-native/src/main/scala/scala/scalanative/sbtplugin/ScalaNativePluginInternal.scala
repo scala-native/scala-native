@@ -9,10 +9,10 @@ import sbt._
 import sbt.complete.DefaultParsers._
 
 import scala.scalanative.build.{Build, BuildException, Discover}
-import scala.scalanative.sbtplugin.SBTCompat.Process
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.ScalaNativeFramework
+import scala.sys.process.Process
 import scala.util.Try
 
 object ScalaNativePluginInternal {
@@ -151,7 +151,7 @@ object ScalaNativePluginInternal {
     run := {
       val env    = (envVars in run).value.toSeq
       val logger = streams.value.log
-      val binary = nativeLink.value.abs
+      val binary = nativeLink.value.getAbsolutePath
       val args   = spaceDelimited("<arg>").parsed
 
       logger.running(binary +: args)
