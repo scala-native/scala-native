@@ -411,11 +411,22 @@ object StringSuite extends tests.Suite {
   test("lines") {
     import scala.collection.JavaConverters._
     assert("".lines.iterator.asScala.toSeq equals Seq(""))
-    assert("hallo\r\nwelt".lines.iterator.asScala.toSeq equals Seq("hallo", "welt"))
-    assert("hallo\rwelt".lines.iterator.asScala.toSeq equals Seq("hallo", "welt"))
-    assert("hallo\nwelt".lines.iterator.asScala.toSeq equals Seq("hallo", "welt"))
-    assert("hallo\rschöne\nwelt".lines.iterator.asScala.toSeq equals Seq("hallo", "schöne", "welt"))
-    assert("hallo\rschöne\r\ngroße\nwelt".lines.iterator.asScala.toSeq equals Seq("hallo", "schöne", "große", "welt"))
+    assert(
+      "hallo\r\nwelt".lines.iterator.asScala.toSeq equals Seq("hallo", "welt"))
+    assert(
+      "hallo\rwelt".lines.iterator.asScala.toSeq equals Seq("hallo", "welt"))
+    assert(
+      "hallo\nwelt".lines.iterator.asScala.toSeq equals Seq("hallo", "welt"))
+    assert(
+      "hallo\rschöne\nwelt".lines.iterator.asScala.toSeq equals Seq("hallo",
+                                                                    "schöne",
+                                                                    "welt"))
+    assert(
+      "hallo\rschöne\r\ngroße\nwelt".lines.iterator.asScala.toSeq equals Seq(
+        "hallo",
+        "schöne",
+        "große",
+        "welt"))
   }
 
   test("repeat") {

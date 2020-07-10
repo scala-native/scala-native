@@ -875,7 +875,9 @@ final class _String()
 
   // Added in JDK 11.
   def repeat(count: Int): _String = {
-    new _String((0 until count).foldRight(Array.empty[Char])((_, soFar) => soFar ++ value ))
+    new _String((0 until count).foldRight(Array.empty[Char]) { (_, soFar) =>
+      soFar ++ value
+    })
   }
 
   def getValue(): Array[Char] = value
