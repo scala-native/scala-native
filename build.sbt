@@ -576,8 +576,11 @@ lazy val tests =
       ),
       nativeLinkStubs := true,
       Test / unmanagedSourceDirectories ++= {
-        if (System.getProperty("java.specification.version") >= "11")
-          Seq(baseDirectory.value / "src/test-jdk11/scala")
+        val javaVersion = System.getProperty("java.specification.version")
+        val majorVersion =
+          javaVersion.stripPrefix("1.").takeWhile(_.isDigit).toInt
+        if (majorVersion >= 11)
+          Seq(baseDirectory.value / "src/test/require-jdk11")
         else
           Seq.empty
       }

@@ -393,5 +393,4 @@ object StringSuite extends tests.Suite {
         .toString
         .toLowerCase equals "scala native")
   }
-
 }

@@ -854,30 +854,29 @@ final class _String()
 
   // Added in JDK 11.
   def stripLeading(): _String = {
-    new _String(value.dropWhile(_.isWhitespace))
+    (this: String).dropWhile(_.isWhitespace)
   }
 
   // Added in JDK 11.
   def stripTrailing(): _String = {
-    new _String(value.reverse.dropWhile(_.isWhitespace).reverse)
+    val thisString: String = this
+    thisString.substring(0, thisString.lastIndexWhere(!_.isWhitespace) + 1)
   }
 
   // Added in JDK 11.
   def isBlank: scala.Boolean = {
-    value.isEmpty || value.forall(_.isWhitespace)
+    value.forall(_.isWhitespace)
   }
 
   // Added in JDK 11.
   def lines(): Stream[_String] = {
-    val split = this.split("\r\n").flatMap(_.split("\r")).flatMap(_.split("\n"))
+    val split = this.split("\r\n?|\n")
     Stream.of(split.asInstanceOf[Array[AnyRef]])
   }
 
   // Added in JDK 11.
   def repeat(count: Int): _String = {
-    new _String((0 until count).foldRight(Array.empty[Char]) { (_, soFar) =>
-      soFar ++ value
-    })
+    (this: String) * count
   }
 
   def getValue(): Array[Char] = value
