@@ -141,7 +141,8 @@ object Unmangle {
     }
 
     def readIdent(): String = {
-      val len   = readNumber()
+      val len = readNumber()
+      if (s.charAt(pos) == '-') pos += 1
       val start = pos
       pos += len
       s.substring(start, pos)

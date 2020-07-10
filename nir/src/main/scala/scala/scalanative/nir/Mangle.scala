@@ -127,6 +127,7 @@ object Mangle {
 
     def mangleIdent(id: String): Unit = {
       str(id.length)
+      if (id.head.isDigit || id.head == '-') str('-')
       str(id)
     }
 
