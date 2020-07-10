@@ -133,8 +133,8 @@ private[scalanative] object IO {
     val digest       = MessageDigest.getInstance("SHA-1")
     val stream       = Files.newInputStream(path)
     val digestStream = new DigestInputStream(stream, digest)
-    val buf          = new Array[Byte](bufSize)
     try {
+      val buf = new Array[Byte](bufSize)
       while (digestStream.read(buf, 0, bufSize) != -1) {}
       digest.digest()
     } finally {
