@@ -27,4 +27,23 @@ class PtrOpsTest {
       assertTrue(sarr - sptr == -7)
     }
   }
+
+  test("cast to CFuncPtr") {
+    type ExpectedFnType = CFuncPtr0[CInt]
+    type OtherFnType    = CFuncPtr1[CInt, CString]
+    val funcPtr: Ptr[Byte] = new ExpectedFnType {
+      override def apply(): CInt = stdlib.rand()
+    }.toPtr
+
+    assertTrue {
+      Ptr
+        .ptrToCFuncPtr[ExpectedFnType](funcPtr)
+        .isInstanceOf[ExpectedFnType]
+    }
+    assertTrue {
+      Ptr
+        .ptrToCFuncPtr[OtherFnType](funcPtr)
+        .isInstanceOf[OtherFnType]
+    }
+  }
 }
