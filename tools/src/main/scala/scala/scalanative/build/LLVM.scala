@@ -12,6 +12,7 @@ import scalanative.build.Discover._
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
 
+  /** Called to unpack jars and copy native code */
   def unpackNativeCode(nativelib: NativeLib): Path =
     if (NativeLib.isJar(nativelib)) unpackNativeJar(nativelib)
     else copyNativeDir(nativelib)
@@ -21,8 +22,8 @@ private[scalanative] object LLVM {
    * is the generated directory where the Scala Native lib or
    * a third party library that includes native code is copied.
    *
-   * If the same archive has already been unpacked to this location, this
-   * call has no effects.
+   * If the same archive has already been unpacked to this location
+   * and hasn't changed, this call has no effects
    *
    * @param nativelib The NativeLib to unpack.
    * @return The Path where the nativelib has been unpacked, `workdir/dest`.
@@ -49,6 +50,8 @@ private[scalanative] object LLVM {
   /**
    * Copy project code from project `src` Path to `workdir/dest`
    * Path where it can be compiled and linked.
+   *
+   * This does not copy if nothing has changed.
    *
    * @param nativelib The NativeLib to copy.
    * @return The Path where the code was copied, `workdir/dest`.

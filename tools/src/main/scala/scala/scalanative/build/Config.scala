@@ -3,8 +3,6 @@ package build
 
 import java.nio.file.{Path, Paths}
 
-import scalanative.build.Discover.NativeLib
-
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait Config {
 

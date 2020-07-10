@@ -12,25 +12,6 @@ import scalanative.build.IO.RichPath
  */
 object Discover {
 
-  /** List of source patterns used */
-  val jarExtension  = ".jar"
-  val srcExtensions = Seq(".c", ".cpp", ".S")
-  val srcPatterns   = srcExtensions.mkString("glob:**{", ",", "}")
-
-  /** Original jar or dir path and generated dir path for native code */
-  case class NativeLib(src: Path, dest: Path)
-
-  /** To positively identify nativelib */
-  val nativeLibMarkerFile = "org_scala-native_nativelib.txt"
-
-  private lazy val dirMarkerFilePattern = "glob:**" + nativeLibMarkerFile
-
-  def isJar(path: Path): Boolean = path.toString().endsWith(jarExtension)
-
-  object NativeLib {
-    def isJar(nativelib: NativeLib): Boolean = Discover.isJar(nativelib.src)
-  }
-
   /** Compilation mode name from SCALANATIVE_MODE env var or default. */
   def mode(): String =
     getenv("SCALANATIVE_MODE").getOrElse(build.Mode.default.name)
@@ -45,63 +26,6 @@ object Discover {
   /** GC variant used from SCALANATIVE_GC env var or default. */
   def GC(): String =
     getenv("SCALANATIVE_GC").getOrElse(build.GC.default.name)
-
-  private[build] def findNativeLibs(classpath: Seq[Path],
-                                    workdir: Path): Seq[NativeLib] = {
-    val nativeLibPaths = classpath.flatMap { path =>
-      if (isJar(path)) readJar(path)
-      else readDir(path)
-    }
-
-    val extractPaths =
-      for ((path, index) <- nativeLibPaths.zipWithIndex) yield {
-        val name =
-          path
-            .getName(path.getNameCount() - 1)
-            .toString()
-            .stripSuffix(jarExtension)
-        NativeLib(src = path,
-                  dest = workdir.resolve(s"native-code-$name-$index"))
-      }
-
-    if (extractPaths.isEmpty)
-      throw new BuildException(s"No Native Libraries found: $classpath")
-    else
-      extractPaths
-  }
-
-  private[build] def findNativeLib(nativeLibs: Seq[NativeLib]): Path = {
-    val nativeLib = nativeLibs.find { nl =>
-      val srcPath = nl.src
-      if (isJar(srcPath))
-        IO.existsInJar(srcPath, hasMarkerFileInJar)
-      else
-        IO.existsInDir(srcPath, dirMarkerFilePattern)
-    }
-    nativeLib match {
-      case Some(nl) => nl.dest
-      case None =>
-        throw new BuildException(s"Native Library not found: $nativeLibs")
-    }
-  }
-
-  private def isNativeFile(name: String): Boolean =
-    srcExtensions.exists(name.endsWith(_))
-
-  private def hasMarkerFileInJar(name: String): Boolean =
-    name.endsWith(nativeLibMarkerFile)
-
-  private def readDir(path: Path): Option[Path] =
-    IO.existsInDir(path, srcPatterns) match {
-      case true  => Some(path)
-      case false => None
-    }
-
-  private def readJar(path: Path): Option[Path] =
-    IO.existsInJar(path, isNativeFile) match {
-      case true  => Some(path)
-      case false => None
-    }
 
   /** Find the newest compatible clang binary. */
   def clang(): Path = {

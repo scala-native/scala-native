@@ -2,7 +2,6 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Path, Files}
-import scalanative.build.Discover.NativeLib
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -59,8 +58,8 @@ object Build {
     ScalaNative.codegen(config, optimized)
     val generated = IO.getAll(workdir, "glob:**.ll")
 
-    val nativelibs   = Discover.findNativeLibs(config.classPath, workdir)
-    val nativelib    = Discover.findNativeLib(nativelibs)
+    val nativelibs   = NativeLib.findNativeLibs(config.classPath, workdir)
+    val nativelib    = NativeLib.findNativeLib(nativelibs)
     val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
 
     val objectFiles = config.logger.time("Compiling to native code") {
