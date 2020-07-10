@@ -9,6 +9,7 @@ import java.util.regex._
 import java.nio._
 import java.nio.charset._
 import java.util.Objects
+import java.util.stream.Stream
 
 final class _String()
     extends Serializable
@@ -844,6 +845,37 @@ final class _String()
     val r =
       Character.offsetByCodePoints(value, offset, count, s, codePointOffset)
     r - offset
+  }
+
+  // Added in JDK 11.
+  def strip(): _String = {
+    this.stripTrailing().stripLeading()
+  }
+
+  // Added in JDK 11.
+  def stripLeading(): _String = {
+    new _String(value.dropWhile(_.isWhitespace))
+  }
+
+  // Added in JDK 11.
+  def stripTrailing(): _String = {
+    new _String(value.reverse.dropWhile(_.isWhitespace).reverse)
+  }
+
+  // Added in JDK 11.
+  def isBlank: scala.Boolean = {
+    value.isEmpty || value.forall(_.isWhitespace)
+  }
+
+  // Added in JDK 11.
+  def lines(): Stream[_String] = {
+    val split = this.split("\r\n").flatMap(_.split("\r")).flatMap(_.split("\n"))
+    Stream.of(split.asInstanceOf[Array[AnyRef]])
+  }
+
+  // Added in JDK 11.
+  def repeat(count: Int): _String = {
+    new _String((0 until count).foldRight(Array.empty[Char])((_, soFar) => soFar ++ value ))
   }
 
   def getValue(): Array[Char] = value
