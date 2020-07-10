@@ -64,7 +64,7 @@ private[scalanative] object NativeLib {
     srcExtensions.exists(name.endsWith(_))
 
   private def hasMarkerFileInJar(name: String): Boolean =
-    name.endsWith(nativeLibMarkerFile)
+    name.equals(nativeLibMarkerFile)
 
   private def readDir(path: Path): Option[Path] =
     IO.existsInDir(path, srcPatterns) match {
