@@ -48,6 +48,6 @@ USER scala-native
 WORKDIR /home/scala-native/scala-native
 
 CMD sbt -no-colors \
-  "-J-Xmx3072M" \
+  "-J-Xmx5G" \
   "set scriptedBufferLog in sbtScalaNative := false" \
   "$TEST_COMMAND"
