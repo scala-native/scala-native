@@ -49,5 +49,7 @@ WORKDIR /home/scala-native/scala-native
 
 CMD sbt -no-colors \
   "-J-Xmx5G" \
+  "-J-XX:+PrintCommandLineFlags" \
+  "-J-XX:+PrintFlagsFinal" \
   "set scriptedBufferLog in sbtScalaNative := false" \
   "$TEST_COMMAND"
