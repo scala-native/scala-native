@@ -15,8 +15,8 @@ trait NirGenExpr { self: NirGenPhase =>
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
 
-  final case class ValTree(value: nir.Val)    extends Tree
-  final case class ContTree(f: () => nir.Val) extends Tree
+  case class ValTree(value: nir.Val)    extends Tree
+  case class ContTree(f: () => nir.Val) extends Tree
 
   class FixupBuffer(implicit fresh: Fresh) extends nir.Buffer {
     private var labeled = false
@@ -1822,7 +1822,7 @@ trait NirGenExpr { self: NirGenPhase =>
           buf.method(self, sig, unwind)
         }
       val values =
-        if (owner.isExternModule || owner.isImplClass)
+        if (owner.isExternModule || isImplClass(owner))
           args
         else
           self +: args

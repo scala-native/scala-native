@@ -1,11 +1,14 @@
 package scala.scalanative
 package nscplugin
 
-import scala.collection.mutable
 import scala.reflect.internal.Flags
 import scala.tools.nsc._
 
 trait NirCompat { self: NirGenPhase =>
+  import NirCompat.{infiniteLoop, noImplClasses}
+
+  val global: Global
+
   import global._
 
   object SAMFunctionAttachCompatDef {
@@ -31,4 +34,39 @@ trait NirCompat { self: NirGenPhase =>
     // Introduced in 2.12.5 to synthesize bridges in LMF classes
     def synthCls: Symbol = NoSymbol
   }
+
+  implicit final class SymbolCompat(self: Symbol) {
+    def originalOwner: Symbol =
+      global.originalOwner.getOrElse(self, self.rawowner)
+
+    def implClass: Symbol = NoSymbol
+
+    def isTraitOrInterface: Boolean = self.isTrait || self.isInterface
+  }
+
+  implicit final class GlobalCompat(self: NirCompat.this.global.type) {
+
+    object originalOwner {
+      def getOrElse(sym: Symbol, orElse: => Symbol): Symbol = infiniteLoop()
+    }
+  }
+
+  private implicit final class FlagsCompat(self: Flags.type) {
+    def IMPLCLASS: Long = infiniteLoop()
+  }
+
+  lazy val scalaUsesImplClasses: Boolean =
+    definitions.SeqClass.implClass != NoSymbol // a trait we know has an impl class
+
+  def isImplClass(sym: Symbol): Boolean =
+    scalaUsesImplClasses && sym.hasFlag(Flags.IMPLCLASS)
+
+}
+
+object NirCompat {
+  private def infiniteLoop(): Nothing =
+    throw new AssertionError("Infinite loop in NirCompat")
+
+  private def noImplClasses(): Nothing =
+    throw new AssertionError("No impl classes in this version")
 }

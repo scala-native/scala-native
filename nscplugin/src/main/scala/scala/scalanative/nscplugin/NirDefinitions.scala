@@ -97,7 +97,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val StructClass = getRequiredClass("scala.scalanative.runtime.struct")
 
-    lazy val RuntimePackage = getPackage(TermName("scala.scalanative.runtime"))
+    lazy val RuntimePackage = getPackage("scala.scalanative.runtime")
 
     lazy val RuntimeMonitorClass = getRequiredClass(
       "scala.scalanative.runtime.Monitor")

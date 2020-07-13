@@ -14,7 +14,7 @@ trait NirGenType { self: NirGenPhase =>
       sym.isInterface
 
     def isScalaModule: Boolean =
-      sym.isModuleClass && !sym.isImplClass && !sym.isLifted
+      sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
 
     def isExternModule: Boolean =
       isScalaModule && sym.annotations.exists(_.symbol == ExternClass)
@@ -163,7 +163,7 @@ trait NirGenType { self: NirGenPhase =>
     val owner    = sym.owner
     val paramtys = genMethodSigParamsImpl(sym, isExtern)
     val selfty =
-      if (isExtern || owner.isExternModule || owner.isImplClass) None
+      if (isExtern || owner.isExternModule || isImplClass(owner)) None
       else Some(genType(owner.tpe))
     val retty =
       if (sym.isClassConstructor) nir.Type.Unit

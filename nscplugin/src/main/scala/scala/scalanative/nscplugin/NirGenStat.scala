@@ -20,7 +20,7 @@ trait NirGenStat { self: NirGenPhase =>
     mutable.UnrolledBuffer.empty[ReflectiveInstantiationBuffer]
 
   def isStaticModule(sym: Symbol): Boolean =
-    sym.isModuleClass && !sym.isImplClass && !sym.isLifted
+    sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
 
   class MethodEnv(val fresh: Fresh) {
     private val env = mutable.Map.empty[Symbol, Val]
@@ -593,7 +593,7 @@ trait NirGenStat { self: NirGenPhase =>
         val attrs    = genMethodAttrs(sym)
         val name     = genMethodName(sym)
         val sig      = genMethodSig(sym)
-        val isStatic = owner.isExternModule || owner.isImplClass
+        val isStatic = owner.isExternModule || isImplClass(owner)
 
         dd.rhs match {
           case EmptyTree =>
