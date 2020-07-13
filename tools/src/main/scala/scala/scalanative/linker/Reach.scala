@@ -698,8 +698,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       case Rt.ScalaHashCodeSig =>
         val scalaImpl = lookupSig(cls, Rt.ScalaHashCodeSig).get
         val javaImpl  = lookupSig(cls, Rt.JavaHashCodeSig).get
-        if (javaImpl.top != Some(Rt.Object.name) &&
-            scalaImpl.top == Some(Rt.Object.name)) {
+        if (javaImpl.top != Rt.Object.name &&
+            scalaImpl.top == Rt.Object.name) {
           Some(javaImpl)
         } else {
           Some(scalaImpl)
