@@ -56,7 +56,8 @@ private[scalanative] object NativeLib {
     nativeLib match {
       case Some(nl) => nl.dest
       case None =>
-        throw new BuildException(s"Native Library 'nativelib' not found: $nativeLibs")
+        throw new BuildException(
+          s"Native Library 'nativelib' not found: $nativeLibs")
     }
   }
 
