@@ -63,7 +63,7 @@ object Ptr {
   @alwaysinline implicit def ptrToCStruct[T <: CStruct](ptr: Ptr[T])(
       implicit tag: Tag[T]): T = !ptr
 
-  @alwaysinline implicit def ptrToCFuncPtr[F <: CFuncPtr](ptr: Ptr[Byte]) =
+  @alwaysinline implicit def ptrToCFuncPtr[F <: CFuncPtr](ptr: Ptr[Byte]): F =
     new CFuncRawPtr(ptr.rawptr).asInstanceOf[F]
 
   @alwaysinline implicit def cFuncPtrToPtr[T](ptr: CFuncPtr): Ptr[Byte] = {
