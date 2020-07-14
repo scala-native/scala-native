@@ -25,4 +25,17 @@ object ExecutionContext {
       }
     }
   }
+
+  private[runtime] def loopRunOnce(): Int = {
+    if (queue.nonEmpty) {
+      val runnable = queue.remove(0)
+      try {
+        runnable.run()
+      } catch {
+        case t: Throwable =>
+          QueueExecutionContext.reportFailure(t)
+      }
+    }
+    queue.size
+  }
 }

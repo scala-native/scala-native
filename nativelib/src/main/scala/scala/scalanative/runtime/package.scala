@@ -72,6 +72,10 @@ package object runtime {
   @noinline def loop(): Unit =
     ExecutionContext.loop()
 
+  /** Run one iteration of the runtime's event loop. */
+  def loopRunOnce(): Int =
+    ExecutionContext.loopRunOnce()
+
   /** Called by the generated code in case of division by zero. */
   @noinline def throwDivisionByZero(): Nothing =
     throw new java.lang.ArithmeticException("/ by zero")
