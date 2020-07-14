@@ -25,6 +25,7 @@
 
 -J-Xmx3G
 
+-J-Xms1G
 # -J-Xms1G is the upper bound supplied by scala-sbt.org runner, lower may work.
 
 # On systems with more physical memory, one can experiment with locally
