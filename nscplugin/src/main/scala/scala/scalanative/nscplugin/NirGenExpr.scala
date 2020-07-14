@@ -614,10 +614,9 @@ trait NirGenExpr { self: NirGenPhase =>
     // Bridges might require multiple samMethod variants to be created.
     def genFunction(tree: Function): Val = {
       val Function(paramTrees,
-                   callTree @ Apply(targetTree @ Select(receiver, _), functionArgs)) = tree
+                   callTree @ Apply(targetTree @ Select(_, _), functionArgs)) = tree
 
       val funSym    = tree.tpe.typeSymbolDirect
-      val targetSym = targetTree.symbol
       val paramSyms = paramTrees.map(_.symbol)
       val captureSyms =
         global.delambdafy.FreeVarTraverser.freeVarsOf(tree).toSeq
@@ -675,7 +674,8 @@ trait NirGenExpr { self: NirGenPhase =>
         val funName = anonName.member(funSig)
 
         val selfType = Type.Ref(anonName)
-        val nir.Sig.Method(_, sigTypes :+ retType) = funSig.unmangled
+        val nir.Sig.Method(_, argTypes :+ retType) = funSig.unmangled
+        val sigTypes = functionArgs.takeRight(argTypes.length).map(arg => genType(arg.tpe))
         val paramTypes = selfType +: sigTypes
 
         val bodyFresh = Fresh()
@@ -737,10 +737,7 @@ trait NirGenExpr { self: NirGenPhase =>
       val funSym = tree.tpe.typeSymbolDirect
 
       if (isFunctionSymbol(funSym)) {
-        unspecializedSymbol(funSym).info.members.collect {
-          case sym if sym.name.toString == "apply" =>
-            sym
-        }.toSeq
+        unspecializedSymbol(funSym).info.members.filter(_.name.toString == "apply").toSeq
       } else {
         val samInfo = tree.attachments.get[SAMFunctionCompat].getOrElse {
           println(tree.attachments)
