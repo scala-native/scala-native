@@ -33,6 +33,7 @@ object CStringSuite extends tests.Suite {
     assertEquals("\t", fromCString(c"\t"))
     assertEquals("\\t", fromCString(c"\\t"))
     assertEquals("\u0020\u0020\u0061\u0062", fromCString(c"\040\40\141\x62"))
+    assertEquals("\\\\v\t\\abc", fromCString(c"\\\v\t\\abc"))
   }
 
   test("fromCString") {
