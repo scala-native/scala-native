@@ -40,7 +40,8 @@ private[scalanative] object NativeLib {
       }
 
     if (extractPaths.isEmpty)
-      throw new BuildException(s"No Native Libraries found: $classpath")
+      throw new BuildException(
+        s"No Scala Native libraries were found: $classpath")
     else
       extractPaths
   }
