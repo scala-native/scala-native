@@ -3,8 +3,8 @@ import scala.collection.mutable
 import scala.util.Try
 
 val sbt10Version          = "1.1.6" // minimum version
-val sbt10ScalaVersion     = "2.12.11"
-val libScalaVersion       = "2.12.11"
+val sbt10ScalaVersion     = "2.12.12"
+val libScalaVersion       = "2.12.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", "2.11.12", libScalaVersion)
 
 // Convert "SomeName" to "some-name".
@@ -402,7 +402,9 @@ lazy val scalalib =
       // Keep the log file clean so that real issues stand out.
       // This futzing can probably removed for scala >= 2.12.
       scalacOptions -= "-deprecation",
-      scalacOptions += "-deprecation:false"
+      scalacOptions += "-deprecation:false",
+      // The option below is needed since Scala 2.12.12.
+      scalacOptions += "-language:postfixOps"
     )
     .settings(mavenPublishSettings)
     .settings(
