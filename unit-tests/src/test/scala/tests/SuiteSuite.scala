@@ -66,7 +66,9 @@ object SuiteSuite extends Suite {
         }
 
       case exc: Throwable =>
-        if (exc.isInstanceOf[AssertionFailed]) // got case object, expected case class
+        if (exc.isInstanceOf[
+              AssertionFailed
+            ]) // got case object, expected case class
           throw AssertionFailed("expected message yet none found")
         else
           throw exc

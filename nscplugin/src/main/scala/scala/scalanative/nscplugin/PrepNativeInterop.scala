@@ -100,7 +100,7 @@ abstract class PrepNativeInterop
         //
         // or so it seems, at least.
         case TypeApply(classOfTree @ Select(predef, nme.classOf), List(tpeArg))
-          if predef.symbol == PredefModule =>
+            if predef.symbol == PredefModule =>
           // Replace call by literal constant containing type
           if (typer.checkClassType(tpeArg)) {
             val widenedTpe = tpeArg.tpe.dealias.widen

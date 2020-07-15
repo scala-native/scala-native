@@ -176,7 +176,8 @@ final class Short(val _value: scala.Short)
 }
 
 object Short {
-  final val TYPE  = scala.Predef.classOf[scala.scalanative.runtime.PrimitiveShort]
+  final val TYPE =
+    scala.Predef.classOf[scala.scalanative.runtime.PrimitiveShort]
   final val SIZE  = 16
   final val BYTES = 2
 

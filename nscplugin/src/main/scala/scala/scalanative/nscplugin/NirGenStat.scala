@@ -68,7 +68,7 @@ trait NirGenStat { self: NirGenPhase =>
   }
 
   class StatBuffer {
-    val buf          = mutable.UnrolledBuffer.empty[nir.Defn]
+    val buf                  = mutable.UnrolledBuffer.empty[nir.Defn]
     def toSeq: Seq[nir.Defn] = buf
 
     def +=(defn: nir.Defn): Unit = {
@@ -225,10 +225,8 @@ trait NirGenStat { self: NirGenPhase =>
     def genClassFields(sym: Symbol): Unit = {
       val attrs = nir.Attrs(isExtern = sym.isExternModule)
 
-      for (
-        f <- sym.info.decls
-        if !f.isMethod && f.isTerm && !f.isModule
-      ) {
+      for (f <- sym.info.decls
+           if !f.isMethod && f.isTerm && !f.isModule) {
         val ty   = genType(f.tpe)
         val name = genFieldName(f)
 
@@ -582,10 +580,10 @@ trait NirGenStat { self: NirGenPhase =>
       val env   = new MethodEnv(fresh)
 
       scoped(
-        curMethodSym     := dd.symbol,
-        curMethodEnv     := env,
-        curMethodInfo    := (new CollectMethodInfo).collect(dd.rhs),
-        curFresh         := fresh,
+        curMethodSym := dd.symbol,
+        curMethodEnv := env,
+        curMethodInfo := (new CollectMethodInfo).collect(dd.rhs),
+        curFresh := fresh,
         curUnwindHandler := None
       ) {
         val sym      = dd.symbol

@@ -21,7 +21,7 @@ trait NirGenFile { self: NirGenPhase =>
       settings.outputDirs.outputDirFor(cunit.source.file)
 
     val pathParts = id.split("[./]")
-    val dir = pathParts.init.foldLeft(baseDir)(_.subdirectoryNamed(_))
+    val dir       = pathParts.init.foldLeft(baseDir)(_.subdirectoryNamed(_))
 
     val filename = pathParts.last
     val file     = dir fileNamed (filename + ".nir")
