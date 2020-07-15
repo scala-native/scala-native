@@ -72,7 +72,8 @@ package object runtime {
   @noinline def loop(): Unit =
     ExecutionContext.loop()
 
-  /** Run one iteration of the runtime's event loop. */
+  /** Run one iteration of the runtime's event loop and return
+   *  remaining runnables count. */
   def loopRunOnce(): Int =
     ExecutionContext.loopRunOnce()
 
