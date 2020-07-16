@@ -60,7 +60,7 @@ installation of macOS.
 
 .. code-block:: shell
 
-    $ sudo apt install clang
+    $ sudo apt install clang-9 build-essential
     $ sudo apt install libgc-dev # optional
 
 **Arch Linux**
@@ -77,7 +77,7 @@ installation of Arch Linux.
 
 .. code-block:: shell
 
-    $ sudo dnf install llvm clang
+    $ sudo dnf install llvm clang libstdc++-devel
     $ sudo dnf install gc-devel zlib-devel # both optional
 
 **FreeBSD**
