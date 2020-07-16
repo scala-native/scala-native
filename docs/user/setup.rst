@@ -77,7 +77,8 @@ installation of Arch Linux.
 
 .. code-block:: shell
 
-    $ sudo dnf install llvm clang libstdc++-devel
+    $ sudo dnf install llvm clang
+    $ sudo dnf groupinstall "Development Tools"
     $ sudo dnf install gc-devel zlib-devel # both optional
 
 **FreeBSD**
