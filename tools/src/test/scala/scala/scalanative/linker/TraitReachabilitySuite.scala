@@ -4,12 +4,11 @@ import org.scalatest._
 import scalanative.nir.{Type, Sig, Global}
 
 class TraitReachabilitySuite extends ReachabilitySuite {
-  val Parent      = g("Parent")
-  val ParentClass = g("Parent$class")
-  val ParentClassInit =
-    g("Parent$class", Sig.Method("$init$", Seq(Type.Ref(Parent), Type.Unit)))
-  val ParentClassFoo =
-    g("Parent$class", Sig.Method("foo", Seq(Type.Ref(Parent), Type.Unit)))
+  val Parent = g("Parent")
+  val ParentInit =
+    g("Parent", Sig.Method("$init$", Seq(Type.Unit)))
+  val ParentFoo =
+    g("Parent", Sig.Method("foo", Seq(Type.Unit)))
   val Child          = g("Child")
   val ChildInit      = g("Child", Sig.Ctor(Seq.empty))
   val ChildFoo       = g("Child", Sig.Method("foo", Seq(Type.Unit)))
@@ -142,7 +141,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   }
 
   testReachable(
-    "calling a method on a trait with default implemention includes impl class") {
+    "calling a method on a trait with default implementation includes impl class") {
     val source = """
       trait Parent {
         def foo: Unit = ()
@@ -166,9 +165,8 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       ChildInit,
       ChildFoo,
       Parent,
-      ParentClass,
-      ParentClassInit,
-      ParentClassFoo,
+      ParentInit,
+      ParentFoo,
       Object,
       ObjectInit
     )
@@ -176,7 +174,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   }
 
   testReachable(
-    "calling a method on a trait with default implemention discards impl class") {
+    "calling a method on a trait with default implementation discards impl class") {
     val source = """
       trait Parent {
         def foo: Unit = ()
@@ -201,9 +199,8 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       Child,
       ChildInit,
       ChildFoo,
-      ParentClass,
-      ParentClassInit,
       Parent,
+      ParentInit,
       Object,
       ObjectInit
     )
