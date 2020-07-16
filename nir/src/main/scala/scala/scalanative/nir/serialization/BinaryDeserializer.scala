@@ -42,9 +42,12 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   private def getStrings(): Seq[String] = getSeq(getString)
   private def getString(): String = {
+    new String(getBytes(), "UTF-8")
+  }
+  private def getBytes(): Array[Byte] = {
     val arr = new Array[Byte](getInt)
     get(arr)
-    new String(arr, "UTF-8")
+    arr
   }
 
   private def getBool(): Boolean = get != 0
@@ -265,7 +268,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.DoubleVal      => Val.Double(getDouble)
     case T.StructValueVal => Val.StructValue(getVals)
     case T.ArrayValueVal  => Val.ArrayValue(getType, getVals)
-    case T.CharsVal       => Val.Chars(getString)
+    case T.CharsVal       => Val.Chars(getBytes())
     case T.LocalVal       => Val.Local(getLocal, getType)
     case T.GlobalVal      => Val.Global(getGlobal, getType)
 

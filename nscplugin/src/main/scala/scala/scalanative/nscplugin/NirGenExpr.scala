@@ -1280,7 +1280,7 @@ trait NirGenExpr { self: NirGenPhase =>
             _),
             _) =>
 
-          val chars = Val.Chars(treatEscapes(str))
+          val chars = Val.Chars(treatEscapes(str).getBytes("UTF-8"))
           val const = Val.Const(chars)
           buf.box(nir.Rt.BoxedPtr, const, unwind)
 

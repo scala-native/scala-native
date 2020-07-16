@@ -533,14 +533,14 @@ object CodeGen {
         unsupported(v)
     }
 
-    def genChars(value: String): Unit = {
+    def genChars(bytes: Array[Byte]): Unit = {
       // `value` should contain a content of a CString literal as is in its source file parsed with parsed escaped characters
       // malformed literals are assumed absent
       str("c\"")
-      value.foreach {
+      bytes.foreach {
         case '\\' => str("\\" * 2)
         case '"'  => str("\\22")
-        case c    => str(c)
+        case c    => str(c.toChar)
       }
       str("\\00\"")
     }

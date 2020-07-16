@@ -460,7 +460,8 @@ object Show {
         str("}")
       case Val.Chars(v) =>
         str("c\"")
-        str(escapeNewLine(escapeQuotes(v)))
+        val strVal = new String(v, "UTF-8")
+        str(escapeNewLine(escapeQuotes(strVal)))
         str("\"")
       case Val.Local(name, ty) =>
         local_(name)

@@ -174,7 +174,7 @@ object Val {
   }
   final case class StructValue(values: Seq[Val])                  extends Val
   final case class ArrayValue(elemty: nir.Type, values: Seq[Val]) extends Val
-  final case class Chars(value: java.lang.String) extends Val {
+  final case class Chars(value: Array[scala.Byte]) extends Val {
     lazy val byteCount: scala.Int = value.length + 1
   }
   final case class Local(name: nir.Local, valty: nir.Type)   extends Val
