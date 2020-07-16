@@ -14,11 +14,6 @@ object CStringSuite extends tests.Suite {
     fromCString(c"\?"); fromCString(c"\\?")
     fromCString(c"\\")
     fromCString(c"\a"); fromCString(c"\\a")
-    fromCString(c"\b"); fromCString(c"\\b")
-    fromCString(c"\f"); fromCString(c"\\f")
-    fromCString(c"\n"); fromCString(c"\\n")
-    fromCString(c"\r"); fromCString(c"\\r")
-    fromCString(c"\t"); fromCString(c"\\t")
     fromCString(c"\v"); fromCString(c"\\v")
     fromCString(c"\012\x6a")
     fromCString(c"%s \\t %.2f %s/s\00")
@@ -30,10 +25,36 @@ object CStringSuite extends tests.Suite {
   }
 
   test("""the value of c"..." literals""") {
+    assertEquals("\b", fromCString(c"\b"))
+    assertEquals("\\b", fromCString(c"\\b"))
+
+    assertEquals("\f", fromCString(c"\f"))
+    assertEquals("\\f", fromCString(c"\\f"))
+
     assertEquals("\t", fromCString(c"\t"))
     assertEquals("\\t", fromCString(c"\\t"))
+
+    assertEquals("\\n", fromCString(c"\\n"))
+    assertEquals("\n", fromCString(c"\n"))
+
+    assertEquals("\\r", fromCString(c"\\r"))
+    assertEquals("\r", fromCString(c"\r"))
+
+    assertEquals("""
+    {
+      "greeting": "Hello world!"
+    }""",
+      fromCString(c"""
+    {
+      "greeting": "Hello world!"
+    }"""))
+
     assertEquals("\u0020\u0020\u0061\u0062", fromCString(c"\040\40\141\x62"))
     assertEquals("\\\\v\t\\abc", fromCString(c"\\\v\t\\abc"))
+
+  assertEquals("\'", fromCString(c"\'"))
+  assertEquals("\\'", fromCString(c"\\'"))
+
   }
 
   test("fromCString") {

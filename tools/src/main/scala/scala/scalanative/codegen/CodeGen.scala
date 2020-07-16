@@ -537,7 +537,11 @@ object CodeGen {
       // `value` should contain a content of a CString literal as is in its source file parsed with parsed escaped characters
       // malformed literals are assumed absent
       str("c\"")
-      str(value.replace("\\", "\\" * 2))
+      value.foreach {
+        case '\\' => str("\\" * 2)
+        case '"'  => str("\\22")
+        case c    => str(c)
+      }
       str("\\00\"")
     }
 
