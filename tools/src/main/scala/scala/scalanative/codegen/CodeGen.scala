@@ -535,15 +535,15 @@ object CodeGen {
 
     def genChars(bytes: Array[Byte]): Unit = {
       str("c\"")
-      bytes.map(_.toChar).foreach {
+      bytes.foreach {
         case '\\' => str("\\" * 2)
-        case c if c.isLetterOrDigit => str(c.toChar)
-        case c =>
+        case c if c < 0x20 || c == '"' || c >= 0x7f =>
           val hex = Integer.toHexString(c)
           str {
             if (hex.length < 2) "\\0" + hex
             else "\\" + hex
           }
+        case c => str(c.toChar)
       }
       str("\\00\"")
     }
