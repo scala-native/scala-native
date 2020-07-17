@@ -518,8 +518,8 @@ object CodeGen {
         str("[ ")
         rep(vs, sep = ", ")(genVal)
         str(" ]")
-      case Val.Chars(v) =>
-        genChars(v)
+      case v: Val.Chars =>
+        genChars(v.bytes)
       case Val.Local(n, ty) =>
         str("%")
         genLocal(n)

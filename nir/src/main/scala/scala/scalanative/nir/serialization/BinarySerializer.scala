@@ -482,7 +482,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.StructValue(vs) => putInt(T.StructValueVal); putVals(vs)
     case Val.ArrayValue(ty, vs) =>
       putInt(T.ArrayValueVal); putType(ty); putVals(vs)
-    case Val.Chars(b)      => putInt(T.CharsVal); putBytes(b)
+    case Val.Chars(b)      => putInt(T.CharsVal); putBytes(b.toArray)
     case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
