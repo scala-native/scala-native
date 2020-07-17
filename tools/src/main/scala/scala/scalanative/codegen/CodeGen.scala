@@ -534,13 +534,16 @@ object CodeGen {
     }
 
     def genChars(bytes: Array[Byte]): Unit = {
-      // `value` should contain a content of a CString literal as is in its source file parsed with parsed escaped characters
-      // malformed literals are assumed absent
       str("c\"")
-      bytes.foreach {
+      bytes.map(_.toChar).foreach {
         case '\\' => str("\\" * 2)
-        case '"'  => str("\\22")
-        case c    => str(c.toChar)
+        case c if c.isLetterOrDigit => str(c.toChar)
+        case c =>
+          val hex = Integer.toHexString(c)
+          str {
+            if (hex.length < 2) "\\0" + hex
+            else "\\" + hex
+          }
       }
       str("\\00\"")
     }
