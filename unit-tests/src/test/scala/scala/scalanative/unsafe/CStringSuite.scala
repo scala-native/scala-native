@@ -1,7 +1,6 @@
 package scala.scalanative
 package unsafe
 
-import scalanative.libc.stdio._
 import scalanative.libc.string._
 
 object CStringSuite extends tests.Suite {
@@ -11,20 +10,24 @@ object CStringSuite extends tests.Suite {
     fromCString(c"")
     fromCString(c"no escapes")
     fromCString(c"\'"); fromCString(c"\\'")
-    fromCString(c"\?"); fromCString(c"\\?")
+    fromCString(c"\\?")
     fromCString(c"\\")
-    fromCString(c"\a"); fromCString(c"\\a")
-    fromCString(c"\v"); fromCString(c"\\v")
-    fromCString(c"\012\x6a")
-    fromCString(c"%s \\t %.2f %s/s\00")
+    fromCString(c"\\a")
+    fromCString(c"\\v")
+    fromCString(c"%s \\t %.2f %s/s\x00")
 
     // uncomment the following to trigger compilation errors for testing
     // fromCString(c"\")     // error at NIR
     // fromCString(c"\x2ae") // error at NIR
     // fromCString(c"\"")    // error at Scala compiler
+    // fromCString(c"\?")
+    // fromCString(c"\v")
+    // fromCString(c"\a")
+    // fromCString(c"\012")
   }
 
   test("""the value of c"..." literals""") {
+
     assertEquals("\b", fromCString(c"\b"))
     assertEquals("\\b", fromCString(c"\\b"))
 
@@ -44,17 +47,15 @@ object CStringSuite extends tests.Suite {
     {
       "greeting": "Hello world!"
     }""",
-      fromCString(c"""
+                 fromCString(c"""
     {
       "greeting": "Hello world!"
     }"""))
 
-    assertEquals("\u0020\u0020\u0061\u0062", fromCString(c"\040\40\141\x62"))
-    assertEquals("\\\\v\t\\abc", fromCString(c"\\\v\t\\abc"))
+    assertEquals("\u0020\u0020\u006a\u006b", fromCString(c"\x20\X20\x6a\x6B"))
 
-  assertEquals("\'", fromCString(c"\'"))
-  assertEquals("\\'", fromCString(c"\\'"))
-
+    assertEquals("\'", fromCString(c"\'"))
+    assertEquals("\\'", fromCString(c"\\'"))
   }
 
   test("fromCString") {

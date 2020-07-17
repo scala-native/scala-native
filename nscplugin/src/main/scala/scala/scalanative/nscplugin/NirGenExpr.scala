@@ -1280,7 +1280,8 @@ trait NirGenExpr { self: NirGenPhase =>
             _),
             _) =>
 
-          val chars = Val.Chars(treatEscapes(str).getBytes("UTF-8"))
+          val processedString = StringContext.processEscapes(processHexValues(str))
+          val chars = Val.Chars(processedString.getBytes("UTF-8"))
           val const = Val.Const(chars)
           buf.box(nir.Rt.BoxedPtr, const, unwind)
 
@@ -1663,52 +1664,15 @@ trait NirGenExpr { self: NirGenPhase =>
       argsp.map(genExpr)
     }
 
-    private def treatEscapes(str: String): String = {
-      val len = str.length
-      val b = new java.lang.StringBuilder()
-
-      // replace escapes with given first escape
-      import Character.isDigit
-      def isOct(c: Char): Boolean = isDigit(c) && c != '8' && c != '9'
-
-      def isHex(c: Char): Boolean =
-        isDigit(c) ||
-          c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
-          c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
-
-      // append replacement starting at index `i`, with `next` backslash
-      @tailrec def loop(from: Int): java.lang.StringBuilder = {
-
-        str.indexOf('\\', from) match {
-          case -1 => b.append(str.substring(from))
-          case idx => b.append(str.substring(from, idx))
-            if (idx >= len) throw new InvalidEscapeException(str, from)
-            str(idx + 1) match {
-              case 'b' => b.append('\b'); loop(idx + 2)
-              case 't' => b.append('\t'); loop(idx + 2)
-              case 'n' => b.append('\n'); loop(idx + 2)
-              case 'f' => b.append('\f'); loop(idx + 2)
-              case 'r' => b.append('\r'); loop(idx + 2)
-              case '"' => b.append('\"'); loop(idx + 2)
-              case '\'' => b.append('\''); loop(idx + 2)
-              case '\\' => b.append('\\'); loop(idx + 2)
-              case o if isOct(o) =>
-                val oct = str.drop(idx + 1).take(3).takeWhile(isOct)
-                b.append(Integer.parseInt(oct, 8).toChar)
-                loop(idx + 1 + oct.length)
-              case 'x' =>
-                val hex = str.drop(idx + 2).takeWhile(isHex)
-                b.append(Integer.parseInt(hex, 16).toChar)
-                loop(idx + 2 + hex.length)
-              case c => b
-                .append('\\')
-                .append(c)
-                loop(idx + 2)
-            }
+    private def processHexValues(str: String): String = {
+      val regex = "\\\\[xX]([0-9A-Fa-f]+)".r
+      regex.replaceAllIn(str, m => {
+        val hexValue = Integer.parseInt(m.group(1), 16)
+        if(hexValue > 255){
+          throw new IllegalArgumentException(s"malformed C string - hex value greater then 0xFF: $str")
         }
-      }
-
-      loop(0).toString
+        hexValue.toChar.toString
+      })
     }
   }
 }
