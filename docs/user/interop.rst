@@ -357,6 +357,9 @@ strings (similarly to C):
     val msg: CString = c"Hello, world!"
     stdio.printf(msg)
 
+It does not allow any octal values or escape characters not supported by Scala compiler, like ``\a`` or ``\?``.
+It is possible to use C-style hex values up to value 0xFF, eg. ``c"Hello \x61\x62\x63"``
+
 Additionally, we also expose two helper functions ``unsafe.toCString`` and
 ``unsafe.fromCString`` to convert between C-style and Java-style strings.
 
