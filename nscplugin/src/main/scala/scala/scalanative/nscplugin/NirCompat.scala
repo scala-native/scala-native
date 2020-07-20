@@ -23,12 +23,13 @@ trait NirCompat { self: NirGenPhase =>
       import global._
 
       type SAMFunctionAlias = SAMFunction
-      val SAMFunctionAlias = SAMFunction
+      val SAMFunctionAlias: global.SAMFunction.type = SAMFunction
     }
   }
 
   type SAMFunctionCompat = SAMFunctionAttachCompat.Inner.SAMFunctionAlias
-  lazy val SAMFunctionCompat = SAMFunctionAttachCompat.Inner.SAMFunctionAlias
+  lazy val SAMFunctionCompat: global.SAMFunction.type =
+    SAMFunctionAttachCompat.Inner.SAMFunctionAlias
 
   implicit final class SAMFunctionCompatOps(self: SAMFunctionCompat) {
     // Introduced in 2.12.5 to synthesize bridges in LMF classes
@@ -60,6 +61,18 @@ trait NirCompat { self: NirGenPhase =>
 
   def isImplClass(sym: Symbol): Boolean =
     scalaUsesImplClasses && sym.hasFlag(Flags.IMPLCLASS)
+
+  implicit final class StdTermNamesCompat(self: global.nme.type) {
+    def IMPL_CLASS_SUFFIX: String = noImplClasses()
+
+    def isImplClassName(name: Name): Boolean = false
+  }
+
+  implicit final class StdTypeNamesCompat(self: global.tpnme.type) {
+    def IMPL_CLASS_SUFFIX: String = noImplClasses()
+
+    def interfaceName(implname: Name): TypeName = noImplClasses()
+  }
 
 }
 
