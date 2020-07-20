@@ -35,7 +35,7 @@ object NIRCompiler {
   def getCompiler(): api.NIRCompiler = {
     val clazz =
       classLoader.loadClass("scala.scalanative.NIRCompiler")
-    clazz.newInstance match {
+    clazz.getConstructor().newInstance() match {
       case compiler: api.NIRCompiler => compiler
       case other =>
         throw new ReflectiveOperationException(
