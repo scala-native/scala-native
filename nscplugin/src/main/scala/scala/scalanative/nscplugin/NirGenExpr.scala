@@ -674,8 +674,7 @@ trait NirGenExpr { self: NirGenPhase =>
         val funName = anonName.member(funSig)
 
         val selfType = Type.Ref(anonName)
-        val nir.Sig.Method(_, argTypes :+ retType) = funSig.unmangled
-        val sigTypes = functionArgs.takeRight(argTypes.length).map(arg => genType(arg.tpe))
+        val nir.Sig.Method(_, sigTypes :+ retType) = funSig.unmangled
         val paramTypes = selfType +: sigTypes
 
         val bodyFresh = Fresh()
@@ -692,16 +691,30 @@ trait NirGenExpr { self: NirGenPhase =>
           val self   = Val.Local(fresh(), selfType)
           val params = sigTypes.map { ty => Val.Local(fresh(), ty) }
           buf.label(fresh(), self +: params)
-          paramSyms.zip(params).foreach {
-            case (sym, value) =>
-              val unboxed = buf.unboxValue(sym.tpe, partial = false, value)
-              curMethodEnv.enter(sym, unboxed)
+
+          // At this point, the type parameter symbols are all Objects.
+          // We need to transform them, so that their type conforms to
+          // what the apply method expects:
+          // - values that can be unboxed, are unboxed
+          // - otherwise, the value is cast to the appropriate type
+          paramSyms.zip(functionArgs.takeRight(sigTypes.length)).zip(params).foreach {
+            case ((sym, arg), value) =>
+              val unboxedOrCast = {
+                val unboxed = buf.unboxValue(sym.tpe, partial = false, value)
+                if (unboxed == value) // no need to or cannot unbox, we should cast
+                  buf.genCastOp(genType(sym.tpe), genType(arg.tpe), value)
+                else
+                  unboxed
+              }
+              curMethodEnv.enter(sym, unboxedOrCast)
           }
+
           captureSyms.zip(captureNames).foreach {
             case (sym, name) =>
               val value = buf.fieldload(genType(sym.tpe), self, name, Next.None)
               curMethodEnv.enter(sym, value)
           }
+
           val sym      = targetTree.symbol
           val method   = Val.Global(genMethodName(sym), Type.Ptr)
           val values   = buf.genMethodArgs(sym, functionArgs)
@@ -1728,9 +1741,6 @@ trait NirGenExpr { self: NirGenPhase =>
       val self = genModule(module)
       genApplyMethod(method, statically = true, self, args)
     }
-
-    def isImplClass(sym: Symbol): Boolean =
-      false//sym.isModuleClass
 
     def genApplyMethod(sym: Symbol,
                       statically: Boolean,
