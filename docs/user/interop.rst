@@ -321,6 +321,12 @@ pointers and do not have a corresponding first-class values backing them.
 
 * ``unsafe.Ptr[unsafe.CArray[T, N]]``
 
+  .. Wizardry and lore ahead!
+  ..
+  .. Sphinx & Pygments warn that they can not parse & highlight next code-block
+  .. as Scala. Use double colon code-block idiom to avoid build warning.
+  .. Default Python style will highlight code-block "close enough" to Scala.
+
   Pointer to a C array with statically-known length ``N``. Length is encoded as
   a type-level natural number. Natural numbers are types that are composed of
   base naturals ``Nat._0, ... Nat._9`` and an additional ``Nat.DigitN``
@@ -330,6 +336,11 @@ pointers and do not have a corresponding first-class values backing them.
       import scalanative.unsafe._, Nat._
 
       type _1024 = Digit4[_1, _0, _2, _4]
+
+  .. Sphinx & Pygments warn that they can not parse & highlight next code-block
+  .. as Scala. Use double colon code-block idiom to avoid build warning.
+  .. There will be a slight visual glitch because default Python will not.
+  .. highlight it.
 
   Once you have a natural for the length, it can be used as an array length::
 
