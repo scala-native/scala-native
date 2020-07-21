@@ -680,36 +680,41 @@ Some notes on the implementation:
 2. This implementation of RE2 does not support:
 
    * Character classes:
-    * Unions: ``[a-d[m-p]]``
-    * Intersections: ``[a-z&&[^aeiou]]``
+
+     * Unions: ``[a-d[m-p]]``
+     * Intersections: ``[a-z&&[^aeiou]]``
 
    * Predefined character classes: ``\h``, ``\H``, ``\v``, ``\V``
 
    * Patterns:
-    * Octal: ``\0100`` - use decimal or hexadecimal instead.
-    * Two character Hexadecimal: ``\xFF`` - use ``\x00FF`` instead.
-    * All alphabetic Unicode: ``\uBEEF`` - use hex ``\xBEEF`` instead.
-    * Escape: ``\e`` - use ``\u001B`` instead.
+
+     * Octal: ``\0100`` - use decimal or hexadecimal instead.
+     * Two character Hexadecimal: ``\xFF`` - use ``\x00FF`` instead.
+     * All alphabetic Unicode: ``\uBEEF`` - use hex ``\xBEEF`` instead.
+     * Escape: ``\e`` - use ``\u001B`` instead.
 
    * Java character function classes:
-    * ``\p{javaLowerCase}``
-    * ``\p{javaUpperCase}``
-    * ``\p{javaWhitespace}``
-    * ``\p{javaMirrored}``
+
+     * ``\p{javaLowerCase}``
+     * ``\p{javaUpperCase}``
+     * ``\p{javaWhitespace}``
+     * ``\p{javaMirrored}``
 
    * Boundary matchers: ``\G``, ``\R``, ``\Z``
 
    * Possessive quantifiers: ``X?+``, ``X*+``, ``X++``, ``X{n}+``,
      ``X{n,}+``, ``X{n,m}+``
+
    * Lookaheads: ``(?=X)``, ``(?!X)``, ``(?<=X)``, ``(?<!X)``, ``(?>X)``
 
    * Options
-    *  CANON_EQ
-    *  COMMENTS
-    *  LITERAL
-    *  UNICODE_CASE
-    *  UNICODE_CHARACTER_CLASS
-    *  UNIX_LINES
+
+     *  CANON_EQ
+     *  COMMENTS
+     *  LITERAL
+     *  UNICODE_CASE
+     *  UNICODE_CHARACTER_CLASS
+     *  UNIX_LINES
 
    * Patterns to match a Unicode binary property, such as
      ``\p{isAlphabetic}`` for a codepoint with the 'alphabetic' property,
