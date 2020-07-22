@@ -633,9 +633,12 @@ trait NirGenExpr { self: NirGenPhase =>
 
       // Generate fields to store the captures.
 
-      val captureTypes = captureSyms.map(sym => genType(sym.tpe))
+      // enclosing class `this` reference + capture symbols
+      val captureSymsWithEnclThis = curClassSym.get +: captureSyms
+
+      val captureTypes = captureSymsWithEnclThis.map(sym => genType(sym.tpe))
       val captureNames =
-        captureSyms.zipWithIndex.map {
+        captureSymsWithEnclThis.zipWithIndex.map {
           case (sym, idx) =>
             val name = anonName.member(nir.Sig.Field("capture" + idx))
             val ty   = genType(sym.tpe)
@@ -709,7 +712,7 @@ trait NirGenExpr { self: NirGenPhase =>
               curMethodEnv.enter(sym, unboxedOrCast)
           }
 
-          captureSyms.zip(captureNames).foreach {
+          captureSymsWithEnclThis.zip(captureNames).foreach {
             case (sym, name) =>
               val value = buf.fieldload(genType(sym.tpe), self, name, Next.None)
               curMethodEnv.enter(sym, value)
@@ -717,9 +720,9 @@ trait NirGenExpr { self: NirGenPhase =>
 
           val sym      = targetTree.symbol
           val method   = Val.Global(genMethodName(sym), Type.Ptr)
-          val values   = buf.genMethodArgs(sym, functionArgs)
+          val values   = buf.genMethodArgs(sym, Ident(curClassSym.get) +: functionArgs)
           val sig      = genMethodSig(sym)
-          val res      = buf.call(sig, method, Val.Null +: values, Next.None)
+          val res      = buf.call(sig, method, values, Next.None)
           val boxedRes = {
             val expectedResTy = genType(funSym.tpe.resultType)
             if (res.ty != expectedResTy) {
@@ -740,7 +743,7 @@ trait NirGenExpr { self: NirGenPhase =>
       // passing all of the captures as arguments.
 
       val alloc       = buf.classalloc(anonName, unwind)
-      val captureVals = captureSyms.map { sym => genExpr(Ident(sym)) }
+      val captureVals = curMethodThis.get.get +: captureSyms.map { sym => genExpr(Ident(sym)) }
       buf.call(ctorTy, Val.Global(ctorName, Type.Ptr), alloc +: captureVals, unwind)
       alloc
     }
