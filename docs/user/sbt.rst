@@ -168,28 +168,80 @@ package resolution system.
 .. _sonatype: https://github.com/xerial/sbt-sonatype
 .. _bintray: https://github.com/sbt/sbt-bintray
 
-Using 3rd Party libraries with Native Code
-------------------------------------------
+Including Native Code in your Application or Library
+----------------------------------------------------
 
-Third party libraries that are targeted only for the Scala Native platform
-can have C and/or C++ components included in the dependency. The code is
-added to `src/main/resources` and is published like a normal Scala library.
+Scala Native uses native C and C++ code to interact with the underlying
+platform and operating system. Since the tool chain compiles and links
+the Scala Native system, it can also compile and link C and C++ code
+included in an application project or a library that supports Scala
+Native that includes C and/or C++ source code.
 
-If the dependency contains native code, Scala Native will unpack the library,
-compile, link, and optimize any native code along with the Scala Native
-runtime and your application code.
+Supported file extensions for native code are `.c`, `.cpp`, and `.S`.
 
-Including Native Code in your Project
-------------------------------------------
+Note that `.S` files or assembly code is not portable across different CPU
+architectures so conditional compilation would be needed to support
+more than one architecture. You can also include header files with
+the extensions `.h` and `.hpp`.
+
+Applications with Native Code
+-----------------------------
 
 In order to create standalone native projects with native code use the
-following procedure.
+following procedure. You can start with the basic Scala Native template.
 
-Add C code into `src/main/resources`. The code can be put in directories as
-desired inside the `resources` directory.
+Add C/C++ code into `src/main/resources/scala-native`. The code can be put in
+subdirectories as desired inside the `scala-native` directory. As an example,
+create a file named `myapi.c` and put it into your `scala-native` directory
+as described above.
 
-This feature can be used in combination with the feature above to include
-3rd party libraries with native code.
+.. code-block:: scala
+
+    long long add3(long long in) { return in + 3; }
+
+Next, create a main file as follows:
+
+.. code-block:: scala
+
+    import scalanative.unsafe._
+
+    @extern
+    object myapi {
+      def add3(in: CLongLong): CLongLong = extern
+    }
+
+    object Main {
+      import myapi._
+      def main(args: Array[String]): Unit = {
+        val res = add3(-3L)
+        assert(res == 0L)
+        println(s"Add3 to -3 = $res")
+      }
+    }
+
+Finally, run this like normal Scala Native application.
+
+
+Using libraries with Native Code
+------------------------------------------
+
+Libraries developed to target the Scala Native platform
+can have C, C++, or assembly files included in the dependency. The code is
+added to `src/main/resources/scala-native` and is published like a normal
+Scala library. The code can be put in subdirectories as desired inside the
+`scala-native` directory. These libraries can also be cross built to
+support Scala/JVM or Scala.js if the Native portions have replacement
+code on the respective platforms.
+
+If the dependency contains native code, Scala Native will identify the
+library as a dependency that has native code and will unpack the library.
+Next, it will compile, link, and optimize any native code along with the
+Scala Native runtime and your application code. No additional information
+is needed in the build file other than the normal dependency so it is
+transparent to the library user.
+
+This feature can be used in combination with the feature to put native
+code in you application as described above.
 
 Cross compilation
 -----------------
