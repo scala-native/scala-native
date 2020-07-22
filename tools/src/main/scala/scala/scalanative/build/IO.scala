@@ -145,10 +145,10 @@ private[scalanative] object IO {
   /** Compute a SHA-1 hash of `files`. */
   def sha1files(files: Seq[Path], bufSize: Int = 1024): Array[Byte] = {
     val digest = MessageDigest.getInstance("SHA-1")
-    val buf    = new Array[Byte](bufSize)
     files.foreach { file =>
       val stream       = Files.newInputStream(file)
       val digestStream = new DigestInputStream(stream, digest)
+      val buf          = new Array[Byte](bufSize)
       try {
         while (digestStream.read(buf, 0, bufSize) != -1) {}
       } finally {

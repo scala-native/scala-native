@@ -10,7 +10,7 @@ private[scalanative] object NativeLib {
 
   /** List of source patterns used */
   val jarExtension  = ".jar"
-  val srcExtensions = Seq(".c", ".cpp", ".S")
+  val srcExtensions = Seq(".c", ".cpp", ".S", ".h", ".hpp")
   val srcPatterns   = srcExtensions.mkString("glob:**{", ",", "}")
 
   /** To positively identify nativelib */

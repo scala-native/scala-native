@@ -51,17 +51,15 @@ private[scalanative] object LLVM {
    * Copy project code from project `src` Path to `workdir/dest`
    * Path where it can be compiled and linked.
    *
-   * This does not copy if nothing has changed.
+   * This does not copy if no native code has changed.
    *
    * @param nativelib The NativeLib to copy.
    * @return The Path where the code was copied, `workdir/dest`.
    */
   private def copyNativeDir(nativelib: NativeLib): Path = {
-    val target = nativelib.dest
-    val source = nativelib.src
-    val files = IO.getAll(source, "glob:**.c") ++
-      IO.getAll(source, "glob:**.cpp") ++
-      IO.getAll(source, "glob:**.S")
+    val target        = nativelib.dest
+    val source        = nativelib.src
+    val files         = IO.getAll(source, NativeLib.srcPatterns)
     val fileshash     = IO.sha1files(files)
     val fileshashPath = target.resolve("fileshash")
     def copied =
@@ -181,7 +179,7 @@ private[scalanative] object LLVM {
    * @param config       The configuration of the toolchain.
    * @param linkerResult The results from the linker.
    * @param llPaths      The list of `.ll` files to link.
-   * @param nativelib    The path to the nativelib.
+   * @param nativelibs   The list of paths to nativelibs.
    * @param outpath      The path where to write the resulting binary.
    * @return `outpath`
    */
