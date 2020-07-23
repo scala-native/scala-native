@@ -703,7 +703,7 @@ trait NirGenExpr { self: NirGenPhase =>
           paramSyms.zip(functionArgs.takeRight(sigTypes.length)).zip(params).foreach {
             case ((sym, arg), value) =>
               val unboxedOrCast = {
-                val unboxed = buf.unboxValue(sym.tpe, partial = false, value)
+                val unboxed = buf.unboxValue(sym.tpe, partial = true, value)
                 if (unboxed == value) // no need to or cannot unbox, we should cast
                   buf.genCastOp(genType(sym.tpe), genType(arg.tpe), value)
                 else
@@ -725,7 +725,7 @@ trait NirGenExpr { self: NirGenPhase =>
           val res      = buf.call(sig, method, values, Next.None)
           val boxedRes = {
             val expectedResTy = genType(funSym.tpe.resultType)
-            if (res.ty != expectedResTy) {
+            if (!res.ty.isInstanceOf[Type.RefKind] && res.ty != expectedResTy) {
               buf.boxValue(callTree.tpe, res)
             } else {
               res
