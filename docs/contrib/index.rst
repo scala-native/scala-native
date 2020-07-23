@@ -8,6 +8,7 @@ Contributor's Guide
 
   contributing
   build
+  docbuild
   compiler
   nir
   mangling

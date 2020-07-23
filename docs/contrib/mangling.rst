@@ -5,7 +5,7 @@ Scala Native toolchain mangles names for all definitions except
 the ones which have been explicitly exported to C using
 ``extern``. Mangling scheme is defined through a simple grammar
 that uses a notation inspired by
-`Itanium ABI <http://refspecs.linuxbase.org/cxxabi-1.83.html>`_::
+`Itanium ABI <https://refspecs.linuxbase.org/cxxabi-1.83.html>`_::
 
     <mangled-name> ::=
         _S <defn-name>

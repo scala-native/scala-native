@@ -209,6 +209,11 @@ Its content is shared as unmanaged source dependency between JVM and Native side
 
 The next section has more build and development information for those wanting
 to work on :ref:`compiler`.
+=======
+The :ref:`compiler` section has more build and development information for
+those wanting to work in those areas.
 
-.. [1] http://www.scala-native.org/en/latest/user/setup.html
-.. [2] http://www.scala-native.org/en/latest/user/sbt.html
+Continue to :ref:`docbuild`.
+
+.. [1] :ref:`setup`
+.. [2] :ref:`sbt`
