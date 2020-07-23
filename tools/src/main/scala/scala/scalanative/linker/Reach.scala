@@ -27,7 +27,10 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     cleanup()
 
     val defns = mutable.UnrolledBuffer.empty[Defn]
-    defns ++= done.valuesIterator
+
+    // drop the null values that have been introduced
+    // in reachUnavailable
+    defns ++= done.valuesIterator.filter(_ != null)
 
     new Result(infos,
                entries,
