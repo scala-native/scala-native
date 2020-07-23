@@ -195,7 +195,7 @@ subdirectories as desired inside the `scala-native` directory. As an example,
 create a file named `myapi.c` and put it into your `scala-native` directory
 as described above.
 
-.. code-block:: scala
+.. code-block:: c
 
     long long add3(long long in) { return in + 3; }
 
@@ -240,8 +240,8 @@ Scala Native runtime and your application code. No additional information
 is needed in the build file other than the normal dependency so it is
 transparent to the library user.
 
-This feature can be used in combination with the feature to put native
-code in you application as described above.
+This feature can be used in combination with the feature above that
+allows native code in your application.
 
 Cross compilation
 -----------------
