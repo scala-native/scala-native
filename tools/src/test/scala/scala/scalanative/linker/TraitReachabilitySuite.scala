@@ -1,14 +1,25 @@
 package scala.scalanative.linker
 
 import org.scalatest._
+import scalanative.util.Platform.scalaVersion
 import scalanative.nir.{Type, Sig, Global}
 
 class TraitReachabilitySuite extends ReachabilitySuite {
   val Parent = g("Parent")
+
+  // Scala 2.11.x
+  val ParentClass = g("Parent$class")
+  val ParentClassInit =
+    g("Parent$class", Sig.Method("$init$", Seq(Type.Ref(Parent), Type.Unit)))
+  val ParentClassFoo =
+    g("Parent$class", Sig.Method("foo", Seq(Type.Ref(Parent), Type.Unit)))
+
+  // Scala 2.12.x
   val ParentInit =
     g("Parent", Sig.Method("$init$", Seq(Type.Unit)))
   val ParentFoo =
     g("Parent", Sig.Method("foo", Seq(Type.Unit)))
+
   val Child          = g("Child")
   val ChildInit      = g("Child", Sig.Ctor(Seq.empty))
   val ChildFoo       = g("Child", Sig.Method("foo", Seq(Type.Unit)))
@@ -164,12 +175,24 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       Child,
       ChildInit,
       ChildFoo,
-      Parent,
-      ParentInit,
-      ParentFoo,
       Object,
       ObjectInit
-    )
+    ) ++ {
+      if (scalaVersion.startsWith("2.11")) {
+        Seq(
+          Parent,
+          ParentClass,
+          ParentClassInit,
+          ParentClassFoo
+        )
+      } else {
+        Seq(
+          Parent,
+          ParentInit,
+          ParentFoo
+        )
+      }
+    }
     (source, entry, reachable)
   }
 
@@ -199,11 +222,22 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       Child,
       ChildInit,
       ChildFoo,
-      Parent,
-      ParentInit,
       Object,
       ObjectInit
-    )
+    ) ++ {
+      if (scalaVersion.startsWith("2.11")) {
+        Seq(
+          Parent,
+          ParentClass,
+          ParentClassInit
+        )
+      } else {
+        Seq(
+          Parent,
+          ParentInit
+        )
+      }
+    }
     (source, entry, reachable)
   }
 }
