@@ -122,7 +122,7 @@ Garbage collectors
 2. **boehm.** (default through 0.3.7)
 
    Conservative generational garbage collector. More information is available
-   at the `project's page <https://www.hboehm.info/gc/>`_.
+   at the Github project "ivmai/bdgc" page.
 
 3. **none.** (experimental, introduced in 0.2)
 
@@ -171,13 +171,13 @@ package resolution system.
 Cross compilation
 -----------------
 
-`sbt-crossproject <https://github.com/scala-native/sbt-crossproject>`_ is an
+`sbt-crossproject <https://github.com/portable-scala/sbt-crossproject>`_ is an
 sbt plugin that lets you cross-compile your projects against all three major
 platforms in Scala: JVM, JavaScript via Scala.js, and native via Scala Native.
 It is based on the original cross-project idea from Scala.js and supports the
 same syntax for existing JVM/JavaScript cross-projects. Please refer to the
 project's
-`README <https://github.com/scala-native/sbt-crossproject/blob/master/README.md>`_
+`README <https://github.com/portable-scala/sbt-crossproject/blob/master/README.md>`_
 for details.
 
 Continue to :ref:`lang`.

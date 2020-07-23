@@ -62,7 +62,7 @@ Community
   Join `our Gitter chat channel <https://gitter.im/scala-native/scala-native>`_.
 
 * Have a question?
-  Ask it on `Stack Overflow with tag scala-native <http://stackoverflow.com/questions/tagged/scala-native>`_.
+  Ask it on `Stack Overflow with tag scala-native <https://stackoverflow.com/questions/tagged/scala-native>`_.
 
 * Found a bug or want to propose a new feature?
   Open `an issue on Github <https://github.com/scala-native/scala-native/issues>`_.

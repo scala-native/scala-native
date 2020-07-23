@@ -20,7 +20,7 @@ Interflow fuses following *static* optimizations in a single optimization pass:
 
 * *Partial evaluation.* As part of its traversal, Interflow partially evaluates instance checks, casts, and virtual calls away and replace them with statically predicted results. Partial evaluation removes computations that can be done at compile time and improves the precision of inferred types due to elimination of impossible control flow paths.
 
-* *Partial escape analysis.* Interflow elides allocations which do not escape. It relies on a variation of a technique called [partial escape analysis and scalar replacement](https://dl.acm.org/citation.cfm?id=2544157). This optimization enables elimination of unnecessary closures, boxes, decorators, builders and other intermediate allocations.
+* *Partial escape analysis.* Interflow elides allocations which do not escape. It relies on a variation of a technique called [partial escape analysis and scalar replacement](https://dl.acm.org/doi/10.1145/2581122.2544157). This optimization enables elimination of unnecessary closures, boxes, decorators, builders and other intermediate allocations.
 
 * *Inlining.* Interflow performs inlining in the same pass as the rest of the optimizations. This opens the door for caller sensitive information based on partial evaluation and partial escape analysis to be taken into account to decide if method call should be inlined.
 

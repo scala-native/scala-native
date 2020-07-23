@@ -282,6 +282,7 @@ runtime system, one has to be extra careful when working with unmanaged memory.
    also bind to plethora of 3-rd party allocators such as jemalloc_ to
    serve the same purpose.
 
+.. Comment - https does not work with jemalloc.net
 .. _jemalloc: http://jemalloc.net/
 
 Undefined behavior

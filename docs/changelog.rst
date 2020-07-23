@@ -78,4 +78,4 @@ Changelog
 0.1.0 (March 14, 2017)
 ----------------------
 
-`Read original announcement on scala-lang.org <http://scala-lang.org/blog/2017/03/14/scala-native-0.1-is-here.html>`_
+`Read original announcement on scala-lang.org <https://scala-lang.org/blog/2017/03/14/scala-native-0.1-is-here.html>`_
