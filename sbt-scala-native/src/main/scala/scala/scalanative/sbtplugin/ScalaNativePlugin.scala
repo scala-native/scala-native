@@ -7,47 +7,59 @@ import sbt._
 
 object ScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin
-
   object autoImport {
 
     val ScalaNativeCrossVersion = sbtplugin.ScalaNativeCrossVersion
 
     val nativeVersion = nir.Versions.current
 
+    val nativeConfig =
+      settingKey[build.Config]("Configuration of the Scala Native plugin")
+
+    @deprecated("Use nativeConfig setting instead", "0.4.3")
     val nativeClang =
-      taskKey[File]("Location of the clang compiler.")
+      settingKey[File]("Location of the clang compiler.")
 
+    @deprecated("Use nativeConfig setting instead", "0.4.3")
     val nativeClangPP =
-      taskKey[File]("Location of the clang++ compiler.")
+      settingKey[File]("Location of the clang++ compiler.")
 
+    @deprecated("Use nativeConfig setting instead", "0.4.3")
     val nativeCompileOptions =
-      taskKey[Seq[String]](
+      settingKey[Seq[String]](
         "Additional options are passed to clang during compilation.")
 
+    @deprecated("Use nativeConfig setting instead", "0.4.3")
     val nativeLinkingOptions =
-      taskKey[Seq[String]](
+      settingKey[Seq[String]](
         "Additional options that are passed to clang during linking.")
 
+    @deprecated("Use nativeConfig setting instead", "0.4.3")
     val nativeLinkStubs =
       settingKey[Boolean]("Whether to link `@stub` methods, or ignore them.")
 
     val nativeLink =
       taskKey[File]("Generates native binary without running it.")
 
+    @deprecated("Use nativeConfig setting instead", "0.4.3")
     val nativeMode =
       settingKey[String]("Compilation mode, either \"debug\" or \"release\".")
 
+    @deprecated("Use nativeConfig setting instead", "0.4.3")
     val nativeGC =
       settingKey[String](
         "GC choice, either \"none\", \"boehm\", \"immix\" or \"commix\".")
 
+    @deprecated("Use nativeConfig setting instead", "0.4.3")
     val nativeLTO =
-      taskKey[String](
+      settingKey[String](
         "LTO variant used for release mode (either \"none\", \"thin\" or \"full\").")
 
+    @deprecated("Use nativeConfig setting instead", "0.4.3")
     val nativeCheck =
       settingKey[Boolean]("Shall native toolchain check NIR during linking?")
 
+    @deprecated("Use nativeConfig setting instead", "0.4.3")
     val nativeDump =
       settingKey[Boolean](
         "Shall native toolchain dump intermediate NIR to disk during linking?")

@@ -129,9 +129,9 @@ object Config {
       mode = Mode.default,
       linkStubs = false,
       logger = Logger.default,
-      LTO = "none",
       check = false,
       dump = false,
+      linkStubs = false,
       optimize = false
     )
 
@@ -146,9 +146,9 @@ object Config {
                                 compileOptions: Seq[String],
                                 gc: GC,
                                 mode: Mode,
-                                linkStubs: Boolean,
                                 logger: Logger,
                                 LTO: String,
+                                linkStubs: Boolean,
                                 check: Boolean,
                                 dump: Boolean,
                                 optimize: Boolean)
@@ -203,5 +203,25 @@ object Config {
 
     def withOptimize(value: Boolean): Config =
       copy(optimize = value)
+
+    override def toString: String =
+      s"""
+         | - workdir:   $workdir
+         | - nativelib: $nativelib
+         | - mainClass: $mainClass
+         | - classPath: $classPath
+         | - clang:     $clang
+         | - clangPP:   $clangPP
+         | - targetTriple:    $targetTriple
+         | - linkingOptions:  $linkingOptions
+         | - compileOptions:  $compileOptions
+         | - gc:        $gc
+         | - mode:      $mode
+         | - linkStubs: $linkStubs
+         | - LTO:       $LTO
+         | - check:     $check
+         | - dump:      $dump
+		 | - optimize   $optimize
+         |""".stripMargin
   }
 }

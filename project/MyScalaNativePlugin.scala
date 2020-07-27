@@ -16,7 +16,7 @@ object MyScalaNativePlugin extends AutoPlugin {
     libraryDependencies ~= { libDeps =>
       libDeps.filterNot(_.organization == "org.scala-native")
     },
-    nativeCheck := true,
-    nativeDump := true
+    nativeConfig ~= (_.withCheck(true)
+      .withDump(true))
   )
 }

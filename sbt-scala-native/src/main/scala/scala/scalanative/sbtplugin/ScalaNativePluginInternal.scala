@@ -3,6 +3,7 @@ package sbtplugin
 
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicReference
+import java.nio.file.Files
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
 import sbt._
@@ -26,15 +27,12 @@ object ScalaNativePluginInternal {
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
 
-  val nativeConfig =
-    taskKey[build.Config]("Aggregate config object that's used for tools.")
-
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
-      "org.scala-native" %%% "nativelib"      % nativeVersion,
-      "org.scala-native" %%% "javalib"        % nativeVersion,
-      "org.scala-native" %%% "auxlib"         % nativeVersion,
-      "org.scala-native" %%% "scalalib"       % nativeVersion,
+      "org.scala-native" %%% "nativelib" % nativeVersion,
+      "org.scala-native" %%% "javalib" % nativeVersion,
+      "org.scala-native" %%% "auxlib" % nativeVersion,
+      "org.scala-native" %%% "scalalib" % nativeVersion,
       "org.scala-native" %%% "test-interface" % nativeVersion % Test
     ),
     addCompilerPlugin(
@@ -42,18 +40,23 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
+    nativeConfig := {
+      build.Config.empty
+        .withClang(interceptBuildException(Discover.clang()))
+        .withClangPP(interceptBuildException(Discover.clangpp()))
+    },
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-    nativeClang := interceptBuildException(Discover.clang().toFile),
-    nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
-    nativeCompileOptions := Discover.compileOptions(),
-    nativeLinkingOptions := Discover.linkingOptions(),
-    nativeMode := Discover.mode(),
-    nativeLinkStubs := false,
-    nativeGC := Discover.GC(),
-    nativeLTO := Discover.LTO(),
-    nativeCheck := false,
-    nativeDump := false
+    nativeClang := nativeConfig.value.clang.toFile,
+    nativeClangPP := nativeConfig.value.clangPP.toFile,
+    nativeCompileOptions := nativeConfig.value.compileOptions,
+    nativeLinkingOptions := nativeConfig.value.linkingOptions,
+    nativeMode := nativeConfig.value.mode.name,
+    nativeGC := nativeConfig.value.gc.name,
+    nativeLTO := nativeConfig.value.LTO,
+    nativeLinkStubs := nativeConfig.value.linkStubs,
+    nativeCheck := nativeConfig.value.check,
+    nativeDump := nativeConfig.value.dump
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -68,93 +71,115 @@ object ScalaNativePluginInternal {
     },
     onComplete := {
       val prev: () => Unit = onComplete.value
-      () => {
-        prev()
-        testAdapters.getAndSet(Nil).foreach(_.close())
-      }
+      () =>
+        {
+          prev()
+          testAdapters.getAndSet(Nil).foreach(_.close())
+        }
     }
   )
 
-  lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
-    nativeTarget := interceptBuildException {
-      val cwd   = nativeWorkdir.value.toPath
-      val clang = nativeClang.value.toPath
-      Discover.targetTriple(clang, cwd)
-    },
-    artifactPath in nativeLink := {
-      crossTarget.value / (moduleName.value + "-out")
-    },
-    nativeWorkdir := {
-      val workdir = crossTarget.value / "native"
-      if (!workdir.exists) {
-        IO.createDirectory(workdir)
+  def scalaNativeConfigSettings(key: TaskKey[File]): Seq[Setting[_]] = {
+    Seq(
+      nativeTarget in key := interceptBuildException {
+        val cwd = (nativeWorkdir in key).value.toPath
+        val clang = (nativeClang in key).value.toPath
+        Discover.targetTriple(clang, cwd)
+      },
+      artifactPath in nativeLink in key := {
+        (crossTarget in key).value / (moduleName.value + "-out")
+      },
+      nativeWorkdir in key := {
+        val workdir = (crossTarget in key).value / "native"
+        if (!workdir.exists) {
+          IO.createDirectory(workdir)
+        }
+        workdir
+      },
+      nativeConfig in key := {
+        build.Config.empty
+          .withClang((nativeClang in key).value.toPath)
+          .withClangPP((nativeClangPP in key).value.toPath)
+          .withCompileOptions((nativeCompileOptions in key).value)
+          .withLinkingOptions((nativeLinkingOptions in key).value)
+          .withGC(build.GC((nativeGC in key).value))
+          .withMode(build.Mode((nativeMode in key).value))
+          .withLinkStubs((nativeLinkStubs in key).value)
+          .withLTO((nativeLTO in key).value)
+          .withCheck((nativeCheck in key).value)
+          .withDump((nativeDump in key).value)
+      },
+      nativeLink := {
+        val mainClass = (selectMainClass in key).value.getOrElse {
+          throw new MessageOnlyException("No main class detected.")
+        }
+        val fullCp = (fullClasspath in key).value
+        val classpath = fullCp.map(_.data.toPath).filter(f => Files.exists(f))
+        val nativelib = {
+          /* Find the entry of the classpath that is the nativelib.
+		   * We use the `moduleID.key` attribute of the entries to find the one
+		   * whose organization is `org.scala-native` and whose name is
+		   * `nativelib`. The name might include the cross-version suffix,
+		   * which is why we also accept names that start with
+		   * `nativelib_native0.`.
+		   */
+          fullCp
+            .find { entry =>
+              entry.get((moduleID in key).key).exists { module =>
+                module.organization == "org.scala-native" &&
+                (module.name == "nativelib" || module.name.startsWith(
+                  "nativelib_native0."))
+              }
+            }
+            .getOrElse {
+              throw new MessageOnlyException(
+                "Could not find nativelib on classpath.")
+            }
+            .data
+            .toPath
+        }
+        val maincls = mainClass + "$"
+        val cwd = (nativeWorkdir in key).value.toPath
+
+        val logger = streams.value.log.toLogger
+        val config = (nativeConfig in key).value
+          .withLogger(logger)
+          .withMainClass(maincls)
+          .withNativelib(nativelib)
+          .withClassPath(classpath)
+          .withWorkdir(cwd)
+          .withTargetTriple((nativeTarget in key).value)
+        val outpath = (artifactPath in nativeLink in key).value
+
+        interceptBuildException(Build.build(config, outpath.toPath))
+
+        outpath
+      },
+      run := {
+        val env = (envVars in run).value.toSeq
+        val logger = streams.value.log
+        val binary = nativeLink.value.getAbsolutePath
+        val args = spaceDelimited("<arg>").parsed
+
+        logger.running(binary +: args)
+        val exitCode = Process(binary +: args, None, env: _*)
+          .run(connectInput = false)
+          .exitValue
+
+        val message =
+          if (exitCode == 0) None
+          else Some("Nonzero exit code: " + exitCode)
+
+        message.foreach(sys.error)
       }
-      workdir
-    },
-    nativeConfig := {
-      val mainClass = selectMainClass.value.getOrElse {
-        throw new MessageOnlyException("No main class detected.")
-      }
-
-      val classpath =
-        fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
-      val maincls = mainClass.toString + "$"
-      val cwd     = nativeWorkdir.value.toPath
-      val clang   = nativeClang.value.toPath
-      val clangpp = nativeClangPP.value.toPath
-      val gc      = build.GC(nativeGC.value)
-      val mode    = build.Mode(nativeMode.value)
-
-      build.Config.empty
-        .withMainClass(maincls)
-        .withClassPath(classpath)
-        .withWorkdir(cwd)
-        .withClang(clang)
-        .withClangPP(clangpp)
-        .withTargetTriple(nativeTarget.value)
-        .withCompileOptions(nativeCompileOptions.value)
-        .withLinkingOptions(nativeLinkingOptions.value)
-        .withGC(gc)
-        .withMode(mode)
-        .withLinkStubs(nativeLinkStubs.value)
-        .withLTO(nativeLTO.value)
-        .withCheck(nativeCheck.value)
-        .withDump(nativeDump.value)
-        .withOptimize(Discover.optimize())
-    },
-    nativeLink := {
-      val logger  = streams.value.log.toLogger
-      val config  = nativeConfig.value.withLogger(logger)
-      val outpath = (artifactPath in nativeLink).value
-
-      interceptBuildException(Build.build(config, outpath.toPath))
-
-      outpath
-    },
-    run := {
-      val env    = (envVars in run).value.toSeq
-      val logger = streams.value.log
-      val binary = nativeLink.value.getAbsolutePath
-      val args   = spaceDelimited("<arg>").parsed
-
-      logger.running(binary +: args)
-      val exitCode = Process(binary +: args, None, env: _*)
-        .run(connectInput = false)
-        .exitValue
-
-      val message =
-        if (exitCode == 0) None
-        else Some("Nonzero exit code: " + exitCode)
-
-      message.foreach(sys.error)
-    }
-  )
+    )
+  }
 
   lazy val scalaNativeCompileSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings
+    scalaNativeConfigSettings(nativeLink)
 
   lazy val scalaNativeTestSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings ++
+    scalaNativeConfigSettings(nativeLink) ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
         loadedTestFrameworks := {
@@ -165,12 +190,12 @@ object ScalaNativePluginInternal {
               s"`$configName / test` tasks in a Scala Native project require $configName / fork := false`.")
           }
 
-          val frameworks     = testFrameworks.value
+          val frameworks = testFrameworks.value
           val frameworkNames = frameworks.map(_.implClassNames.toList).toList
 
-          val logger     = streams.value.log.toLogger
+          val logger = streams.value.log.toLogger
           val testBinary = nativeLink.value
-          val envVars    = (test / Keys.envVars).value
+          val envVars = (test / Keys.envVars).value
 
           val config = TestAdapter
             .Config()
@@ -178,7 +203,7 @@ object ScalaNativePluginInternal {
             .withEnvVars(envVars)
             .withLogger(logger)
 
-          val adapter           = newTestAdapter(config)
+          val adapter = newTestAdapter(config)
           val frameworkAdapters = adapter.loadFrameworks(frameworkNames)
 
           frameworks
