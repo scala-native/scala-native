@@ -44,6 +44,9 @@ object CStringSuite extends tests.Suite {
     assertEquals("\r", fromCString(c"\r"))
     assertEquals("\\r", fromCString(c"\\r"))
 
+    assertEquals("\u0065", fromCString(c"\x65"))
+    assertEquals("\\x65", fromCString(c"\\x65"))
+
     assertEquals("""
     {
       "greeting": "Hello world!"
@@ -53,7 +56,7 @@ object CStringSuite extends tests.Suite {
       "greeting": "Hello world!"
     }"""))
 
-    assertEquals("\u0020\u0020\u006a\u006b", fromCString(c"\x20\X20\x6a\x6B"))
+    assertEquals("\u0020\\X20\u006a\u006b", fromCString(c"\x20\X20\x6a\x6B"))
 
     assertEquals("\'", fromCString(c"\'"))
     assertEquals("\\'", fromCString(c"\\'"))
