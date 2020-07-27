@@ -1827,7 +1827,7 @@ trait NirGenExpr { self: NirGenPhase =>
         }
       val args = genMethodArgs(sym, argsp)
       val method =
-        if (isImplClass(owner) || statically || owner.isStruct || owner.isExternModule) {
+        if (isImplClass(owner) || statically || owner.isStruct || owner.isExternModule || self.ty == nir.Type.Ptr) {
           Val.Global(name, nir.Type.Ptr)
         } else {
           val Global.Member(_, sig) = name
