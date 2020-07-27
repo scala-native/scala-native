@@ -1,7 +1,7 @@
 sudo: required
 
 scala:
-  - "2.11.12"
+  - "2.12.12"
 
 os: linux
 dist: trusty
