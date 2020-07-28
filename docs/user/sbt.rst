@@ -219,7 +219,7 @@ Next, create a main file as follows:
       }
     }
 
-Finally, run this like normal Scala Native application.
+Finally, compile and run this like a normal Scala Native application.
 
 
 Using libraries with Native Code
