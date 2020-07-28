@@ -3,9 +3,10 @@ sudo: required
 scala:
   - "2.11.12"
 
-os: linux
-dist: trusty
-jdk: oraclejdk8
+os: 
+  - linux
+  - osx
+jdk: openjdk8
 language: scala
 
 services:
