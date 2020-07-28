@@ -20,8 +20,8 @@ object Discover {
     getenv("SCALANATIVE_OPTIMIZE").forall(_.toBoolean)
 
   /** LTO variant used for release mode from SCALANATIVE_LTO env var or default. */
-  def LTO(): String =
-    getenv("SCALANATIVE_LTO").getOrElse("none")
+  def LTO(): LTO =
+    getenv("SCALANATIVE_LTO").map(build.LTO(_)).getOrElse(build.LTO.None)
 
   /** GC variant used from SCALANATIVE_GC env var or default. */
   def GC(): GC =

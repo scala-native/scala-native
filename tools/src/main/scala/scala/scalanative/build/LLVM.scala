@@ -217,9 +217,9 @@ private[scalanative] object LLVM {
 
   private def lto(config: Config): Option[String] =
     (config.mode, config.LTO) match {
-      case (Mode.Debug, _)           => None
-      case (_: Mode.Release, "none") => None
-      case (_: Mode.Release, name)   => Some(name)
+      case (Mode.Debug, _)             => None
+      case (_: Mode.Release, LTO.None) => None
+      case (_: Mode.Release, lto)      => Some(lto.name)
     }
 
   private def flto(config: Config): Seq[String] =

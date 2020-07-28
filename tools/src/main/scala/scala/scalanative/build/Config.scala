@@ -47,7 +47,7 @@ sealed trait Config {
   def logger: Logger
 
   /** The LTO mode to use used during a release build. */
-  def LTO: String
+  def LTO: LTO
 
   /** Shall linker check that NIR is well-formed after every phase? */
   def check: Boolean
@@ -99,7 +99,7 @@ sealed trait Config {
   def withLogger(value: Logger): Config
 
   /** Create a new config with the given lto mode. */
-  def withLTO(value: String): Config
+  def withLTO(value: LTO): Config
 
   /** Create a new config with given check value. */
   def withCheck(value: Boolean): Config
@@ -147,7 +147,7 @@ object Config {
                                 gc: GC,
                                 mode: Mode,
                                 logger: Logger,
-                                LTO: String,
+                                LTO: LTO,
                                 linkStubs: Boolean,
                                 check: Boolean,
                                 dump: Boolean,
@@ -192,7 +192,7 @@ object Config {
     def withLogger(value: Logger): Config =
       copy(logger = value)
 
-    def withLTO(value: String): Config =
+    def withLTO(value: LTO): Config =
       copy(LTO = value)
 
     def withCheck(value: Boolean): Config =
@@ -205,23 +205,23 @@ object Config {
       copy(optimize = value)
 
     override def toString: String =
-      s"""
-         | - workdir:   $workdir
-         | - nativelib: $nativelib
-         | - mainClass: $mainClass
-         | - classPath: $classPath
-         | - clang:     $clang
-         | - clangPP:   $clangPP
+      s"""NativeConfig(
+         | - workdir:         $workdir
          | - targetTriple:    $targetTriple
+         | - nativelib:       $nativelib
+         | - mainClass:       $mainClass
+         | - classPath:       $classPath
+         | - clang:           $clang
+         | - clangPP:         $clangPP
          | - linkingOptions:  $linkingOptions
          | - compileOptions:  $compileOptions
-         | - gc:        $gc
-         | - mode:      $mode
-         | - linkStubs: $linkStubs
-         | - LTO:       $LTO
-         | - check:     $check
-         | - dump:      $dump
-		 | - optimize   $optimize
-         |""".stripMargin
+         | - GC:              $gc
+         | - mode:            $mode
+         | - LTO:             $LTO
+         | - linkStubs:       $linkStubs
+         | - check:           $check
+         | - dump:            $dump
+		 | - optimize         $optimize
+         |)""".stripMargin
   }
 }
