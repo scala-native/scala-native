@@ -6,24 +6,6 @@ import java.nio.file.{Path, Paths}
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait Config {
 
-  /** The garbage collector to use. */
-  def gc: GC
-
-  /** Compilation mode. */
-  def mode: Mode
-
-  /** The path to the `clang` executable. */
-  def clang: Path
-
-  /** The path to the `clang++` executable. */
-  def clangPP: Path
-
-  /** The options passed to LLVM's linker. */
-  def linkingOptions: Seq[String]
-
-  /** The compilation options passed to LLVM. */
-  def compileOptions: Seq[String]
-
   /** Target triple that defines current OS, ABI and CPU architecture. */
   def targetTriple: String
 
@@ -40,41 +22,10 @@ sealed trait Config {
   /** Sequence of all NIR locations. */
   def classPath: Seq[Path]
 
-  /** Should stubs be linked? */
-  def linkStubs: Boolean
-
   /** The logger used by the toolchain. */
   def logger: Logger
 
-  /** The LTO mode to use used during a release build. */
-  def LTO: LTO
-
-  /** Shall linker check that NIR is well-formed after every phase? */
-  def check: Boolean
-
-  /** Shall linker dump intermediate NIR after every phase? */
-  def dump: Boolean
-
-  /** Shall we optimize the resulting NIR code? */
-  def optimize: Boolean
-
-  /** Create a new config with given garbage collector. */
-  def withGC(value: GC): Config
-
-  /** Create a new config with given compilation mode. */
-  def withMode(value: Mode): Config
-
-  /** Create a new config with given path to clang. */
-  def withClang(value: Path): Config
-
-  /** Create a new config with given path to clang++. */
-  def withClangPP(value: Path): Config
-
-  /** Create a new config with given linking options. */
-  def withLinkingOptions(value: Seq[String]): Config
-
-  /** Create a new config with given compilation options. */
-  def withCompileOptions(value: Seq[String]): Config
+  def compilerConfig: NativeConfig
 
   /** Create a new config with given target triple. */
   def withTargetTriple(value: String): Config
@@ -92,23 +43,42 @@ sealed trait Config {
   /** Create a new config with given nir paths. */
   def withClassPath(value: Seq[Path]): Config
 
-  /** Create a new config with given behavior for stubs. */
-  def withLinkStubs(value: Boolean): Config
-
   /** Create a new config with the given logger. */
   def withLogger(value: Logger): Config
 
-  /** Create a new config with the given lto mode. */
-  def withLTO(value: LTO): Config
+  def withCompilerConfig(value: NativeConfig): Config
 
-  /** Create a new config with given check value. */
-  def withCheck(value: Boolean): Config
+  def withCompilerConfig(fn: NativeConfig => NativeConfig): Config
 
-  /** Create a new config with given dump value. */
-  def withDump(value: Boolean): Config
+  /** The garbage collector to use. */
+  def gc: GC = compilerConfig.gc
 
-  /** Create a new config with given optimize value. */
-  def withOptimize(value: Boolean): Config
+  /** Compilation mode. */
+  def mode: Mode = compilerConfig.mode
+
+  /** The path to the `clang` executable. */
+  def clang: Path = compilerConfig.clang
+
+  /** The path to the `clang++` executable. */
+  def clangPP: Path = compilerConfig.clangPP
+
+  /** The options passed to LLVM's linker. */
+  def linkingOptions: Seq[String] = compilerConfig.linkingOptions
+
+  /** The compilation options passed to LLVM. */
+  def compileOptions: Seq[String] = compilerConfig.compileOptions
+
+  /** Should stubs be linked? */
+  def linkStubs: Boolean = compilerConfig.linkStubs
+
+  /** The LTO mode to use used during a release build. */
+  def LTO: LTO = compilerConfig.LTO
+
+  /** Shall linker check that NIR is well-formed after every phase? */
+  def check: Boolean = compilerConfig.check
+
+  /** Shall linker dump intermediate NIR after every phase? */
+  def dump: Boolean = compilerConfig.dump
 }
 
 object Config {
@@ -120,38 +90,18 @@ object Config {
       mainClass = "",
       classPath = Seq.empty,
       workdir = Paths.get(""),
-      clang = Paths.get(""),
-      clangPP = Paths.get(""),
       targetTriple = "",
-      linkingOptions = Seq.empty,
-      compileOptions = Seq.empty,
-      gc = GC.default,
-      mode = Mode.default,
-      linkStubs = false,
       logger = Logger.default,
-      check = false,
-      dump = false,
-      linkStubs = false,
-      optimize = false
+      compilerConfig = NativeConfig.empty
     )
 
   private final case class Impl(nativelib: Path,
                                 mainClass: String,
                                 classPath: Seq[Path],
                                 workdir: Path,
-                                clang: Path,
-                                clangPP: Path,
                                 targetTriple: String,
-                                linkingOptions: Seq[String],
-                                compileOptions: Seq[String],
-                                gc: GC,
-                                mode: Mode,
                                 logger: Logger,
-                                LTO: LTO,
-                                linkStubs: Boolean,
-                                check: Boolean,
-                                dump: Boolean,
-                                optimize: Boolean)
+                                compilerConfig: NativeConfig)
       extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
@@ -165,63 +115,16 @@ object Config {
     def withWorkdir(value: Path): Config =
       copy(workdir = value)
 
-    def withClang(value: Path): Config =
-      copy(clang = value)
-
-    def withClangPP(value: Path): Config =
-      copy(clangPP = value)
-
     def withTargetTriple(value: String): Config =
       copy(targetTriple = value)
-
-    def withLinkingOptions(value: Seq[String]): Config =
-      copy(linkingOptions = value)
-
-    def withCompileOptions(value: Seq[String]): Config =
-      copy(compileOptions = value)
-
-    def withGC(value: GC): Config =
-      copy(gc = value)
-
-    def withMode(value: Mode): Config =
-      copy(mode = value)
-
-    def withLinkStubs(value: Boolean): Config =
-      copy(linkStubs = value)
 
     def withLogger(value: Logger): Config =
       copy(logger = value)
 
-    def withLTO(value: LTO): Config =
-      copy(LTO = value)
+    override def withCompilerConfig(value: NativeConfig): Config =
+      copy(compilerConfig = value)
 
-    def withCheck(value: Boolean): Config =
-      copy(check = value)
-
-    def withDump(value: Boolean): Config =
-      copy(dump = value)
-
-    def withOptimize(value: Boolean): Config =
-      copy(optimize = value)
-
-    override def toString: String =
-      s"""NativeConfig(
-         | - workdir:         $workdir
-         | - targetTriple:    $targetTriple
-         | - nativelib:       $nativelib
-         | - mainClass:       $mainClass
-         | - classPath:       $classPath
-         | - clang:           $clang
-         | - clangPP:         $clangPP
-         | - linkingOptions:  $linkingOptions
-         | - compileOptions:  $compileOptions
-         | - GC:              $gc
-         | - mode:            $mode
-         | - LTO:             $LTO
-         | - linkStubs:       $linkStubs
-         | - check:           $check
-         | - dump:            $dump
-		 | - optimize         $optimize
-         |)""".stripMargin
+    override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
+      copy(compilerConfig = fn(compilerConfig))
   }
 }

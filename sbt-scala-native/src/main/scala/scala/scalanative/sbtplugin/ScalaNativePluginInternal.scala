@@ -27,6 +27,9 @@ object ScalaNativePluginInternal {
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
 
+  val nativeBuildConfig =
+    taskKey[build.Config]("Aggregate config object that's used for tools.")
+
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "nativelib" % nativeVersion,
@@ -39,25 +42,29 @@ object ScalaNativePluginInternal {
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full)
   )
 
-  lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
-    nativeConfig := {
-      build.Config.empty
-        .withClang(interceptBuildException(Discover.clang()))
-        .withClangPP(interceptBuildException(Discover.clangpp()))
-    },
-    crossVersion := ScalaNativeCrossVersion.binary,
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-    nativeClang := nativeConfig.value.clang.toFile,
-    nativeClangPP := nativeConfig.value.clangPP.toFile,
-    nativeCompileOptions := nativeConfig.value.compileOptions,
-    nativeLinkingOptions := nativeConfig.value.linkingOptions,
-    nativeMode := nativeConfig.value.mode.name,
-    nativeGC := nativeConfig.value.gc.name,
-    nativeLTO := nativeConfig.value.LTO.name,
-    nativeLinkStubs := nativeConfig.value.linkStubs,
-    nativeCheck := nativeConfig.value.check,
-    nativeDump := nativeConfig.value.dump
-  )
+  lazy val scalaNativeBaseSettings: Seq[Setting[_]] = {
+    val config = build.NativeConfig.empty
+      .withClang(interceptBuildException(Discover.clang()))
+      .withClangPP(interceptBuildException(Discover.clangpp()))
+
+    Seq(
+      nativeConfig := config,
+      nativeBuildConfig := build.Config.empty
+        .withCompilerConfig(config),
+      crossVersion := ScalaNativeCrossVersion.binary,
+      platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
+      nativeClang := config.clang.toFile,
+      nativeClangPP := config.clangPP.toFile,
+      nativeCompileOptions := config.compileOptions,
+      nativeLinkingOptions := config.linkingOptions,
+      nativeMode := config.mode.name,
+      nativeGC := config.gc.name,
+      nativeLTO := config.LTO.name,
+      nativeLinkStubs := config.linkStubs,
+      nativeCheck := config.check,
+      nativeDump := config.dump
+    )
+  }
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
     nativeWarnOldJVM := {
@@ -97,7 +104,7 @@ object ScalaNativePluginInternal {
         workdir
       },
       nativeConfig in key := {
-        build.Config.empty
+        nativeConfig.value
           .withClang((nativeClang in key).value.toPath)
           .withClangPP((nativeClangPP in key).value.toPath)
           .withCompileOptions((nativeCompileOptions in key).value)
@@ -109,7 +116,7 @@ object ScalaNativePluginInternal {
           .withCheck((nativeCheck in key).value)
           .withDump((nativeDump in key).value)
       },
-      nativeLink := {
+      nativeBuildConfig in key := {
         val mainClass = (selectMainClass in key).value.getOrElse {
           throw new MessageOnlyException("No main class detected.")
         }
@@ -142,14 +149,18 @@ object ScalaNativePluginInternal {
         val cwd = (nativeWorkdir in key).value.toPath
 
         val logger = streams.value.log.toLogger
-        val config = (nativeConfig in key).value
+        nativeBuildConfig.value
           .withLogger(logger)
           .withMainClass(maincls)
           .withNativelib(nativelib)
           .withClassPath(classpath)
           .withWorkdir(cwd)
           .withTargetTriple((nativeTarget in key).value)
+          .withCompilerConfig((nativeConfig in key).value)
+      },
+      nativeLink := {
         val outpath = (artifactPath in nativeLink in key).value
+        val config  = (nativeBuildConfig in key).value
 
         interceptBuildException(Build.build(config, outpath.toPath))
 

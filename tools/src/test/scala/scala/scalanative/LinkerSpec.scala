@@ -5,9 +5,8 @@ import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
-import scalanative.build.{ScalaNative, Config, Mode}
+import scalanative.build.{ScalaNative, Config}
 import scalanative.util.Scope
-import scalanative.nir.Global
 
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -22,7 +21,7 @@ abstract class LinkerSpec extends AnyFlatSpec {
    * @param sources Map from file name to file content representing all the code
    *                to compile and link.
    * @param driver  Optional custom driver that defines the pipeline.
-   * @param fn      A function to apply to the products of the compilation.
+   * @param f      A function to apply to the products of the compilation.
    * @return The result of applying `fn` to the resulting definitions.
    */
   def link[T](entry: String,
@@ -57,7 +56,7 @@ abstract class LinkerSpec extends AnyFlatSpec {
       .withWorkdir(outDir)
       .withClassPath(classpath)
       .withMainClass(entry)
-      .withLinkStubs(linkStubs)
+      .withCompilerConfig(_.withLinkStubs(linkStubs))
   }
 
   protected implicit def String2MapStringString(

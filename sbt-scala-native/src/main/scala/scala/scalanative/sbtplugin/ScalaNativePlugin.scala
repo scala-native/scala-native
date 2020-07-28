@@ -14,7 +14,7 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeVersion = nir.Versions.current
 
     val nativeConfig =
-      settingKey[build.Config]("Configuration of the Scala Native plugin")
+      settingKey[build.NativeConfig]("Configuration of the Scala Native plugin")
 
     @deprecated("Use nativeConfig setting instead", "0.4.3")
     val nativeClang =
