@@ -43,6 +43,23 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = {
+    Seq(
+      crossVersion := ScalaNativeCrossVersion.binary,
+      platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
+      nativeClang := nativeConfig.value.clang.toFile,
+      nativeClangPP := nativeConfig.value.clangPP.toFile,
+      nativeCompileOptions := nativeConfig.value.compileOptions,
+      nativeLinkingOptions := nativeConfig.value.linkingOptions,
+      nativeMode := nativeConfig.value.mode.name,
+      nativeGC := nativeConfig.value.gc.name,
+      nativeLTO := nativeConfig.value.LTO.name,
+      nativeLinkStubs := nativeConfig.value.linkStubs,
+      nativeCheck := nativeConfig.value.check,
+      nativeDump := nativeConfig.value.dump
+    )
+  }
+
+  lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = {
     val config = build.NativeConfig.empty
       .withClang(interceptBuildException(Discover.clang()))
       .withClangPP(interceptBuildException(Discover.clangpp()))
@@ -51,40 +68,25 @@ object ScalaNativePluginInternal {
       nativeConfig := config,
       nativeBuildConfig := build.Config.empty
         .withCompilerConfig(config),
-      crossVersion := ScalaNativeCrossVersion.binary,
-      platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-      nativeClang := config.clang.toFile,
-      nativeClangPP := config.clangPP.toFile,
-      nativeCompileOptions := config.compileOptions,
-      nativeLinkingOptions := config.linkingOptions,
-      nativeMode := config.mode.name,
-      nativeGC := config.gc.name,
-      nativeLTO := config.LTO.name,
-      nativeLinkStubs := config.linkStubs,
-      nativeCheck := config.check,
-      nativeDump := config.dump
+      nativeWarnOldJVM := {
+        val logger = streams.value.log
+        Try(Class.forName("java.util.function.Function")).toOption match {
+          case None =>
+            logger.warn("Scala Native is only supported on Java 8 or newer.")
+          case Some(_) =>
+            ()
+        }
+      },
+      onComplete := {
+        val prev: () => Unit = onComplete.value
+        () =>
+          {
+            prev()
+            testAdapters.getAndSet(Nil).foreach(_.close())
+          }
+      }
     )
   }
-
-  lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
-    nativeWarnOldJVM := {
-      val logger = streams.value.log
-      Try(Class.forName("java.util.function.Function")).toOption match {
-        case None =>
-          logger.warn("Scala Native is only supported on Java 8 or newer.")
-        case Some(_) =>
-          ()
-      }
-    },
-    onComplete := {
-      val prev: () => Unit = onComplete.value
-      () =>
-        {
-          prev()
-          testAdapters.getAndSet(Nil).foreach(_.close())
-        }
-    }
-  )
 
   def scalaNativeConfigSettings(key: TaskKey[File]): Seq[Setting[_]] = {
     Seq(
@@ -93,7 +95,7 @@ object ScalaNativePluginInternal {
         val clang = (nativeClang in key).value.toPath
         Discover.targetTriple(clang, cwd)
       },
-      artifactPath in nativeLink in key := {
+      artifactPath in key := {
         (crossTarget in key).value / (moduleName.value + "-out")
       },
       nativeWorkdir in key := {
@@ -158,9 +160,9 @@ object ScalaNativePluginInternal {
           .withTargetTriple((nativeTarget in key).value)
           .withCompilerConfig((nativeConfig in key).value)
       },
-      nativeLink := {
-        val outpath = (artifactPath in nativeLink in key).value
-        val config  = (nativeBuildConfig in key).value
+      key := {
+        val outpath = (artifactPath in key).value
+        val config = (nativeBuildConfig in key).value
 
         interceptBuildException(Build.build(config, outpath.toPath))
 
@@ -169,7 +171,7 @@ object ScalaNativePluginInternal {
       run := {
         val env = (envVars in run).value.toSeq
         val logger = streams.value.log
-        val binary = nativeLink.value.getAbsolutePath
+        val binary = key.value.getAbsolutePath
         val args = spaceDelimited("<arg>").parsed
 
         logger.running(binary +: args)
