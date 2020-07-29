@@ -56,6 +56,9 @@ sealed trait Config {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean
 
+  /** Shall we optimise the resulting NIR code? */
+  def optimise: Boolean
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): Config
 
@@ -103,6 +106,9 @@ sealed trait Config {
 
   /** Create a new config with given dump value. */
   def withDump(value: Boolean): Config
+
+  /** Create a new config with given optimise value. */
+  def withOptimise(value: Boolean): Config
 }
 
 object Config {
@@ -125,7 +131,8 @@ object Config {
       logger = Logger.default,
       LTO = "none",
       check = false,
-      dump = false
+      dump = false,
+      optimise = false
     )
 
   private final case class Impl(nativelib: Path,
@@ -143,7 +150,8 @@ object Config {
                                 logger: Logger,
                                 LTO: String,
                                 check: Boolean,
-                                dump: Boolean)
+                                dump: Boolean,
+                                optimise: Boolean)
       extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
@@ -192,5 +200,8 @@ object Config {
 
     def withDump(value: Boolean): Config =
       copy(dump = value)
+
+    def withOptimise(value: Boolean): Config =
+      copy(optimise = value)
   }
 }

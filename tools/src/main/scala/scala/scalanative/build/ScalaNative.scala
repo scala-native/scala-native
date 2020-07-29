@@ -72,11 +72,15 @@ private[scalanative] object ScalaNative {
   def optimize(config: Config, linked: linker.Result): linker.Result =
     dump(config, "optimized") {
       check(config) {
-        config.logger.time(s"Optimizing (${config.mode} mode)") {
-          val optimized =
-            interflow.Interflow(config, linked)
+        if (config.optimise) {
+          config.logger.time(s"Optimizing (${config.mode} mode)") {
+            val optimized =
+              interflow.Interflow(config, linked)
 
-          linker.Link(config, linked.entries, optimized)
+            linker.Link(config, linked.entries, optimized)
+          }
+        } else {
+          linked
         }
       }
     }
