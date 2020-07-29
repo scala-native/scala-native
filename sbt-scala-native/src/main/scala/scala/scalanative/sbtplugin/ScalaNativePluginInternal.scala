@@ -138,6 +138,7 @@ object ScalaNativePluginInternal {
         .withLTO(nativeLTO.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
+        .withOptimize(Discover.optimize())
     },
     nativeLink := {
       val logger  = streams.value.log.toLogger
@@ -156,7 +157,7 @@ object ScalaNativePluginInternal {
 
       logger.running(binary +: args)
       val exitCode = Process(binary +: args, None, env: _*)
-        .run(connectInput = true)
+        .run(connectInput = false)
         .exitValue
 
       val message =

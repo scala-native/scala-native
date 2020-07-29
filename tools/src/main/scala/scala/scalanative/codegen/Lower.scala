@@ -857,19 +857,21 @@ object Lower {
       val Op.Arrayalloc(ty, init) = op
       init match {
         case len if len.ty == Type.Int =>
-          val sig  = arrayAllocSig.getOrElse(ty, arrayAllocSig(Rt.Object))
-          val func = arrayAlloc.getOrElse(ty, arrayAlloc(Rt.Object))
+          val sig    = arrayAllocSig.getOrElse(ty, arrayAllocSig(Rt.Object))
+          val func   = arrayAlloc.getOrElse(ty, arrayAlloc(Rt.Object))
+          val module = genModuleOp(buf, fresh(), Op.Module(func.owner))
           buf.let(n,
-                  Op.Call(sig, Val.Global(func, Type.Ptr), Seq(Val.Null, len)),
+                  Op.Call(sig, Val.Global(func, Type.Ptr), Seq(module, len)),
                   unwind)
         case arrval: Val.ArrayValue =>
-          val sig  = arraySnapshotSig.getOrElse(ty, arraySnapshotSig(Rt.Object))
-          val func = arraySnapshot.getOrElse(ty, arraySnapshot(Rt.Object))
-          val len  = Val.Int(arrval.values.length)
-          val init = Val.Const(arrval)
+          val sig    = arraySnapshotSig.getOrElse(ty, arraySnapshotSig(Rt.Object))
+          val func   = arraySnapshot.getOrElse(ty, arraySnapshot(Rt.Object))
+          val module = genModuleOp(buf, fresh(), Op.Module(func.owner))
+          val len    = Val.Int(arrval.values.length)
+          val init   = Val.Const(arrval)
           buf.let(
             n,
-            Op.Call(sig, Val.Global(func, Type.Ptr), Seq(Val.Null, len, init)),
+            Op.Call(sig, Val.Global(func, Type.Ptr), Seq(module, len, init)),
             unwind)
       }
     }
