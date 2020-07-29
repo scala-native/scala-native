@@ -88,15 +88,16 @@ abstract class Suite {
     throw AssertionFailed(s"expected to throw ${expected.getName} but didn't")
   }
 
-  def test(name: String)(body: => Unit): Unit =
-    tests += Test(name, { () =>
-      try {
-        body
-        TestResult(true, None)
-      } catch {
-        case thrown: Throwable => TestResult(false, Option(thrown))
-      }
-    })
+  def test(name: String, cond: Boolean = true)(body: => Unit): Unit =
+    if (cond)
+      tests += Test(name, { () =>
+        try {
+          body
+          TestResult(true, None)
+        } catch {
+          case thrown: Throwable => TestResult(false, Option(thrown))
+        }
+      })
 
   def testFails(name: String, issue: Int)(body: => Unit): Unit =
     tests += Test(name, { () =>
