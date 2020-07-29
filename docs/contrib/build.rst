@@ -103,9 +103,9 @@ whereas the `release` mode performs additional optimizations and takes longer
 to compile. The `release-fast` mode builds faster, performs less optimizations,
 but may perform better than `release`.
 
-The `optimise` setting is controlled via the `SCALANATIVE_OPTIMISE` environment
+The `optimize` setting is controlled via the `SCALANATIVE_OPTIMISE` environment
 variable. Valid values are `true` and `false`. The default value is `true`.
-This setting controls whether the Interflow optimiser is enabled or not.
+This setting controls whether the Interflow optimizer is enabled or not.
 
 Setting the GC setting via `sbt`
 --------------------------------

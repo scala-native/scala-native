@@ -55,9 +55,7 @@ object ScalaNativePluginInternal {
       .getOrElse(build.GC.default.name),
     nativeLTO := Discover.LTO(),
     nativeCheck := false,
-    nativeDump := false,
-    optimise :=
-      System.getenv.getOrDefault("SCALANATIVE_OPTIMISE", "true").toBoolean
+    nativeDump := false
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -140,7 +138,7 @@ object ScalaNativePluginInternal {
         .withLTO(nativeLTO.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-        .withOptimise(optimise.value)
+        .withOptimize(Discover.optimize())
     },
     nativeLink := {
       val logger  = streams.value.log.toLogger
