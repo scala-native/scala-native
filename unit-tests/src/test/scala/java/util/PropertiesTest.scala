@@ -8,11 +8,13 @@ import java.io._
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.scalanative.junit.utils.AssertThrows._
+
 class PropertiesTest {
   @Test def put_on_null_key_or_null_value(): Unit = {
     val properties = new Properties
-    // assertThrows[NullPointerException](properties.put(null, "any"))
-    // assertThrows[NullPointerException](properties.put("any", null))
+    assertThrows(classOf[NullPointerException], properties.put(null, "any"))
+    assertThrows(classOf[NullPointerException], properties.put("any", null))
   }
 
   @Test def non_string_values(): Unit = {
@@ -20,9 +22,8 @@ class PropertiesTest {
 
     properties.put("age", Int.box(18))
     assertNull(properties.getProperty("age"))
-    // assertThrows[ClassCastException] {
-    //   properties.list(new PrintWriter(new ByteArrayOutputStream))
-    // }
+    assertThrows(classOf[ClassCastException],
+                 properties.list(new PrintWriter(new ByteArrayOutputStream)))
   }
 
   @Test def list(): Unit = {
@@ -68,9 +69,8 @@ class PropertiesTest {
 
   @Test def load_InputStream_with_null_input(): Unit = {
     val prop = new java.util.Properties()
-    // assertThrows[NullPointerException] {
-    //   prop.load(null: java.io.InputStream)
-    // }
+    assertThrows(classOf[NullPointerException],
+                 prop.load(null: java.io.InputStream))
   }
 
   @Test def load_InputStream(): Unit = {
@@ -150,9 +150,7 @@ class PropertiesTest {
 
   @Test def load_Reader_with_null_input(): Unit = {
     val prop = new java.util.Properties()
-    // assertThrows[NullPointerException] {
-    //   prop.load(null: Reader)
-    // }
+    assertThrows(classOf[NullPointerException], prop.load(null: Reader))
   }
 
   @Test def load_Reader(): Unit = {
@@ -196,9 +194,8 @@ class PropertiesTest {
 
   @Test def store_OutputStream_comments_with_null_input(): Unit = {
     val prop = new java.util.Properties()
-    // assertThrows[NullPointerException] {
-    //   prop.store(null: OutputStream, "")
-    // }
+    assertThrows(classOf[NullPointerException],
+                 prop.store(null: OutputStream, ""))
   }
 
   // used for next two tests, \b prints as \u0008
@@ -262,9 +259,7 @@ class PropertiesTest {
 
   @Test def store_Writer_comments_with_null_input(): Unit = {
     val prop = new java.util.Properties()
-    // assertThrows[NullPointerException] {
-    //   prop.store(null: Writer, "")
-    // }
+    assertThrows(classOf[NullPointerException], prop.store(null: Writer, ""))
   }
 
   @Test def store_Writer_comments(): Unit = {
