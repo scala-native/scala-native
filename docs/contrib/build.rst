@@ -103,7 +103,7 @@ whereas the `release` mode performs additional optimizations and takes longer
 to compile. The `release-fast` mode builds faster, performs less optimizations,
 but may perform better than `release`.
 
-The `optimize` setting is controlled via the `SCALANATIVE_OPTIMISE` environment
+The `optimize` setting is controlled via the `SCALANATIVE_OPTIMIZE` environment
 variable. Valid values are `true` and `false`. The default value is `true`.
 This setting controls whether the Interflow optimizer is enabled or not.
 
