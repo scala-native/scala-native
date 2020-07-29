@@ -170,14 +170,16 @@ class PropertiesTest {
   @Test def load_Reader_handle_special_chars(): Unit = {
     var prop = new java.util.Properties()
     prop.load(
-      new InputStreamReader(new ByteArrayInputStream(
-        "#\u008d\u00d2\na=\u008d\u00d3".getBytes("UTF-8"))))
+      new InputStreamReader(
+        new ByteArrayInputStream(
+          "#\u008d\u00d2\na=\u008d\u00d3".getBytes("UTF-8"))))
     assertEquals("\u008d\u00d3", prop.get("a"))
 
     prop = new java.util.Properties()
     prop.load(
-      new InputStreamReader(new ByteArrayInputStream(
-        "#properties file\r\nfred=1\r\n#last comment".getBytes("UTF-8"))))
+      new InputStreamReader(
+        new ByteArrayInputStream(
+          "#properties file\r\nfred=1\r\n#last comment".getBytes("UTF-8"))))
     assertEquals("1", prop.get("fred"))
   }
 
