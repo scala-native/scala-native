@@ -89,7 +89,7 @@ abstract class Suite {
   }
 
   def test(name: String, cond: Boolean = true)(body: => Unit): Unit =
-    if (cond)
+    if (cond) {
       tests += Test(name, { () =>
         try {
           body
@@ -98,6 +98,7 @@ abstract class Suite {
           case thrown: Throwable => TestResult(false, Option(thrown))
         }
       })
+    }
 
   def testFails(name: String, issue: Int)(body: => Unit): Unit =
     tests += Test(name, { () =>
