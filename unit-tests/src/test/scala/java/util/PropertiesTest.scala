@@ -293,6 +293,7 @@ class PropertiesTest {
     assertEquals("   j", prop.getProperty("j"))
     assertEquals("   c", prop.getProperty("space"))
     assertEquals("\\", prop.getProperty("dblbackslash"))
+    // added for new implementation
     assertEquals("foo,   ", prop.getProperty("trailing"))
     assertEquals("", prop.getProperty("bar"))
     assertEquals("""baz \  """, prop.getProperty("notrailing"))
