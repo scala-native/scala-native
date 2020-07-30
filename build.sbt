@@ -627,7 +627,12 @@ lazy val testInterfaceCommonSourcesSettings = Seq(
 lazy val testInterface =
   project
     .in(file("test-interface"))
-    .enablePlugins(MyScalaNativePlugin)
+    .enablePlugins(MyScalaNativePlugin, BuildInfoPlugin)
+    .settings(
+      buildInfoPackage := "scala.scalanative.buildinfo",
+      buildInfoObject := "ScalaNativeBuildInfo",
+      buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion, sbtVersion)
+    )
     .settings(mavenPublishSettings)
     .settings(testInterfaceCommonSourcesSettings)
     .dependsOn(nscplugin   % "plugin",
