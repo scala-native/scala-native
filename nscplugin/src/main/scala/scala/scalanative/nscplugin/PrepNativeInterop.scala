@@ -136,10 +136,20 @@ abstract class PrepNativeInterop
 
         // `DefDef` that initializes `lazy val scalaProps` in trait `PropertiesTrait`
         // We rewrite the body to return a pre-propulated `Properties`.
-        case dd @ DefDef(mods, name, Nil, Nil, tpt, rhs)
+        // - Scala 2.11
+        case dd @ DefDef(mods, name, Nil, Nil, tpt, _)
             if dd.symbol == PropertiesTrait.info.member(nativenme.scalaProps) =>
-          val nrhs = prepopulatedScalaProperties(dd, unit.freshTermName _)
+          val nrhs = prepopulatedScalaProperties(dd, unit.freshTermName)
           treeCopy.DefDef(tree, mods, name, Nil, Nil, transform(tpt), nrhs)
+
+        // `DefDef` that initializes `lazy val scalaProps` in trait `PropertiesTrait`
+        // We rewrite the body to return a pre-propulated `Properties`.
+        // - Scala 2.12
+        case vddef @ ValDef(mods, name, tpt, _)
+            if vddef.symbol == PropertiesTrait.info.member(
+              nativenme.scalaProps) =>
+          val nrhs = prepopulatedScalaProperties(vddef, unit.freshTermName)
+          treeCopy.ValDef(tree, mods, name, tpt, nrhs)
 
         // Catch ValDefs in enumerations with simple calls to Value
         case ValDef(mods, name, tpt, ScalaEnumValue.NoName(optPar))
@@ -303,7 +313,7 @@ abstract class PrepNativeInterop
    * @return The new (typed) rhs of the given `DefDef`.
    */
   private def prepopulatedScalaProperties(
-      original: DefDef,
+      original: ValOrDefDef,
       freshName: String => TermName): Tree = {
     val libraryFileName = "/library.properties"
 
