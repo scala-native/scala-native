@@ -27,14 +27,7 @@ class StubSpec extends LinkerSpec {
   "Stub methods" should "be ignored by the linker when `linkStubs = false`" in {
     link(entry, stubMethodSource, linkStubs = false) { (cfg, result) =>
       assert(!cfg.linkStubs)
-      if (scalaVersion.startsWith("2.11")) {
-        assert(result.unavailable.length == 1)
-      } else {
-        // In Scala 2.12.x, the reachability analysis discards a few extra symbols:
-        // - java.util.Properties.load
-        // - java.lang.Class.getResourceAsStream
-        assert(result.unavailable.length == 3)
-      }
+      assert(result.unavailable.length == 1)
       assert(
         result.unavailable.head == Global
           .Top("Main$")
@@ -52,14 +45,7 @@ class StubSpec extends LinkerSpec {
   "Stub classes" should "be ignored by the linker when `linkStubs = false`" in {
     link(entry, stubClassSource, linkStubs = false) { (cfg, result) =>
       assert(!cfg.linkStubs)
-      if (scalaVersion.startsWith("2.11")) {
-        assert(result.unavailable.length == 1)
-      } else {
-        // In Scala 2.12.x, the reachability analysis discards a few extra symbols:
-        // - java.util.Properties.load
-        // - java.lang.Class.getResourceAsStream
-        assert(result.unavailable.length == 3)
-      }
+      assert(result.unavailable.length == 1)
       assert(result.unavailable.head == Global.Top("StubClass"))
     }
   }
@@ -74,14 +60,7 @@ class StubSpec extends LinkerSpec {
   "Stub modules" should "be ignored by the linker when `linkStubs = false`" in {
     link(entry, stubModuleSource, linkStubs = false) { (cfg, result) =>
       assert(!cfg.linkStubs)
-      if (scalaVersion.startsWith("2.11")) {
-        assert(result.unavailable.length == 1)
-      } else {
-        // In Scala 2.12.x, the reachability analysis discards a few extra symbols:
-        // - java.util.Properties.load
-        // - java.lang.Class.getResourceAsStream
-        assert(result.unavailable.length == 3)
-      }
+      assert(result.unavailable.length == 1)
       assert(result.unavailable.head == Global.Top("StubModule$"))
     }
   }
