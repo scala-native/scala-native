@@ -1,5 +1,7 @@
 package java.util
 
+import java.util
+
 import scala.collection.JavaConverters._
 
 object ArrayDequeSuite extends tests.Suite {
@@ -109,7 +111,7 @@ object ArrayDequeSuite extends tests.Suite {
 
   test(s"addFirst(e)") {
     locally {
-      type E = Float
+      type E = AnyRef
       val ad = new ArrayDeque[E]()
 
       assertThrows[NullPointerException] {
@@ -135,7 +137,7 @@ object ArrayDequeSuite extends tests.Suite {
 
   test(s"addLast(e)") {
     locally {
-      type E = Long
+      type E = AnyRef
       val ad = new ArrayDeque[E]()
 
       assertThrows[NullPointerException] {
@@ -300,7 +302,7 @@ object ArrayDequeSuite extends tests.Suite {
 
   test(s"offer(e: E)") {
     locally {
-      type E = Long
+      type E = AnyRef
       val ad = new ArrayDeque[E]()
 
       assertThrows[NullPointerException] {
@@ -325,7 +327,7 @@ object ArrayDequeSuite extends tests.Suite {
 
   test(s"offerFirst(e: E)") {
     locally {
-      type E = Float
+      type E = AnyRef
       val ad = new ArrayDeque[E]()
 
       assertThrows[NullPointerException] {
@@ -351,7 +353,7 @@ object ArrayDequeSuite extends tests.Suite {
 
   test(s"offerLast(e: E)") {
     locally {
-      type E = Long
+      type E = AnyRef
       val ad = new ArrayDeque[E]()
 
       assertThrows[NullPointerException] {
@@ -551,7 +553,7 @@ object ArrayDequeSuite extends tests.Suite {
 
   test(s"push(e: E)") {
     locally {
-      type E = Double
+      type E = AnyRef
       val ad = new ArrayDeque[E]()
 
       assertThrows[NullPointerException] {
