@@ -187,6 +187,104 @@ object MatcherSuite extends tests.Suite {
     )
   }
 
+  // This helper is named appendReplacement() in re2j. That name causes
+  // conflicts with the 'import m._' idiom used in this Suite.
+  private def re2jAppendReplacement(m: Matcher, replacement: String): String = {
+    val b = new StringBuffer()
+    m.appendReplacement(b, replacement)
+    b.toString()
+  }
+
+  test("Named Groups - Perl") {
+
+    val p = Pattern.compile(
+      "(?P<baz>f(?P<foo>b*a(?P<another>r+)){0,10})" +
+        "(?P<bag>bag)?(?P<nomatch>zzz)?")
+
+    val m = p.matcher("fbbarrrrrbag")
+
+    assert(m.matches(), "match failed")
+    assertEquals("fbbarrrrr", m.group("baz"))
+    assertEquals("bbarrrrr", m.group("foo"))
+    assertEquals("rrrrr", m.group("another"))
+    assertEquals(0, m.start("baz"))
+    assertEquals(1, m.start("foo"))
+    assertEquals(4, m.start("another"))
+    assertEquals(9, m.end("baz"))
+    assertEquals(9, m.end("foo"))
+    assertEquals("bag", m.group("bag"))
+    assertEquals(9, m.start("bag"))
+    assertEquals(12, m.end("bag"))
+    assertEquals(null, m.group("nomatch"))
+    assertEquals(-1, m.start("nomatch"))
+    assertEquals(-1, m.end("nomatch"))
+
+    assertThrowsAnd[IllegalStateException](m.group("nonexistent"))(
+      _.getMessage == "No match found"
+    )
+
+    // appendReplacement
+
+    assertEquals("whatbbarrrrreverbag",
+                 re2jAppendReplacement(m, "what$2ever${bag}"))
+
+    assertThrowsAnd[IllegalStateException](
+      re2jAppendReplacement(m, "what$2ever${no-final-brace "))(
+      _.getMessage == "No match available"
+    )
+
+    assertThrowsAnd[IllegalStateException](
+      re2jAppendReplacement(m, "what$2ever${NOTbag}"))(
+      _.getMessage == "No match available"
+    )
+
+  }
+
+  test(s"Named Groups - Java") {
+
+    val p = Pattern.compile(
+      "(?<baz>f(?<foo>b*a(?<another>r+)){0,10})" +
+        "(?<bag>bag)?(?<nomatch>zzz)?")
+
+    val m = p.matcher("fbbarrrrrbag")
+
+    assert(m.matches(), "match failed")
+    assertEquals("fbbarrrrr", m.group("baz"))
+    assertEquals("bbarrrrr", m.group("foo"))
+    assertEquals("rrrrr", m.group("another"))
+    assertEquals(0, m.start("baz"))
+    assertEquals(1, m.start("foo"))
+    assertEquals(4, m.start("another"))
+    assertEquals(9, m.end("baz"))
+    assertEquals(9, m.end("foo"))
+    assertEquals("bag", m.group("bag"))
+    assertEquals(9, m.start("bag"))
+    assertEquals(12, m.end("bag"))
+    assertEquals(null, m.group("nomatch"))
+    assertEquals(-1, m.start("nomatch"))
+    assertEquals(-1, m.end("nomatch"))
+
+    assertThrowsAnd[IllegalStateException](m.group("nonexistent"))(
+      _.getMessage == "No match found"
+    )
+
+    // appendReplacement
+
+    assertEquals("whatbbarrrrreverbag",
+                 re2jAppendReplacement(m, "what$2ever${bag}"))
+
+    assertThrowsAnd[IllegalStateException](
+      re2jAppendReplacement(m, "what$2ever${no-final-brace "))(
+      _.getMessage == "No match available"
+    )
+
+    assertThrowsAnd[IllegalStateException](
+      re2jAppendReplacement(m, "what$2ever${NOTbag}"))(
+      _.getMessage == "No match available"
+    )
+
+  }
+
   test("issue #852, StringIndexOutOfBoundsException") {
     val JsonNumberRegex =
       """(-)?((?:[1-9][0-9]*|0))(?:\.([0-9]+))?(?:[eE]([-+]?[0-9]+))?""".r
