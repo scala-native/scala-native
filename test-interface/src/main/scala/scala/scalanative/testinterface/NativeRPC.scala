@@ -5,7 +5,6 @@ import java.net.Socket
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.scalanative.junit.async._
 import scala.scalanative.testinterface.common.RPCCore
 import scala.util.{Failure, Success, Try}
 
@@ -36,6 +35,11 @@ private[testinterface] object NativeRPC extends RPCCore {
       val outStream = new DataOutputStream(socket.getOutputStream)
       outStream.writeInt(msg.length)
       outStream.write(msg.getBytes("UTF-16"))
+    }
+
+    private def await(future: Future[_]): Unit = {
+      scala.scalanative.runtime.loop()
+      future.value.get.get
     }
 
     private lazy val inStream = new DataInputStream(socket.getInputStream)

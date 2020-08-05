@@ -174,7 +174,6 @@ class ComRunner(bin: File,
     var native2jvm: DataInputStream  = null
 
     try {
-      logger.info("Awaiting connection")
       serverSocket.setSoTimeout(40 * 1000)
       comSocket = serverSocket.accept()
       serverSocket.close() // we don't need it anymore.
@@ -197,7 +196,6 @@ class ComRunner(bin: File,
   }
 
   private def onConnected(c: Connected): Unit = synchronized {
-    logger.info("Connected")
     state match {
       case AwaitingConnection(msgs) =>
         msgs.reverse.foreach(writeMsg(c.jvm2native, _))

@@ -56,8 +56,10 @@ addCommandAlias(
   "test-all",
   Seq(
     "sandbox/run",
-    "tests/test",
+    "testRunner/test",
+    "testInterface/test",
     "tools/test",
+    "tests/test",
     "nirparser/test",
     "sbtScalaNative/scripted",
     "tools/mimaReportBinaryIssues",
@@ -69,6 +71,8 @@ addCommandAlias(
 addCommandAlias(
   "test-tools",
   Seq(
+    "testRunner/test",
+    "testInterface/test",
     "tools/test",
     "nirparser/test",
     "tools/mimaReportBinaryIssues"
@@ -625,15 +629,14 @@ lazy val testInterface =
     .settings(mavenPublishSettings)
     .settings(
       Compile / sources ++= (testInterfaceCommon / Compile / sources).value,
-      Test / sources ++= (testInterfaceCommon / Test / sources).value,
-      Test / sources ++= (junitAsyncNative / Compile / sources).value
+      Test / sources ++= (testInterfaceCommon / Test / sources).value
     )
     .dependsOn(nscplugin   % "plugin",
                junitPlugin % "plugin",
                allCoreLibs,
-               testInterfaceCommon,
+               testInterfaceSbtDefs,
                junitRuntime,
-               junitAsyncNative)
+               junitAsyncNative % "test")
 
 lazy val testInterfaceCommon =
   project
@@ -719,7 +722,7 @@ lazy val junitTestOutputsNative =
       nscplugin        % "plugin",
       junitRuntime     % "test",
       junitAsyncNative % "test",
-      testInterface
+      testInterface    % "test"
     )
 
 lazy val junitTestOutputsJVM =
