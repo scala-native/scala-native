@@ -31,8 +31,8 @@ object TestMain extends {
     val clientSocket = new Socket("127.0.0.1", serverPort)
 
     TestAdapterBridge.start()
-    val res = NativeRPC.loop(clientSocket)
-    sys.exit(res)
+    val exitCode = NativeRPC.loop(clientSocket)
+    sys.exit(exitCode)
   }
 
 }

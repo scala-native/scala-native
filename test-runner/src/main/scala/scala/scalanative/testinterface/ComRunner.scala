@@ -1,6 +1,8 @@
 package scala.scalanative
 package testinterface
 
+// Ported from Scala.JS
+
 import java.io._
 import java.net.{ServerSocket, Socket, SocketTimeoutException}
 import scala.concurrent.{ExecutionContext, Future, Promise}

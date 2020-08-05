@@ -35,8 +35,8 @@ trait Framework {
              remoteArgs: Array[String],
              testClassLoader: ClassLoader): Runner
 
-  /** Scala.js specific: Creates a slave runner for a given run.
-   *
+  /** Scala Native specific: Creates a slave runner for a given run.
+   *  Ported from Scala.JS
    *  The slave may send a message to the master runner by calling `send`.
    */
   def slaveRunner(args: Array[String],

@@ -1,21 +1,9 @@
-/*
- * Scala.js (https://www.scala-js.org/)
- *
- * Copyright EPFL.
- *
- * Licensed under Apache License 2.0
- * (https://www.apache.org/licenses/LICENSE-2.0).
- *
- * See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
- */
-
 package scala.scalanative.testinterface.common
 
-import java.time.Duration
+// Ported from Scala.JS
+
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent._
-import scala.concurrent.duration.FiniteDuration
 import scala.scalanative.testinterface.common.Serializer.{
   deserialize,
   serialize
@@ -57,7 +45,8 @@ abstract class RPCCore()(implicit ec: ExecutionContext) {
 
       def getPending(): Option[PendingCall] = {
         val callID = in.readLong()
-        /* Note that `callID` might not be in `pending` anymore if it got
+
+        /** Note that `callID` might not be in `pending` anymore if it got
 		 * removed during a close operation. In this case we're not doing
 		 * anything.
 		 */
@@ -83,7 +72,7 @@ abstract class RPCCore()(implicit ec: ExecutionContext) {
         case _ =>
           endpoints.get(opCode) match {
             case null =>
-              /* Quick and dirty way to provide more error detail for certain
+              /** Quick and dirty way to provide more error detail for certain
 			   * known problems.
 			   * This is not ideal, but the best we can do, since we do not know
 			   * all possible opCodes we could receive (we'd need something like
@@ -103,7 +92,7 @@ abstract class RPCCore()(implicit ec: ExecutionContext) {
                 case _ =>
                   ""
               }
-              println(s"unknown endpoint: $opCode$detail")
+              System.err.println(s"unknown endpoint: $opCode$detail")
 
               throw new IllegalStateException(s"Unknown opcode: $opCode$detail")
 
@@ -159,7 +148,8 @@ abstract class RPCCore()(implicit ec: ExecutionContext) {
     }
 
     if (closeReason != null) {
-      /* In the meantime, someone closed the channel. Help closing.
+
+      /** In the meantime, someone closed the channel. Help closing.
 	   * We need this check to guard against a race between `call` and `close`.
 	   */
       helpClose()
@@ -218,13 +208,14 @@ abstract class RPCCore()(implicit ec: ExecutionContext) {
   }
 
   private def helpClose(): Unit = {
-    /* Fix for #3128: explicitly upcast to java.util.Map so that the keySet()
+
+    /** Fix for #3128: explicitly upcast to java.util.Map so that the keySet()
 	 * method is binary compatible on JDK7.
 	 */
     val pendingCallIDs = (pending: java.util.Map[Long, _]).keySet()
     val exception      = new ClosedException(closeReason)
 
-    /* Directly use the Java Iterator because Scala's JavaConverters are
+    /** Directly use the Java Iterator because Scala's JavaConverters are
 	 * tricky to use across 2.12- and 2.13+.
 	 */
     val pendingCallIDsIter = pendingCallIDs.iterator()

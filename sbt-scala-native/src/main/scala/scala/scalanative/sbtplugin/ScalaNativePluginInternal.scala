@@ -163,8 +163,8 @@ object ScalaNativePluginInternal {
 
           val logger     = streams.value.log.toLogger
           val testBinary = nativeLink.value
+          val envVars    = (test / Keys.envVars).value
 
-          val envVars = (test / Keys.envVars).value
           val config = TestAdapter
             .Config()
             .withBinaryFile(testBinary)

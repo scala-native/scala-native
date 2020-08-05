@@ -1,16 +1,6 @@
-/*
- * Scala.js (https://www.scala-js.org/)
- *
- * Copyright EPFL.
- *
- * Licensed under Apache License 2.0
- * (https://www.apache.org/licenses/LICENSE-2.0).
- *
- * See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
- */
-
 package scala.scalanative.testinterface
+
+// Ported from Scala.JS
 
 import java.io.File
 import scala.concurrent.ExecutionContext
@@ -27,8 +17,7 @@ private[testinterface] final class NativeRunnerRPC(
     extends RPCCore() {
   val runner = new ComRunner(binaryFile, envVars, args, logger, handleMessage)
 
-  /* Once the com closes, ensure all still pending calls are failing.
-   * This can be necessary, if the JSEnv terminates unexpectedly.
+  /** Once the com closes, ensure all still pending calls are failing.
    * Note: We do not need to give a grace time here, since the reply
    * dispatch happens synchronously in `handleMessage`.
    * In other words, at this point we'll only see pending calls that
@@ -45,7 +34,8 @@ private[testinterface] final class NativeRunnerRPC(
   override protected def send(msg: String): Unit = runner.send(msg)
 
   override def close(cause: Throwable): Unit = {
-    /* Close the RPC layer and fail all pending calls.
+
+    /** Close the RPC layer and fail all pending calls.
      * This needs to happen first so we do not race completion of the run
      * itself (to retain the cause given here).
      */

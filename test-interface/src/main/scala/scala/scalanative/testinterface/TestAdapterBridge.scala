@@ -1,25 +1,12 @@
-/*
- * Scala.js (https://www.scala-js.org/)
- *
- * Copyright EPFL.
- *
- * Licensed under Apache License 2.0
- * (https://www.apache.org/licenses/LICENSE-2.0).
- *
- * See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
- */
-
 package scala.scalanative.testinterface
 
-import sbt.testing._
-import scala.concurrent.Promise
-import scala.scalanative.testinterface.common._
-import scala.util.Try
-import scala.util.control.NonFatal
-import JVMEndpoints._
+// Ported from Scala.JS
 
+import sbt.testing._
+import scala.scalanative.testinterface.common.JVMEndpoints._
 import scala.scalanative.testinterface.common.NativeEndpoints._
+import scala.scalanative.testinterface.common._
+
 private[testinterface] object TestAdapterBridge {
 
   private[this] val mux = new RunMuxRPC(NativeRPC)
@@ -47,16 +34,13 @@ private[testinterface] object TestAdapterBridge {
     val loader    = new ScalaNativeClassLoader()
 
     val runID = args.runID
-    println(s"create runner - master:$isMaster - ${framework.name()}")
-    val runner = {
-      if (isMaster) {
-        framework.runner(args.args.toArray, args.remoteArgs.toArray, loader)
-      } else {
-        framework.slaveRunner(args.args.toArray,
-                              args.remoteArgs.toArray,
-                              loader,
-                              mux.send(JVMEndpoints.msgSlave, runID))
-      }
+    val runner = if (isMaster) {
+      framework.runner(args.args.toArray, args.remoteArgs.toArray, loader)
+    } else {
+      framework.slaveRunner(args.args.toArray,
+                            args.remoteArgs.toArray,
+                            loader,
+                            mux.send(JVMEndpoints.msgSlave, runID))
     }
 
     mux.attach(NativeEndpoints.tasks, runID)(tasksFun(runner))
@@ -84,36 +68,20 @@ private[testinterface] object TestAdapterBridge {
 
   private def tasksFun(runner: Runner) = { taskDefs: List[TaskDef] =>
     val tasks = runner.tasks(taskDefs.toArray)
-    val x     = tasks.map(TaskInfoBuilder.detachTask(_, runner)).toList
-    x.map(_.taskDef.fullyQualifiedName()).foreach(println)
-    x
+    tasks.map(TaskInfoBuilder.detachTask(_, runner)).toList
   }
 
   private def executeFun(runID: RunMux.RunID, runner: Runner) = {
     req: ExecuteRequest =>
-      val task = TaskInfoBuilder.attachTask(req.taskInfo, runner)
-      println(s"executeFun $runID - ${task.taskDef().fullyQualifiedName()}")
+      val task         = TaskInfoBuilder.attachTask(req.taskInfo, runner)
       val eventHandler = new RemoteEventHandler(runID)
 
       val loggers = for {
         (withColor, i) <- req.loggerColorSupport.zipWithIndex
       } yield new RemoteLogger(runID, i, withColor)
-//    val promise = Promise[List[TaskInfo]]()
 
-//    def cont(tasks: Array[Task]) = {
-//      Try(tasks.map(TaskInfoBuilder.detachTask(_, runner)).toList)
-//      promise.complete(result)
-//    }
-//    try {
       val tasks = task.execute(eventHandler, loggers.toArray)
       tasks.map(TaskInfoBuilder.detachTask(_, runner)).toList
-//     cont(tasks)
-//    } catch {
-//      case NonFatal(t) =>
-//        promise.tryFailure(t)
-//    }
-
-//    promise.future
   }
 
   private def doneFun(runID: RunMux.RunID,
