@@ -5,11 +5,11 @@ import java.net.Socket
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.scalanative.junit.async._
 import scala.scalanative.testinterface.common.RPCCore
 import scala.util.{Failure, Success, Try}
-import scalanative.junit.async._
 
-/** Native RPC Core. Uses `scalajsCom`. */
+/** Native RPC Core. */
 private[testinterface] object NativeRPC extends RPCCore {
   Com.init(handleMessage)
 
@@ -38,39 +38,49 @@ private[testinterface] object NativeRPC extends RPCCore {
       outStream.write(msg.getBytes("UTF-16"))
     }
 
+    private lazy val inStream = new DataInputStream(socket.getInputStream)
+
     @tailrec
-    def loop(): Int =
-      if (socket.isClosed) {
-        println("Socket closed")
-        0
-      } else
-        Try {
-          val inStream = new DataInputStream(socket.getInputStream)
-          while (inStream.available > 4) {
+    def loop(pendingMsgBytes: Option[Int] = None): Int = {
+      def readMsg(msgBytes: Int): Unit = {
+        val buff = new Array[Byte](msgBytes)
+        inStream.read(buff, 0, msgBytes)
+        val str = new String(buff, "UTF-16")
+        if (messageHandler == null) messageQueue.enqueue(str)
+        else
+          await {
+            Future.fromTry {
+              Try(messageHandler(str))
+            }
+          }
+      }
+
+      def tryRead: Try[Option[Int]] = Try {
+        val available = inStream.available()
+        pendingMsgBytes match {
+          case Some(bytes) if available >= bytes => readMsg(bytes); None
+          case None if available > 4 =>
             val msgLength = inStream.readInt()
             val msgBytes  = msgLength * 2
 
-            if (inStream.available() < msgBytes) ()
+            if (inStream.available() < msgBytes) Some(msgBytes)
             else {
-              val buff = new Array[Byte](msgBytes)
-              inStream.read(buff, 0, msgBytes)
-              val str = new String(buff, "UTF-16")
-              if (messageHandler == null) messageQueue.enqueue(str)
-              else
-                await {
-                  Future.fromTry {
-                    Try(messageHandler(str))
-                  }
-                }
+              readMsg(msgBytes);
+              None
             }
-          }
-        } match {
-          case Failure(exception) =>
-            println(s"NativeRPC loop failed: $exception"); -1
-          case Success(_) =>
-            Thread.sleep(100)
-            loop()
+          case opt => opt
         }
+      }
+
+      if (socket.isClosed) 0
+      else
+        tryRead match {
+          case Success(optPendingBytes) => loop(optPendingBytes)
+          case Failure(exception) =>
+            System.err.println(s"NativeRPC loop failed: $exception");
+            -1
+        }
+    }
   }
 
 }
