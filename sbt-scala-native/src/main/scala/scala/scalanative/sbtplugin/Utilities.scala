@@ -10,7 +10,8 @@ import sbt._
 object Utilities {
   implicit class RichLogger(logger: Logger) {
     def toLogger: build.Logger =
-      build.Logger(logger.debug(_),
+      build.Logger(logger.trace(_),
+                   logger.debug(_),
                    logger.info(_),
                    logger.warn(_),
                    logger.error(_))
