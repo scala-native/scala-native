@@ -6,6 +6,7 @@ package java.util
 import java.io._
 import java.{lang => jl}
 import java.{util => ju}
+import java.nio.charset.StandardCharsets
 
 import scala.annotation.switch
 import scala.collection.immutable.{Map => SMap}
@@ -21,7 +22,7 @@ class Properties(protected val defaults: Properties)
 
   def load(inStream: InputStream): Unit = {
     val stream = new BufferedInputStream(inStream)
-    loadImpl(new InputStreamReader(stream, "ISO8859-1"))
+    loadImpl(new InputStreamReader(stream, StandardCharsets.ISO_8859_1))
   }
 
   def load(reader: Reader): Unit =
@@ -86,7 +87,7 @@ class Properties(protected val defaults: Properties)
   }
 
   def store(out: OutputStream, comments: String): Unit = {
-    val writer = new OutputStreamWriter(out, "ISO8859_1")
+    val writer = new OutputStreamWriter(out, StandardCharsets.ISO_8859_1)
     storeImpl(writer, comments, true)
   }
 
