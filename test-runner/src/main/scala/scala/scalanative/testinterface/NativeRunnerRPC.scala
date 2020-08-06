@@ -3,6 +3,7 @@ package scala.scalanative.testinterface
 // Ported from Scala.JS
 
 import java.io.File
+import java.net.ServerSocket
 import scala.concurrent.ExecutionContext
 import scala.scalanative.build.Logger
 import scala.scalanative.testinterface.common._
@@ -15,7 +16,17 @@ private[testinterface] final class NativeRunnerRPC(
     logger: Logger
 )(implicit ec: ExecutionContext)
     extends RPCCore() {
-  val runner = new ComRunner(binaryFile, envVars, args, logger, handleMessage)
+
+  private[this] val serverSocket: ServerSocket = new ServerSocket(
+    /* port = */ 0,
+    /* backlog = */ 1
+  )
+  val processRunner = new ProcessRunner(binaryFile,
+                                        envVars,
+                                        args,
+                                        logger,
+                                        serverSocket.getLocalPort)
+  val runner = new ComRunner(processRunner, serverSocket, logger, handleMessage)
 
   /** Once the com closes, ensure all still pending calls are failing.
    * Note: We do not need to give a grace time here, since the reply
@@ -27,7 +38,6 @@ private[testinterface] final class NativeRunnerRPC(
    * called anymore after that).
    */
   runner.future.onComplete { t =>
-    logger.info("ComRunner closed")
     close(NativeRunnerRPC.RunTerminatedException(t.failed.toOption))
   }
 
@@ -40,7 +50,6 @@ private[testinterface] final class NativeRunnerRPC(
      * itself (to retain the cause given here).
      */
     super.close(cause)
-
     // Now terminate the run itself.
     runner.close()
   }

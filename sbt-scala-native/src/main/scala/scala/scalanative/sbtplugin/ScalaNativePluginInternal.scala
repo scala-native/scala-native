@@ -65,6 +65,13 @@ object ScalaNativePluginInternal {
         case Some(_) =>
           ()
       }
+    },
+    onComplete := {
+      val prev: () => Unit = onComplete.value
+      () => {
+        prev()
+        testAdapters.getAndSet(Nil).foreach(_.close())
+      }
     }
   )
 
@@ -210,4 +217,5 @@ object ScalaNativePluginInternal {
     if (l.compareAndSet(prev, r :: prev)) r
     else registerResource(l, r)
   }
+
 }

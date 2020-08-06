@@ -4,68 +4,37 @@ package testinterface
 // Ported from Scala.JS
 
 import java.io._
-import java.net.{ServerSocket, Socket, SocketTimeoutException}
+import java.net.{ServerSocket, Socket}
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.scalanative.build.{BuildException, Logger}
-import scala.sys.process._
+import scala.scalanative.build.Logger
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 /**
  * Represents a distant program with whom we communicate over the network.
- * @param bin    The program to run
- * @param args   Arguments to pass to the program
  * @param logger Logger to log to.
  */
-class ComRunner(bin: File,
-                envVars: Map[String, String],
-                args: Seq[String],
+class ComRunner(processRunner: ProcessRunner,
+                serverSocket: ServerSocket,
                 logger: Logger,
-                handleMessage: String => Unit) {
+                handleMessage: String => Unit)
+    extends AutoCloseable {
   import ComRunner._
   implicit val executionContext: ExecutionContext = ExecutionContext.global
+
+  processRunner.future.onComplete {
+    case Failure(exception) => forceClose(exception)
+    case Success(_)         => onNativeTerminated()
+  }
 
   @volatile
   private[this] var state: State = AwaitingConnection(Nil)
 
-  private[this] val runPromise: Promise[Unit] = Promise[Unit]()
-  private[this] val runner = new Thread {
-    override def run(): Unit = {
-      val port = serverSocket.getLocalPort
-      logger.info(s"Starting process '$bin' on port '$port'.")
-
-      val exitCode =
-        Process(command = bin.toString +: port.toString +: args,
-                cwd = None,
-                extraEnv = envVars.toSeq: _*) ! Logger.toProcessLogger(logger)
-
-      if (exitCode == 0) runPromise.trySuccess(())
-      else {
-        runPromise.tryFailure(
-          new RuntimeException(
-            s"Process $bin finished with non-zero value $exitCode"))
-      }
-    }
-  }
-
-  val future: Future[Unit] = runPromise.future
-
-  private[this] val serverSocket: ServerSocket = new ServerSocket(
-    /* port = */ 0,
-    /* backlog = */ 1
-  )
-  runner.start()
-
-  // If the run completes, make sure we also complete.
-  runPromise.future.onComplete {
-    case Failure(t) => forceClose(t)
-    case Success(_) => onNativeTerminated()
-  }
+  private[this] val promise: Promise[Unit] = Promise[Unit]()
 
   // TODO replace this with scheduled tasks on the execution context.
-  private[this] val receiver = new Thread {
+  new Thread {
     setName("ComRunner receiver")
-
     override def run(): Unit = {
       try {
         try {
@@ -89,7 +58,7 @@ class ComRunner(bin: File,
                   val carr = Array.fill(len)(native2jvm.readChar())
                   handleMessage(String.valueOf(carr))
                 } catch {
-                  // JS end terminated gracefully. Close.
+                  // Native end terminated gracefully. Close.
                   case _: EOFException => close()
                 }
             }
@@ -103,14 +72,17 @@ class ComRunner(bin: File,
          * Everything got closed. We wait for the run to terminate.
          * We need to wait in order to make sure that closing the
          * underlying run does not fail it. */
-        runPromise.future.foreach { _ => close() }
+        processRunner.future.foreach { _ =>
+          processRunner.close()
+          promise.trySuccess(())
+        }
       } catch {
         case t: Throwable => handleThrowable(t)
       }
     }
-  }
+  }.start()
 
-  receiver.start()
+  val future: Future[Unit] = promise.future
 
   def send(msg: String): Unit = synchronized {
     state match {
@@ -132,7 +104,6 @@ class ComRunner(bin: File,
   def close(): Unit = synchronized {
     val oldState = state
     state = Closing // Signal receiver thread that it is OK if socket read fails.
-
     oldState match {
       case c: Connected =>
         closeAll(
@@ -157,8 +128,9 @@ class ComRunner(bin: File,
 
   private def forceClose(cause: Throwable): Unit = {
     logger.warn(s"Force close $cause")
-    runPromise.tryFailure(cause)
+    promise.tryFailure(cause)
     close()
+    processRunner.close()
     serverSocket.close()
   }
 
@@ -184,11 +156,6 @@ class ComRunner(bin: File,
 
       onConnected(Connected(comSocket, jvm2native, native2jvm))
     } catch {
-      case _: SocketTimeoutException =>
-        val ex = new BuildException(
-          "The test program never connected to the test runner.")
-        runPromise.tryFailure(ex)
-        throw ex
       case t: Throwable =>
         closeAll(comSocket, jvm2native, native2jvm)
         throw t
@@ -205,8 +172,7 @@ class ComRunner(bin: File,
       case _: Connected =>
         throw new IllegalStateException(s"Unexpected state: $state")
 
-      case Closing =>
-        closeAll(c)
+      case Closing => closeAll(c)
     }
   }
 }

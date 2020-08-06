@@ -25,6 +25,9 @@ private[testinterface] object NativeRPC extends RPCCore {
     private var messageHandler: String => Unit = _
     private[NativeRPC] var socket: Socket      = _
 
+    private lazy val inStream  = new DataInputStream(socket.getInputStream)
+    private lazy val outStream = new DataOutputStream(socket.getOutputStream)
+
     def init(onReceive: String => Unit): Unit = {
       if (messageHandler != null) sys.error("Com already initialized")
       messageHandler = onReceive
@@ -32,7 +35,6 @@ private[testinterface] object NativeRPC extends RPCCore {
     }
 
     def send(msg: String): Unit = {
-      val outStream = new DataOutputStream(socket.getOutputStream)
       outStream.writeInt(msg.length)
       outStream.write(msg.getBytes("UTF-16"))
     }
@@ -42,48 +44,36 @@ private[testinterface] object NativeRPC extends RPCCore {
       future.value.get.get
     }
 
-    private lazy val inStream = new DataInputStream(socket.getInputStream)
-
     @tailrec
-    def loop(pendingMsgBytes: Option[Int] = None): Int = {
-      def readMsg(msgBytes: Int): Unit = {
-        val buff = new Array[Byte](msgBytes)
-        inStream.read(buff, 0, msgBytes)
-        val str = new String(buff, "UTF-16")
-        if (messageHandler == null) messageQueue.enqueue(str)
-        else
-          await {
-            Future.fromTry {
-              Try(messageHandler(str))
-            }
-          }
-      }
+    def loop(): Int = {
+      def tryRead: Try[Boolean] = Try {
+        val msgLength = inStream.readInt()
 
-      def tryRead: Try[Option[Int]] = Try {
-        val available = inStream.available()
-        pendingMsgBytes match {
-          case Some(bytes) if available >= bytes => readMsg(bytes); None
-          case None if available > 4 =>
-            val msgLength = inStream.readInt()
-            val msgBytes  = msgLength * 2
-
-            if (inStream.available() < msgBytes) Some(msgBytes)
-            else {
-              readMsg(msgBytes);
-              None
+        /**
+         * Current implementation of DataInputStream does not check for EOF,
+         * in this case we need to follow up base `read` behaviour which is returning -1 value to signal EOF
+         * TODO Fix this after merging changes due to #1868
+         */
+        if (msgLength < 0) true
+        else {
+          val msg = Array.fill(msgLength)(inStream.readChar).mkString
+          if (messageHandler == null) messageQueue.enqueue(msg)
+          else
+            await {
+              Future.fromTry {
+                Try(messageHandler(msg))
+              }
             }
-          case opt => opt
+          false
         }
       }
 
-      if (socket.isClosed) 0
-      else
-        tryRead match {
-          case Success(optPendingBytes) => loop(optPendingBytes)
-          case Failure(exception) =>
-            System.err.println(s"NativeRPC loop failed: $exception");
-            -1
-        }
+      tryRead match {
+        case Success(isEOF) => if (isEOF) 0 else loop()
+        case Failure(exception) =>
+          System.err.println(s"NativeRPC loop failed: $exception")
+          -1
+      }
     }
   }
 

@@ -111,10 +111,10 @@ final class TestAdapter(config: TestAdapter.Config) {
     // Otherwise we might leak runners.
     require(!closed, "We are closed. Cannot create new runner.")
 
-    val com = new NativeRunnerRPC(config.binaryFile,
-                                  config.envVars,
-                                  Seq.empty,
-                                  config.logger)
+    val com = new NativeRunnerRPC(binaryFile = config.binaryFile,
+                                  envVars = config.envVars,
+                                  args = Seq.empty,
+                                  logger = config.logger)
     val mux = new RunMuxRPC(com)
 
     new ManagedRunner(threadId, com, mux)
