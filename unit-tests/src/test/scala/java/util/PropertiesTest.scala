@@ -1,5 +1,5 @@
 /**
- * Ported from Harmony
+ * Ported from Scala.js and Harmony
  */
 package java.util
 
@@ -197,8 +197,7 @@ class PropertiesTest {
       stream.flush()
     }
 
-    val result0 = "-- listing properties --\n"
-    assertResult(result0)
+    assertResult("-- listing properties --\n")
 
     properties.put("name", "alice")
     val result1 =

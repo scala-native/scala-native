@@ -1,6 +1,3 @@
-/**
- * Ported from Harmony
- */
 package java.util
 
 import java.io._
@@ -9,7 +6,6 @@ import java.{util => ju}
 import java.nio.charset.StandardCharsets
 
 import scala.annotation.switch
-import scala.collection.immutable.{Map => SMap}
 import scala.collection.JavaConverters._
 
 class Properties(protected val defaults: Properties)
@@ -74,7 +70,7 @@ class Properties(protected val defaults: Properties)
       s"$key=$value"
   }
 
-  private val listStr = "-- listing properties --"
+  private final val listStr = "-- listing properties --"
 
   def list(out: PrintStream): Unit = {
     out.println(listStr)
@@ -88,11 +84,11 @@ class Properties(protected val defaults: Properties)
 
   def store(out: OutputStream, comments: String): Unit = {
     val writer = new OutputStreamWriter(out, StandardCharsets.ISO_8859_1)
-    storeImpl(writer, comments, true)
+    storeImpl(writer, comments, toHex = true)
   }
 
   def store(writer: Writer, comments: String): Unit =
-    storeImpl(writer, comments, false)
+    storeImpl(writer, comments, toHex = false)
 
   private def storeImpl(writer: Writer,
                         comments: String,
@@ -106,10 +102,11 @@ class Properties(protected val defaults: Properties)
     writer.write(System.lineSeparator)
 
     entrySet().asScala.foreach { entry =>
-      writer.write(encodeString(entry.getKey.asInstanceOf[String], true, toHex))
+      writer.write(
+        encodeString(entry.getKey.asInstanceOf[String], isKey = true, toHex))
       writer.write('=')
       writer.write(
-        encodeString(entry.getValue.asInstanceOf[String], false, toHex))
+        encodeString(entry.getValue.asInstanceOf[String], isKey = false, toHex))
       writer.write(System.lineSeparator)
     }
     writer.flush()
@@ -122,10 +119,8 @@ class Properties(protected val defaults: Properties)
   private def loadImpl(reader: Reader): Unit = {
     import java.util.regex._
     val trailingBackspace = Pattern.compile("""(\\)+$""")
-    lazy val chMap =
-      SMap('b' -> '\b', 'f' -> '\f', 'n' -> '\n', 'r' -> '\r', 't' -> '\t')
     val br                = new BufferedReader(reader)
-    var valBuf            = new jl.StringBuilder()
+    val valBuf            = new jl.StringBuilder()
     var prevValueContinue = false
     var isKeyParsed       = false
     var key: String       = null
@@ -135,7 +130,7 @@ class Properties(protected val defaults: Properties)
       var i: Int   = -1
       var ch: Char = Char.MinValue
 
-      def getNextChar: Char = {
+      def getNextChar(): Char = {
         i += 1
         // avoid out of bounds if value is empty
         if (i < line.length())
@@ -169,7 +164,7 @@ class Properties(protected val defaults: Properties)
         isTokenKeySeparator(char) || isWhitespace(char)
 
       def isEmpty(): Boolean =
-        line.isEmpty() // trim removes all whitespace
+        line.isEmpty()
 
       def isComment(): Boolean =
         line.startsWith("#") || line.startsWith("!")
@@ -189,16 +184,17 @@ class Properties(protected val defaults: Properties)
 
       def processChar(buf: jl.StringBuilder): Unit =
         if (ch == '\\') {
-          ch = getNextChar
-          if (ch == 'u') {
-            getNextChar // advance
-            val uch = parseUnicodeEscape()
-            buf.append(uch)
-          } else if (ch == 't' || ch == 'f' || ch == 'r' || ch == 'n' || ch == 'b') {
-            val mch = chMap(ch)
-            buf.append(mch)
-          } else {
-            buf.append(ch)
+          ch = getNextChar()
+          ch match {
+            case 'u' =>
+              getNextChar() // advance
+              val uch = parseUnicodeEscape()
+              buf.append(uch)
+            case 't' => buf.append('\t')
+            case 'f' => buf.append('\f')
+            case 'r' => buf.append('\r')
+            case 'n' => buf.append('\n')
+            case _   => buf.append(ch)
           }
         } else {
           buf.append(ch)
@@ -208,20 +204,20 @@ class Properties(protected val defaults: Properties)
         val buf = new jl.StringBuilder()
         // ignore leading whitespace
         while (i < line.length && isWhitespace(ch)) {
-          ch = getNextChar
+          ch = getNextChar()
         }
         // key sep or empty value
         while (!isKeySeparator(ch) && i < line.length()) {
           processChar(buf)
-          ch = getNextChar
+          ch = getNextChar()
         }
         // ignore trailing whitespace
         while (i < line.length && isWhitespace(ch)) {
-          ch = getNextChar
+          ch = getNextChar()
         }
         // ignore non-space key separator
         if (i < line.length && isTokenKeySeparator(ch)) {
-          ch = getNextChar
+          ch = getNextChar()
         }
         isKeyParsed = true
         buf.toString()
@@ -230,22 +226,22 @@ class Properties(protected val defaults: Properties)
       def parseValue(): String = {
         // ignore leading whitespace
         while (i < line.length && isWhitespace(ch)) {
-          ch = getNextChar
+          ch = getNextChar()
         }
 
         // nothing but line continuation
         if (valueContinues() && i == line.length() - 1) {
           // ignore the final backslash
-          ch = getNextChar
+          ch = getNextChar()
         }
 
         while (i < line.length) {
           if (valueContinues() && i == line.length() - 1) {
             // ignore the final backslash
-            ch = getNextChar
+            ch = getNextChar()
           } else {
             processChar(valBuf)
-            ch = getNextChar
+            ch = getNextChar()
           }
         }
         valBuf.toString()
@@ -253,9 +249,9 @@ class Properties(protected val defaults: Properties)
 
       // run the parsing
       if (!(isComment() || isEmpty())) {
-        ch = getNextChar
+        ch = getNextChar()
         if (!isKeyParsed) {
-          valBuf = new jl.StringBuilder()
+          valBuf.setLength(0)
           key = parseKey()
           val value = parseValue()
           prevValueContinue = valueContinues()
@@ -283,34 +279,29 @@ class Properties(protected val defaults: Properties)
     val chars = comments.toCharArray
     var index = 0
     while (index < chars.length) {
-      if (chars(index) < 256) {
-        if (chars(index) == '\r' || chars(index) == '\n') {
-          def indexPlusOne = index + 1
+      val ch = chars(index)
+      if (ch < 256) {
+        if (ch == '\r' || ch == '\n') {
           // "\r\n"
-          if (chars(index) == '\r'
-              && indexPlusOne < chars.length
-              && chars(indexPlusOne) == '\n') {
+          if (ch == '\r'
+              && index + 1 < chars.length
+              && chars(index + 1) == '\n') {
             index += 1
           }
           writer.write(System.lineSeparator)
-          // return char with either '#' or '!' afterward
-          if (indexPlusOne < chars.length
-              && (chars(indexPlusOne) == '#'
-              || chars(indexPlusOne) == '!')) {
-            writer.write(chars(indexPlusOne))
-            index += 1
-          } else {
+          // add '#' if next char doesn't start with a comment
+          if (index + 1 < chars.length
+              && (chars(index + 1) != '#' && chars(index + 1) != '!')) {
             writer.write('#')
           }
-
         } else {
-          writer.write(chars(index))
+          writer.write(ch)
         }
       } else {
         if (toHex) {
-          writer.write(unicodeToHexaDecimal(chars(index)))
+          writer.write(unicodeToHexaDecimal(ch))
         } else {
-          writer.write(chars(index))
+          writer.write(ch)
         }
       }
       index += 1
@@ -325,9 +316,11 @@ class Properties(protected val defaults: Properties)
     var index  = 0
     val length = string.length
     // leading element (value) spaces are escaped
-    while (!isKey && index < length && string.charAt(index) == ' ') {
-      buffer.append("\\ ")
-      index += 1
+    if (!isKey) {
+      while (index < length && string.charAt(index) == ' ') {
+        buffer.append("\\ ")
+        index += 1
+      }
     }
 
     while (index < length) {
