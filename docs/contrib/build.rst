@@ -193,8 +193,6 @@ The build has roughly five groups of sub-projects as follows:
 
     - ``testInterface (test-interface)``
 
-    - ``testInterfaceSerialization (test-interface-serialization)``
-
     - ``testInterfaceSbtDefs (test-interface-sbt-defs)``
 
 5.  Tests and benchmarks (no dependencies on each other).
@@ -204,6 +202,9 @@ The build has roughly five groups of sub-projects as follows:
     - ``tools`` This has tests within the project (JVM project)
 
     - ``(scripted-tests)`` (JVM project)
+
+Apart from those mentioned sub-projects it is possible to notice project-like directory ``testInterfaceCommon (test-interface-common)``.
+Its content is shared as unmanaged source dependency between JVM and Native sides of test interface.
 
 The next section has more build and development information for those wanting
 to work on :ref:`compiler`.
