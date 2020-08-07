@@ -1,11 +1,12 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
-final class ExecuteRequest(val taskInfo: TaskInfo,
-                           val loggerColorSupport: List[Boolean])
+private[testinterface] final class ExecuteRequest(
+    val taskInfo: TaskInfo,
+    val loggerColorSupport: List[Boolean])
 
-object ExecuteRequest {
+private[testinterface] object ExecuteRequest {
   implicit object ExecuteRequestSerializer extends Serializer[ExecuteRequest] {
     def serialize(x: ExecuteRequest, out: Serializer.SerializeState): Unit = {
       out.write(x.taskInfo)

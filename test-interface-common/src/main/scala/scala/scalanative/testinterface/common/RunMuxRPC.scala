@@ -1,6 +1,6 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import scala.language.higherKinds
 
@@ -16,7 +16,7 @@ import scala.util.Try
  *  This is useful for functionality that needs to be dispatched to a specific
  *  runner.
  */
-final class RunMuxRPC(rpc: RPCCore) {
+private[testinterface] final class RunMuxRPC(rpc: RPCCore) {
   import RunMux.RunID
   import RunMuxRPC._
 
@@ -89,7 +89,7 @@ final class RunMuxRPC(rpc: RPCCore) {
   }
 }
 
-object RunMuxRPC {
+private[testinterface] object RunMuxRPC {
   // Helper types
   type MuxRPCEndpoint[T] = RPCEndpoint { type Req = RunMux[T] }
   type MuxMsgEndpoint[T] = MsgEndpoint { type Msg = RunMux[T] }

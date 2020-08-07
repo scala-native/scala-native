@@ -1,6 +1,6 @@
 package scala.scalanative.testinterface
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import java.io.File
 import java.net.ServerSocket
@@ -10,7 +10,7 @@ import scala.scalanative.testinterface.common._
 
 /** RPC Core for use with native rpc. */
 private[testinterface] final class NativeRunnerRPC(
-    binaryFile: File,
+    executableFile: File,
     envVars: Map[String, String],
     args: Seq[String],
     logger: Logger
@@ -21,7 +21,7 @@ private[testinterface] final class NativeRunnerRPC(
     /* port = */ 0,
     /* backlog = */ 1
   )
-  val processRunner = new ProcessRunner(binaryFile,
+  val processRunner = new ProcessRunner(executableFile,
                                         envVars,
                                         args,
                                         logger,

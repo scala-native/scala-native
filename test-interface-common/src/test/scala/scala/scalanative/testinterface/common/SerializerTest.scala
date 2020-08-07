@@ -1,6 +1,6 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import org.junit.Test
 import org.junit.Assert._

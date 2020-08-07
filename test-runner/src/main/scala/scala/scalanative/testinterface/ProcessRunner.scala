@@ -4,16 +4,17 @@ import java.io.File
 import scala.concurrent.{Future, Promise}
 import scala.scalanative.build.Logger
 
-class ProcessRunner(bin: File,
-                    envVars: Map[String, String],
-                    args: Seq[String],
-                    logger: Logger,
-                    port: Int)
+private[testinterface] class ProcessRunner(executableFile: File,
+                                           envVars: Map[String, String],
+                                           args: Seq[String],
+                                           logger: Logger,
+                                           port: Int)
     extends AutoCloseable {
 
   private[this] val process = {
-    val builder = new ProcessBuilder(bin.toString +: port.toString +: args: _*)
-      .inheritIO()
+    val builder =
+      new ProcessBuilder(executableFile.toString +: port.toString +: args: _*)
+        .inheritIO()
 
     envVars.foreach {
       case (k, v) =>
@@ -27,13 +28,13 @@ class ProcessRunner(bin: File,
   private[this] val runner = new Thread {
     setName("TestRunner")
     override def run(): Unit = {
-      logger.info(s"Starting process '$bin' on port '$port'.")
+      logger.info(s"Starting process '$executableFile' on port '$port'.")
       val exitCode = process.waitFor()
       if (exitCode == 0) runnerPromise.trySuccess(())
       else {
         runnerPromise.tryFailure(
           new RuntimeException(
-            s"Process $bin finished with non-zero value $exitCode"))
+            s"Process $executableFile finished with non-zero value $exitCode"))
       }
     }
   }

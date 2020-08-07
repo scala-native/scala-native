@@ -1,24 +1,24 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import sbt.testing.TaskDef
 
-object NativeEndpoints {
+private[testinterface] object NativeEndpoints {
   val detectFrameworks
       : RPCEndpoint.EP[List[List[String]], List[Option[FrameworkInfo]]] =
     RPCEndpoint[List[List[String]], List[Option[FrameworkInfo]]](2)
 
-  val createMasterRunner: RPCEndpoint.EP[RunnerArgs, Unit] =
+  val createController: RPCEndpoint.EP[RunnerArgs, Unit] =
     RPCEndpoint[RunnerArgs, Unit](3)
 
-  val createSlaveRunner: RPCEndpoint.EP[RunnerArgs, Unit] =
+  val createWorker: RPCEndpoint.EP[RunnerArgs, Unit] =
     RPCEndpoint[RunnerArgs, Unit](4)
 
-  val msgSlave: MsgEndpoint.EP[RunMux[String]] =
+  val msgWorker: MsgEndpoint.EP[RunMux[String]] =
     MsgEndpoint[RunMux[String]](5)
 
-  val msgMaster: MsgEndpoint.EP[RunMux[FrameworkMessage]] =
+  val msgController: MsgEndpoint.EP[RunMux[FrameworkMessage]] =
     MsgEndpoint[RunMux[FrameworkMessage]](6)
 
   val tasks: RPCEndpoint.EP[RunMux[List[TaskDef]], List[TaskInfo]] =

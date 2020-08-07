@@ -1,18 +1,18 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
-sealed trait Endpoint {
+private[testinterface] sealed trait Endpoint {
   val opCode: RPCCore.OpCode
 }
 
-sealed trait MsgEndpoint extends Endpoint {
+private[testinterface] sealed trait MsgEndpoint extends Endpoint {
   type Msg
 
   implicit val msgSerializer: Serializer[Msg]
 }
 
-object MsgEndpoint {
+private[testinterface] object MsgEndpoint {
 
   /** Helper type for readability */
   type EP[M] = MsgEndpoint { type Msg = M }
@@ -28,7 +28,7 @@ object MsgEndpoint {
   }
 }
 
-sealed trait RPCEndpoint extends Endpoint {
+private[testinterface] sealed trait RPCEndpoint extends Endpoint {
   type Req
   type Resp
 
@@ -36,7 +36,7 @@ sealed trait RPCEndpoint extends Endpoint {
   implicit val respSerializer: Serializer[Resp]
 }
 
-object RPCEndpoint {
+private[testinterface] object RPCEndpoint {
 
   /** Helper type for readability */
   type EP[Rq, Rp] = RPCEndpoint { type Req = Rq; type Resp = Rp }

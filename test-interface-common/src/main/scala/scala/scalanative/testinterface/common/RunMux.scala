@@ -1,10 +1,11 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
-final class RunMux[+T](val runId: RunMux.RunID, val value: T)
+private[testinterface] final class RunMux[+T](val runId: RunMux.RunID,
+                                              val value: T)
 
-object RunMux {
+private[testinterface] object RunMux {
   type RunID = Int
 
   implicit def runMuxSerializer[T: Serializer]: Serializer[RunMux[T]] = {

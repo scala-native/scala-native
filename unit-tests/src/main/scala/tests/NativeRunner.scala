@@ -10,16 +10,17 @@ class NativeRunner(override val args: Array[String],
 
   override def done(): String = ""
 
-  /** Scala.js specific: Invoked on the master <code>Runner</code>, if a slave
-   * sends a message (through the channel provided by the client).
+  /** Ported from Scala.js
+   *  Scala Native specific: Invoked on the controller <code>Runner</code>, if a worker
+   *  sends a message (through the channel provided by the client).
    *
-   * The master may send a message back to the sending slave by returning the
-   * message in a Some.
+   *  The controller may send a message back to the sending worker by returning the
+   *  message in a Some.
    *
-   * Invoked on a slave <code>Runner</code>, if the master responds to a
-   * message (sent by the slave via the supplied closure in
-   * <code>slaveRunner</code>). The return value of the call is ignored in
-   * this case.
+   *  Invoked on a worker <code>Runner</code>, if the controller responds to a
+   *  message (sent by the worker via the supplied closure in
+   *  <code>slaveRunner</code>). The return value of the call is ignored in
+   *  this case.
    */
   override def receiveMessage(msg: String): Option[String] = None
 

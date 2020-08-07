@@ -1,6 +1,6 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent._
@@ -22,7 +22,7 @@ import scala.util.{Failure, Success, Try}
  *  This class guarantees that dispatch handles synchronously when
  *  [[handleMessage]] is called, so closing can be performed race-free.
  */
-abstract class RPCCore()(implicit ec: ExecutionContext) {
+private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
   import RPCCore._
 
   /** Pending calls. */
@@ -47,9 +47,9 @@ abstract class RPCCore()(implicit ec: ExecutionContext) {
         val callID = in.readLong()
 
         /** Note that `callID` might not be in `pending` anymore if it got
-		 * removed during a close operation. In this case we're not doing
-		 * anything.
-		 */
+         * removed during a close operation. In this case we're not doing
+         * anything.
+         */
         Option(pending.remove(callID))
       }
 
@@ -73,26 +73,24 @@ abstract class RPCCore()(implicit ec: ExecutionContext) {
           endpoints.get(opCode) match {
             case null =>
               /** Quick and dirty way to provide more error detail for certain
-			   * known problems.
-			   * This is not ideal, but the best we can do, since we do not know
-			   * all possible opCodes we could receive (we'd need something like
-			   * an opCode "domain").
-			   * For now this is good enough; if collisions happen in the
-			   * future, we can improve this.
-			   */
+               * known problems.
+               * This is not ideal, but the best we can do, since we do not know
+               * all possible opCodes we could receive (we'd need something like
+               * an opCode "domain").
+               * For now this is good enough; if collisions happen in the
+               * future, we can improve this.
+               */
               val detail = opCode match {
-                case NativeEndpoints.msgSlave.opCode =>
+                case NativeEndpoints.msgWorker.opCode =>
                   "; " +
-                    "The test adapter could not send a message to a slave, " +
-                    "which probably happens because the slave terminated early, " +
+                    "The test adapter could not send a message to a worker, " +
+                    "which probably happens because the worker terminated early, " +
                     "without waiting for the reply to a call to send(). " +
                     "This is probably a bug in the testing framework you are " +
-                    "using. See also #3201."
+                    "using. See also scala-js/scala-js#3201."
 
-                case _ =>
-                  ""
+                case _ => ""
               }
-              System.err.println(s"unknown endpoint: $opCode$detail")
 
               throw new IllegalStateException(s"Unknown opcode: $opCode$detail")
 
@@ -150,8 +148,8 @@ abstract class RPCCore()(implicit ec: ExecutionContext) {
     if (closeReason != null) {
 
       /** In the meantime, someone closed the channel. Help closing.
-	   * We need this check to guard against a race between `call` and `close`.
-	   */
+       * We need this check to guard against a race between `call` and `close`.
+       */
       helpClose()
     } else {
       // Actually send message.
@@ -210,14 +208,14 @@ abstract class RPCCore()(implicit ec: ExecutionContext) {
   private def helpClose(): Unit = {
 
     /** Fix for #3128: explicitly upcast to java.util.Map so that the keySet()
-	 * method is binary compatible on JDK7.
-	 */
+     * method is binary compatible on JDK7.
+     */
     val pendingCallIDs = (pending: java.util.Map[Long, _]).keySet()
     val exception      = new ClosedException(closeReason)
 
     /** Directly use the Java Iterator because Scala's JavaConverters are
-	 * tricky to use across 2.12- and 2.13+.
-	 */
+     * tricky to use across 2.12- and 2.13+.
+     */
     val pendingCallIDsIter = pendingCallIDs.iterator()
     while (pendingCallIDsIter.hasNext()) {
       val callID = pendingCallIDsIter.next()
@@ -251,7 +249,7 @@ abstract class RPCCore()(implicit ec: ExecutionContext) {
   }
 }
 
-object RPCCore {
+private[testinterface] object RPCCore {
   type OpCode = Byte
 
   /** Exception thrown if a remote invocation fails. */

@@ -1,16 +1,16 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import sbt.testing._
 import java.io._
 
-trait Serializer[T] {
+private[testinterface] trait Serializer[T] {
   def serialize(x: T, out: Serializer.SerializeState): Unit
   def deserialize(in: Serializer.DeserializeState): T
 }
 
-object Serializer {
+private[testinterface] object Serializer {
   /* Serialization states. Serialization is currently stateless, in the sense
    * that the same value will always get serialized to the same bytes, no matter
    * where it is in the bytestream.

@@ -99,21 +99,21 @@ trait Runner {
    */
   def args: Array[String]
 
-  /** Ported from Scala.JS
-   *  Scala Native specific: Invoked on the master <code>Runner</code>, if a slave
+  /** Ported from Scala.js
+   *  Scala Native specific: Invoked on the controller <code>Runner</code>, if a worker
    *  sends a message (through the channel provided by the client).
    *
-   *  The master may send a message back to the sending slave by returning the
+   *  The controller may send a message back to the sending worker by returning the
    *  message in a Some.
    *
-   *  Invoked on a slave <code>Runner</code>, if the master responds to a
-   *  message (sent by the slave via the supplied closure in
+   *  Invoked on a worker <code>Runner</code>, if the controller responds to a
+   *  message (sent by the worker via the supplied closure in
    *  <code>slaveRunner</code>). The return value of the call is ignored in
    *  this case.
    */
   def receiveMessage(msg: String): Option[String]
 
-  /** Ported from Scala.JS
+  /** Ported from Scala.js
    *  Scala Native specific: Serialize a task created by <code>tasks</code> or
    *  returned from <code>execute</code>.
    *
@@ -123,7 +123,7 @@ trait Runner {
    */
   def serializeTask(task: Task, serializer: TaskDef => String): String
 
-  /** Ported from Scala.JS
+  /** Ported from Scala.js
    *  Scala Native specific: Deserialize a task that has been serialized by
    *  <code>serializeTask</code> of another or this <code>Runner</code>.
    *

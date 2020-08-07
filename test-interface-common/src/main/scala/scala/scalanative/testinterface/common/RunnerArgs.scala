@@ -1,13 +1,13 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
-final class RunnerArgs(val runID: RunMux.RunID,
-                       val frameworkImpl: String,
-                       val args: List[String],
-                       val remoteArgs: List[String])
+private[testinterface] final class RunnerArgs(val runID: RunMux.RunID,
+                                              val frameworkImpl: String,
+                                              val args: List[String],
+                                              val remoteArgs: List[String])
 
-object RunnerArgs {
+private[testinterface] object RunnerArgs {
   implicit object RunnerArgsSerializer extends Serializer[RunnerArgs] {
     def serialize(x: RunnerArgs, out: Serializer.SerializeState): Unit = {
       out.write(x.runID)

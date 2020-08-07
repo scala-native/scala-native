@@ -1,21 +1,20 @@
 package scala.scalanative.testinterface
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import sbt.testing._
 import scala.scalanative.testinterface.common.JVMEndpoints._
 import scala.scalanative.testinterface.common.NativeEndpoints._
 import scala.scalanative.testinterface.common._
 
-private[testinterface] object TestAdapterBridge {
+private[testinterface] class TestAdapterBridge(rpcClient: NativeRPC) {
 
-  private[this] val mux = new RunMuxRPC(NativeRPC)
+  private[this] val mux = new RunMuxRPC(rpcClient)
 
   def start(): Unit = {
-
-    NativeRPC.attach(detectFrameworks)(detectFrameworksFun)
-    NativeRPC.attach(createMasterRunner)(createRunnerFun(isMaster = true))
-    NativeRPC.attach(createSlaveRunner)(createRunnerFun(isMaster = false))
+    rpcClient.attach(detectFrameworks)(detectFrameworksFun)
+    rpcClient.attach(createController)(createRunnerFun(isController = true))
+    rpcClient.attach(createWorker)(createRunnerFun(isController = false))
   }
 
   private def detectFrameworksFun = { names: List[List[String]] =>
@@ -29,41 +28,43 @@ private[testinterface] object TestAdapterBridge {
     }
   }
 
-  private def createRunnerFun(isMaster: Boolean) = { args: RunnerArgs =>
+  private def createRunnerFun(isController: Boolean) = { args: RunnerArgs =>
     val framework = FrameworkLoader.loadFramework(args.frameworkImpl)
     val loader    = new ScalaNativeClassLoader()
 
     val runID = args.runID
-    val runner = if (isMaster) {
+    val runner = if (isController) {
       framework.runner(args.args.toArray, args.remoteArgs.toArray, loader)
     } else {
       framework.slaveRunner(args.args.toArray,
                             args.remoteArgs.toArray,
                             loader,
-                            mux.send(JVMEndpoints.msgSlave, runID))
+                            mux.send(JVMEndpoints.msgWorker, runID))
     }
 
     mux.attach(NativeEndpoints.tasks, runID)(tasksFun(runner))
     mux.attach(NativeEndpoints.execute, runID)(executeFun(runID, runner))
-    mux.attach(NativeEndpoints.done, runID)(doneFun(runID, runner, isMaster))
+    mux.attach(NativeEndpoints.done, runID)(
+      doneFun(runID, runner, isController))
 
-    if (isMaster) {
-      mux.attach(NativeEndpoints.msgMaster, runID)(msgMasterFun(runID, runner))
+    if (isController) {
+      mux.attach(NativeEndpoints.msgController, runID)(
+        msgMasterFun(runID, runner))
     } else {
-      mux.attach(NativeEndpoints.msgSlave, runID)(runner.receiveMessage)
+      mux.attach(NativeEndpoints.msgWorker, runID)(runner.receiveMessage)
     }
   }
 
   private def detachRunnerCommands(runID: RunMux.RunID,
-                                   isMaster: Boolean): Unit = {
+                                   isController: Boolean): Unit = {
     mux.detach(NativeEndpoints.tasks, runID)
     mux.detach(NativeEndpoints.execute, runID)
     mux.detach(NativeEndpoints.done, runID)
 
-    if (isMaster)
-      mux.detach(NativeEndpoints.msgMaster, runID)
+    if (isController)
+      mux.detach(NativeEndpoints.msgController, runID)
     else
-      mux.detach(NativeEndpoints.msgSlave, runID)
+      mux.detach(NativeEndpoints.msgWorker, runID)
   }
 
   private def tasksFun(runner: Runner) = { taskDefs: List[TaskDef] =>
@@ -86,16 +87,16 @@ private[testinterface] object TestAdapterBridge {
 
   private def doneFun(runID: RunMux.RunID,
                       runner: Runner,
-                      isMaster: Boolean) = { _: Unit =>
+                      isController: Boolean) = { _: Unit =>
     try runner.done()
-    finally detachRunnerCommands(runID, isMaster)
+    finally detachRunnerCommands(runID, isController)
   }
 
   private def msgMasterFun(runID: RunMux.RunID, runner: Runner) = {
     msg: FrameworkMessage =>
       for (reply <- runner.receiveMessage(msg.msg)) {
-        val fm = new FrameworkMessage(msg.slaveId, reply)
-        mux.send(JVMEndpoints.msgMaster, runID)(fm)
+        val fm = new FrameworkMessage(msg.workerId, reply)
+        mux.send(JVMEndpoints.msgController, runID)(fm)
       }
   }
 

@@ -1,6 +1,6 @@
 package scala.scalanative.testinterface.adapter
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import java.io.File
 import java.nio.file.Paths
@@ -111,7 +111,7 @@ final class TestAdapter(config: TestAdapter.Config) {
     // Otherwise we might leak runners.
     require(!closed, "We are closed. Cannot create new runner.")
 
-    val com = new NativeRunnerRPC(binaryFile = config.binaryFile,
+    val com = new NativeRunnerRPC(executableFile = config.binaryFile,
                                   envVars = config.envVars,
                                   args = Seq.empty,
                                   logger = config.logger)

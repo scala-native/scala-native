@@ -6,7 +6,7 @@ import java.net.Socket
 object TestMain extends {
 
   private val usage: String = {
-    """usage: test-main <server_port>
+    """Usage: test-main <server_port>
       |
       |arguments:
       |  server_port             -  the sbt test server port to use (required)
@@ -22,16 +22,19 @@ object TestMain extends {
 
   /** Main method of the test runner. */
   def main(args: Array[String]): Unit = {
-    if (args.length < 1) {
+    if (args.length != 1) {
       System.err.println(usage)
-      throw new IllegalArgumentException("missing arguments")
+      throw new IllegalArgumentException("One argument expected")
     }
 
     val serverPort   = args(0).toInt
     val clientSocket = new Socket("127.0.0.1", serverPort)
+    val nativeRPC    = new NativeRPC(clientSocket)
+    val bridge       = new TestAdapterBridge(nativeRPC)
 
-    TestAdapterBridge.start()
-    val exitCode = NativeRPC.loop(clientSocket)
+    bridge.start()
+
+    val exitCode = nativeRPC.loop()
     sys.exit(exitCode)
   }
 

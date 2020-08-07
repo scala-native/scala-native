@@ -1,10 +1,10 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
-final class LogElement[T](val index: Int, val x: T)
+private[testinterface] final class LogElement[T](val index: Int, val x: T)
 
-object LogElement {
+private[testinterface] object LogElement {
   implicit def logElementSerializer[T: Serializer]
       : Serializer[LogElement[T]] = {
     new Serializer[LogElement[T]] {

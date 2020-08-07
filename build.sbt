@@ -1,6 +1,4 @@
 import java.io.File.pathSeparator
-import sbt.Keys.unmanagedSourceDirectories
-import sbt.Test
 import scala.collection.mutable
 import scala.util.Try
 
@@ -296,10 +294,6 @@ lazy val sbtScalaNative =
       crossScalaVersions := libCrossScalaVersions,
       addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
-      // `testInterfaceSerialization` needs to be available from the sbt plugin,
-      // but it's a Scala Native project (and thus 2.11), and the plugin is 2.12.
-      // We simply add the sources to mimic cross-compilation.
-      Compile / sources ++= (testInterfaceCommon / Compile / sources).value,
       // publish the other projects before running scripted tests.
       scriptedDependencies := {
         scriptedDependencies
@@ -315,7 +309,6 @@ lazy val sbtScalaNative =
             auxlib / publishLocal,
             scalalib / publishLocal,
             testInterfaceSbtDefs / publishLocal,
-            testInterfaceCommon / publishLocal,
             testInterface / publishLocal,
             junitRuntime / publishLocal,
             // JVM libraries
@@ -622,28 +615,23 @@ lazy val testingCompiler =
     )
     .dependsOn(testingCompilerInterface)
 
+lazy val testInterfaceCommonSourcesSettings = Seq(
+  unmanagedSourceDirectories in Compile += baseDirectory.value.getParentFile / "test-interface-common/src/main/scala",
+  unmanagedSourceDirectories in Test += baseDirectory.value.getParentFile / "test-interface-common/src/test/scala"
+)
+
 lazy val testInterface =
   project
     .in(file("test-interface"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
-    .settings(
-      Compile / sources ++= (testInterfaceCommon / Compile / sources).value,
-      Test / sources ++= (testInterfaceCommon / Test / sources).value
-    )
+    .settings(testInterfaceCommonSourcesSettings)
     .dependsOn(nscplugin   % "plugin",
                junitPlugin % "plugin",
                allCoreLibs,
                testInterfaceSbtDefs,
                junitRuntime,
                junitAsyncNative % "test")
-
-lazy val testInterfaceCommon =
-  project
-    .in(file("test-interface-common"))
-    .enablePlugins(MyScalaNativePlugin)
-    .settings(mavenPublishSettings)
-    .dependsOn(nscplugin % "plugin", allCoreLibs, testInterfaceSbtDefs)
 
 lazy val testInterfaceSbtDefs =
   project
@@ -657,14 +645,13 @@ lazy val testRunner =
     .in(file("test-runner"))
     .settings(toolSettings)
     .settings(mavenPublishSettings)
+    .settings(testInterfaceCommonSourcesSettings)
     .settings(
       crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies ++= Seq(
         "org.scala-sbt" % "test-interface"  % "1.0",
         "com.novocode"  % "junit-interface" % "0.11" % "test"
       ),
-      Compile / sources ++= (testInterfaceCommon / Compile / sources).value,
-      Test / sources ++= (testInterfaceCommon / Test / sources).value,
       Test / sources ++= (junitAsyncJVM / Compile / sources).value
     )
     .dependsOn(tools)

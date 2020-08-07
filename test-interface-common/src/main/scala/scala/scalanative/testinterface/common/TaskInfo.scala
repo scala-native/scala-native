@@ -1,14 +1,14 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import sbt.testing._
 
-final class TaskInfo(val serializedTask: String,
-                     val taskDef: TaskDef,
-                     val tags: List[String])
+private[testinterface] final class TaskInfo(val serializedTask: String,
+                                            val taskDef: TaskDef,
+                                            val tags: List[String])
 
-object TaskInfo {
+private[testinterface] object TaskInfo {
   implicit object TaskInfoSerializer extends Serializer[TaskInfo] {
     def serialize(x: TaskInfo, out: Serializer.SerializeState): Unit = {
       out.write(x.serializedTask)

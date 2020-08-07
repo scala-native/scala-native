@@ -1,14 +1,15 @@
 package scala.scalanative.testinterface.common
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import sbt.testing._
 
-final class FrameworkInfo(val implName: String,
-                          val displayName: String,
-                          val fingerprints: List[Fingerprint])
+private[testinterface] final class FrameworkInfo(
+    val implName: String,
+    val displayName: String,
+    val fingerprints: List[Fingerprint])
 
-object FrameworkInfo {
+private[testinterface] object FrameworkInfo {
   implicit object FrameworkInfoSerializer extends Serializer[FrameworkInfo] {
     def serialize(x: FrameworkInfo, out: Serializer.SerializeState): Unit = {
       out.write(x.implName)

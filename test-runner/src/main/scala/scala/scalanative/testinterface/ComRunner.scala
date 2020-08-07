@@ -1,7 +1,7 @@
 package scala.scalanative
 package testinterface
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import java.io._
 import java.net.{ServerSocket, Socket}
@@ -14,10 +14,10 @@ import scala.util.{Failure, Success}
  * Represents a distant program with whom we communicate over the network.
  * @param logger Logger to log to.
  */
-class ComRunner(processRunner: ProcessRunner,
-                serverSocket: ServerSocket,
-                logger: Logger,
-                handleMessage: String => Unit)
+private[testinterface] class ComRunner(processRunner: ProcessRunner,
+                                       serverSocket: ServerSocket,
+                                       logger: Logger,
+                                       handleMessage: String => Unit)
     extends AutoCloseable {
   import ComRunner._
   implicit val executionContext: ExecutionContext = ExecutionContext.global
@@ -39,7 +39,7 @@ class ComRunner(processRunner: ProcessRunner,
       try {
         try {
 
-          /** We need to await the connection unconditionally. Otherwise the JS end
+          /** We need to await the connection unconditionally. Otherwise the Native end
            * might try to connect indefinitely. */
           awaitConnection()
 
@@ -49,9 +49,10 @@ class ComRunner(processRunner: ProcessRunner,
                 throw new IllegalStateException(s"Unexpected state: $s")
 
               case Closing =>
-              /** We can end up here if there is a race between the two read to
-               * state. Do nothing, loop will terminate.
-               */
+                /** We can end up here if there is a race between the two read to
+                 * state. Do nothing, loop will terminate.
+                 */
+                ()
               case Connected(_, _, native2jvm) =>
                 try {
                   val len  = native2jvm.readInt()
@@ -120,7 +121,7 @@ class ComRunner(processRunner: ProcessRunner,
      * Interrupt receiver if we are still waiting for connection.
      * Should only be relevant if we are still awaiting the connection.
      * Note: We cannot do this in close(), otherwise if the JVM side closes
-     * before the JS side connected, the JS VM will fail instead of terminate
+     * before the Native side connected, the Native VM will fail instead of terminate
      * normally.
      */
     serverSocket.close()
@@ -177,7 +178,7 @@ class ComRunner(processRunner: ProcessRunner,
   }
 }
 
-object ComRunner {
+private[testinterface] object ComRunner {
   private def closeAll(c: Closeable*): Unit =
     c.withFilter(_ != null).foreach(_.close())
 

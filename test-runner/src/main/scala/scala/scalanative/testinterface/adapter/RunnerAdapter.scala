@@ -1,6 +1,6 @@
 package scala.scalanative.testinterface.adapter
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import sbt.testing._
 import scala.collection.concurrent.TrieMap
@@ -14,18 +14,18 @@ import scala.scalanative.testinterface.common.{
 }
 
 private final class RunnerAdapter private (runnerArgs: RunnerArgs,
-                                           master: ManagedRunner,
+                                           controller: ManagedRunner,
                                            testAdapter: TestAdapter)
     extends Runner {
 
   private val runID     = runnerArgs.runID
   private val rpcGetter = () => getRunnerRPC()
 
-  private val slaves = TrieMap.empty[Long, ManagedRunner]
+  private val workers = TrieMap.empty[Long, ManagedRunner]
 
-  // Route master messages to slaves.
-  master.mux.attach(JVMEndpoints.msgMaster, runID) { msg =>
-    slaves(msg.slaveId).mux.send(NativeEndpoints.msgSlave, runID)(msg.msg)
+  // Route master messages to workers.
+  controller.mux.attach(JVMEndpoints.msgController, runID) { msg =>
+    workers(msg.workerId).mux.send(NativeEndpoints.msgWorker, runID)(msg.msg)
   }
 
   def args(): Array[String] = runnerArgs.args.toArray
@@ -41,16 +41,18 @@ private final class RunnerAdapter private (runnerArgs: RunnerArgs,
   }
 
   def done(): String = synchronized {
-    val slaves = this.slaves.values.toList // .toList to make it strict.
+    val workers = this.workers.values.toList // .toList to make it strict.
 
     try {
-      slaves.map(_.mux.call(NativeEndpoints.done, runID)(())).foreach(_.await())
-      master.mux.call(NativeEndpoints.done, runID)(()).await()
+      workers
+        .map(_.mux.call(NativeEndpoints.done, runID)(()))
+        .foreach(_.await())
+      controller.mux.call(NativeEndpoints.done, runID)(()).await()
     } finally {
-      slaves.foreach(_.mux.detach(JVMEndpoints.msgSlave, runID))
-      master.mux.detach(JVMEndpoints.msgMaster, runID)
+      workers.foreach(_.mux.detach(JVMEndpoints.msgWorker, runID))
+      controller.mux.detach(JVMEndpoints.msgController, runID)
 
-      this.slaves.clear()
+      this.workers.clear()
       testAdapter.runDone(runID)
     }
   }
@@ -58,18 +60,18 @@ private final class RunnerAdapter private (runnerArgs: RunnerArgs,
   private def getRunnerRPC(): RunMuxRPC = {
     val mRunner = testAdapter.getRunnerForThread()
 
-    if (mRunner != master && !slaves.contains(mRunner.id)) {
-      // Put the slave in the map so messages can be routed.
-      slaves.put(mRunner.id, mRunner)
+    if (mRunner != controller && !workers.contains(mRunner.id)) {
+      // Put the worker in the map so messages can be routed.
+      workers.put(mRunner.id, mRunner)
 
       // Attach message endpoint.
-      mRunner.mux.attach(JVMEndpoints.msgSlave, runID) { msg =>
-        master.mux.send(NativeEndpoints.msgMaster, runID)(
+      mRunner.mux.attach(JVMEndpoints.msgWorker, runID) { msg =>
+        controller.mux.send(NativeEndpoints.msgController, runID)(
           new FrameworkMessage(mRunner.id, msg))
       }
 
-      // Start slave.
-      mRunner.com.call(NativeEndpoints.createSlaveRunner)(runnerArgs).await()
+      // Start worker.
+      mRunner.com.call(NativeEndpoints.createWorker)(runnerArgs).await()
     }
 
     mRunner.mux
@@ -87,7 +89,7 @@ private[adapter] object RunnerAdapter {
       val runnerArgs =
         new RunnerArgs(runID, frameworkImplName, args.toList, remoteArgs.toList)
       val mRunner = testAdapter.getRunnerForThread()
-      mRunner.com.call(NativeEndpoints.createMasterRunner)(runnerArgs).await()
+      mRunner.com.call(NativeEndpoints.createController)(runnerArgs).await()
 
       new RunnerAdapter(runnerArgs, mRunner, testAdapter)
     } catch {

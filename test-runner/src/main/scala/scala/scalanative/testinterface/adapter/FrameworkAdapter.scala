@@ -1,6 +1,6 @@
 package scala.scalanative.testinterface.adapter
 
-// Ported from Scala.JS
+// Ported from Scala.js
 
 import scala.scalanative.testinterface.common._
 import sbt.testing._
