@@ -3,7 +3,7 @@ package testinterface
 
 import java.net.Socket
 
-object TestMain extends {
+object TestMain {
 
   private val usage: String = {
     """Usage: test-main <server_port>
