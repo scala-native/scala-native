@@ -280,7 +280,7 @@ class Properties(protected val defaults: Properties)
     var index = 0
     while (index < chars.length) {
       val ch = chars(index)
-      if (ch < 256) {
+      if (ch <= 0xff) {
         if (ch == '\r' || ch == '\n') {
           // "\r\n"
           if (ch == '\r'
@@ -340,7 +340,7 @@ class Properties(protected val defaults: Properties)
         case ' ' if isKey =>
           buffer.append("\\ ")
         case _ =>
-          if (toHex && (ch < ' ' || ch > '~')) {
+          if (toHex && (ch < 0x20 || ch > 0x7e)) {
             buffer.append(unicodeToHexaDecimal(ch))
           } else {
             buffer.append(ch)
