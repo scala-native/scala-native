@@ -18,7 +18,7 @@ class PropertiesTest {
   // remove when Platform is implemented
   val hasCompliantAsInstanceOfs = true
 
-  // ported from Scala.js - 2 tests ignored below
+  // ported from Scala.js
   @Test def setProperty(): Unit = {
     val prop = new Properties()
     prop.setProperty("a", "A")
@@ -71,19 +71,6 @@ class PropertiesTest {
     assertEnumSameElementsAsSet[Any]("a", "b", "c", "d")(prop2.propertyNames())
   }
 
-  @Ignore @Test def propertyNamesIsNotAffectedByOverriddenPropertyNamesInDefaults()
-      : Unit = {
-    val defaults = new java.util.Properties {
-      override def propertyNames(): ju.Enumeration[_] =
-        ju.Collections.emptyEnumeration[String]()
-    }
-    defaults.setProperty("foo", "bar")
-
-    val props = new Properties(defaults)
-    props.setProperty("foobar", "babar")
-    assertEnumSameElementsAsSet[Any]("foo", "foobar")(props.propertyNames())
-  }
-
   @Test def propertyNamesWithBadContents(): Unit = {
     assumeTrue("Assumed compliant asInstanceOf", hasCompliantAsInstanceOfs)
 
@@ -127,19 +114,6 @@ class PropertiesTest {
     prop.setProperty("d", "D")
     assertEquals(4, prop2.stringPropertyNames().size)
     assertCollSameElementsAsSet("a", "b", "c", "d")(prop2.stringPropertyNames())
-  }
-
-  @Ignore @Test def stringPropertyNamesIsNotAffectedByOverriddenStringPropertyNamesInDefaults()
-      : Unit = {
-    val defaults = new java.util.Properties {
-      override def stringPropertyNames(): ju.Set[String] =
-        ju.Collections.emptySet[String]()
-    }
-    defaults.setProperty("foo", "bar")
-
-    val props = new Properties(defaults)
-    props.setProperty("foobar", "babar")
-    assertCollSameElementsAsSet("foo", "foobar")(props.stringPropertyNames())
   }
 
   @Test def stringPropertyNamesWithBadContents(): Unit = {
