@@ -651,10 +651,9 @@ lazy val testRunner =
       libraryDependencies ++= Seq(
         "org.scala-sbt" % "test-interface"  % "1.0",
         "com.novocode"  % "junit-interface" % "0.11" % "test"
-      ),
-      Test / sources ++= (junitAsyncJVM / Compile / sources).value
+      )
     )
-    .dependsOn(tools)
+    .dependsOn(tools, junitAsyncJVM % "test")
 
 // JUnit modules and settings ------------------------------------------------
 
@@ -737,6 +736,7 @@ lazy val junitAsyncJVM =
   project
     .in(file("junit-async/jvm"))
     .settings(
+      scalaVersion := sbt10ScalaVersion,
       nameSettings,
-      Compile / publishArtifact := false
+      publishArtifact := false
     )
