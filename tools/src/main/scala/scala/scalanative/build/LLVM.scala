@@ -1,43 +1,77 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import java.util.Arrays
 import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath
+import scalanative.build.Discover._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
 
+  /** Called to unpack jars and copy native code */
+  def unpackNativeCode(nativelib: NativeLib): Path =
+    if (NativeLib.isJar(nativelib)) unpackNativeJar(nativelib)
+    else copyNativeDir(nativelib)
+
   /**
-   * Unpack the `nativelib` to `workdir/lib`.
+   * Unpack the `src` Jar Path to `workdir/dest` where `dest`
+   * is the generated directory where the Scala Native lib or
+   * a third party library that includes native code is copied.
    *
-   * If the same archive has already been unpacked to this location, this
-   * call has no effects.
+   * If the same archive has already been unpacked to this location
+   * and hasn't changed, this call has no effects
    *
-   * @param nativelib The JAR to unpack.
-   * @param workdir   The working directory. The nativelib will be unpacked
-   *                  to `workdir/lib`.
-   * @return The location where the nativelib has been unpacked, `workdir/lib`.
+   * @param nativelib The NativeLib to unpack.
+   * @return The Path where the nativelib has been unpacked, `workdir/dest`.
    */
-  def unpackNativelib(nativelib: Path, workdir: Path): Path = {
-    val lib         = workdir.resolve("lib")
-    val jarhash     = IO.sha1(nativelib)
-    val jarhashPath = lib.resolve("jarhash")
+  private def unpackNativeJar(nativelib: NativeLib): Path = {
+    val target      = nativelib.dest
+    val source      = nativelib.src
+    val jarhash     = IO.sha1(source)
+    val jarhashPath = target.resolve("jarhash")
     def unpacked =
-      Files.exists(lib) &&
+      Files.exists(target) &&
         Files.exists(jarhashPath) &&
         Arrays.equals(jarhash, Files.readAllBytes(jarhashPath))
 
     if (!unpacked) {
-      IO.deleteRecursive(lib)
-      IO.unzip(nativelib, lib)
+      IO.deleteRecursive(target)
+      IO.unzip(source, target)
       IO.write(jarhashPath, jarhash)
     }
 
-    lib
+    target
+  }
+
+  /**
+   * Copy project code from project `src` Path to `workdir/dest`
+   * Path where it can be compiled and linked.
+   *
+   * This does not copy if no native code has changed.
+   *
+   * @param nativelib The NativeLib to copy.
+   * @return The Path where the code was copied, `workdir/dest`.
+   */
+  private def copyNativeDir(nativelib: NativeLib): Path = {
+    val target        = nativelib.dest
+    val source        = nativelib.src
+    val files         = IO.getAll(source, NativeLib.srcPatterns)
+    val fileshash     = IO.sha1files(files)
+    val fileshashPath = target.resolve("fileshash")
+    def copied =
+      Files.exists(target) &&
+        Files.exists(fileshashPath) &&
+        Arrays.equals(fileshash, Files.readAllBytes(fileshashPath))
+    if (!copied) {
+      IO.deleteRecursive(target)
+      IO.copyDirectory(source, target)
+      IO.write(fileshashPath, fileshash)
+    }
+    target
   }
 
   /**
@@ -45,7 +79,7 @@ private[scalanative] object LLVM {
    *
    * @param config       The configuration of the toolchain.
    * @param linkerResult The results from the linker.
-   * @param libPath      The location where the `.o` files should be written.
+   * @param libPath      The location of the Scala Native nativelib.
    * @return `libPath`
    */
   def compileNativelib(config: Config,
@@ -145,14 +179,14 @@ private[scalanative] object LLVM {
    * @param config       The configuration of the toolchain.
    * @param linkerResult The results from the linker.
    * @param llPaths      The list of `.ll` files to link.
-   * @param nativelib    The path to the nativelib.
+   * @param nativelibs   The list of paths to nativelibs.
    * @param outpath      The path where to write the resulting binary.
    * @return `outpath`
    */
   def link(config: Config,
            linkerResult: linker.Result,
            llPaths: Seq[Path],
-           nativelib: Path,
+           nativelibs: Seq[Path],
            outpath: Path): Path = {
     val links = {
       val srclinks = linkerResult.links.map(_.name)
@@ -165,10 +199,11 @@ private[scalanative] object LLVM {
     val linkopts  = config.linkingOptions ++ links.map("-l" + _)
     val targetopt = Seq("-target", config.targetTriple)
     val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
-    val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
-    val paths     = llPaths.map(_.abs) ++ opaths
-    val compile   = config.clangPP.abs +: (flags ++ paths ++ linkopts)
-    val ltoName   = lto(config).getOrElse("none")
+    val opaths = nativelibs.flatMap(nativelib =>
+      IO.getAll(nativelib, "glob:**.o").map(_.abs))
+    val paths   = llPaths.map(_.abs) ++ opaths
+    val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
+    val ltoName = lto(config).getOrElse("none")
 
     config.logger.time(
       s"Linking native code (${config.gc.name} gc, $ltoName lto)") {

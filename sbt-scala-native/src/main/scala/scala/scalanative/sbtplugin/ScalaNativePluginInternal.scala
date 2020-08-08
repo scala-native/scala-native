@@ -1,7 +1,9 @@
 package scala.scalanative
 package sbtplugin
 
-import java.nio.file.Files
+import java.lang.System.{lineSeparator => nl}
+import java.io.ByteArrayInputStream
+import java.nio.file.{Files, Path}
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
@@ -48,11 +50,9 @@ object ScalaNativePluginInternal {
     nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
     nativeCompileOptions := Discover.compileOptions(),
     nativeLinkingOptions := Discover.linkingOptions(),
-    nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
-      .getOrElse(build.Mode.default.name),
+    nativeMode := Discover.mode(),
     nativeLinkStubs := false,
-    nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
-      .getOrElse(build.GC.default.name),
+    nativeGC := Discover.GC(),
     nativeLTO := Discover.LTO(),
     nativeCheck := false,
     nativeDump := false
@@ -90,31 +90,9 @@ object ScalaNativePluginInternal {
       val mainClass = selectMainClass.value.getOrElse {
         throw new MessageOnlyException("No main class detected.")
       }
-      val fullCp    = fullClasspath.value
-      val classpath = fullCp.map(_.data.toPath).filter(f => Files.exists(f))
-      val nativelib = {
-        /* Find the entry of the classpath that is the nativelib.
-         * We use the `moduleID.key` attribute of the entries to find the one
-         * whose organization is `org.scala-native` and whose name is
-         * `nativelib`. The name might include the cross-version suffix,
-         * which is why we also accept names that start with
-         * `nativelib_native0.`.
-         */
-        fullCp
-          .find { entry =>
-            entry.get(moduleID.key).exists { module =>
-              module.organization == "org.scala-native" &&
-              (module.name == "nativelib" || module.name.startsWith(
-                "nativelib_native0."))
-            }
-          }
-          .getOrElse {
-            throw new MessageOnlyException(
-              "Could not find nativelib on classpath.")
-          }
-          .data
-          .toPath
-      }
+
+      val classpath =
+        fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
       val maincls = mainClass.toString + "$"
       val cwd     = nativeWorkdir.value.toPath
       val clang   = nativeClang.value.toPath
@@ -123,7 +101,6 @@ object ScalaNativePluginInternal {
       val mode    = build.Mode(nativeMode.value)
 
       build.Config.empty
-        .withNativelib(nativelib)
         .withMainClass(maincls)
         .withClassPath(classpath)
         .withWorkdir(cwd)

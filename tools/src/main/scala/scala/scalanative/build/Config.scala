@@ -3,8 +3,6 @@ package build
 
 import java.nio.file.{Path, Paths}
 
-import nir.Global
-
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait Config {
 
@@ -33,6 +31,7 @@ sealed trait Config {
   def workdir: Path
 
   /** Path to the nativelib jar. */
+  @deprecated("Not needed: discovery is internal", "0.4.0")
   def nativelib: Path
 
   /** Entry point for linking. */
@@ -84,6 +83,7 @@ sealed trait Config {
   def withWorkdir(value: Path): Config
 
   /** Create a new config with given path to nativelib. */
+  @deprecated("Not needed: discovery is internal", "0.4.0")
   def withNativelib(value: Path): Config
 
   /** Create new config with given mainClass point. */
