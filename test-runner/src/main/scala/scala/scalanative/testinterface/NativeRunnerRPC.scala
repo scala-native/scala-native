@@ -28,7 +28,7 @@ private[testinterface] final class NativeRunnerRPC(
                                         serverSocket.getLocalPort)
   val runner = new ComRunner(processRunner, serverSocket, logger, handleMessage)
 
-  /** Once the com closes, ensure all still pending calls are failing.
+  /* Once the com closes, ensure all still pending calls are failing.
    * Note: We do not need to give a grace time here, since the reply
    * dispatch happens synchronously in `handleMessage`.
    * In other words, at this point we'll only see pending calls that
@@ -45,7 +45,7 @@ private[testinterface] final class NativeRunnerRPC(
 
   override def close(cause: Throwable): Unit = {
 
-    /** Close the RPC layer and fail all pending calls.
+    /* Close the RPC layer and fail all pending calls.
      * This needs to happen first so we do not race completion of the run
      * itself (to retain the cause given here).
      */

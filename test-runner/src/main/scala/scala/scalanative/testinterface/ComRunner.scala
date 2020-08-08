@@ -39,7 +39,7 @@ private[testinterface] class ComRunner(processRunner: ProcessRunner,
       try {
         try {
 
-          /** We need to await the connection unconditionally. Otherwise the Native end
+          /* We need to await the connection unconditionally. Otherwise the Native end
            * might try to connect indefinitely. */
           awaitConnection()
 
@@ -49,7 +49,7 @@ private[testinterface] class ComRunner(processRunner: ProcessRunner,
                 throw new IllegalStateException(s"Unexpected state: $s")
 
               case Closing =>
-                /** We can end up here if there is a race between the two read to
+                /* We can end up here if there is a race between the two read to
                  * state. Do nothing, loop will terminate.
                  */
                 ()
@@ -69,7 +69,7 @@ private[testinterface] class ComRunner(processRunner: ProcessRunner,
           case _: IOException if state == Closing => ()
         }
 
-        /**
+        /*
          * Everything got closed. We wait for the run to terminate.
          * We need to wait in order to make sure that closing the
          * underlying run does not fail it. */
@@ -107,9 +107,8 @@ private[testinterface] class ComRunner(processRunner: ProcessRunner,
     state = Closing // Signal receiver thread that it is OK if socket read fails.
     oldState match {
       case c: Connected =>
-        closeAll(
-          c
-        ) // Interrupts the receiver thread and signals the VM to terminate.
+        // Interrupts the receiver thread and signals the VM to terminate.
+        closeAll(c)
       case Closing | _: AwaitingConnection => ()
     }
   }
@@ -117,7 +116,7 @@ private[testinterface] class ComRunner(processRunner: ProcessRunner,
   private def onNativeTerminated(): Unit = {
     close()
 
-    /**
+    /*
      * Interrupt receiver if we are still waiting for connection.
      * Should only be relevant if we are still awaiting the connection.
      * Note: We cannot do this in close(), otherwise if the JVM side closes

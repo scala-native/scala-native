@@ -146,8 +146,7 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
     }
 
     if (closeReason != null) {
-
-      /** In the meantime, someone closed the channel. Help closing.
+      /* In the meantime, someone closed the channel. Help closing.
        * We need this check to guard against a race between `call` and `close`.
        */
       helpClose()
@@ -166,12 +165,12 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
     })
   }
 
-  /** Attaches the given method to the given (local) endpoint. */
+  /* Attaches the given method to the given (local) endpoint. */
   final def attach(ep: RPCEndpoint)(ex: ep.Req => ep.Resp): Unit = {
     attachAsync(ep)(x => Future.fromTry(Try(ex(x))))
   }
 
-  /** Attaches the given method to the given (local) endpoint. */
+  /* Attaches the given method to the given (local) endpoint. */
   final def attachAsync(ep: RPCEndpoint)(
       ex: ep.Req => Future[ep.Resp]): Unit = {
     attach(new BoundRPCEndpoint {
@@ -207,13 +206,13 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
 
   private def helpClose(): Unit = {
 
-    /** Fix for #3128: explicitly upcast to java.util.Map so that the keySet()
+    /* Fix for #3128: explicitly upcast to java.util.Map so that the keySet()
      * method is binary compatible on JDK7.
      */
     val pendingCallIDs = (pending: java.util.Map[Long, _]).keySet()
     val exception      = new ClosedException(closeReason)
 
-    /** Directly use the Java Iterator because Scala's JavaConverters are
+    /* Directly use the Java Iterator because Scala's JavaConverters are
      * tricky to use across 2.12- and 2.13+.
      */
     val pendingCallIDsIter = pendingCallIDs.iterator()

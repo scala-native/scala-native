@@ -46,10 +46,10 @@ trait Framework {
    *  If we change that method name, they will need a separate source file for Native.
    *
    *  Similarly, Scala.js cannot change the name of that method in its API either,
-   *  since that would be a binary breaking that would break all published testing frameworks, which is not acceptable.
+   *  since that would be a binary breaking change that would break all published testing frameworks, which is not acceptable.
    *
    *  Introducing another method and deprecating this one as a forwarder is not an option,
-   *  because testing frameworks must implement that method, not call it.)
+   *  because testing frameworks must implement that method, not call it.
    */
   def slaveRunner(args: Array[String],
                   remoteArgs: Array[String],

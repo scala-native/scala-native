@@ -21,6 +21,7 @@ private[testinterface] class ProcessRunner(executableFile: File,
         builder.environment().put(k, v)
     }
 
+    logger.info(s"Starting process '$executableFile' on port '$port'.")
     builder.start()
   }
 
@@ -28,7 +29,6 @@ private[testinterface] class ProcessRunner(executableFile: File,
   private[this] val runner = new Thread {
     setName("TestRunner")
     override def run(): Unit = {
-      logger.info(s"Starting process '$executableFile' on port '$port'.")
       val exitCode = process.waitFor()
       if (exitCode == 0) runnerPromise.trySuccess(())
       else {
