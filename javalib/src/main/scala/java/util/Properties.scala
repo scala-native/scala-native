@@ -6,7 +6,10 @@ import java.{util => ju}
 import java.nio.charset.StandardCharsets
 
 import scala.annotation.switch
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+
+import ScalaOps._
 
 class Properties(protected val defaults: Properties)
     extends ju.Hashtable[AnyRef, AnyRef] {
@@ -38,27 +41,34 @@ class Properties(protected val defaults: Properties)
   }
 
   def propertyNames(): ju.Enumeration[_] = {
-    val thisSet = keySet().asScala.map(_.asInstanceOf[String])
-    val defaultsIterator =
-      if (defaults != null) defaults.propertyNames().asScala.toIterator
-      else scala.collection.Iterator.empty
-    val filteredDefaults = defaultsIterator.collect {
-      case k: String if !thisSet(k) => k
+    val propNames = new ju.HashSet[String]
+    foreachAncestor { ancestor =>
+      ancestor.keySet().scalaOps.foreach { key =>
+        // Explicitly use asInstanceOf, to trigger the ClassCastException mandated by the spec
+        propNames.add(key.asInstanceOf[String])
+      }
     }
-    (thisSet.iterator ++ filteredDefaults).asJavaEnumeration
+    Collections.enumeration(propNames)
   }
 
   def stringPropertyNames(): ju.Set[String] = {
     val set = new ju.HashSet[String]
-    entrySet().asScala.foreach { entry =>
-      (entry.getKey, entry.getValue) match {
-        case (key: String, _: String) => set.add(key)
-        case _                        => // Ignore key
+    foreachAncestor { ancestor =>
+      ancestor.entrySet().scalaOps.foreach { entry =>
+        (entry.getKey(), entry.getValue()) match {
+          case (key: String, _: String) => set.add(key)
+          case _                        => // Ignore key
+        }
       }
     }
-    if (defaults != null)
-      set.addAll(defaults.stringPropertyNames())
     set
+  }
+
+  @inline @tailrec
+  private final def foreachAncestor(f: Properties => Unit): Unit = {
+    f(this)
+    if (defaults ne null)
+      defaults.foreachAncestor(f)
   }
 
   private def format(entry: ju.Map.Entry[AnyRef, AnyRef]): String = {
