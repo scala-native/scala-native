@@ -20,13 +20,12 @@ abstract class LinkerSpec extends AnyFlatSpec {
    * @param entry   The entry point for the linker.
    * @param sources Map from file name to file content representing all the code
    *                to compile and link.
-   * @param driver  Optional custom driver that defines the pipeline.
-   * @param f      A function to apply to the products of the compilation.
+   * @param fn      A function to apply to the products of the compilation.
    * @return The result of applying `fn` to the resulting definitions.
    */
   def link[T](entry: String,
               sources: Map[String, String],
-              linkStubs: Boolean = false)(f: (Config, linker.Result) => T): T =
+              linkStubs: Boolean = false)(fn: (Config, linker.Result) => T): T =
     Scope { implicit in =>
       val outDir     = Files.createTempDirectory("native-test-out")
       val compiler   = NIRCompiler.getCompiler(outDir)
@@ -36,7 +35,7 @@ abstract class LinkerSpec extends AnyFlatSpec {
       val entries    = ScalaNative.entries(config)
       val result     = ScalaNative.link(config, entries)
 
-      f(config, result)
+      fn(config, result)
     }
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
