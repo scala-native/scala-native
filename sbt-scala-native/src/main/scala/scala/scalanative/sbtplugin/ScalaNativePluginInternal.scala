@@ -63,6 +63,12 @@ object ScalaNativePluginInternal {
     val config = build.NativeConfig.empty
       .withClang(interceptBuildException(Discover.clang()))
       .withClangPP(interceptBuildException(Discover.clangpp()))
+      .withCompileOptions(Discover.compileOptions())
+      .withLinkingOptions(Discover.linkingOptions())
+      .withLTO(Discover.LTO())
+      .withGC(Discover.GC())
+      .withMode(Discover.mode())
+      .withOptimize(Discover.optimize())
 
     Seq(
       nativeConfig := config,
@@ -124,29 +130,6 @@ object ScalaNativePluginInternal {
         }
         val fullCp = (fullClasspath in key).value
         val classpath = fullCp.map(_.data.toPath).filter(f => Files.exists(f))
-        val nativelib = {
-          /* Find the entry of the classpath that is the nativelib.
-		   * We use the `moduleID.key` attribute of the entries to find the one
-		   * whose organization is `org.scala-native` and whose name is
-		   * `nativelib`. The name might include the cross-version suffix,
-		   * which is why we also accept names that start with
-		   * `nativelib_native0.`.
-		   */
-          fullCp
-            .find { entry =>
-              entry.get((moduleID in key).key).exists { module =>
-                module.organization == "org.scala-native" &&
-                (module.name == "nativelib" || module.name.startsWith(
-                  "nativelib_native0."))
-              }
-            }
-            .getOrElse {
-              throw new MessageOnlyException(
-                "Could not find nativelib on classpath.")
-            }
-            .data
-            .toPath
-        }
         val maincls = mainClass + "$"
         val cwd = (nativeWorkdir in key).value.toPath
 
@@ -154,7 +137,6 @@ object ScalaNativePluginInternal {
         nativeBuildConfig.value
           .withLogger(logger)
           .withMainClass(maincls)
-          .withNativelib(nativelib)
           .withClassPath(classpath)
           .withWorkdir(cwd)
           .withTargetTriple((nativeTarget in key).value)

@@ -36,6 +36,9 @@ sealed trait NativeConfig {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean
 
+  /** Shall we optimize the resulting NIR code? */
+  def optimize: Boolean
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
 
@@ -65,6 +68,9 @@ sealed trait NativeConfig {
 
   /** Create a new config with given dump value. */
   def withDump(value: Boolean): NativeConfig
+
+  /** Create a new config with given optimize value */
+  def withOptimize(value: Boolean): NativeConfig
 }
 
 object NativeConfig {
@@ -74,14 +80,15 @@ object NativeConfig {
     Impl(
       clang = Paths.get(""),
       clangPP = Paths.get(""),
-      linkingOptions = Discover.linkingOptions(),
-      compileOptions = Discover.compileOptions(),
-      gc = Discover.GC(),
-      LTO = Discover.LTO(),
-      mode = Discover.mode(),
+      linkingOptions = Seq.empty,
+      compileOptions = Seq.empty,
+      gc = GC.default,
+      LTO = LTO.default,
+      mode = Mode.default,
       check = false,
       dump = false,
-      linkStubs = false
+      linkStubs = false,
+      optimize = false
     )
 
   private final case class Impl(clang: Path,
@@ -93,7 +100,8 @@ object NativeConfig {
                                 LTO: LTO,
                                 linkStubs: Boolean,
                                 check: Boolean,
-                                dump: Boolean)
+                                dump: Boolean,
+                                optimize: Boolean)
       extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -126,6 +134,9 @@ object NativeConfig {
     def withDump(value: Boolean): NativeConfig =
       copy(dump = value)
 
+    override def withOptimize(value: Boolean): NativeConfig =
+      copy(optimize = value)
+
     override def toString: String =
       s"""NativeConfig(
          | - clang:           $clang
@@ -138,6 +149,7 @@ object NativeConfig {
          | - linkStubs:       $linkStubs
          | - check:           $check
          | - dump:            $dump
+		 | - optimize         $optimize
          |)""".stripMargin
   }
 
