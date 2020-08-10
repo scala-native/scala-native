@@ -1,7 +1,9 @@
 package scala.scalanative
 package build
 
+import java.io.File
 import java.nio.file.Path
+import java.util.regex._
 
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
@@ -12,6 +14,13 @@ private[scalanative] object NativeLib {
   val jarExtension  = ".jar"
   val srcExtensions = Seq(".c", ".cpp", ".S", ".h", ".hpp")
   val srcPatterns   = srcExtensions.mkString("glob:**{", ",", "}")
+
+  def jarRegex(): String = {
+    val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
+    s"""^scala-native${File.separator}(.+)${regexExtensions}$$"""
+  }
+
+  val jarPattern = Pattern.compile(jarRegex())
 
   /** To positively identify nativelib */
   val nativeLibMarkerFile = "org_scala-native_nativelib.txt"
@@ -63,7 +72,7 @@ private[scalanative] object NativeLib {
   }
 
   private def isNativeFile(name: String): Boolean =
-    srcExtensions.exists(name.endsWith(_))
+    jarPattern.matcher(name).matches()
 
   private def hasMarkerFileInJar(name: String): Boolean =
     name.equals(nativeLibMarkerFile)
