@@ -11,13 +11,17 @@ private[scalanative] case class NativeLib(src: Path, dest: Path)
 private[scalanative] object NativeLib {
 
   /** List of source patterns used */
+  val fs            = File.separator
   val jarExtension  = ".jar"
   val srcExtensions = Seq(".c", ".cpp", ".S", ".h", ".hpp")
-  val srcPatterns   = srcExtensions.mkString("glob:**{", ",", "}")
+  val srcPatterns = srcExtensions.mkString(
+    s"glob:**${fs}classes${fs}scala-native${fs}**{",
+    ",",
+    "}")
 
   def jarRegex(): String = {
     val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
-    s"""^scala-native${File.separator}(.+)${regexExtensions}$$"""
+    s"""^scala-native${fs}(.+)${regexExtensions}$$"""
   }
 
   val jarPattern = Pattern.compile(jarRegex())
@@ -25,7 +29,7 @@ private[scalanative] object NativeLib {
   /** To positively identify nativelib */
   val nativeLibMarkerFile = "org_scala-native_nativelib.txt"
 
-  val dirMarkerFilePattern = "glob:**" + nativeLibMarkerFile
+  val dirMarkerFilePattern = s"glob:**${fs}classes${fs}" + nativeLibMarkerFile
 
   def isJar(path: Path): Boolean = path.toString().endsWith(jarExtension)
 
