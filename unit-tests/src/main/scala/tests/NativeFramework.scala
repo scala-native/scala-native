@@ -10,6 +10,14 @@ class NativeFramework extends Framework {
 
   override def runner(args: Array[String],
                       remoteArgs: Array[String],
-                      testClassLoader: ClassLoader): Runner =
+                      testClassLoader: ClassLoader): Runner = {
     new NativeRunner(args, remoteArgs)
+  }
+
+  override def slaveRunner(args: Array[String],
+                           remoteArgs: Array[String],
+                           testClassLoader: ClassLoader,
+                           send: String => Unit): Runner = {
+    new NativeRunner(args, remoteArgs)
+  }
 }

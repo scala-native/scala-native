@@ -1,5 +1,4 @@
 import java.io.File.pathSeparator
-
 import scala.collection.mutable
 import scala.util.Try
 
@@ -55,8 +54,10 @@ addCommandAlias(
   "test-all",
   Seq(
     "sandbox/run",
-    "tests/test",
+    "testRunner/test",
+    "testInterface/test",
     "tools/test",
+    "tests/test",
     "nirparser/test",
     "sbtScalaNative/scripted",
     "tools/mimaReportBinaryIssues",
@@ -68,6 +69,8 @@ addCommandAlias(
 addCommandAlias(
   "test-tools",
   Seq(
+    "testRunner/test",
+    "testInterface/test",
     "tools/test",
     "nirparser/test",
     "tools/mimaReportBinaryIssues"
@@ -291,10 +294,6 @@ lazy val sbtScalaNative =
       crossScalaVersions := libCrossScalaVersions,
       addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
-      // `testInterfaceSerialization` needs to be available from the sbt plugin,
-      // but it's a Scala Native project (and thus 2.11), and the plugin is 2.12.
-      // We simply add the sources to mimic cross-compilation.
-      Compile / sources ++= (testInterfaceSerialization / Compile / sources).value,
       // publish the other projects before running scripted tests.
       scriptedDependencies := {
         scriptedDependencies
@@ -310,7 +309,6 @@ lazy val sbtScalaNative =
             auxlib / publishLocal,
             scalalib / publishLocal,
             testInterfaceSbtDefs / publishLocal,
-            testInterfaceSerialization / publishLocal,
             testInterface / publishLocal,
             junitRuntime / publishLocal,
             // JVM libraries
@@ -617,19 +615,23 @@ lazy val testingCompiler =
     )
     .dependsOn(testingCompilerInterface)
 
+lazy val testInterfaceCommonSourcesSettings = Seq(
+  unmanagedSourceDirectories in Compile += baseDirectory.value.getParentFile / "test-interface-common/src/main/scala",
+  unmanagedSourceDirectories in Test += baseDirectory.value.getParentFile / "test-interface-common/src/test/scala"
+)
+
 lazy val testInterface =
   project
     .in(file("test-interface"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
-    .dependsOn(nscplugin % "plugin", allCoreLibs, testInterfaceSerialization)
-
-lazy val testInterfaceSerialization =
-  project
-    .in(file("test-interface-serialization"))
-    .enablePlugins(MyScalaNativePlugin)
-    .settings(mavenPublishSettings)
-    .dependsOn(nscplugin % "plugin", allCoreLibs, testInterfaceSbtDefs)
+    .settings(testInterfaceCommonSourcesSettings)
+    .dependsOn(nscplugin   % "plugin",
+               junitPlugin % "plugin",
+               allCoreLibs,
+               testInterfaceSbtDefs,
+               junitRuntime,
+               junitAsyncNative % "test")
 
 lazy val testInterfaceSbtDefs =
   project
@@ -643,12 +645,15 @@ lazy val testRunner =
     .in(file("test-runner"))
     .settings(toolSettings)
     .settings(mavenPublishSettings)
+    .settings(testInterfaceCommonSourcesSettings)
     .settings(
       crossScalaVersions := Seq(sbt10ScalaVersion),
-      libraryDependencies += "org.scala-sbt" % "test-interface" % "1.0",
-      Compile / sources ++= (testInterfaceSerialization / Compile / sources).value
+      libraryDependencies ++= Seq(
+        "org.scala-sbt" % "test-interface"  % "1.0",
+        "com.novocode"  % "junit-interface" % "0.11" % "test"
+      )
     )
-    .dependsOn(tools)
+    .dependsOn(tools, junitAsyncJVM % "test")
 
 // JUnit modules and settings ------------------------------------------------
 
@@ -660,7 +665,7 @@ lazy val junitRuntime =
     .settings(nameSettings)
     .dependsOn(
       nscplugin % "plugin",
-      testInterface
+      testInterfaceSbtDefs
     )
 
 lazy val junitPlugin =
@@ -702,7 +707,8 @@ lazy val junitTestOutputsNative =
     .dependsOn(
       nscplugin        % "plugin",
       junitRuntime     % "test",
-      junitAsyncNative % "test"
+      junitAsyncNative % "test",
+      testInterface    % "test"
     )
 
 lazy val junitTestOutputsJVM =
@@ -710,6 +716,7 @@ lazy val junitTestOutputsJVM =
     .in(file("junit-test/output-jvm"))
     .settings(
       commonJUnitTestOutputsSettings,
+      scalaVersion := sbt10ScalaVersion,
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.11" % "test"
       )
@@ -730,6 +737,7 @@ lazy val junitAsyncJVM =
   project
     .in(file("junit-async/jvm"))
     .settings(
+      scalaVersion := sbt10ScalaVersion,
       nameSettings,
-      Compile / publishArtifact := false
+      publishArtifact := false
     )

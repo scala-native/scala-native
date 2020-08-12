@@ -6,7 +6,7 @@ Compile / unmanagedSourceDirectories ++= {
     "nir",
     "tools",
     "sbt-scala-native",
-    "test-interface-serialization",
+    "test-interface-common",
     "test-runner"
   ).map(dir => root / s"$dir/src/main/scala")
 }

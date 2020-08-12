@@ -1,19 +1,17 @@
 package scala.scalanative
 package sbtplugin
 
-import java.lang.System.{lineSeparator => nl}
-import java.io.ByteArrayInputStream
-import java.nio.file.{Files, Path}
-
+import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicReference
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 import sbt.complete.DefaultParsers._
-
+import scala.annotation.tailrec
 import scala.scalanative.build.{Build, BuildException, Discover}
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.scalanative.sbtplugin.Utilities._
-import scala.scalanative.testinterface.ScalaNativeFramework
+import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
 import scala.util.Try
 
@@ -66,6 +64,13 @@ object ScalaNativePluginInternal {
           logger.warn("Scala Native is only supported on Java 8 or newer.")
         case Some(_) =>
           ()
+      }
+    },
+    onComplete := {
+      val prev: () => Unit = onComplete.value
+      () => {
+        prev()
+        testAdapters.getAndSet(Nil).foreach(_.close())
       }
     }
   )
@@ -153,19 +158,35 @@ object ScalaNativePluginInternal {
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
         loadedTestFrameworks := {
-          val frameworks = loadedTestFrameworks.value
-          val logger     = streams.value.log
+          val configName = configuration.value.name
+
+          if (fork.value) {
+            throw new MessageOnlyException(
+              s"`$configName / test` tasks in a Scala Native project require $configName / fork := false`.")
+          }
+
+          val frameworks     = testFrameworks.value
+          val frameworkNames = frameworks.map(_.implClassNames.toList).toList
+
+          val logger     = streams.value.log.toLogger
           val testBinary = nativeLink.value
           val envVars    = (test / Keys.envVars).value
-          frameworks.zipWithIndex.map {
-            case ((tf, f), id) =>
-              (tf,
-               new ScalaNativeFramework(f,
-                                        id,
-                                        logger.toLogger,
-                                        testBinary,
-                                        envVars))
-          }
+
+          val config = TestAdapter
+            .Config()
+            .withBinaryFile(testBinary)
+            .withEnvVars(envVars)
+            .withLogger(logger)
+
+          val adapter           = newTestAdapter(config)
+          val frameworkAdapters = adapter.loadFrameworks(frameworkNames)
+
+          frameworks
+            .zip(frameworkAdapters)
+            .collect {
+              case (tf, Some(adapter)) => (tf, adapter)
+            }
+            .toMap
         }
       )
 
@@ -175,6 +196,12 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(scalaNativeCompileSettings) ++
       inConfig(Test)(scalaNativeTestSettings)
 
+  private val testAdapters = new AtomicReference[List[TestAdapter]](Nil)
+
+  private def newTestAdapter(config: TestAdapter.Config): TestAdapter = {
+    registerResource(testAdapters, new TestAdapter(config))
+  }
+
   /** Run `op`, rethrows `BuildException`s as `MessageOnlyException`s. */
   private def interceptBuildException[T](op: => T): T = {
     try op
@@ -182,4 +209,13 @@ object ScalaNativePluginInternal {
       case ex: BuildException => throw new MessageOnlyException(ex.getMessage)
     }
   }
+
+  @tailrec
+  final private def registerResource[T <: AnyRef](l: AtomicReference[List[T]],
+                                                  r: T): r.type = {
+    val prev = l.get()
+    if (l.compareAndSet(prev, r :: prev)) r
+    else registerResource(l, r)
+  }
+
 }
