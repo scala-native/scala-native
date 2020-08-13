@@ -8,6 +8,7 @@ import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath
 import scalanative.build.Discover._
+import scalanative.build.NativeLib._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -43,7 +44,6 @@ private[scalanative] object LLVM {
       IO.unzip(source, target)
       IO.write(jarhashPath, jarhash)
     }
-
     target
   }
 
@@ -79,17 +79,16 @@ private[scalanative] object LLVM {
    *
    * @param config       The configuration of the toolchain.
    * @param linkerResult The results from the linker.
-   * @param libPath      The location of the Scala Native nativelib.
-   * @return `libPath`
+   * @param basePath     The generated location of the Scala Native nativelib.
+   * @return `libPath`   The basePath plus `scala-native`
    */
   def compileNativelib(config: Config,
                        linkerResult: linker.Result,
-                       libPath: Path): Path = {
-    val cpaths = IO.getAll(config.workdir, "glob:**.c").map(_.abs) ++ IO
-      .getAll(config.workdir, "glob:**.S")
-      .map(_.abs)
-    val cpppaths = IO.getAll(config.workdir, "glob:**.cpp").map(_.abs)
-    val paths    = cpaths ++ cpppaths
+                       basePath: Path): Path = {
+    val libDir = basePath.getFileName().toString()
+    val paths =
+      IO.getAll(basePath, NativeLib.destSrcPatterns(libDir)).map(_.abs)
+    val libPath = basePath.resolve(NativeLib.codeDir)
 
     // predicate to check if given file path shall be compiled
     // we only include sources of the current gc and exclude
@@ -115,7 +114,7 @@ private[scalanative] object LLVM {
     // delete .o files for all excluded source files
     paths.foreach { path =>
       if (!include(path)) {
-        val opath = Paths.get(path + ".o")
+        val opath = Paths.get(path + oExt)
         if (Files.exists(opath)) {
           Files.delete(opath)
         }
@@ -124,9 +123,9 @@ private[scalanative] object LLVM {
 
     // generate .o files for all included source files in parallel
     paths.par.foreach { path =>
-      val opath = path + ".o"
+      val opath = path + oExt
       if (include(path) && !Files.exists(Paths.get(opath))) {
-        val isCpp    = path.endsWith(".cpp")
+        val isCpp    = path.endsWith(cppExt)
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
         val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
@@ -141,7 +140,6 @@ private[scalanative] object LLVM {
         }
       }
     }
-
     libPath
   }
 
@@ -211,7 +209,6 @@ private[scalanative] object LLVM {
       Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
         config.logger)
     }
-
     outpath
   }
 
