@@ -85,9 +85,11 @@ private[scalanative] object LLVM {
   def compileNativelib(config: Config,
                        linkerResult: linker.Result,
                        basePath: Path): Path = {
-    val libDir = basePath.getFileName().toString()
+    val workdir = config.workdir
+    // search starting at workdir "native" to find
+    // code across all native component libraries
     val paths =
-      IO.getAll(basePath, NativeLib.destSrcPatterns(libDir)).map(_.abs)
+      IO.getAll(workdir, NativeLib.destSrcPatterns()).map(_.abs)
     val libPath = basePath.resolve(NativeLib.codeDir)
 
     // predicate to check if given file path shall be compiled
