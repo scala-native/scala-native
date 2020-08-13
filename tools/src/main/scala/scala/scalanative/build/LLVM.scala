@@ -75,7 +75,9 @@ private[scalanative] object LLVM {
   }
 
   /**
-   * Compile the native lib to `.o` files
+   * Compile all the native libs to `.o` files
+   * with special logic to select GC and optional components
+   * for the `nativelib`.
    *
    * @param config       The configuration of the toolchain.
    * @param linkerResult The results from the linker.
@@ -86,8 +88,9 @@ private[scalanative] object LLVM {
                        linkerResult: linker.Result,
                        basePath: Path): Path = {
     val workdir = config.workdir
-    // search starting at workdir "native" to find
+    // search starting at workdir `native` to find
     // code across all native component libraries
+    // including the `nativelib`
     val paths =
       IO.getAll(workdir, NativeLib.destSrcPatterns()).map(_.abs)
     val libPath = basePath.resolve(NativeLib.codeDir)
@@ -174,20 +177,21 @@ private[scalanative] object LLVM {
   }
 
   /**
-   * Links a collection of `.ll` files into native binary.
+   * Links a collection of `.ll` files and the `.o` files
+   * from the `nativelib`, other libaries, and the
+   * application project into the native binary.
    *
    * @param config       The configuration of the toolchain.
    * @param linkerResult The results from the linker.
    * @param llPaths      The list of `.ll` files to link.
-   * @param nativelibs   The list of paths to nativelibs.
    * @param outpath      The path where to write the resulting binary.
    * @return `outpath`
    */
   def link(config: Config,
            linkerResult: linker.Result,
            llPaths: Seq[Path],
-           nativelibs: Seq[Path],
            outpath: Path): Path = {
+    val workdir = config.workdir
     val links = {
       val srclinks = linkerResult.links.map(_.name)
       val gclinks  = config.gc.links
@@ -199,11 +203,10 @@ private[scalanative] object LLVM {
     val linkopts  = config.linkingOptions ++ links.map("-l" + _)
     val targetopt = Seq("-target", config.targetTriple)
     val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
-    val opaths = nativelibs.flatMap(nativelib =>
-      IO.getAll(nativelib, "glob:**.o").map(_.abs))
-    val paths   = llPaths.map(_.abs) ++ opaths
-    val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
-    val ltoName = lto(config).getOrElse("none")
+    val opaths    = IO.getAll(workdir, NativeLib.destObjPatterns()).map(_.abs)
+    val paths     = llPaths.map(_.abs) ++ opaths
+    val compile   = config.clangPP.abs +: (flags ++ paths ++ linkopts)
+    val ltoName   = lto(config).getOrElse("none")
 
     config.logger.time(
       s"Linking native code (${config.gc.name} gc, $ltoName lto)") {

@@ -8,6 +8,7 @@ import java.util.regex._
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
 
+/** Utilities for dealing with native library code */
 private[scalanative] object NativeLib {
   val fs           = File.separator
   val jarExtension = ".jar"
@@ -39,14 +40,21 @@ private[scalanative] object NativeLib {
    *
    * Note: this assumes that the `workdir` ends with `native`.
    *
-   * @param genDir the generated directory for `scalalib` or `*` for all dirs
    * @return the source pattern
    */
-  def destSrcPatterns(genDir: String = "*"): String =
-    srcExtensions.mkString(
-      s"glob:**${fs}native${fs}${genDir}${fs}${codeDir}${fs}**{",
-      ",",
-      "}")
+  def destSrcPatterns(): String =
+    srcExtensions.mkString(s"glob:**${fs}native${fs}*${fs}${codeDir}${fs}**{",
+                           ",",
+                           "}")
+
+  /**
+   * Allow all the object files ".o" to be found with one
+   * directory recursion.
+   *
+   * @return the object file pattern
+   */
+  def destObjPatterns(): String =
+    s"glob:**${fs}native${fs}*${fs}${codeDir}${fs}**${oExt}"
 
   /** Used to find native source files in jar files */
   private def jarRegex(): String = {
