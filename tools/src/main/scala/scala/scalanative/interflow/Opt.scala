@@ -5,6 +5,7 @@ import scalanative.nir._
 import scalanative.linker._
 
 trait Opt { self: Interflow =>
+
   def shallOpt(name: Global): Boolean = {
     val defn =
       getOriginal(originalName(name))
@@ -19,11 +20,11 @@ trait Opt { self: Interflow =>
   }
 
   def opt(name: Global): Defn.Define = in(s"visit ${name.show}") {
-    val orig     = originalName(name)
-    val origtys  = argumentTypes(orig)
+    val orig = originalName(name)
+    val origtys = argumentTypes(orig)
     val origdefn = getOriginal(orig)
-    val argtys   = argumentTypes(name)
-
+    val argtys = argumentTypes(name)
+    implicit val pos = origdefn.pos
     // Wrap up the result.
     def result(retty: Type, rawInsts: Seq[Inst]) =
       origdefn.copy(name = name,

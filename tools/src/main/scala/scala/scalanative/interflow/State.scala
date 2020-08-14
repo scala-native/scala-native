@@ -68,12 +68,12 @@ final class State(block: Local) {
       if (emitted.contains(op)) {
         emitted(op)
       } else {
-        val value = emit.let(op, Next.None)
+        val value = emit.let(op, Next.None)(Position.generated)
         emitted(op) = value
         value
       }
     } else {
-      emit.let(op, Next.None)
+      emit.let(op, Next.None)(Position.generated)
     }
   }
   def deref(addr: Addr): Instance = {
@@ -245,7 +245,7 @@ final class State(block: Local) {
           } else {
             Val.Int(values.length)
           }
-        emit.arrayalloc(elemty, init, Next.None)
+        emit.arrayalloc(elemty, init, Next.None)(Position.generated)
       case VirtualInstance(BoxKind, cls, Array(value)) =>
         reachVal(value)
         emit(Op.Box(Type.Ref(cls.name), escapedVal(value)))
@@ -262,7 +262,7 @@ final class State(block: Local) {
           .toArray[Char]
         Val.String(new java.lang.String(chars))
       case VirtualInstance(_, cls, values) =>
-        emit.classalloc(cls.name, Next.None)
+        emit.classalloc(cls.name, Next.None)(Position.generated)
       case DelayedInstance(op) =>
         reachOp(op)
         emit(escapedOp(op), idempotent = true)
@@ -287,7 +287,7 @@ final class State(block: Local) {
                                 local,
                                 Val.Int(idx),
                                 escapedVal(value),
-                                Next.None)
+                                Next.None)(Position.generated)
               }
           }
         }
@@ -305,7 +305,7 @@ final class State(block: Local) {
                               local,
                               fld.name,
                               escapedVal(value),
-                              Next.None)
+                              Next.None)(Position.generated)
             }
         }
       case DelayedInstance(op) =>

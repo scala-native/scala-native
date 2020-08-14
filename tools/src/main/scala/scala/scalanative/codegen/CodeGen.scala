@@ -113,7 +113,9 @@ object CodeGen {
       if (!generated.contains(mn)) {
         newline()
         genDefn {
-          env(n) match {
+          val defn             = env(n)
+          implicit val rootPos = defn.pos
+          defn match {
             case defn @ Defn.Var(attrs, _, _, _) =>
               defn.copy(attrs.copy(isExtern = true))
             case defn @ Defn.Const(attrs, _, ty, _) =>
@@ -438,7 +440,7 @@ object CodeGen {
       line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
       line(s"$exc = load i8*, i8** $w2")
       line(s"call void @__cxa_end_catch()")
-      genInst(Inst.Jump(next))
+      genInst(Inst.Jump(next)(Position.generated))
       unindent()
 
       line(s"$excfail:")
@@ -614,7 +616,7 @@ object CodeGen {
                    elseNext @ Next.Label(elseName, elseArgs))
           if thenName == elseName =>
         if (thenArgs == elseArgs) {
-          genInst(Inst.Jump(thenNext))
+          genInst(Inst.Jump(thenNext)(inst.pos))
         } else {
           val args = thenArgs.zip(elseArgs).map {
             case (thenV, elseV) =>
@@ -630,7 +632,7 @@ object CodeGen {
               genVal(elseV)
               Val.Local(name, thenV.ty)
           }
-          genInst(Inst.Jump(Next.Label(thenName, args)))
+          genInst(Inst.Jump(Next.Label(thenName, args))(inst.pos))
         }
 
       case Inst.If(cond, thenp, elsep) =>

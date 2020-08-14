@@ -34,21 +34,21 @@ object Lower {
 
     // Names of the fields of the java.lang.String in the memory layout order.
     private val stringFieldNames = {
-      val node  = ClassRef.unapply(StringName).get
+      val node = ClassRef.unapply(StringName).get
       val names = layout(node).entries.map(_.name)
       assert(names.length == 4, "java.lang.String is expected to have 4 fields")
       names
     }
 
-    private val fresh         = new util.ScopedVar[Fresh]
+    private val fresh = new util.ScopedVar[Fresh]
     private val unwindHandler = new util.ScopedVar[Option[Local]]
 
-    private val unreachableSlowPath    = mutable.Map.empty[Option[Local], Local]
-    private val nullPointerSlowPath    = mutable.Map.empty[Option[Local], Local]
+    private val unreachableSlowPath = mutable.Map.empty[Option[Local], Local]
+    private val nullPointerSlowPath = mutable.Map.empty[Option[Local], Local]
     private val divisionByZeroSlowPath = mutable.Map.empty[Option[Local], Local]
-    private val classCastSlowPath      = mutable.Map.empty[Option[Local], Local]
-    private val outOfBoundsSlowPath    = mutable.Map.empty[Option[Local], Local]
-    private val noSuchMethodSlowPath   = mutable.Map.empty[Option[Local], Local]
+    private val classCastSlowPath = mutable.Map.empty[Option[Local], Local]
+    private val outOfBoundsSlowPath = mutable.Map.empty[Option[Local], Local]
+    private val noSuchMethodSlowPath = mutable.Map.empty[Option[Local], Local]
 
     private def unwind: Next =
       unwindHandler.get.fold[Next](Next.None) { handler =>
@@ -87,27 +87,27 @@ object Lower {
     }
 
     override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-      val buf      = new nir.Buffer()(fresh)
+      val buf = new nir.Buffer()(fresh)
       val handlers = new nir.Buffer()(fresh)
-      import buf._
 
       buf += insts.head
 
-      def newUnwindHandler(next: Next): Option[Local] = next match {
-        case Next.None =>
-          None
-        case Next.Unwind(exc, next) =>
-          val handler = fresh()
-          handlers.label(handler, Seq(exc))
-          handlers.jump(next)
-          Some(handler)
-        case _ =>
-          util.unreachable
-      }
+      def newUnwindHandler(next: Next)(implicit pos: Position): Option[Local] =
+        next match {
+          case Next.None =>
+            None
+          case Next.Unwind(exc, next) =>
+            val handler = fresh()
+            handlers.label(handler, Seq(exc))
+            handlers.jump(next)
+            Some(handler)
+          case _ =>
+            util.unreachable
+        }
 
       insts.foreach {
-        case Inst.Let(n, Op.Var(ty), unwind) =>
-          buf.let(n, Op.Stackalloc(ty, Val.Int(1)), unwind)
+        case inst @ Inst.Let(n, Op.Var(ty), unwind) =>
+          buf.let(n, Op.Stackalloc(ty, Val.Int(1)), unwind)(inst.pos)
         case _ =>
           ()
       }
@@ -115,21 +115,21 @@ object Lower {
       insts.tail.foreach {
         case inst @ Inst.Let(n, op, unwind) =>
           ScopedVar.scoped(
-            unwindHandler := newUnwindHandler(unwind)
+            unwindHandler := newUnwindHandler(unwind)(inst.pos)
           ) {
-            genLet(buf, n, op)
+            genLet(buf, n, op)(inst.pos)
           }
 
-        case Inst.Throw(v, unwind) =>
+        case inst @ Inst.Throw(v, unwind) =>
           ScopedVar.scoped(
-            unwindHandler := newUnwindHandler(unwind)
+            unwindHandler := newUnwindHandler(unwind)(inst.pos)
           ) {
-            genThrow(buf, v)
+            genThrow(buf, v)(inst.pos)
           }
 
-        case Inst.Unreachable(unwind) =>
+        case inst @ Inst.Unreachable(unwind) =>
           ScopedVar.scoped(
-            unwindHandler := newUnwindHandler(unwind)
+            unwindHandler := newUnwindHandler(unwind)(inst.pos)
           ) {
             genUnreachable(buf)
           }
@@ -138,6 +138,7 @@ object Lower {
           buf += inst
       }
 
+      implicit val pos: Position = Position.generated
       genNullPointerSlowPath(buf)
       genDivisionByZeroSlowPath(buf)
       genClassCastSlowPath(buf)
@@ -168,7 +169,7 @@ object Lower {
         super.onVal(value)
     }
 
-    def genNullPointerSlowPath(buf: Buffer): Unit = {
+    def genNullPointerSlowPath(buf: Buffer)(implicit pos: Position): Unit = {
       nullPointerSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -184,7 +185,7 @@ object Lower {
       }
     }
 
-    def genDivisionByZeroSlowPath(buf: Buffer): Unit = {
+    def genDivisionByZeroSlowPath(buf: Buffer)(implicit pos: Position): Unit = {
       divisionByZeroSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -200,13 +201,13 @@ object Lower {
       }
     }
 
-    def genClassCastSlowPath(buf: Buffer): Unit = {
+    def genClassCastSlowPath(buf: Buffer)(implicit pos: Position): Unit = {
       classCastSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
             unwindHandler := slowPathUnwindHandler
           ) {
-            val obj  = Val.Local(fresh(), Type.Ptr)
+            val obj = Val.Local(fresh(), Type.Ptr)
             val toty = Val.Local(fresh(), Type.Ptr)
 
             buf.label(slowPath, Seq(obj, toty))
@@ -220,7 +221,7 @@ object Lower {
       }
     }
 
-    def genUnreachableSlowPath(buf: Buffer): Unit = {
+    def genUnreachableSlowPath(buf: Buffer)(implicit pos: Position): Unit = {
       unreachableSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -233,7 +234,7 @@ object Lower {
       }
     }
 
-    def genOutOfBoundsSlowPath(buf: Buffer): Unit = {
+    def genOutOfBoundsSlowPath(buf: Buffer)(implicit pos: Position): Unit = {
       outOfBoundsSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -251,7 +252,7 @@ object Lower {
       }
     }
 
-    def genNoSuchMethodSlowPath(buf: Buffer): Unit = {
+    def genNoSuchMethodSlowPath(buf: Buffer)(implicit pos: Position): Unit = {
       noSuchMethodSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -269,139 +270,148 @@ object Lower {
       }
     }
 
-    def genLet(buf: Buffer, n: Local, op: Op): Unit = op.resty match {
-      case Type.Unit =>
-        genOp(buf, fresh(), op)
-        buf.let(n, Op.Copy(unit), unwind)
-      case Type.Nothing =>
-        genOp(buf, fresh(), op)
-        genUnreachable(buf)
-        buf.label(fresh(), Seq(Val.Local(n, op.resty)))
-      case _ =>
-        genOp(buf, n, op)
-    }
+    def genLet(buf: Buffer, n: Local, op: Op)(implicit pos: Position): Unit =
+      op.resty match {
+        case Type.Unit =>
+          genOp(buf, fresh(), op)
+          buf.let(n, Op.Copy(unit), unwind)(Position.generated)
+        case Type.Nothing =>
+          genOp(buf, fresh(), op)
+          genUnreachable(buf)
+          buf.label(fresh(), Seq(Val.Local(n, op.resty)))(Position.generated)
+        case _ =>
+          genOp(buf, n, op)
+      }
 
-    def genThrow(buf: Buffer, exc: Val) = {
+    def genThrow(buf: Buffer, exc: Val)(implicit pos: Position) = {
       genGuardNotNull(buf, exc)
       genOp(buf, fresh(), Op.Call(throwSig, throw_, Seq(exc)))
-      buf.unreachable(Next.None)
+      buf.unreachable(Next.None)(Position.generated)
     }
 
     def genUnreachable(buf: Buffer) = {
       val failL = unreachableSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
-      buf.jump(Next(failL))
+      buf.jump(Next(failL))(Position.generated)
     }
 
-    def genOp(buf: Buffer, n: Local, op: Op): Unit = op match {
-      case op: Op.Fieldload =>
-        genFieldloadOp(buf, n, op)
-      case op: Op.Fieldstore =>
-        genFieldstoreOp(buf, n, op)
-      case op: Op.Method =>
-        genMethodOp(buf, n, op)
-      case op: Op.Dynmethod =>
-        genDynmethodOp(buf, n, op)
-      case op: Op.Is =>
-        genIsOp(buf, n, op)
-      case op: Op.As =>
-        genAsOp(buf, n, op)
-      case op: Op.Sizeof =>
-        genSizeofOp(buf, n, op)
-      case op: Op.Classalloc =>
-        genClassallocOp(buf, n, op)
-      case op: Op.Conv =>
-        genConvOp(buf, n, op)
-      case op: Op.Bin =>
-        genBinOp(buf, n, op)
-      case op: Op.Box =>
-        genBoxOp(buf, n, op)
-      case op: Op.Unbox =>
-        genUnboxOp(buf, n, op)
-      case op: Op.Module =>
-        genModuleOp(buf, n, op)
-      case op: Op.Var =>
-        ()
-      case Op.Varload(Val.Local(slot, Type.Var(ty))) =>
-        buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)
-      case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
-        buf.let(n, Op.Store(ty, Val.Local(slot, Type.Ptr), value), unwind)
-      case op: Op.Arrayalloc =>
-        genArrayallocOp(buf, n, op)
-      case op: Op.Arrayload =>
-        genArrayloadOp(buf, n, op)
-      case op: Op.Arraystore =>
-        genArraystoreOp(buf, n, op)
-      case op: Op.Arraylength =>
-        genArraylengthOp(buf, n, op)
-      case _ =>
-        buf.let(n, op, unwind)
-    }
+    def genOp(buf: Buffer, n: Local, op: Op)(implicit pos: Position): Unit =
+      op match {
+        case op: Op.Fieldload =>
+          genFieldloadOp(buf, n, op)
+        case op: Op.Fieldstore =>
+          genFieldstoreOp(buf, n, op)
+        case op: Op.Method =>
+          genMethodOp(buf, n, op)
+        case op: Op.Dynmethod =>
+          genDynmethodOp(buf, n, op)
+        case op: Op.Is =>
+          genIsOp(buf, n, op)
+        case op: Op.As =>
+          genAsOp(buf, n, op)
+        case op: Op.Sizeof =>
+          genSizeofOp(buf, n, op)
+        case op: Op.Classalloc =>
+          genClassallocOp(buf, n, op)
+        case op: Op.Conv =>
+          genConvOp(buf, n, op)
+        case op: Op.Bin =>
+          genBinOp(buf, n, op)
+        case op: Op.Box =>
+          genBoxOp(buf, n, op)
+        case op: Op.Unbox =>
+          genUnboxOp(buf, n, op)
+        case op: Op.Module =>
+          genModuleOp(buf, n, op)
+        case op: Op.Var =>
+          ()
+        case Op.Varload(Val.Local(slot, Type.Var(ty))) =>
+          buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)(
+            Position.generated)
+        case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
+          buf.let(n, Op.Store(ty, Val.Local(slot, Type.Ptr), value), unwind)(
+            Position.generated)
+        case op: Op.Arrayalloc =>
+          genArrayallocOp(buf, n, op)
+        case op: Op.Arrayload =>
+          genArrayloadOp(buf, n, op)
+        case op: Op.Arraystore =>
+          genArraystoreOp(buf, n, op)
+        case op: Op.Arraylength =>
+          genArraylengthOp(buf, n, op)
+        case _ =>
+          buf.let(n, op, unwind)(Position.generated)
+      }
 
-    def genGuardNotNull(buf: Buffer, obj: Val): Unit = obj.ty match {
-      case ty: Type.RefKind if !ty.isNullable =>
-        ()
+    def genGuardNotNull(buf: Buffer, obj: Val)(implicit pos: Position): Unit =
+      obj.ty match {
+        case ty: Type.RefKind if !ty.isNullable =>
+          ()
 
-      case _ =>
-        import buf._
+        case _ =>
+          import buf._
+          val notNullL = fresh()
+          val isNullL =
+            nullPointerSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
-        val notNullL = fresh()
-        val isNullL =
-          nullPointerSlowPath.getOrElseUpdate(unwindHandler, fresh())
+          val isNull = comp(Comp.Ine, obj.ty, obj, Val.Null, unwind)
+          branch(isNull, Next(notNullL), Next(isNullL))
+          label(notNullL)
+      }
 
-        val isNull = comp(Comp.Ine, obj.ty, obj, Val.Null, unwind)
-        branch(isNull, Next(notNullL), Next(isNullL))
-        label(notNullL)
-    }
-
-    def genGuardInBounds(buf: Buffer, idx: Val, len: Val): Unit = {
+    def genGuardInBounds(buf: Buffer, idx: Val, len: Val)(
+        implicit pos: Position): Unit = {
       import buf._
 
       val inBoundsL = fresh()
       val outOfBoundsL =
         outOfBoundsSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
-      val gt0      = comp(Comp.Sge, Type.Int, idx, Val.Int(0), unwind)
-      val ltLen    = comp(Comp.Slt, Type.Int, idx, len, unwind)
+      val gt0 = comp(Comp.Sge, Type.Int, idx, Val.Int(0), unwind)
+      val ltLen = comp(Comp.Slt, Type.Int, idx, len, unwind)
       val inBounds = bin(Bin.And, Type.Bool, gt0, ltLen, unwind)
       branch(inBounds, Next(inBoundsL), Next.Label(outOfBoundsL, Seq(idx)))
       label(inBoundsL)
     }
 
-    def genFieldElemOp(buf: Buffer, obj: Val, name: Global) = {
+    def genFieldElemOp(buf: Buffer, obj: Val, name: Global)(
+        implicit pos: Position) = {
       import buf._
 
       val FieldRef(cls: Class, fld) = name
 
       val layout = meta.layout(cls)
-      val ty     = layout.struct
-      val index  = layout.index(fld)
+      val ty = layout.struct
+      val index = layout.index(fld)
 
       genGuardNotNull(buf, obj)
       elem(ty, obj, Seq(Val.Int(0), Val.Int(index)), unwind)
     }
 
-    def genFieldloadOp(buf: Buffer, n: Local, op: Op.Fieldload) = {
+    def genFieldloadOp(buf: Buffer, n: Local, op: Op.Fieldload)(
+        implicit pos: Position) = {
       val Op.Fieldload(ty, obj, name) = op
 
       val elem = genFieldElemOp(buf, obj, name)
       buf.let(n, Op.Load(ty, elem), unwind)
     }
 
-    def genFieldstoreOp(buf: Buffer, n: Local, op: Op.Fieldstore) = {
+    def genFieldstoreOp(buf: Buffer, n: Local, op: Op.Fieldstore)(
+        implicit pos: Position) = {
       val Op.Fieldstore(ty, obj, name, value) = op
 
       val elem = genFieldElemOp(buf, obj, name)
       buf.let(n, Op.Store(ty, elem, value), unwind)
     }
 
-    def genMethodOp(buf: Buffer, n: Local, op: Op.Method) = {
+    def genMethodOp(buf: Buffer, n: Local, op: Op.Method)(
+        implicit pos: Position) = {
       import buf._
 
       val Op.Method(obj, sig) = op
 
       def genClassVirtualLookup(cls: Class): Unit = {
-        val vindex  = vtable(cls).index(sig)
+        val vindex = vtable(cls).index(sig)
         val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
         val methptrptr = let(
           Op.Elem(rtti(cls).struct,
@@ -413,7 +423,7 @@ object Lower {
       }
 
       def genTraitVirtualLookup(trt: Trait): Unit = {
-        val sigid   = dispatchTable.traitSigIds(sig)
+        val sigid = dispatchTable.traitSigIds(sig)
         val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
         val idptr =
           let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(1))), unwind)
@@ -457,7 +467,8 @@ object Lower {
       genMethodLookup()
     }
 
-    def genDynmethodOp(buf: Buffer, n: Local, op: Op.Dynmethod): Unit = {
+    def genDynmethodOp(buf: Buffer, n: Local, op: Op.Dynmethod)(
+        implicit pos: Position): Unit = {
       import buf._
 
       val Op.Dynmethod(obj, sig) = op
@@ -502,7 +513,8 @@ object Lower {
       genReflectiveLookup()
     }
 
-    def genIsOp(buf: Buffer, n: Local, op: Op.Is): Unit = {
+    def genIsOp(buf: Buffer, n: Local, op: Op.Is)(
+        implicit pos: Position): Unit = {
       import buf._
 
       op match {
@@ -530,7 +542,8 @@ object Lower {
       }
     }
 
-    def genIsOp(buf: Buffer, ty: Type, obj: Val): Val = {
+    def genIsOp(buf: Buffer, ty: Type, obj: Val)(
+        implicit pos: Position): Val = {
       import buf._
 
       ty match {
@@ -539,7 +552,7 @@ object Lower {
           let(Op.Comp(Comp.Ieq, Type.Ptr, typeptr, rtti(cls).const), unwind)
 
         case ClassRef(cls) =>
-          val range   = meta.ranges(cls)
+          val range = meta.ranges(cls)
           val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
           val idptr =
             let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))), unwind)
@@ -567,7 +580,8 @@ object Lower {
       }
     }
 
-    def genAsOp(buf: Buffer, n: Local, op: Op.As): Unit = {
+    def genAsOp(buf: Buffer, n: Local, op: Op.As)(
+        implicit pos: Position): Unit = {
       import buf._
 
       op match {
@@ -576,14 +590,14 @@ object Lower {
 
         case Op.As(ty: Type.RefKind, v) if v.ty.isInstanceOf[Type.RefKind] =>
           val checkIfIsInstanceOfL, castL = fresh()
-          val failL                       = classCastSlowPath.getOrElseUpdate(unwindHandler, fresh())
+          val failL = classCastSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
           val isNull = comp(Comp.Ieq, v.ty, v, Val.Null, unwind)
           branch(isNull, Next(castL), Next(checkIfIsInstanceOfL))
 
           label(checkIfIsInstanceOfL)
           val isInstanceOf = genIsOp(buf, ty, v)
-          val toTy         = Val.Global(rtti(linked.infos(ty.className)).name, Type.Ptr)
+          val toTy = Val.Global(rtti(linked.infos(ty.className)).name, Type.Ptr)
           branch(isInstanceOf, Next(castL), Next.Label(failL, Seq(v, toTy)))
 
           label(castL)
@@ -594,13 +608,15 @@ object Lower {
       }
     }
 
-    def genSizeofOp(buf: Buffer, n: Local, op: Op.Sizeof): Unit = {
+    def genSizeofOp(buf: Buffer, n: Local, op: Op.Sizeof)(
+        implicit pos: Position): Unit = {
       val Op.Sizeof(ty) = op
 
       buf.let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty))), unwind)
     }
 
-    def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc): Unit = {
+    def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(
+        implicit pos: Position): Unit = {
       val Op.Classalloc(ClassRef(cls)) = op
 
       val size = MemoryLayout.sizeOf(layout(cls).struct)
@@ -613,7 +629,8 @@ object Lower {
         unwind)
     }
 
-    def genConvOp(buf: Buffer, n: Local, op: Op.Conv): Unit = {
+    def genConvOp(buf: Buffer, n: Local, op: Op.Conv)(
+        implicit pos: Position): Unit = {
       import buf._
 
       op match {
@@ -664,7 +681,7 @@ object Lower {
           }
 
           val isNaNL, checkLessThanMinL, lessThanMinL, checkLargerThanMaxL,
-              largerThanMaxL, inBoundsL, resultL = fresh()
+          largerThanMaxL, inBoundsL, resultL = fresh()
 
           val isNaN = comp(Comp.Fne, v.ty, v, v, unwind)
           branch(isNaN, Next(isNaNL), Next(checkLessThanMinL))
@@ -697,7 +714,8 @@ object Lower {
       }
     }
 
-    def genBinOp(buf: Buffer, n: Local, op: Op.Bin): Unit = {
+    def genBinOp(buf: Buffer, n: Local, op: Op.Bin)(
+        implicit pos: Position): Unit = {
       import buf._
 
       // LLVM's division by zero is undefined behaviour. We guard
@@ -807,7 +825,8 @@ object Lower {
       }
     }
 
-    def genBoxOp(buf: Buffer, n: Local, op: Op.Box): Unit = {
+    def genBoxOp(buf: Buffer, n: Local, op: Op.Box)(
+        implicit pos: Position): Unit = {
       val Op.Box(ty, from) = op
 
       val methodName = BoxTo(ty)
@@ -822,7 +841,8 @@ object Lower {
         unwind)
     }
 
-    def genUnboxOp(buf: Buffer, n: Local, op: Op.Unbox): Unit = {
+    def genUnboxOp(buf: Buffer, n: Local, op: Op.Unbox)(
+        implicit pos: Position): Unit = {
       val Op.Unbox(ty, from) = op
 
       val methodName = UnboxTo(ty)
@@ -837,7 +857,8 @@ object Lower {
         unwind)
     }
 
-    def genModuleOp(buf: Buffer, n: Local, op: Op.Module) = {
+    def genModuleOp(buf: Buffer, n: Local, op: Op.Module)(
+        implicit pos: Position) = {
       val Op.Module(name) = op
 
       meta.linked.infos(name) match {
@@ -847,28 +868,29 @@ object Lower {
 
         case _ =>
           val loadSig = Type.Function(Seq(), Type.Ref(name))
-          val load    = Val.Global(name.member(Sig.Generated("load")), Type.Ptr)
+          val load = Val.Global(name.member(Sig.Generated("load")), Type.Ptr)
 
           buf.let(n, Op.Call(loadSig, load, Seq()), unwind)
       }
     }
 
-    def genArrayallocOp(buf: Buffer, n: Local, op: Op.Arrayalloc): Unit = {
+    def genArrayallocOp(buf: Buffer, n: Local, op: Op.Arrayalloc)(
+        implicit pos: Position): Unit = {
       val Op.Arrayalloc(ty, init) = op
       init match {
         case len if len.ty == Type.Int =>
-          val sig    = arrayAllocSig.getOrElse(ty, arrayAllocSig(Rt.Object))
-          val func   = arrayAlloc.getOrElse(ty, arrayAlloc(Rt.Object))
+          val sig = arrayAllocSig.getOrElse(ty, arrayAllocSig(Rt.Object))
+          val func = arrayAlloc.getOrElse(ty, arrayAlloc(Rt.Object))
           val module = genModuleOp(buf, fresh(), Op.Module(func.owner))
           buf.let(n,
                   Op.Call(sig, Val.Global(func, Type.Ptr), Seq(module, len)),
                   unwind)
         case arrval: Val.ArrayValue =>
-          val sig    = arraySnapshotSig.getOrElse(ty, arraySnapshotSig(Rt.Object))
-          val func   = arraySnapshot.getOrElse(ty, arraySnapshot(Rt.Object))
+          val sig = arraySnapshotSig.getOrElse(ty, arraySnapshotSig(Rt.Object))
+          val func = arraySnapshot.getOrElse(ty, arraySnapshot(Rt.Object))
           val module = genModuleOp(buf, fresh(), Op.Module(func.owner))
-          val len    = Val.Int(arrval.values.length)
-          val init   = Val.Const(arrval)
+          val len = Val.Int(arrval.values.length)
+          val init = Val.Const(arrval)
           buf.let(
             n,
             Op.Call(sig, Val.Global(func, Type.Ptr), Seq(module, len, init)),
@@ -876,7 +898,8 @@ object Lower {
       }
     }
 
-    def genArrayloadOp(buf: Buffer, n: Local, op: Op.Arrayload): Unit = {
+    def genArrayloadOp(buf: Buffer, n: Local, op: Op.Arrayload)(
+        implicit pos: Position): Unit = {
       val Op.Arrayload(ty, arr, idx) = op
 
       val len = fresh()
@@ -887,11 +910,12 @@ object Lower {
       val arrTy = Type.StructValue(
         Seq(Type.Ptr, Type.Int, Type.Int, Type.ArrayValue(ty, 0)))
       val elemPath = Seq(Val.Int(0), Val.Int(3), idx)
-      val elemPtr  = buf.elem(arrTy, arr, elemPath, unwind)
+      val elemPtr = buf.elem(arrTy, arr, elemPath, unwind)
       buf.let(n, Op.Load(ty, elemPtr), unwind)
     }
 
-    def genArraystoreOp(buf: Buffer, n: Local, op: Op.Arraystore): Unit = {
+    def genArraystoreOp(buf: Buffer, n: Local, op: Op.Arraystore)(
+        implicit pos: Position): Unit = {
       val Op.Arraystore(ty, arr, idx, value) = op
 
       val len = fresh()
@@ -906,23 +930,24 @@ object Lower {
       buf.let(n, Op.Store(ty, elemPtr, value), unwind)
     }
 
-    def genArraylengthOp(buf: Buffer, n: Local, op: Op.Arraylength): Unit = {
+    def genArraylengthOp(buf: Buffer, n: Local, op: Op.Arraylength)(
+        implicit pos: Position): Unit = {
       val Op.Arraylength(arr) = op
 
-      val sig  = arrayLengthSig
+      val sig = arrayLengthSig
       val func = arrayLength
 
       genGuardNotNull(buf, arr)
-      val arrTy  = Type.StructValue(Seq(Type.Ptr, Type.Int))
+      val arrTy = Type.StructValue(Seq(Type.Ptr, Type.Int))
       val lenPtr = buf.elem(arrTy, arr, Seq(Val.Int(0), Val.Int(1)), unwind)
       buf.let(n, Op.Load(Type.Int, lenPtr), unwind)
     }
 
     def genStringVal(value: String): Val = {
-      val StringCls    = ClassRef.unapply(StringName).get
+      val StringCls = ClassRef.unapply(StringName).get
       val CharArrayCls = ClassRef.unapply(CharArrayName).get
 
-      val chars       = value.toCharArray
+      val chars = value.toCharArray
       val charsLength = Val.Int(chars.length)
       val charsConst = Val.Const(
         Val.StructValue(
@@ -952,8 +977,8 @@ object Lower {
       0
     } else {
       val value = s.toCharArray
-      var hash  = 0
-      var i     = 0
+      var hash = 0
+      var i = 0
       while (i < value.length) {
         hash = value(i) + ((hash << 5) - hash)
         i += 1
@@ -966,10 +991,10 @@ object Lower {
   val allocSig = Type.Function(Seq(Type.Ptr, Type.Long), Type.Ptr)
 
   val allocSmallName = extern("scalanative_alloc_small")
-  val alloc          = Val.Global(allocSmallName, allocSig)
+  val alloc = Val.Global(allocSmallName, allocSig)
 
   val largeAllocName = extern("scalanative_alloc_large")
-  val largeAlloc     = Val.Global(largeAllocName, allocSig)
+  val largeAlloc = Val.Global(largeAllocName, allocSig)
 
   val dyndispatchName = extern("scalanative_dyndispatch")
   val dyndispatchSig =
@@ -985,10 +1010,10 @@ object Lower {
     Type.Unit)
   val excInit = Val.Global(excptnInitGlobal, Type.Ptr)
 
-  val StringName       = Rt.String.name
-  val StringValueName  = StringName.member(Sig.Field("value"))
+  val StringName = Rt.String.name
+  val StringValueName = StringName.member(Sig.Field("value"))
   val StringOffsetName = StringName.member(Sig.Field("offset"))
-  val StringCountName  = StringName.member(Sig.Field("count"))
+  val StringCountName = StringName.member(Sig.Field("count"))
   val StringCachedHashCodeName =
     StringName.member(Sig.Field("cachedHashCode"))
 
@@ -999,19 +1024,19 @@ object Lower {
   val RuntimeBoxes = Global.Top("scala.scalanative.runtime.Boxes$")
 
   val BoxTo: Map[Type, Global] = Type.boxClasses.map { cls =>
-    val name   = cls.asInstanceOf[Global.Top].id
-    val boxty  = Type.Ref(Global.Top(name))
+    val name = cls.asInstanceOf[Global.Top].id
+    val boxty = Type.Ref(Global.Top(name))
     val module = if (name.startsWith("java.")) BoxesRunTime else RuntimeBoxes
-    val id     = "boxTo" + name.split("\\.").last
-    val tys    = Seq(nir.Type.unbox(boxty), boxty)
-    val meth   = module.member(Sig.Method(id, tys))
+    val id = "boxTo" + name.split("\\.").last
+    val tys = Seq(nir.Type.unbox(boxty), boxty)
+    val meth = module.member(Sig.Method(id, tys))
 
     boxty -> meth
   }.toMap
 
   val UnboxTo: Map[Type, Global] = Type.boxClasses.map { cls =>
-    val name   = cls.asInstanceOf[Global.Top].id
-    val boxty  = Type.Ref(Global.Top(name))
+    val name = cls.asInstanceOf[Global.Top].id
+    val boxty = Type.Ref(Global.Top(name))
     val module = if (name.startsWith("java.")) BoxesRunTime else RuntimeBoxes
     val id = {
       val last = name.split("\\.").last
@@ -1021,7 +1046,7 @@ object Lower {
         else last
       "unboxTo" + suffix
     }
-    val tys  = Seq(nir.Rt.Object, nir.Type.unbox(boxty))
+    val tys = Seq(nir.Rt.Object, nir.Type.unbox(boxty))
     val meth = module.member(Sig.Method(id, tys))
 
     boxty -> meth
@@ -1030,18 +1055,18 @@ object Lower {
   private def extern(id: String): Global =
     Global.Member(Global.Top("__"), Sig.Extern(id))
 
-  val unitName     = Global.Top("scala.scalanative.runtime.BoxedUnit$")
+  val unitName = Global.Top("scala.scalanative.runtime.BoxedUnit$")
   val unitInstance = unitName.member(Sig.Generated("instance"))
-  val unit         = Val.Global(unitInstance, Type.Ptr)
+  val unit = Val.Global(unitInstance, Type.Ptr)
 
   val throwName = extern("scalanative_throw")
-  val throwSig  = Type.Function(Seq(Type.Ptr), Type.Nothing)
-  val throw_    = Val.Global(throwName, Type.Ptr)
+  val throwSig = Type.Function(Seq(Type.Ptr), Type.Nothing)
+  val throw_ = Val.Global(throwName, Type.Ptr)
 
   val arrayAlloc = Type.typeToArray.map {
     case (ty, arrname) =>
       val Global.Top(id) = arrname
-      val arrcls         = Type.Ref(arrname)
+      val arrcls = Type.Ref(arrname)
       ty -> Global.Member(Global.Top(id + "$"),
                           Sig.Method("alloc", Seq(Type.Int, arrcls)))
   }.toMap
@@ -1054,7 +1079,7 @@ object Lower {
   val arraySnapshot = Type.typeToArray.map {
     case (ty, arrname) =>
       val Global.Top(id) = arrname
-      val arrcls         = Type.Ref(arrname)
+      val arrcls = Type.Ref(arrname)
       ty -> Global.Member(
         Global.Top(id + "$"),
         Sig.Method("snapshot", Seq(Type.Int, Type.Ptr, arrcls)))
@@ -1150,10 +1175,11 @@ object Lower {
   val throwNoSuchMethodVal =
     Val.Global(throwNoSuchMethod, Type.Ptr)
 
-  val RuntimeNull    = Type.Ref(Global.Top("scala.runtime.Null$"))
+  val RuntimeNull = Type.Ref(Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
 
   val injects: Seq[Defn] = {
+    implicit val pos = Position.generated
     val buf = mutable.UnrolledBuffer.empty[Defn]
     buf += Defn.Declare(Attrs.None, allocSmallName, allocSig)
     buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)

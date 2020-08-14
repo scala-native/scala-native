@@ -34,7 +34,7 @@ object ControlFlow {
 
     def pred  = inEdges.map(_.from)
     def succ  = outEdges.map(_.to)
-    def label = Inst.Label(name, params)
+    def label = Inst.Label(name, params)(Position.generated)
     def show  = name.show
   }
 

@@ -5,16 +5,18 @@ import scala.collection.mutable
 import scalanative.nir._
 
 final class MergeBlock(val label: Inst.Label, val name: Local) {
-  var incoming            = mutable.Map.empty[Local, (Seq[Val], State)]
-  var outgoing            = mutable.Map.empty[Local, MergeBlock]
+  var incoming = mutable.Map.empty[Local, (Seq[Val], State)]
+  var outgoing = mutable.Map.empty[Local, MergeBlock]
   var phis: Seq[MergePhi] = _
-  var start: State        = _
-  var end: State          = _
-  var cf: Inst.Cf         = _
-  var invalidations: Int  = 0
+  var start: State = _
+  var end: State = _
+  var cf: Inst.Cf = _
+  var invalidations: Int = 0
 
   def toInsts(): Seq[Inst] = {
-    val block  = this
+    implicit def pos: Position =
+      if (cf.pos != null) cf.pos else Position.generated
+    val block = this
     val result = new nir.Buffer()(Fresh(0))
     def mergeNext(next: Next.Label): Next.Label = {
       val nextBlock = outgoing(next.name)
@@ -58,7 +60,7 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
       case Inst.Unreachable(unwind) =>
         result.unreachable(mergeUnwind(unwind))
       case unknown =>
-        throw BailOut("MergeUnwind unknown Inst: ${unknown.show}")
+        throw BailOut(s"MergeUnwind unknown Inst: ${unknown.show}")
     }
     result.toSeq
   }

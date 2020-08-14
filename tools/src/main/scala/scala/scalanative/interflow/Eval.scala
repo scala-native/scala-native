@@ -16,6 +16,7 @@ trait Eval { self: Interflow =>
 
     while (true) {
       val inst = insts(pc)
+      implicit val pos: Position = inst.pos
       def bailOut =
         throw BailOut("can't eval inst: " + inst.show)
       inst match {
@@ -27,7 +28,7 @@ trait Eval { self: Interflow =>
           }
           val value = eval(op)
           if (value.ty == Type.Nothing) {
-            return Inst.Unreachable(unwind)
+            return Inst.Unreachable(unwind)(inst.pos)
           } else {
             val ty = value match {
               case InstanceRef(ty) => ty

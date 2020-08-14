@@ -2,6 +2,7 @@ package scala.scalanative
 package nir
 package serialization
 
+import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import scala.collection.mutable
@@ -11,21 +12,24 @@ import scala.scalanative.util.StringUtils
 final class BinaryDeserializer(buffer: ByteBuffer) {
   import buffer._
 
-  private val (prelude, header): (Prelude, Map[Global, Int]) = {
+  private[this] var lastPosition: Position = Position.NoPosition
+
+  private val (prelude, header, files): (Prelude,
+                                         Seq[(Global, Int)],
+                                         Array[URI]) = {
     buffer.position(0)
 
     val prelude = Prelude.readFrom(buffer)
 
-    val pairs = getSeq((getGlobal, getInt))
-    val map   = pairs.toMap
-    prelude -> map
-  }
+    val files = Array.fill(getInt())(new URI(getString()))
 
-  final def globals: Set[Global] = header.keySet
+    val pairs = getSeq((getGlobal, getInt))
+    (prelude, pairs, files)
+  }
 
   final def deserialize(): Seq[Defn] = {
     val allDefns = mutable.UnrolledBuffer.empty[Defn]
-    header.map {
+    header.foreach {
       case (g, offset) =>
         buffer.position(offset)
         allDefns += getDefn
@@ -97,16 +101,19 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   }
 
   private def getInsts(): Seq[Inst] = getSeq(getInst)
-  private def getInst(): Inst = getInt match {
-    case T.LabelInst       => Inst.Label(getLocal, getParams)
-    case T.LetInst         => Inst.Let(getLocal, getOp, Next.None)
-    case T.LetUnwindInst   => Inst.Let(getLocal, getOp, getNext)
-    case T.RetInst         => Inst.Ret(getVal)
-    case T.JumpInst        => Inst.Jump(getNext)
-    case T.IfInst          => Inst.If(getVal, getNext, getNext)
-    case T.SwitchInst      => Inst.Switch(getVal, getNext, getNexts)
-    case T.ThrowInst       => Inst.Throw(getVal, getNext)
-    case T.UnreachableInst => Inst.Unreachable(getNext)
+  private def getInst(): Inst = {
+    implicit val pos: nir.Position = getPosition()
+    getInt() match {
+      case T.LabelInst       => Inst.Label(getLocal, getParams)
+      case T.LetInst         => Inst.Let(getLocal, getOp, Next.None)
+      case T.LetUnwindInst   => Inst.Let(getLocal, getOp, getNext)
+      case T.RetInst         => Inst.Ret(getVal)
+      case T.JumpInst        => Inst.Jump(getNext)
+      case T.IfInst          => Inst.If(getVal, getNext, getNext)
+      case T.SwitchInst      => Inst.Switch(getVal, getNext, getNexts)
+      case T.ThrowInst       => Inst.Throw(getVal, getNext)
+      case T.UnreachableInst => Inst.Unreachable(getNext)
+    }
   }
 
   private def getComp(): Comp = getInt match {
@@ -145,30 +152,33 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   }
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn)
-  private def getDefn(): Defn = getInt match {
-    case T.VarDefn =>
-      Defn.Var(getAttrs, getGlobal, getType, getVal)
+  private def getDefn(): Defn = {
+    implicit val pos: nir.Position = getPosition()
+    getInt() match {
+      case T.VarDefn =>
+        Defn.Var(getAttrs, getGlobal, getType, getVal)
 
-    case T.ConstDefn =>
-      Defn.Const(getAttrs, getGlobal, getType, getVal)
+      case T.ConstDefn =>
+        Defn.Const(getAttrs, getGlobal, getType, getVal)
 
-    case T.DeclareDefn =>
-      Defn.Declare(getAttrs, getGlobal, getType)
+      case T.DeclareDefn =>
+        Defn.Declare(getAttrs, getGlobal, getType)
 
-    case T.DefineDefn =>
-      Defn.Define(getAttrs, getGlobal, getType, getInsts)
+      case T.DefineDefn =>
+        Defn.Define(getAttrs(), getGlobal(), getType(), getInsts())
 
-    case T.TraitDefn =>
-      Defn.Trait(getAttrs, getGlobal, getGlobals)
+      case T.TraitDefn =>
+        Defn.Trait(getAttrs, getGlobal, getGlobals)
 
-    case T.ClassDefn =>
-      Defn.Class(getAttrs, getGlobal, getGlobalOpt, getGlobals)
+      case T.ClassDefn =>
+        Defn.Class(getAttrs, getGlobal, getGlobalOpt, getGlobals)
 
-    case T.ModuleDefn =>
-      Defn.Module(getAttrs, getGlobal, getGlobalOpt, getGlobals)
+      case T.ModuleDefn =>
+        Defn.Module(getAttrs, getGlobal, getGlobalOpt, getGlobals)
+    }
   }
 
-  private def getGlobals(): Seq[Global]      = getSeq(getGlobal)
+  private def getGlobals(): Seq[Global] = getSeq(getGlobal)
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
   private def getGlobal(): Global = getInt match {
     case T.NoneGlobal =>
@@ -227,7 +237,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
-  private def getParam(): Val.Local       = Val.Local(getLocal, getType)
+  private def getParam(): Val.Local = Val.Local(getLocal, getType)
 
   private def getTypes(): Seq[Type] = getSeq(getType)
   private def getType(): Type = getInt match {
@@ -281,5 +291,49 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
         new String(chars)
       }
     case T.VirtualVal => Val.Virtual(getLong)
+  }
+
+  // Ported from Scala.js
+  def getPosition(): Position = {
+    import PositionFormat._
+
+    def readPosition(): Position = {
+      val first = get()
+      if (first == FormatNoPositionValue) {
+        Position.NoPosition
+      } else {
+        val result = if ((first & FormatFullMask) == FormatFullMaskValue) {
+          val file = files(getInt())
+          val line = getInt()
+          val column = getInt()
+          Position(file, line, column)
+        } else {
+          assert(lastPosition != Position.NoPosition,
+                 "Position format error: first position must be full")
+          if ((first & Format1Mask) == Format1MaskValue) {
+            val columnDiff = first >> Format1Shift
+            Position(lastPosition.source,
+                     lastPosition.line,
+                     lastPosition.column + columnDiff)
+          } else if ((first & Format2Mask) == Format2MaskValue) {
+            val lineDiff = first >> Format2Shift
+            val column = get() & 0xff // unsigned
+            Position(lastPosition.source, lastPosition.line + lineDiff, column)
+          } else {
+            assert(
+              (first & Format3Mask) == Format3MaskValue,
+              s"Position format error: first byte $first does not match any format")
+            val lineDiff = getShort()
+            val column = get() & 0xff // unsigned
+            Position(lastPosition.source, lastPosition.line + lineDiff, column)
+          }
+        }
+        lastPosition = result
+        result
+      }
+    }
+
+    if (prelude.revision < 7) Position.NoPosition
+    else readPosition()
   }
 }
