@@ -33,6 +33,12 @@ private[scalanative] object NativeLib {
     ",",
     "}")
 
+  /** Used to find native source files in jar files */
+  private val jarSrcRegex: String = {
+    val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
+    s"""^${codeDir}${fs}(.+)${regexExtensions}$$"""
+  }
+
   /**
    * This method guarantees that only code copied and generated
    * into the `native` directory and also in the `scala-native`
@@ -55,14 +61,6 @@ private[scalanative] object NativeLib {
    */
   def destObjPatterns(): String =
     s"glob:**${fs}native${fs}*${fs}${codeDir}${fs}**${oExt}"
-
-  /** Used to find native source files in jar files */
-  private def jarRegex(): String = {
-    val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
-    s"""^${codeDir}${fs}(.+)${regexExtensions}$$"""
-  }
-
-  val jarPattern = Pattern.compile(jarRegex())
 
   /** To positively identify nativelib */
   private val nativeLibMarkerFile = "org_scala-native_nativelib.txt"
@@ -133,6 +131,8 @@ private[scalanative] object NativeLib {
           s"Native Library 'nativelib' not found: $nativeLibs")
     }
   }
+
+  private val jarPattern = Pattern.compile(jarSrcRegex)
 
   private def isNativeFile(name: String): Boolean =
     jarPattern.matcher(name).matches()
