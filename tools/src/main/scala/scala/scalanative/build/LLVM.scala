@@ -13,7 +13,12 @@ import scalanative.build.NativeLib._
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
 
-  /** Called to unpack jars and copy native code */
+  /**
+    * Called to unpack jars and copy native code.
+    *
+    * @param nativelib the native lib to copy/unpack
+    * @return The destination path of the directory
+    */
   def unpackNativeCode(nativelib: NativeLib): Path =
     if (NativeLib.isJar(nativelib)) unpackNativeJar(nativelib)
     else copyNativeDir(nativelib)
@@ -24,7 +29,7 @@ private[scalanative] object LLVM {
    * a third party library that includes native code is copied.
    *
    * If the same archive has already been unpacked to this location
-   * and hasn't changed, this call has no effects
+   * and hasn't changed, this call has no effect.
    *
    * @param nativelib The NativeLib to unpack.
    * @return The Path where the nativelib has been unpacked, `workdir/dest`.
@@ -77,7 +82,7 @@ private[scalanative] object LLVM {
   /**
    * Compile all the native libs to `.o` files
    * with special logic to select GC and optional components
-   * for the `nativelib`.
+   * for the Scala Native `nativelib`.
    *
    * @param config       The configuration of the toolchain.
    * @param linkerResult The results from the linker.
@@ -92,7 +97,7 @@ private[scalanative] object LLVM {
     // code across all native component libraries
     // including the `nativelib`
     val paths =
-      IO.getAll(workdir, NativeLib.destSrcPatterns()).map(_.abs)
+      IO.getAll(workdir, NativeLib.destSrcPatterns).map(_.abs)
     val libPath = basePath.resolve(NativeLib.codeDir)
 
     // predicate to check if given file path shall be compiled
@@ -203,7 +208,7 @@ private[scalanative] object LLVM {
     val linkopts  = config.linkingOptions ++ links.map("-l" + _)
     val targetopt = Seq("-target", config.targetTriple)
     val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
-    val opaths    = IO.getAll(workdir, NativeLib.destObjPatterns()).map(_.abs)
+    val opaths    = IO.getAll(workdir, NativeLib.destObjPatterns).map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
     val compile   = config.clangPP.abs +: (flags ++ paths ++ linkopts)
     val ltoName   = lto(config).getOrElse("none")

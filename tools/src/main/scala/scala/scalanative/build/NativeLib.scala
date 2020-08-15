@@ -10,8 +10,8 @@ private[scalanative] case class NativeLib(src: Path, dest: Path)
 
 /** Utilities for dealing with native library code */
 private[scalanative] object NativeLib {
-  val fs           = File.separator
-  val jarExtension = ".jar"
+  private val fs           = File.separator
+  private val jarExtension = ".jar"
 
   /** Object file extension: ".o" */
   val oExt = ".o"
@@ -48,7 +48,7 @@ private[scalanative] object NativeLib {
    *
    * @return the source pattern
    */
-  def destSrcPatterns(): String =
+  val destSrcPatterns: String =
     srcExtensions.mkString(s"glob:**${fs}native${fs}*${fs}${codeDir}${fs}**{",
                            ",",
                            "}")
@@ -59,7 +59,7 @@ private[scalanative] object NativeLib {
    *
    * @return the object file pattern
    */
-  def destObjPatterns(): String =
+  val destObjPatterns: String =
     s"glob:**${fs}native${fs}*${fs}${codeDir}${fs}**${oExt}"
 
   /** To positively identify nativelib */
