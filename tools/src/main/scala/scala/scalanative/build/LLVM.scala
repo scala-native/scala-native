@@ -14,11 +14,11 @@ import scalanative.build.NativeLib._
 private[scalanative] object LLVM {
 
   /**
-    * Called to unpack jars and copy native code.
-    *
-    * @param nativelib the native lib to copy/unpack
-    * @return The destination path of the directory
-    */
+   * Called to unpack jars and copy native code.
+   *
+   * @param nativelib the native lib to copy/unpack
+   * @return The destination path of the directory
+   */
   def unpackNativeCode(nativelib: NativeLib): Path =
     if (NativeLib.isJar(nativelib)) unpackNativeJar(nativelib)
     else copyNativeDir(nativelib)
@@ -97,7 +97,7 @@ private[scalanative] object LLVM {
     // code across all native component libraries
     // including the `nativelib`
     val paths =
-      IO.getAll(workdir, NativeLib.destSrcPatterns).map(_.abs)
+      IO.getAll(workdir, NativeLib.destSrcPatterns(workdir)).map(_.abs)
     val libPath = basePath.resolve(NativeLib.codeDir)
 
     // predicate to check if given file path shall be compiled
@@ -208,10 +208,11 @@ private[scalanative] object LLVM {
     val linkopts  = config.linkingOptions ++ links.map("-l" + _)
     val targetopt = Seq("-target", config.targetTriple)
     val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
-    val opaths    = IO.getAll(workdir, NativeLib.destObjPatterns).map(_.abs)
-    val paths     = llPaths.map(_.abs) ++ opaths
-    val compile   = config.clangPP.abs +: (flags ++ paths ++ linkopts)
-    val ltoName   = lto(config).getOrElse("none")
+    val opaths =
+      IO.getAll(workdir, NativeLib.destObjPatterns(workdir)).map(_.abs)
+    val paths   = llPaths.map(_.abs) ++ opaths
+    val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
+    val ltoName = lto(config).getOrElse("none")
 
     config.logger.time(
       s"Linking native code (${config.gc.name} gc, $ltoName lto)") {

@@ -44,23 +44,28 @@ private[scalanative] object NativeLib {
    * into the `native` directory and also in the `scala-native`
    * sub directory gets picked up for compilation.
    *
-   * Note: this assumes that the `workdir` ends with `native`.
-   *
+   * @param workdir the base working directory
    * @return the source pattern
    */
-  val destSrcPatterns: String =
-    srcExtensions.mkString(s"glob:**${fs}native${fs}*${fs}${codeDir}${fs}**{",
-                           ",",
-                           "}")
+  def destSrcPatterns(workdir: Path): String = {
+    val workdirName = workdir.getFileName()
+    srcExtensions.mkString(
+      s"glob:**${fs}${workdirName}${fs}*${fs}${codeDir}${fs}**{",
+      ",",
+      "}")
+  }
 
   /**
    * Allow all the object files ".o" to be found with one
    * directory recursion.
    *
+   * @param workdir the base working directory
    * @return the object file pattern
    */
-  val destObjPatterns: String =
-    s"glob:**${fs}native${fs}*${fs}${codeDir}${fs}**${oExt}"
+  def destObjPatterns(workdir: Path): String = {
+    val workdirName = workdir.getFileName()
+    s"glob:**${fs}${workdirName}${fs}*${fs}${codeDir}${fs}**${oExt}"
+  }
 
   /** To positively identify nativelib */
   private val nativeLibMarkerFile = "org_scala-native_nativelib.txt"

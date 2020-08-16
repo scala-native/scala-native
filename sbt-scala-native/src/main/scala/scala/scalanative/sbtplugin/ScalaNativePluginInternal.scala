@@ -92,7 +92,8 @@ object ScalaNativePluginInternal {
       crossTarget.value / (moduleName.value + "-out")
     },
     nativeWorkdir := {
-      // downstream tools assume the workdir ends in `native`
+      // all build tools should have the workdir
+      // ending in `native` for users' consistency
       val workdir = crossTarget.value / "native"
       if (!workdir.exists) {
         IO.createDirectory(workdir)
