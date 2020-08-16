@@ -2,6 +2,7 @@ package scala.scalanative
 package nscplugin
 
 import scala.collection.mutable
+import scala.scalanative.NirGenSymbols.jlObjectRef
 import scalanative.nir._
 import scalanative.util.{StringUtils, unsupported}
 import scalanative.util.ScopedVar.scoped
@@ -725,8 +726,13 @@ trait NirGenExpr { self: NirGenPhase =>
           val res      = buf.call(sig, method, values, Next.None)
           val boxedRes = {
             val expectedResTy = genType(funSym.tpe.resultType)
-            if (!res.ty.isInstanceOf[Type.RefKind] && res.ty != expectedResTy) {
-              buf.boxValue(callTree.tpe, res)
+            if (res.ty != expectedResTy) {
+              res.ty match {
+                case _: Type.Array =>
+                  wrapAsArrayOps(res, buf)
+                case _ =>
+                  buf.boxValue(callTree.tpe, res)
+              }
             } else {
               res
             }
@@ -745,6 +751,38 @@ trait NirGenExpr { self: NirGenPhase =>
       val alloc       = buf.classalloc(anonName, unwind)
       val captureVals = curMethodThis.get.get +: captureSyms.map { sym => genExpr(Ident(sym)) }
       buf.call(ctorTy, Val.Global(ctorName, Type.Ptr), alloc +: captureVals, unwind)
+      alloc
+    }
+
+    private def wrapAsArrayOps(value: Val, buf: ExprBuffer): Val = {
+      val Type.Array(underlyingType, _) = value.ty
+
+      val (arrayOps, ty) = underlyingType match {
+        case Type.Bool =>
+          (Global.Top("scala.collection.mutable.ArrayOps$ofBoolean"), underlyingType)
+        case Type.Byte =>
+          (Global.Top("scala.collection.mutable.ArrayOps$ofByte"), underlyingType)
+        case Type.Char =>
+          (Global.Top("scala.collection.mutable.ArrayOps$ofChar"), underlyingType)
+        case Type.Double =>
+          (Global.Top("scala.collection.mutable.ArrayOps$ofDouble"), underlyingType)
+        case Type.Float =>
+          (Global.Top("scala.collection.mutable.ArrayOps$ofFloat"), underlyingType)
+        case Type.Int =>
+          (Global.Top("scala.collection.mutable.ArrayOps$ofInt"), underlyingType)
+        case Type.Long =>
+          (Global.Top("scala.collection.mutable.ArrayOps$ofLong"), underlyingType)
+        case Type.Short =>
+          (Global.Top("scala.collection.mutable.ArrayOps$ofShort"), underlyingType)
+        case Type.Unit =>
+          (Global.Top("scala.collection.mutable.ArrayOps$ofUnit"), underlyingType)
+        case _ =>
+          (Global.Top("scala.collection.mutable.ArrayOps$ofRef"), NirGenSymbols.jlObjectRef)
+      }
+
+      val alloc = buf.classalloc(arrayOps, unwind)
+      val ctor = Val.Global(arrayOps.member(Sig.Ctor(Seq(Type.Array(ty)))), Type.Ptr)
+      buf.call(Type.Function(Seq(Type.Ref(arrayOps), Type.Array(ty)), Type.Unit), ctor, Seq(alloc, value), unwind)
       alloc
     }
 
@@ -1323,7 +1361,7 @@ trait NirGenExpr { self: NirGenPhase =>
                              BoxUnsignedMethod(st.sym),
                              Seq(ValTree(value)))
       case _ =>
-        if (genPrimCode(st.sym) == 'O') {
+        if (genPrimCode(st) == 'O') {
           value
         } else {
           genApplyBox(st, ValTree(value))
@@ -1683,6 +1721,8 @@ trait NirGenExpr { self: NirGenPhase =>
               buf.unreachable(unwind)
               buf.label(fresh())
               Val.Zero(Type.Nothing)
+            case (Type.Ref(Global.Top("java.lang.Object"), _, _), toty : Type.Array) =>
+              genAsInstanceOfToArray(app, value, toty, boxty, boxed)
             case _ =>
               val cast = buf.as(boxty, boxed, unwind)
               unboxValue(app.tpe, partial = true, cast)
@@ -1692,6 +1732,58 @@ trait NirGenExpr { self: NirGenPhase =>
           assert(argsp.size == 1)
           genSynchronized(ValTree(boxed), argsp.head)
       }
+    }
+
+    private def genAsInstanceOfToArray(app: Apply, value: Val, toty: nir.Type, boxty: nir.Type, boxed: Val): Val = {
+      //val arrayOps = Global.Top("scala.collection.mutable.ArrayOps$ofInt")
+      val Type.Array(underlyingType, _) = toty
+
+      val arrayOps = underlyingType match {
+        case Type.Bool => Global.Top("scala.collection.mutable.ArrayOps$ofBoolean")
+        case Type.Byte => Global.Top("scala.collection.mutable.ArrayOps$ofByte")
+        case Type.Char => Global.Top("scala.collection.mutable.ArrayOps$ofChar")
+        case Type.Double => Global.Top("scala.collection.mutable.ArrayOps$ofDouble")
+        case Type.Float => Global.Top("scala.collection.mutable.ArrayOps$ofFloat")
+        case Type.Int => Global.Top("scala.collection.mutable.ArrayOps$ofInt")
+        case Type.Long => Global.Top("scala.collection.mutable.ArrayOps$ofLong")
+        case Type.Short => Global.Top("scala.collection.mutable.ArrayOps$ofShort")
+        case Type.Unit => Global.Top("scala.collection.mutable.ArrayOps$ofUnit")
+        case _ => Global.Top("scala.collection.mutable.ArrayOps$ofRef")
+      }
+
+      val genericUnderlyingType = underlyingType match {
+        case _: Type.RefKind => jlObjectRef
+        case _ => underlyingType
+      }
+
+      val arrayOpsRef = Type.Ref(arrayOps)
+      val mergeV = Val.Local(fresh(), toty)
+
+      val isArrayOpsL, notArrayOpsL, mergeL = fresh()
+      val isArrayOps = buf.is(arrayOpsRef, value, unwind)
+      buf.branch(isArrayOps, Next(isArrayOpsL), Next(notArrayOpsL))
+
+      locally {
+        buf.label(isArrayOpsL)
+        val asArrayOps = buf.as(arrayOpsRef, value, unwind)
+        val repr = buf.method(asArrayOps, arrayOps.member(Sig.Method("repr", Seq(Type.Array(genericUnderlyingType)))).sig, unwind)
+        val res = buf.call(Type.Function(Seq(arrayOpsRef), Type.Array(genericUnderlyingType)), repr, Seq(asArrayOps), unwind)
+        val cast = {
+          if (res.ty != toty) buf.as(toty, res, unwind)
+          else res
+        }
+        buf.jump(mergeL, Seq(cast))
+      }
+
+      locally {
+        buf.label(notArrayOpsL)
+        val cast = buf.as(boxty, boxed, unwind)
+        val res = unboxValue(app.tpe, partial = true, cast)
+        buf.jump(mergeL, Seq(res))
+      }
+
+      buf.label(mergeL, Seq(mergeV))
+      mergeV
     }
 
     def genApplyNew(app: Apply): Val = {
