@@ -137,17 +137,13 @@ object Discover {
   /** Versions of clang which are known to work with Scala Native. */
   private[scalanative] val clangVersions =
     Seq(
+      ("11", ""),
       ("10", ""),
       ("9", ""),
       ("8", ""),
       ("7", ""),
-      ("7", "0"), // LLVM changed version numbering scheme, try both.
       ("6", "0"),
-      ("5", "0"),
-      ("4", "0"),
-      ("3", "9"),
-      ("3", "8"),
-      ("3", "7")
+      ("5", "0")
     )
 
   /** Discover concrete binary path using command name and
