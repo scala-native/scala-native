@@ -3,15 +3,14 @@ package linker
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.codegen.Metadata
 
 class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val unavailable = mutable.Set.empty[Global]
   val loaded      = mutable.Map.empty[Global, mutable.Map[Global, Defn]]
   val enqueued    = mutable.Set.empty[Global]
-  val todo        = mutable.Stack.empty[Global]
+  var todo        = List.empty[Global]
   val done        = mutable.Map.empty[Global, Defn]
-  val stack       = mutable.Stack.empty[Global]
+  var stack       = List.empty[Global]
   val links       = mutable.Set.empty[Attr.Link]
   val infos       = mutable.Map.empty[Global, Info]
   val from        = mutable.Map.empty[Global, Global]
@@ -84,14 +83,15 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def process(): Unit =
     while (todo.nonEmpty) {
-      val name = todo.pop()
+      val name = todo.last
+      todo = todo.init
       if (!done.contains(name)) {
         reachDefn(name)
       }
     }
 
   def reachDefn(name: Global): Unit = {
-    stack.push(name)
+    stack :+= name
     lookup(name).fold[Unit] {
       reachUnavailable(name)
     } { defn =>
@@ -101,7 +101,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         reachDefn(defn)
       }
     }
-    stack.pop()
+    stack = stack.init
   }
 
   def reachDefn(defn: Defn): Unit = {
@@ -164,7 +164,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     if (!enqueued.contains(name) && name.ne(Global.None)) {
       enqueued += name
       from(name) = if (stack.isEmpty) Global.None else stack.head
-      todo.push(name)
+      todo :+= name
     }
 
   def reachGlobalNow(name: Global): Unit =

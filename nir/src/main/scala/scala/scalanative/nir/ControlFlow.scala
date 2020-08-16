@@ -12,7 +12,7 @@ import nir._
  *  * What are the successors of given block?
  */
 object ControlFlow {
-  final case class Edge(val from: Block, val to: Block, val next: Next)
+  final case class Edge(from: Block, to: Block, next: Next)
 
   final case class Block(name: Local,
                          params: Seq[Val.Local],
@@ -24,7 +24,7 @@ object ControlFlow {
     lazy val splitCount: Int = {
       var count = 0
       insts.foreach {
-        case Inst.Let(_, call: Op.Call, unwind) if unwind ne Next.None =>
+        case Inst.Let(_, _: Op.Call, unwind) if unwind ne Next.None =>
           count += 1
         case _ =>
           ()
@@ -64,33 +64,35 @@ object ControlFlow {
       }
 
       val blocks = mutable.Map.empty[Local, Block]
-      val todo   = mutable.Stack.empty[Block]
+      var todo   = List.empty[Block]
 
       def edge(from: Block, to: Block, next: Next) = {
-        val e = new Edge(from, to, next)
+        val e = Edge(from, to, next)
         from.outEdges += e
         to.inEdges += e
       }
 
       def block(local: Local): Block =
-        blocks.get(local).getOrElse {
-          val k                     = locations(local)
-          val Inst.Label(n, params) = insts(k)
+        blocks.getOrElse(
+          local, {
+            val k                     = locations(local)
+            val Inst.Label(n, params) = insts(k)
 
-          // copy all instruction up until and including
-          // first control-flow instruction after the label
-          val body = mutable.UnrolledBuffer.empty[Inst]
-          var i    = k
-          do {
-            i += 1
-            body += insts(i)
-          } while (!insts(i).isInstanceOf[Inst.Cf])
+            // copy all instruction up until and including
+            // first control-flow instruction after the label
+            val body = mutable.UnrolledBuffer.empty[Inst]
+            var i    = k
+            do {
+              i += 1
+              body += insts(i)
+            } while (!insts(i).isInstanceOf[Inst.Cf])
 
-          val block = new Block(n, params, body, isEntry = k == 0)
-          blocks(local) = block
-          todo.push(block)
-          block
-        }
+            val block = new Block(n, params, body, isEntry = k == 0)
+            blocks(local) = block
+            todo :+= block
+            block
+          }
+        )
 
       def visit(node: Block): Unit = {
         val insts :+ cf = node.insts
@@ -128,8 +130,9 @@ object ControlFlow {
       val visited = mutable.Set.empty[Local]
 
       while (todo.nonEmpty) {
-        val block = todo.pop()
-        val name  = block.name
+        val block = todo.last
+        todo = todo.init
+        val name = block.name
         if (!visited(name)) {
           visited += name
           visit(block)
