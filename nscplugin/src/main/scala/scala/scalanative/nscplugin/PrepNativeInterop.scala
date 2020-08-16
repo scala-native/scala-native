@@ -1,11 +1,9 @@
 package scala.scalanative
 package nscplugin
 
-import scala.tools.nsc
-import nsc._
-
-import scala.collection.immutable.ListMap
 import scala.collection.mutable.Buffer
+import scala.tools.nsc
+import scala.tools.nsc._
 
 /**
  * This phase does:
@@ -23,9 +21,8 @@ abstract class PrepNativeInterop
   }
 
   import global._
-  import nirAddons.nirDefinitions._
   import definitions._
-  import rootMirror._
+  import nirAddons.nirDefinitions._
 
   val phaseName: String            = "nativeinterop"
   override def description: String = "prepare ASTs for Native interop"
@@ -142,14 +139,14 @@ abstract class PrepNativeInterop
           val nrhs = prepopulatedScalaProperties(dd, unit.freshTermName)
           treeCopy.DefDef(tree, mods, name, Nil, Nil, transform(tpt), nrhs)
 
-        // `DefDef` that initializes `lazy val scalaProps` in trait `PropertiesTrait`
+        // `ValDef` that initializes `lazy val scalaProps` in trait `PropertiesTrait`
         // We rewrite the body to return a pre-propulated `Properties`.
         // - Scala 2.12
         case vddef @ ValDef(mods, name, tpt, _)
             if vddef.symbol == PropertiesTrait.info.member(
               nativenme.scalaProps) =>
           val nrhs = prepopulatedScalaProperties(vddef, unit.freshTermName)
-          treeCopy.ValDef(tree, mods, name, tpt, nrhs)
+          treeCopy.ValDef(tree, mods, name, transform(tpt), nrhs)
 
         // Catch ValDefs in enumerations with simple calls to Value
         case ValDef(mods, name, tpt, ScalaEnumValue.NoName(optPar))
@@ -349,7 +346,6 @@ abstract class PrepNativeInterop
 
 object PrepNativeInterop {
   private final class OwnerKind(val baseKinds: Int) extends AnyVal {
-    import OwnerKind._
 
     @inline def isBaseKind: Boolean =
       Integer.lowestOneBit(baseKinds) == baseKinds && baseKinds != 0 // exactly 1 bit on
