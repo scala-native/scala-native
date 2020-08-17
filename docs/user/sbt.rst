@@ -233,8 +233,8 @@ Scala library. The code can be put in subdirectories as desired inside the
 support Scala/JVM or Scala.js if the Native portions have replacement
 code on the respective platforms.
 
-The primary purpose of this feature is to allow libraries that need native
-`glue` code to allow the library to support Scala Native. The current
+The primary purpose of this feature is to allow libraries to support
+Scala Native that need native `glue` code to operate. The current
 C interopt does not allow direct access to macro defined constants and
 functions or allow passing `struct`s from the stack to C functions.
 Future versions of Scala Native may relax these restrictions making
