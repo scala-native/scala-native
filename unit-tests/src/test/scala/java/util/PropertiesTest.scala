@@ -5,6 +5,7 @@ package java.util
 
 import java.io._
 import java.{util => ju}
+import java.nio.charset.StandardCharsets
 
 import org.junit.Test
 import org.junit.Ignore
@@ -329,48 +330,6 @@ class PropertiesTest {
                  prop.store(null: OutputStream, ""))
   }
 
-  def storeStream(props: Properties,
-                  header: String = ""): ByteArrayOutputStream = {
-    val out = new ByteArrayOutputStream()
-    props.store(out, header)
-    out
-  }
-
-  def storeWriter(props: Properties,
-                  header: String = ""): ByteArrayOutputStream = {
-    val out = new ByteArrayOutputStream()
-    props.store(new OutputStreamWriter(out), header)
-    out.close()
-    out
-  }
-
-  def loadByteArrayOutputStream(out: ByteArrayOutputStream): Properties = {
-    val props = new Properties()
-    props.load(new ByteArrayInputStream(out.toByteArray))
-    props
-  }
-
-  def assertAll(expected: Properties, actual: Properties): Unit = {
-    val e = expected.propertyNames()
-    while (e.hasMoreElements) {
-      val nextKey = e.nextElement().asInstanceOf[String]
-      assertEquals(actual.getProperty(nextKey), expected.getProperty(nextKey))
-    }
-  }
-
-  def loadStream(in: String): Properties = {
-    val prop = new java.util.Properties()
-    prop.load(new ByteArrayInputStream(in.getBytes("ISO8859_1")))
-    prop
-  }
-
-  def loadReader(in: String): Properties = {
-    val prop = new java.util.Properties()
-    prop.load(
-      new InputStreamReader(new ByteArrayInputStream(in.getBytes("UTF-8"))))
-    prop
-  }
-
   @Test def storeOutputStreamCommentsLoadInputStreamRoundtrip(): Unit = {
     val prop1 = new Properties()
     prop1.put("Property A", " aye\\\f\t\n\r\b")
@@ -428,5 +387,51 @@ class PropertiesTest {
     val out   = storeWriter(prop1, "A Header")
     val prop2 = loadByteArrayOutputStream(out)
     assertAll(prop1, prop2)
+  }
+
+  // helper functions
+
+  def storeStream(props: Properties,
+                  header: String = ""): ByteArrayOutputStream = {
+    val out = new ByteArrayOutputStream()
+    props.store(out, header)
+    out
+  }
+
+  def storeWriter(props: Properties,
+                  header: String = ""): ByteArrayOutputStream = {
+    val out = new ByteArrayOutputStream()
+    props.store(new OutputStreamWriter(out), header)
+    out.close()
+    out
+  }
+
+  def loadByteArrayOutputStream(out: ByteArrayOutputStream): Properties = {
+    val props = new Properties()
+    props.load(new ByteArrayInputStream(out.toByteArray))
+    props
+  }
+
+  def assertAll(expected: Properties, actual: Properties): Unit = {
+    val e = expected.propertyNames()
+    while (e.hasMoreElements) {
+      val nextKey = e.nextElement().asInstanceOf[String]
+      assertEquals(actual.getProperty(nextKey), expected.getProperty(nextKey))
+    }
+  }
+
+  def loadStream(in: String): Properties = {
+    val prop = new java.util.Properties()
+    prop.load(
+      new ByteArrayInputStream(in.getBytes(StandardCharsets.ISO_8859_1)))
+    prop
+  }
+
+  def loadReader(in: String): Properties = {
+    val prop = new java.util.Properties()
+    prop.load(
+      new InputStreamReader(
+        new ByteArrayInputStream(in.getBytes(StandardCharsets.UTF_8))))
+    prop
   }
 }
