@@ -138,7 +138,7 @@ object ExecutionContext {
    *
    * @return the global `ExecutionContext`
    */
-  def global: ExecutionContextExecutor = Implicits.global.asInstanceOf[ExecutionContextExecutor]
+  def global: ExecutionContext = Implicits.global
 
   object Implicits {
     /**
@@ -149,7 +149,8 @@ object ExecutionContext {
      * the thread pool uses a target number of worker threads equal to the number of
      * [[https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#availableProcessors-- available processors]].
      */
-    implicit lazy val global: ExecutionContext = impl.ExecutionContextImpl.fromExecutor(null: Executor)
+    implicit lazy val global: ExecutionContext =
+      scala.scalanative.runtime.ExecutionContext.global
   }
 
   /** Creates an `ExecutionContext` from the given `ExecutorService`.
