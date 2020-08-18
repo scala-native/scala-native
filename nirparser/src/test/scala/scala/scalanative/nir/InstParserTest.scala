@@ -6,11 +6,11 @@ import org.scalatest._
 import org.scalatest.funsuite.AnyFunSuite
 
 class InstParserTest extends AnyFunSuite {
-  val local = Local(1)
-  val next = Next(local)
-  val noTpe = Type.Unit
-  val value = Val.Int(42)
-  val unwind = Next.Unwind(Val.Local(local, nir.Rt.Object), next)
+  val local        = Local(1)
+  val next         = Next(local)
+  val noTpe        = Type.Unit
+  val value        = Val.Int(42)
+  val unwind       = Next.Unwind(Val.Local(local, nir.Rt.Object), next)
   implicit val pos = Position.generated
   Seq[Inst](
     Inst.Label(local, Seq.empty),
