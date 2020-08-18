@@ -271,7 +271,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.CharsVal =>
       Val.Chars {
         if (prelude.revision < 7)
-          StringUtils.processEscapes(getString()).getBytes("UTF-8")
+          StringUtils.processEscapes(getString())
         else getBytes()
       }
     case T.LocalVal  => Val.Local(getLocal, getType)

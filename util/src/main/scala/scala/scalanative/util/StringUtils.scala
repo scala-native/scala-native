@@ -2,17 +2,20 @@ package scala.scalanative.util
 
 import scala.StringContext.InvalidEscapeException
 import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuilder
 
 object StringUtils {
 
   /**
    * Custom implementation of StringContext.processEscapes which also parses hex values
-   * @param str UTF-8 encoded input string optionally containing literal escapes and hex values
-   * @return UTF-8 representation of escaped ByteString
+   * @param str input string optionally containing literal escapes and hex values
+   * @return escaped ByteString
    */
-  def processEscapes(str: String): String = {
+  def processEscapes(str: String): Array[Byte] = {
     val len = str.length
-    val b   = new java.lang.StringBuilder()
+    val b   = Array.newBuilder[Byte]
+
+    def append(str: String): ArrayBuilder[Byte] = b ++= str.getBytes
 
     // replace escapes with given first escape
     def isHex(c: Char): Boolean =
@@ -21,22 +24,22 @@ object StringUtils {
         (c >= 'A' && c <= 'F')
 
     // append replacement starting at index `i`, with `next` backslash
-    @tailrec def loop(from: Int): java.lang.StringBuilder = {
+    @tailrec def loop(from: Int): ArrayBuilder[Byte] = {
 
       str.indexOf('\\', from) match {
-        case -1 => b.append(str.substring(from))
+        case -1 => append(str.substring(from))
         case idx =>
-          b.append(str.substring(from, idx))
+          append(str.substring(from, idx))
           if (idx >= len) throw new InvalidEscapeException(str, from)
           str(idx + 1) match {
-            case 'b'  => b.append('\b'); loop(idx + 2)
-            case 't'  => b.append('\t'); loop(idx + 2)
-            case 'n'  => b.append('\n'); loop(idx + 2)
-            case 'f'  => b.append('\f'); loop(idx + 2)
-            case 'r'  => b.append('\r'); loop(idx + 2)
-            case '"'  => b.append('\"'); loop(idx + 2)
-            case '\'' => b.append('\''); loop(idx + 2)
-            case '\\' => b.append('\\'); loop(idx + 2)
+            case 'b'  => b += '\b'; loop(idx + 2)
+            case 't'  => b += '\t'; loop(idx + 2)
+            case 'n'  => b += '\n'; loop(idx + 2)
+            case 'f'  => b += '\f'; loop(idx + 2)
+            case 'r'  => b += '\r'; loop(idx + 2)
+            case '"'  => b += '\"'; loop(idx + 2)
+            case '\'' => b += '\''; loop(idx + 2)
+            case '\\' => b += '\\'; loop(idx + 2)
             case o if '0' <= o && o <= '7' =>
               throw new InvalidEscapeException(str, idx)
             case 'x' =>
@@ -46,17 +49,17 @@ object StringUtils {
                 throw new IllegalArgumentException(
                   s"malformed C string - hex value greater then 0xFF: $str")
               }
-              b.append(hexValue.toChar)
+              b += hexValue.toByte
               loop(idx + 2 + hex.length)
             case c =>
-              b.append('\\')
-                .append(c)
+              b += '\\'
+              b += c.toByte
               loop(idx + 2)
           }
       }
     }
 
-    loop(0).toString
+    loop(0).result()
   }
 
 }

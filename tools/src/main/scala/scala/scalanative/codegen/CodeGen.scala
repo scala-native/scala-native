@@ -536,7 +536,7 @@ object CodeGen {
     def genChars(bytes: Array[Byte]): Unit = {
       str("c\"")
       bytes.foreach {
-        case '\\' => str("\\" * 2)
+        case '\\' => str("\\\\")
         case c if c < 0x20 || c == '"' || c >= 0x7f =>
           val hex = Integer.toHexString(c)
           str {

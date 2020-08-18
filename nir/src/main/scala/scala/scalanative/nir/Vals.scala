@@ -176,7 +176,6 @@ object Val {
   final case class Chars(value: Seq[scala.Byte]) extends Val {
     lazy val byteCount: scala.Int     = value.length + 1
     lazy val bytes: Array[scala.Byte] = value.toArray
-    lazy val stringValue              = new java.lang.String(bytes, "UTF-8")
   }
   final case class Local(name: nir.Local, valty: nir.Type)   extends Val
   final case class Global(name: nir.Global, valty: nir.Type) extends Val
