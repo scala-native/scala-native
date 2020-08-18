@@ -10,7 +10,7 @@ private[scalanative] case class NativeLib(src: Path, dest: Path)
 
 /** Utilities for dealing with native library code */
 private[scalanative] object NativeLib {
-  private val fs           = File.separator
+  private val fileSep      = File.separator
   private val jarExtension = ".jar"
 
   /** Object file extension: ".o" */
@@ -29,14 +29,14 @@ private[scalanative] object NativeLib {
 
   /** Used to find native source files in directories */
   val srcPatterns = srcExtensions.mkString(
-    s"glob:**${fs}classes${fs}${codeDir}${fs}**{",
+    s"glob:**${fileSep}classes${fileSep}${codeDir}${fileSep}**{",
     ",",
     "}")
 
   /** Used to find native source files in jar files */
   private val jarSrcRegex: String = {
     val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
-    s"""^${codeDir}${fs}(.+)${regexExtensions}$$"""
+    s"""^${codeDir}${fileSep}(.+)${regexExtensions}$$"""
   }
 
   /**
@@ -48,9 +48,9 @@ private[scalanative] object NativeLib {
    * @return the source pattern
    */
   def destSrcPatterns(workdir: Path): String = {
-    val workdirName = workdir.getFileName()
+    val workdirStr = workdir.toString()
     srcExtensions.mkString(
-      s"glob:**${fs}${workdirName}${fs}*${fs}${codeDir}${fs}**{",
+      s"glob:${workdirStr}${fileSep}*${fileSep}${codeDir}${fileSep}**{",
       ",",
       "}")
   }
@@ -63,8 +63,8 @@ private[scalanative] object NativeLib {
    * @return the object file pattern
    */
   def destObjPatterns(workdir: Path): String = {
-    val workdirName = workdir.getFileName()
-    s"glob:**${fs}${workdirName}${fs}*${fs}${codeDir}${fs}**${oExt}"
+    val workdirStr = workdir.toString()
+    s"glob:${workdirStr}${fileSep}*${fileSep}${codeDir}${fileSep}**${oExt}"
   }
 
   /** To positively identify nativelib */
@@ -72,7 +72,7 @@ private[scalanative] object NativeLib {
 
   /** Note: assumes that code is compiled into the `classes` directory */
   private val dirMarkerFilePattern =
-    s"glob:**${fs}classes${fs}" + nativeLibMarkerFile
+    s"glob:**${fileSep}classes${fileSep}" + nativeLibMarkerFile
 
   /** Does this Path point to a jar file */
   def isJar(path: Path): Boolean = path.toString().endsWith(jarExtension)
