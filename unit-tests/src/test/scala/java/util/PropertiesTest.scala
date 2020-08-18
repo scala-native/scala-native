@@ -5,6 +5,7 @@ package java.util
 
 import java.io._
 import java.{util => ju}
+import java.nio.charset.StandardCharsets
 
 import org.junit.Test
 import org.junit.Ignore
@@ -171,72 +172,65 @@ class PropertiesTest {
   }
 
   // ported from Harmony
-  @Test def put_on_null_key_or_null_value(): Unit = {
+  @Test def putOnNullKeyOrNullValue(): Unit = {
     val properties = new Properties
     assertThrows(classOf[NullPointerException], properties.put(null, "any"))
     assertThrows(classOf[NullPointerException], properties.put("any", null))
   }
 
-  @Test def non_string_values(): Unit = {
+  @Test def nonStringValues(): Unit = {
     val properties = new Properties
 
-    properties.put("age", Int.box(18))
+    properties.put("age", new Integer(18))
     assertNull(properties.getProperty("age"))
     assertThrows(classOf[ClassCastException],
-                 properties.list(new PrintWriter(new ByteArrayOutputStream)))
+                 properties.list(new PrintWriter(new ByteArrayOutputStream())))
   }
 
   @Test def list(): Unit = {
-    val properties = new Properties
 
-    def assertResult(result: String): Unit = {
-      val buffer4stream = new ByteArrayOutputStream
-      val stream        = new PrintStream(buffer4stream)
-      properties.list(stream)
-      assertEquals(buffer4stream.toString.trim, result.trim)
-      stream.flush()
+    def assertResult(props: Properties, result: String): Unit = {
+      val out = new ByteArrayOutputStream()
+      val ps  = new PrintStream(out)
+      props.list(ps)
+      ps.close()
+      assertEquals(out.toString.trim, result.trim)
     }
 
-    assertResult("-- listing properties --\n")
+    assertResult(new Properties(), "-- listing properties --\n")
 
-    properties.put("name", "alice")
+    val prop1 = new Properties()
+    prop1.put("name", "alice")
     val result1 =
       """
         |-- listing properties --
         |name=alice
       """.stripMargin
-    assertResult(result1)
+    assertResult(prop1, result1)
 
-    properties.put("p0000000000111111111122222222223333333333", "40")
+    val prop2 = new Properties()
+    prop2.put("p0000000000111111111122222222223333333333", "40")
     val result2 =
       """-- listing properties --
-        |name=alice
         |p000000000011111111112222222222333333...=40
       """.stripMargin
-    assertResult(result2)
+    assertResult(prop2, result2)
   }
 
-  private val dummyProps = {
-    val bout = new ByteArrayOutputStream()
-    val ps   = new PrintStream(bout)
-    ps.println("#commented.key=dummy_value")
-    ps.println("key1=value1")
-    ps.println("key2=value1")
-    ps.close()
-    bout.toByteArray
-  }
+  private val dummyProps =
+    """#commented.key=dummy_value
+      |key1=value1
+      |key2=value1
+      |""".stripMargin
 
-  @Test def load_InputStream_with_null_input(): Unit = {
+  @Test def loadInputStreamWithNullInput(): Unit = {
     val prop = new java.util.Properties()
     assertThrows(classOf[NullPointerException],
                  prop.load(null: java.io.InputStream))
   }
 
-  @Test def load_InputStream(): Unit = {
-    val is: InputStream = new ByteArrayInputStream(dummyProps)
-    val prop            = new Properties()
-    prop.load(is)
-    is.close()
+  @Test def loadInputStream(): Unit = {
+    val prop = loadStream(dummyProps)
 
     assertEquals("value1", prop.getProperty("key1"))
     assertNull(prop.getProperty("commented.key"))
@@ -244,38 +238,28 @@ class PropertiesTest {
                  prop.getProperty("commented.key", "default_value"))
   }
 
-  @Test def load_InputStream_for_empty_keys(): Unit = {
-    var prop = new java.util.Properties()
-    prop.load(new ByteArrayInputStream("=".getBytes()))
+  @Test def loadInputStreamForEmptyKeys(): Unit = {
+    val prop = loadStream("=")
     assertEquals("", prop.get(""))
 
-    prop = new java.util.Properties()
-    prop.load(new ByteArrayInputStream(" = ".getBytes()))
-    assertEquals("", prop.get(""))
+    val prop1 = loadStream(" = ")
+    assertEquals("", prop1.get(""))
   }
 
-  @Test def load_InputStream_handle_whitespace(): Unit = {
-    var prop = new java.util.Properties()
-    prop.load(new ByteArrayInputStream(" a= b".getBytes()))
+  @Test def loadInputStreamHandleWhitespace(): Unit = {
+    val prop = loadStream(" a= b")
     assertEquals("b", prop.get("a"))
 
-    prop = new java.util.Properties()
-    prop.load(new ByteArrayInputStream(" a b".getBytes()))
-    assertEquals("b", prop.get("a"))
+    val prop1 = loadStream(" a b")
+    assertEquals("b", prop1.get("a"))
   }
 
-  @Test def load_InputStream_handle_special_chars(): Unit = {
-    var prop = new java.util.Properties()
-    prop.load(
-      new ByteArrayInputStream(
-        "#\u008d\u00d2\na=\u008d\u00d3".getBytes("ISO8859_1")))
+  @Test def loadInputStreamHandleSpecialChars(): Unit = {
+    val prop = loadStream("#\u008d\u00d2\na=\u008d\u00d3")
     assertEquals("\u008d\u00d3", prop.get("a"))
 
-    prop = new java.util.Properties()
-    prop.load(
-      new ByteArrayInputStream(
-        "#properties file\r\nfred=1\r\n#last comment".getBytes("ISO8859_1")))
-    assertEquals("1", prop.get("fred"))
+    val prop1 = loadStream("#properties file\r\nfred=1\r\n#last comment")
+    assertEquals("1", prop1.get("fred"))
   }
 
   def checkLoadFromFile(prop: Properties): Unit = {
@@ -298,7 +282,7 @@ class PropertiesTest {
     assertEquals("""baz \  """, prop.getProperty("notrailing"))
   }
 
-  @Test def load_InputStream_with_file_input(): Unit = {
+  @Test def loadInputStreamWithFileInput(): Unit = {
     val file =
       new File("unit-tests/src/test/resources/properties-load-test.properties")
     val is: InputStream = new FileInputStream(file)
@@ -308,16 +292,13 @@ class PropertiesTest {
     checkLoadFromFile(prop)
   }
 
-  @Test def load_Reader_with_null_input(): Unit = {
+  @Test def loadReaderWithNullInput(): Unit = {
     val prop = new java.util.Properties()
     assertThrows(classOf[NullPointerException], prop.load(null: Reader))
   }
 
-  @Test def load_Reader(): Unit = {
-    val is: InputStream = new ByteArrayInputStream(dummyProps)
-    val prop            = new Properties()
-    prop.load(new InputStreamReader(is))
-    is.close()
+  @Test def loadReader(): Unit = {
+    val prop = loadReader(dummyProps)
 
     assertEquals("value1", prop.getProperty("key1"))
     assertNull(prop.getProperty("commented.key"))
@@ -325,67 +306,41 @@ class PropertiesTest {
                  prop.getProperty("commented.key", "default_value"))
   }
 
-  @Test def load_Reader_handle_special_chars(): Unit = {
-    var prop = new java.util.Properties()
-    prop.load(
-      new InputStreamReader(
-        new ByteArrayInputStream(
-          "#\u008d\u00d2\na=\u008d\u00d3".getBytes("UTF-8"))))
+  @Test def loadReaderHandleSpecialChars(): Unit = {
+    val prop = loadReader("#\u008d\u00d2\na=\u008d\u00d3")
     assertEquals("\u008d\u00d3", prop.get("a"))
 
-    prop = new java.util.Properties()
-    prop.load(
-      new InputStreamReader(
-        new ByteArrayInputStream(
-          "#properties file\r\nfred=1\r\n#last comment".getBytes("UTF-8"))))
-    assertEquals("1", prop.get("fred"))
+    val prop1 = loadReader("#properties file\r\nfred=1\r\n#last comment")
+    assertEquals("1", prop1.get("fred"))
   }
 
-  @Test def load_Reader_with_file_input(): Unit = {
+  @Test def loadReaderWithFileInput(): Unit = {
     val file =
       new File("unit-tests/src/test/resources/properties-load-test.properties")
     val is: InputStream = new FileInputStream(file)
     val prop            = new Properties()
     prop.load(new InputStreamReader(is))
     is.close()
-
     checkLoadFromFile(prop)
   }
 
-  @Test def store_OutputStream_comments_with_null_input(): Unit = {
+  @Test def storeOutputStreamCommentsWithNullInput(): Unit = {
     val prop = new java.util.Properties()
     assertThrows(classOf[NullPointerException],
                  prop.store(null: OutputStream, ""))
   }
 
-  // used for next two tests, \b prints as \u0008
-  val prop1 = new Properties()
-  prop1.put("Property A", " aye\\\f\t\n\r\b")
-  prop1.put("Property B", "b ee#!=:")
-  prop1.put("Property C", "see")
-  val header1 =
-    "A Header\rLine2\nLine3\r\nLine4\n!AfterExclaim\r\n#AfterPound\nWow!"
-  val out1 = new ByteArrayOutputStream()
-  prop1.store(out1, header1)
-  out1.close() // noop
+  @Test def storeOutputStreamCommentsLoadInputStreamRoundtrip(): Unit = {
+    val prop1 = new Properties()
+    prop1.put("Property A", " aye\\\f\t\n\r\b")
+    prop1.put("Property B", "b ee#!=:")
+    prop1.put("Property C", "see")
+    val header1 =
+      "A Header\rLine2\nLine3\r\nLine4\n!AfterExclaim\r\n#AfterPound\nWow!"
+    val out1 = storeStream(prop1, header1)
 
-  @Test def store_OutputStream_comments_load_InputStream_roundtrip(): Unit = {
-    val prop2 = new Properties()
-
-    val out1 = new ByteArrayOutputStream()
-    prop1.store(out1, header1)
-
-    val in = new ByteArrayInputStream(out1.toByteArray)
-    prop2.load(in)
-    in.close()
-
-    val e = prop1.propertyNames()
-    while (e.hasMoreElements) {
-      val nextKey = e.nextElement().asInstanceOf[String]
-      assertEquals(prop2.getProperty(nextKey), prop1.getProperty(nextKey))
-    }
-  }
-  @Test def check_comment_formatted_correctly(): Unit = {
+    val prop2 = loadByteArrayOutputStream(out1)
+    assertAll(expected = prop1, actual = prop2)
     // Avoid variable Date output which is last line in comment
     // Matches JVM output
     val commentsWithoutDate =
@@ -396,52 +351,87 @@ class PropertiesTest {
          |!AfterExclaim
          |#AfterPound
          |#Wow!""".stripMargin
-
     assertTrue(out1.toString().startsWith(commentsWithoutDate))
   }
 
-  @Test def check_properties_formatted_correctly(): Unit = {
-    // for better or worse JVM outputs \b as \u0008 and you
-    // can't just add \u0008 to the end of the last property
-    val props = new StringBuilder("""|Property\ C=see
-         |Property\ B=b ee\#\!\=\:
-         |Property\ A=\ aye\\\f\t\n\r""")
-      .appendAll(Array('\\', 'u', '0', '0', '0', '8'))
-      .append(System.lineSeparator)
-      .append('|')
+  @Test def checkPropertiesFormattedCorrectly(): Unit = {
+    val prop1 = new Properties()
+    prop1.put("Property C", "see")
+    val out1 = storeStream(prop1)
+    assertTrue(out1.toString().trim().endsWith("""Property\ C=see"""))
 
-    val res = props.toString.stripMargin
-    // uncomment for debug
-    //println(out1.toString())
-    //println(res)
-    assertTrue(out1.toString().endsWith(res))
+    val prop2 = new Properties()
+    prop2.put("Property B", "b ee#!=:")
+    val out2 = storeStream(prop2)
+    assertTrue(out2.toString().trim().endsWith("""Property\ B=b ee\#\!\=\:"""))
+
+    val prop3 = new Properties()
+    prop3.put("Property A", " aye\\\f\t\n\r\b")
+    val out3 = storeStream(prop3)
+    // JVM outputs \b as \u0008 and you can't just add \u0008 to the end
+    val result = new StringBuilder("""Property\ A=\ aye\\\f\t\n\r""")
+      .appendAll(Array('\\', 'u', '0', '0', '0', '8'))
+    assertTrue(out3.toString().trim().endsWith(result.toString))
   }
 
-  @Test def store_Writer_comments_with_null_input(): Unit = {
+  @Test def storeWriterCommentsWithNullInput(): Unit = {
     val prop = new java.util.Properties()
     assertThrows(classOf[NullPointerException], prop.store(null: Writer, ""))
   }
 
-  @Test def store_Writer_comments(): Unit = {
+  @Test def storeWriterComments(): Unit = {
     val prop1 = new Properties()
-    val prop2 = new Properties()
-
     prop1.put("Property A", " aye\\\f\t\n\r\b")
     prop1.put("Property B", "b ee#!=:")
     prop1.put("Property C", "see")
+    val out   = storeWriter(prop1, "A Header")
+    val prop2 = loadByteArrayOutputStream(out)
+    assertAll(prop1, prop2)
+  }
 
+  // helper functions
+
+  def storeStream(props: Properties,
+                  header: String = ""): ByteArrayOutputStream = {
     val out = new ByteArrayOutputStream()
-    prop1.store(new OutputStreamWriter(out), "A Header")
+    props.store(out, header)
+    out
+  }
+
+  def storeWriter(props: Properties,
+                  header: String = ""): ByteArrayOutputStream = {
+    val out = new ByteArrayOutputStream()
+    props.store(new OutputStreamWriter(out), header)
     out.close()
+    out
+  }
 
-    val in = new ByteArrayInputStream(out.toByteArray)
-    prop2.load(in)
-    in.close()
+  def loadByteArrayOutputStream(out: ByteArrayOutputStream): Properties = {
+    val props = new Properties()
+    props.load(new ByteArrayInputStream(out.toByteArray))
+    props
+  }
 
-    val e = prop1.propertyNames()
+  def assertAll(expected: Properties, actual: Properties): Unit = {
+    val e = expected.propertyNames()
     while (e.hasMoreElements) {
       val nextKey = e.nextElement().asInstanceOf[String]
-      assertEquals(prop2.getProperty(nextKey), prop1.getProperty(nextKey))
+      assertEquals(actual.getProperty(nextKey), expected.getProperty(nextKey))
     }
+  }
+
+  def loadStream(in: String): Properties = {
+    val prop = new java.util.Properties()
+    prop.load(
+      new ByteArrayInputStream(in.getBytes(StandardCharsets.ISO_8859_1)))
+    prop
+  }
+
+  def loadReader(in: String): Properties = {
+    val prop = new java.util.Properties()
+    prop.load(
+      new InputStreamReader(
+        new ByteArrayInputStream(in.getBytes(StandardCharsets.UTF_8))))
+    prop
   }
 }
