@@ -80,25 +80,27 @@ private[scalanative] object LLVM {
   }
 
   /**
-   * Compile all the native libs to `.o` files
+   * Compile all the native lib source files to `.o` files
    * with special logic to select GC and optional components
    * for the Scala Native `nativelib`.
    *
-   * @param config       The configuration of the toolchain.
-   * @param linkerResult The results from the linker.
-   * @param basePath     The generated location of the Scala Native nativelib.
-   * @return `libPath`   The basePath plus `scala-native`
+   * @param config        The configuration of the toolchain.
+   * @param linkerResult  The results from the linker.
+   * @param nativelibPath The generated location of the Scala Native nativelib.
+   * @param nativelibs    The Paths to the native libs
+   * @return `libPath`    The nativelibPath plus `scala-native`
    */
-  def compileNativelib(config: Config,
+  def compileNativelibs(config: Config,
                        linkerResult: linker.Result,
-                       basePath: Path): Path = {
+                       nativelibs: Seq[Path],
+                       nativelibPath: Path): Path = {
     val workdir = config.workdir
     // search starting at workdir `native` to find
     // code across all native component libraries
     // including the `nativelib`
-    val paths =
-      IO.getAll(workdir, NativeLib.destSrcPatterns(workdir)).map(_.abs)
-    val libPath = basePath.resolve(NativeLib.codeDir)
+    val srcPatterns = NativeLib.destSrcPatterns(workdir, nativelibs)
+    val paths = IO.getAll(workdir, srcPatterns).map(_.abs)
+    val libPath = nativelibPath.resolve(NativeLib.codeDir)
 
     // predicate to check if given file path shall be compiled
     // we only include sources of the current gc and exclude
@@ -210,9 +212,8 @@ private[scalanative] object LLVM {
     val linkopts  = config.linkingOptions ++ links.map("-l" + _)
     val targetopt = Seq("-target", config.targetTriple)
     val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
-    val opaths =
-      IO.getAll(workdir, NativeLib.destObjPatterns(workdir, nativelibs))
-        .map(_.abs)
+    val objPatterns = NativeLib.destObjPatterns(workdir, nativelibs)
+    val opaths = IO.getAll(workdir, objPatterns).map(_.abs)
     val paths   = llPaths.map(_.abs) ++ opaths
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
     val ltoName = lto(config).getOrElse("none")

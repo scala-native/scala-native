@@ -70,7 +70,7 @@ object Build {
       val nativelibConfig =
         config.withCompilerConfig(
           _.withCompileOptions("-O2" +: config.compileOptions))
-      LLVM.compileNativelib(nativelibConfig, linked, nativelib)
+      LLVM.compileNativelibs(nativelibConfig, linked, unpackedLibs, nativelib)
       LLVM.compile(config, generated)
     }
 
