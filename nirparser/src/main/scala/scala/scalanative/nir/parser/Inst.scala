@@ -6,6 +6,7 @@ import fastparse.all._
 
 object Inst extends Base[nir.Inst] {
   import Base.IgnoreWhitespace._
+  implicit val pos = Position.generated
 
   private val unwind: P[Next] =
     P(Next.parser.?).map(_.getOrElse(nir.Next.None))
