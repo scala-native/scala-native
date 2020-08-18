@@ -91,16 +91,16 @@ private[scalanative] object LLVM {
    * @return `libPath`    The nativelibPath plus `scala-native`
    */
   def compileNativelibs(config: Config,
-                       linkerResult: linker.Result,
-                       nativelibs: Seq[Path],
-                       nativelibPath: Path): Path = {
+                        linkerResult: linker.Result,
+                        nativelibs: Seq[Path],
+                        nativelibPath: Path): Path = {
     val workdir = config.workdir
     // search starting at workdir `native` to find
     // code across all native component libraries
     // including the `nativelib`
     val srcPatterns = NativeLib.destSrcPatterns(workdir, nativelibs)
-    val paths = IO.getAll(workdir, srcPatterns).map(_.abs)
-    val libPath = nativelibPath.resolve(NativeLib.codeDir)
+    val paths       = IO.getAll(workdir, srcPatterns).map(_.abs)
+    val libPath     = nativelibPath.resolve(NativeLib.codeDir)
 
     // predicate to check if given file path shall be compiled
     // we only include sources of the current gc and exclude
@@ -209,14 +209,14 @@ private[scalanative] object LLVM {
       // * libpthread for process APIs and parallel garbage collection.
       "pthread" +: "dl" +: srclinks ++: gclinks
     }
-    val linkopts  = config.linkingOptions ++ links.map("-l" + _)
-    val targetopt = Seq("-target", config.targetTriple)
-    val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
+    val linkopts    = config.linkingOptions ++ links.map("-l" + _)
+    val targetopt   = Seq("-target", config.targetTriple)
+    val flags       = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
     val objPatterns = NativeLib.destObjPatterns(workdir, nativelibs)
-    val opaths = IO.getAll(workdir, objPatterns).map(_.abs)
-    val paths   = llPaths.map(_.abs) ++ opaths
-    val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
-    val ltoName = lto(config).getOrElse("none")
+    val opaths      = IO.getAll(workdir, objPatterns).map(_.abs)
+    val paths       = llPaths.map(_.abs) ++ opaths
+    val compile     = config.clangPP.abs +: (flags ++ paths ++ linkopts)
+    val ltoName     = lto(config).getOrElse("none")
 
     config.logger.time(
       s"Linking native code (${config.gc.name} gc, $ltoName lto)") {
