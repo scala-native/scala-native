@@ -3,7 +3,7 @@ import java.nio.file.{Files => NioFiles}
 
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.12"
 
 nativeLinkStubs := true // DateFormatSymbols
 

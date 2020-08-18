@@ -2,7 +2,7 @@ enablePlugins(ScalaNativePlugin)
 
 import scala.sys.process._
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.12"
 
 Compile / nativeLinkingOptions += s"-L${target.value.getAbsoluteFile}"
 

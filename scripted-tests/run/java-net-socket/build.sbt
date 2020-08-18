@@ -7,7 +7,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.12"
 
 lazy val launchServer = taskKey[Unit]("Setting up a server for tests")
 lazy val launchTcpEchoServer =

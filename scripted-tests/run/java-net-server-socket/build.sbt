@@ -4,7 +4,7 @@ import java.nio.file.{Files, Paths}
 
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.12"
 
 lazy val launchClient = taskKey[Unit]("Launching a client for tests")
 

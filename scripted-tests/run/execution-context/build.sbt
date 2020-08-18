@@ -1,6 +1,6 @@
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.12"
 
 lazy val runAndCheck = taskKey[Unit]("...")
 

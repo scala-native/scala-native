@@ -2,7 +2,7 @@ import java.util.concurrent.TimeUnit
 import java.lang.ProcessBuilder
 import java.nio.file.Files
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.12"
 
 val runTest = taskKey[Unit]("run test")
 
