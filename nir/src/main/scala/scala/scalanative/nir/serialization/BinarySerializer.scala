@@ -14,13 +14,13 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private[this] var lastPosition: Position = Position.NoPosition
 
-  private[this] val files = mutable.ListBuffer.empty[URI]
+  private[this] val files        = mutable.ListBuffer.empty[URI]
   private[this] val fileIndexMap = mutable.Map.empty[URI, Int]
   private def fileToIndex(file: URI): Int =
     fileIndexMap.getOrElseUpdate(file, (files += file).size - 1)
 
   final def serialize(defns: Seq[Defn]): Unit = {
-    val names = defns.map(_.name)
+    val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
     // Init map with all possible filenames as they must be serialized before other definitions
@@ -541,10 +541,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
       writeFull()
       lastPosition = pos
     } else {
-      val line = pos.line
-      val column = pos.column
-      val lineDiff = line - lastPosition.line
-      val columnDiff = column - lastPosition.column
+      val line         = pos.line
+      val column       = pos.column
+      val lineDiff     = line - lastPosition.line
+      val columnDiff   = column - lastPosition.column
       val columnIsByte = column >= 0 && column < 256
 
       if (lineDiff == 0 && columnDiff >= -64 && columnDiff < 64) {

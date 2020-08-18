@@ -15,7 +15,7 @@ trait Eval { self: Interflow =>
     var pc = offsets(from) + 1
 
     while (true) {
-      val inst = insts(pc)
+      val inst                   = insts(pc)
       implicit val pos: Position = inst.pos
       def bailOut =
         throw BailOut("can't eval inst: " + inst.show)

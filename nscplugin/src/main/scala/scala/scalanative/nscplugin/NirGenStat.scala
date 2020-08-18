@@ -109,7 +109,7 @@ trait NirGenStat { self: NirGenPhase =>
       val body =
         Seq(Inst.Label(Local(0), Seq.empty), Inst.Unreachable(Next.None))
 
-      Defn.Define(attrs, name, sig, body)
+      Defn.Define(attrs, name, sig, body)(cd.pos)
     }
 
     def genFuncPtrExternForwarder(cd: ClassDef): Defn = {

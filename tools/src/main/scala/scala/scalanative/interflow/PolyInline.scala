@@ -26,9 +26,7 @@ trait PolyInline { self: Interflow =>
         val targets = mutable.UnrolledBuffer.empty[(Class, Global)]
         scope.implementors.foreach { cls =>
           if (cls.allocated) {
-            cls.resolve(sig).foreach { g =>
-              targets += ((cls, g))
-            }
+            cls.resolve(sig).foreach { g => targets += ((cls, g)) }
           }
         }
         targets
@@ -46,9 +44,9 @@ trait PolyInline { self: Interflow =>
       false
 
     case _: build.Mode.Release =>
-      val targets = polyTargets(op)
+      val targets    = polyTargets(op)
       val classCount = targets.map(_._1).size
-      val implCount = targets.map(_._2).distinct.size
+      val implCount  = targets.map(_._2).distinct.size
 
       if (mode == build.Mode.ReleaseFast) {
         classCount <= 8 && implCount == 2
@@ -61,14 +59,14 @@ trait PolyInline { self: Interflow =>
                                                 linked: linker.Result): Val = {
     import state.{emit, fresh, materialize}
 
-    val obj = materialize(op.obj)
-    val margs = args.map(materialize(_))
+    val obj     = materialize(op.obj)
+    val margs   = args.map(materialize(_))
     val targets = polyTargets(op)
     val classes = targets.map(_._1)
-    val impls = targets.map(_._2).distinct
+    val impls   = targets.map(_._2).distinct
 
     val checkLabels = (1 until targets.size).map(_ => fresh()).toSeq
-    val callLabels = (1 to impls.size).map(_ => fresh()).toSeq
+    val callLabels  = (1 to impls.size).map(_ => fresh()).toSeq
     val callLabelIndex =
       (0 until targets.size).map(i => impls.indexOf(targets(i)._2))
     val mergeLabel = fresh()
@@ -103,7 +101,7 @@ trait PolyInline { self: Interflow =>
     callLabels.zip(impls).foreach {
       case (callLabel, m) =>
         emit.label(callLabel, Seq.empty)
-        val ty = originalFunctionType(m)
+        val ty                           = originalFunctionType(m)
         val Type.Function(argtys, retty) = ty
         rettys += retty
 

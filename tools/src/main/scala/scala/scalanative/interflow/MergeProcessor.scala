@@ -421,7 +421,8 @@ final class MergeProcessor(insts: Array[Inst],
       // to the source instructions, not relative to generated ones.
       val syntheticFresh = Fresh(insts)
       val syntheticParam = Val.Local(syntheticFresh(), retTy)
-      val syntheticLabel = Inst.Label(syntheticFresh(), Seq(syntheticParam))(Position.generated)
+      val syntheticLabel =
+        Inst.Label(syntheticFresh(), Seq(syntheticParam))(Position.generated)
       val resultMergeBlock =
         new MergeBlock(syntheticLabel, Local(blockFresh().id * 10000))
       blocks(syntheticLabel.name) = resultMergeBlock
@@ -431,7 +432,8 @@ final class MergeProcessor(insts: Array[Inst],
       // and update incoming/outgoing edges to include result block.
       retMergeBlocks.foreach { block =>
         val Inst.Ret(v) = block.cf
-        block.cf = Inst.Jump(Next.Label(syntheticLabel.name, Seq(v)))(block.cf.pos)
+        block.cf =
+          Inst.Jump(Next.Label(syntheticLabel.name, Seq(v)))(block.cf.pos)
         block.outgoing(syntheticLabel.name) = resultMergeBlock
         resultMergeBlock.incoming(block.label.name) = (Seq(v), block.end)
       }
@@ -444,7 +446,8 @@ final class MergeProcessor(insts: Array[Inst],
       resultMergeBlock.phis = phis
       resultMergeBlock.start = state
       resultMergeBlock.end = state
-      resultMergeBlock.cf = Inst.Ret(eval.eval(syntheticParam)(state))(Position.generated)
+      resultMergeBlock.cf =
+        Inst.Ret(eval.eval(syntheticParam)(state))(Position.generated)
     }
 
     orderedBlocks ++= sortedBlocks.filter(isExceptional)

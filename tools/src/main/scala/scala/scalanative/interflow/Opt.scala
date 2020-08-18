@@ -20,10 +20,10 @@ trait Opt { self: Interflow =>
   }
 
   def opt(name: Global): Defn.Define = in(s"visit ${name.show}") {
-    val orig = originalName(name)
-    val origtys = argumentTypes(orig)
-    val origdefn = getOriginal(orig)
-    val argtys = argumentTypes(name)
+    val orig         = originalName(name)
+    val origtys      = argumentTypes(orig)
+    val origdefn     = getOriginal(orig)
+    val argtys       = argumentTypes(name)
     implicit val pos = origdefn.pos
     // Wrap up the result.
     def result(retty: Type, rawInsts: Seq[Inst]) =
