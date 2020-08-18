@@ -27,11 +27,17 @@ private[scalanative] object NativeLib {
    */
   val codeDir = "scala-native"
 
-  /** Used to find native source files in directories */
-  val srcPatterns = srcExtensions.mkString(
-    s"glob:**${fileSep}classes${fileSep}${codeDir}${fileSep}**{",
-    ",",
-    "}")
+  /**
+   * Used to find native source files in directories
+   *
+   * @param path The classpath entry
+   * @return the source pattern
+   */
+  def srcPatterns(path: Path) = {
+    val pathStr     = path.toString()
+    val pathPattern = s"${pathStr}${fileSep}${codeDir}${fileSep}"
+    srcExtensions.mkString(s"glob:${pathPattern}**{", ",", "}")
+  }
 
   /** Used to find native source files in jar files */
   private val jarSrcRegex: String = {
@@ -74,9 +80,14 @@ private[scalanative] object NativeLib {
   /** To positively identify nativelib */
   private val nativeLibMarkerFile = "org_scala-native_nativelib.txt"
 
-  /** Note: assumes that code is compiled into the `classes` directory */
-  private val dirMarkerFilePattern =
-    s"glob:**${fileSep}classes${fileSep}" + nativeLibMarkerFile
+  /**
+   * Find the marker file in the directory.
+   *
+   * @param path The path we are searching
+   * @return the search file pattern
+   */
+  private def dirMarkerFilePattern(path: Path): String =
+    s"glob:${path.toString()}${fileSep}${nativeLibMarkerFile}"
 
   /** Does this Path point to a jar file */
   def isJar(path: Path): Boolean = path.toString().endsWith(jarExtension)
@@ -131,7 +142,7 @@ private[scalanative] object NativeLib {
       if (isJar(srcPath))
         IO.existsInJar(srcPath, hasMarkerFileInJar)
       else
-        IO.existsInDir(srcPath, dirMarkerFilePattern)
+        IO.existsInDir(srcPath, dirMarkerFilePattern(srcPath))
     }
     nativeLib match {
       case Some(nl) => nl.dest
@@ -150,7 +161,7 @@ private[scalanative] object NativeLib {
     name.equals(nativeLibMarkerFile)
 
   private def readDir(path: Path): Option[Path] =
-    IO.existsInDir(path, srcPatterns) match {
+    IO.existsInDir(path, srcPatterns(path)) match {
       case true  => Some(path)
       case false => None
     }
