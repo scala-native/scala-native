@@ -189,12 +189,14 @@ private[scalanative] object LLVM {
    * @param config       The configuration of the toolchain.
    * @param linkerResult The results from the linker.
    * @param llPaths      The list of `.ll` files to link.
+   * @param nativelibs   The Paths to the native libs
    * @param outpath      The path where to write the resulting binary.
    * @return `outpath`
    */
   def link(config: Config,
            linkerResult: linker.Result,
            llPaths: Seq[Path],
+           nativelibs: Seq[Path],
            outpath: Path): Path = {
     val workdir = config.workdir
     val links = {
@@ -209,7 +211,8 @@ private[scalanative] object LLVM {
     val targetopt = Seq("-target", config.targetTriple)
     val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
     val opaths =
-      IO.getAll(workdir, NativeLib.destObjPatterns(workdir)).map(_.abs)
+      IO.getAll(workdir, NativeLib.destObjPatterns(workdir, nativelibs))
+        .map(_.abs)
     val paths   = llPaths.map(_.abs) ++ opaths
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
     val ltoName = lto(config).getOrElse("none")

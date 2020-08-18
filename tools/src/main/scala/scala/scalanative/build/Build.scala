@@ -74,6 +74,6 @@ object Build {
       LLVM.compile(config, generated)
     }
 
-    LLVM.link(config, linked, objectFiles, outpath)
+    LLVM.link(config, linked, objectFiles, unpackedLibs, outpath)
   }
 }
