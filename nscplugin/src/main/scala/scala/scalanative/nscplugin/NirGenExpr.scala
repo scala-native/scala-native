@@ -723,19 +723,15 @@ trait NirGenExpr { self: NirGenPhase =>
           val values   = buf.genMethodArgs(sym, Ident(curClassSym.get) +: functionArgs)
           val sig      = genMethodSig(sym)
           val res      = buf.call(sig, method, values, Next.None)
-          val boxedRes = {
-            val expectedResTy = genType(funSym.tpe.resultType)
-            if (res.ty != expectedResTy) {
-              res.ty match {
-                case _: Type.Array =>
-                  wrapAsArrayOps(res, buf)
-                case _ =>
-                  buf.boxValue(callTree.tpe, res)
-              }
-            } else {
-              res
-            }
+
+          // Get the result type of the lambda after erasure, when entering posterasure.
+          // This allows to recover the correct type in case value classes are involved.
+          // In that case, the type will be an ErasedValueType.
+          val resTyEnteringPosterasure = enteringPhase(currentRun.posterasurePhase) {
+            targetTree.symbol.tpe.resultType
           }
+
+          val boxedRes = ensureBoxed(res, resTyEnteringPosterasure, callTree.tpe)(buf)
           buf.ret(boxedRes)
           buf.toSeq
         }
@@ -753,38 +749,27 @@ trait NirGenExpr { self: NirGenPhase =>
       alloc
     }
 
-    private def wrapAsArrayOps(value: Val, buf: ExprBuffer): Val = {
-      val Type.Array(underlyingType, _) = value.ty
-      val (arrayOps, ty) = toArrayOps(underlyingType)
+    def ensureBoxed(value: Val, tpeEnteringPosterasure: Type, targetTpe: Type)(
+        implicit buf: ExprBuffer): Val = {
+      tpeEnteringPosterasure match {
+        case tpe if isPrimitiveValueType(tpe) =>
+          buf.boxValue(targetTpe, value)
 
-      val alloc = buf.classalloc(arrayOps, unwind)
-      val ctor = Val.Global(arrayOps.member(Sig.Ctor(Seq(Type.Array(ty)))), Type.Ptr)
-      buf.call(Type.Function(Seq(Type.Ref(arrayOps), Type.Array(ty)), Type.Unit), ctor, Seq(alloc, value), unwind)
-      alloc
-    }
+        case tpe: ErasedValueType =>
+          val boxedClass = tpe.valueClazz
+          val ctorName = genMethodName(boxedClass.primaryConstructor)
+          val ctorSig = genMethodSig(boxedClass.primaryConstructor)
 
-    private def toArrayOps(underlyingType: nir.Type): (Global.Top, nir.Type) = underlyingType match {
-        case nir.Type.Bool =>
-          (Global.Top("scala.collection.mutable.ArrayOps$ofBoolean"), underlyingType)
-        case nir.Type.Byte =>
-          (Global.Top("scala.collection.mutable.ArrayOps$ofByte"), underlyingType)
-        case nir.Type.Char =>
-          (Global.Top("scala.collection.mutable.ArrayOps$ofChar"), underlyingType)
-        case nir.Type.Double =>
-          (Global.Top("scala.collection.mutable.ArrayOps$ofDouble"), underlyingType)
-        case nir.Type.Float =>
-          (Global.Top("scala.collection.mutable.ArrayOps$ofFloat"), underlyingType)
-        case nir.Type.Int =>
-          (Global.Top("scala.collection.mutable.ArrayOps$ofInt"), underlyingType)
-        case nir.Type.Long =>
-          (Global.Top("scala.collection.mutable.ArrayOps$ofLong"), underlyingType)
-        case nir.Type.Short =>
-          (Global.Top("scala.collection.mutable.ArrayOps$ofShort"), underlyingType)
-        case nir.Type.Unit =>
-          (Global.Top("scala.collection.mutable.ArrayOps$ofUnit"), underlyingType)
+          val alloc = buf.classalloc(Global.Top(boxedClass.fullName), unwind)
+          val ctor = buf.method(alloc, ctorName.asInstanceOf[nir.Global.Member].sig, unwind)
+          buf.call(ctorSig, ctor, Seq(alloc, value), unwind)
+
+          alloc
+
         case _ =>
-          (Global.Top("scala.collection.mutable.ArrayOps$ofRef"), NirGenSymbols.jlObjectRef)
+          value
       }
+    }
 
     // Compute a set of method symbols that SAM-generated class needs to implement.
     def functionMethodSymbols(tree: Function): Seq[Symbol] = {
@@ -1721,9 +1706,6 @@ trait NirGenExpr { self: NirGenPhase =>
               buf.unreachable(unwind)
               buf.label(fresh())
               Val.Zero(Type.Nothing)
-            case (Type.Ref(Global.Top("java.lang.Object"), _, _), toty : Type.Array)
-              if Platform.scalaVersion.startsWith("2.12") =>
-              unwrapFromArrayOps(app, value, toty, boxty, boxed)
             case _ =>
               val cast = buf.as(boxty, boxed, unwind)
               unboxValue(app.tpe, partial = true, cast)
@@ -1733,40 +1715,6 @@ trait NirGenExpr { self: NirGenPhase =>
           assert(argsp.size == 1)
           genSynchronized(ValTree(boxed), argsp.head)
       }
-    }
-
-    private def unwrapFromArrayOps(app: Apply, value: Val, toty: nir.Type, boxty: nir.Type, boxed: Val): Val = {
-      val Type.Array(underlyingType, _) = toty
-      val (arrayOps, ty) = toArrayOps(underlyingType)
-
-      val arrayOpsRef = Type.Ref(arrayOps)
-
-      val mergeV = Val.Local(fresh(), toty)
-      val isArrayOpsL, notArrayOpsL, mergeL = fresh()
-      val isArrayOps = buf.is(arrayOpsRef, value, unwind)
-      buf.branch(isArrayOps, Next(isArrayOpsL), Next(notArrayOpsL))
-
-      locally {
-        buf.label(isArrayOpsL)
-        val asArrayOps = buf.as(arrayOpsRef, value, unwind)
-        val repr = buf.method(asArrayOps, arrayOps.member(Sig.Method("repr", Seq(Type.Array(ty)))).sig, unwind)
-        val res = buf.call(Type.Function(Seq(arrayOpsRef), Type.Array(ty)), repr, Seq(asArrayOps), unwind)
-        val cast = {
-          if (res.ty != toty) buf.as(toty, res, unwind)
-          else res
-        }
-        buf.jump(mergeL, Seq(cast))
-      }
-
-      locally {
-        buf.label(notArrayOpsL)
-        val cast = buf.as(boxty, boxed, unwind)
-        val res = unboxValue(app.tpe, partial = true, cast)
-        buf.jump(mergeL, Seq(res))
-      }
-
-      buf.label(mergeL, Seq(mergeV))
-      mergeV
     }
 
     def genApplyNew(app: Apply): Val = {
