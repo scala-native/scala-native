@@ -2,6 +2,7 @@ package scala.scalanative
 package nscplugin
 
 import scala.collection.mutable
+import scala.scalanative.nir.Type.isPtr
 import scalanative.nir._
 import scalanative.util.{Platform, StringUtils, unsupported}
 import scalanative.util.ScopedVar.scoped
@@ -1850,7 +1851,7 @@ trait NirGenExpr { self: NirGenPhase =>
         }
       val args = genMethodArgs(sym, argsp)
       val method =
-        if (isImplClass(owner) || statically || owner.isStruct || owner.isExternModule || self.ty == nir.Type.Ptr) {
+        if (isImplClass(owner) || statically || owner.isStruct || owner.isExternModule || isPtr(self.ty)) {
           Val.Global(name, nir.Type.Ptr)
         } else {
           val Global.Member(_, sig) = name
