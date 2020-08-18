@@ -33,17 +33,26 @@ private[scalanative] object NativeLib {
    * @param path The classpath entry
    * @return the source pattern
    */
-  def srcPatterns(path: Path) = {
-    val pathStr     = path.toString()
-    val pathPattern = s"${pathStr}${fileSep}${codeDir}${fileSep}"
-    srcExtensions.mkString(s"glob:${pathPattern}**{", ",", "}")
-  }
+  def srcPatterns(path: Path) =
+    srcExtensions.mkString(s"glob:${srcPathPattern(path)}**{", ",", "}")
 
   /** Used to find native source files in jar files */
   private val jarSrcRegex: String = {
     val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
     s"""^${codeDir}${fileSep}(.+)${regexExtensions}$$"""
   }
+
+  private def srcPathPattern(path: Path): String =
+    s"${path.toString()}${fileSep}${codeDir}${fileSep}"
+
+  /**
+   * Used to create hash of the directory to copy
+   *
+   * @param path The classpath entry
+   * @return the file pattern
+   */
+  def allFilesPattern(path: Path) =
+    s"glob:${srcPathPattern(path)}**"
 
   /**
    * This method guarantees that only code copied and generated
@@ -55,7 +64,7 @@ private[scalanative] object NativeLib {
    * @return the source pattern
    */
   def destSrcPatterns(workdir: Path, nativelibs: Seq[Path]): String = {
-    val pathPat = pathPattern(workdir, nativelibs)
+    val pathPat = destPathPattern(workdir, nativelibs)
     srcExtensions.mkString(s"glob:${pathPat}**{", ",", "}")
   }
 
@@ -68,9 +77,9 @@ private[scalanative] object NativeLib {
    * @return the object file pattern
    */
   def destObjPatterns(workdir: Path, nativelibs: Seq[Path]): String =
-    s"glob:${pathPattern(workdir, nativelibs)}**${oExt}"
+    s"glob:${destPathPattern(workdir, nativelibs)}**${oExt}"
 
-  private def pathPattern(workdir: Path, nativelibs: Seq[Path]): String = {
+  private def destPathPattern(workdir: Path, nativelibs: Seq[Path]): String = {
     val workdirStr = workdir.toString()
     val nativeDirs = nativelibs.map(_.getFileName().toString())
     val dirPattern = nativeDirs.mkString("{", ",", "}")

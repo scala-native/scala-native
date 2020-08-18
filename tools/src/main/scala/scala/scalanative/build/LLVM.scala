@@ -64,7 +64,7 @@ private[scalanative] object LLVM {
   private def copyNativeDir(nativelib: NativeLib): Path = {
     val target        = nativelib.dest
     val source        = nativelib.src
-    val files         = IO.getAll(source, NativeLib.srcPatterns(source))
+    val files         = IO.getAll(source, NativeLib.allFilesPattern(source))
     val fileshash     = IO.sha1files(files)
     val fileshashPath = target.resolve("fileshash")
     def copied =
