@@ -8,11 +8,11 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   val Parent = g("Parent")
 
   // Scala 2.11.x
-  val ParentClass = g("Parent$class")
+  val ParentClass = g("Parent$class$")
   val ParentClassInit =
-    g("Parent$class", Sig.Method("$init$", Seq(Type.Ref(Parent), Type.Unit)))
+    g("Parent$class$", Sig.Method("$init$", Seq(Type.Ref(Parent), Type.Unit)))
   val ParentClassFoo =
-    g("Parent$class", Sig.Method("foo", Seq(Type.Ref(Parent), Type.Unit)))
+    g("Parent$class$", Sig.Method("foo", Seq(Type.Ref(Parent), Type.Unit)))
 
   // Scala 2.12.x
   val ParentInit =
