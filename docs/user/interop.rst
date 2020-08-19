@@ -358,8 +358,17 @@ strings (similarly to C):
     val msg: CString = c"Hello, world!"
     stdio.printf(msg)
 
-Additionally, we also expose two helper functions ``unsafe.toCString`` and
-``unsafe.fromCString`` to convert between C-style and Java-style strings.
+It does not allow any octal values or escape characters not supported by Scala compiler, like ``\a`` or ``\?``, but also unicode escapes.
+It is possible to use C-style hex values up to value 0xFF, eg. ``c"Hello \x61\x62\x63"``
+
+Additionally, we also expose two helper functions ``unsafe.fromCString`` and ``unsafe.toCString``
+to convert between C-style `CString` (sequence of Bytes, usually interpreted as UTF-8 or ASCII)
+and Java-style `String` (sequence of 2-byte Chars usually interpreted as UTF-16).
+
+It's worth to remember that ``unsafe.toCString`` and `c"..."` interpreter cannot be used interchangeably as they handle literals differently.
+Helper methods ``unsafe.fromCString` and ``unsafe.toCString`` are charset aware.
+They will always assume `String` is UTF-16, and take a `Charset` parameter to know what encoding to assume for the byte string (`CString`) - if not present it is UTF-8.
+
 
 Platform-specific types
 -----------------------

@@ -25,7 +25,7 @@ class ValParserTest extends AnyFunSuite {
     Val.StructValue(Seq(Val.Int(32), Val.Long(64))),
     Val.ArrayValue(Type.Int, Seq.empty),
     Val.ArrayValue(Type.Int, Seq(Val.Int(32))),
-    Val.Chars("foobar"),
+    Val.Chars("foobar".getBytes("UTF-8")),
     Val.Local(Local(0), Type.Int),
     Val.Global(global, Type.Ptr),
     Val.Unit,

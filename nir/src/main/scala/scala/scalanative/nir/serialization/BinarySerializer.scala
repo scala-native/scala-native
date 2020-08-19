@@ -54,8 +54,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putInts(ints: Seq[Int]) = putSeq[Int](ints)(putInt(_))
 
   private def putStrings(vs: Seq[String]) = putSeq(vs)(putString)
-  private def putString(v: String) = {
-    val bytes = v.getBytes("UTF-8")
+  private def putString(v: String) = putBytes {
+    v.getBytes("UTF-8")
+  }
+  private def putBytes(bytes: Array[Byte]) = {
     putInt(bytes.length); put(bytes)
   }
 
@@ -480,7 +482,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.StructValue(vs) => putInt(T.StructValueVal); putVals(vs)
     case Val.ArrayValue(ty, vs) =>
       putInt(T.ArrayValueVal); putType(ty); putVals(vs)
-    case Val.Chars(s)      => putInt(T.CharsVal); putString(s)
+    case v: Val.Chars      => putInt(T.CharsVal); putBytes(v.bytes)
     case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
