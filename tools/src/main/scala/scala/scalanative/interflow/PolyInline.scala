@@ -115,7 +115,9 @@ trait PolyInline { self: Interflow =>
         emit.jump(Next.Label(mergeLabel, Seq(res)))
     }
 
-    val result = Val.Local(fresh(), Sub.lub(rettys))
+    val result = Val.Local(
+      fresh(),
+      Sub.lub(rettys, Type.Ref(Global.Top("java.lang.Object"))))
     emit.label(mergeLabel, Seq(result))
 
     result

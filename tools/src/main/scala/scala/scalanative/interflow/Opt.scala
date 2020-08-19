@@ -86,7 +86,7 @@ trait Opt { self: Interflow =>
     val retty = rets match {
       case Seq()   => Type.Nothing
       case Seq(ty) => ty
-      case tys     => Sub.lub(tys)
+      case tys     => Sub.lub(tys, Type.Ref(Global.Top("java.lang.Object")))
     }
 
     // Interflow usually infers better types on our erased type system

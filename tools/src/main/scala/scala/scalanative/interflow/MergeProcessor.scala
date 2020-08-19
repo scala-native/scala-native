@@ -83,8 +83,12 @@ final class MergeProcessor(insts: Array[Inst],
               case (s, v) =>
                 s.materialize(v)
             }
-            val name    = mergeFresh()
-            val paramty = Sub.lub(materialized.map(_.ty))
+            val name = mergeFresh()
+            val bound = params.headOption match {
+              case Some(local) => local.ty
+              case None        => Type.Ref(Global.Top("java.lang.Object"))
+            }
+            val paramty = Sub.lub(materialized.map(_.ty), bound)
             val param   = Val.Local(name, paramty)
             mergePhis += MergePhi(param, names.zip(materialized))
             param
@@ -398,14 +402,15 @@ final class MergeProcessor(insts: Array[Inst],
     // If the discovered blocks contain more than one,
     // we must merge them together using a synthetic block.
     if (inline && retMergeBlocks.size > 1) {
-      val retTy = Sub.lub(retMergeBlocks.map { block =>
+      val tys = retMergeBlocks.map { block =>
         val Inst.Ret(v)    = block.cf
         implicit val state = block.end
         v match {
           case InstanceRef(ty) => ty
           case _               => v.ty
         }
-      })
+      }
+      val retTy = Sub.lub(tys, Type.Ref(Global.Top("java.lang.Object")))
 
       // Create synthetic label and block where all returning blocks
       // are going tojump to. Synthetics names must be fresh relative
