@@ -85,8 +85,8 @@ final class MergeProcessor(insts: Array[Inst],
             }
             val name = mergeFresh()
             val bound = params.headOption match {
-              case Some(local) => local.ty
-              case None        => Type.Ref(Global.Top("java.lang.Object"))
+              case Some(Val.Local(_, ty: Type.RefKind)) => ty
+              case _                                    => Type.Ref(Global.Top("java.lang.Object"))
             }
             val paramty = Sub.lub(materialized.map(_.ty), bound)
             val param   = Val.Local(name, paramty)
