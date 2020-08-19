@@ -11,6 +11,8 @@ trait NirCompat { self: NirGenPhase =>
 
   import global._
 
+  // SAMFunction was introduced in 2.12 for LMF-capable SAM type
+
   object SAMFunctionAttachCompatDef {
     case class SAMFunction(samTp: Type, sam: Symbol, synthCls: Symbol)
         extends PlainAttachment
@@ -23,13 +25,12 @@ trait NirCompat { self: NirGenPhase =>
       import global._
 
       type SAMFunctionAlias = SAMFunction
-      val SAMFunctionAlias: global.SAMFunction.type = SAMFunction
+      val SAMFunctionAlias = SAMFunction
     }
   }
 
   type SAMFunctionCompat = SAMFunctionAttachCompat.Inner.SAMFunctionAlias
-  lazy val SAMFunctionCompat: global.SAMFunction.type =
-    SAMFunctionAttachCompat.Inner.SAMFunctionAlias
+  lazy val SAMFunctionCompat = SAMFunctionAttachCompat.Inner.SAMFunctionAlias
 
   implicit final class SAMFunctionCompatOps(self: SAMFunctionCompat) {
     // Introduced in 2.12.5 to synthesize bridges in LMF classes
