@@ -32,10 +32,10 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
-      "org.scala-native" %%% "nativelib" % nativeVersion,
-      "org.scala-native" %%% "javalib" % nativeVersion,
-      "org.scala-native" %%% "auxlib" % nativeVersion,
-      "org.scala-native" %%% "scalalib" % nativeVersion,
+      "org.scala-native" %%% "nativelib"      % nativeVersion,
+      "org.scala-native" %%% "javalib"        % nativeVersion,
+      "org.scala-native" %%% "auxlib"         % nativeVersion,
+      "org.scala-native" %%% "scalalib"       % nativeVersion,
       "org.scala-native" %%% "test-interface" % nativeVersion % Test
     ),
     addCompilerPlugin(
@@ -85,11 +85,10 @@ object ScalaNativePluginInternal {
       },
       onComplete := {
         val prev: () => Unit = onComplete.value
-        () =>
-          {
-            prev()
-            testAdapters.getAndSet(Nil).foreach(_.close())
-          }
+        () => {
+          prev()
+          testAdapters.getAndSet(Nil).foreach(_.close())
+        }
       }
     )
   }
@@ -97,7 +96,7 @@ object ScalaNativePluginInternal {
   def scalaNativeConfigSettings(key: TaskKey[File]): Seq[Setting[_]] = {
     Seq(
       nativeTarget in key := interceptBuildException {
-        val cwd = (nativeWorkdir in key).value.toPath
+        val cwd   = (nativeWorkdir in key).value.toPath
         val clang = (nativeClang in key).value.toPath
         Discover.targetTriple(clang, cwd)
       },
@@ -128,10 +127,10 @@ object ScalaNativePluginInternal {
         val mainClass = (selectMainClass in key).value.getOrElse {
           throw new MessageOnlyException("No main class detected.")
         }
-        val fullCp = (fullClasspath in key).value
+        val fullCp    = (fullClasspath in key).value
         val classpath = fullCp.map(_.data.toPath).filter(f => Files.exists(f))
-        val maincls = mainClass + "$"
-        val cwd = (nativeWorkdir in key).value.toPath
+        val maincls   = mainClass + "$"
+        val cwd       = (nativeWorkdir in key).value.toPath
 
         val logger = streams.value.log.toLogger
         nativeBuildConfig.value
@@ -144,17 +143,17 @@ object ScalaNativePluginInternal {
       },
       key := {
         val outpath = (artifactPath in key).value
-        val config = (nativeBuildConfig in key).value
+        val config  = (nativeBuildConfig in key).value
 
         interceptBuildException(Build.build(config, outpath.toPath))
 
         outpath
       },
       run := {
-        val env = (envVars in run).value.toSeq
+        val env    = (envVars in run).value.toSeq
         val logger = streams.value.log
         val binary = key.value.getAbsolutePath
-        val args = spaceDelimited("<arg>").parsed
+        val args   = spaceDelimited("<arg>").parsed
 
         logger.running(binary +: args)
         val exitCode = Process(binary +: args, None, env: _*)
@@ -185,12 +184,12 @@ object ScalaNativePluginInternal {
               s"`$configName / test` tasks in a Scala Native project require $configName / fork := false`.")
           }
 
-          val frameworks = testFrameworks.value
+          val frameworks     = testFrameworks.value
           val frameworkNames = frameworks.map(_.implClassNames.toList).toList
 
-          val logger = streams.value.log.toLogger
+          val logger     = streams.value.log.toLogger
           val testBinary = nativeLink.value
-          val envVars = (test / Keys.envVars).value
+          val envVars    = (test / Keys.envVars).value
 
           val config = TestAdapter
             .Config()
@@ -198,7 +197,7 @@ object ScalaNativePluginInternal {
             .withEnvVars(envVars)
             .withLogger(logger)
 
-          val adapter = newTestAdapter(config)
+          val adapter           = newTestAdapter(config)
           val frameworkAdapters = adapter.loadFrameworks(frameworkNames)
 
           frameworks
