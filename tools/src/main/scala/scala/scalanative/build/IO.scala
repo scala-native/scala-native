@@ -161,7 +161,7 @@ private[scalanative] object IO {
   /** Unzip all members of the ZIP archive `archive` to `target`. */
   def unzip(archive: Path, target: Path): Unit = {
     Files.createDirectories(target)
-    val zipFS = FileSystems.newFileSystem(archive, null)
+    val zipFS = FileSystems.newFileSystem(archive, null: ClassLoader)
     try {
       val rootDirectories = zipFS.getRootDirectories().iterator
       while (rootDirectories.hasNext) {
