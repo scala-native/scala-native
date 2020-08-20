@@ -68,7 +68,7 @@ trait NirGenStat { self: NirGenPhase =>
   }
 
   class StatBuffer {
-    val buf                  = mutable.UnrolledBuffer.empty[nir.Defn]
+    private val buf          = mutable.UnrolledBuffer.empty[nir.Defn]
     def toSeq: Seq[nir.Defn] = buf
 
     def +=(defn: nir.Defn): Unit = {

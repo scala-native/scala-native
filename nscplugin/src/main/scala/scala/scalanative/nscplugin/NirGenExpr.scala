@@ -546,19 +546,10 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genAssign(tree: Assign): Val = {
-      // println("genAssign: ")
-      // println("- " + showRaw(tree))
-      // println("- " + showCode(tree))
       val Assign(lhsp, rhsp) = tree
 
       lhsp match {
         case sel @ Select(qualp, _) =>
-          // println("@ sel.tpe " + sel.tpe)
-          // println("@ sel.sym " + sel.symbol)
-          // println("@ sel.sym.tpe " + sel.symbol.tpe)
-          // println("@ qualp.tpe " + qualp.tpe)
-          // println("@ qualp.sym " + qualp.symbol)
-          // println("@ rhs.tpe " + rhsp.tpe)
           val qual = genExpr(qualp)
           val rhs  = genExpr(rhsp)
           val name = genFieldName(sel.symbol)

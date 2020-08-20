@@ -195,10 +195,6 @@ abstract class PrepNativeInterop
           )
           super.transform(tree)
 
-        // case TypeApply(_, _) if tree.toString.contains("classOf") =>
-        //   println("type apply: " + tree)
-        //   super.transform(tree)
-
         case _ =>
           super.transform(tree)
       }
