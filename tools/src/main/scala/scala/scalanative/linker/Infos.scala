@@ -143,12 +143,7 @@ final class Class(val attrs: Attrs,
     isModule && (isWhitelisted || attrs.isExtern || (hasEmptyOrNoCtor && hasNoFields))
   }
   def resolve(sig: Sig): Option[Global] = {
-    responds.get(sig) match {
-      case None =>
-        defaultResponds.get(sig)
-      case someImpl =>
-        someImpl
-    }
+    responds.get(sig).orElse(defaultResponds.get(sig))
   }
   def targets(sig: Sig): mutable.Set[Global] = {
     val out = mutable.Set.empty[Global]

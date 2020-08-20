@@ -1,7 +1,6 @@
 package scala.scalanative
 package linker
 
-import scala.scalanative.util.Platform.scalaVersion
 import nir.{Sig, Type, Global}
 
 class StubSpec extends LinkerSpec {

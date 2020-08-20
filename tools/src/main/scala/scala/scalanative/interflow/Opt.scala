@@ -62,7 +62,7 @@ trait Opt { self: Interflow =>
     val blocks =
       try {
         pushBlockFresh(fresh)
-        process(origdefn.insts.toArray, args, state, inline = false)
+        process(origdefn.insts.toArray, args, state, doInline = false)
       } finally {
         popBlockFresh()
       }
@@ -111,9 +111,9 @@ trait Opt { self: Interflow =>
   def process(insts: Array[Inst],
               args: Seq[Val],
               state: State,
-              inline: Boolean): Seq[MergeBlock] = {
+              doInline: Boolean): Seq[MergeBlock] = {
     val processor =
-      MergeProcessor.fromEntry(insts, args, state, inline, blockFresh, this)
+      MergeProcessor.fromEntry(insts, args, state, doInline, blockFresh, this)
 
     try {
       pushMergeProcessor(processor)
@@ -125,6 +125,6 @@ trait Opt { self: Interflow =>
       popMergeProcessor()
     }
 
-    processor.toSeq()
+    processor.toSeq
   }
 }

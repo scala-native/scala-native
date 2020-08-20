@@ -249,9 +249,9 @@ object CodeGen {
       if (attrs.opt eq Attr.NoOpt) {
         str(" optnone noinline")
       } else {
-        if (attrs.inline ne Attr.MayInline) {
+        if (attrs.doInline ne Attr.MayInline) {
           str(" ")
-          genAttr(attrs.inline)
+          genAttr(attrs.doInline)
         }
       }
       if (!attrs.isExtern && !isDecl) {

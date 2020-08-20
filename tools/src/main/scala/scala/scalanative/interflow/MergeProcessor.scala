@@ -8,9 +8,9 @@ import scalanative.linker._
 
 final class MergeProcessor(insts: Array[Inst],
                            blockFresh: Fresh,
-                           inline: Boolean,
+                           doInline: Boolean,
                            eval: Eval)(implicit linked: linker.Result) {
-  val offsets =
+  val offsets: Map[Local, Int] =
     insts.zipWithIndex.collect {
       case (Inst.Label(local, _), offset) =>
         local -> offset
@@ -50,7 +50,7 @@ final class MergeProcessor(insts: Array[Inst],
             newstate.storeLocal(param.name, value)
         }
         val phis =
-          if (id == -1 && !inline) {
+          if (id == -1 && !doInline) {
             values.zipWithIndex.map {
               case (param: Val.Local, i) =>
                 MergePhi(param, Seq.empty[(Local, Val)])
@@ -308,7 +308,7 @@ final class MergeProcessor(insts: Array[Inst],
     def nextLabel(next: Next.Label): Unit = {
       val nextMergeBlock = findMergeBlock(next.name)
       block.outgoing(next.name) = nextMergeBlock
-      nextMergeBlock.incoming(block.label.name) = ((next.args, block.end))
+      nextMergeBlock.incoming(block.label.name) = (next.args, block.end)
       todo += next.name
     }
     def nextUnwind(next: Next): Unit = next match {
@@ -380,15 +380,15 @@ final class MergeProcessor(insts: Array[Inst],
     }
   }
 
-  def toSeq(): Seq[MergeBlock] = {
+  def toSeq: Seq[MergeBlock] = {
     val sortedBlocks = blocks.values.toSeq
-      .sortBy { block => offsets(block.label.name) }
       .filter(_.cf != null)
+      .sortBy { block => offsets(block.label.name) }
 
     val retMergeBlocks = sortedBlocks.collect {
       case block if block.cf.isInstanceOf[Inst.Ret] =>
         block
-    }.toSeq
+    }
 
     def isExceptional(block: MergeBlock): Boolean = {
       val cf = block.cf
@@ -401,10 +401,10 @@ final class MergeProcessor(insts: Array[Inst],
     // Inlining expects at most one block that returns.
     // If the discovered blocks contain more than one,
     // we must merge them together using a synthetic block.
-    if (inline && retMergeBlocks.size > 1) {
+    if (doInline && retMergeBlocks.size > 1) {
       val tys = retMergeBlocks.map { block =>
-        val Inst.Ret(v)    = block.cf
-        implicit val state = block.end
+        val Inst.Ret(v)           = block.cf
+        implicit val state: State = block.end
         v match {
           case InstanceRef(ty) => ty
           case _               => v.ty
@@ -429,7 +429,7 @@ final class MergeProcessor(insts: Array[Inst],
         val Inst.Ret(v) = block.cf
         block.cf = Inst.Jump(Next.Label(syntheticLabel.name, Seq(v)))
         block.outgoing(syntheticLabel.name) = resultMergeBlock
-        resultMergeBlock.incoming(block.label.name) = ((Seq(v), block.end))
+        resultMergeBlock.incoming(block.label.name) = (Seq(v), block.end)
       }
 
       // Perform merge of all incoming edges to compute
@@ -456,15 +456,15 @@ object MergeProcessor {
   def fromEntry(insts: Array[Inst],
                 args: Seq[Val],
                 state: State,
-                inline: Boolean,
+                doInline: Boolean,
                 blockFresh: Fresh,
                 eval: Eval)(implicit linked: linker.Result): MergeProcessor = {
-    val builder         = new MergeProcessor(insts, blockFresh, inline, eval)
+    val builder         = new MergeProcessor(insts, blockFresh, doInline, eval)
     val entryName       = insts.head.asInstanceOf[Inst.Label].name
     val entryMergeBlock = builder.findMergeBlock(entryName)
     val entryState      = new State(entryMergeBlock.name)
     entryState.inherit(state, args)
-    entryMergeBlock.incoming(Local(-1)) = ((args, entryState))
+    entryMergeBlock.incoming(Local(-1)) = (args, entryState)
     builder.todo += entryName
     builder
   }
