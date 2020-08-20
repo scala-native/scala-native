@@ -1,7 +1,5 @@
 package java.util
 
-import java.util
-
 import scala.collection.JavaConverters._
 
 object ArrayDequeSuite extends tests.Suite {
