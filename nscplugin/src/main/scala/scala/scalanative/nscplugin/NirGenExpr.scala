@@ -16,10 +16,8 @@ trait NirGenExpr { self: NirGenPhase =>
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
 
-  // TODO: These classes should be final - however, it results in the following error:
-  // TODO: > The outer reference in this type test cannot be checked at run time.
-  case class ValTree(value: nir.Val)    extends Tree
-  case class ContTree(f: () => nir.Val) extends Tree
+  sealed case class ValTree(value: nir.Val)    extends Tree
+  sealed case class ContTree(f: () => nir.Val) extends Tree
 
   class FixupBuffer(implicit fresh: Fresh) extends nir.Buffer {
     private var labeled = false
