@@ -13,27 +13,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
 
   private[this] var lastPosition: Position = Position.NoPosition
-
-  private[this] val files        = mutable.ListBuffer.empty[URI]
-  private[this] val fileIndexMap = mutable.Map.empty[URI, Int]
-  private def fileToIndex(file: URI): Int =
-    fileIndexMap.getOrElseUpdate(file, (files += file).size - 1)
+  private[this] val fileIndexMap           = mutable.ListMap.empty[URI, Int]
 
   final def serialize(defns: Seq[Defn]): Unit = {
     val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
-
-    // Init map with all possible filenames as they must be serialized before other definitions
-    locally {
-      def initFile(pos: Position): Unit =
-        if (pos.isDefined) fileToIndex(pos.source)
-      defns.foreach {
-        case defn @ Defn.Define(_, _, _, insts) =>
-          initFile(defn.pos)
-          insts.foreach(inst => initFile(inst.pos))
-        case defn => initFile(defn.pos)
-      }
-    }
 
     Prelude.writeTo(buffer,
                     Prelude(Versions.magic,
@@ -41,7 +25,13 @@ final class BinarySerializer(buffer: ByteBuffer) {
                             Versions.revision,
                             Defn.existsEntryPoint(defns)))
 
-    putSeq(files)(f => putString(f.toString))
+    // Init map with all possible filenames as they must be serialized before other definitions
+    initFiles(defns)
+    putSeq {
+      fileIndexMap.toVector.sortBy(_._2)
+    } {
+      case (file, _) => putString(file.toString)
+    }
 
     putSeq(names) { n =>
       putGlobal(n)
@@ -529,7 +519,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     import PositionFormat._
     def writeFull(): Unit = {
       put(FormatFullMaskValue.toByte)
-      putInt(fileToIndex(pos.source))
+      putInt(fileIndexMap(pos.source))
       putInt(pos.line)
       putInt(pos.column)
     }
@@ -561,6 +551,20 @@ final class BinarySerializer(buffer: ByteBuffer) {
       }
 
       lastPosition = pos
+    }
+  }
+
+  private def initFiles(defns: Seq[Defn]): Unit = {
+    def initFile(pos: Position): Unit = {
+      val file = pos.source
+      if (pos.isDefined)
+        fileIndexMap.getOrElseUpdate(file, fileIndexMap.size)
+    }
+    defns.foreach {
+      case defn @ Defn.Define(_, _, _, insts) =>
+        initFile(defn.pos)
+        insts.foreach(inst => initFile(inst.pos))
+      case defn => initFile(defn.pos)
     }
   }
 }

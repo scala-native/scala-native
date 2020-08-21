@@ -134,7 +134,7 @@ trait NirGenStat { self: NirGenPhase =>
       val name  = genFuncPtrExternForwarderName(cd.symbol)
       val sig   = genExternMethodSig(applySym)
 
-      implicit val pos: nir.Position = apply.pos
+      implicit val pos: nir.Position = applySym.pos
 
       val body = scoped(
         curUnwindHandler := None
@@ -149,7 +149,7 @@ trait NirGenStat { self: NirGenPhase =>
         buf.label(fresh(), params)
         val boxedParams = params.zip(origtys.tail).map {
           case (param, ty) =>
-            buf.frompeExtern(ty, param)
+            buf.fromExtern(ty, param)
         }
         val res =
           buf.call(applySig, applyName, Val.Null +: boxedParams, Next.None)
@@ -226,7 +226,7 @@ trait NirGenStat { self: NirGenPhase =>
         genTypeName(psym)
       }
 
-    def genClassFields(sym: Symbol): Unit = {
+    def genClassFields(sym: Symbol)(implicit pos: nir.Position): Unit = {
       val attrs = nir.Attrs(isExtern = sym.isExternModule)
 
       for (f <- sym.info.decls
@@ -234,7 +234,7 @@ trait NirGenStat { self: NirGenPhase =>
         val ty   = genType(f.tpe)
         val name = genFieldName(f)
 
-        buf += Defn.Var(attrs, name, ty, Val.Zero(ty))(sym.pos)
+        buf += Defn.Var(attrs, name, ty, Val.Zero(ty))
       }
     }
 
@@ -346,7 +346,7 @@ trait NirGenStat { self: NirGenPhase =>
       val fqSymId   = curClassSym.fullName + "$"
       val fqSymName = Global.Top(fqSymId)
 
-      implicit val pos: nir.Position = Position.generated
+      implicit val pos: nir.Position = cd.pos
 
       reflectiveInstantiationInfo += ReflectiveInstantiationBuffer(fqSymId)
       val reflInstBuffer = reflectiveInstantiationInfo.last
@@ -423,8 +423,9 @@ trait NirGenStat { self: NirGenPhase =>
                           Seq(_1, _2))
       }
 
-      def genClassConstructorsInfo(exprBuf: ExprBuffer,
-                                   ctors: Seq[global.Symbol]): Val = {
+      def genClassConstructorsInfo(
+          exprBuf: ExprBuffer,
+          ctors: Seq[global.Symbol])(implicit pos: nir.Position): Val = {
         val applyMethodSig =
           Sig.Method("apply", Seq(jlObjectRef, jlObjectRef))
 
@@ -554,16 +555,16 @@ trait NirGenStat { self: NirGenPhase =>
             .alternatives
             .filter(_.isPublic)
 
+      implicit val pos: nir.Position = cd.pos
       if (ctors.isEmpty)
         Seq.empty
       else
         withFreshExprBuffer { exprBuf =>
-          exprBuf.label(curFresh(), Seq())(Position.generated)
+          exprBuf.label(curFresh(), Seq())
 
           val fqcnArg = Val.String(fqSymId)
           val runtimeClassArg =
-            exprBuf.genBoxClass(Val.Global(fqSymName, Type.Ptr))(
-              Position.generated)
+            exprBuf.genBoxClass(Val.Global(fqSymName, Type.Ptr))
           val instantiateClassFunArg =
             genClassConstructorsInfo(exprBuf, ctors)
 
@@ -573,7 +574,7 @@ trait NirGenStat { self: NirGenPhase =>
             Seq(fqcnArg, runtimeClassArg, instantiateClassFunArg).map(
               ValTree(_)))
 
-          exprBuf.ret(Val.Unit)(Position.generated)
+          exprBuf.ret(Val.Unit)
           exprBuf.toSeq
         }
     }
@@ -702,6 +703,8 @@ trait NirGenStat { self: NirGenPhase =>
       val fresh = curFresh.get
       val buf   = new ExprBuffer()(fresh)
 
+      implicit val pos: nir.Position = dd.pos
+
       val paramSyms = genParamSyms(dd, isStatic)
       val params = paramSyms.map {
         case None =>
@@ -715,13 +718,13 @@ trait NirGenStat { self: NirGenPhase =>
       }
 
       def genEntry(): Unit = {
-        buf.label(fresh(), params)(dd.pos)
+        buf.label(fresh(), params)
 
         if (isExtern) {
           paramSyms.zip(params).foreach {
             case (Some(sym), param) if isExtern =>
               val ty    = genType(sym.tpe)
-              val value = buf.fromExtern(ty, param)(sym.pos)
+              val value = buf.fromExtern(ty, param)
               curMethodEnv.enter(sym, value)
             case _ =>
               ()
@@ -733,7 +736,7 @@ trait NirGenStat { self: NirGenPhase =>
         val vars = curMethodInfo.mutableVars.toSeq
         vars.foreach { sym =>
           val ty   = genType(sym.info)
-          val slot = buf.var_(ty, unwind(fresh))(sym.pos)
+          val slot = buf.var_(ty, unwind(fresh))
           curMethodEnv.enter(sym, slot)
         }
       }
