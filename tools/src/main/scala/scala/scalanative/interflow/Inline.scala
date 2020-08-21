@@ -138,6 +138,8 @@ trait Inline { self: Interflow =>
           getDone(name)
       }
 
+      implicit val pos: Position = defn.pos
+
       val inlineArgs  = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
       val blocks      = process(inlineInsts, inlineArgs, state, doInline = true)
@@ -145,7 +147,7 @@ trait Inline { self: Interflow =>
       val emit = new nir.Buffer()(state.fresh)
 
       def nothing = {
-        emit.label(state.fresh(), Seq.empty)(defn.pos)
+        emit.label(state.fresh(), Seq.empty)
         Val.Zero(Type.Nothing)
       }
 
@@ -154,7 +156,7 @@ trait Inline { self: Interflow =>
           util.unreachable
 
         case Seq(block) =>
-          implicit val pos = block.cf.pos
+          implicit val pos = Option(block.cf.pos).getOrElse(defn.pos)
           block.cf match {
             case Inst.Ret(value) =>
               emit ++= block.end.emit
@@ -182,7 +184,7 @@ trait Inline { self: Interflow =>
               case Inst.Throw(value, unwind) =>
                 val excv = block.end.materialize(value)
                 emit ++= block.toInsts.init
-                emit.raise(excv, unwind)(block.cf.pos)
+                emit.raise(excv, unwind)
               case _ =>
                 emit ++= block.toInsts
             }

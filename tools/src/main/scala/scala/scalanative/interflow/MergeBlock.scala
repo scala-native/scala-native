@@ -14,10 +14,9 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
   var invalidations: Int  = 0
 
   def toInsts(): Seq[Inst] = {
-    implicit def pos: Position =
-      if (cf.pos != null) cf.pos else Position.generated
-    val block  = this
-    val result = new nir.Buffer()(Fresh(0))
+    implicit def pos: Position = cf.pos
+    val block                  = this
+    val result                 = new nir.Buffer()(Fresh(0))
     def mergeNext(next: Next.Label): Next.Label = {
       val nextBlock = outgoing(next.name)
       val mergeValues = nextBlock.phis.flatMap {

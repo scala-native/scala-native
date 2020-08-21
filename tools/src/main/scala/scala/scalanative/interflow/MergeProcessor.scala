@@ -380,7 +380,7 @@ final class MergeProcessor(insts: Array[Inst],
     }
   }
 
-  def toSeq: Seq[MergeBlock] = {
+  def toSeq()(implicit originDefnPos: nir.Position): Seq[MergeBlock] = {
     val sortedBlocks = blocks.values.toSeq
       .filter(_.cf != null)
       .sortBy { block => offsets(block.label.name) }
@@ -422,7 +422,7 @@ final class MergeProcessor(insts: Array[Inst],
       val syntheticFresh = Fresh(insts)
       val syntheticParam = Val.Local(syntheticFresh(), retTy)
       val syntheticLabel =
-        Inst.Label(syntheticFresh(), Seq(syntheticParam))(Position.generated)
+        Inst.Label(syntheticFresh(), Seq(syntheticParam))
       val resultMergeBlock =
         new MergeBlock(syntheticLabel, Local(blockFresh().id * 10000))
       blocks(syntheticLabel.name) = resultMergeBlock
@@ -446,8 +446,7 @@ final class MergeProcessor(insts: Array[Inst],
       resultMergeBlock.phis = phis
       resultMergeBlock.start = state
       resultMergeBlock.end = state
-      resultMergeBlock.cf =
-        Inst.Ret(eval.eval(syntheticParam)(state))(Position.generated)
+      resultMergeBlock.cf = Inst.Ret(eval.eval(syntheticParam)(state))
     }
 
     orderedBlocks ++= sortedBlocks.filter(isExceptional)

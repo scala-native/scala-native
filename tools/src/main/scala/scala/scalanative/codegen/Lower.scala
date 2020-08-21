@@ -131,7 +131,7 @@ object Lower {
           ScopedVar.scoped(
             unwindHandler := newUnwindHandler(unwind)(inst.pos)
           ) {
-            genUnreachable(buf)
+            genUnreachable(buf)(inst.pos)
           }
 
         case inst =>
@@ -274,11 +274,11 @@ object Lower {
       op.resty match {
         case Type.Unit =>
           genOp(buf, fresh(), op)
-          buf.let(n, Op.Copy(unit), unwind)(Position.generated)
+          buf.let(n, Op.Copy(unit), unwind)
         case Type.Nothing =>
           genOp(buf, fresh(), op)
           genUnreachable(buf)
-          buf.label(fresh(), Seq(Val.Local(n, op.resty)))(Position.generated)
+          buf.label(fresh(), Seq(Val.Local(n, op.resty)))
         case _ =>
           genOp(buf, n, op)
       }
@@ -286,13 +286,13 @@ object Lower {
     def genThrow(buf: Buffer, exc: Val)(implicit pos: Position) = {
       genGuardNotNull(buf, exc)
       genOp(buf, fresh(), Op.Call(throwSig, throw_, Seq(exc)))
-      buf.unreachable(Next.None)(Position.generated)
+      buf.unreachable(Next.None)
     }
 
-    def genUnreachable(buf: Buffer) = {
+    def genUnreachable(buf: Buffer)(implicit pos: Position) = {
       val failL = unreachableSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
-      buf.jump(Next(failL))(Position.generated)
+      buf.jump(Next(failL))
     }
 
     def genOp(buf: Buffer, n: Local, op: Op)(implicit pos: Position): Unit =
@@ -326,11 +326,9 @@ object Lower {
         case op: Op.Var =>
           ()
         case Op.Varload(Val.Local(slot, Type.Var(ty))) =>
-          buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)(
-            Position.generated)
+          buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)
         case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
-          buf.let(n, Op.Store(ty, Val.Local(slot, Type.Ptr), value), unwind)(
-            Position.generated)
+          buf.let(n, Op.Store(ty, Val.Local(slot, Type.Ptr), value), unwind)
         case op: Op.Arrayalloc =>
           genArrayallocOp(buf, n, op)
         case op: Op.Arrayload =>
@@ -340,7 +338,7 @@ object Lower {
         case op: Op.Arraylength =>
           genArraylengthOp(buf, n, op)
         case _ =>
-          buf.let(n, op, unwind)(Position.generated)
+          buf.let(n, op, unwind)
       }
 
     def genGuardNotNull(buf: Buffer, obj: Val)(implicit pos: Position): Unit =

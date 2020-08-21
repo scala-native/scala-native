@@ -403,14 +403,16 @@ object CodeGen {
     def genBlockLandingPads(block: Block)(implicit cfg: CFG,
                                           fresh: Fresh): Unit = {
       block.insts.foreach {
-        case Inst.Let(_, _, unwind: Next.Unwind) =>
+        case inst @ Inst.Let(_, _, unwind: Next.Unwind) =>
+          import inst.pos
           genLandingPad(unwind)
         case _ =>
           ()
       }
     }
 
-    def genLandingPad(unwind: Next.Unwind)(implicit fresh: Fresh): Unit = {
+    def genLandingPad(unwind: Next.Unwind)(implicit fresh: Fresh,
+                                           pos: nir.Position): Unit = {
       val Next.Unwind(Val.Local(excname, _), next) = unwind
 
       val excpad  = "_" + excname.id + ".landingpad"
@@ -440,7 +442,7 @@ object CodeGen {
       line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
       line(s"$exc = load i8*, i8** $w2")
       line(s"call void @__cxa_end_catch()")
-      genInst(Inst.Jump(next)(Position.generated))
+      genInst(Inst.Jump(next))
       unindent()
 
       line(s"$excfail:")
