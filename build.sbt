@@ -194,7 +194,12 @@ lazy val buildInfoSettings: Seq[Setting[_]] =
   Def.settings(
     buildInfoPackage := "scala.scalanative.buildinfo",
     buildInfoObject := "ScalaNativeBuildInfo",
-    buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion, sbtVersion)
+    buildInfoKeys := Seq[BuildInfoKey](
+      version,
+      sbtVersion,
+      scalaVersion,
+      "nativeScalaVersion" -> (nativelib / scalaVersion).value
+    )
   )
 
 lazy val util =
@@ -233,6 +238,8 @@ lazy val tools =
     .in(file("tools"))
     .settings(toolSettings)
     .settings(mavenPublishSettings)
+    .enablePlugins(BuildInfoPlugin)
+    .settings(buildInfoSettings)
     .settings(
       libraryDependencies ++= Seq(
         scalacheckDep,
