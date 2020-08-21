@@ -25,3 +25,6 @@ bin/
 /.bloop/
 /.metals/
 /project/metals.sbt
+
+# vscode
+/.vscode/
