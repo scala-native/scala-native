@@ -180,7 +180,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     }
   }
 
-  private def getGlobals(): Seq[Global] = getSeq(getGlobal)
+  private def getGlobals(): Seq[Global]      = getSeq(getGlobal)
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
   private def getGlobal(): Global = getInt match {
     case T.NoneGlobal =>
@@ -239,7 +239,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
-  private def getParam(): Val.Local = Val.Local(getLocal, getType)
+  private def getParam(): Val.Local       = Val.Local(getLocal, getType)
 
   private def getTypes(): Seq[Type] = getSeq(getType)
   private def getType(): Type = getInt match {
@@ -305,8 +305,8 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
         Position.NoPosition
       } else {
         val result = if ((first & FormatFullMask) == FormatFullMaskValue) {
-          val file = files(getInt())
-          val line = getInt()
+          val file   = files(getInt())
+          val line   = getInt()
           val column = getInt()
           Position(file, line, column)
         } else {
@@ -319,14 +319,14 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
                      lastPosition.column + columnDiff)
           } else if ((first & Format2Mask) == Format2MaskValue) {
             val lineDiff = first >> Format2Shift
-            val column = get() & 0xff // unsigned
+            val column   = get() & 0xff // unsigned
             Position(lastPosition.source, lastPosition.line + lineDiff, column)
           } else {
             assert(
               (first & Format3Mask) == Format3MaskValue,
               s"Position format error: first byte $first does not match any format")
             val lineDiff = getShort()
-            val column = get() & 0xff // unsigned
+            val column   = get() & 0xff // unsigned
             Position(lastPosition.source, lastPosition.line + lineDiff, column)
           }
         }
