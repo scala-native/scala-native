@@ -1,4 +1,5 @@
-package scala.scalanative.linker
+package scala.scalanative
+package linker
 
 import scala.scalanative.NativePlatform
 import scala.scalanative.nir.{Global, Sig, Type}
