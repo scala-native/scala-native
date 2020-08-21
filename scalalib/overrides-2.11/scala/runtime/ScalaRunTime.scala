@@ -174,7 +174,6 @@ object ScalaRunTime {
 
   def hash(x: Any): Int =
     if (x == null) 0
-    else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
     else x.hashCode
 
   def hash(dv: Double): Int = {
@@ -201,7 +200,7 @@ object ScalaRunTime {
     val high = (lv >>> 32).toInt
     low ^ (high + lowSign)
   }
-  def hash(x: Number): Int  = runtime.BoxesRunTime.hashFromNumber(x)
+  def hash(x: Number): Int = x.hashCode
 
   // The remaining overloads are here for completeness, but the compiler
   // inlines these definitions directly so they're not generally used.
