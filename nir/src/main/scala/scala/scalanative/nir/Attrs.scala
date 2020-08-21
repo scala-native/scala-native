@@ -32,7 +32,7 @@ object Attr {
   final case object Abstract          extends Attr
 }
 
-final case class Attrs(doInline: Inline = MayInline,
+final case class Attrs(inlineHint: Inline = MayInline,
                        specialize: Specialize = MaySpecialize,
                        opt: Opt = UnOpt,
                        isExtern: Boolean = false,
@@ -43,7 +43,7 @@ final case class Attrs(doInline: Inline = MayInline,
   def toSeq: Seq[Attr] = {
     val out = mutable.UnrolledBuffer.empty[Attr]
 
-    if (doInline != MayInline) out += doInline
+    if (inlineHint != MayInline) out += inlineHint
     if (specialize != MaySpecialize) out += specialize
     if (opt != UnOpt) out += opt
     if (isExtern) out += Extern
@@ -59,7 +59,7 @@ object Attrs {
   val None = new Attrs()
 
   def fromSeq(attrs: Seq[Attr]): Attrs = {
-    var inline     = None.doInline
+    var inline     = None.inlineHint
     var specialize = None.specialize
     var opt        = None.opt
     var isExtern   = false

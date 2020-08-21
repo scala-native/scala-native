@@ -35,11 +35,11 @@ trait Inline { self: Interflow =>
         val noOpt =
           defn.attrs.opt == Attr.NoOpt
         val noInline =
-          defn.attrs.doInline == Attr.NoInline
+          defn.attrs.inlineHint == Attr.NoInline
         val alwaysInline =
-          defn.attrs.doInline == Attr.AlwaysInline
+          defn.attrs.inlineHint == Attr.AlwaysInline
         val hintInline =
-          defn.attrs.doInline == Attr.InlineHint
+          defn.attrs.inlineHint == Attr.InlineHint
         val isRecursive =
           hasContext(s"inlining ${name.show}")
         val isBlacklisted =
