@@ -22,8 +22,6 @@ object ClassLoader {
   }
 
   def fromMemory(defns: Seq[Defn]): ClassLoader = {
-    assert(defns != null)
-    assert(defns.forall(_ != null))
     new FromMemory(defns)
   }
 

@@ -641,16 +641,16 @@ trait NirGenExpr { self: NirGenPhase =>
       val ctorName = anonName.member(Sig.Ctor(captureTypes))
       val ctorTy   = nir.Type.Function(Type.Ref(anonName) +: captureTypes, Type.Unit)
       val ctorBody = {
-        val fresh    = Fresh()
-        val buf      = new nir.Buffer()(fresh)
-        val self     = Val.Local(fresh(), Type.Ref(anonName))
-        val captures = captureTypes.map { ty => Val.Local(fresh(), ty) }
-        buf.label(fresh(), self +: captures)
+        val fresh          = Fresh()
+        val buf            = new nir.Buffer()(fresh)
+        val self           = Val.Local(fresh(), Type.Ref(anonName))
+        val captureFormals = captureTypes.map { ty => Val.Local(fresh(), ty) }
+        buf.label(fresh(), self +: captureFormals)
         val superTy   = nir.Type.Function(Seq(Rt.Object), Type.Unit)
         val superName = Rt.Object.name.member(Sig.Ctor(Seq()))
         val superCtor = Val.Global(superName, Type.Ptr)
         buf.call(superTy, superCtor, Seq(self), Next.None)
-        captureNames.zip(captures).foreach {
+        captureNames.zip(captureFormals).foreach {
           case (name, capture) =>
             buf.fieldstore(capture.ty, self, name, capture, Next.None)
         }
