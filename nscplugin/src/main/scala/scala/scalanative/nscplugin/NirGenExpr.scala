@@ -4,7 +4,7 @@ package nscplugin
 import scala.collection.mutable
 import scala.scalanative.nir.Type.isPtr
 import scalanative.nir._
-import scalanative.util.{Platform, StringUtils, unsupported}
+import scalanative.util.{StringUtils, unsupported}
 import scalanative.util.ScopedVar.scoped
 import scalanative.nscplugin.NirPrimitives._
 
