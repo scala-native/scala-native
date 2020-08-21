@@ -129,7 +129,8 @@ trait Inline { self: Interflow =>
   }
 
   def inline(name: Global, args: Seq[Val])(implicit state: State,
-                                           linked: linker.Result): Val =
+                                           linked: linker.Result,
+                                           origPos: Position): Val =
     in(s"inlining ${name.show}") {
       val defn = mode match {
         case build.Mode.Debug =>
@@ -137,8 +138,6 @@ trait Inline { self: Interflow =>
         case _: build.Mode.Release =>
           getDone(name)
       }
-
-      implicit val pos: Position = defn.pos
 
       val inlineArgs  = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
@@ -156,7 +155,6 @@ trait Inline { self: Interflow =>
           util.unreachable
 
         case Seq(block) =>
-          implicit val pos = Option(block.cf.pos).getOrElse(defn.pos)
           block.cf match {
             case Inst.Ret(value) =>
               emit ++= block.end.emit

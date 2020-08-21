@@ -30,13 +30,16 @@ final class MergeProcessor(insts: Array[Inst],
   }
 
   def merge(block: MergeBlock)(
-      implicit linked: linker.Result): (Seq[MergePhi], State) =
+      implicit linked: linker.Result): (Seq[MergePhi], State) = {
+    import block.cfPos
     merge(block.name, block.label.params, block.incoming.toSeq.sortBy(_._1.id))
+  }
 
   def merge(merge: Local,
             params: Seq[Val.Local],
             incoming: Seq[(Local, (Seq[Val], State))])(
-      implicit linked: linker.Result): (Seq[MergePhi], State) = {
+      implicit linked: linker.Result,
+      origDefPos: Position): (Seq[MergePhi], State) = {
     val names  = incoming.map { case (n, (_, _)) => n }
     val states = incoming.map { case (_, (_, s)) => s }
 
@@ -432,8 +435,7 @@ final class MergeProcessor(insts: Array[Inst],
       // and update incoming/outgoing edges to include result block.
       retMergeBlocks.foreach { block =>
         val Inst.Ret(v) = block.cf
-        block.cf =
-          Inst.Jump(Next.Label(syntheticLabel.name, Seq(v)))(block.cf.pos)
+        block.cf = Inst.Jump(Next.Label(syntheticLabel.name, Seq(v)))
         block.outgoing(syntheticLabel.name) = resultMergeBlock
         resultMergeBlock.incoming(block.label.name) = (Seq(v), block.end)
       }
@@ -446,7 +448,8 @@ final class MergeProcessor(insts: Array[Inst],
       resultMergeBlock.phis = phis
       resultMergeBlock.start = state
       resultMergeBlock.end = state
-      resultMergeBlock.cf = Inst.Ret(eval.eval(syntheticParam)(state))
+      resultMergeBlock.cf =
+        Inst.Ret(eval.eval(syntheticParam)(state, originDefnPos))
     }
 
     orderedBlocks ++= sortedBlocks.filter(isExceptional)

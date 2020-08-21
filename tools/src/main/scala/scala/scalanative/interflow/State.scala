@@ -63,17 +63,18 @@ final class State(block: Local) {
       value
     }
   }
-  def emit(op: Op, idempotent: Boolean = false): Val = {
+  def emit(op: Op, idempotent: Boolean = false)(
+      implicit position: Position): Val = {
     if (op.isIdempotent || idempotent) {
       if (emitted.contains(op)) {
         emitted(op)
       } else {
-        val value = emit.let(op, Next.None)(Position.generated)
+        val value = emit.let(op, Next.None)
         emitted(op) = value
         value
       }
     } else {
-      emit.let(op, Next.None)(Position.generated)
+      emit.let(op, Next.None)
     }
   }
   def deref(addr: Addr): Instance = {
@@ -220,7 +221,8 @@ final class State(block: Local) {
     case _ =>
       false
   }
-  def materialize(rootValue: Val)(implicit linked: linker.Result): Val = {
+  def materialize(rootValue: Val)(implicit linked: linker.Result,
+                                  origPos: Position): Val = {
     val locals = mutable.Map.empty[Addr, Val]
 
     def reachAddr(addr: Addr): Unit = {
@@ -245,7 +247,7 @@ final class State(block: Local) {
           } else {
             Val.Int(values.length)
           }
-        emit.arrayalloc(elemty, init, Next.None)(Position.generated)
+        emit.arrayalloc(elemty, init, Next.None)
       case VirtualInstance(BoxKind, cls, Array(value)) =>
         reachVal(value)
         emit(Op.Box(Type.Ref(cls.name), escapedVal(value)))
@@ -262,7 +264,7 @@ final class State(block: Local) {
           .toArray[Char]
         Val.String(new java.lang.String(chars))
       case VirtualInstance(_, cls, values) =>
-        emit.classalloc(cls.name, Next.None)(Position.generated)
+        emit.classalloc(cls.name, Next.None)
       case DelayedInstance(op) =>
         reachOp(op)
         emit(escapedOp(op), idempotent = true)
@@ -287,7 +289,7 @@ final class State(block: Local) {
                                 local,
                                 Val.Int(idx),
                                 escapedVal(value),
-                                Next.None)(Position.generated)
+                                Next.None)
               }
           }
         }
@@ -305,7 +307,7 @@ final class State(block: Local) {
                               local,
                               fld.name,
                               escapedVal(value),
-                              Next.None)(Position.generated)
+                              Next.None)
             }
         }
       case DelayedInstance(op) =>

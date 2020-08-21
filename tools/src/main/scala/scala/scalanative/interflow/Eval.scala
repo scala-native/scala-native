@@ -99,7 +99,9 @@ trait Eval { self: Interflow =>
     unreachable
   }
 
-  def eval(op: Op)(implicit state: State, linked: linker.Result): Val = {
+  def eval(op: Op)(implicit state: State,
+                   linked: linker.Result,
+                   origPos: Position): Val = {
     import state.{emit, materialize, delay}
     def bailOut =
       throw BailOut("can't eval op: " + op.show)
@@ -411,7 +413,8 @@ trait Eval { self: Interflow =>
     }
   }
 
-  def eval(bin: Bin, ty: Type, l: Val, r: Val)(implicit state: State): Val = {
+  def eval(bin: Bin, ty: Type, l: Val, r: Val)(implicit state: State,
+                                               origPos: Position): Val = {
     import state.{emit, materialize}
     def fallback =
       emit(Op.Bin(bin, ty, materialize(l), materialize(r)))
@@ -821,7 +824,7 @@ trait Eval { self: Interflow =>
     }
   }
 
-  def eval(value: Val)(implicit state: State): Val = {
+  def eval(value: Val)(implicit state: State, origPos: Position): Val = {
     value match {
       case Val.Local(local, _) if local.id >= 0 =>
         state.loadLocal(local) match {

@@ -12,11 +12,14 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
   var end: State          = _
   var cf: Inst.Cf         = _
   var invalidations: Int  = 0
+  implicit def cfPos: Position = {
+    if (cf != null) cf.pos
+    else label.pos
+  }
 
   def toInsts(): Seq[Inst] = {
-    implicit def pos: Position = cf.pos
-    val block                  = this
-    val result                 = new nir.Buffer()(Fresh(0))
+    val block  = this
+    val result = new nir.Buffer()(Fresh(0))
     def mergeNext(next: Next.Label): Next.Label = {
       val nextBlock = outgoing(next.name)
       val mergeValues = nextBlock.phis.flatMap {
