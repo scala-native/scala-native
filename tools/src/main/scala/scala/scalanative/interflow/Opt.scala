@@ -89,21 +89,10 @@ trait Opt { self: Interflow =>
       case tys     => Sub.lub(tys, Type.Ref(Global.Top("java.lang.Object")))
     }
 
-    // Interflow usually infers better types on our erased type system
-    // than scalac, yet we live it a benefit of the doubt and make sure
-    // that if original return type is more specific, we keep it as is.
-    val origRetty = {
+    val resRetty = {
       val Type.Function(_, ty) = origdefn.ty
       ty
     }
-    val resRetty =
-      if (!Sub.is(retty, origRetty)) {
-        log(
-          s"inferred type ${retty.show} is less precise than ${origRetty.show}")
-        origRetty
-      } else {
-        retty
-      }
 
     result(resRetty, insts)
   }
