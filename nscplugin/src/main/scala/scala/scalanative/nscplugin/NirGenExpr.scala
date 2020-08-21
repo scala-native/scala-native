@@ -615,11 +615,11 @@ trait NirGenExpr { self: NirGenPhase =>
 
       // Generate an anonymous class definition.
 
-      val suffix   = "$$Lambda$" + curClassFresh.get.apply().id
-      val anonName = nir.Global.Top(genName(curClassSym).top.id + suffix)
-      val trtName  = genName(funSym)
+      val suffix    = "$$Lambda$" + curClassFresh.get.apply().id
+      val anonName  = nir.Global.Top(genName(curClassSym).top.id + suffix)
+      val traitName = genName(funSym)
 
-      statBuf += nir.Defn.Class(Attrs.None, anonName, Some(nir.Rt.Object.name), Seq(trtName))
+      statBuf += nir.Defn.Class(Attrs.None, anonName, Some(nir.Rt.Object.name), Seq(traitName))
 
       // Generate fields to store the captures.
 
