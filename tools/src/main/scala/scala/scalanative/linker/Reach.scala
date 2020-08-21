@@ -83,15 +83,15 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def process(): Unit =
     while (todo.nonEmpty) {
-      val name = todo.last
-      todo = todo.init
+      val name = todo.head
+      todo = todo.tail
       if (!done.contains(name)) {
         reachDefn(name)
       }
     }
 
   def reachDefn(name: Global): Unit = {
-    stack :+= name
+    stack ::= name
     lookup(name).fold[Unit] {
       reachUnavailable(name)
     } { defn =>
@@ -101,7 +101,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         reachDefn(defn)
       }
     }
-    stack = stack.init
+    stack = stack.tail
   }
 
   def reachDefn(defn: Defn): Unit = {
@@ -164,7 +164,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     if (!enqueued.contains(name) && name.ne(Global.None)) {
       enqueued += name
       from(name) = if (stack.isEmpty) Global.None else stack.head
-      todo :+= name
+      todo ::= name
     }
 
   def reachGlobalNow(name: Global): Unit =

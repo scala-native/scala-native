@@ -89,7 +89,7 @@ object ControlFlow {
 
             val block = new Block(n, params, body, isEntry = k == 0)
             blocks(local) = block
-            todo :+= block
+            todo ::= block
             block
           }
         )
@@ -130,8 +130,8 @@ object ControlFlow {
       val visited = mutable.Set.empty[Local]
 
       while (todo.nonEmpty) {
-        val block = todo.last
-        todo = todo.init
+        val block = todo.head
+        todo = todo.tail
         val name = block.name
         if (!visited(name)) {
           visited += name
