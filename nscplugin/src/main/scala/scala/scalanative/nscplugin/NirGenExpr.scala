@@ -183,10 +183,11 @@ trait NirGenExpr { self: NirGenPhase =>
     def genIf(tree: If): Val = {
       val If(cond, thenp, elsep) = tree
       val retty                  = genType(tree.tpe)
-      genIf(retty, cond, thenp, elsep)
+      genIf(retty, cond, thenp, elsep)(tree.pos)
     }
 
-    def genIf(retty: nir.Type, condp: Tree, thenp: Tree, elsep: Tree): Val = {
+    def genIf(retty: nir.Type, condp: Tree, thenp: Tree, elsep: Tree)(
+        implicit ifPos: nir.Position): Val = {
       val thenn, elsen, mergen = fresh()
       val mergev               = Val.Local(fresh(), retty)
 
@@ -195,14 +196,14 @@ trait NirGenExpr { self: NirGenPhase =>
       locally {
         buf.label(thenn)(thenp.pos)
         val thenv = genExpr(thenp)
-        buf.jump(mergen, Seq(thenv))(NoPosition)
+        buf.jump(mergen, Seq(thenv))
       }
       locally {
         buf.label(elsen)(elsep.pos)
         val elsev = genExpr(elsep)
-        buf.jump(mergen, Seq(elsev))(NoPosition)
+        buf.jump(mergen, Seq(elsev))
       }
-      buf.label(mergen, Seq(mergev))(NoPosition)
+      buf.label(mergen, Seq(mergev))
       mergev
     }
 
@@ -240,9 +241,11 @@ trait NirGenExpr { self: NirGenPhase =>
       val merge       = fresh()
       val mergev      = Val.Local(fresh(), retty)
 
+      implicit val pos: nir.Position = m.pos
+
       // Generate code for the switch and its cases.
       val scrut = genExpr(scrutp)
-      buf.switch(scrut, defaultnext, casenexts)(m.pos)
+      buf.switch(scrut, defaultnext, casenexts)
       buf.label(defaultnext.name)(defaultp.pos)
       val defaultres = genExpr(defaultp)
       buf.jump(merge, Seq(defaultres))(defaultp.pos)
@@ -250,9 +253,9 @@ trait NirGenExpr { self: NirGenPhase =>
         case (n, _, expr) =>
           buf.label(n)(expr.pos)
           val caseres = genExpr(expr)
-          buf.jump(merge, Seq(caseres))(NoPosition)
+          buf.jump(merge, Seq(caseres))
       }
-      buf.label(merge, Seq(mergev))(NoPosition)
+      buf.label(merge, Seq(mergev))
       mergev
     }
 
@@ -301,7 +304,7 @@ trait NirGenExpr { self: NirGenPhase =>
       }
       locally {
         nested.label(handler, Seq(excv))
-        val res = nested.genTryCatch(retty, excv, mergen, catches)
+        val res = nested.genTryCatch(retty, excv, mergen, catches)(expr.pos)
         nested.jump(mergen, Seq(res))
       }
 
@@ -323,7 +326,8 @@ trait NirGenExpr { self: NirGenPhase =>
     def genTryCatch(retty: nir.Type,
                     exc: Val,
                     mergen: Local,
-                    catches: List[Tree]): Val = {
+                    catches: List[Tree])(
+                    implicit exprPos: nir.Position): Val = {
       val cases = catches.map {
         case cd @ CaseDef(pat, _, body) =>
           implicit val pos: nir.Position = cd.pos
@@ -350,14 +354,14 @@ trait NirGenExpr { self: NirGenPhase =>
       def wrap(cases: Seq[(nir.Type, () => Val, nir.Position)]): Val =
         cases match {
           case Seq() =>
-            buf.raise(exc, unwind)(NoPosition)
+            buf.raise(exc, unwind)
             Val.Unit
           case (excty, f, pos) +: rest =>
             val cond = buf.is(excty, exc, unwind)(pos)
             genIf(retty,
                   ValTree(cond),
                   ContTree(f),
-                  ContTree(() => wrap(rest)))
+                  ContTree(() => wrap(rest)))(pos)
         }
 
       wrap(cases)
@@ -1024,6 +1028,8 @@ trait NirGenExpr { self: NirGenPhase =>
     def genSimpleOp(app: Apply, args: List[Tree], code: Int): Val = {
       val retty = genType(app.tpe)
 
+      implicit val pos: nir.Position = app.pos
+
       args match {
         case List(right)       => genUnaryOp(code, right, retty)
         case List(left, right) => genBinaryOp(code, left, right, retty)
@@ -1057,7 +1063,8 @@ trait NirGenExpr { self: NirGenPhase =>
       }
     }
 
-    def genBinaryOp(code: Int, left: Tree, right: Tree, retty: nir.Type): Val = {
+    def genBinaryOp(code: Int, left: Tree, right: Tree, retty: nir.Type)(
+        implicit exprPos: nir.Position): Val = {
       import scalaPrimitives._
 
       val lty  = genType(left.tpe)
@@ -1788,9 +1795,9 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genApplyMethod(sym: Symbol,
-                      statically: Boolean,
-                      selfp: Tree,
-                      argsp: Seq[Tree]): Val = {
+                       statically: Boolean,
+                       selfp: Tree,
+                       argsp: Seq[Tree])(implicit pos: nir.Position): Val = {
       if (sym.owner.isExternModule && sym.isAccessor) {
         genApplyExternAccessor(sym, argsp)
       } else if (isImplClass(sym.owner)) {
