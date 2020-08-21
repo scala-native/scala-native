@@ -293,7 +293,8 @@ lazy val sbtPluginSettings: Seq[Setting[_]] =
         scriptedLaunchOpts.value ++
           Seq("-Xmx1024M",
               "-XX:MaxMetaspaceSize=256M",
-              "-Dplugin.version=" + version.value) ++
+              "-Dplugin.version=" + version.value,
+              "-Dscala.version=" + (nativelib / scalaVersion).value) ++
           ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq
       }
     )
@@ -304,7 +305,7 @@ lazy val sbtScalaNative =
     .enablePlugins(SbtPlugin)
     .settings(sbtPluginSettings)
     .settings(
-      crossScalaVersions := libCrossScalaVersions,
+      crossScalaVersions := Seq(sbt10ScalaVersion),
       addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
       // publish the other projects before running scripted tests.
