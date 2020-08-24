@@ -239,7 +239,7 @@ word_t *Allocator_lazySweep(Heap *heap, uint32_t size) {
     return object;
 }
 
-NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
+NOINLINE word_t *Allocator_allocSlow(ThreadManager *threadManager, Heap *heap, uint32_t size) {
     word_t *object = Allocator_tryAlloc(&allocator, size);
 
     if (object != NULL) {
@@ -262,7 +262,7 @@ NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
             goto done;
     }
 
-    Heap_Collect(heap);
+    Heap_Collect(threadManager, heap);
     object = Allocator_tryAlloc(&allocator, size);
 
     if (object != NULL)
