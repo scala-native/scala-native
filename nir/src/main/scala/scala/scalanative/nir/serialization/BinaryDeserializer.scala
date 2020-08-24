@@ -17,7 +17,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     val prelude = Prelude.readFrom(buffer)
 
     val pairs = getSeq((getGlobal, getInt))
-    val map = pairs.toMap
+    val map   = pairs.toMap
     prelude -> map
   }
 
@@ -176,7 +176,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
       Defn.Module(getAttrs, getGlobal, getGlobalOpt, getGlobals)
   }
 
-  private def getGlobals(): Seq[Global] = getSeq(getGlobal)
+  private def getGlobals(): Seq[Global]      = getSeq(getGlobal)
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
   private def getGlobal(): Global = getInt match {
     case T.NoneGlobal =>
@@ -235,7 +235,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
-  private def getParam(): Val.Local = Val.Local(getLocal, getType)
+  private def getParam(): Val.Local       = Val.Local(getLocal, getType)
 
   private def getTypes(): Seq[Type] = getSeq(getType)
   private def getType(): Type = getInt match {

@@ -1,15 +1,15 @@
 package java.lang
 
 /** Test suite for [[java.lang.Character]]
-  *
-  * To be consistent the implementations should be based on
-  * Unicode 7.0.
-  * @see [[http://www.unicode.org/Public/7.0.0 Unicode 7.0]]
-  *
-  * Overall code point range U+0000 - U+D7FF and U+E000 - U+10FFF.
-  * Surrogate code points are in the gap and U+FFFF
-  * is the max value for [[scala.Char]].
-  */
+ *
+ * To be consistent the implementations should be based on
+ * Unicode 7.0.
+ * @see [[http://www.unicode.org/Public/7.0.0 Unicode 7.0]]
+ *
+ * Overall code point range U+0000 - U+D7FF and U+E000 - U+10FFF.
+ * Surrogate code points are in the gap and U+FFFF
+ * is the max value for [[scala.Char]].
+ */
 object CharacterSuite extends tests.Suite {
   import java.lang.Character._
 
@@ -50,7 +50,7 @@ object CharacterSuite extends tests.Suite {
   test("codePointAt - Array[Char]") {
     val arr1 = "abcdEfghIjklMnoPqrsTuvwXyz".toArray
 
-    val result = Character.codePointAt(arr1, 3, arr1.length)
+    val result   = Character.codePointAt(arr1, 3, arr1.length)
     val expected = 100 // 'd'
     assert(result == expected, s"result: $result != expected: $expected")
   }
@@ -58,13 +58,13 @@ object CharacterSuite extends tests.Suite {
   test("codePointAt - CharSeq") {
     val charSeq1: CharSequence = "abcdEfghIjklMnoPqrsTuvwXyz"
 
-    val result = Character.codePointAt(charSeq1, 8)
+    val result   = Character.codePointAt(charSeq1, 8)
     val expected = 73 // 'I'
     assert(result == expected, s"result: $result != expected: $expected")
   }
 
   test("codePointAt - Array[Char],CharSeq return same non-ASCII value") {
-    val str1 = "30\u20ac" // 'euro-character'
+    val str1  = "30\u20ac" // 'euro-character'
     val index = str1.length - 1
 
     val resultCA = Character.codePointAt(str1.toArray, index, str1.length)
@@ -76,7 +76,7 @@ object CharacterSuite extends tests.Suite {
   }
 
   test("codePointAt - high surrogate at end of line") {
-    val str1 = "eol\uDBFF" // Character.MAX_HIGH_SURROGATE
+    val str1  = "eol\uDBFF" // Character.MAX_HIGH_SURROGATE
     val index = str1.length - 1
 
     val resultCA = Character.codePointAt(str1.toArray, index, str1.length)
@@ -89,7 +89,7 @@ object CharacterSuite extends tests.Suite {
 
   test("codePointAt - surrogate pair") {
     // Character.MIN_HIGH_SURROGATE followed by Character.MAX_LOW_SURROGATE
-    val str1 = "before \uD800\uDFFF after"
+    val str1  = "before \uD800\uDFFF after"
     val index = 7
 
     val resultCA = Character.codePointAt(str1.toArray, index, str1.length)
@@ -133,27 +133,27 @@ object CharacterSuite extends tests.Suite {
   }
 
   test("codePointBefore - Array[Char]") {
-    val arr1 = "abcdEfghIjklMnopQrstUvwxYz".toArray
+    val arr1  = "abcdEfghIjklMnopQrstUvwxYz".toArray
     val index = 10
 
-    val result = Character.codePointBefore(arr1, index)
+    val result   = Character.codePointBefore(arr1, index)
     val expected = 106 // 'j'
 
     assert(result == expected, s"result: $result != expected: $expected")
   }
 
   test("codePointBefore - CharSeq") {
-    val str1 = "abcdEfghIjklMnoPqrsTuvwXyz"
+    val str1  = "abcdEfghIjklMnoPqrsTuvwXyz"
     val index = str1.length - 1
 
-    val result = Character.codePointBefore(str1, index)
+    val result   = Character.codePointBefore(str1, index)
     val expected = 121 // 'y'
 
     assert(result == expected, s"result: $result != expected: $expected")
   }
 
   test("codePointBefore - Array[Char], CharSeq return same non-ASCII value") {
-    val str1 = "bugsabound\u03bb" // Greek small letter lambda
+    val str1  = "bugsabound\u03bb" // Greek small letter lambda
     val index = str1.length
 
     val resultCA = Character.codePointBefore(str1.toArray, index)
@@ -165,7 +165,7 @@ object CharacterSuite extends tests.Suite {
   }
 
   test("codePointBefore - high surrogate at end of line") {
-    val str1 = "eol\uDBFF" // Character.MAX_HIGH_SURROGATE
+    val str1  = "eol\uDBFF" // Character.MAX_HIGH_SURROGATE
     val index = str1.length
 
     val resultCA = Character.codePointBefore(str1.toArray, index)
@@ -178,7 +178,7 @@ object CharacterSuite extends tests.Suite {
 
   test("codePointBefore - surrogate pair") {
     // Character.MIN_HIGH_SURROGATE followed by Character.MAX_LOW_SURROGATE
-    val str1 = "Denali\uD800\uDFFF"
+    val str1  = "Denali\uD800\uDFFF"
     val index = str1.length
 
     val resultCA = Character.codePointBefore(str1.toArray, index, str1.length)
@@ -190,10 +190,10 @@ object CharacterSuite extends tests.Suite {
   }
 
   test("codePointCount") {
-    val data = "Mt. Whitney".toArray[scala.Char]
-    val offset = 1
+    val data     = "Mt. Whitney".toArray[scala.Char]
+    val offset   = 1
     val expected = data.size - offset
-    val result = Character.codePointCount(data, offset, expected)
+    val result   = Character.codePointCount(data, offset, expected)
 
     assert(result == expected, s"result: $result != expected: $expected")
   }
@@ -267,7 +267,7 @@ object CharacterSuite extends tests.Suite {
 // format: on
 
     for {
-      zero <- All0s
+      zero   <- All0s
       offset <- 0 to 9
     } {
       assay(offset, zero + offset)
@@ -276,7 +276,7 @@ object CharacterSuite extends tests.Suite {
     val AllAs = Array[Int]('A', 'a', 0xff21, 0xff41)
 
     for {
-      a <- AllAs
+      a      <- AllAs
       offset <- 0 to 25
     } {
       assay(10 + offset, a + offset)

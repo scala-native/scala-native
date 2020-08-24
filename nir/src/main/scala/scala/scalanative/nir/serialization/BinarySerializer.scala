@@ -11,7 +11,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
 
   final def serialize(defns: Seq[Defn]): Unit = {
-    val names = defns.map(_.name)
+    val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
     Prelude.writeTo(buffer,
