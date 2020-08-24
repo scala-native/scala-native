@@ -54,7 +54,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putInts(ints: Seq[Int]) = putSeq[Int](ints)(putInt(_))
 
   private def putASCIIString(v: String) = putBytes {
-    v.getBytes(StandardCharsets.ISO_8859_1)
+    v.getBytes(StandardCharsets.UTF_8)
   }
   private def putString(v: String) = {
     putInt(v.length)

@@ -50,7 +50,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   }
 
   private def getASCIIString(): String = {
-    new String(getBytes(), StandardCharsets.ISO_8859_1)
+    new String(getBytes(), StandardCharsets.UTF_8)
   }
 
   private def getBytes(): Array[Byte] = {
