@@ -3,6 +3,7 @@ package nir
 package serialization
 
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.nir.serialization.{Tags => T}
 import scala.scalanative.util.StringUtils
@@ -16,7 +17,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     val prelude = Prelude.readFrom(buffer)
 
     val pairs = getSeq((getGlobal, getInt))
-    val map   = pairs.toMap
+    val map = pairs.toMap
     prelude -> map
   }
 
@@ -40,10 +41,18 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   private def getInts(): Seq[Int] = getSeq(getInt)
 
-  private def getStrings(): Seq[String] = getSeq(getString)
   private def getString(): String = {
-    new String(getBytes(), "UTF-8")
+    if (prelude.revision < 7) getASCIIString()
+    else {
+      val chars = Array.fill(getInt)(getChar)
+      new String(chars)
+    }
   }
+
+  private def getASCIIString(): String = {
+    new String(getBytes(), StandardCharsets.ISO_8859_1)
+  }
+
   private def getBytes(): Array[Byte] = {
     val arr = new Array[Byte](getInt)
     get(arr)
@@ -65,12 +74,12 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.UnOptAttr   => Attr.UnOpt
     case T.NoOptAttr   => Attr.NoOpt
     case T.DidOptAttr  => Attr.DidOpt
-    case T.BailOptAttr => Attr.BailOpt(getString)
+    case T.BailOptAttr => Attr.BailOpt(getASCIIString)
 
     case T.DynAttr      => Attr.Dyn
     case T.StubAttr     => Attr.Stub
     case T.ExternAttr   => Attr.Extern
-    case T.LinkAttr     => Attr.Link(getString)
+    case T.LinkAttr     => Attr.Link(getASCIIString)
     case T.AbstractAttr => Attr.Abstract
   }
 
@@ -167,19 +176,19 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
       Defn.Module(getAttrs, getGlobal, getGlobalOpt, getGlobals)
   }
 
-  private def getGlobals(): Seq[Global]      = getSeq(getGlobal)
+  private def getGlobals(): Seq[Global] = getSeq(getGlobal)
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
   private def getGlobal(): Global = getInt match {
     case T.NoneGlobal =>
       Global.None
     case T.TopGlobal =>
-      Global.Top(getString)
+      Global.Top(getASCIIString)
     case T.MemberGlobal =>
-      Global.Member(Global.Top(getString), getSig)
+      Global.Member(Global.Top(getASCIIString), getSig)
   }
 
   private def getSig(): Sig =
-    new Sig(getString)
+    new Sig(getASCIIString)
 
   private def getLocal(): Local =
     Local(getLong)
@@ -226,7 +235,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
-  private def getParam(): Val.Local       = Val.Local(getLocal, getType)
+  private def getParam(): Val.Local = Val.Local(getLocal, getType)
 
   private def getTypes(): Seq[Type] = getSeq(getType)
   private def getType(): Type = getInt match {
@@ -271,7 +280,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.CharsVal =>
       Val.Chars {
         if (prelude.revision < 7)
-          StringUtils.processEscapes(getString())
+          StringUtils.processEscapes(getASCIIString)
         else getBytes()
       }
     case T.LocalVal  => Val.Local(getLocal, getType)

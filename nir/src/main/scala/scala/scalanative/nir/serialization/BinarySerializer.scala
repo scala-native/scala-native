@@ -3,7 +3,7 @@ package nir
 package serialization
 
 import java.nio.ByteBuffer
-
+import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.nir.serialization.{Tags => T}
 
@@ -11,7 +11,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
 
   final def serialize(defns: Seq[Defn]): Unit = {
-    val names     = defns.map(_.name)
+    val names = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
     Prelude.writeTo(buffer,
@@ -53,9 +53,12 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putInts(ints: Seq[Int]) = putSeq[Int](ints)(putInt(_))
 
-  private def putStrings(vs: Seq[String]) = putSeq(vs)(putString)
-  private def putString(v: String) = putBytes {
-    v.getBytes("UTF-8")
+  private def putASCIIString(v: String) = putBytes {
+    v.getBytes(StandardCharsets.ISO_8859_1)
+  }
+  private def putString(v: String) = {
+    putInt(v.length)
+    v.foreach(putChar)
   }
   private def putBytes(bytes: Array[Byte]) = {
     putInt(bytes.length); put(bytes)
@@ -76,12 +79,12 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.UnOpt        => putInt(T.UnOptAttr)
     case Attr.NoOpt        => putInt(T.NoOptAttr)
     case Attr.DidOpt       => putInt(T.DidOptAttr)
-    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putString(msg)
+    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putASCIIString(msg)
 
     case Attr.Dyn      => putInt(T.DynAttr)
     case Attr.Stub     => putInt(T.StubAttr)
     case Attr.Extern   => putInt(T.ExternAttr)
-    case Attr.Link(s)  => putInt(T.LinkAttr); putString(s)
+    case Attr.Link(s)  => putInt(T.LinkAttr); putASCIIString(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
   }
 
@@ -247,17 +250,17 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.NoneGlobal)
     case Global.Top(id) =>
       putInt(T.TopGlobal)
-      putString(id)
+      putASCIIString(id)
     case Global.Member(Global.Top(owner), sig) =>
       putInt(T.MemberGlobal)
-      putString(owner)
+      putASCIIString(owner)
       putSig(sig)
     case _ =>
       util.unreachable
   }
 
   private def putSig(sig: Sig): Unit =
-    putString(sig.mangle)
+    putASCIIString(sig.mangle)
 
   private def putLocal(local: Local): Unit =
     putLong(local.id)
