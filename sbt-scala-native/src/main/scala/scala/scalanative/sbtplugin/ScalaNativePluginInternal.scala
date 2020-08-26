@@ -82,7 +82,7 @@ object ScalaNativePluginInternal {
     }
   )
 
-  def scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
+  lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
     nativeTarget := interceptBuildException {
       val cwd   = nativeWorkdir.value.toPath
       val clang = nativeClang.value.toPath
