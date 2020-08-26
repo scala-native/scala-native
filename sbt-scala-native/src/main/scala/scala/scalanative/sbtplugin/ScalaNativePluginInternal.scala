@@ -82,80 +82,78 @@ object ScalaNativePluginInternal {
     }
   )
 
-  def scalaNativeConfigSettings: Seq[Setting[_]] = {
-    Seq(
-      nativeTarget in nativeLink := interceptBuildException {
-        val cwd   = (nativeWorkdir in nativeLink).value.toPath
-        val clang = (nativeClang in nativeLink).value.toPath
-        Discover.targetTriple(clang, cwd)
-      },
-      artifactPath in nativeLink := {
-        (crossTarget in nativeLink).value / (moduleName.value + "-out")
-      },
-      nativeWorkdir in nativeLink := {
-        val workdir = (crossTarget in nativeLink).value / "native"
-        if (!workdir.exists) {
-          IO.createDirectory(workdir)
-        }
-        workdir
-      },
-      nativeConfig in nativeLink := {
-        nativeConfig.value
-          .withClang((nativeClang in nativeLink).value.toPath)
-          .withClangPP((nativeClangPP in nativeLink).value.toPath)
-          .withCompileOptions((nativeCompileOptions in nativeLink).value)
-          .withLinkingOptions((nativeLinkingOptions in nativeLink).value)
-          .withGC(build.GC((nativeGC in nativeLink).value))
-          .withMode(build.Mode((nativeMode in nativeLink).value))
-          .withLTO(build.LTO((nativeLTO in nativeLink).value))
-          .withLinkStubs((nativeLinkStubs in nativeLink).value)
-          .withCheck((nativeCheck in nativeLink).value)
-          .withDump((nativeDump in nativeLink).value)
-      },
-      nativeLink := {
-        val outpath = (artifactPath in nativeLink).value
-        val config = {
-          val mainClass = (selectMainClass in nativeLink).value.getOrElse {
-            throw new MessageOnlyException("No main class detected.")
-          }
-          val fullCp    = (fullClasspath in nativeLink).value
-          val classpath = fullCp.map(_.data.toPath).filter(f => Files.exists(f))
-          val maincls   = mainClass + "$"
-          val cwd       = (nativeWorkdir in nativeLink).value.toPath
-
-          val logger = streams.value.log.toLogger
-          build.Config.empty
-            .withLogger(logger)
-            .withMainClass(maincls)
-            .withClassPath(classpath)
-            .withWorkdir(cwd)
-            .withTargetTriple((nativeTarget in nativeLink).value)
-            .withCompilerConfig((nativeConfig in nativeLink).value)
-        }
-
-        interceptBuildException(Build.build(config, outpath.toPath))
-
-        outpath
-      },
-      run := {
-        val env    = (envVars in run).value.toSeq
-        val logger = streams.value.log
-        val binary = nativeLink.value.getAbsolutePath
-        val args   = spaceDelimited("<arg>").parsed
-
-        logger.running(binary +: args)
-        val exitCode = Process(binary +: args, None, env: _*)
-          .run(connectInput = false)
-          .exitValue
-
-        val message =
-          if (exitCode == 0) None
-          else Some("Nonzero exit code: " + exitCode)
-
-        message.foreach(sys.error)
+  def scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
+    nativeTarget in nativeLink := interceptBuildException {
+      val cwd   = (nativeWorkdir in nativeLink).value.toPath
+      val clang = (nativeClang in nativeLink).value.toPath
+      Discover.targetTriple(clang, cwd)
+    },
+    artifactPath in nativeLink := {
+      (crossTarget in nativeLink).value / (moduleName.value + "-out")
+    },
+    nativeWorkdir in nativeLink := {
+      val workdir = (crossTarget in nativeLink).value / "native"
+      if (!workdir.exists) {
+        IO.createDirectory(workdir)
       }
-    )
-  }
+      workdir
+    },
+    nativeConfig in nativeLink := {
+      nativeConfig.value
+        .withClang((nativeClang in nativeLink).value.toPath)
+        .withClangPP((nativeClangPP in nativeLink).value.toPath)
+        .withCompileOptions((nativeCompileOptions in nativeLink).value)
+        .withLinkingOptions((nativeLinkingOptions in nativeLink).value)
+        .withGC(build.GC((nativeGC in nativeLink).value))
+        .withMode(build.Mode((nativeMode in nativeLink).value))
+        .withLTO(build.LTO((nativeLTO in nativeLink).value))
+        .withLinkStubs((nativeLinkStubs in nativeLink).value)
+        .withCheck((nativeCheck in nativeLink).value)
+        .withDump((nativeDump in nativeLink).value)
+    },
+    nativeLink := {
+      val outpath = (artifactPath in nativeLink).value
+      val config = {
+        val mainClass = (selectMainClass in nativeLink).value.getOrElse {
+          throw new MessageOnlyException("No main class detected.")
+        }
+        val fullCp    = (fullClasspath in nativeLink).value
+        val classpath = fullCp.map(_.data.toPath).filter(f => Files.exists(f))
+        val maincls   = mainClass + "$"
+        val cwd       = (nativeWorkdir in nativeLink).value.toPath
+
+        val logger = streams.value.log.toLogger
+        build.Config.empty
+          .withLogger(logger)
+          .withMainClass(maincls)
+          .withClassPath(classpath)
+          .withWorkdir(cwd)
+          .withTargetTriple((nativeTarget in nativeLink).value)
+          .withCompilerConfig((nativeConfig in nativeLink).value)
+      }
+
+      interceptBuildException(Build.build(config, outpath.toPath))
+
+      outpath
+    },
+    run := {
+      val env    = (envVars in run).value.toSeq
+      val logger = streams.value.log
+      val binary = nativeLink.value.getAbsolutePath
+      val args   = spaceDelimited("<arg>").parsed
+
+      logger.running(binary +: args)
+      val exitCode = Process(binary +: args, None, env: _*)
+        .run(connectInput = false)
+        .exitValue
+
+      val message =
+        if (exitCode == 0) None
+        else Some("Nonzero exit code: " + exitCode)
+
+      message.foreach(sys.error)
+    }
+  )
 
   lazy val scalaNativeCompileSettings: Seq[Setting[_]] =
     scalaNativeConfigSettings
