@@ -83,44 +83,45 @@ object ScalaNativePluginInternal {
   )
 
   def scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
-    nativeTarget in nativeLink := interceptBuildException {
-      val cwd   = (nativeWorkdir in nativeLink).value.toPath
-      val clang = (nativeClang in nativeLink).value.toPath
+    nativeTarget := interceptBuildException {
+      val cwd   = nativeWorkdir.value.toPath
+      val clang = nativeClang.value.toPath
       Discover.targetTriple(clang, cwd)
     },
     artifactPath in nativeLink := {
-      (crossTarget in nativeLink).value / (moduleName.value + "-out")
+      crossTarget.value / (moduleName.value + "-out")
     },
-    nativeWorkdir in nativeLink := {
-      val workdir = (crossTarget in nativeLink).value / "native"
+    nativeWorkdir := {
+      val workdir = crossTarget.value / "native"
       if (!workdir.exists) {
         IO.createDirectory(workdir)
       }
       workdir
     },
-    nativeConfig in nativeLink := {
+    nativeConfig := {
       nativeConfig.value
-        .withClang((nativeClang in nativeLink).value.toPath)
-        .withClangPP((nativeClangPP in nativeLink).value.toPath)
-        .withCompileOptions((nativeCompileOptions in nativeLink).value)
-        .withLinkingOptions((nativeLinkingOptions in nativeLink).value)
-        .withGC(build.GC((nativeGC in nativeLink).value))
-        .withMode(build.Mode((nativeMode in nativeLink).value))
-        .withLTO(build.LTO((nativeLTO in nativeLink).value))
-        .withLinkStubs((nativeLinkStubs in nativeLink).value)
-        .withCheck((nativeCheck in nativeLink).value)
-        .withDump((nativeDump in nativeLink).value)
+        .withClang(nativeClang.value.toPath)
+        .withClangPP(nativeClangPP.value.toPath)
+        .withCompileOptions(nativeCompileOptions.value)
+        .withLinkingOptions(nativeLinkingOptions.value)
+        .withGC(build.GC(nativeGC.value))
+        .withMode(build.Mode(nativeMode.value))
+        .withLTO(build.LTO(nativeLTO.value))
+        .withLinkStubs(nativeLinkStubs.value)
+        .withCheck(nativeCheck.value)
+        .withDump(nativeDump.value)
     },
     nativeLink := {
       val outpath = (artifactPath in nativeLink).value
       val config = {
-        val mainClass = (selectMainClass in nativeLink).value.getOrElse {
+        val mainClass = selectMainClass.value.getOrElse {
           throw new MessageOnlyException("No main class detected.")
         }
-        val fullCp    = (fullClasspath in nativeLink).value
-        val classpath = fullCp.map(_.data.toPath).filter(f => Files.exists(f))
-        val maincls   = mainClass + "$"
-        val cwd       = (nativeWorkdir in nativeLink).value.toPath
+        val classpath = fullClasspath.value
+          .map(_.data.toPath)
+          .filter(f => Files.exists(f))
+        val maincls = mainClass + "$"
+        val cwd     = nativeWorkdir.value.toPath
 
         val logger = streams.value.log.toLogger
         build.Config.empty
@@ -128,8 +129,8 @@ object ScalaNativePluginInternal {
           .withMainClass(maincls)
           .withClassPath(classpath)
           .withWorkdir(cwd)
-          .withTargetTriple((nativeTarget in nativeLink).value)
-          .withCompilerConfig((nativeConfig in nativeLink).value)
+          .withTargetTriple(nativeTarget.value)
+          .withCompilerConfig(nativeConfig.value)
       }
 
       interceptBuildException(Build.build(config, outpath.toPath))
