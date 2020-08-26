@@ -13,19 +13,19 @@ import scalanative.build.IO.RichPath
 object Discover {
 
   /** Compilation mode name from SCALANATIVE_MODE env var or default. */
-  def mode(): String =
-    getenv("SCALANATIVE_MODE").getOrElse(build.Mode.default.name)
+  def mode(): Mode =
+    getenv("SCALANATIVE_MODE").map(build.Mode(_)).getOrElse(build.Mode.default)
 
   def optimize(): Boolean =
     getenv("SCALANATIVE_OPTIMIZE").forall(_.toBoolean)
 
   /** LTO variant used for release mode from SCALANATIVE_LTO env var or default. */
-  def LTO(): String =
-    getenv("SCALANATIVE_LTO").getOrElse("none")
+  def LTO(): LTO =
+    getenv("SCALANATIVE_LTO").map(build.LTO(_)).getOrElse(build.LTO.None)
 
   /** GC variant used from SCALANATIVE_GC env var or default. */
-  def GC(): String =
-    getenv("SCALANATIVE_GC").getOrElse(build.GC.default.name)
+  def GC(): GC =
+    getenv("SCALANATIVE_GC").map(build.GC(_)).getOrElse(build.GC.default)
 
   /** Find the newest compatible clang binary. */
   def clang(): Path = {

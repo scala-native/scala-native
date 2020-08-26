@@ -3,6 +3,7 @@ package sbtplugin
 
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicReference
+import java.nio.file.Files
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
 import sbt._
@@ -26,9 +27,6 @@ object ScalaNativePluginInternal {
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
 
-  val nativeConfig =
-    taskKey[build.Config]("Aggregate config object that's used for tools.")
-
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "nativelib"      % nativeVersion,
@@ -44,19 +42,28 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-    nativeClang := interceptBuildException(Discover.clang().toFile),
-    nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
-    nativeCompileOptions := Discover.compileOptions(),
-    nativeLinkingOptions := Discover.linkingOptions(),
-    nativeMode := Discover.mode(),
-    nativeLinkStubs := false,
-    nativeGC := Discover.GC(),
-    nativeLTO := Discover.LTO(),
-    nativeCheck := false,
-    nativeDump := false
+    nativeClang := nativeConfig.value.clang.toFile,
+    nativeClangPP := nativeConfig.value.clangPP.toFile,
+    nativeCompileOptions := nativeConfig.value.compileOptions,
+    nativeLinkingOptions := nativeConfig.value.linkingOptions,
+    nativeMode := nativeConfig.value.mode.name,
+    nativeGC := nativeConfig.value.gc.name,
+    nativeLTO := nativeConfig.value.lto.name,
+    nativeLinkStubs := nativeConfig.value.linkStubs,
+    nativeCheck := nativeConfig.value.check,
+    nativeDump := nativeConfig.value.dump
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
+    nativeConfig := build.NativeConfig.empty
+      .withClang(interceptBuildException(Discover.clang()))
+      .withClangPP(interceptBuildException(Discover.clangpp()))
+      .withCompileOptions(Discover.compileOptions())
+      .withLinkingOptions(Discover.linkingOptions())
+      .withLTO(Discover.LTO())
+      .withGC(Discover.GC())
+      .withMode(Discover.mode())
+      .withOptimize(Discover.optimize()),
     nativeWarnOldJVM := {
       val logger = streams.value.log
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -92,40 +99,39 @@ object ScalaNativePluginInternal {
       workdir
     },
     nativeConfig := {
-      val mainClass = selectMainClass.value.getOrElse {
-        throw new MessageOnlyException("No main class detected.")
-      }
-
-      val classpath =
-        fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
-      val maincls = mainClass.toString + "$"
-      val cwd     = nativeWorkdir.value.toPath
-      val clang   = nativeClang.value.toPath
-      val clangpp = nativeClangPP.value.toPath
-      val gc      = build.GC(nativeGC.value)
-      val mode    = build.Mode(nativeMode.value)
-
-      build.Config.empty
-        .withMainClass(maincls)
-        .withClassPath(classpath)
-        .withWorkdir(cwd)
-        .withClang(clang)
-        .withClangPP(clangpp)
-        .withTargetTriple(nativeTarget.value)
+      nativeConfig.value
+        .withClang(nativeClang.value.toPath)
+        .withClangPP(nativeClangPP.value.toPath)
         .withCompileOptions(nativeCompileOptions.value)
         .withLinkingOptions(nativeLinkingOptions.value)
-        .withGC(gc)
-        .withMode(mode)
+        .withGC(build.GC(nativeGC.value))
+        .withMode(build.Mode(nativeMode.value))
+        .withLTO(build.LTO(nativeLTO.value))
         .withLinkStubs(nativeLinkStubs.value)
-        .withLTO(nativeLTO.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-        .withOptimize(Discover.optimize())
     },
     nativeLink := {
-      val logger  = streams.value.log.toLogger
-      val config  = nativeConfig.value.withLogger(logger)
       val outpath = (artifactPath in nativeLink).value
+      val config = {
+        val mainClass = selectMainClass.value.getOrElse {
+          throw new MessageOnlyException("No main class detected.")
+        }
+        val classpath = fullClasspath.value
+          .map(_.data.toPath)
+          .filter(f => Files.exists(f))
+        val maincls = mainClass + "$"
+        val cwd     = nativeWorkdir.value.toPath
+
+        val logger = streams.value.log.toLogger
+        build.Config.empty
+          .withLogger(logger)
+          .withMainClass(maincls)
+          .withClassPath(classpath)
+          .withWorkdir(cwd)
+          .withTargetTriple(nativeTarget.value)
+          .withCompilerConfig(nativeConfig.value)
+      }
 
       interceptBuildException(Build.build(config, outpath.toPath))
 

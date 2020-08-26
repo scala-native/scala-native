@@ -28,12 +28,16 @@ object Build {
    *
    *  val config =
    *    Config.empty
-   *      .withGC(GC.default)
-   *      .withMode(Mode.default)
-   *      .withClang(clang)
-   *      .withClangPP(clangpp)
-   *      .withLinkingOptions(linkopts)
-   *      .withCompileOptions(compopts)
+   *      .withCompilerConfig{
+   *        NativeConfig.empty
+   *         .withGC(GC.default)
+   *         .withMode(Mode.default)
+   *         .withClang(clang)
+   *         .withClangPP(clangpp)
+   *         .withLinkingOptions(linkopts)
+   *         .withCompileOptions(compopts)
+   *         .withLinkStubs(true)
+   *       }
    *      .withTargetTriple(triple)
    *      .withMainClass(main)
    *      .withClassPath(classpath)
@@ -64,7 +68,8 @@ object Build {
 
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
-        config.withCompileOptions("-O2" +: config.compileOptions)
+        config.withCompilerConfig(
+          _.withCompileOptions("-O2" +: config.compileOptions))
       LLVM.compileNativelib(nativelibConfig, linked, nativelib)
       LLVM.compile(config, generated)
     }
