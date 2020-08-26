@@ -75,6 +75,17 @@ object CharacterSuite extends tests.Suite {
     assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
   }
 
+  test("codePointAt - low surrogate at beginning of line") {
+    val str1     = "\uDC00eol" // Character.MIN_LOW_SURROGATE
+    val index    = 0
+    val resultCA = Character.codePointAt(str1.toArray, index, str1.length)
+    val resultCS = Character.codePointAt(str1, index)
+    val expected = 0xDC00 // Character.MIN_LOW_SURROGATE, 56320 decimal
+
+    assert(resultCA == resultCS, s"resultCA: $resultCA != resultCS: $resultCS")
+    assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
+  }
+
   test("codePointAt - high surrogate at end of line") {
     val str1  = "eol\uDBFF" // Character.MAX_HIGH_SURROGATE
     val index = str1.length - 1
@@ -98,6 +109,36 @@ object CharacterSuite extends tests.Suite {
 
     assert(resultCA == resultCS, s"resultCA: $resultCA != resultCS: $resultCS")
     assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
+  }
+
+  test("codePointAt - high-non-high surrogate") {
+    val str1    = "a\uDBFFb\uDBFFc"
+    val indexes = Seq(1, 3)
+    indexes.foreach { index =>
+      val resultCA = Character.codePointAt(str1.toArray, index, str1.length)
+      val resultCS = Character.codePointAt(str1, index)
+      val expected = 0xDBFF
+
+      assert(resultCA == resultCS,
+             s"resultCA: $resultCA != resultCS: $resultCS")
+      assert(resultCA == expected,
+             s"resultCA: $resultCA != expected: $expected")
+    }
+  }
+
+  test("codePointAt - low-non-low surrogate") {
+    val str1    = "a\uDC00b\uDC00c"
+    val indexes = Seq(1, 3)
+    indexes.foreach { index =>
+      val resultCA = Character.codePointAt(str1.toArray, index, str1.length)
+      val resultCS = Character.codePointAt(str1, index)
+      val expected = 0xDC00
+
+      assert(resultCA == resultCS,
+             s"resultCA: $resultCA != resultCS: $resultCS")
+      assert(resultCA == expected,
+             s"resultCA: $resultCA != expected: $expected")
+    }
   }
 
   // codePointBefore tests
@@ -164,6 +205,17 @@ object CharacterSuite extends tests.Suite {
     assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
   }
 
+  test("codePointBefore - low surrogate at beginning of line") {
+    val str1     = "\uDC00eol" // Character.MIN_LOW_SURROGATE
+    val index    = 1
+    val resultCA = Character.codePointBefore(str1.toArray, index)
+    val resultCS = Character.codePointBefore(str1, index)
+    val expected = 0xDC00 // Character.MIN_LOW_SURROGATE, 56320 decimal
+
+    assert(resultCA == resultCS, s"resultCA: $resultCA != resultCS: $resultCS")
+    assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
+  }
+
   test("codePointBefore - high surrogate at end of line") {
     val str1  = "eol\uDBFF" // Character.MAX_HIGH_SURROGATE
     val index = str1.length
@@ -187,6 +239,36 @@ object CharacterSuite extends tests.Suite {
 
     assert(resultCA == resultCS, s"resultCA: $resultCA != resultCS: $resultCS")
     assert(resultCA == expected, s"resultCA: $resultCA != expected: $expected")
+  }
+
+  test("codePointBefore - high-non-high surrogate") {
+    val str1    = "a\uDBFFb\uDBFFc"
+    val indexes = Seq(2, 4)
+    indexes.foreach { index =>
+      val resultCA = Character.codePointBefore(str1.toArray, index)
+      val resultCS = Character.codePointBefore(str1, index)
+      val expected = 0xDBFF
+
+      assert(resultCA == resultCS,
+             s"resultCA: $resultCA != resultCS: $resultCS")
+      assert(resultCA == expected,
+             s"resultCA: $resultCA != expected: $expected")
+    }
+  }
+
+  test("codePointBefore - low-non-low surrogate") {
+    val str1    = "a\uDC00b\uDC00c"
+    val indexes = Seq(2, 4)
+    indexes.foreach { index =>
+      val resultCA = Character.codePointBefore(str1.toArray, index)
+      val resultCS = Character.codePointBefore(str1, index)
+      val expected = 0xDC00
+
+      assert(resultCA == resultCS,
+             s"resultCA: $resultCA != resultCS: $resultCS")
+      assert(resultCA == expected,
+             s"resultCA: $resultCA != expected: $expected")
+    }
   }
 
   test("codePointCount") {
