@@ -54,8 +54,8 @@ object ScalaNativePluginInternal {
     nativeDump := nativeConfig.value.dump
   )
 
-  def scalaNativeGlobalSettings: Seq[Setting[_]] = {
-    val config = build.NativeConfig.empty
+  lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
+    nativeConfig := build.NativeConfig.empty
       .withClang(interceptBuildException(Discover.clang()))
       .withClangPP(interceptBuildException(Discover.clangpp()))
       .withCompileOptions(Discover.compileOptions())
@@ -63,28 +63,24 @@ object ScalaNativePluginInternal {
       .withLTO(Discover.LTO())
       .withGC(Discover.GC())
       .withMode(Discover.mode())
-      .withOptimize(Discover.optimize())
-
-    Seq(
-      nativeConfig := config,
-      nativeWarnOldJVM := {
-        val logger = streams.value.log
-        Try(Class.forName("java.util.function.Function")).toOption match {
-          case None =>
-            logger.warn("Scala Native is only supported on Java 8 or newer.")
-          case Some(_) =>
-            ()
-        }
-      },
-      onComplete := {
-        val prev: () => Unit = onComplete.value
-        () => {
-          prev()
-          testAdapters.getAndSet(Nil).foreach(_.close())
-        }
+      .withOptimize(Discover.optimize()),
+    nativeWarnOldJVM := {
+      val logger = streams.value.log
+      Try(Class.forName("java.util.function.Function")).toOption match {
+        case None =>
+          logger.warn("Scala Native is only supported on Java 8 or newer.")
+        case Some(_) =>
+          ()
       }
-    )
-  }
+    },
+    onComplete := {
+      val prev: () => Unit = onComplete.value
+      () => {
+        prev()
+        testAdapters.getAndSet(Nil).foreach(_.close())
+      }
+    }
+  )
 
   def scalaNativeConfigSettings: Seq[Setting[_]] = {
     Seq(
