@@ -41,15 +41,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   private def getInts(): Seq[Int] = getSeq(getInt)
 
-  private def getString(): String = {
-    if (prelude.revision < 7) getASCIIString()
-    else {
-      val chars = Array.fill(getInt)(getChar)
-      new String(chars)
-    }
-  }
-
-  private def getASCIIString(): String = {
+  private def getUTF8String(): String = {
     new String(getBytes(), StandardCharsets.UTF_8)
   }
 
@@ -74,12 +66,12 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.UnOptAttr   => Attr.UnOpt
     case T.NoOptAttr   => Attr.NoOpt
     case T.DidOptAttr  => Attr.DidOpt
-    case T.BailOptAttr => Attr.BailOpt(getASCIIString)
+    case T.BailOptAttr => Attr.BailOpt(getUTF8String)
 
     case T.DynAttr      => Attr.Dyn
     case T.StubAttr     => Attr.Stub
     case T.ExternAttr   => Attr.Extern
-    case T.LinkAttr     => Attr.Link(getASCIIString)
+    case T.LinkAttr     => Attr.Link(getUTF8String)
     case T.AbstractAttr => Attr.Abstract
   }
 
@@ -182,13 +174,13 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.NoneGlobal =>
       Global.None
     case T.TopGlobal =>
-      Global.Top(getASCIIString)
+      Global.Top(getUTF8String)
     case T.MemberGlobal =>
-      Global.Member(Global.Top(getASCIIString), getSig)
+      Global.Member(Global.Top(getUTF8String), getSig)
   }
 
   private def getSig(): Sig =
-    new Sig(getASCIIString)
+    new Sig(getUTF8String)
 
   private def getLocal(): Local =
     Local(getLong)
@@ -280,15 +272,22 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.CharsVal =>
       Val.Chars {
         if (prelude.revision < 7)
-          StringUtils.processEscapes(getASCIIString)
+          StringUtils.processEscapes(getUTF8String)
         else getBytes()
       }
     case T.LocalVal  => Val.Local(getLocal, getType)
     case T.GlobalVal => Val.Global(getGlobal, getType)
 
-    case T.UnitVal    => Val.Unit
-    case T.ConstVal   => Val.Const(getVal)
-    case T.StringVal  => Val.String(getString)
+    case T.UnitVal  => Val.Unit
+    case T.ConstVal => Val.Const(getVal)
+    case T.StringVal =>
+      Val.String {
+        if (prelude.revision < 7) getUTF8String()
+        else {
+          val chars = Array.fill(getInt)(getChar)
+          new String(chars)
+        }
+      }
     case T.VirtualVal => Val.Virtual(getLong)
   }
 }
