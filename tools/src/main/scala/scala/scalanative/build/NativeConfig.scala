@@ -28,7 +28,7 @@ sealed trait NativeConfig {
   def linkStubs: Boolean
 
   /** The LTO mode to use used during a release build. */
-  def LTO: LTO
+  def lto: LTO
 
   /** Shall linker check that NIR is well-formed after every phase? */
   def check: Boolean
@@ -83,7 +83,7 @@ object NativeConfig {
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
       gc = GC.default,
-      LTO = LTO.default,
+      lto = LTO.default,
       mode = Mode.default,
       check = false,
       dump = false,
@@ -97,7 +97,7 @@ object NativeConfig {
                                 compileOptions: Seq[String],
                                 gc: GC,
                                 mode: Mode,
-                                LTO: LTO,
+                                lto: LTO,
                                 linkStubs: Boolean,
                                 check: Boolean,
                                 dump: Boolean,
@@ -126,7 +126,7 @@ object NativeConfig {
       copy(linkStubs = value)
 
     def withLTO(value: LTO): NativeConfig =
-      copy(LTO = value)
+      copy(lto = value)
 
     def withCheck(value: Boolean): NativeConfig =
       copy(check = value)
@@ -139,18 +139,18 @@ object NativeConfig {
 
     override def toString: String =
       s"""NativeConfig(
-         | - clang:           $clang
-         | - clangPP:         $clangPP
-         | - linkingOptions:  $linkingOptions
-         | - compileOptions:  $compileOptions
-         | - GC:              $gc
-         | - mode:            $mode
-         | - LTO:             $LTO
-         | - linkStubs:       $linkStubs
-         | - check:           $check
-         | - dump:            $dump
-		 | - optimize         $optimize
-         |)""".stripMargin
+        | - clang:           $clang
+        | - clangPP:         $clangPP
+        | - linkingOptions:  $linkingOptions
+        | - compileOptions:  $compileOptions
+        | - GC:              $gc
+        | - mode:            $mode
+        | - LTO:             $lto
+        | - linkStubs:       $linkStubs
+        | - check:           $check
+        | - dump:            $dump
+        | - optimize         $optimize
+        |)""".stripMargin
   }
 
 }

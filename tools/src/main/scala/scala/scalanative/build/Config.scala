@@ -72,7 +72,7 @@ sealed trait Config {
   def linkStubs: Boolean = compilerConfig.linkStubs
 
   /** The LTO mode to use used during a release build. */
-  def LTO: LTO = compilerConfig.LTO
+  def LTO: LTO = compilerConfig.lto
 
   /** Shall linker check that NIR is well-formed after every phase? */
   def check: Boolean = compilerConfig.check
