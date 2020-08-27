@@ -30,4 +30,24 @@ object ExternSuite extends tests.Suite {
       assert(fArg == "farg")
     }
   }
+
+  @extern
+  object Ext1 {
+    def snprintf(buf: CString, size: CSize, format: CString, l: CString): Int =
+      extern
+  }
+  @extern
+  object Ext2 {
+    @name("snprintf")
+    def p(buf: CString, size: CSize, format: CString, i: Int): Int = extern
+  }
+  test("same extern name in two different objects") {
+    val bufsize = 10L
+    val buf1    = stackalloc[Byte](bufsize)
+    val buf2    = stackalloc[Byte](bufsize)
+    Ext1.snprintf(buf1, bufsize, c"%s", c"hello")
+    assert(string.strcmp(buf1, c"hello") == 0)
+    Ext2.p(buf2, bufsize, c"%d", 1)
+    assert(string.strcmp(buf2, c"1") == 0)
+  }
 }

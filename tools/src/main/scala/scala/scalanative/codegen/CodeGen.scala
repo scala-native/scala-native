@@ -85,13 +85,14 @@ object CodeGen {
                            defns: Seq[Defn])(implicit meta: Metadata) {
     import Impl._
 
-    var currentBlockName: Local = _
-    var currentBlockSplit: Int  = _
+    private var currentBlockName: Local = _
+    private var currentBlockSplit: Int  = _
 
-    val copies    = mutable.Map.empty[Local, Val]
-    val deps      = mutable.Set.empty[Global]
-    val generated = mutable.Set.empty[String]
-    val builder   = new ShowBuilder
+    private val copies           = mutable.Map.empty[Local, Val]
+    private val deps             = mutable.Set.empty[Global]
+    private val generated        = mutable.Set.empty[String]
+    private val externSigMembers = mutable.Map.empty[Sig, Global.Member]
+    private val builder          = new ShowBuilder
     import builder._
 
     def gen(): ByteBuffer = {
@@ -472,8 +473,8 @@ object CodeGen {
         unsupported(ty)
     }
 
-    val constMap = mutable.Map.empty[Val, Global]
-    val constTy  = mutable.Map.empty[Global, Type]
+    private val constMap = mutable.Map.empty[Val, Global]
+    private val constTy  = mutable.Map.empty[Global, Type]
     def constFor(v: Val): Global =
       if (constMap.contains(v)) {
         constMap(v)
@@ -681,7 +682,22 @@ object CodeGen {
           ()
 
         case call: Op.Call =>
-          genCall(genBind, call, unwind)
+          /* When a call points to an extern method with same mangled Sig as some already defined call
+           * in another extern object we need to manually enforce getting into second case of `genCall`
+           * (when lookup(pointee) != call.ty). By replacing `call.ptr` with the ptr of that already
+           * defined call so we can enforce creating call bitcasts to the correct types.
+           * Because of the deduplication in `genDeps` and since mangling Sig.Extern is not based
+           * on function types, each extern method in deps is generated only once in IR file.
+           * In this case LLVM linking would otherwise result in call arguments type mismatch.
+           */
+          val callDef = call.ptr match {
+            case Val.Global(m @ Global.Member(_, sig), valty) if sig.isExtern =>
+              val glob = externSigMembers.getOrElseUpdate(sig, m)
+              if (glob == m) call
+              else call.copy(ptr = Val.Global(glob, valty))
+            case _ => call
+          }
+          genCall(genBind, callDef, unwind)
 
         case Op.Load(ty, ptr) =>
           val pointee = fresh()
