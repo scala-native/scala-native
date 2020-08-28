@@ -51,7 +51,7 @@ private[scalanative] object NativeLib {
    * @param path The classpath entry
    * @return the file pattern
    */
-  def allFilesPattern(path: Path) =
+  def allFilesPattern(path: Path): String =
     s"glob:${srcPathPattern(path)}**"
 
   /**
