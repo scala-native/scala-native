@@ -8,11 +8,17 @@ import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath
 import scalanative.build.Discover._
+import scalanative.build.NativeLib._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
 
-  /** Called to unpack jars and copy native code */
+  /**
+   * Called to unpack jars and copy native code.
+   *
+   * @param nativelib the native lib to copy/unpack
+   * @return The destination path of the directory
+   */
   def unpackNativeCode(nativelib: NativeLib): Path =
     if (NativeLib.isJar(nativelib)) unpackNativeJar(nativelib)
     else copyNativeDir(nativelib)
@@ -23,7 +29,7 @@ private[scalanative] object LLVM {
    * a third party library that includes native code is copied.
    *
    * If the same archive has already been unpacked to this location
-   * and hasn't changed, this call has no effects
+   * and hasn't changed, this call has no effect.
    *
    * @param nativelib The NativeLib to unpack.
    * @return The Path where the nativelib has been unpacked, `workdir/dest`.
@@ -43,7 +49,6 @@ private[scalanative] object LLVM {
       IO.unzip(source, target)
       IO.write(jarhashPath, jarhash)
     }
-
     target
   }
 
@@ -59,7 +64,7 @@ private[scalanative] object LLVM {
   private def copyNativeDir(nativelib: NativeLib): Path = {
     val target        = nativelib.dest
     val source        = nativelib.src
-    val files         = IO.getAll(source, NativeLib.srcPatterns)
+    val files         = IO.getAll(source, NativeLib.allFilesPattern(source))
     val fileshash     = IO.sha1files(files)
     val fileshashPath = target.resolve("fileshash")
     def copied =
@@ -75,21 +80,27 @@ private[scalanative] object LLVM {
   }
 
   /**
-   * Compile the native lib to `.o` files
+   * Compile all the native lib source files to `.o` files
+   * with special logic to select GC and optional components
+   * for the Scala Native `nativelib`.
    *
-   * @param config       The configuration of the toolchain.
-   * @param linkerResult The results from the linker.
-   * @param libPath      The location of the Scala Native nativelib.
-   * @return `libPath`
+   * @param config        The configuration of the toolchain.
+   * @param linkerResult  The results from the linker.
+   * @param nativelibPath The generated location of the Scala Native nativelib.
+   * @param nativelibs    The Paths to the native libs
+   * @return `libPath`    The nativelibPath plus `scala-native`
    */
-  def compileNativelib(config: Config,
-                       linkerResult: linker.Result,
-                       libPath: Path): Path = {
-    val cpaths = IO.getAll(config.workdir, "glob:**.c").map(_.abs) ++ IO
-      .getAll(config.workdir, "glob:**.S")
-      .map(_.abs)
-    val cpppaths = IO.getAll(config.workdir, "glob:**.cpp").map(_.abs)
-    val paths    = cpaths ++ cpppaths
+  def compileNativelibs(config: Config,
+                        linkerResult: linker.Result,
+                        nativelibs: Seq[Path],
+                        nativelibPath: Path): Path = {
+    val workdir = config.workdir
+    // search starting at workdir `native` to find
+    // code across all native component libraries
+    // including the `nativelib`
+    val srcPatterns = NativeLib.destSrcPatterns(workdir, nativelibs)
+    val paths       = IO.getAll(workdir, srcPatterns).map(_.abs)
+    val libPath     = nativelibPath.resolve(NativeLib.codeDir)
 
     // predicate to check if given file path shall be compiled
     // we only include sources of the current gc and exclude
@@ -115,7 +126,7 @@ private[scalanative] object LLVM {
     // delete .o files for all excluded source files
     paths.foreach { path =>
       if (!include(path)) {
-        val opath = Paths.get(path + ".o")
+        val opath = Paths.get(path + oExt)
         if (Files.exists(opath)) {
           Files.delete(opath)
         }
@@ -124,9 +135,9 @@ private[scalanative] object LLVM {
 
     // generate .o files for all included source files in parallel
     paths.par.foreach { path =>
-      val opath = path + ".o"
+      val opath = path + oExt
       if (include(path) && !Files.exists(Paths.get(opath))) {
-        val isCpp    = path.endsWith(".cpp")
+        val isCpp    = path.endsWith(cppExt)
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
         val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
@@ -141,7 +152,6 @@ private[scalanative] object LLVM {
         }
       }
     }
-
     libPath
   }
 
@@ -174,12 +184,14 @@ private[scalanative] object LLVM {
   }
 
   /**
-   * Links a collection of `.ll` files into native binary.
+   * Links a collection of `.ll` files and the `.o` files
+   * from the `nativelib`, other libaries, and the
+   * application project into the native binary.
    *
    * @param config       The configuration of the toolchain.
    * @param linkerResult The results from the linker.
    * @param llPaths      The list of `.ll` files to link.
-   * @param nativelibs   The list of paths to nativelibs.
+   * @param nativelibs   The Paths to the native libs
    * @param outpath      The path where to write the resulting binary.
    * @return `outpath`
    */
@@ -188,6 +200,7 @@ private[scalanative] object LLVM {
            llPaths: Seq[Path],
            nativelibs: Seq[Path],
            outpath: Path): Path = {
+    val workdir = config.workdir
     val links = {
       val srclinks = linkerResult.links.map(_.name)
       val gclinks  = config.gc.links
@@ -196,14 +209,14 @@ private[scalanative] object LLVM {
       // * libpthread for process APIs and parallel garbage collection.
       "pthread" +: "dl" +: srclinks ++: gclinks
     }
-    val linkopts  = config.linkingOptions ++ links.map("-l" + _)
-    val targetopt = Seq("-target", config.targetTriple)
-    val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
-    val opaths = nativelibs.flatMap(nativelib =>
-      IO.getAll(nativelib, "glob:**.o").map(_.abs))
-    val paths   = llPaths.map(_.abs) ++ opaths
-    val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
-    val ltoName = lto(config).getOrElse("none")
+    val linkopts    = config.linkingOptions ++ links.map("-l" + _)
+    val targetopt   = Seq("-target", config.targetTriple)
+    val flags       = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
+    val objPatterns = NativeLib.destObjPatterns(workdir, nativelibs)
+    val opaths      = IO.getAll(workdir, objPatterns).map(_.abs)
+    val paths       = llPaths.map(_.abs) ++ opaths
+    val compile     = config.clangPP.abs +: (flags ++ paths ++ linkopts)
+    val ltoName     = lto(config).getOrElse("none")
 
     config.logger.time(
       s"Linking native code (${config.gc.name} gc, $ltoName lto)") {
@@ -211,7 +224,6 @@ private[scalanative] object LLVM {
       Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
         config.logger)
     }
-
     outpath
   }
 

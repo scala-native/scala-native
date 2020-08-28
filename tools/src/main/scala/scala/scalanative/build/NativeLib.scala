@@ -1,27 +1,114 @@
 package scala.scalanative
 package build
 
+import java.io.File
 import java.nio.file.Path
+import java.util.regex._
 
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
 
+/** Utilities for dealing with native library code */
 private[scalanative] object NativeLib {
+  private val fileSep      = File.separator
+  private val jarExtension = ".jar"
 
-  /** List of source patterns used */
-  val jarExtension  = ".jar"
-  val srcExtensions = Seq(".c", ".cpp", ".S", ".h", ".hpp")
-  val srcPatterns   = srcExtensions.mkString("glob:**{", ",", "}")
+  /** Object file extension: ".o" */
+  val oExt = ".o"
+
+  /** C++ file extension: ".cpp" */
+  val cppExt = ".cpp"
+
+  /** List of source patterns used: ".c, .cpp, .S" */
+  val srcExtensions = Seq(".c", cppExt, ".S")
+
+  /**
+   * Name of directory that contains native code: "scala-native"
+   */
+  val codeDir = "scala-native"
+
+  /** Used to find native source files in directories */
+  private def srcPatterns(path: Path): String =
+    srcExtensions.mkString(s"glob:${srcPathPattern(path)}**{", ",", "}")
+
+  /** Used to find native source files in jar files */
+  private val jarSrcRegex: String = {
+    val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
+    s"""^${codeDir}${fileSep}(.+)${regexExtensions}$$"""
+  }
+
+  private def srcPathPattern(path: Path): String =
+    s"${path.toString()}${fileSep}${codeDir}${fileSep}"
+
+  /**
+   * Used to create hash of the directory to copy
+   *
+   * @param path The classpath entry
+   * @return the file pattern
+   */
+  def allFilesPattern(path: Path): String =
+    s"glob:${srcPathPattern(path)}**"
+
+  /**
+   * This method guarantees that only code copied and generated
+   * into the `native` directory and also in the `scala-native`
+   * sub directory gets picked up for compilation.
+   *
+   * @param workdir    The base working directory
+   * @param nativelibs The Paths to the native libs
+   * @return the source pattern
+   */
+  def destSrcPatterns(workdir: Path, nativelibs: Seq[Path]): String = {
+    val pathPat = destPathPattern(workdir, nativelibs)
+    srcExtensions.mkString(s"glob:${pathPat}**{", ",", "}")
+  }
+
+  /**
+   * Allow all the object files ".o" to be found with one
+   * directory recursion.
+   *
+   * @param workdir    The base working directory
+   * @param nativelibs The Paths to the native libs
+   * @return the object file pattern
+   */
+  def destObjPatterns(workdir: Path, nativelibs: Seq[Path]): String =
+    s"glob:${destPathPattern(workdir, nativelibs)}**${oExt}"
+
+  private def destPathPattern(workdir: Path, nativelibs: Seq[Path]): String = {
+    val workdirStr = workdir.toString()
+    val nativeDirs = nativelibs.map(_.getFileName().toString())
+    val dirPattern = nativeDirs.mkString("{", ",", "}")
+    s"${workdirStr}${fileSep}${dirPattern}${fileSep}${codeDir}${fileSep}"
+  }
 
   /** To positively identify nativelib */
-  val nativeLibMarkerFile = "org_scala-native_nativelib.txt"
+  private val nativeLibMarkerFile = "org_scala-native_nativelib.txt"
 
-  val dirMarkerFilePattern = "glob:**" + nativeLibMarkerFile
+  /**
+   * Find the marker file in the directory.
+   *
+   * @param path The path we are searching
+   * @return the search file pattern
+   */
+  private def dirMarkerFilePattern(path: Path): String =
+    s"glob:${path.toString()}${fileSep}${nativeLibMarkerFile}"
 
+  /** Does this Path point to a jar file */
   def isJar(path: Path): Boolean = path.toString().endsWith(jarExtension)
 
+  /** Is this NativeLib in a jar file */
   def isJar(nativelib: NativeLib): Boolean = isJar(nativelib.src)
 
+  /**
+   * Finds all the native libs on the classpath.
+   *
+   * The method generates a unique directory for each classpath
+   * entry that has native source.
+   *
+   * @param classpath the classpath
+   * @param workdir the base working directory
+   * @return the Seq of NativeLib objects
+   */
   def findNativeLibs(classpath: Seq[Path], workdir: Path): Seq[NativeLib] = {
     val nativeLibPaths = classpath.flatMap { path =>
       if (isJar(path)) readJar(path)
@@ -32,7 +119,7 @@ private[scalanative] object NativeLib {
       for ((path, index) <- nativeLibPaths.zipWithIndex) yield {
         val name =
           path
-            .getName(path.getNameCount() - 1)
+            .getFileName()
             .toString()
             .stripSuffix(jarExtension)
         NativeLib(src = path,
@@ -46,13 +133,20 @@ private[scalanative] object NativeLib {
       extractPaths
   }
 
+  /**
+   * Find the Scala Native `nativelib` from within all the
+   * other libraries with native code.
+   *
+   * @param nativeLibs - the Seq of discovered native libs
+   * @return the Scala Native `nativelib`
+   */
   def findNativeLib(nativeLibs: Seq[NativeLib]): Path = {
     val nativeLib = nativeLibs.find { nl =>
       val srcPath = nl.src
       if (isJar(srcPath))
         IO.existsInJar(srcPath, hasMarkerFileInJar)
       else
-        IO.existsInDir(srcPath, dirMarkerFilePattern)
+        IO.existsInDir(srcPath, dirMarkerFilePattern(srcPath))
     }
     nativeLib match {
       case Some(nl) => nl.dest
@@ -62,14 +156,16 @@ private[scalanative] object NativeLib {
     }
   }
 
+  private val jarPattern = Pattern.compile(jarSrcRegex)
+
   private def isNativeFile(name: String): Boolean =
-    srcExtensions.exists(name.endsWith(_))
+    jarPattern.matcher(name).matches()
 
   private def hasMarkerFileInJar(name: String): Boolean =
     name.equals(nativeLibMarkerFile)
 
   private def readDir(path: Path): Option[Path] =
-    IO.existsInDir(path, srcPatterns) match {
+    IO.existsInDir(path, srcPatterns(path)) match {
       case true  => Some(path)
       case false => None
     }
