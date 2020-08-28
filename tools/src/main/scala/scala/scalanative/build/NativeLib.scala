@@ -27,13 +27,8 @@ private[scalanative] object NativeLib {
    */
   val codeDir = "scala-native"
 
-  /**
-   * Used to find native source files in directories
-   *
-   * @param path The classpath entry
-   * @return the source pattern
-   */
-  def srcPatterns(path: Path): String =
+  /** Used to find native source files in directories */
+  private def srcPatterns(path: Path): String =
     srcExtensions.mkString(s"glob:${srcPathPattern(path)}**{", ",", "}")
 
   /** Used to find native source files in jar files */
