@@ -3,10 +3,11 @@ package posix
 
 import scalanative.unsafe._
 import scalanative.posix.sys.stat.mode_t
-import scalanative.posix.sys.stat.mode_t
 
 @extern
 object fcntl {
+
+  def open(pathname: CString, flags: CInt): CInt = extern
 
   def open(pathname: CString, flags: CInt, mode: mode_t): CInt = extern
 
