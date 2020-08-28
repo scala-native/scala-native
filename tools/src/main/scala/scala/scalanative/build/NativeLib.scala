@@ -33,7 +33,7 @@ private[scalanative] object NativeLib {
    * @param path The classpath entry
    * @return the source pattern
    */
-  def srcPatterns(path: Path) =
+  def srcPatterns(path: Path): String =
     srcExtensions.mkString(s"glob:${srcPathPattern(path)}**{", ",", "}")
 
   /** Used to find native source files in jar files */
