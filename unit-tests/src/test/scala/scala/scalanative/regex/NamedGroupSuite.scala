@@ -9,7 +9,7 @@ object NamedGroupSuite extends tests.Suite {
   test("named group is stack safe") {
     val buf                       = new StringBuffer()
     var i                         = 0
-    def randomGroupName(): String = Random.alphanumeric.take(5).mkString("")
+    def randomGroupName(): String = Random.alphanumeric.take(10).mkString("")
     while (i < 20000) {
       buf.append("(?<" + randomGroupName + ">test)")
       i += 1
