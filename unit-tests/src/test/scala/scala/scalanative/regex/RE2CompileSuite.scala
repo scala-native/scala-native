@@ -41,9 +41,11 @@ object RE2CompileSuite extends tests.Suite {
 //          "Illegal/unsupported character class near index 3\n[a-z\n   ^"),
     Array("[z-a]", "Illegal character range near index 3\n[z-a]\n   ^"),
     Array("abc\\", "Trailing Backslash near index 4\nabc\\\n    ^"),
-    Array("a**", "invalid nested repetition operator near index 0\n**\n^"),
-    Array("a*+", "invalid nested repetition operator near index 0\n*+\n^"),
-    Array("\\x", "Illegal/unsupported escape sequence near index 1\n\\x\n ^")
+    Array("a**", "Invalid nested repetition operator near index 0\n**\n^"),
+    Array("a*+", "Invalid nested repetition operator near index 0\n*+\n^"),
+    Array("\\x", "Illegal/unsupported escape sequence near index 1\n\\x\n ^"),
+    Array("\\p", "Unknown character property name near index 2\n\\p\n  ^"),
+    Array("\\p{", "Unknown character property name near index 3\n\\p{\n   ^")
   )
 
   test("Compile") {
@@ -52,11 +54,13 @@ object RE2CompileSuite extends tests.Suite {
         RE2.compile(input)
         if (expectedError != null)
           fail(
-            "RE2.compile(" + input + ") was successful, expected " + expectedError)
+            "RE2.compile(" + input + ") was successful, expected "
+              + expectedError)
       } catch {
         case e: PatternSyntaxException =>
-          if (expectedError == null || !(e.getMessage == expectedError))
+          if (expectedError == null || !(e.getMessage == expectedError)) {
             fail("compiling " + input + "; unexpected error: " + e.getMessage)
+          }
       }
     }
   }
