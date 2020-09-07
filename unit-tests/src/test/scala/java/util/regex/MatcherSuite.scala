@@ -562,12 +562,8 @@ object MatcherSuite extends tests.Suite {
     assertEquals(group("D"), "Lausanne, Switzerland")
   }
 
-  // Do not expect support for re2 syntax in java.util.regex with
-  // scalanative.regex.
-  // No Issue number necessary.
-  testFails("named group (re2 syntax)", 0) {
-    // scalanative.regex behavior change, so no Issue #
-    // change pattern to java: "from (?<S>.*) to (?<D>.*)"
+  // re2 syntax is not defined in Java, but it works with scalanative.regex
+  test("named group (re2 syntax, not in Java 8)") {
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
@@ -785,9 +781,8 @@ object MatcherSuite extends tests.Suite {
     assertEquals(end("D"), 46)
   }
 
-  // Do not support re2 syntax in java.util.regex with scalanative.regex.
-  // No Issue number.
-  testFails("start(name)/end(name) re2 syntax", 0) {
+  // re2 syntax is not defined in Java, but it works with scalanative.regex
+  test("start(name)/end(name) re2 syntax (not in Java 8)") {
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"

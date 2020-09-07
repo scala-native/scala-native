@@ -402,8 +402,8 @@ object PatternSuite extends tests.Suite {
     pass("(?<foo>a)", "a")
   }
 
-  // Do not support re2 syntax in java.util.regex.
-  testFails("(Not supported) re2 named groups", 0) { // Intended, No Issue
+  // re2 syntax is not defined in Java, but it works with scalanative.regex
+  test("re2 named groups (not in Java 8)") {
     pass("(?P<foo>a)", "a")
   }
 
