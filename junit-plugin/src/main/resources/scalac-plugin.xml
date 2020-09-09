@@ -1,0 +1,4 @@
+<plugin>
+  <name>scalanative-junit</name>
+  <classname>scala.scalanative.junit.plugin.ScalaNativeJUnitPlugin</classname>
+</plugin>

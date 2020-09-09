@@ -78,5 +78,5 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
   }
 
   override def toString(): String =
-    iterator.asScala.mkString("[", ",", "]")
+    iterator.asScala.mkString("[", ", ", "]")
 }

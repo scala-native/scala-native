@@ -1,7 +1,6 @@
 package java.math
 
 object BigIntegerSuite extends tests.Suite {
-
 // byteValueExact
 
   val byteMaxBi = new BigInteger(java.lang.Byte.MAX_VALUE.toString)
@@ -110,4 +109,31 @@ object BigIntegerSuite extends tests.Suite {
     }
   }
 
+//   __scala_==
+
+  test("BigInteger == BigInteger") {
+    val token                      = 2047L
+    val jbi1: java.math.BigInteger = java.math.BigInteger.valueOf(token)
+    val jbi2: java.math.BigInteger = java.math.BigInteger.valueOf(token)
+
+    // Depending upon possible caching, they may or may not be eq.
+    assert(jbi1 == jbi2)
+  }
+
+  test("BigInteger.equals(BigInteger)") {
+    val token                      = 2047L
+    val jbi1: java.math.BigInteger = java.math.BigInteger.valueOf(token)
+    val jbi2: java.math.BigInteger = java.math.BigInteger.valueOf(token)
+
+    // Depending upon possible caching, they may or may not be reference eq.
+    assert(jbi1.equals(jbi2))
+  }
+
+  test("BigInteger does not == BigInteger with different value") {
+    val token                      = 2047L
+    val jbi1: java.math.BigInteger = java.math.BigInteger.valueOf(token)
+    val jbi2: java.math.BigInteger = java.math.BigInteger.valueOf(token + 1)
+
+    assertFalse(jbi1 == jbi2)
+  }
 }

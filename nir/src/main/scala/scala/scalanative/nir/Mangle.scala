@@ -51,6 +51,9 @@ object Mangle {
         str("R")
         types.foreach(mangleType)
         str("E")
+      case Sig.Clinit() =>
+        str("I")
+        str("E")
       case Sig.Method(id, types) =>
         str("D")
         mangleIdent(id)
@@ -104,13 +107,19 @@ object Mangle {
         str("E")
 
       case Type.Array(ty, nullable) =>
-        if (nullable) { str("L") }
+        if (nullable) {
+          str("L")
+        }
         str("A")
         mangleType(ty)
         str("_")
       case Type.Ref(Global.Top(id), exact, nullable) =>
-        if (nullable) { str("L") }
-        if (exact) { str("X") }
+        if (nullable) {
+          str("L")
+        }
+        if (exact) {
+          str("X")
+        }
         mangleIdent(id)
       case _ =>
         util.unreachable
@@ -118,6 +127,7 @@ object Mangle {
 
     def mangleIdent(id: String): Unit = {
       str(id.length)
+      if (id.head.isDigit || id.head == '-') str('-')
       str(id)
     }
 

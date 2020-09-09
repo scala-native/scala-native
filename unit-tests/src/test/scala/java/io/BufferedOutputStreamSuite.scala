@@ -193,9 +193,7 @@ object BufferedOutputStreamSuite extends tests.Suite {
     assertEquals(10,
                  byteArrayis
                    .available())
-    (0 until 10).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
+    (0 until 10).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
 
     buffos.write(buffer, 0, 10)
     byteArrayis = new ByteArrayInputStream(byteArrayos.toByteArray())
@@ -205,12 +203,8 @@ object BufferedOutputStreamSuite extends tests.Suite {
     assertEquals(20,
                  byteArrayis
                    .available())
-    (0 until 10).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
-    (0 until 10).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
+    (0 until 10).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
+    (0 until 10).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
 
     buffos.write(buffer, 0, 10)
     byteArrayis = new ByteArrayInputStream(byteArrayos.toByteArray())
@@ -220,15 +214,9 @@ object BufferedOutputStreamSuite extends tests.Suite {
     assertEquals(30,
                  byteArrayis
                    .available())
-    (0 until 10).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
-    (0 until 10).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
-    (0 until 10).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
+    (0 until 10).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
+    (0 until 10).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
+    (0 until 10).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
   }
 
   test("Write scenario 2") {
@@ -245,9 +233,7 @@ object BufferedOutputStreamSuite extends tests.Suite {
     assertEquals(10,
                  byteArrayis
                    .available())
-    (0 until 10).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
+    (0 until 10).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
 
     val buffer2 = Array[Byte]('a', 'b', 'c', 'd')
     buffos.write(buffer2, 0, 4)
@@ -258,12 +244,8 @@ object BufferedOutputStreamSuite extends tests.Suite {
     assertEquals(14,
                  byteArrayis
                    .available())
-    (0 until 10).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
-    (0 until 4).foreach { i =>
-      assertEquals(buffer2(i), byteArrayis.read())
-    }
+    (0 until 10).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
+    (0 until 4).foreach { i => assertEquals(buffer2(i), byteArrayis.read()) }
 
     val buffer3 = Array[Byte]('e', 'f', 'g', 'h', 'i')
     buffos.write(buffer3, 0, 5)
@@ -274,15 +256,9 @@ object BufferedOutputStreamSuite extends tests.Suite {
     assertEquals(19,
                  byteArrayis
                    .available())
-    (0 until 10).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
-    (0 until 4).foreach { i =>
-      assertEquals(buffer2(i), byteArrayis.read())
-    }
-    (0 until 5).foreach { i =>
-      assertEquals(buffer3(i), byteArrayis.read())
-    }
+    (0 until 10).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
+    (0 until 4).foreach { i => assertEquals(buffer2(i), byteArrayis.read()) }
+    (0 until 5).foreach { i => assertEquals(buffer3(i), byteArrayis.read()) }
 
     buffos.write(Array[Byte]('j', 'k'))
     byteArrayis = new ByteArrayInputStream(byteArrayos.toByteArray())
@@ -310,9 +286,7 @@ object BufferedOutputStreamSuite extends tests.Suite {
     assertEquals(4,
                  byteArrayis
                    .available())
-    (0 until 4).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
+    (0 until 4).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
 
     buffos.write(buffer, 0, 5)
     byteArrayis = new ByteArrayInputStream(byteArrayos.toByteArray())
@@ -322,12 +296,8 @@ object BufferedOutputStreamSuite extends tests.Suite {
     assertEquals(9,
                  byteArrayis
                    .available())
-    (0 until 4).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
-    (0 until 5).foreach { i =>
-      assertEquals(buffer(i), byteArrayis.read())
-    }
+    (0 until 4).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
+    (0 until 5).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
   }
 
   // Regression test for flush on closed stream

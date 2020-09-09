@@ -3,8 +3,9 @@ package nir
 package serialization
 
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 import scala.collection.mutable
-import nir.serialization.{Tags => T}
+import scala.scalanative.nir.serialization.{Tags => T}
 
 final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
@@ -13,9 +14,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
     val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
-    putInt(Versions.magic)
-    putInt(Versions.compat)
-    putInt(Versions.revision)
+    Prelude.writeTo(buffer,
+                    Prelude(Versions.magic,
+                            Versions.compat,
+                            Versions.revision,
+                            Defn.existsEntryPoint(defns)))
 
     putSeq(names) { n =>
       putGlobal(n)
@@ -50,9 +53,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putInts(ints: Seq[Int]) = putSeq[Int](ints)(putInt(_))
 
-  private def putStrings(vs: Seq[String]) = putSeq(vs)(putString)
-  private def putString(v: String) = {
-    val bytes = v.getBytes("UTF-8")
+  private def putUTF8tring(v: String) = putBytes {
+    v.getBytes(StandardCharsets.UTF_8)
+  }
+
+  private def putBytes(bytes: Array[Byte]) = {
     putInt(bytes.length); put(bytes)
   }
 
@@ -71,12 +76,12 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.UnOpt        => putInt(T.UnOptAttr)
     case Attr.NoOpt        => putInt(T.NoOptAttr)
     case Attr.DidOpt       => putInt(T.DidOptAttr)
-    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putString(msg)
+    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putUTF8tring(msg)
 
     case Attr.Dyn      => putInt(T.DynAttr)
     case Attr.Stub     => putInt(T.StubAttr)
     case Attr.Extern   => putInt(T.ExternAttr)
-    case Attr.Link(s)  => putInt(T.LinkAttr); putString(s)
+    case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8tring(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
   }
 
@@ -242,17 +247,17 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.NoneGlobal)
     case Global.Top(id) =>
       putInt(T.TopGlobal)
-      putString(id)
+      putUTF8tring(id)
     case Global.Member(Global.Top(owner), sig) =>
       putInt(T.MemberGlobal)
-      putString(owner)
+      putUTF8tring(owner)
       putSig(sig)
     case _ =>
       util.unreachable
   }
 
   private def putSig(sig: Sig): Unit =
-    putString(sig.mangle)
+    putUTF8tring(sig.mangle)
 
   private def putLocal(local: Local): Unit =
     putLong(local.id)
@@ -477,13 +482,16 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.StructValue(vs) => putInt(T.StructValueVal); putVals(vs)
     case Val.ArrayValue(ty, vs) =>
       putInt(T.ArrayValueVal); putType(ty); putVals(vs)
-    case Val.Chars(s)      => putInt(T.CharsVal); putString(s)
+    case v: Val.Chars      => putInt(T.CharsVal); putBytes(v.bytes)
     case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
-    case Val.Unit       => putInt(T.UnitVal)
-    case Val.Const(v)   => putInt(T.ConstVal); putVal(v)
-    case Val.String(v)  => putInt(T.StringVal); putString(v)
+    case Val.Unit     => putInt(T.UnitVal)
+    case Val.Const(v) => putInt(T.ConstVal); putVal(v)
+    case Val.String(v) =>
+      putInt(T.StringVal)
+      putInt(v.length)
+      v.foreach(putChar)
     case Val.Virtual(v) => putInt(T.VirtualVal); putLong(v)
   }
 }

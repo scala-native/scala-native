@@ -16,6 +16,12 @@ trait NirGenStat { self: NirGenPhase =>
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
 
+  val reflectiveInstantiationInfo =
+    mutable.UnrolledBuffer.empty[ReflectiveInstantiationBuffer]
+
+  def isStaticModule(sym: Symbol): Boolean =
+    sym.isModuleClass && !sym.isImplClass && !sym.isLifted
+
   class MethodEnv(val fresh: Fresh) {
     private val env = mutable.Map.empty[Symbol, Val]
 
@@ -64,6 +70,13 @@ trait NirGenStat { self: NirGenPhase =>
   class StatBuffer {
     private val buf          = mutable.UnrolledBuffer.empty[nir.Defn]
     def toSeq: Seq[nir.Defn] = buf
+
+    def +=(defn: nir.Defn): Unit = {
+      buf += defn
+    }
+
+    def isEmpty  = buf.isEmpty
+    def nonEmpty = buf.nonEmpty
 
     def genClass(cd: ClassDef): Unit = {
       scoped(
@@ -152,6 +165,7 @@ trait NirGenStat { self: NirGenPhase =>
       def parent = genClassParent(sym)
       def traits = genClassInterfaces(sym)
 
+      genReflectiveInstantiation(cd)
       genClassFields(sym)
       genMethods(cd)
       if (sym.isCFuncPtrClass) {
@@ -216,6 +230,339 @@ trait NirGenStat { self: NirGenPhase =>
 
         buf += Defn.Var(attrs, name, ty, Val.Zero(ty))
       }
+    }
+
+    def withFreshExprBuffer[R](f: ExprBuffer => R): R = {
+      scoped(
+        curFresh := Fresh()
+      ) {
+        val exprBuffer = new ExprBuffer()(curFresh)
+        f(exprBuffer)
+      }
+    }
+
+    def genReflectiveInstantiation(cd: ClassDef): Unit = {
+      val sym = cd.symbol
+      val enableReflectiveInstantiation = {
+        (sym :: sym.ancestors).exists { ancestor =>
+          ancestor.hasAnnotation(EnableReflectiveInstantiationAnnotation)
+        }
+      }
+
+      if (enableReflectiveInstantiation) {
+        scoped(
+          curClassSym := cd.symbol,
+          curFresh := Fresh(),
+          curUnwindHandler := None
+        ) {
+          genRegisterReflectiveInstantiation(cd)
+        }
+      }
+    }
+
+    def genRegisterReflectiveInstantiation(cd: ClassDef): Unit = {
+      val owner = genTypeName(curClassSym)
+      val name  = owner.member(nir.Sig.Clinit())
+
+      val staticInitBody =
+        if (isStaticModule(curClassSym))
+          Some(genRegisterReflectiveInstantiationForModuleClass(cd))
+        else if (curClassSym.isModuleClass)
+          None // see: https://github.com/scala-js/scala-js/issues/3228
+        else if (curClassSym.isLifted && !curClassSym.originalOwner.isClass)
+          None // see: https://github.com/scala-js/scala-js/issues/3227
+        else
+          Some(genRegisterReflectiveInstantiationForNormalClass(cd))
+
+      staticInitBody.foreach {
+        case body if body.nonEmpty =>
+          buf += Defn.Define(Attrs(),
+                             name,
+                             nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
+                             body)
+        case _ => ()
+      }
+    }
+
+    // Generate the constructor for the class instantiator class,
+    // which is expected to extend one of scala.runtime.AbstractFunctionX.
+    private def genReflectiveInstantiationConstructor(
+        reflInstBuffer: ReflectiveInstantiationBuffer,
+        superClass: Global): Unit = {
+      withFreshExprBuffer { exprBuf =>
+        val body = {
+          // first argument is this
+          val thisArg = Val.Local(curFresh(), Type.Ref(reflInstBuffer.name))
+          exprBuf.label(curFresh(), Seq(thisArg))
+
+          // call to super constructor
+          exprBuf.call(
+            Type.Function(Seq(Type.Ref(superClass)), Type.Unit),
+            Val.Global(superClass.member(Sig.Ctor(Seq())), Type.Ptr),
+            Seq(thisArg),
+            unwind(curFresh)
+          )
+
+          exprBuf.ret(Val.Unit)
+          exprBuf.toSeq
+        }
+
+        reflInstBuffer += Defn.Define(
+          Attrs(),
+          reflInstBuffer.name.member(Sig.Ctor(Seq())),
+          nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
+          body
+        )
+      }
+    }
+
+    // Allocate and construct an object, using the provided ExprBuffer.
+    private def allocAndConstruct(exprBuf: ExprBuffer,
+                                  name: Global,
+                                  argTypes: Seq[nir.Type],
+                                  args: Seq[Val]): Val = {
+      val alloc = exprBuf.classalloc(name, unwind(curFresh))
+      exprBuf.call(
+        Type.Function(Type.Ref(name) +: argTypes, Type.Unit),
+        Val.Global(name.member(Sig.Ctor(argTypes)), Type.Ptr),
+        alloc +: args,
+        unwind(curFresh)
+      )
+      alloc
+    }
+
+    def genRegisterReflectiveInstantiationForModuleClass(
+        cd: ClassDef): Seq[Inst] = {
+      import NirGenSymbols._
+
+      val fqSymId   = curClassSym.fullName + "$"
+      val fqSymName = Global.Top(fqSymId)
+
+      reflectiveInstantiationInfo += ReflectiveInstantiationBuffer(fqSymId)
+      val reflInstBuffer = reflectiveInstantiationInfo.last
+
+      def genModuleLoaderAnonFun(exprBuf: ExprBuffer): Val = {
+        val applyMethodSig =
+          Sig.Method("apply", Seq(jlObjectRef))
+
+        // Generate the module loader class. The generated class extends
+        // AbstractFunction0[Any], i.e. has an apply method, which loads the module.
+        // We need a fresh ExprBuffer for this, since it is different scope.
+        withFreshExprBuffer { exprBuf =>
+          val body = {
+            // first argument is this
+            val thisArg = Val.Local(curFresh(), Type.Ref(reflInstBuffer.name))
+            exprBuf.label(curFresh(), Seq(thisArg))
+
+            val m = exprBuf.module(fqSymName, unwind(curFresh))
+            exprBuf.ret(m)
+            exprBuf.toSeq
+          }
+
+          reflInstBuffer += Defn.Define(
+            Attrs(),
+            reflInstBuffer.name.member(applyMethodSig),
+            nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), jlObjectRef),
+            body)
+        }
+
+        // Generate the module loader class constructor.
+        genReflectiveInstantiationConstructor(reflInstBuffer,
+                                              srAbstractFunction0)
+
+        reflInstBuffer += Defn.Class(Attrs(),
+                                     reflInstBuffer.name,
+                                     Some(srAbstractFunction0),
+                                     Seq(serializable))
+
+        // Allocate and return an instance of the generated class.
+        allocAndConstruct(exprBuf, reflInstBuffer.name, Seq(), Seq())
+      }
+
+      withFreshExprBuffer { exprBuf =>
+        exprBuf.label(curFresh(), Seq())
+
+        val fqcnArg = Val.String(fqSymId)
+        val runtimeClassArg =
+          exprBuf.genBoxClass(Val.Global(Global.Top(fqSymId), Type.Ptr))
+        val loadModuleFunArg = genModuleLoaderAnonFun(exprBuf)
+
+        exprBuf.genApplyModuleMethod(
+          ReflectModule,
+          Reflect_registerLoadableModuleClass,
+          Seq(fqcnArg, runtimeClassArg, loadModuleFunArg).map(ValTree(_)))
+
+        exprBuf.ret(Val.Unit)
+        exprBuf.toSeq
+      }
+    }
+
+    def genRegisterReflectiveInstantiationForNormalClass(
+        cd: ClassDef): Seq[Inst] = {
+      import NirGenSymbols._
+
+      val fqSymId   = curClassSym.fullName
+      val fqSymName = Global.Top(fqSymId)
+
+      // Create a new Tuple2 and initialise it with the provided values.
+      def createTuple2(exprBuf: ExprBuffer, _1: Val, _2: Val): Val = {
+        allocAndConstruct(exprBuf,
+                          tuple2,
+                          Seq(jlObjectRef, jlObjectRef),
+                          Seq(_1, _2))
+      }
+
+      def genClassConstructorsInfo(exprBuf: ExprBuffer,
+                                   ctors: Seq[global.Symbol]): Val = {
+        val applyMethodSig =
+          Sig.Method("apply", Seq(jlObjectRef, jlObjectRef))
+
+        // Constructors info is an array of Tuple2 (tpes, inst), where:
+        // - tpes is an array with the runtime classes of the constructor arguments.
+        // - inst is a function, which accepts an array with tpes and returns a new
+        //   instance of the class.
+        val ctorsInfo = exprBuf.arrayalloc(Type.Array(tuple2Ref),
+                                           Val.Int(ctors.length),
+                                           unwind(curFresh))
+
+        // For each (public) constructor C, generate a lambda responsible for
+        // initialising and returning an instance of the class, using C.
+        for ((ctor, ctorIdx) <- ctors.zipWithIndex) {
+          val ctorSig     = genMethodSig(ctor)
+          val ctorArgsSig = ctorSig.args.map(_.mangle).mkString
+
+          reflectiveInstantiationInfo += ReflectiveInstantiationBuffer(
+            fqSymId + ctorArgsSig)
+          val reflInstBuffer = reflectiveInstantiationInfo.last
+
+          // Lambda generation consists of generating a class which extends
+          // scala.runtime.AbstractFunction1, with an apply method that accepts
+          // the list of arguments, instantiates an instance of the class by
+          // forwarding the arguments to C, and returns the instance.
+          withFreshExprBuffer { exprBuf =>
+            val body = {
+              // first argument is this
+              val thisArg = Val.Local(curFresh(), Type.Ref(reflInstBuffer.name))
+              // second argument is parameters sequence
+              val argsArg = Val.Local(curFresh(), Type.Array(jlObjectRef))
+              exprBuf.label(curFresh(), Seq(thisArg, argsArg))
+
+              // Extract and cast arguments to proper types.
+              val argsVals =
+                (for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) yield {
+                  val elem =
+                    exprBuf.arrayload(jlObjectRef,
+                                      argsArg,
+                                      Val.Int(argIdx),
+                                      unwind(curFresh))
+                  // If the expected argument type can be boxed (i.e. is a primitive
+                  // type), then we need to unbox it before passing it to C.
+                  Type.box.get(arg) match {
+                    case Some(bt) =>
+                      exprBuf.unbox(bt, elem, unwind(curFresh))
+                    case None =>
+                      exprBuf.as(arg, elem, unwind(curFresh))
+                  }
+                })
+
+              // Allocate a new instance and call C.
+              val alloc = allocAndConstruct(exprBuf,
+                                            fqSymName,
+                                            ctorSig.args.tail,
+                                            argsVals)
+
+              exprBuf.ret(alloc)
+              exprBuf.toSeq
+            }
+
+            reflInstBuffer += Defn.Define(
+              Attrs(),
+              reflInstBuffer.name.member(applyMethodSig),
+              nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name),
+                                    Type.Array(jlObjectRef)),
+                                jlObjectRef),
+              body
+            )
+          }
+
+          // Generate the class instantiator constructor.
+          genReflectiveInstantiationConstructor(reflInstBuffer,
+                                                srAbstractFunction1)
+
+          reflInstBuffer += Defn.Class(Attrs(),
+                                       reflInstBuffer.name,
+                                       Some(srAbstractFunction1),
+                                       Seq(serializable))
+
+          // Allocate an instance of the generated class.
+          val instantiator =
+            allocAndConstruct(exprBuf, reflInstBuffer.name, Seq(), Seq())
+
+          // Create the current constructor's info. We need:
+          // - an array with the runtime classes of the ctor parameters.
+          // - the instantiator function created above (instantiator).
+          val rtClasses = exprBuf.arrayalloc(jlClassRef,
+                                             Val.Int(ctorSig.args.tail.length),
+                                             unwind(curFresh))
+          for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
+            // Allocate and instantiate a java.lang.Class object for the arg.
+            val co = allocAndConstruct(
+              exprBuf,
+              jlClass,
+              Seq(Type.Ptr),
+              Seq(Val.Global(Type.typeToName(arg), Type.Ptr))
+            )
+            // Store the runtime class in the array.
+            exprBuf.arraystore(jlClassRef,
+                               rtClasses,
+                               Val.Int(argIdx),
+                               co,
+                               unwind(curFresh))
+          }
+
+          // Allocate a tuple to store the current constructor's info
+          val to = createTuple2(exprBuf, rtClasses, instantiator)
+
+          exprBuf.arraystore(tuple2Ref,
+                             ctorsInfo,
+                             Val.Int(ctorIdx),
+                             to,
+                             unwind(curFresh))
+        }
+
+        ctorsInfo
+      }
+
+      // Collect public constructors.
+      val ctors =
+        if (curClassSym.isAbstractClass) Nil
+        else
+          curClassSym.info
+            .member(nme.CONSTRUCTOR)
+            .alternatives
+            .filter(_.isPublic)
+
+      if (ctors.isEmpty)
+        Seq.empty
+      else
+        withFreshExprBuffer { exprBuf =>
+          exprBuf.label(curFresh(), Seq())
+
+          val fqcnArg = Val.String(fqSymId)
+          val runtimeClassArg =
+            exprBuf.genBoxClass(Val.Global(fqSymName, Type.Ptr))
+          val instantiateClassFunArg =
+            genClassConstructorsInfo(exprBuf, ctors)
+
+          exprBuf.genApplyModuleMethod(
+            ReflectModule,
+            Reflect_registerInstantiatableClass,
+            Seq(fqcnArg, runtimeClassArg, instantiateClassFunArg).map(
+              ValTree(_)))
+
+          exprBuf.ret(Val.Unit)
+          exprBuf.toSeq
+        }
     }
 
     def genMethods(cd: ClassDef): Unit =

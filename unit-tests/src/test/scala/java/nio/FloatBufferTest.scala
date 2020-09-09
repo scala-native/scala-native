@@ -95,7 +95,7 @@ abstract class ReadOnlyFloatViewOfByteBufferTest(
 
   val factory: BufferFactory.FloatBufferFactory = {
     new ByteBufferFloatViewFactory(byteBufferFactory, order)
-    with BufferFactory.ReadOnlyBufferFactory
+      with BufferFactory.ReadOnlyBufferFactory
   }
 }
 

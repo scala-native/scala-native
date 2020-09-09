@@ -59,8 +59,8 @@ object DefaultFormatterSuite extends tests.Suite {
     // TimeZone.setDefault(defaultTimeZone)
   }
 
-  override def test(name: String)(body: => Unit): Unit =
-    super.test(name) {
+  override def test(name: String, cond: Boolean = true)(body: => Unit): Unit =
+    super.test(name, cond) {
       setUp()
       try {
         body

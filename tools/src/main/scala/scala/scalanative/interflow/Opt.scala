@@ -59,12 +59,13 @@ trait Opt { self: Interflow =>
     }
 
     // Run a merge processor starting from the entry basic block.
-    val blocks = try {
-      pushBlockFresh(fresh)
-      process(origdefn.insts.toArray, args, state, inline = false)
-    } finally {
-      popBlockFresh()
-    }
+    val blocks =
+      try {
+        pushBlockFresh(fresh)
+        process(origdefn.insts.toArray, args, state, inline = false)
+      } finally {
+        popBlockFresh()
+      }
 
     // Collect instructions, materialize all returned values
     // and compute the result type.

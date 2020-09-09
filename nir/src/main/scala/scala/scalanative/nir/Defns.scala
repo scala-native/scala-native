@@ -34,4 +34,13 @@ object Defn {
                           parent: Option[Global],
                           traits: Seq[Global])
       extends Defn
+
+  def existsEntryPoint(defns: Seq[Defn]): Boolean = {
+    defns.exists {
+      case defn: Defn.Define =>
+        val Global.Member(_, sig) = defn.name
+        sig.isClinit
+      case _ => false
+    }
+  }
 }

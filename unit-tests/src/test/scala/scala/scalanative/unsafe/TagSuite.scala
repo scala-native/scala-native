@@ -148,16 +148,16 @@ object TagSuite extends tests.Suite {
   type sa_family_t = CUnsignedShort
   type _14         = Nat.Digit2[Nat._1, Nat._4]
   type sockaddr =
-    CStruct2[sa_family_t, // sa_family
+    CStruct2[sa_family_t,        // sa_family
              CArray[CChar, _14]] // sa_data, size = 14 in OS X and Linux
   type sockaddr_storage = CStruct1[sa_family_t] // ss_family
   type msghdr = CStruct7[Ptr[Byte], // msg_name
-                         socklen_t, // msg_namelen
+                         socklen_t,  // msg_namelen
                          Ptr[iovec], // msg_iov
-                         CInt, // msg_iovlen
-                         Ptr[Byte], // msg_control
-                         socklen_t, // msg_crontrollen
-                         CInt] // msg_flags
+                         CInt,       // msg_iovlen
+                         Ptr[Byte],  // msg_control
+                         socklen_t,  // msg_crontrollen
+                         CInt]       // msg_flags
   type cmsghdr = CStruct3[socklen_t, // cmsg_len
                           CInt, // cmsg_level
                           CInt] // cmsg_type
@@ -171,14 +171,14 @@ object TagSuite extends tests.Suite {
   type in_addr = CStruct1[in_addr_t] // s_addr
   type sockaddr_in = CStruct3[sa_family_t, // sin_family
                               in_port_t, // sin_port
-                              in_addr] // sin_addr
+                              in_addr]   // sin_addr
 
   type in6_addr = CStruct1[CArray[uint8_t, _16]] // s6_addr
   type sockaddr_in6 = CStruct5[in6_addr, // sin6_addr
                                sa_family_t, // sin6_family
-                               in_port_t, // sin6_port
-                               uint32_t, // sin6_flowinfo
-                               uint32_t] // sin6_scope_id
+                               in_port_t,   // sin6_port
+                               uint32_t,    // sin6_flowinfo
+                               uint32_t]    // sin6_scope_id
 
   type ipv6_mreq = CStruct2[in6_addr, // ipv6mr_multiaddr
                             CUnsignedInt] // ipv6mr_interface

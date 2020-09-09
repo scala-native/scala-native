@@ -94,7 +94,7 @@ abstract class ReadOnlyIntViewOfByteBufferTest(
 
   val factory: BufferFactory.IntBufferFactory = {
     new ByteBufferIntViewFactory(byteBufferFactory, order)
-    with BufferFactory.ReadOnlyBufferFactory
+      with BufferFactory.ReadOnlyBufferFactory
   }
 }
 

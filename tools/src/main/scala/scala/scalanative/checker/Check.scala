@@ -265,9 +265,7 @@ final class Check(implicit linked: linker.Result) {
         .get(ty)
         .fold {
           error(s"uknown box type ${ty.show}")
-        } { unboxedty =>
-          expect(unboxedty, value)
-        }
+        } { unboxedty => expect(unboxedty, value) }
     case Op.Unbox(ty, obj) =>
       expect(Rt.Object, obj)
     case Op.Var(ty) =>
@@ -330,9 +328,7 @@ final class Check(implicit linked: linker.Result) {
     def loop(ty: Type, indexes: Seq[Val]): Unit =
       indexes match {
         case Seq() =>
-          stores.foreach { v =>
-            expect(ty, v)
-          }
+          stores.foreach { v => expect(ty, v) }
         case value +: rest =>
           ty match {
             case Type.StructValue(tys) =>

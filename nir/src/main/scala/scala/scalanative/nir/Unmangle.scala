@@ -24,6 +24,8 @@ object Unmangle {
         Sig.Field(readIdent())
       case 'R' =>
         Sig.Ctor(readTypes())
+      case 'I' =>
+        Sig.Clinit()
       case 'D' =>
         Sig.Method(readIdent(), readTypes())
       case 'P' =>
@@ -139,7 +141,8 @@ object Unmangle {
     }
 
     def readIdent(): String = {
-      val len   = readNumber()
+      val len = readNumber()
+      if (s.charAt(pos) == '-') pos += 1
       val start = pos
       pos += len
       s.substring(start, pos)

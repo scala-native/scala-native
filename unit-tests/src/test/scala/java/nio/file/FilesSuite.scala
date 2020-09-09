@@ -653,7 +653,7 @@ object FilesSuite extends tests.Suite {
     }
   }
 
-  test("Files.walk walks files") {
+  test("Files.walk walks directory") {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
       val f0  = dir.resolve("f0")
@@ -681,6 +681,23 @@ object FilesSuite extends tests.Suite {
       assert(files contains f2)
       assert(files contains f0)
       assert(files contains f1)
+    }
+  }
+
+  test("Files.walk walks single file") {
+    withTemporaryDirectory { dirFile =>
+      val f0 = dirFile.toPath.resolve("f0")
+
+      Files.createFile(f0)
+      assert(Files.exists(f0) && Files.isRegularFile(f0))
+
+      val it    = Files.walk(f0).iterator()
+      val files = scala.collection.mutable.Set.empty[Path]
+      while (it.hasNext) {
+        files += it.next()
+      }
+      assert(files.size == 1)
+      assert(files contains f0)
     }
   }
 

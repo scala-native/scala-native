@@ -2,9 +2,8 @@ package scala.scalanative
 package nscplugin
 
 import scala.collection.mutable
-import scala.reflect.internal.Flags._
 import scalanative.nir._
-import scalanative.util.unsupported
+import scalanative.util.{StringUtils, unsupported}
 import scalanative.util.ScopedVar.scoped
 import scalanative.nscplugin.NirPrimitives._
 
@@ -1277,7 +1276,7 @@ trait NirGenExpr { self: NirGenPhase =>
                               _))))))),
             _),
             _) =>
-          val chars = Val.Chars(str.replace("\\n", "\n").replace("\\r", "\r"))
+          val chars = Val.Chars(StringUtils.processEscapes(str))
           val const = Val.Const(chars)
           buf.box(nir.Rt.BoxedPtr, const, unwind)
 

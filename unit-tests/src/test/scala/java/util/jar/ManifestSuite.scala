@@ -124,7 +124,7 @@ object ManifestSuite extends tests.Suite {
 
   test("testNul") {
     val manifestContent =
-      "Manifest-Version: 1.0\nCreated-By: nasty gcc tool\n\n\0"
+      "Manifest-Version: 1.0\nCreated-By: nasty gcc tool\n\n\u0000"
     val bytes = manifestContent.getBytes("ISO-8859-1")
     new Manifest(new ByteArrayInputStream(bytes)) // the last NUL is ok
 

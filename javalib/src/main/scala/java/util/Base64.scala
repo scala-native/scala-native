@@ -89,7 +89,7 @@ object Base64 {
 
     def decode(src: Array[Byte], dst: Array[Byte]): Int = {
       if (dst.length < dstMaxLength(src.length) && // dst is possibly too small
-          dst.length < dstRequiredLength(src)) { // dst is actually too small
+          dst.length < dstRequiredLength(src)) {   // dst is actually too small
         throw new IllegalArgumentException(
           "Output byte array is too small for decoding all input bytes")
       }

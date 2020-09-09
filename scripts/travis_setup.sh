@@ -13,8 +13,8 @@ if [ "$(uname)" == "Darwin" ]; then
     brew link bdw-gc
     brew install jq
     brew install re2
-    brew install llvm@4
-    export PATH="/usr/local/opt/llvm@4/bin:$PATH"
+    brew install llvm@9
+    export PATH="/usr/local/opt/llvm@9/bin:$PATH"
 
 else
 

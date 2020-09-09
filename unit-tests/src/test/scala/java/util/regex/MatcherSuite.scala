@@ -389,7 +389,7 @@ object MatcherSuite extends tests.Suite {
     locally {
       // region before first occurrence of needle.
 
-      val regionStart = 2 // somewhere other than 0 and within prefix.
+      val regionStart = 2             // somewhere other than 0 and within prefix.
       val regionEnd   = prefix.length // somewhere in prefix.
 
       m.region(regionStart, regionEnd)
@@ -419,8 +419,9 @@ object MatcherSuite extends tests.Suite {
     locally {
       // region after last occurrence of needle.
 
-      val regionStart = haystack.length - 11 // anywhere after 'T' of 3rd needle.
-      val regionEnd   = haystack.length - 2  // somewhere before haystack end.
+      val regionStart =
+        haystack.length - 11 // anywhere after 'T' of 3rd needle.
+      val regionEnd = haystack.length - 2 // somewhere before haystack end.
 
       m.region(regionStart, regionEnd)
 

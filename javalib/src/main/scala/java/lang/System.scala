@@ -6,6 +6,8 @@ import scala.scalanative.unsafe._
 import scala.scalanative.posix.unistd
 import scala.scalanative.posix.sys.utsname._
 import scala.scalanative.posix.sys.uname._
+import scala.scalanative.posix.pwd
+import scala.scalanative.posix.pwdOps._
 import scala.scalanative.runtime.{time, Platform, GC, Intrinsics}
 
 final class System private ()
@@ -61,11 +63,21 @@ object System {
         sysProps.setProperty("user.language", userLang)
         sysProps.setProperty("user.country", userCountry)
       }
-      sysProps.setProperty("user.home", getenv("HOME"))
-      val buf = stackalloc[scala.Byte](1024)
-      unistd.getcwd(buf, 1024) match {
-        case null =>
-        case b    => sysProps.setProperty("user.dir", fromCString(b))
+      locally {
+        val buf = stackalloc[pwd.passwd]
+        val uid = unistd.getuid()
+        val res = pwd.getpwuid(uid, buf)
+        if (res == 0 && buf.pw_dir != null) {
+          sysProps.setProperty("user.home", fromCString(buf.pw_dir))
+        }
+      }
+      locally {
+        val bufSize = 1024
+        val buf     = stackalloc[scala.Byte](bufSize)
+        val cwd     = unistd.getcwd(buf, bufSize)
+        if (cwd != null) {
+          sysProps.setProperty("user.dir", fromCString(cwd))
+        }
       }
     }
 

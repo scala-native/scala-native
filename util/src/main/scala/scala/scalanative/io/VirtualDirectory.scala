@@ -18,6 +18,9 @@ sealed trait VirtualDirectory {
   /** Reads a contents of file with given path. */
   def read(path: Path): ByteBuffer
 
+  /** Reads up to len bytes from the file with the given path. */
+  def read(path: Path, len: Int): ByteBuffer
+
   /** Replaces contents of file with given value. */
   def write(path: Path, buffer: ByteBuffer): Unit
 
@@ -74,6 +77,15 @@ object VirtualDirectory {
       buffer
     }
 
+    override def read(path: Path, len: Int): ByteBuffer = {
+      val stream = Files.newInputStream(resolve(path))
+      try {
+        val bytes = new Array[Byte](len)
+        val read  = stream.read(bytes)
+        ByteBuffer.wrap(bytes, 0, read)
+      } finally stream.close()
+    }
+
     override def write(path: Path, buffer: ByteBuffer): Unit = {
       val channel = open(resolve(path))
       try channel.write(buffer)
@@ -126,6 +138,8 @@ object VirtualDirectory {
     override def read(path: Path): ByteBuffer =
       throw new UnsupportedOperationException(
         "Can't read from empty directory.")
+
+    override def read(path: Path, len: Int): ByteBuffer = read(path)
 
     override def write(path: Path, buffer: ByteBuffer): Unit =
       throw new UnsupportedOperationException("Can't write to empty directory.")

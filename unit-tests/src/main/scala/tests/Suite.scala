@@ -4,6 +4,7 @@ import sbt.testing.{EventHandler, Logger, Status}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import scala.scalanative.reflect.annotation.EnableReflectiveInstantiation
 
 final case class AssertionFailed(msg: String) extends Exception(msg)
 
@@ -11,6 +12,7 @@ final case class TestResult(status: Boolean, thrown: Option[Throwable])
 
 final case class Test(name: String, run: () => TestResult)
 
+@EnableReflectiveInstantiation
 abstract class Suite {
   private val tests = new mutable.UnrolledBuffer[Test]
 
@@ -31,6 +33,11 @@ abstract class Suite {
   def assertFalse(cond: Boolean): Unit =
     if (cond) {
       throw AssertionFailed(s"condition is true")
+    }
+
+  def assertFalse(message: String, cond: Boolean): Unit =
+    if (cond) {
+      throw AssertionFailed(message)
     }
 
   def assertNull[A](a: A): Unit =
@@ -81,15 +88,17 @@ abstract class Suite {
     throw AssertionFailed(s"expected to throw ${expected.getName} but didn't")
   }
 
-  def test(name: String)(body: => Unit): Unit =
-    tests += Test(name, { () =>
-      try {
-        body
-        TestResult(true, None)
-      } catch {
-        case thrown: Throwable => TestResult(false, Option(thrown))
-      }
-    })
+  def test(name: String, cond: Boolean = true)(body: => Unit): Unit =
+    if (cond) {
+      tests += Test(name, { () =>
+        try {
+          body
+          TestResult(true, None)
+        } catch {
+          case thrown: Throwable => TestResult(false, Option(thrown))
+        }
+      })
+    }
 
   def testFails(name: String, issue: Int)(body: => Unit): Unit =
     tests += Test(name, { () =>
@@ -115,9 +124,7 @@ abstract class Suite {
 
       val stacktrace = writer.toString
         .split('\n')
-        .map { line =>
-          s"\n${color}${indentSpaces}${line}"
-        }
+        .map { line => s"\n${color}${indentSpaces}${line}" }
         .mkString("")
 
       s"\n${color}${indentSpaces}${info}" + stacktrace

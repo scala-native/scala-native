@@ -10,6 +10,8 @@ package scala.scalanative.build
  *
  *  * Immix GC. Mostly-precise mark-region garbage collector.
  *
+ *  * Commix GC. Mostly-precise mark-region garbage collector running concurrently.
+ *
  *  Additional GCs might be added to the list in the future.
  *
  *  @param dir name of the gc
@@ -34,7 +36,7 @@ object GC {
   def immix: GC = Immix
 
   /** Mostly-precise mark-region garbage collector running concurrently. */
-  def commix: GC = Immix
+  def commix: GC = Commix
 
   /** The default garbage collector. */
   def default: GC = Immix
@@ -42,13 +44,13 @@ object GC {
   /** Get a garbage collector with given name. */
   def apply(gc: String) = gc match {
     case "none" =>
-      GC.None
+      none
     case "boehm" =>
-      GC.Boehm
+      boehm
     case "immix" =>
-      GC.Immix
+      immix
     case "commix" =>
-      GC.Commix
+      commix
     case value =>
       throw new IllegalArgumentException(
         "nativeGC can be either \"none\", \"boehm\", \"immix\" or \"commix\", not: " + value)

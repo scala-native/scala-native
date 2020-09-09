@@ -235,7 +235,9 @@ object Files {
     }
 
   def deleteIfExists(path: Path): Boolean =
-    try { delete(path); true } catch { case _: NoSuchFileException => false }
+    try {
+      delete(path); true
+    } catch { case _: NoSuchFileException => false }
 
   def exists(path: Path, options: Array[LinkOption]): Boolean =
     if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
@@ -249,14 +251,7 @@ object Files {
            matcher: BiPredicate[Path, BasicFileAttributes],
            options: Array[FileVisitOption]): Stream[Path] = {
     val stream = walk(start, maxDepth, 0, options, SSet.empty).filter { p =>
-      //
-      // See comments for FileVisitOption & linkOpts in _walkFileTree
-      val linkOpts =
-        if (options.contains(FileVisitOption.FOLLOW_LINKS))
-          Array.empty[LinkOption]
-        else
-          Array(LinkOption.NOFOLLOW_LINKS)
-
+      val linkOpts = linkOptsFromFileVisitOpts(options)
       val attributes =
         getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
           .readAttributes()
@@ -583,28 +578,35 @@ object Files {
                    currentDepth: Int,
                    options: Array[FileVisitOption],
                    visited: SSet[Path]): SStream[Path] = {
-    start #:: FileHelpers
-      .list(start.toString, (n, t) => (n, t))
-      .toStream
-      .flatMap {
-        case (name, tpe)
-            if tpe == DT_LNK && options.contains(
-              FileVisitOption.FOLLOW_LINKS) =>
-          val path       = start.resolve(name)
-          val newVisited = visited + path
-          val target     = readSymbolicLink(path)
-          if (newVisited.contains(target))
-            throw new FileSystemLoopException(path.toString)
-          else walk(path, maxDepth, currentDepth + 1, options, newVisited)
-        case (name, tpe) if tpe == DT_DIR && currentDepth < maxDepth =>
-          val path = start.resolve(name)
-          val newVisited =
-            if (options.contains(FileVisitOption.FOLLOW_LINKS)) visited + path
-            else visited
-          walk(path, maxDepth, currentDepth + 1, options, newVisited)
-        case (name, _) =>
-          start.resolve(name) #:: SStream.Empty
+    start #:: {
+      if (!isDirectory(start, linkOptsFromFileVisitOpts(options))) SStream.empty
+      else {
+        FileHelpers
+          .list(start.toString, (n, t) => (n, t))
+          .toStream
+          .flatMap {
+            case (name, tpe)
+                if tpe == DT_LNK && options.contains(
+                  FileVisitOption.FOLLOW_LINKS) =>
+              val path       = start.resolve(name)
+              val newVisited = visited + path
+              val target     = readSymbolicLink(path)
+              if (newVisited.contains(target))
+                throw new FileSystemLoopException(path.toString)
+              else walk(path, maxDepth, currentDepth + 1, options, newVisited)
+            case (name, tpe) if tpe == DT_DIR && currentDepth < maxDepth =>
+              val path = start.resolve(name)
+              val newVisited =
+                if (options.contains(FileVisitOption.FOLLOW_LINKS))
+                  visited + path
+                else visited
+              walk(path, maxDepth, currentDepth + 1, options, newVisited)
+            case (name, _) =>
+              start.resolve(name) #:: SStream.Empty
+          }
       }
+    }
+
   }
 
   def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path =
@@ -622,15 +624,22 @@ object Files {
     try _walkFileTree(start, options, maxDepth, visitor)
     catch { case TerminateTraversalException => start }
 
+  // The sense of how LinkOption follows links or not is somewhat
+  // inverted because of a double negative.  The absense of
+  // LinkOption.NOFOLLOW_LINKS means follow links, the default.
+  // There is no explicit LinkOption.FOLLOW_LINKS.
+  private def linkOptsFromFileVisitOpts(
+      options: Array[FileVisitOption]): Array[LinkOption] = {
+    if (options.contains(FileVisitOption.FOLLOW_LINKS)) Array.empty[LinkOption]
+    else Array(LinkOption.NOFOLLOW_LINKS)
+  }
+
   private def _walkFileTree(start: Path,
                             options: Set[FileVisitOption],
                             maxDepth: Int,
                             visitor: FileVisitor[_ >: Path]): Path = {
-    val stream = walk(start,
-                      maxDepth,
-                      0,
-                      options.toArray.asInstanceOf[Array[FileVisitOption]],
-                      SSet.empty)
+    val optsArray  = options.toArray(new Array[FileVisitOption](options.size()))
+    val stream     = walk(start, maxDepth, 0, optsArray, SSet.empty)
     val dirsToSkip = scala.collection.mutable.Set.empty[Path]
     val openDirs   = scala.collection.mutable.Stack.empty[Path]
     stream.foreach { p =>
@@ -639,18 +648,7 @@ object Files {
       if (dirsToSkip.contains(parent)) ()
       else {
         try {
-
-          // The sense of how LinkOption follows links or not is somewhat
-          // inverted because of a double negative.  The absense of
-          // LinkOption.NOFOLLOW_LINKS means follow links, the default.
-          // There is no explicit LinkOption.FOLLOW_LINKS.
-
-          val linkOpts =
-            if (options.contains(FileVisitOption.FOLLOW_LINKS))
-              Array.empty[LinkOption]
-            else
-              Array(LinkOption.NOFOLLOW_LINKS)
-
+          val linkOpts = linkOptsFromFileVisitOpts(optsArray)
           val attributes =
             getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
               .readAttributes()
@@ -742,8 +740,8 @@ object Files {
     }
 
   private val attributesClassesToViews
-    : SMap[Class[_ <: BasicFileAttributes],
-           Class[_ <: BasicFileAttributeView]] =
+      : SMap[Class[_ <: BasicFileAttributes],
+             Class[_ <: BasicFileAttributeView]] =
     SMap(
       classOf[BasicFileAttributes] -> classOf[BasicFileAttributeView],
       classOf[DosFileAttributes]   -> classOf[DosFileAttributeView],

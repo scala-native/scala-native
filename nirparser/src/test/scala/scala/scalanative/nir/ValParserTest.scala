@@ -3,8 +3,9 @@ package nir
 
 import fastparse.all.Parsed
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class ValParserTest extends FunSuite {
+class ValParserTest extends AnyFunSuite {
   val global = Global.Top("test")
 
   Seq[Val](
@@ -24,7 +25,7 @@ class ValParserTest extends FunSuite {
     Val.StructValue(Seq(Val.Int(32), Val.Long(64))),
     Val.ArrayValue(Type.Int, Seq.empty),
     Val.ArrayValue(Type.Int, Seq(Val.Int(32))),
-    Val.Chars("foobar"),
+    Val.Chars("foobar".getBytes("UTF-8")),
     Val.Local(Local(0), Type.Int),
     Val.Global(global, Type.Ptr),
     Val.Unit,

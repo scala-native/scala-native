@@ -1,3 +1,12 @@
+
+// BEWARE: This file is generated - direct edits will be lost.
+// Do not edit this it directly other than to remove
+// personally identifiable information in sourceLocation lines.
+// All direct edits to this file will be lost the next time it
+// is generated.
+//
+// See nativelib runtime/Arrays.scala.gyb for details.
+
 package scala.scalanative
 package runtime
 

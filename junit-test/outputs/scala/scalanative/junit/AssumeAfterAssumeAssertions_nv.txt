@@ -1,0 +1,8 @@
+liTest run started
+liTest scala.scalanative.junit.AssumeAfterAssume.assumeFail started
+leTest scala.scalanative.junit.AssumeAfterAssume.assumeFail failed: org.junit.internal.AssumptionViolatedException: This assume should not pass, took <TIME>
+e2scala.scalanative.junit.AssumeAfterAssume.assumeFail
+leTest scala.scalanative.junit.AssumeAfterAssume.assumeFail failed: org.junit.internal.AssumptionViolatedException: This assume should not pass, took <TIME>
+ldTest scala.scalanative.junit.AssumeAfterAssume.assumeFail finished, took <TIME>
+liTest run finished: 2 failed, 0 ignored, 1 total, <TIME>
+d

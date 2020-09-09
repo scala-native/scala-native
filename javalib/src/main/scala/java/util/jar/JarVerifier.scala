@@ -286,7 +286,7 @@ private[jar] class JarVerifier(jarName: String) {
 private[jar] object JarVerifier {
   def getSignerCertificates(signatureFileName: String,
                             certificates: Map[String, Array[Certificate]])
-    : ArrayBuffer[Certificate] = {
+      : ArrayBuffer[Certificate] = {
     val result = ArrayBuffer.empty[Certificate]
     certificates.get(signatureFileName) match {
       case null => result

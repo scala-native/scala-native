@@ -1,10 +1,9 @@
 import java.io.File.pathSeparator
+import scala.collection.mutable
 import scala.util.Try
-import scalanative.sbtplugin.ScalaNativePluginInternal._
-import scalanative.io.packageNameFromPath
 
-val sbt10Version          = "1.0.4"
-val sbt10ScalaVersion     = "2.12.10"
+val sbt10Version          = "1.1.6" // minimum version
+val sbt10ScalaVersion     = "2.12.11"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
@@ -19,8 +18,8 @@ def projectName(project: sbt.ResolvedProject): String = {
 }
 
 // Provide consistent project name pattern.
-lazy val nameSettings = Seq(
-  normalizedName := projectName(thisProject.value), // Maven <artifactId>
+lazy val nameSettings: Seq[Setting[_]] = Seq(
+  normalizedName := projectName(thisProject.value),         // Maven <artifactId>
   name := s"Scala Native ${projectName(thisProject.value)}" // Maven <name>
 )
 
@@ -33,50 +32,49 @@ lazy val mimaSettings: Seq[Setting[_]] = Seq(
   }
 )
 
-lazy val baseSettings = Seq(
-  organization := "org.scala-native", // Maven <groupId>
-  version := nativeVersion // Maven <version>
-)
-
-addCommandAlias(
-  "rebuild",
-  Seq(
-    "clean",
-    "cleanCache",
-    "cleanLocal",
-    "dirty-rebuild"
-  ).mkString(";", ";", "")
-)
-
-addCommandAlias(
-  "dirty-rebuild",
-  Seq(
-    "scalalib/publishLocal",
-    "testRunner/publishLocal",
-    "sbtScalaNative/publishLocal",
-    "testInterface/publishLocal"
-  ).mkString(";", ";", "")
-)
+// Common start but individual sub-projects may add or remove scalacOptions.
+// project/build.sbt uses a less stringent set to bootstrap.
+inThisBuild(
+  Def.settings(
+    organization := "org.scala-native", // Maven <groupId>
+    version := nativeVersion,           // Maven <version>
+    scalaVersion := libScalaVersion,
+    scalacOptions ++= Seq(
+      "-deprecation",
+      "-encoding",
+      "utf8",
+      "-feature",
+      "-target:jvm-1.8",
+      "-unchecked",
+      "-Xfatal-warnings"
+    )
+  ))
 
 addCommandAlias(
   "test-all",
   Seq(
     "sandbox/run",
-    "tests/test",
+    "testRunner/test",
+    "testInterface/test",
     "tools/test",
+    "tests/test",
     "nirparser/test",
     "sbtScalaNative/scripted",
-    "tools/mimaReportBinaryIssues"
-  ).mkString(";", ";", "")
+    "tools/mimaReportBinaryIssues",
+    "junitTestOutputsJVM/test",
+    "junitTestOutputsNative/test"
+  ).mkString(";")
 )
 
 addCommandAlias(
   "test-tools",
   Seq(
+    "testRunner/test",
+    "testInterface/test",
     "tools/test",
     "nirparser/test",
     "tools/mimaReportBinaryIssues"
-  ).mkString(";", ";", "")
+  ).mkString(";")
 )
 
 addCommandAlias(
@@ -84,33 +82,14 @@ addCommandAlias(
   Seq(
     "sandbox/run",
     "tests/test",
-    "sbtScalaNative/scripted"
-  ).mkString(";", ";", "")
+    "sbtScalaNative/scripted",
+    "junitTestOutputsJVM/test",
+    "junitTestOutputsNative/test"
+  ).mkString(";")
 )
 
 lazy val publishSnapshot =
   taskKey[Unit]("Publish snapshot to sonatype on every commit to master.")
-
-lazy val setUpTestingCompiler = Def.task {
-  val nscpluginjar = (Keys.`package` in nscplugin in Compile).value
-  val nativelibjar = (Keys.`package` in nativelib in Compile).value
-  val auxlibjar    = (Keys.`package` in auxlib in Compile).value
-  val clibjar      = (Keys.`package` in clib in Compile).value
-  val posixlibjar  = (Keys.`package` in posixlib in Compile).value
-  val scalalibjar  = (Keys.`package` in scalalib in Compile).value
-  val javalibjar   = (Keys.`package` in javalib in Compile).value
-  val testingcompilercp =
-    (fullClasspath in testingCompiler in Compile).value.files
-  val testingcompilerjar = (Keys.`package` in testingCompiler in Compile).value
-
-  sys.props("scalanative.nscplugin.jar") = nscpluginjar.getAbsolutePath
-  sys.props("scalanative.testingcompiler.cp") =
-    (testingcompilercp :+ testingcompilerjar) map (_.getAbsolutePath) mkString pathSeparator
-  sys.props("scalanative.nativeruntime.cp") =
-    Seq(nativelibjar, auxlibjar, clibjar, posixlibjar, scalalibjar, javalibjar) mkString pathSeparator
-  sys.props("scalanative.nativelib.dir") =
-    ((crossTarget in Compile).value / "nativelib").getAbsolutePath
-}
 
 // to publish plugin (we only need to do this once, it's already done!)
 // follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html
@@ -118,16 +97,14 @@ lazy val setUpTestingCompiler = Def.task {
 // name: sbt-scala-native, license: BSD-like, version control: git@github.com:scala-native/scala-native.git
 // to be available without a resolver
 // follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html#Linking+your+package+to+the+sbt+organization
-lazy val bintrayPublishSettings = Seq(
+lazy val bintrayPublishSettings: Seq[Setting[_]] = Seq(
   bintrayRepository := "sbt-plugins",
   bintrayOrganization := Some("scala-native")
 ) ++ publishSettings
 
-lazy val mavenPublishSettings = Seq(
+lazy val mavenPublishSettings: Seq[Setting[_]] = Seq(
   publishMavenStyle := true,
-  pomIncludeRepository := { x =>
-    false
-  },
+  pomIncludeRepository := { x => false },
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (version.value.trim.endsWith("SNAPSHOT"))
@@ -167,12 +144,12 @@ lazy val mavenPublishSettings = Seq(
   }.toSeq
 ) ++ publishSettings
 
-lazy val publishSettings = Seq(
-  publishArtifact in Compile := true,
-  publishArtifact in Test := false,
-  publishArtifact in (Compile, packageDoc) :=
+lazy val publishSettings: Seq[Setting[_]] = Seq(
+  Compile / publishArtifact := true,
+  Test / publishArtifact := false,
+  Compile / packageDoc / publishArtifact :=
     !version.value.contains("SNAPSHOT"),
-  publishArtifact in (Compile, packageSrc) :=
+  Compile / packageSrc / publishArtifact :=
     !version.value.contains("SNAPSHOT"),
   homepage := Some(url("http://www.scala-native.org")),
   startYear := Some(2015),
@@ -197,48 +174,21 @@ lazy val publishSettings = Seq(
   )
 ) ++ nameSettings
 
-lazy val noPublishSettings = Seq(
+lazy val noPublishSettings: Seq[Setting[_]] = Seq(
   publishArtifact := false,
   packagedArtifacts := Map.empty,
   publish := {},
   publishLocal := {},
   publishSnapshot := { println("no publish") },
-  skip in publish := true
+  publish / skip := true
 ) ++ nameSettings
 
-lazy val toolSettings =
-  baseSettings ++
-    Seq(
-      crossSbtVersions := List(sbt10Version),
-      scalaVersion := {
-        (sbtBinaryVersion in pluginCrossBuild).value match {
-          case _ => sbt10ScalaVersion
-        }
-      },
-      scalacOptions ++= Seq(
-        "-deprecation",
-        "-unchecked",
-        "-feature",
-        "-encoding",
-        "utf8"
-      ),
-      javacOptions ++= Seq("-encoding", "utf8")
-    )
-
-lazy val libSettings =
-  (baseSettings ++ ScalaNativePlugin.projectSettings.tail) ++ Seq(
-    scalaVersion := libScalaVersion,
-    resolvers := Nil,
-    scalacOptions ++= Seq("-encoding", "utf8")
-  )
-
-lazy val projectSettings =
-  ScalaNativePlugin.projectSettings ++ Seq(
-    scalaVersion := libScalaVersion,
-    resolvers := Nil,
-    scalacOptions ++= Seq("-target:jvm-1.8"),
-    nativeCheck := true,
-    nativeDump := true
+lazy val toolSettings: Seq[Setting[_]] =
+  Def.settings(
+    sbtVersion := sbt10Version,
+    crossSbtVersions := List(sbt10Version),
+    scalaVersion := sbt10ScalaVersion,
+    javacOptions ++= Seq("-encoding", "utf8")
   )
 
 lazy val util =
@@ -254,6 +204,9 @@ lazy val nir =
     .settings(mavenPublishSettings)
     .dependsOn(util)
 
+lazy val scalacheckDep = "org.scalacheck" %% "scalacheck" % "1.14.3" % "test"
+lazy val scalatestDep  = "org.scalatest"  %% "scalatest"  % "3.1.1"  % "test"
+
 lazy val nirparser =
   project
     .in(file("nirparser"))
@@ -263,10 +216,8 @@ lazy val nirparser =
       libraryDependencies ++= Seq(
         "com.lihaoyi" %% "fastparse"  % "1.0.0",
         "com.lihaoyi" %% "scalaparse" % "1.0.0",
-        compilerPlugin(
-          "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-        "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-        "org.scalatest"  %% "scalatest"  % "3.0.0"  % "test"
+        scalacheckDep,
+        scalatestDep
       )
     )
     .dependsOn(nir)
@@ -278,16 +229,26 @@ lazy val tools =
     .settings(mavenPublishSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-        "org.scalatest"  %% "scalatest"  % "3.0.0"  % "test"
+        scalacheckDep,
+        scalatestDep
       ),
-      fullClasspath in Test := ((fullClasspath in Test) dependsOn setUpTestingCompiler).value,
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in nir)
-        .dependsOn(publishLocal in util)
-        .value,
+      Test / fork := true,
+      Test / javaOptions ++= {
+        val nscpluginjar = (nscplugin / Compile / Keys.`package`).value
+        val testingcompilercp =
+          (testingCompiler / Compile / fullClasspath).value.files
+        val allCoreLibsCp =
+          (allCoreLibs / Compile / fullClasspath).value.files
+        Seq(
+          "-Dscalanative.nscplugin.jar=" + nscpluginjar.getAbsolutePath,
+          "-Dscalanative.testingcompiler.cp=" +
+            testingcompilercp.map(_.getAbsolutePath).mkString(pathSeparator),
+          "-Dscalanative.nativeruntime.cp=" +
+            allCoreLibsCp.map(_.getAbsolutePath).mkString(pathSeparator)
+        )
+      },
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
-      parallelExecution in Test := false,
+      Test / parallelExecution := false,
       mimaSettings
     )
     .dependsOn(nir, util, testingCompilerInterface % Test)
@@ -295,23 +256,23 @@ lazy val tools =
 lazy val nscplugin =
   project
     .in(file("nscplugin"))
-    .settings(baseSettings)
     .settings(mavenPublishSettings)
     .settings(
-      scalaVersion := libScalaVersion,
       crossScalaVersions := libCrossScalaVersions,
       crossVersion := CrossVersion.full,
-      unmanagedSourceDirectories in Compile ++= Seq(
-        (scalaSource in (nir, Compile)).value,
-        (scalaSource in (util, Compile)).value
+      Compile / unmanagedSourceDirectories ++= Seq(
+        (nir / Compile / scalaSource).value,
+        (util / Compile / scalaSource).value
       ),
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
-      )
+      ),
+      exportJars := true
     )
+    .settings(scalacOptions += "-Xno-patmat-analysis")
 
-lazy val sbtPluginSettings =
+lazy val sbtPluginSettings: Seq[Setting[_]] =
   toolSettings ++
     bintrayPublishSettings ++
     Seq(
@@ -332,187 +293,280 @@ lazy val sbtScalaNative =
     .settings(
       crossScalaVersions := libCrossScalaVersions,
       addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
-      sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
-      // `testInterfaceSerialization` needs to be available from the sbt plugin,
-      // but it's a Scala Native project (and thus 2.11), and the plugin is 2.12.
-      // We simply add the sources to mimic cross-compilation.
-      sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
+      sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
       // publish the other projects before running scripted tests.
-      scripted := scripted
-        .dependsOn(testInterface / publishLocal)
-        .dependsOn(ThisProject / publishLocal)
-        .dependsOn(scalalib / publishLocal)
-        .evaluated,
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in tools, publishLocal in testRunner)
-        .value
+      scriptedDependencies := {
+        scriptedDependencies
+          .dependsOn(
+            // Compiler plugins
+            nscplugin / publishLocal,
+            junitPlugin / publishLocal,
+            // Scala Native libraries
+            nativelib / publishLocal,
+            clib / publishLocal,
+            posixlib / publishLocal,
+            javalib / publishLocal,
+            auxlib / publishLocal,
+            scalalib / publishLocal,
+            testInterfaceSbtDefs / publishLocal,
+            testInterface / publishLocal,
+            junitRuntime / publishLocal,
+            // JVM libraries
+            util / publishLocal,
+            nir / publishLocal,
+            tools / publishLocal,
+            testRunner / publishLocal
+          )
+          .value
+      }
     )
     .dependsOn(tools, testRunner)
 
 lazy val nativelib =
   project
     .in(file("nativelib"))
-    .settings(libSettings)
+    .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
     .settings(
       libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in nscplugin)
-        .value
+      exportJars := true
     )
+    .dependsOn(nscplugin % "plugin")
 
 lazy val clib =
   project
     .in(file("clib"))
-    .settings(libSettings)
+    .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
-    .settings(
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib)
-        .value
-    )
-    .dependsOn(nativelib)
+    .dependsOn(nscplugin % "plugin", nativelib)
 
 lazy val posixlib =
   project
     .in(file("posixlib"))
-    .settings(libSettings)
+    .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
-    .settings(
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in clib)
-        .value
-    )
-    .dependsOn(clib)
+    .dependsOn(nscplugin % "plugin", clib)
 
 lazy val javalib =
   project
     .in(file("javalib"))
-    .settings(libSettings)
+    .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
     .settings(
-      sources in doc in Compile := Nil, // doc generation currently broken
+      Compile / doc / sources := Nil, // doc generation currently broken
       // This is required to have incremental compilation to work in javalib.
       // We put our classes on scalac's `javabootclasspath` so that it uses them
       // when compiling rather than the definitions from the JDK.
-      scalacOptions in Compile := {
-        val previous = (scalacOptions in Compile).value
+      Compile / scalacOptions := {
+        val previous = (Compile / scalacOptions).value
         val javaBootClasspath =
           scala.tools.util.PathResolver.Environment.javaBootClassPath
-        val classDir  = (classDirectory in Compile).value.getAbsolutePath()
+        val classDir  = (Compile / classDirectory).value.getAbsolutePath
         val separator = sys.props("path.separator")
         "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
       },
       // Don't include classfiles for javalib in the packaged jar.
-      mappings in packageBin in Compile := {
-        val previous = (mappings in packageBin in Compile).value
+      Compile / packageBin / mappings := {
+        val previous = (Compile / packageBin / mappings).value
         previous.filter {
-          case (file, path) =>
+          case (_, path) =>
             !path.endsWith(".class")
         }
       },
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib, publishLocal in posixlib)
-        .value
+      exportJars := true
     )
-    .dependsOn(nativelib, posixlib)
+    .dependsOn(nscplugin % "plugin", nativelib, posixlib)
 
-lazy val assembleScalaLibrary = taskKey[Unit](
-  "Checks out scala standard library from submodules/scala and then applies overrides.")
+val fetchScalaSource =
+  taskKey[File]("Fetches the scala source for the current scala version")
 
 lazy val auxlib =
   project
     .in(file("auxlib"))
-    .settings(libSettings)
+    .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
     .settings(
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in javalib)
-        .value
+      exportJars := true
     )
-    .dependsOn(nativelib)
+    .dependsOn(nscplugin % "plugin", nativelib)
 
 lazy val scalalib =
   project
     .in(file("scalalib"))
-    .settings(libSettings)
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(
+      // This build uses libScalaVersion, which is currently 2.11.12
+      // to compile what appears to be 2.11.0 sources. This yields 114
+      // deprecations. Editing those sources is not an option (long story),
+      // so do not spend compile time looking for the deprecations.
+      // Keep the log file clean so that real issues stand out.
+      // This futzing can probably removed for scala >= 2.12.
+      scalacOptions -= "-deprecation",
+      scalacOptions += "-deprecation:false"
+    )
     .settings(mavenPublishSettings)
     .settings(
-      assembleScalaLibrary := {
-        import org.eclipse.jgit.api._
+      // Code to fetch scala sources adapted, with gratitude, from
+      // Scala.js Build.scala at the suggestion of @sjrd.
+      // https://github.com/scala-js/scala-js/blob/\
+      //    1761f94ee31902b61c579d5cb121117c9dc08295/\
+      //    project/Build.scala#L1125-L1233
+      //
+      // By intent, the Scala Native code below is as identical as feasible.
+      // Scala Native build.sbt uses a slightly different baseDirectory
+      // than Scala.js. See commented starting with "SN Port:" below.
+      libraryDependencies +=
+        "org.scala-lang" % "scala-library" % scalaVersion.value classifier "sources",
+      fetchScalaSource / artifactPath :=
+        target.value / "scalaSources" / scalaVersion.value,
+      // Scala.js original comment modified to clarify issue is Scala.js.
+      /* Work around for https://github.com/scala-js/scala-js/issues/2649
+       * We would like to always use `update`, but
+       * that fails if the scalaVersion we're looking for happens to be the
+       * version of Scala used by sbt itself. This is clearly a bug in sbt,
+       * which we work around here by using `updateClassifiers` instead in
+       * that case.
+       */
+      fetchScalaSource / update := Def.taskDyn {
+        if (scalaVersion.value == scala.util.Properties.versionNumberString)
+          updateClassifiers
+        else
+          update
+      }.value,
+      fetchScalaSource := {
+        val s        = streams.value
+        val cacheDir = s.cacheDirectory
+        val ver      = scalaVersion.value
+        val trgDir   = (fetchScalaSource / artifactPath).value
 
-        val s      = streams.value
-        val trgDir = target.value / "scalaSources" / scalaVersion.value
-        val scalaRepo = sys.env
-          .get("SCALANATIVE_SCALAREPO")
-          .getOrElse("https://github.com/scala/scala.git")
+        val report = (fetchScalaSource / update).value
+        val scalaLibSourcesJar = report
+          .select(configuration = configurationFilter("compile"),
+                  module = moduleFilter(name = "scala-library"),
+                  artifact = artifactFilter(classifier = "sources"))
+          .headOption
+          .getOrElse {
+            throw new Exception(
+              s"Could not fetch scala-library sources for version $ver")
+          }
 
-        if (!trgDir.exists) {
-          s.log.info(
-            s"Fetching Scala source version ${scalaVersion.value} from $scalaRepo")
+        FileFunction.cached(cacheDir / s"fetchScalaSource-$ver",
+                            FilesInfo.lastModified,
+                            FilesInfo.exists) { dependencies =>
+          s.log.info(s"Unpacking Scala library sources to $trgDir...")
 
-          // Make parent dirs and stuff
+          if (trgDir.exists)
+            IO.delete(trgDir)
           IO.createDirectory(trgDir)
+          IO.unzip(scalaLibSourcesJar, trgDir)
+        }(Set(scalaLibSourcesJar))
 
-          // Clone scala source code
-          new CloneCommand()
-            .setDirectory(trgDir)
-            .setURI(scalaRepo)
-            .call()
+        trgDir
+      },
+      Compile / unmanagedSourceDirectories := {
+        // Calculates all prefixes of the current Scala version
+        // (including the empty prefix) to construct override
+        // directories like the following:
+        // - override-2.13.0-RC1
+        // - override-2.13.0
+        // - override-2.13
+        // - override-2
+        // - override
+
+        val ver = scalaVersion.value
+
+        // SN Port: sjs uses baseDirectory.value.getParentFile here.
+        val base  = baseDirectory.value
+        val parts = ver.split(Array('.', '-'))
+        val verList = parts.inits.map { ps =>
+          val len = ps.mkString(".").length
+          // re-read version, since we lost '.' and '-'
+          ver.substring(0, len)
+        }
+        def dirStr(v: String) =
+          if (v.isEmpty) "overrides" else s"overrides-$v"
+        val dirs = verList.map(base / dirStr(_)).filter(_.exists)
+        dirs.toSeq // most specific shadow less specific
+      },
+      // Compute sources
+      // Files in earlier src dirs shadow files in later dirs
+      Compile / sources := {
+        // Sources coming from the sources of Scala
+        val scalaSrcDir = fetchScalaSource.value
+
+        // All source directories (overrides shadow scalaSrcDir)
+        val sourceDirectories =
+          (Compile / unmanagedSourceDirectories).value :+ scalaSrcDir
+
+        // Filter sources with overrides
+        def normPath(f: File): String =
+          f.getPath.replace(java.io.File.separator, "/")
+
+        val sources = mutable.ListBuffer.empty[File]
+        val paths   = mutable.Set.empty[String]
+
+        val s = streams.value
+
+        for {
+          srcDir <- sourceDirectories
+          normSrcDir = normPath(srcDir)
+          src <- (srcDir ** "*.scala").get
+        } {
+          val normSrc = normPath(src)
+          val path    = normSrc.substring(normSrcDir.length)
+          val useless =
+            path.contains("/scala/collection/parallel/") ||
+              path.contains("/scala/util/parsing/")
+          if (!useless) {
+            if (paths.add(path))
+              sources += src
+            else
+              s.log.debug(s"not including $src")
+          }
         }
 
-        // Checkout proper ref. We do this anyway so we fail if
-        // something is wrong
-        val git = Git.open(trgDir)
-        s.log.info(s"Checking out Scala source version ${scalaVersion.value}")
-        git.checkout().setName(s"v${scalaVersion.value}").call()
-
-        IO.delete(file("scalalib/src/main/scala"))
-        IO.copyDirectory(trgDir / "src" / "library" / "scala",
-                         file("scalalib/src/main/scala/scala"))
-
-        val epoch :: major :: _ = scalaVersion.value.split("\\.").toList
-        IO.copyDirectory(file(s"scalalib/overrides-$epoch.$major/scala"),
-                         file("scalalib/src/main/scala/scala"),
-                         overwrite = true)
-
-        // Remove all java code, as it's not going to be available
-        // in the NIR anyway. This also resolves issues wrt overrides
-        // of code that was previously in Java but is in Scala now.
-        (file("scalalib/src/main/scala") ** "*.java").get.foreach(IO.delete)
+        sources.result()
       },
-      compile in Compile := (compile in Compile)
-        .dependsOn(assembleScalaLibrary)
-        .value,
       // Don't include classfiles for scalalib in the packaged jar.
-      mappings in packageBin in Compile := {
-        val previous = (mappings in packageBin in Compile).value
+      Compile / packageBin / mappings := {
+        val previous = (Compile / packageBin / mappings).value
         previous.filter {
           case (file, path) =>
             !path.endsWith(".class")
         }
       },
-      publishLocal := publishLocal
-        .dependsOn(assembleScalaLibrary, publishLocal in auxlib)
-        .value
+      exportJars := true
     )
-    .dependsOn(auxlib, nativelib, javalib)
+    .dependsOn(nscplugin % "plugin", auxlib, nativelib, javalib)
+
+// Shortcut for further Native projects to depend on all core libraries
+lazy val allCoreLibs: Project =
+  scalalib // scalalib transitively depends on all the other core libraries
 
 lazy val tests =
   project
     .in(file("unit-tests"))
-    .settings(projectSettings)
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(
+      scalacOptions -= "-deprecation",
+      scalacOptions += "-deprecation:false"
+    )
     .settings(noPublishSettings)
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
       // nativeLinkerReporter := LinkerReporter.toFile(
       //   target.value / "out.dot"),
-      libraryDependencies += "org.scala-native" %%% "test-interface" % nativeVersion,
-      testFrameworks += new TestFramework("tests.NativeFramework"),
-      envVars in (Test, test) ++= Map(
+      testFrameworks ++= Seq(
+        new TestFramework("tests.NativeFramework"),
+        new TestFramework("com.novocode.junit.JUnitFramework")
+      ),
+      Test / testOptions ++= Seq(
+        Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+      ),
+      Test / test / envVars ++= Map(
         "USER"                           -> "scala-native",
-        "HOME"                           -> baseDirectory.value.getAbsolutePath,
+        "HOME"                           -> System.getProperty("user.home"),
         "SCALA_NATIVE_ENV_WITH_EQUALS"   -> "1+1=2",
         "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
         "SCALA_NATIVE_ENV_WITH_UNICODE"  -> 0x2192.toChar.toString,
@@ -520,24 +574,27 @@ lazy val tests =
       ),
       nativeLinkStubs := true
     )
-    .enablePlugins(ScalaNativePlugin)
+    .dependsOn(nscplugin   % "plugin",
+               junitPlugin % "plugin",
+               allCoreLibs,
+               testInterface,
+               junitRuntime)
 
 lazy val sandbox =
   project
     .in(file("sandbox"))
-    .settings(projectSettings)
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(scalacOptions -= "-Xfatal-warnings")
     .settings(noPublishSettings)
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
-      scalaVersion := libScalaVersion
     )
-    .enablePlugins(ScalaNativePlugin)
+    .dependsOn(nscplugin % "plugin", allCoreLibs, testInterface % Test)
 
 lazy val testingCompilerInterface =
   project
     .in(file("testing-compiler-interface"))
-    .settings(libSettings)
     .settings(noPublishSettings)
     .settings(
       crossPaths := false,
@@ -548,66 +605,139 @@ lazy val testingCompilerInterface =
 lazy val testingCompiler =
   project
     .in(file("testing-compiler"))
-    .settings(libSettings)
     .settings(noPublishSettings)
     .settings(
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
-      )
+      ),
+      exportJars := true
     )
-    .dependsOn(testingCompilerInterface, nativelib)
+    .dependsOn(testingCompilerInterface)
+
+lazy val testInterfaceCommonSourcesSettings = Seq(
+  unmanagedSourceDirectories in Compile += baseDirectory.value.getParentFile / "test-interface-common/src/main/scala",
+  unmanagedSourceDirectories in Test += baseDirectory.value.getParentFile / "test-interface-common/src/test/scala"
+)
 
 lazy val testInterface =
   project
-    .settings(toolSettings)
-    .settings(scalaVersion := libScalaVersion)
-    .settings(mavenPublishSettings)
     .in(file("test-interface"))
-    .settings(
-      libraryDependencies += "org.scala-sbt"    % "test-interface"   % "1.0",
-      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in testInterfaceSerialization)
-        .value
-    )
-    .enablePlugins(ScalaNativePlugin)
-    .dependsOn(testInterfaceSerialization)
-
-lazy val testInterfaceSerialization =
-  project
-    .settings(toolSettings)
-    .settings(scalaVersion := libScalaVersion)
+    .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
-    .in(file("test-interface-serialization"))
-    .settings(
-      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in testInterfaceSbtDefs)
-        .value
-    )
-    .dependsOn(testInterfaceSbtDefs)
-    .enablePlugins(ScalaNativePlugin)
+    .settings(testInterfaceCommonSourcesSettings)
+    .dependsOn(nscplugin   % "plugin",
+               junitPlugin % "plugin",
+               allCoreLibs,
+               testInterfaceSbtDefs,
+               junitRuntime,
+               junitAsyncNative % "test")
 
 lazy val testInterfaceSbtDefs =
   project
-    .settings(toolSettings)
-    .settings(scalaVersion := libScalaVersion)
-    .settings(mavenPublishSettings)
     .in(file("test-interface-sbt-defs"))
-    .settings(
-      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
-    )
-    .enablePlugins(ScalaNativePlugin)
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(mavenPublishSettings)
+    .dependsOn(nscplugin % "plugin", allCoreLibs)
 
 lazy val testRunner =
   project
+    .in(file("test-runner"))
     .settings(toolSettings)
     .settings(mavenPublishSettings)
-    .in(file("test-runner"))
+    .settings(testInterfaceCommonSourcesSettings)
     .settings(
       crossScalaVersions := Seq(sbt10ScalaVersion),
-      libraryDependencies += "org.scala-sbt" % "test-interface" % "1.0",
-      sources in Compile ++= (sources in testInterfaceSerialization in Compile).value
+      libraryDependencies ++= Seq(
+        "org.scala-sbt" % "test-interface"  % "1.0",
+        "com.novocode"  % "junit-interface" % "0.11" % "test"
+      )
     )
-    .dependsOn(tools)
+    .dependsOn(tools, junitAsyncJVM % "test")
+
+// JUnit modules and settings ------------------------------------------------
+
+lazy val junitRuntime =
+  project
+    .in(file("junit-runtime"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(mavenPublishSettings)
+    .settings(nameSettings)
+    .dependsOn(
+      nscplugin % "plugin",
+      testInterfaceSbtDefs
+    )
+
+lazy val junitPlugin =
+  project
+    .in(file("junit-plugin"))
+    .settings(mavenPublishSettings)
+    .settings(
+      crossScalaVersions := libCrossScalaVersions,
+      crossVersion := CrossVersion.full,
+      libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+      exportJars := true
+    )
+
+val commonJUnitTestOutputsSettings = Def.settings(
+  nameSettings,
+  Compile / publishArtifact := false,
+  Test / parallelExecution := false,
+  Test / unmanagedSourceDirectories +=
+    baseDirectory.value.getParentFile / "shared/src/test/scala",
+  Test / testOptions ++= Seq(
+    Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v"),
+    Tests.Filter(_.endsWith("Assertions"))
+  ),
+  Test / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
+  Test / scalacOptions += "-deprecation:false"
+)
+
+lazy val junitTestOutputsNative =
+  project
+    .in(file("junit-test/output-native"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(
+      commonJUnitTestOutputsSettings,
+      Test / scalacOptions ++= {
+        val jar = (junitPlugin / Compile / packageBin).value
+        Seq(s"-Xplugin:$jar")
+      }
+    )
+    .dependsOn(
+      nscplugin        % "plugin",
+      junitRuntime     % "test",
+      junitAsyncNative % "test",
+      testInterface    % "test"
+    )
+
+lazy val junitTestOutputsJVM =
+  project
+    .in(file("junit-test/output-jvm"))
+    .settings(
+      commonJUnitTestOutputsSettings,
+      scalaVersion := sbt10ScalaVersion,
+      libraryDependencies ++= Seq(
+        "com.novocode" % "junit-interface" % "0.11" % "test"
+      )
+    )
+    .dependsOn(junitAsyncJVM % "test")
+
+lazy val junitAsyncNative =
+  project
+    .in(file("junit-async/native"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(
+      nameSettings,
+      Compile / publishArtifact := false
+    )
+    .dependsOn(nscplugin % "plugin", allCoreLibs)
+
+lazy val junitAsyncJVM =
+  project
+    .in(file("junit-async/jvm"))
+    .settings(
+      scalaVersion := sbt10ScalaVersion,
+      nameSettings,
+      publishArtifact := false
+    )

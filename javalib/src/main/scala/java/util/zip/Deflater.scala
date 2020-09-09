@@ -231,8 +231,8 @@ object Deflater {
       stream,
       level,
       zlib.Z_DEFLATED, // Only supported ZLIB method
-      wbits, // Window bits to use. 15 is fastest but consumes most memory
-      9, // Memory allocation for internal compression state. 9 uses the most.
+      wbits,           // Window bits to use. 15 is fastest but consumes most memory
+      9,               // Memory allocation for internal compression state. 9 uses the most.
       strategy
     )
     if (err != zlib.Z_OK) {

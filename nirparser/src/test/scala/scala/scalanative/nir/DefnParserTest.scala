@@ -3,8 +3,9 @@ package nir
 
 import fastparse.all.Parsed
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class DefnParserTest extends FunSuite {
+class DefnParserTest extends AnyFunSuite {
   val ty     = Type.Int
   val global = Global.Top("global")
 

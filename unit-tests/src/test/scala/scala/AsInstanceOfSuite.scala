@@ -20,7 +20,7 @@ object AsInstanceOfSuite extends tests.Suite {
   }
 
   test("null.asInstanceOf[Null]") {
-    assert(anyNull.asInstanceOf[Null] == null)
+    assert((anyNull.asInstanceOf[Null]: Any) == null)
   }
 
   test("null.asInstanceOf[Nothing]") {

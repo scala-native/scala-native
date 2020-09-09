@@ -11,6 +11,7 @@ import scalanative.io.{VirtualDirectory, withScratchBuffer}
 import scalanative.nir._
 import scalanative.nir.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.util.unreachable
+import scalanative.build.ScalaNative.dumpDefns
 
 object CodeGen {
 
@@ -23,7 +24,7 @@ object CodeGen {
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
     val lowered   = lower(generated)
-    nir.Show.dump(lowered, "lowered.hnir")
+    dumpDefns(config, "lowered", lowered)
     emit(config, lowered)
   }
 
@@ -36,9 +37,7 @@ object CodeGen {
           Lower(defns)
       }
       .seq
-      .foreach { defns =>
-        buf ++= defns
-      }
+      .foreach { defns => buf ++= defns }
 
     buf
   }
@@ -75,9 +74,9 @@ object CodeGen {
       }
 
       (config.mode, config.LTO) match {
-        case (build.Mode.Debug, _)           => separate()
-        case (_: build.Mode.Release, "none") => single()
-        case (_: build.Mode.Release, _)      => separate()
+        case (build.Mode.Debug, _)                   => separate()
+        case (_: build.Mode.Release, build.LTO.None) => single()
+        case (_: build.Mode.Release, _)              => separate()
       }
     }
 
@@ -86,13 +85,14 @@ object CodeGen {
                            defns: Seq[Defn])(implicit meta: Metadata) {
     import Impl._
 
-    var currentBlockName: Local = _
-    var currentBlockSplit: Int  = _
+    private var currentBlockName: Local = _
+    private var currentBlockSplit: Int  = _
 
-    val copies    = mutable.Map.empty[Local, Val]
-    val deps      = mutable.Set.empty[Global]
-    val generated = mutable.Set.empty[String]
-    val builder   = new ShowBuilder
+    private val copies           = mutable.Map.empty[Local, Val]
+    private val deps             = mutable.Set.empty[Global]
+    private val generated        = mutable.Set.empty[String]
+    private val externSigMembers = mutable.Map.empty[Sig, Global.Member]
+    private val builder          = new ShowBuilder
     import builder._
 
     def gen(): ByteBuffer = {
@@ -157,18 +157,12 @@ object CodeGen {
         }
       }
 
-      defns.foreach { defn =>
-        if (defn.isInstanceOf[Defn.Const]) onDefn(defn)
-      }
-      defns.foreach { defn =>
-        if (defn.isInstanceOf[Defn.Var]) onDefn(defn)
-      }
+      defns.foreach { defn => if (defn.isInstanceOf[Defn.Const]) onDefn(defn) }
+      defns.foreach { defn => if (defn.isInstanceOf[Defn.Var]) onDefn(defn) }
       defns.foreach { defn =>
         if (defn.isInstanceOf[Defn.Declare]) onDefn(defn)
       }
-      defns.foreach { defn =>
-        if (defn.isInstanceOf[Defn.Define]) onDefn(defn)
-      }
+      defns.foreach { defn => if (defn.isInstanceOf[Defn.Define]) onDefn(defn) }
     }
 
     def genPrelude(): Unit = {
@@ -275,12 +269,8 @@ object CodeGen {
         }
 
         val cfg = CFG(insts)
-        cfg.all.foreach { block =>
-          genBlock(block)(cfg, fresh)
-        }
-        cfg.all.foreach { block =>
-          genBlockLandingPads(block)(cfg, fresh)
-        }
+        cfg.all.foreach { block => genBlock(block)(cfg, fresh) }
+        cfg.all.foreach { block => genBlockLandingPads(block)(cfg, fresh) }
         newline()
 
         str("}")
@@ -346,9 +336,7 @@ object CodeGen {
       genBlockHeader()
       indent()
       genBlockPrologue(block)
-      rep(insts) { inst =>
-        genInst(inst)
-      }
+      rep(insts) { inst => genInst(inst) }
       unindent()
     }
 
@@ -485,8 +473,8 @@ object CodeGen {
         unsupported(ty)
     }
 
-    val constMap = mutable.Map.empty[Val, Global]
-    val constTy  = mutable.Map.empty[Global, Type]
+    private val constMap = mutable.Map.empty[Val, Global]
+    private val constTy  = mutable.Map.empty[Global, Type]
     def constFor(v: Val): Global =
       if (constMap.contains(v)) {
         constMap(v)
@@ -531,8 +519,8 @@ object CodeGen {
         str("[ ")
         rep(vs, sep = ", ")(genVal)
         str(" ]")
-      case Val.Chars(v) =>
-        genChars(v)
+      case v: Val.Chars =>
+        genChars(v.bytes)
       case Val.Local(n, ty) =>
         str("%")
         genLocal(n)
@@ -546,53 +534,18 @@ object CodeGen {
         unsupported(v)
     }
 
-    def genChars(value: String): Unit = {
-      // `value` should contain a content of a CString literal as is in its source file
-      // malformed literals are assumed absent
+    def genChars(bytes: Array[Byte]): Unit = {
       str("c\"")
-      @tailrec def loop(from: Int): Unit =
-        value.indexOf('\\', from) match {
-          case -1 => str(value.substring(from))
-          case idx =>
-            str(value.substring(from, idx))
-            import Character.isDigit
-            def isOct(c: Char): Boolean = isDigit(c) && c != '8' && c != '9'
-            def isHex(c: Char): Boolean =
-              isDigit(c) ||
-                c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
-                c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
-            value(idx + 1) match {
-              case c @ (''' | '"' | '?') => str(c); loop(idx + 2)
-              case '\\'                  => str("\\\\"); loop(idx + 2)
-              case 'a'                   => str("\\07"); loop(idx + 2)
-              case 'b'                   => str("\\08"); loop(idx + 2)
-              case 'f'                   => str("\\0C"); loop(idx + 2)
-              case 'n'                   => str("\\0A"); loop(idx + 2)
-              case 'r'                   => str("\\0D"); loop(idx + 2)
-              case 't'                   => str("\\09"); loop(idx + 2)
-              case 'v'                   => str("\\0B"); loop(idx + 2)
-              case d if isOct(d) =>
-                val oct = value.drop(idx + 1).take(3).takeWhile(isOct)
-                val hex =
-                  Integer.toHexString(Integer.parseInt(oct, 8)).toUpperCase
-                str {
-                  if (hex.length < 2) "\\0" + hex
-                  else "\\" + hex
-                }
-                loop(idx + 1 + oct.length)
-              case 'x' =>
-                val hex = value.drop(idx + 2).takeWhile(isHex).toUpperCase
-                str {
-                  if (hex.length < 2) "\\0" + hex
-                  else "\\" + hex
-                }
-                loop(idx + 2 + hex.length)
-              case unknown =>
-                // clang warns but allows unknown escape sequences, while java emits errors
-                str(unknown); loop(idx + 2)
-            }
-        }
-      loop(0)
+      bytes.foreach {
+        case '\\' => str("\\\\")
+        case c if c < 0x20 || c == '"' || c >= 0x7f =>
+          val hex = Integer.toHexString(c)
+          str {
+            if (hex.length < 2) "\\0" + hex
+            else "\\" + hex
+          }
+        case c => str(c.toChar)
+      }
       str("\\00\"")
     }
 
@@ -729,7 +682,22 @@ object CodeGen {
           ()
 
         case call: Op.Call =>
-          genCall(genBind, call, unwind)
+          /* When a call points to an extern method with same mangled Sig as some already defined call
+           * in another extern object we need to manually enforce getting into second case of `genCall`
+           * (when lookup(pointee) != call.ty). By replacing `call.ptr` with the ptr of that already
+           * defined call so we can enforce creating call bitcasts to the correct types.
+           * Because of the deduplication in `genDeps` and since mangling Sig.Extern is not based
+           * on function types, each extern method in deps is generated only once in IR file.
+           * In this case LLVM linking would otherwise result in call arguments type mismatch.
+           */
+          val callDef = call.ptr match {
+            case Val.Global(m @ Global.Member(_, sig), valty) if sig.isExtern =>
+              val glob = externSigMembers.getOrElseUpdate(sig, m)
+              if (glob == m) call
+              else call.copy(ptr = Val.Global(glob, valty))
+            case _ => call
+          }
+          genCall(genBind, callDef, unwind)
 
         case Op.Load(ty, ptr) =>
           val pointee = fresh()

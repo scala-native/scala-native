@@ -8,6 +8,6 @@ docker run -v $HOME/.ivy2:/home/scala-native/.ivy2 \
            -v $PWD:/home/scala-native/scala-native \
            -e SCALANATIVE_MODE=$SCALANATIVE_MODE \
            -e SCALANATIVE_GC=$SCALANATIVE_GC \
-           -e SBT_VERSION=$SBT_VERSION \
+           -e SCALANATIVE_OPTIMIZE=$SCALANATIVE_OPTIMIZE \
            -e TEST_COMMAND=$TEST_COMMAND \
            -it scala-native-testing:linux-$TARGET_DOCKER_PLATFORM;

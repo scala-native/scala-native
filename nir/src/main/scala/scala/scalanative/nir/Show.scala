@@ -1,8 +1,9 @@
 package scala.scalanative
 package nir
 
+import java.nio.charset.StandardCharsets
 import scala.collection.mutable
-import scalanative.util.{unreachable, ShowBuilder}
+import scalanative.util.{ShowBuilder, unreachable}
 
 object Show {
   def newBuilder: NirShowBuilder = new NirShowBuilder(new ShowBuilder)
@@ -458,9 +459,11 @@ object Show {
         str(" {")
         rep(values, sep = ", ")(val_)
         str("}")
-      case Val.Chars(v) =>
+      case v: Val.Chars =>
         str("c\"")
-        str(escapeNewLine(escapeQuotes(v)))
+        val stringValue =
+          new java.lang.String(v.bytes, StandardCharsets.ISO_8859_1)
+        str(escapeNewLine(escapeQuotes(stringValue)))
         str("\"")
       case Val.Local(name, ty) =>
         local_(name)
@@ -594,13 +597,19 @@ object Show {
       case Type.Var(ty) => str("var["); type_(ty); str("]")
       case Type.Unit    => str("unit")
       case Type.Array(ty, nullable) =>
-        if (!nullable) { str("?") }
+        if (!nullable) {
+          str("?")
+        }
         str("array[")
         type_(ty)
         str("]")
       case Type.Ref(name, exact, nullable) =>
-        if (exact) { str("!") }
-        if (!nullable) { str("?") }
+        if (exact) {
+          str("!")
+        }
+        if (!nullable) {
+          str("?")
+        }
         global_(name)
     }
 

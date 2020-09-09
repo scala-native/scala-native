@@ -190,9 +190,7 @@ class RE2 private {
   //
   // This is visible for testing.
   def replaceAll(src: String, repl: String): String =
-    replaceAllFunc(src, 2 * src.length() + 1) { orig =>
-      repl
-    }
+    replaceAllFunc(src, 2 * src.length() + 1) { orig => repl }
 
   // Returns a copy of {@code src} in which only the first match for this regexp
   // has been replaced by {@code repl}.  No support is provided for
@@ -201,9 +199,7 @@ class RE2 private {
   //
   // This is visible for testing.
   def replaceFirst(src: String, repl: String): String =
-    replaceAllFunc(src, 1) { orig =>
-      repl
-    }
+    replaceAllFunc(src, 1) { orig => repl }
 
   // Returns a copy of {@code src} in which at most {@code maxReplaces} matches
   // for this regexp have been replaced by the return value of of function
@@ -613,9 +609,7 @@ class RE2 private {
   // This is visible for testing.
   def findAllUTF8SubmatchIndex(b: Array[Byte], n: Int): List[Array[Int]] = {
     val result = new ArrayList[Array[Int]]()
-    allMatches(MachineInput.fromUTF8(b), n) { _match =>
-      result.add(_match)
-    }
+    allMatches(MachineInput.fromUTF8(b), n) { _match => result.add(_match) }
     if (result.isEmpty()) {
       return null
     }
@@ -659,9 +653,7 @@ class RE2 private {
   // This is visible for testing.
   def findAllSubmatchIndex(s: String, n: Int): List[Array[Int]] = {
     val result = new ArrayList[Array[Int]]()
-    allMatches(MachineInput.fromUTF16(s), n) { _match =>
-      result.add(_match)
-    }
+    allMatches(MachineInput.fromUTF16(s), n) { _match => result.add(_match) }
     if (result.isEmpty()) {
       return null
     }

@@ -60,9 +60,7 @@ object Stats {
   }
   private def printThreads(): Unit = {
     val threads = mutable.Set.empty[String]
-    times.keys.foreach { k =>
-      threads += k.split(":")(0)
-    }
+    times.keys.foreach { k => threads += k.split(":")(0) }
     threads.toSeq.sorted.foreach(printThread)
   }
   private def print(): Unit = synchronized {

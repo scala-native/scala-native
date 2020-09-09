@@ -23,7 +23,8 @@ trait MapSuite extends tests.Suite {
     assertEquals("two", mp.get("TWO"))
   }
 
-  test("should store integers") {
+  test("should store integers",
+       cond = !factory.isInstanceOf[IdentityMapSuiteFactory]) {
     val mp = factory.empty[Int, Int]
 
     mp.put(100, 12345)
@@ -32,7 +33,8 @@ trait MapSuite extends tests.Suite {
     assertEquals(12345, one)
   }
 
-  test("should store doubles also in corner cases") {
+  test("should store doubles also in corner cases",
+       cond = !factory.isInstanceOf[IdentityMapSuiteFactory]) {
     val mp = factory.empty[Double, Double]
 
     mp.put(1.2345, 11111.0)
@@ -82,7 +84,8 @@ trait MapSuite extends tests.Suite {
     assertNull(mp.get("ONE"))
   }
 
-  test("should remove stored elements on double corner cases") {
+  test("should remove stored elements on double corner cases",
+       cond = !factory.isInstanceOf[IdentityMapSuiteFactory]) {
     val mp = factory.empty[Double, String]
 
     mp.put(1.2345, "11111.0")

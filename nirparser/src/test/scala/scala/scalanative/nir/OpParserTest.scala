@@ -3,8 +3,9 @@ package nir
 
 import fastparse.all.Parsed
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class OpParserTest extends FunSuite {
+class OpParserTest extends AnyFunSuite {
   val ty     = Type.Int
   val global = Global.Top("foo")
   val local  = Val.Local(Local(0), ty)

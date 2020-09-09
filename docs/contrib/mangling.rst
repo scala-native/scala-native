@@ -54,4 +54,4 @@ that uses a notation inspired by
         j                              // scala.Long
 
     <name> ::=
-        <length number> <chars>        // raw identifier of given length
+        <length number> [-] <chars>    // raw identifier of given length; `-` separator is only used when <chars> starts with digit or `-` itself

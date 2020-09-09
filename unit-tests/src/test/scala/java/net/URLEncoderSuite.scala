@@ -36,27 +36,19 @@ object URLEncoderSuite extends tests.Suite {
   }
 
   test("characters 'a' through 'z' encode the same") {
-    Range('a', 'z') foreach { v =>
-      assertIsoEncoded(v.toChar.toString)
-    }
+    Range('a', 'z') foreach { v => assertIsoEncoded(v.toChar.toString) }
   }
 
   test("characters 'A' through 'Z' encode the same") {
-    Range('A', 'Z') foreach { v =>
-      assertIsoEncoded(v.toChar.toString)
-    }
+    Range('A', 'Z') foreach { v => assertIsoEncoded(v.toChar.toString) }
   }
 
   test("characters '0' through '9' encode the same") {
-    Range('0', '9') foreach { v =>
-      assertIsoEncoded(v.toChar.toString)
-    }
+    Range('0', '9') foreach { v => assertIsoEncoded(v.toChar.toString) }
   }
 
   test("special characters '.', '-', '*', and '_' encode the same") {
-    Seq('.', '-', '*', '_') foreach { v =>
-      assertIsoEncoded(v.toChar.toString)
-    }
+    Seq('.', '-', '*', '_') foreach { v => assertIsoEncoded(v.toChar.toString) }
   }
 
   test("space character is converted to a '+' character") {

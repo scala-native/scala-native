@@ -78,9 +78,7 @@ object FileHelpers {
     }
 
   def exists(path: String): Boolean =
-    Zone { implicit z =>
-      access(toCString(path), fcntl.F_OK) == 0
-    }
+    Zone { implicit z => access(toCString(path), fcntl.F_OK) == 0 }
   private def tempDir(): String = {
     val dir = getenv(c"TMPDIR")
     if (dir == null) {

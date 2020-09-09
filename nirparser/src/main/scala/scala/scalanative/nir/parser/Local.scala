@@ -9,7 +9,5 @@ object Local extends Base[nir.Local] {
   import Base._
 
   override val parser: P[nir.Local] =
-    P("%" ~ int map { id =>
-      nir.Local(id)
-    })
+    P("%" ~ int map { id => nir.Local(id) })
 }

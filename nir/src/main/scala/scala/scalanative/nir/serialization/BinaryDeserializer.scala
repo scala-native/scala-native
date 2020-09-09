@@ -3,26 +3,22 @@ package nir
 package serialization
 
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 import scala.collection.mutable
-import scalanative.nir.serialization.{Tags => T}
+import scala.scalanative.nir.serialization.{Tags => T}
+import scala.scalanative.util.StringUtils
 
 final class BinaryDeserializer(buffer: ByteBuffer) {
   import buffer._
 
-  private val header: Map[Global, Int] = {
+  private val (prelude, header): (Prelude, Map[Global, Int]) = {
     buffer.position(0)
 
-    val magic    = getInt
-    val compat   = getInt
-    val revision = getInt
-
-    assert(magic == Versions.magic, "Can't read non-NIR file.")
-    assert(compat == Versions.compat && revision <= Versions.revision,
-           "Can't read binary-incompatible version of NIR.")
+    val prelude = Prelude.readFrom(buffer)
 
     val pairs = getSeq((getGlobal, getInt))
     val map   = pairs.toMap
-    map
+    prelude -> map
   }
 
   final def globals: Set[Global] = header.keySet
@@ -45,11 +41,14 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   private def getInts(): Seq[Int] = getSeq(getInt)
 
-  private def getStrings(): Seq[String] = getSeq(getString)
-  private def getString(): String = {
+  private def getUTF8String(): String = {
+    new String(getBytes(), StandardCharsets.UTF_8)
+  }
+
+  private def getBytes(): Array[Byte] = {
     val arr = new Array[Byte](getInt)
     get(arr)
-    new String(arr, "UTF-8")
+    arr
   }
 
   private def getBool(): Boolean = get != 0
@@ -67,12 +66,12 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.UnOptAttr   => Attr.UnOpt
     case T.NoOptAttr   => Attr.NoOpt
     case T.DidOptAttr  => Attr.DidOpt
-    case T.BailOptAttr => Attr.BailOpt(getString)
+    case T.BailOptAttr => Attr.BailOpt(getUTF8String)
 
     case T.DynAttr      => Attr.Dyn
     case T.StubAttr     => Attr.Stub
     case T.ExternAttr   => Attr.Extern
-    case T.LinkAttr     => Attr.Link(getString)
+    case T.LinkAttr     => Attr.Link(getUTF8String)
     case T.AbstractAttr => Attr.Abstract
   }
 
@@ -175,13 +174,13 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.NoneGlobal =>
       Global.None
     case T.TopGlobal =>
-      Global.Top(getString)
+      Global.Top(getUTF8String)
     case T.MemberGlobal =>
-      Global.Member(Global.Top(getString), getSig)
+      Global.Member(Global.Top(getUTF8String), getSig)
   }
 
   private def getSig(): Sig =
-    new Sig(getString)
+    new Sig(getUTF8String)
 
   private def getLocal(): Local =
     Local(getLong)
@@ -270,13 +269,25 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.DoubleVal      => Val.Double(getDouble)
     case T.StructValueVal => Val.StructValue(getVals)
     case T.ArrayValueVal  => Val.ArrayValue(getType, getVals)
-    case T.CharsVal       => Val.Chars(getString)
-    case T.LocalVal       => Val.Local(getLocal, getType)
-    case T.GlobalVal      => Val.Global(getGlobal, getType)
+    case T.CharsVal =>
+      Val.Chars {
+        if (prelude.revision < 7)
+          StringUtils.processEscapes(getUTF8String)
+        else getBytes()
+      }
+    case T.LocalVal  => Val.Local(getLocal, getType)
+    case T.GlobalVal => Val.Global(getGlobal, getType)
 
-    case T.UnitVal    => Val.Unit
-    case T.ConstVal   => Val.Const(getVal)
-    case T.StringVal  => Val.String(getString)
+    case T.UnitVal  => Val.Unit
+    case T.ConstVal => Val.Const(getVal)
+    case T.StringVal =>
+      Val.String {
+        if (prelude.revision < 7) getUTF8String()
+        else {
+          val chars = Array.fill(getInt)(getChar)
+          new String(chars)
+        }
+      }
     case T.VirtualVal => Val.Virtual(getLong)
   }
 }

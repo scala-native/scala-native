@@ -183,9 +183,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       s.port = inet.ntohs(sa.sin6_port).toInt
     }
 
-    Zone { implicit z =>
-      s.address = InetAddress.getByName(fromCString(ipstr))
-    }
+    Zone { implicit z => s.address = InetAddress.getByName(fromCString(ipstr)) }
 
     s.fd = new FileDescriptor(newFd)
     s.localport = this.localport

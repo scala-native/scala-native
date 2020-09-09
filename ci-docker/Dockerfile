@@ -23,7 +23,7 @@ RUN sed -i -e "s/deb http/deb [arch=$HOST_ARCHITECTURE] http/g" /etc/apt/host-so
 RUN apt-get update && apt-get install -y openjdk-8-jdk-headless:$HOST_ARCHITECTURE
 ENV PATH "/usr/lib/jvm/java-8-openjdk-$HOST_ARCHITECTURE/bin:$PATH"
 
-ENV SBT_LAUNCHER_VERSION 1.3.3
+ENV SBT_LAUNCHER_VERSION 1.3.7
 
 RUN apt-get install -y curl
 
@@ -47,4 +47,4 @@ USER scala-native
 
 WORKDIR /home/scala-native/scala-native
 
-CMD sbt -no-colors -J-Xmx3G "^^ $SBT_VERSION" rebuild "set scriptedBufferLog in sbtScalaNative := false" "$TEST_COMMAND"
+CMD sbt -no-colors -J-Xmx3G "set scriptedBufferLog in sbtScalaNative := false" "$TEST_COMMAND"

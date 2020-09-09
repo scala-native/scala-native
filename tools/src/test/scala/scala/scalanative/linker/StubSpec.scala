@@ -13,10 +13,10 @@ class StubSpec extends LinkerSpec {
                            |  def stubMethod: Int = ???
                            |}""".stripMargin
   val stubClassSource  = """@scalanative.annotation.stub class StubClass
-                          |object Main {
-                          |  def main(args: Array[String]): Unit =
-                          |    new StubClass
-                          |}""".stripMargin
+                           |object Main {
+                           |  def main(args: Array[String]): Unit =
+                           |    new StubClass
+                           |}""".stripMargin
   val stubModuleSource = """@scalanative.annotation.stub object StubModule
                            |object Main {
                            |  def main(args: Array[String]): Unit =

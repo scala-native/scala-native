@@ -129,8 +129,9 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
   override def removeAll(c: Collection[_]): Boolean = {
     val iter    = c.iterator()
     var changed = false
-    while (iter.hasNext) changed =
-      inner.remove(Box(iter.next).asInstanceOf[Box[E]]) || changed
+    while (iter.hasNext)
+      changed =
+        inner.remove(Box(iter.next).asInstanceOf[Box[E]]) || changed
     changed
   }
 

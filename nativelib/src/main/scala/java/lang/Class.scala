@@ -1,6 +1,7 @@
 package java.lang
 
 import java.lang.reflect.{Field, Method}
+import scala.language.implicitConversions
 
 import scalanative.annotation._
 import scalanative.unsafe._

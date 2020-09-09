@@ -25,9 +25,7 @@ class HasTraitTables(meta: Metadata) {
 
   def markTraits(row: Array[Boolean], trt: Trait): Unit = {
     row(meta.ids(trt)) = true
-    trt.traits.foreach { right =>
-      row(meta.ids(right)) = true
-    }
+    trt.traits.foreach { right => row(meta.ids(right)) = true }
     trt.traits.foreach(markTraits(row, _))
   }
 

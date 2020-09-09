@@ -12,10 +12,13 @@ trait NirGenFile { self: NirGenPhase =>
   import global._
 
   def genPathFor(cunit: CompilationUnit, sym: Symbol): Path = {
+    val nir.Global.Top(id) = genTypeName(sym)
+    genPathFor(cunit, id)
+  }
+
+  def genPathFor(cunit: CompilationUnit, id: String): Path = {
     val baseDir: AbstractFile =
       settings.outputDirs.outputDirFor(cunit.source.file)
-
-    val nir.Global.Top(id) = genTypeName(sym)
 
     val pathParts = id.split("[./]")
     val dir       = (baseDir /: pathParts.init)(_.subdirectoryNamed(_))

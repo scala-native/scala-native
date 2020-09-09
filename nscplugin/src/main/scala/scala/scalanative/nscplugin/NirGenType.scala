@@ -1,16 +1,15 @@
 package scala.scalanative
 package nscplugin
 
-import util._
-
 trait NirGenType { self: NirGenPhase =>
+  import SimpleType.{fromSymbol, fromType}
   import global._
   import definitions._
   import nirAddons._
   import nirDefinitions._
-  import SimpleType.{fromType, fromSymbol}
 
-  final case class SimpleType(sym: Symbol, targs: Seq[SimpleType] = Seq.empty) {
+  sealed case class SimpleType(sym: Symbol,
+                               targs: Seq[SimpleType] = Seq.empty) {
     def isInterface: Boolean =
       sym.isInterface
 

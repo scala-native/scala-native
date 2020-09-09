@@ -39,6 +39,8 @@ sealed abstract class Op {
     case Op.Arrayload(ty, _, _)    => ty
     case Op.Arraystore(_, _, _, _) => Type.Unit
     case Op.Arraylength(_)         => Type.Int
+    case _ =>
+      throw new Exception(s"nir/Ops#resty ${this} not in set of expected Ops.")
   }
 
   final def show: String = nir.Show(this)

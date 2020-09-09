@@ -28,7 +28,8 @@ object Val extends Base[nir.Val] {
     P("arrayvalue" ~ Type.parser ~ "{" ~ Val.parser.rep(sep = ",") ~ "}" map {
       case (ty, values) => nir.Val.ArrayValue(ty, values)
     })
-  val Chars = P("c" ~ stringLit map (nir.Val.Chars(_)))
+  val Chars = P(
+    "c" ~ stringLit map (_.getBytes("UTF-8")) map (nir.Val.Chars(_)))
   val Local =
     P(nir.parser.Local.parser ~ ":" ~ Type.parser map {
       case (name, ty) => nir.Val.Local(name, ty)

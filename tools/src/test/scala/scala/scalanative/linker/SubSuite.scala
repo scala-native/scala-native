@@ -96,13 +96,9 @@ class SubSuite extends ReachabilitySuite {
     }
   }
 
-  referenceTypes.foreach { rty =>
-    testIs(Type.Null, rty)
-  }
+  referenceTypes.foreach { rty => testIs(Type.Null, rty) }
 
-  types.foreach { ty =>
-    testIs(Type.Nothing, ty)
-  }
+  types.foreach { ty => testIs(Type.Nothing, ty) }
 
   referenceTypes.foreach { rty =>
     testIs(rty, Type.Ref(Global.Top("java.lang.Object")))

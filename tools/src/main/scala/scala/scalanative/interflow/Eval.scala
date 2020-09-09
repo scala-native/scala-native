@@ -90,6 +90,8 @@ trait Eval { self: Interflow =>
             throw BailOut("try-catch")
           }
           return Inst.Unreachable(Next.None)
+        case _ =>
+          bailOut
       }
     }
 
@@ -118,9 +120,7 @@ trait Eval { self: Interflow =>
           val (dsig, dtarget) = emeth match {
             case Val.Global(name, _) =>
               visitDuplicate(name, argtys)
-                .map { defn =>
-                  (defn.ty, Val.Global(defn.name, Type.Ptr))
-                }
+                .map { defn => (defn.ty, Val.Global(defn.name, Type.Ptr)) }
                 .getOrElse {
                   visitRoot(name)
                   (sig, emeth)
@@ -870,9 +870,7 @@ trait Eval { self: Interflow =>
           } else {
             visitDuplicate(init, argumentTypes(init)).fold {
               false
-            } { defn =>
-              isPureModuleCtor(defn)
-            }
+            } { defn => isPureModuleCtor(defn) }
           }
         setModulePurity(clsName, isPure)
         isPure

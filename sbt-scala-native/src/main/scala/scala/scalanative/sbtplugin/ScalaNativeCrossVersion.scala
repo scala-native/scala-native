@@ -5,7 +5,6 @@ package sbtplugin
 
 import sbt._
 import scala.scalanative.nir.Versions
-import SBTCompat._
 
 object ScalaNativeCrossVersion {
   private final val ReleaseVersion =
@@ -16,6 +15,21 @@ object ScalaNativeCrossVersion {
   def binaryVersion(full: String): String = full match {
     case ReleaseVersion(major, minor, _) => s"$major.$minor"
     case _                               => full
+  }
+
+  private[this] def crossVersionAddPlatformPart(cross: CrossVersion,
+                                                part: String): CrossVersion = {
+    cross match {
+      // .Disabled reference https://github.com/sbt/librarymanagement/pull/316
+      case _: sbt.librarymanagement.Disabled =>
+        CrossVersion.constant(part)
+      case cross: sbt.librarymanagement.Constant =>
+        cross.withValue(part + "_" + cross.value)
+      case cross: CrossVersion.Binary =>
+        cross.withPrefix(part + "_" + cross.prefix)
+      case cross: CrossVersion.Full =>
+        cross.withPrefix(part + "_" + cross.prefix)
+    }
   }
 
   def scalaNativeMapped(cross: CrossVersion): CrossVersion =

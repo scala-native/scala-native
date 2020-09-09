@@ -3,7 +3,6 @@ package nir
 
 import java.lang.Float.floatToRawIntBits
 import java.lang.Double.doubleToRawLongBits
-import scala.annotation.tailrec
 
 sealed abstract class Val {
   final def ty: Type = this match {
@@ -51,17 +50,17 @@ sealed abstract class Val {
   }
 
   final def isZero: Boolean = this match {
-    case Val.Zero(_)    => true
-    case Val.False      => true
-    case Val.Char('\0') => true
-    case Val.Byte(0)    => true
-    case Val.Short(0)   => true
-    case Val.Int(0)     => true
-    case Val.Long(0L)   => true
-    case Val.Float(0F)  => true
-    case Val.Double(0D) => true
-    case Val.Null       => true
-    case _              => false
+    case Val.Zero(_)        => true
+    case Val.False          => true
+    case Val.Char('\u0000') => true
+    case Val.Byte(0)        => true
+    case Val.Short(0)       => true
+    case Val.Int(0)         => true
+    case Val.Long(0L)       => true
+    case Val.Float(0F)      => true
+    case Val.Double(0D)     => true
+    case Val.Null           => true
+    case _                  => false
   }
 
   final def isOne: Boolean = this match {
@@ -115,7 +114,7 @@ sealed abstract class Val {
     case Val.Zero(Type.Bool) =>
       Val.False
     case Val.Zero(Type.Char) =>
-      Val.Char('\0')
+      Val.Char('\u0000')
     case Val.Zero(Type.Byte) =>
       Val.Byte(0.toByte)
     case Val.Zero(Type.Short) =>
@@ -174,60 +173,9 @@ object Val {
   }
   final case class StructValue(values: Seq[Val])                  extends Val
   final case class ArrayValue(elemty: nir.Type, values: Seq[Val]) extends Val
-  final case class Chars(value: java.lang.String) extends Val {
-    lazy val byteCount: scala.Int = {
-      import Character.isDigit
-
-      def isOct(c: scala.Char): Boolean =
-        isDigit(c) && c != '8' && c != '9'
-      def isHex(c: scala.Char): Boolean =
-        isDigit(c) ||
-          c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
-          c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
-      def malformed() =
-        throw new IllegalArgumentException("malformed C string: " + value)
-
-      // Subtracts from the length of the bytes for each escape sequence
-      // uses String, not Seq[Byte], but should be okay since we handle ASCII only
-      val chars = value.toArray
-      var accum = chars.length + 1
-      var idx   = 0
-
-      while (idx < chars.length) {
-        if (chars(idx) == '\\') {
-          if (idx == chars.length - 1) {
-            malformed()
-          } else {
-            chars(idx + 1) match {
-              case d if isOct(d) =>
-                // octal ("\O", "\OO", "\OOO")
-                val digitNum =
-                  chars.drop(idx + 1).take(3).takeWhile(isOct).length
-                idx += digitNum
-                accum -= digitNum
-              case 'x' =>
-                // hexademical ("\xH", "\xHH")
-                val digitNum = chars.drop(idx + 2).takeWhile(isHex).length
-                // mimic clang, which reports compilation error against too many hex digits
-                if (digitNum >= 3) {
-                  malformed()
-                }
-                idx += digitNum + 1
-                accum -= digitNum + 1
-              // TODO: support unicode?
-              // case 'u' =>
-              // case 'U' =>
-              case _ =>
-                idx += 1
-                accum -= 1
-            }
-          }
-        }
-        idx += 1
-      }
-
-      accum
-    }
+  final case class Chars(value: Seq[scala.Byte]) extends Val {
+    lazy val byteCount: scala.Int     = value.length + 1
+    lazy val bytes: Array[scala.Byte] = value.toArray
   }
   final case class Local(name: nir.Local, valty: nir.Type)   extends Val
   final case class Global(name: nir.Global, valty: nir.Type) extends Val

@@ -1,10 +1,12 @@
 package java.lang
 
 import scalanative.unsafe._
-import scalanative.libc._
+import scalanative.libc
 
 import scalanative.runtime.ieee754tostring.ryu.{RyuRoundingMode, RyuDouble}
 import scalanative.runtime.Intrinsics
+
+import java.lang.IEEE754Helpers.parseIEEE754
 
 final class Double(val _value: scala.Double)
     extends Number
@@ -241,16 +243,7 @@ object Double {
     Math.min(a, b)
 
   def parseDouble(s: String): scala.Double =
-    Zone { implicit z =>
-      val cstr = toCString(s)
-      val end  = stackalloc[CString]
-
-      errno.errno = 0
-      val res = stdlib.strtod(cstr, end)
-
-      if (errno.errno == 0 && cstr != !end && string.strlen(!end) == 0) res
-      else throw new NumberFormatException(s)
-    }
+    parseIEEE754[scala.Double](s, libc.stdlib.strtod)
 
   @inline def sum(a: scala.Double, b: scala.Double): scala.Double =
     a + b

@@ -414,8 +414,8 @@ object Machine {
   // research.swtch.com/2008/03/using-uninitialized-memory-for-fun-and.html
   private class Queue(n: Int) {
     val dense: Array[Entry] = new Array[Entry](n) // may contain stale Entries in slots >= size
-    val sparse: Array[Int]  = new Array[Int](n) // may contain stale but in-bounds values.
-    var size: Int           = _ // of prefix of |dense| that is logically populated
+    val sparse: Array[Int]  = new Array[Int](n)   // may contain stale but in-bounds values.
+    var size: Int           = _                   // of prefix of |dense| that is logically populated
 
     def contains(pc: Int): Boolean = {
       val j = sparse(pc) // (non-negative)

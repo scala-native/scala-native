@@ -14,13 +14,17 @@ services:
 env:
   matrix:
     - MODE=source-checks
-    - MODE=test-tools SBT_VERSION=1.3.3
-    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=debug SCALANATIVE_GC=boehm SBT_VERSION=1.3.3 TEST_COMMAND="sbtScalaNative/scripted"
-    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=debug SCALANATIVE_GC=immix SBT_VERSION=1.3.3 TEST_COMMAND="sbtScalaNative/scripted"
-    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=debug SCALANATIVE_GC=commix SBT_VERSION=1.3.3 TEST_COMMAND="sbtScalaNative/scripted"
-    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_GC=boehm SBT_VERSION=1.3.3 TEST_COMMAND="sbtScalaNative/scripted"
-    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_GC=immix SBT_VERSION=1.3.3 TEST_COMMAND="sbtScalaNative/scripted"
-    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_GC=commix SBT_VERSION=1.3.3 TEST_COMMAND="sbtScalaNative/scripted"
+    - MODE=test-tools
+    # without the Interflow optimizer (only Immix GC)
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=debug SCALANATIVE_OPTIMIZE=false SCALANATIVE_GC=immix TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_OPTIMIZE=false SCALANATIVE_GC=immix TEST_COMMAND="test-runtime"
+    # with the Interflow optimizer
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=debug SCALANATIVE_OPTIMIZE=true SCALANATIVE_GC=boehm TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=debug SCALANATIVE_OPTIMIZE=true SCALANATIVE_GC=immix TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=debug SCALANATIVE_OPTIMIZE=true SCALANATIVE_GC=commix TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_OPTIMIZE=true SCALANATIVE_GC=boehm TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_OPTIMIZE=true SCALANATIVE_GC=immix TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_OPTIMIZE=true SCALANATIVE_GC=commix TEST_COMMAND="test-runtime"
 
   global:
     - MAVEN_REALM="Sonatype Nexus Repository Manager"
@@ -32,7 +36,7 @@ script:
   - java -version
   - if [ "$MODE" == "source-checks" ]; then ./scripts/source-checks; fi
   - if [ "$MODE" == "test-tools" ]; then
-      sbt "-no-colors" "-J-Xmx3G" "^^ $SBT_VERSION" nscplugin/publishLocal sbtScalaNative/publishLocal test-tools;
+      sbt "-no-colors" "-J-Xmx3G" test-tools;
     fi
   - if [ "$MODE" == "test-runtime" ]; then
       ./ci-docker/load-cached-images.sh

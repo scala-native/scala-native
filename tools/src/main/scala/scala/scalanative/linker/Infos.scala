@@ -68,9 +68,7 @@ final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])
 
     def add(cls: Class): Unit =
       if (cls.allocated) {
-        cls.resolve(sig).foreach { impl =>
-          out += impl
-        }
+        cls.resolve(sig).foreach { impl => out += impl }
       }
 
     implementors.foreach(add)
@@ -150,9 +148,7 @@ final class Class(val attrs: Attrs,
 
     def add(cls: Class): Unit =
       if (cls.allocated) {
-        cls.resolve(sig).foreach { impl =>
-          out += impl
-        }
+        cls.resolve(sig).foreach { impl => out += impl }
       }
 
     add(this)

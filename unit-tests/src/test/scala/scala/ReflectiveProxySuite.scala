@@ -2,6 +2,8 @@ package scala
 
 // Ported from ScalaJS
 
+import scala.language.reflectiveCalls
+
 object ReflectiveProxySuite extends tests.Suite {
 
   test("should allow subtyping in return types") {

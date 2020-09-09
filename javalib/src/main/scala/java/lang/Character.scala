@@ -1316,7 +1316,7 @@ object Character {
                            steps: Array[scala.Byte]): Int = {
     import CaseUtil._
     if (asciiLow <= codePoint && codePoint <= asciiHigh)
-      convert(codePoint, deltas(0)) // ascii
+      convert(codePoint, deltas(0))           // ascii
     else if (codePoint < lowFilter) codePoint // whitespace, punctuation, etc.
     else {
       val idx = Arrays.binarySearch(ranges, codePoint)
@@ -2070,9 +2070,7 @@ object Character {
         .get(blockName)
         .fold {
           throw new IllegalArgumentException()
-        } { value =>
-          value
-        }
+        } { value => value }
     }
 
     def of(c: scala.Char): UnicodeBlock = of(c.toInt)

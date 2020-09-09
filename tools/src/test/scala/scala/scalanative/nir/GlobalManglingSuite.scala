@@ -2,11 +2,16 @@ package scala.scalanative
 package nir
 
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class GlobalManglingSuite extends FunSuite {
+class GlobalManglingSuite extends AnyFunSuite {
   Seq(
     Global.Top("foo"),
     Global.Top("foo.bar.Baz"),
+    Global.Top("1"),
+    Global.Top("-1bar"),
+    Global.Member(Global.Top("1"), Sig.Field("2")),
+    Global.Member(Global.Top("-1bar"), Sig.Field("-2foo")),
     Global.Member(Global.Top("foo"), Sig.Field("field")),
     Global.Member(Global.Top("foo"), Sig.Ctor(Seq.empty)),
     Global.Member(Global.Top("foo"), Sig.Ctor(Seq(Type.Int))),

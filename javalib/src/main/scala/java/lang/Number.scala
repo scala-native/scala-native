@@ -14,7 +14,7 @@ abstract class Number extends java.lang._Object with java.io.Serializable {
     if (other.isInstanceOf[ScalaNumber] && !this.isInstanceOf[ScalaNumber]) {
       other.equals(this)
     } else {
-      super.__scala_==(other)
+      this.equals(other)
     }
   }
 }

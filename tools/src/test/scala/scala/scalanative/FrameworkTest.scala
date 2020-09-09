@@ -3,6 +3,7 @@ package scala.scalanative
 import nir.Global
 
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
 
 class FrameworkTest extends codegen.CodeGenSpec with Matchers {
 

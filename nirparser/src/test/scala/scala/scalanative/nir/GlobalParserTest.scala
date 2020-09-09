@@ -3,8 +3,9 @@ package nir
 
 import fastparse.all.Parsed
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class GlobalParserTest extends FunSuite {
+class GlobalParserTest extends AnyFunSuite {
 
   Seq[Global](
     Global.Top("java.lang.String"),

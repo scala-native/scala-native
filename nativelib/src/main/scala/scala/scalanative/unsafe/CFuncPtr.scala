@@ -1,52 +1,61 @@
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 1)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 1)
+
+// BEWARE: This file is generated - direct edits will be lost.
+// Do not edit this it directly other than to remove
+// personally identifiable information in sourceLocation lines.
+// All direct edits to this file will be lost the next time it
+// is generated.
+//
+// See nativelib runtime/Arrays.scala.gyb for details.
+
 package scala.scalanative
 package unsafe
 
 sealed trait CFuncPtr
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr0[R] extends CFuncPtr {
   def apply(): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr1[T1, R] extends CFuncPtr {
   def apply(arg1: T1): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr2[T1, T2, R] extends CFuncPtr {
   def apply(arg1: T1, arg2: T2): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr3[T1, T2, T3, R] extends CFuncPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr4[T1, T2, T3, T4, R] extends CFuncPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3, arg4: T4): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr5[T1, T2, T3, T4, T5, R] extends CFuncPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr6[T1, T2, T3, T4, T5, T6, R] extends CFuncPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5, arg6: T6): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R] extends CFuncPtr {
   def apply(arg1: T1,
@@ -58,7 +67,7 @@ trait CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R] extends CFuncPtr {
             arg7: T7): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] extends CFuncPtr {
   def apply(arg1: T1,
@@ -71,7 +80,7 @@ trait CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] extends CFuncPtr {
             arg8: T8): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] extends CFuncPtr {
   def apply(arg1: T1,
@@ -85,7 +94,7 @@ trait CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] extends CFuncPtr {
             arg9: T9): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] extends CFuncPtr {
   def apply(arg1: T1,
@@ -100,7 +109,7 @@ trait CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] extends CFuncPtr {
             arg10: T10): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]
     extends CFuncPtr {
@@ -117,7 +126,7 @@ trait CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]
             arg11: T11): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R]
     extends CFuncPtr {
@@ -135,7 +144,7 @@ trait CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R]
             arg12: T12): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R]
     extends CFuncPtr {
@@ -154,7 +163,7 @@ trait CFuncPtr13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R]
             arg13: T13): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R]
     extends CFuncPtr {
@@ -174,7 +183,7 @@ trait CFuncPtr14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R]
             arg14: T14): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr15[
     T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R]
@@ -196,7 +205,7 @@ trait CFuncPtr15[
             arg15: T15): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
 trait CFuncPtr16[
     T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, R]
@@ -219,26 +228,27 @@ trait CFuncPtr16[
             arg16: T16): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
-trait CFuncPtr17[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 R]
+trait CFuncPtr17[
+    T1,
+    T2,
+    T3,
+    T4,
+    T5,
+    T6,
+    T7,
+    T8,
+    T9,
+    T10,
+    T11,
+    T12,
+    T13,
+    T14,
+    T15,
+    T16,
+    T17,
+    R]
     extends CFuncPtr {
   def apply(arg1: T1,
             arg2: T2,
@@ -259,27 +269,28 @@ trait CFuncPtr17[T1,
             arg17: T17): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
-trait CFuncPtr18[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 T18,
-                 R]
+trait CFuncPtr18[
+    T1,
+    T2,
+    T3,
+    T4,
+    T5,
+    T6,
+    T7,
+    T8,
+    T9,
+    T10,
+    T11,
+    T12,
+    T13,
+    T14,
+    T15,
+    T16,
+    T17,
+    T18,
+    R]
     extends CFuncPtr {
   def apply(arg1: T1,
             arg2: T2,
@@ -301,28 +312,29 @@ trait CFuncPtr18[T1,
             arg18: T18): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
-trait CFuncPtr19[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 T18,
-                 T19,
-                 R]
+trait CFuncPtr19[
+    T1,
+    T2,
+    T3,
+    T4,
+    T5,
+    T6,
+    T7,
+    T8,
+    T9,
+    T10,
+    T11,
+    T12,
+    T13,
+    T14,
+    T15,
+    T16,
+    T17,
+    T18,
+    T19,
+    R]
     extends CFuncPtr {
   def apply(arg1: T1,
             arg2: T2,
@@ -345,29 +357,30 @@ trait CFuncPtr19[T1,
             arg19: T19): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
-trait CFuncPtr20[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 T18,
-                 T19,
-                 T20,
-                 R]
+trait CFuncPtr20[
+    T1,
+    T2,
+    T3,
+    T4,
+    T5,
+    T6,
+    T7,
+    T8,
+    T9,
+    T10,
+    T11,
+    T12,
+    T13,
+    T14,
+    T15,
+    T16,
+    T17,
+    T18,
+    T19,
+    T20,
+    R]
     extends CFuncPtr {
   def apply(arg1: T1,
             arg2: T2,
@@ -391,30 +404,31 @@ trait CFuncPtr20[T1,
             arg20: T20): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
-trait CFuncPtr21[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 T18,
-                 T19,
-                 T20,
-                 T21,
-                 R]
+trait CFuncPtr21[
+    T1,
+    T2,
+    T3,
+    T4,
+    T5,
+    T6,
+    T7,
+    T8,
+    T9,
+    T10,
+    T11,
+    T12,
+    T13,
+    T14,
+    T15,
+    T16,
+    T17,
+    T18,
+    T19,
+    T20,
+    T21,
+    R]
     extends CFuncPtr {
   def apply(arg1: T1,
             arg2: T2,
@@ -439,31 +453,32 @@ trait CFuncPtr21[T1,
             arg21: T21): R
 }
 
-// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/unsafe.CFuncPtr.scala.gyb", line: 8)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 17)
 
-trait CFuncPtr22[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 T18,
-                 T19,
-                 T20,
-                 T21,
-                 T22,
-                 R]
+trait CFuncPtr22[
+    T1,
+    T2,
+    T3,
+    T4,
+    T5,
+    T6,
+    T7,
+    T8,
+    T9,
+    T10,
+    T11,
+    T12,
+    T13,
+    T14,
+    T15,
+    T16,
+    T17,
+    T18,
+    T19,
+    T20,
+    T21,
+    T22,
+    R]
     extends CFuncPtr {
   def apply(arg1: T1,
             arg2: T2,

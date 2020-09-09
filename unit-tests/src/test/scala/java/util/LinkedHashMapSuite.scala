@@ -148,10 +148,10 @@ abstract class LinkedHashMapSuite extends MapSuite {
       if (accessOrder) {
         // elements ordered by insertion order except for those accessed
         if (withSizeLimit.isEmpty) {
-          if (index < 5) index // no elements removed in this range
+          if (index < 5) index               // no elements removed in this range
           else if (index + 1 < 42) index + 1 // shifted by 1 removed element
           else if (index + 2 < 52) index + 2 // shifted by 2 removed element
-          else if (index < 97) index + 3 // shifted by 3 removed element
+          else if (index < 97) index + 3     // shifted by 3 removed element
           // elements reordered by accesses
           else if (index == 97) 42
           else if (index == 98) 52
@@ -159,7 +159,7 @@ abstract class LinkedHashMapSuite extends MapSuite {
         } else {
           // note that 5 and 42 are not accessed because they where dropped
           // due to the size limit
-          if (index < 2) index + 50 // no elements removed in this range
+          if (index < 2) index + 50       // no elements removed in this range
           else if (index < 49) index + 51 // shifted by 1 removed element
           // element reordered by accesses
           else 52

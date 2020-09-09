@@ -1,6 +1,7 @@
 package scala.scalanative
 package unsafe
 
+import scala.language.implicitConversions
 import scala.runtime.BoxesRunTime._
 import scala.reflect.ClassTag
 import scalanative.annotation.alwaysinline

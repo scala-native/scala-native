@@ -112,7 +112,11 @@ object FileOutputStreamSuite extends tests.Suite {
       // prepares a non-empty file
       locally {
         val fos = new FileOutputStream(nonEmpty)
-        try { fos.write(0x20) } finally { fos.close() }
+        try {
+          fos.write(0x20)
+        } finally {
+          fos.close()
+        }
       }
       // re-opens the file with append=false so that it is truncated
       locally {
@@ -140,7 +144,11 @@ object FileOutputStreamSuite extends tests.Suite {
       // prepares a non-empty file
       locally {
         val fos = new FileOutputStream(nonEmpty)
-        try { fos.write(written) } finally { fos.close() }
+        try {
+          fos.write(written)
+        } finally {
+          fos.close()
+        }
       }
       // re-opens the file with append=true
       locally {

@@ -3,8 +3,9 @@ package nir
 
 import fastparse.all.Parsed
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class CompParserTest extends FunSuite {
+class CompParserTest extends AnyFunSuite {
   import Comp._
 
   Seq[Comp](Ieq,

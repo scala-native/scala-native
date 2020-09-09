@@ -8,6 +8,7 @@ _build/
 scripts/.coursier
 scripts/.scalafmt*
 sbt-crossproject/
+local.sbt
 
 CMakeLists.txt
 cmake-build-debug/
@@ -19,3 +20,11 @@ bin/
 .settings/
 .externalToolBuilders/
 .cache*
+
+# metals
+/.bloop/
+/.metals/
+/project/metals.sbt
+
+# vscode
+/.vscode/
