@@ -71,8 +71,8 @@ class Properties(protected val defaults: Properties)
   }
 
   private def format(entry: ju.Map.Entry[AnyRef, AnyRef]): String = {
-    val key: String   = entry.getKey.asInstanceOf[String]
-    val value: String = entry.getValue.asInstanceOf[String]
+    val key: String   = entry.getKey().asInstanceOf[String]
+    val value: String = entry.getValue().asInstanceOf[String]
     if (key.length > 40)
       s"${key.substring(0, 37)}...=$value"
     else
@@ -112,10 +112,12 @@ class Properties(protected val defaults: Properties)
 
     entrySet().scalaOps.foreach { entry =>
       writer.write(
-        encodeString(entry.getKey.asInstanceOf[String], isKey = true, toHex))
+        encodeString(entry.getKey().asInstanceOf[String], isKey = true, toHex))
       writer.write('=')
       writer.write(
-        encodeString(entry.getValue.asInstanceOf[String], isKey = false, toHex))
+        encodeString(entry.getValue().asInstanceOf[String],
+                     isKey = false,
+                     toHex))
       writer.write(System.lineSeparator)
     }
     writer.flush()
@@ -181,7 +183,7 @@ class Properties(protected val defaults: Properties)
       def oddBackslash(): Boolean = {
         val m = trailingBackspace.matcher(line)
         if (m.find()) {
-          val num   = m.end(1) - m.start
+          val num   = m.end(1) - m.start()
           val isOdd = num % 2 != 0
           isOdd
         } else {
