@@ -24,7 +24,7 @@ bin/
 # metals
 /.bloop/
 /.metals/
-/project/metals.sbt
+/project/**/metals.sbt
 
 # vscode
 /.vscode/
