@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets
 
 import scala.annotation.switch
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 
 import ScalaOps._
 
@@ -84,12 +83,12 @@ class Properties(protected val defaults: Properties)
 
   def list(out: PrintStream): Unit = {
     out.println(listStr)
-    entrySet().asScala.foreach { entry => out.println(format(entry)) }
+    entrySet().scalaOps.foreach { entry => out.println(format(entry)) }
   }
 
   def list(out: PrintWriter): Unit = {
     out.println(listStr)
-    entrySet().asScala.foreach { entry => out.println(format(entry)) }
+    entrySet().scalaOps.foreach { entry => out.println(format(entry)) }
   }
 
   def store(out: OutputStream, comments: String): Unit = {
@@ -111,7 +110,7 @@ class Properties(protected val defaults: Properties)
     writer.write(new Date().toString)
     writer.write(System.lineSeparator)
 
-    entrySet().asScala.foreach { entry =>
+    entrySet().scalaOps.foreach { entry =>
       writer.write(
         encodeString(entry.getKey.asInstanceOf[String], isKey = true, toHex))
       writer.write('=')
