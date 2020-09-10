@@ -208,11 +208,14 @@ class PropertiesTest {
       """.stripMargin
     assertResult(prop1, result1)
 
+    // Undocumented feature
+    // https://bugs.java.com/bugdatabase/view_bug.do?bug_id=5089823
+    // https://bugs.java.com/bugdatabase/view_bug.do?bug_id=4622226
     val prop2 = new Properties()
-    prop2.put("p0000000000111111111122222222223333333333", "40")
+    prop2.put("k40", "v0000000001111111111222222222233333333334")
     val result2 =
       """-- listing properties --
-        |p000000000011111111112222222222333333...=40
+        |k40=v000000000111111111122222222223333333...
       """.stripMargin
     assertResult(prop2, result2)
   }
