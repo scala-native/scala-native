@@ -63,7 +63,7 @@ final class _Class[A](val rawty: RawPtr) {
     is(obj.getClass.asInstanceOf[_Class[_]].ty, ty)
 
   @alwaysinline private def is(cls: Class[_]): Boolean = {
-    Intrinsics.castObjectToRawPtr(this) == Intrinsics.castObjectToRawPtr(cls)
+    rawty == toRawType(cls)
   }
 
   private def is(left: Ptr[Type], right: Ptr[Type]): Boolean =
