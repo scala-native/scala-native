@@ -218,6 +218,14 @@ class PropertiesTest {
         |k40=v000000000111111111122222222223333333...
       """.stripMargin
     assertResult(prop2, result2)
+
+    val prop3 = new Properties()
+    prop3.put("k0000000001111111111222222222233333333334", "v40")
+    val result3 =
+      """-- listing properties --
+        |k0000000001111111111222222222233333333334=v40
+      """.stripMargin
+    assertResult(prop3, result3)
   }
 
   private val dummyProps =

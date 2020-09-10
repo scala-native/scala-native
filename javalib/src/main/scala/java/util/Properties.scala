@@ -71,12 +71,13 @@ class Properties(protected val defaults: Properties)
   }
 
   private def format(entry: ju.Map.Entry[AnyRef, AnyRef]): String = {
+    def format(s: String): String =
+      if (s.length > 40) s"${s.substring(0, 37)}..." else s
+
     val key: String   = entry.getKey().asInstanceOf[String]
     val value: String = entry.getValue().asInstanceOf[String]
-    if (value.length > 40)
-      s"${key}=${value.substring(0, 37)}..."
-    else
-      s"$key=$value"
+
+    s"${key}=${format(value)}"
   }
 
   private final val listStr = "-- listing properties --"
