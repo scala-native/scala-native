@@ -19,6 +19,7 @@ typedef struct {
         int32_t id;
         int32_t tid;
         word_t *name;
+        word_t *cls;
     } rt;
     int32_t size;
     int32_t idRangeUntil;
