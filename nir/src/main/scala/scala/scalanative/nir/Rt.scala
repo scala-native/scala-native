@@ -7,7 +7,7 @@ object Rt {
   val Object  = Ref(Global.Top("java.lang.Object"))
   val Class   = Ref(Global.Top("java.lang.Class"))
   val String  = Ref(Global.Top("java.lang.String"))
-  val Type    = StructValue(Seq(Int, Int, Ptr))
+  val Type    = StructValue(Seq(Int, Int, Ptr, Ptr))
   val Runtime = Ref(Global.Top("scala.scalanative.runtime.package$"))
 
   val BoxedPtr        = Ref(Global.Top("scala.scalanative.unsafe.Ptr"))
@@ -17,6 +17,7 @@ object Rt {
 
   val GetRawTypeSig    = Sig.Method("getRawType", Seq(Rt.Object, Ptr)).mangled
   val JavaEqualsSig    = Sig.Method("equals", Seq(Object, Bool)).mangled
+  val JavaGetClassSig  = Sig.Method("getClass", Seq(Class)).mangled
   val JavaHashCodeSig  = Sig.Method("hashCode", Seq(Int)).mangled
   val ScalaEqualsSig   = Sig.Method("scala_==", Seq(Object, Bool)).mangled
   val ScalaHashCodeSig = Sig.Method("scala_##", Seq(Int)).mangled

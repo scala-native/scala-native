@@ -42,6 +42,7 @@ object Lower {
 
     private val fresh         = new util.ScopedVar[Fresh]
     private val unwindHandler = new util.ScopedVar[Option[Local]]
+    private val currBuffer    = new ScopedVar[nir.Buffer]
 
     private val unreachableSlowPath    = mutable.Map.empty[Option[Local], Local]
     private val nullPointerSlowPath    = mutable.Map.empty[Option[Local], Local]
@@ -115,7 +116,8 @@ object Lower {
       insts.tail.foreach {
         case inst @ Inst.Let(n, op, unwind) =>
           ScopedVar.scoped(
-            unwindHandler := newUnwindHandler(unwind)(inst.pos)
+            unwindHandler := newUnwindHandler(unwind)(inst.pos),
+            currBuffer := buf
           ) {
             genLet(buf, n, op)(inst.pos)
           }
@@ -155,12 +157,29 @@ object Lower {
 
       buf ++= handlers
 
-      eliminateDeadCode(buf.toSeq.map(super.onInst))
+      eliminateDeadCode {
+        val loweredBuf = new Buffer()(fresh)
+        ScopedVar.scoped(
+          currBuffer := loweredBuf
+        ) {
+          buf.toSeq.foreach { inst => loweredBuf += super.onInst(inst) }
+
+          loweredBuf.toSeq
+        }
+      }
+    }
+
+    def genClassOf(node: ScopeInfo): Val = {
+      val buf    = currBuffer.get
+      val tpePtr = Val.Const(rtti(node).const)
+      buf.call(JavaGetClassSig, JavaGetClass, Seq(tpePtr), Next.None)
     }
 
     override def onVal(value: Val): Val = value match {
       case Val.Global(ScopeRef(node), _) =>
-        Val.Global(rtti(node).name, Type.Ptr)
+        rtti(node).const
+      case Val.ClassOf(ScopeRef(node)) =>
+        genClassOf(node)
       case Val.String(v) =>
         genStringVal(v)
       case Val.Unit =>
@@ -347,6 +366,7 @@ object Lower {
           ()
 
         case _ =>
+          import buf._
           import buf._
           val notNullL = fresh()
           val isNullL =
@@ -597,7 +617,7 @@ object Lower {
 
           label(checkIfIsInstanceOfL)
           val isInstanceOf = genIsOp(buf, ty, v)
-          val toTy         = Val.Global(rtti(linked.infos(ty.className)).name, Type.Ptr)
+          val toTy         = rtti(linked.infos(ty.className)).const
           branch(isInstanceOf, Next(castL), Next.Label(failL, Seq(v, toTy)))
 
           label(castL)
@@ -1062,6 +1082,10 @@ object Lower {
   val throwName = extern("scalanative_throw")
   val throwSig  = Type.Function(Seq(Type.Ptr), Type.Nothing)
   val throw_    = Val.Global(throwName, Type.Ptr)
+
+  val JavaGetClassName = Rt.Object.name.member(Rt.JavaGetClassSig)
+  val JavaGetClassSig  = Type.Function(Seq(Type.Ptr), Rt.Class)
+  val JavaGetClass     = Val.Global(JavaGetClassName, Type.Ptr)
 
   val arrayAlloc = Type.typeToArray.map {
     case (ty, arrname) =>

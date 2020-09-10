@@ -9,7 +9,7 @@ import scalanative.runtime.LLVMIntrinsics._
 package object runtime {
 
   /** Runtime Type Information. */
-  type Type = CStruct2[Int, String]
+  type Type = CStruct3[Int, String, Class[Any]]
 
   implicit class TypeOps(val self: Ptr[Type]) extends AnyVal {
     @alwaysinline def id: Int          = self._1

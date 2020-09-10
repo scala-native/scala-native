@@ -474,7 +474,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           genLiteralValue(lit)
 
         case ClazzTag =>
-          genBoxClass(genTypeValue(value.typeValue))
+          genTypeValue(value.typeValue)
 
         case EnumTag =>
           genStaticMember(value.symbolValue)
@@ -1035,19 +1035,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           "Unknown primitive operation: " + sym.fullName + "(" +
             fun.symbol.simpleName + ") " + " at: " + (app.pos))
       }
-    }
-
-    lazy val jlClassName     = nir.Global.Top("java.lang.Class")
-    lazy val jlClass         = nir.Type.Ref(jlClassName)
-    lazy val jlClassCtorName = jlClassName.member(nir.Sig.Ctor(Seq(nir.Type.Ptr)))
-    lazy val jlClassCtorSig =
-      nir.Type.Function(Seq(jlClass, Type.Ptr), nir.Type.Unit)
-    lazy val jlClassCtor = nir.Val.Global(jlClassCtorName, nir.Type.Ptr)
-
-    def genBoxClass(typeVal: Val)(implicit pos: nir.Position): Val = {
-      val alloc = buf.classalloc(jlClassName, unwind)
-      buf.call(jlClassCtorSig, jlClassCtor, Seq(alloc, typeVal), unwind)
-      alloc
     }
 
     def numOfType(num: Int, ty: nir.Type): Val = ty match {

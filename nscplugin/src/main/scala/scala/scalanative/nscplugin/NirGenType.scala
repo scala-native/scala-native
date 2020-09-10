@@ -119,7 +119,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       case _ if st.sym == ArrayClass =>
         genTypeValue(RuntimeArrayClass(genPrimCode(st.targs.head)))
       case 'O' =>
-        nir.Val.Global(genTypeName(st.sym), nir.Type.Ptr)
+        nir.Val.ClassOf(genTypeName(st.sym))
       case code =>
         genTypeValue(RuntimePrimitive(code))
     }

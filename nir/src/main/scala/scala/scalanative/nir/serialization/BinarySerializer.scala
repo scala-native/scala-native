@@ -520,7 +520,8 @@ final class BinarySerializer {
       putInt(T.StringVal)
       putInt(v.length)
       v.foreach(putChar(_))
-    case Val.Virtual(v) => putInt(T.VirtualVal); putLong(v)
+    case Val.Virtual(v)   => putInt(T.VirtualVal); putLong(v)
+    case Val.ClassOf(cls) => putInt(T.ClassOfVal); putGlobal(cls)
   }
 
   // Ported from Scala.js

@@ -19,6 +19,7 @@ object rtti {
 }
 import rtti._
 
+/** @param rawty - Pointer with underlying Rt.Type info */
 final class _Class[A](val rawty: RawPtr) {
   @alwaysinline private def ty: Ptr[Type] =
     fromRawPtr[Type](rawty)

@@ -16,8 +16,16 @@ class _Object {
   @inline def __toString(): String =
     getClass.getName + "@" + Integer.toHexString(hashCode)
 
-  @inline def __getClass(): _Class[_] =
-    new _Class(getRawType(this))
+  @inline def __getClass(): _Class[_] = {
+    val self       = getRawType(this)
+    val clsPtr     = elemRawPtr(self, 16)
+    val maybeClass = loadRawPtr(clsPtr)
+    if (maybeClass == null) {
+      val newClass = new _Class[Any](self)
+      storeObject(clsPtr, newClass)
+      newClass
+    } else castRawPtrToObject(maybeClass).asInstanceOf[_Class[Any]]
+  }
 
   @inline def __notify(): Unit =
     getMonitor(this)._notify()

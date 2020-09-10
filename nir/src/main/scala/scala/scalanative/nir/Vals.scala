@@ -27,6 +27,7 @@ sealed abstract class Val {
     case Val.String(_) =>
       Type.Ref(Rt.String.name, exact = true, nullable = false)
     case Val.Virtual(_) => Type.Virtual
+    case Val.ClassOf(n) => Rt.Class
   }
 
   final def show: String = nir.Show(this)
@@ -185,4 +186,5 @@ object Val {
   final case class Const(value: Val)               extends Val
   final case class String(value: java.lang.String) extends Val
   final case class Virtual(key: scala.Long)        extends Val
+  final case class ClassOf(name: nir.Global)       extends Val
 }
