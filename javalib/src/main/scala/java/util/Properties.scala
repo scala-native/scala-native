@@ -124,7 +124,7 @@ class Properties(protected val defaults: Properties)
     writer.flush()
   }
 
-  @deprecated("", "")
+  @Deprecated
   def save(out: OutputStream, comments: String): Unit =
     store(out, comments)
 
