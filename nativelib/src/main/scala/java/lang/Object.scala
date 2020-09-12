@@ -17,14 +17,13 @@ class _Object {
     getClass.getName + "@" + Integer.toHexString(hashCode)
 
   @inline def __getClass(): _Class[_] = {
-    val self       = getRawType(this)
-    val clsPtr     = elemRawPtr(self, 16)
-    val maybeClass = loadRawPtr(clsPtr)
-    if (maybeClass == null) {
+    val self   = getRawType(this)
+    val clsPtr = elemRawPtr(self, 16)
+    if (loadRawPtr(clsPtr) == null) {
       val newClass = new _Class[Any](self)
       storeObject(clsPtr, newClass)
-      newClass
-    } else castRawPtrToObject(maybeClass).asInstanceOf[_Class[Any]]
+    }
+    loadObject(clsPtr).asInstanceOf[_Class[_]]
   }
 
   @inline def __notify(): Unit =
