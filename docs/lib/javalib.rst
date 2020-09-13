@@ -538,6 +538,7 @@ Here is the list of currently available classes:
 * ``java.util.MissingFormatArgumentException``
 * ``java.util.MissingFormatWidthException``
 * ``java.util.MissingResourceException``
+* ``java.util.NavigableMap``
 * ``java.util.NavigableSet``
 * ``java.util.NavigableView``
 * ``java.util.NoSuchElementException``
