@@ -294,16 +294,20 @@ class Properties(protected val defaults: Properties)
       val ch = chars(index)
       if (ch <= 0xff) {
         if (ch == '\r' || ch == '\n') {
-          // "\r\n"
-          if (ch == '\r'
-              && index + 1 < chars.length
-              && chars(index + 1) == '\n') {
+          def isCrlf =
+            ch == '\r' && index + 1 < chars.length && chars(index + 1) == '\n'
+
+          if (isCrlf) {
             index += 1
           }
           writer.write(System.lineSeparator)
-          // add '#' if next char doesn't start with a comment
-          if (index + 1 < chars.length
-              && (chars(index + 1) != '#' && chars(index + 1) != '!')) {
+
+          def noExplicitComment = {
+            index + 1 < chars.length &&
+            (chars(index + 1) != '#' && chars(index + 1) != '!')
+          }
+
+          if (noExplicitComment) {
             writer.write('#')
           }
         } else {
