@@ -22,8 +22,18 @@ class _Object {
     if (loadRawPtr(clsPtr) == null) {
       val newClass = new _Class[Any](self)
       storeObject(clsPtr, newClass)
+      newClass
+    } else {
+      loadObject(clsPtr) match {
+        case cls: _Class[_] => cls
+        case _              =>
+          // There are some cases when clsPtr does not contain instance of j.l.Class
+          // Until this issue is resolved we're overriding it's value with new instance of Class
+          storeObject(clsPtr, null)
+          __getClass()
+
+      }
     }
-    loadObject(clsPtr).asInstanceOf[_Class[_]]
   }
 
   @inline def __notify(): Unit =
