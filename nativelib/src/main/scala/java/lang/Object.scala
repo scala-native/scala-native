@@ -17,22 +17,15 @@ class _Object {
     getClass.getName + "@" + Integer.toHexString(hashCode)
 
   @inline def __getClass(): _Class[_] = {
-    val self   = getRawType(this)
-    val clsPtr = elemRawPtr(self, 16)
-    if (loadRawPtr(clsPtr) == null) {
-      val newClass = new _Class[Any](self)
-      storeObject(clsPtr, newClass)
-      newClass
-    } else {
-      loadObject(clsPtr) match {
-        case cls: _Class[_] => cls
-        case _              =>
-          // There are some cases when clsPtr does not contain instance of j.l.Class
-          // Until this issue is resolved we're overriding it's value with new instance of Class
-          storeObject(clsPtr, null)
-          __getClass()
+    val rtti   = getRawType(this)
+    val clsPtr = elemRawPtr(rtti, 16)
 
-      }
+    if (loadRawPtr(clsPtr) == null) {
+      val newClass = new _Class[Any](rtti)
+      storeObject(clsPtr, newClass)
+      ClassInstancesRegistry.add(newClass)
+    } else {
+      loadObject(clsPtr).asInstanceOf[_Class[_]]
     }
   }
 
@@ -76,4 +69,25 @@ class _Object {
   }
 
   protected def __finalize(): Unit = ()
+}
+
+/** Registry for created instances of java.lang.Class
+ * It's only purpose is to prevent GC from collecting instances of java.lang.Class
+ **/
+object ClassInstancesRegistry {
+  private var instances     = new scala.Array[_Class[_]](512)
+  private var lastId        = -1
+  @inline def nextId(): Int = { lastId += 1; lastId }
+
+  def add(cls: _Class[_]): _Class[_] = {
+    val id = nextId()
+    if (instances.length <= id) {
+      val newSize: Int = (instances.length * 1.1).toInt
+      val newArr       = new scala.Array[_Class[_]](newSize)
+      Array.copy(instances, 0, newArr, 0, instances.length)
+      instances = newArr
+    }
+    instances(id) = cls
+    cls
+  }
 }
