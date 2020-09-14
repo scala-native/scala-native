@@ -231,6 +231,7 @@ object CodeGen {
       val isDecl = insts.isEmpty
 
       str(if (isDecl) "declare " else "define ")
+      str(if (attrs.isExtern) "" else "fastcc ")
       genFunctionReturnType(retty)
       str(" @")
       genGlobal(name)
@@ -861,6 +862,7 @@ object CodeGen {
         newline()
         genBind()
         str(if (unwind ne Next.None) "invoke " else "call ")
+        str("fastcc ")
         genCallFunctionType(ty)
         str(" %")
         genLocal(pointee)
