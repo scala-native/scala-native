@@ -521,20 +521,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                                              Val.Int(ctorSig.args.tail.length),
                                              unwind(curFresh))
           for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
-            // Allocate and instantiate a java.lang.Class object for the arg.
-            val co = Val.ClassOf(Type.typeToName(arg))
-
-//            allocAndConstruct(
-//              exprBuf,
-//              jlClass,
-//              Seq(Type.Ptr),
-//              Seq(Val.Global(Type.typeToName(arg), Type.Ptr))
-//            )
             // Store the runtime class in the array.
             exprBuf.arraystore(jlClassRef,
                                rtClasses,
                                Val.Int(argIdx),
-                               co,
+                               Val.ClassOf(Type.typeToName(arg)),
                                unwind(curFresh))
           }
 
