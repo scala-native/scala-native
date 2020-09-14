@@ -821,11 +821,17 @@ object CodeGen {
       case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
         val Type.Function(argtys, _) = ty
 
+        val isExtern = pointee match {
+          case Global.Member(_, sig) if sig.isExtern => true
+          case _ => false
+        }
+
         touch(pointee)
 
         newline()
         genBind()
         str(if (unwind ne Next.None) "invoke " else "call ")
+        if(!isExtern) str("fastcc ")
         genCallFunctionType(ty)
         str(" @")
         genGlobal(pointee)
