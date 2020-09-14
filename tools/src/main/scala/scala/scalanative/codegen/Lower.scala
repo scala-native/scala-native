@@ -496,7 +496,9 @@ object Lower {
       }
 
       def genMethodLookup(): Unit = {
-        val targets = obj.ty match {
+        // We check type of original value, because it may change inside `genVal` transformation
+        // Eg. Val.String is transformed to Const(StructValue) which changes type from Ref to Ptr
+        val targets = v.ty match {
           case ClassRef(cls) if !sig.isVirtual =>
             cls.resolve(sig).toSeq
           case ScopeRef(scope) =>
