@@ -1291,6 +1291,7 @@ object Lower {
     buf += throwNoSuchMethod
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
+    buf += JavaGetClass.name
     buf
   }
 }
