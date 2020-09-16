@@ -24,7 +24,7 @@ trait NirGenName { self: NirGenPhase =>
       unreachable
     }
 
-  def genTypeName(sym: Symbol): nir.Global = {
+  def genTypeName(sym: Symbol): nir.Global.Top = {
     val id = {
       val fullName = sym.fullName.toString
       if (fullName == "java.lang._String") "java.lang.String"
@@ -34,7 +34,7 @@ trait NirGenName { self: NirGenPhase =>
     }
     val name = sym match {
       case ObjectClass =>
-        nir.Rt.Object.name
+        nir.Rt.Object.name.asInstanceOf[nir.Global.Top]
       case _ if sym.isModule =>
         genTypeName(sym.moduleClass)
       case _ =>
@@ -49,6 +49,10 @@ trait NirGenName { self: NirGenPhase =>
     name
   }
 
+  def genPrivateId(owner: nir.Global.Top, id: String): String = {
+    s"P_${owner.id}_$id"
+  }
+
   def genFieldName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
     val id    = nativeIdOf(sym)
@@ -57,7 +61,8 @@ trait NirGenName { self: NirGenPhase =>
       if (sym.owner.isExternModule) {
         nir.Sig.Extern(id)
       } else {
-        nir.Sig.Field(id)
+        val fieldId = if (sym.isPrivate) genPrivateId(owner, id) else id
+        nir.Sig.Field(fieldId)
       }
     }
   }
@@ -82,7 +87,8 @@ trait NirGenName { self: NirGenPhase =>
       owner.member(nir.Sig.Ctor(paramTypes))
     } else {
       val retType = genType(tpe.resultType)
-      owner.member(nir.Sig.Method(id, paramTypes :+ retType))
+      val metId   = if (sym.isPrivate) genPrivateId(owner, id) else id
+      owner.member(nir.Sig.Method(metId, paramTypes :+ retType))
     }
   }
 
@@ -105,7 +111,7 @@ trait NirGenName { self: NirGenPhase =>
         } else if (isScalaHashOrEquals) {
           name.substring(2) // strip the __
         } else {
-          name.toString
+          name
         }
       } else {
         scalanative.util.unreachable
