@@ -49,20 +49,21 @@ trait NirGenName { self: NirGenPhase =>
     name
   }
 
-  def genPrivateId(owner: nir.Global.Top, id: String): String = {
-    s"P_${owner.id}_$id"
-  }
-
   def genFieldName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
     val id    = nativeIdOf(sym)
+    val scope = {
+      /* Variables are internally private, but with public setter/getter.
+       Removing this check would cause problems with reachability  */
+      if (sym.isPrivate && !sym.isVariable) nir.Sig.Scope.Private(owner)
+      else nir.Sig.Scope.Public
+    }
 
     owner.member {
       if (sym.owner.isExternModule) {
         nir.Sig.Extern(id)
       } else {
-        val fieldId = if (sym.isPrivate) genPrivateId(owner, id) else id
-        nir.Sig.Field(fieldId)
+        nir.Sig.Field(id, scope)
       }
     }
   }
@@ -71,6 +72,9 @@ trait NirGenName { self: NirGenPhase =>
     val owner = genTypeName(sym.owner)
     val id    = nativeIdOf(sym)
     val tpe   = sym.tpe.widen
+    val scope =
+      if (sym.isPrivate) nir.Sig.Scope.Private(owner)
+      else nir.Sig.Scope.Public
 
     val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
 
@@ -87,8 +91,7 @@ trait NirGenName { self: NirGenPhase =>
       owner.member(nir.Sig.Ctor(paramTypes))
     } else {
       val retType = genType(tpe.resultType)
-      val metId   = if (sym.isPrivate) genPrivateId(owner, id) else id
-      owner.member(nir.Sig.Method(metId, paramTypes :+ retType))
+      owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
     }
   }
 

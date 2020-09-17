@@ -77,19 +77,19 @@ class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
         val loopType = Seq(Type.Int, Rt.String, Type.Bool, Rt.String)
         val fooType  = Seq(Type.Int, Type.Int)
 
-        def privateDef(method: String, in: String) = {
-          s"P_${in}_$method"
+        def privateMethodSig(method: String, tpe: Seq[Type], in: String) = {
+          Sig.Method(method, tpe, Sig.Scope.Private(Global.Top(in)))
         }
 
-        val expected = Set(
+        val expected = Seq(
           Sig.Method("encode", Seq(Type.Int, Rt.String, Type.Bool, Rt.String)),
           Sig.Method("encodeLoop", Seq(Type.Int, Rt.String, Rt.String)),
-          Sig.Method(privateDef("loop$1", "xyz.A"), loopType),
-          Sig.Method(privateDef("loop$1", "xyz.B$"), loopType),
-          Sig.Method(privateDef("loop$1", "foo.B$"), loopType),
-          Sig.Method(privateDef("foo", "xyz.A"), fooType),
-          Sig.Method(privateDef("foo", "xyz.B$"), fooType),
-          Sig.Method(privateDef("foo", "foo.B$"), fooType)
+          privateMethodSig("loop$1", loopType, "xyz.B$"),
+          privateMethodSig("loop$1", loopType, "xyz.A"),
+          privateMethodSig("loop$1", loopType, "foo.B$"),
+          privateMethodSig("foo", fooType, "xyz.A"),
+          privateMethodSig("foo", fooType, "xyz.B$"),
+          privateMethodSig("foo", fooType, "foo.B$")
         ).map(_.mangle)
 
         expected.foreach { sig => assert(testedDefns.contains(sig)) }
