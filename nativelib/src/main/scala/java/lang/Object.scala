@@ -75,11 +75,19 @@ class _Object {
  * It's only purpose is to prevent GC from collecting instances of java.lang.Class
  **/
 object ClassInstancesRegistry {
-  import scala.collection.mutable.UnrolledBuffer
-  private lazy val instances = UnrolledBuffer.empty[_Class[_]]
+  private var instances     = new scala.Array[_Class[_]](512)
+  private var lastId        = -1
+  @inline def nextId(): Int = { lastId += 1; lastId }
 
   def add(cls: _Class[_]): _Class[_] = {
-    instances += cls
+    val id = nextId()
+    if (instances.length <= id) {
+      val newSize: Int = (instances.length * 1.1).toInt
+      val newArr       = new scala.Array[_Class[_]](newSize)
+      Array.copy(instances, 0, newArr, 0, instances.length)
+      instances = newArr
+    }
+    instances(id) = cls
     cls
   }
 }
