@@ -70,24 +70,3 @@ class _Object {
 
   protected def __finalize(): Unit = ()
 }
-
-/** Registry for created instances of java.lang.Class
- * It's only purpose is to prevent GC from collecting instances of java.lang.Class
- **/
-object ClassInstancesRegistry {
-  private var instances     = new scala.Array[_Class[_]](512)
-  private var lastId        = -1
-  @inline def nextId(): Int = { lastId += 1; lastId }
-
-  def add(cls: _Class[_]): _Class[_] = {
-    val id = nextId()
-    if (instances.length <= id) {
-      val newSize: Int = (instances.length * 1.1).toInt
-      val newArr       = new scala.Array[_Class[_]](newSize)
-      Array.copy(instances, 0, newArr, 0, instances.length)
-      instances = newArr
-    }
-    instances(id) = cls
-    cls
-  }
-}
