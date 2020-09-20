@@ -24,8 +24,9 @@ class Thread private (runnable: Runnable) extends Runnable {
   final def getName(): String =
     this.name
 
-  @stub
-  def getStackTrace(): Array[StackTraceElement] = ???
+  // Stub implementation which is more useful than '???'.
+  def getStackTrace(): Array[StackTraceElement] =
+    new Array[StackTraceElement](0) // Do not use scala collections.
 
   def getId(): scala.Long = 1
 
