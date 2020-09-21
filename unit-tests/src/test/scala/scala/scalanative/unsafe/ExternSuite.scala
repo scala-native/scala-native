@@ -50,4 +50,13 @@ object ExternSuite extends tests.Suite {
     Ext2.p(buf2, bufsize, c"%d", 1)
     assert(string.strcmp(buf2, c"1") == 0)
   }
+
+  val cb: CFuncPtr0[CInt] = new CFuncPtr0[Int] {
+    override def apply(): Int = 42
+  }
+  test("allows to use generic function as argument") {
+    val res0 = testlib.exec0(cb) //expected CFuncPtr0[Int]
+    val res1 = testlib.exec(cb)  //expected CFuncPtr
+    assert(res0 == res1)
+  }
 }
