@@ -129,8 +129,6 @@ class Properties(protected val defaults: Properties)
     store(out, comments)
 
   private def loadImpl(reader: Reader): Unit = {
-    import java.util.regex._
-    val trailingBackspace = Pattern.compile("""(\\)+$""")
     val br                = new BufferedReader(reader)
     val valBuf            = new jl.StringBuilder()
     var prevValueContinue = false
@@ -152,17 +150,10 @@ class Properties(protected val defaults: Properties)
       }
 
       def parseUnicodeEscape(): Char = {
-        val sb = new jl.StringBuilder()
-        var j  = 0
-        while (j < 4) {
-          sb.append(line.charAt(i))
-          if (j < 3) {
-            // don't advance past the last char used
-            i += 1
-          }
-          j += 1
-        }
-        val ch = Integer.parseInt(sb.toString(), 16).toChar
+        val hexStr = line.substring(i, i + 4)
+        // don't advance past the last char used
+        i += 3
+        val ch = Integer.parseInt(hexStr, 16).toChar
         ch
       }
 
@@ -182,14 +173,10 @@ class Properties(protected val defaults: Properties)
         line.startsWith("#") || line.startsWith("!")
 
       def oddBackslash(): Boolean = {
-        val m = trailingBackspace.matcher(line)
-        if (m.find()) {
-          val num   = m.end(1) - m.start()
-          val isOdd = num % 2 != 0
-          isOdd
-        } else {
-          false
-        }
+        var i = line.length()
+        while (i > 0 && line.charAt(i - 1) == '\\')
+          i -= 1
+        (line.length() - i) % 2 != 0
       }
 
       def valueContinues(): Boolean = oddBackslash()
