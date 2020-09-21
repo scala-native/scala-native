@@ -168,7 +168,7 @@ trait NirGenStat { self: NirGenPhase =>
       genReflectiveInstantiation(cd)
       genClassFields(sym)
       genMethods(cd)
-      if (sym.isCFuncPtrClass) {
+      if (sym.isCFuncPtrClassDef) {
         if (sym == CFuncRawPtrClass) {
           buf += genFuncRawPtrExternForwarder(cd)
         } else {
