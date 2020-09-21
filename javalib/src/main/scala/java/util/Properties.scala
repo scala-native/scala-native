@@ -153,8 +153,7 @@ class Properties(protected val defaults: Properties)
         val hexStr = line.substring(i, i + 4)
         // don't advance past the last char used
         i += 3
-        val ch = Integer.parseInt(hexStr, 16).toChar
-        ch
+        Integer.parseInt(hexStr, 16).toChar
       }
 
       def isWhitespace(char: Char): Boolean =
