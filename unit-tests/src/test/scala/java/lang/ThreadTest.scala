@@ -13,7 +13,7 @@ import org.junit.Assert._
 
 class ThreadTest {
 
-  val executingInJVM = false
+  val executingInJVM         = false
   val executingInScalaNative = true
 
   @Test def getName_and_setName(): Unit = {
