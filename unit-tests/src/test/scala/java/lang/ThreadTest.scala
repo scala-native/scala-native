@@ -6,18 +6,6 @@
 //
 // Slightly modified for Scala Native.
 
-/*
- * Scala.js (https://www.scala-js.org/)
- *
- * Copyright EPFL.
- *
- * Licensed under Apache License 2.0
- * (https://www.apache.org/licenses/LICENSE-2.0).
- *
- * See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
- */
-
 package java.lang
 
 import org.junit.Test
@@ -26,6 +14,7 @@ import org.junit.Assert._
 class ThreadTest {
 
   val executingInJVM = false
+  val executingInScalaNative = true
 
   @Test def getName_and_setName(): Unit = {
     if (!executingInJVM) {
@@ -43,7 +32,9 @@ class ThreadTest {
 
   @Test def currentThread_getStackTrace(): Unit = {
     val trace = Thread.currentThread().getStackTrace()
-    assertEquals(trace.length, 0)
+    if (executingInScalaNative) {
+      assertEquals(trace.length, 0)
+    }
   }
 
   @Test def getId(): Unit = {
