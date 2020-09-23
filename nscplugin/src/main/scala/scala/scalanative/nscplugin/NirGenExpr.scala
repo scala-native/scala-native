@@ -1032,6 +1032,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genRawCastOp(app, code)
       } else if (code == RESOLVE_CFUNCPTR) {
         genResolveCFuncPtr(app, code)
+      } else if (code == CALL_CFUNCPTR) {
+        genCallCFuncPtr(app, code)
       } else if (isCoercion(code)) {
         genCoercion(app, receiver, code)
       } else if (code == SYNCHRONIZED) {
@@ -1525,6 +1527,28 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val value = genExpr(argp)
 
       buf.method(value, Sig.Generated("$extern$forwarder"), unwind)(app.pos)
+    }
+
+    def genCallCFuncPtr(app: Apply, code: Int): Val = {
+      val Apply(_, aargs) = app
+
+      val targetp         = aargs.head
+      val argsp           = if(aargs.size > 2) aargs.slice(1, aargs.length / 2) else Nil
+      val evidences       = aargs.drop(aargs.length / 2)
+      val retTypeEv       = evidences.last
+      val retType         = genType(unwrapTag(retTypeEv))
+
+      val target          = genExpr(targetp)
+      val args: List[Val] = argsp.zip(evidences).map{
+        case (arg, evidence) =>
+        val tag = unwrapTag(evidence)
+        buf.unboxValue(tag, partial = false, genExpr(arg))
+      }
+
+      buf.call(Type.Function(args.map(_.ty), retType),
+               ptr = target,
+               args = args,
+               unwind = Next.None)
     }
 
     def genCastOp(fromty: nir.Type, toty: nir.Type, value: Val)(implicit pos: nir.Position): Val =

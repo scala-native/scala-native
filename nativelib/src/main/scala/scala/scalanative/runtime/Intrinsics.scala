@@ -3,7 +3,7 @@ package runtime
 
 import scalanative.unsafe.CFuncPtr
 
-object Intrinsics {
+object Intrinsics extends CFuncIntrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
   def stackalloc(size: Long): RawPtr = intrinsic

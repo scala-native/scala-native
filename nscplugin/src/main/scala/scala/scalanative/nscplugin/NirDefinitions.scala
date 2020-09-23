@@ -54,6 +54,12 @@ trait NirDefinitions {
     lazy val CFuncRawPtrClass =
       getRequiredClass("scala.scalanative.runtime.CFuncRawPtr")
 
+    lazy val NatBaseClass = (0 to 9).map { n =>
+      getRequiredClass("scala.scalanative.native.Nat$_" + n)
+    }
+    lazy val NatDigitClass =
+      getRequiredClass("scala.scalanative.native.Nat$Digit")
+
     lazy val TagModule     = getRequiredModule("scala.scalanative.unsafe.Tag")
     lazy val UnitTagMethod = getDecl(TagModule, TermName("materializeUnitTag"))
     lazy val BooleanTagMethod =
@@ -202,6 +208,13 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("stackalloc"))
     lazy val ResolveCFuncPtrMethod =
       getMember(IntrinsicsModule, TermName("resolveCFuncPtr"))
+    lazy val CallCFuncPtrMethods = {
+      val member = getMember(IntrinsicsModule, TermName("callCFuncPtr"))
+      member.info match {
+        case OverloadedType(_, alternatives) => alternatives
+        case _                               => member :: Nil
+      }
+    }
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
       'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),
