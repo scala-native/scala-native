@@ -6,9 +6,6 @@ import java.nio.file.{Path, Paths}
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait Config {
 
-  /** Target triple that defines current OS, ABI and CPU architecture. */
-  def targetTriple: String
-
   /** Directory to emit intermediate compilation results. */
   def workdir: Path
 
@@ -26,9 +23,6 @@ sealed trait Config {
   def logger: Logger
 
   def compilerConfig: NativeConfig
-
-  /** Create a new config with given target triple. */
-  def withTargetTriple(value: String): Config
 
   /** Create a new config with given directory. */
   def withWorkdir(value: Path): Config
@@ -68,6 +62,9 @@ sealed trait Config {
   /** The compilation options passed to LLVM. */
   def compileOptions: Seq[String] = compilerConfig.compileOptions
 
+  /** Target triple that defines current OS, ABI and CPU architecture. */
+  def targetTriple: String = compilerConfig.targetTriple
+
   /** Should stubs be linked? */
   def linkStubs: Boolean = compilerConfig.linkStubs
 
@@ -90,7 +87,6 @@ object Config {
       mainClass = "",
       classPath = Seq.empty,
       workdir = Paths.get(""),
-      targetTriple = "",
       logger = Logger.default,
       compilerConfig = NativeConfig.empty
     )
@@ -99,7 +95,6 @@ object Config {
                                 mainClass: String,
                                 classPath: Seq[Path],
                                 workdir: Path,
-                                targetTriple: String,
                                 logger: Logger,
                                 compilerConfig: NativeConfig)
       extends Config {
@@ -114,9 +109,6 @@ object Config {
 
     def withWorkdir(value: Path): Config =
       copy(workdir = value)
-
-    def withTargetTriple(value: String): Config =
-      copy(targetTriple = value)
 
     def withLogger(value: Logger): Config =
       copy(logger = value)

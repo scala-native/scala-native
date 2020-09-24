@@ -137,12 +137,14 @@ private[scalanative] object LLVM {
     paths.par.foreach { path =>
       val opath = path + oExt
       if (include(path) && !Files.exists(Paths.get(opath))) {
-        val isCpp    = path.endsWith(cppExt)
-        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
-        val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
+        val isCpp     = path.endsWith(cppExt)
+        val compiler  = if (isCpp) config.clangPP.abs else config.clang.abs
+        val stdflag   = if (isCpp) "-std=c++11" else "-std=gnu11"
+        val flags     = stdflag +: "-fvisibility=hidden" +: config.compileOptions
+        val targetOpt = targetTripleOpt(config.targetTriple)
         val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++ Seq("-c", path, "-o", opath)
+          Seq(compiler) ++ flto(config) ++ flags ++ targetOpt ++
+            Seq("-c", path, "-o", opath)
 
         config.logger.running(compilec)
         val result = Process(compilec, config.workdir.toFile) ! Logger
@@ -155,6 +157,11 @@ private[scalanative] object LLVM {
     libPath
   }
 
+  private def targetTripleOpt(targetTriple: String) = targetTriple match {
+    case ""     => Seq.empty
+    case triple => Seq("-target", triple)
+  }
+
   /** Compile the given LL files to object files */
   def compile(config: Config, llPaths: Seq[Path]): Seq[Path] = {
     val optimizationOpt =
@@ -163,7 +170,10 @@ private[scalanative] object LLVM {
         case Mode.ReleaseFast => "-O2"
         case Mode.ReleaseFull => "-O3"
       }
-    val opts = optimizationOpt +: config.compileOptions
+    val noTargetWarnOpt = "-Wno-override-module"
+    val targetOpt       = targetTripleOpt(config.targetTriple)
+    val opts =
+      Seq(optimizationOpt, noTargetWarnOpt) ++ targetOpt ++ config.compileOptions
 
     llPaths.par
       .map { ll =>
@@ -210,7 +220,7 @@ private[scalanative] object LLVM {
       "pthread" +: "dl" +: srclinks ++: gclinks
     }
     val linkopts    = config.linkingOptions ++ links.map("-l" + _)
-    val targetopt   = Seq("-target", config.targetTriple)
+    val targetopt   = targetTripleOpt(config.targetTriple)
     val flags       = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
     val objPatterns = NativeLib.destObjPatterns(workdir, nativelibs)
     val opaths      = IO.getAll(workdir, objPatterns).map(_.abs)

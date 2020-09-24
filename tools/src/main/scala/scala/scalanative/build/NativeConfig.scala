@@ -24,6 +24,9 @@ sealed trait NativeConfig {
   /** The compilation options passed to LLVM. */
   def compileOptions: Seq[String]
 
+  /** Target triple that defines current OS, ABI and CPU architecture. */
+  def targetTriple: String
+
   /** Should stubs be linked? */
   def linkStubs: Boolean
 
@@ -71,6 +74,9 @@ sealed trait NativeConfig {
 
   /** Create a new config with given optimize value */
   def withOptimize(value: Boolean): NativeConfig
+
+  /** Create a new config with given optimize value */
+  def withTargetTriple(value: String): NativeConfig
 }
 
 object NativeConfig {
@@ -82,6 +88,7 @@ object NativeConfig {
       clangPP = Paths.get(""),
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
+      targetTriple = "",
       gc = GC.default,
       lto = LTO.default,
       mode = Mode.default,
@@ -95,6 +102,7 @@ object NativeConfig {
                                 clangPP: Path,
                                 linkingOptions: Seq[String],
                                 compileOptions: Seq[String],
+                                targetTriple: String,
                                 gc: GC,
                                 mode: Mode,
                                 lto: LTO,
@@ -115,6 +123,9 @@ object NativeConfig {
 
     def withCompileOptions(value: Seq[String]): NativeConfig =
       copy(compileOptions = value)
+
+    override def withTargetTriple(value: String): NativeConfig =
+      copy(targetTriple = value)
 
     def withGC(value: GC): NativeConfig =
       copy(gc = value)
@@ -143,6 +154,7 @@ object NativeConfig {
         | - clangPP:         $clangPP
         | - linkingOptions:  $linkingOptions
         | - compileOptions:  $compileOptions
+        | - targetTriple:    $targetTriple
         | - GC:              $gc
         | - mode:            $mode
         | - LTO:             $lto
