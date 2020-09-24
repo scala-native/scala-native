@@ -78,7 +78,7 @@ object Ptr {
       val unboxPtr  = q"$runtime.Boxes.unboxToPtr"
 
       val F       = weakTypeOf[F].dealias
-      val tps     = F.typeArgs
+      val tps     = F.typeArgs.map(_.dealias)
       val argTps  = tps.init
       val retType = tps.last
 

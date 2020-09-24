@@ -1529,26 +1529,50 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       buf.method(value, Sig.Generated("$extern$forwarder"), unwind)(app.pos)
     }
 
+    /** Generates direct call to function ptr with optional unboxing arguments and boxing result
+     * Apply.args can contain different number of arguments depending on usage, however
+     * they are passed in constant order:
+     *  - 1 function RawPtr
+     *  - 0..N args
+     *  - 1..N+1 type evidences (scalanative.Tag), where last one is return type tag
+     */
     def genCallCFuncPtr(app: Apply, code: Int): Val = {
       val Apply(_, aargs) = app
 
-      val targetp         = aargs.head
-      val argsp           = if(aargs.size > 2) aargs.slice(1, aargs.length / 2) else Nil
-      val evidences       = aargs.drop(aargs.length / 2)
-      val retTypeEv       = evidences.last
-      val retType         = genType(unwrapTag(retTypeEv))
+      val targetp   = aargs.head
+      val argsp     = if (aargs.size > 2) aargs.slice(1, aargs.length / 2) else Nil
+      val evidences = aargs.drop(aargs.length / 2)
 
-      val target          = genExpr(targetp)
-      val args: List[Val] = argsp.zip(evidences).map{
-        case (arg, evidence) =>
-        val tag = unwrapTag(evidence)
-        buf.unboxValue(tag, partial = false, genExpr(arg))
-      }
+      val retTypeEv = evidences.last
+      val retType0  = genType(unwrapTag(retTypeEv))
+      val retType   = Type.unbox.getOrElse(retType0, retType0)
+      val shouldBoxResult =
+        retType0 != retType && retType0.isInstanceOf[Type.RefKind]
 
-      buf.call(Type.Function(args.map(_.ty), retType),
-               ptr = target,
-               args = args,
-               unwind = Next.None)
+      val target = genExpr(targetp)
+      val args = argsp
+        .zip(evidences)
+        .map {
+          case (arg, evidence) =>
+            val tag = unwrapTag(evidence)
+            val tpe = genType(tag)
+            val obj = genExpr(arg)
+
+            /* buf.unboxValue does not handle Ref( Ptr | CArray | ... ) unboxing
+             * That's why we're doint it directly */
+            if (Type.unbox.isDefinedAt(tpe)) {
+              buf.unbox(tpe, obj, Next.None)
+            } else {
+              buf.unboxValue(tag, partial = false, obj)
+            }
+        }
+      val argTypes = args.map(_.ty)
+      val funcSig  = Type.Function(argTypes, retType)
+
+      val result = buf.call(funcSig, target, args, Next.None)
+
+      if (shouldBoxResult) buf.box(retType0, result, Next.None)
+      else result
     }
 
     def genCastOp(fromty: nir.Type, toty: nir.Type, value: Val)(implicit pos: nir.Position): Val =

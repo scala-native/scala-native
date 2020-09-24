@@ -55,10 +55,17 @@ trait NirDefinitions {
       getRequiredClass("scala.scalanative.runtime.CFuncRawPtr")
 
     lazy val NatBaseClass = (0 to 9).map { n =>
-      getRequiredClass("scala.scalanative.native.Nat$_" + n)
+      getRequiredClass("scala.scalanative.unsafe.Nat$_" + n)
     }
-    lazy val NatDigitClass =
-      getRequiredClass("scala.scalanative.native.Nat$Digit")
+    lazy val NatDigitClass = (2 to 9).map { n =>
+      getRequiredClass("scala.scalanative.unsafe.Nat$Digit" + n)
+    }
+
+    lazy val CStructClass = (0 to 22).map { n =>
+      getRequiredClass("scala.scalanative.unsafe.CStruct" + n)
+    }
+    lazy val CArrayClass =
+      getRequiredClass("scala.scalanative.unsafe.CArray")
 
     lazy val TagModule     = getRequiredModule("scala.scalanative.unsafe.Tag")
     lazy val UnitTagMethod = getDecl(TagModule, TermName("materializeUnitTag"))
@@ -87,8 +94,9 @@ trait NirDefinitions {
     lazy val NatBaseTagMethod = (0 to 9).map { n =>
       getDecl(TagModule, TermName("materializeNat" + n + "Tag"))
     }
-    lazy val NatDigitTagMethod =
-      getDecl(TagModule, TermName("materializeNatDigitTag"))
+    lazy val NatDigitTagMethod = (2 to 9).map { n =>
+      getDecl(TagModule, TermName(s"materializeNatDigit${n}Tag"))
+    }
     lazy val CArrayTagMethod =
       getDecl(TagModule, TermName("materializeCArrayTag"))
     lazy val CStructTagMethod = (0 to 22).map { n =>

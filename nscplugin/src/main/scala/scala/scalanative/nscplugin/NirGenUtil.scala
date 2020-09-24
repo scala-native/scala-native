@@ -72,20 +72,18 @@ trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
           case DoubleTagMethod  => just(DoubleClass)
           case PtrTagMethod     => just(PtrClass)
           case ClassTagMethod   => just(unwrapClassTagOption(args.head).get)
+          case sym if CStructTagMethod.contains(sym) =>
+            wrap(CStructClass(args.length))
+          case CArrayTagMethod =>
+            wrap(CArrayClass)
           case sym if NatBaseTagMethod.contains(sym) =>
             just(NatBaseClass(NatBaseTagMethod.indexOf(sym)))
-          case NatDigitTagMethod =>
-            wrap(NatDigitClass)
-//          case CArrayTagMethod =>
-//            wrap(CArrayClass)
-//          case sym if CStructTagMethod.contains(sym) =>
-//            wrap(CStructClass(args.length))
+          case sym if NatDigitTagMethod.contains(sym) =>
+            wrap(NatDigitClass(NatDigitTagMethod.indexOf(sym)))
           case _ =>
             None
         }
-
-      case tree =>
-        None
+      case _ => None
     }
   }
 
