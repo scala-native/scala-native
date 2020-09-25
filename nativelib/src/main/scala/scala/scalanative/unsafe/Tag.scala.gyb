@@ -199,20 +199,23 @@ object Tag {
 
   % end
 
-  private[scalanative] sealed trait CFuncPtrTag {
+  private[scalanative] sealed trait CFuncPtrTag[F <: unsafe.CFuncPtr]
+   extends Tag[F] {
+		def load(ptr: unsafe.Ptr[F], loadPtr: Boolean): F
+
   	@alwaysinline def size: Int = 8
 		@alwaysinline def alignment: Int = 8
-  }
+    @alwaysinline override def load(ptr: unsafe.Ptr[F]): F = load(ptr, loadPtr = true)
+    @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit =
+      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
+    }
 
   % for N in range(0, 23):
   %   targs = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
   %   tag   = "CFuncPtr{}[{}]".format(N, targs)
   %   nativeCFuncPtr = "unsafe.CFuncPtr{}[{}]".format(N, targs)
-  class ${tag} extends Tag[${nativeCFuncPtr}] with CFuncPtrTag {
-		// @alwaysinline override def load(ptr: unsafe.Ptr[${nativeCFuncPtr}])
-    @alwaysinline override def store(ptr: unsafe.Ptr[${nativeCFuncPtr}], value: ${nativeCFuncPtr}): Unit =
-      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
-  }
+  abstract class ${tag}
+  	extends CFuncPtrTag[${nativeCFuncPtr}]
   % end
 
   @alwaysinline implicit def materializePtrTag[T](implicit tag: Tag[T]): Tag[unsafe.Ptr[T]] =
@@ -247,21 +250,22 @@ object Tag {
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
   % for N in range(0, 23):
   %   targs = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
-  @alwaysinline implicit def materializeCFuncPtr${N}[${targs}]: Tag[unsafe.CFuncPtr${N}[${targs}]] =
+  @alwaysinline implicit def materializeCFuncPtr${N}[${targs}]: CFuncPtrTag[unsafe.CFuncPtr${N}[${targs}]] =
 		macro MacroImpl.materializeCFuncPtr${N}[${targs}]
   % end
 
-	private class MacroImpl(val c: scala.reflect.macros.blackbox.Context) {
-		import c.universe._
+  private class MacroImpl(val c: scala.reflect.macros.blackbox.Context) {
+    import c.universe._
 
-		val annotation = q"_root_.scala.scalanative.annotation"
-		val runtime    = q"_root_.scala.scalanative.runtime"
-		val unsafe     = q"_root_.scala.scalanative.unsafe"
+    val annotation = q"_root_.scala.scalanative.annotation"
+    val runtime    = q"_root_.scala.scalanative.runtime"
+    val unsafe     = q"_root_.scala.scalanative.unsafe"
 
-		val callCFunc = q"$runtime.Intrinsics.callCFuncPtr"
-		val unboxPtr  = q"$runtime.Boxes.unboxToPtr"
-
-		val fnPtr = q"$runtime.Intrinsics.loadRawPtr($runtime.toRawPtr(ptr))"
+    val callCFunc = q"$runtime.Intrinsics.callCFuncPtr"
+    val fnPtr     = q"""
+      val _rawPtr = $runtime.toRawPtr(ptr)
+      if(loadPtr) $runtime.Intrinsics.loadRawPtr(_rawPtr)
+      else _rawPtr"""
 
 	% for N in range(0, 23):
 	%   targs 		= ", ".join(["T" + str(i) 											for i in range(1, N+1)] + ["R"])
@@ -270,23 +274,21 @@ object Tag {
 	%   tpsDef		= "\n".join(["val T" + str(i) + " = weakTypeOf[T" + str(i) + "].dealias" for i in range(1, N+1)])
 	%   args		  = ", ".join(["$fnPtr"] + ["arg" + str(i) 									for i in range(1, N+1)])
 	%   argsDecl  = ", ".join("arg" + str(i) + ": $T" + str(i) 							for i in range(1, N+1))
-	%   argTags		= ", ".join(["implicitly[$unsafe.Tag[$T" + str(i) + "]]" 	for i in range(1, N+1)])
-	%   CFuncPtr  = "$unsafe.CFuncPtr{}[{}]".format(N, tps)
-		def materializeCFuncPtr${N}[${tArgsDecl}]: c.Tree = {
-			val R = weakTypeOf[R].dealias
-		  ${tpsDef}
-
-			val newCFuncPtr = q"""
-				new ${CFuncPtr} {
-					override def apply(${argsDecl}): $R = $callCFunc[${tps}](${args})
-				}"""
-
-			q"""new $unsafe.Tag.CFuncPtr${N}[${tps}] {
-				 override def load(ptr: $unsafe.Ptr[${CFuncPtr}]): ${CFuncPtr} = {
-					 $newCFuncPtr
-					}
-		 		}"""
-		}
+	%   CFuncPtr  = "CFuncPtr{}[{}]".format(N, tps)
+    def materializeCFuncPtr${N}[${tArgsDecl}]: c.Tree = {
+      val R = weakTypeOf[R].dealias
+      ${tpsDef}
+      q"""
+        type CFuncPtr = $unsafe.${CFuncPtr}
+        type Tag      = $unsafe.Tag.${CFuncPtr}
+        new Tag {
+          def load(ptr: $unsafe.Ptr[CFuncPtr], loadPtr: Boolean): CFuncPtr = {
+            new CFuncPtr {
+              override def apply(${argsDecl}): $R = $callCFunc[${tps}](${args})
+            }
+          }
+        }"""
+    }
 	% end
 	}
 }

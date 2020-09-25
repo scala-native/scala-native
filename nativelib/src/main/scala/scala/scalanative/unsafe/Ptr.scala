@@ -61,37 +61,11 @@ object Ptr {
   @alwaysinline implicit def ptrToCStruct[T <: CStruct](ptr: Ptr[T])(
       implicit tag: Tag[T]): T = !ptr
 
-  @alwaysinline implicit def ptrToCFuncPtr[F <: CFuncPtr](ptr: Ptr[Byte]): F =
-    macro MacroImpl.toCFuncPtr[F]
+  @alwaysinline implicit def ptrToCFuncPtr[F <: CFuncPtr](ptr: Ptr[Byte])(
+      implicit tag: Tag.CFuncPtrTag[F]): F =
+    tag.load(ptr.asInstanceOf[Ptr[F]], loadPtr = false)
 
   @alwaysinline implicit def cFuncPtrToPtr[T](ptr: CFuncPtr): Ptr[Byte] = {
     Boxes.boxToPtr[Byte](Boxes.unboxToCFuncRawPtr(ptr))
-  }
-
-  private object MacroImpl {
-    import scala.reflect.macros.blackbox.Context
-    def toCFuncPtr[F: c.WeakTypeTag](c: Context)(ptr: c.Tree): c.Tree = {
-      import c.universe._
-
-      val runtime   = q"_root_.scala.scalanative.runtime"
-      val callCFunc = q"$runtime.Intrinsics.callCFuncPtr"
-      val unboxPtr  = q"$runtime.Boxes.unboxToPtr"
-
-      val F       = weakTypeOf[F].dealias
-      val tps     = F.typeArgs.map(_.dealias)
-      val argTps  = tps.init
-      val retType = tps.last
-
-      val (args, argSigs) = argTps.zipWithIndex.map {
-        case (tpe, idx) =>
-          val arg = TermName("arg" + (idx + 1))
-          q"$arg" -> q"$arg: $tpe"
-      }.unzip
-      val allArgs = q"$unboxPtr($ptr)" +: args
-
-      q"""new $F{
-		    override def apply(..$argSigs): $retType = $callCFunc[..$tps](..$allArgs)
-      }"""
-    }
   }
 }
