@@ -16,6 +16,7 @@ import scalanative.annotation.alwaysinline
 import scalanative.unsigned._
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
+import scala.language.experimental.macros
 
 sealed abstract class Tag[T] {
   def size: Int
@@ -8667,1428 +8668,939 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 199)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr0 extends Tag[unsafe.CFuncPtr0[Any]] {
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
+  private[scalanative] sealed trait CFuncPtrTag {
     @alwaysinline def size: Int      = 8
     @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr0[Any]]): unsafe.CFuncPtr0[Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
-    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CFuncPtr0[Any]],
-                                     value: unsafe.CFuncPtr0[Any]): Unit =
-      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr1 extends Tag[unsafe.CFuncPtr1[Any, Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr1[Any, Any]])
-        : unsafe.CFuncPtr1[Any, Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr0[R] extends Tag[unsafe.CFuncPtr0[R]] with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr0[R]])
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CFuncPtr0[R]],
+                                     value: unsafe.CFuncPtr0[R]): Unit =
+      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
+  }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr1[T1, R] extends Tag[unsafe.CFuncPtr1[T1, R]] with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr1[T1, R]])
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CFuncPtr1[T1, R]],
+                                     value: unsafe.CFuncPtr1[T1, R]): Unit =
+      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
+  }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr2[T1, T2, R]
+      extends Tag[unsafe.CFuncPtr2[T1, T2, R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr2[T1, T2, R]])
     @alwaysinline override def store(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr1[Any, Any]],
-        value: unsafe.CFuncPtr1[Any, Any]): Unit =
+        ptr: unsafe.Ptr[unsafe.CFuncPtr2[T1, T2, R]],
+        value: unsafe.CFuncPtr2[T1, T2, R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr2 extends Tag[unsafe.CFuncPtr2[Any, Any, Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr2[Any, Any, Any]])
-        : unsafe.CFuncPtr2[Any, Any, Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr3[T1, T2, T3, R]
+      extends Tag[unsafe.CFuncPtr3[T1, T2, T3, R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr3[T1, T2, T3, R]])
     @alwaysinline override def store(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr2[Any, Any, Any]],
-        value: unsafe.CFuncPtr2[Any, Any, Any]): Unit =
+        ptr: unsafe.Ptr[unsafe.CFuncPtr3[T1, T2, T3, R]],
+        value: unsafe.CFuncPtr3[T1, T2, T3, R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr3 extends Tag[unsafe.CFuncPtr3[Any, Any, Any, Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr3[Any, Any, Any, Any]])
-        : unsafe.CFuncPtr3[Any, Any, Any, Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr4[T1, T2, T3, T4, R]
+      extends Tag[unsafe.CFuncPtr4[T1, T2, T3, T4, R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr4[T1, T2, T3, T4, R]])
     @alwaysinline override def store(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr3[Any, Any, Any, Any]],
-        value: unsafe.CFuncPtr3[Any, Any, Any, Any]): Unit =
+        ptr: unsafe.Ptr[unsafe.CFuncPtr4[T1, T2, T3, T4, R]],
+        value: unsafe.CFuncPtr4[T1, T2, T3, T4, R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr4 extends Tag[unsafe.CFuncPtr4[Any, Any, Any, Any, Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr4[Any, Any, Any, Any, Any]])
-        : unsafe.CFuncPtr4[Any, Any, Any, Any, Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr5[T1, T2, T3, T4, T5, R]
+      extends Tag[unsafe.CFuncPtr5[T1, T2, T3, T4, T5, R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr5[T1, T2, T3, T4, T5, R]])
     @alwaysinline override def store(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr4[Any, Any, Any, Any, Any]],
-        value: unsafe.CFuncPtr4[Any, Any, Any, Any, Any]): Unit =
+        ptr: unsafe.Ptr[unsafe.CFuncPtr5[T1, T2, T3, T4, T5, R]],
+        value: unsafe.CFuncPtr5[T1, T2, T3, T4, T5, R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr5 extends Tag[unsafe.CFuncPtr5[Any, Any, Any, Any, Any, Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr5[Any, Any, Any, Any, Any, Any]])
-        : unsafe.CFuncPtr5[Any, Any, Any, Any, Any, Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr6[T1, T2, T3, T4, T5, T6, R]
+      extends Tag[unsafe.CFuncPtr6[T1, T2, T3, T4, T5, T6, R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr6[T1, T2, T3, T4, T5, T6, R]])
     @alwaysinline override def store(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr5[Any, Any, Any, Any, Any, Any]],
-        value: unsafe.CFuncPtr5[Any, Any, Any, Any, Any, Any]): Unit =
+        ptr: unsafe.Ptr[unsafe.CFuncPtr6[T1, T2, T3, T4, T5, T6, R]],
+        value: unsafe.CFuncPtr6[T1, T2, T3, T4, T5, T6, R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr6
-      extends Tag[unsafe.CFuncPtr6[Any, Any, Any, Any, Any, Any, Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr6[Any, Any, Any, Any, Any, Any, Any]])
-        : unsafe.CFuncPtr6[Any, Any, Any, Any, Any, Any, Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]
+      extends Tag[unsafe.CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]])
     @alwaysinline override def store(
-        ptr: unsafe.Ptr[unsafe.CFuncPtr6[Any, Any, Any, Any, Any, Any, Any]],
-        value: unsafe.CFuncPtr6[Any, Any, Any, Any, Any, Any, Any]): Unit =
+        ptr: unsafe.Ptr[unsafe.CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]],
+        value: unsafe.CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr7
-      extends Tag[unsafe.CFuncPtr7[Any, Any, Any, Any, Any, Any, Any, Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr7[Any, Any, Any, Any, Any, Any, Any, Any]])
-        : unsafe.CFuncPtr7[Any, Any, Any, Any, Any, Any, Any, Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]
+      extends Tag[unsafe.CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]])
+    @alwaysinline override def store(
+        ptr: unsafe.Ptr[unsafe.CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]],
+        value: unsafe.CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]): Unit =
+      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
+  }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]
+      extends Tag[unsafe.CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]])
     @alwaysinline override def store(
         ptr: unsafe.Ptr[
-          unsafe.CFuncPtr7[Any, Any, Any, Any, Any, Any, Any, Any]],
-        value: unsafe.CFuncPtr7[Any, Any, Any, Any, Any, Any, Any, Any]): Unit =
+          unsafe.CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]],
+        value: unsafe.CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr8
-      extends Tag[unsafe.CFuncPtr8[Any, Any, Any, Any, Any, Any, Any, Any, Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr8[Any, Any, Any, Any, Any, Any, Any, Any, Any]])
-        : unsafe.CFuncPtr8[Any, Any, Any, Any, Any, Any, Any, Any, Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]
+      extends Tag[unsafe.CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]])
     @alwaysinline override def store(
         ptr: unsafe.Ptr[
-          unsafe.CFuncPtr8[Any, Any, Any, Any, Any, Any, Any, Any, Any]],
-        value: unsafe.CFuncPtr8[Any, Any, Any, Any, Any, Any, Any, Any, Any])
+          unsafe.CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]],
+        value: unsafe.CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R])
         : Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr9
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]
       extends Tag[
-        unsafe.CFuncPtr9[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr9[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]])
-        : unsafe.CFuncPtr9[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]])
     @alwaysinline override def store(
         ptr: unsafe.Ptr[
-          unsafe.CFuncPtr9[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]],
-        value: unsafe.CFuncPtr9[Any,
-                                Any,
-                                Any,
-                                Any,
-                                Any,
-                                Any,
-                                Any,
-                                Any,
-                                Any,
-                                Any]): Unit =
+          unsafe.CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]],
+        value: unsafe.CFuncPtr11[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr10
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R]
       extends Tag[
-        unsafe.CFuncPtr10[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(ptr: unsafe.Ptr[
-      unsafe.CFuncPtr10[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]])
-        : unsafe.CFuncPtr10[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R]])
     @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr10[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr10[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
+                                       unsafe.CFuncPtr12[T1,
+                                                         T2,
+                                                         T3,
+                                                         T4,
+                                                         T5,
+                                                         T6,
+                                                         T7,
+                                                         T8,
+                                                         T9,
+                                                         T10,
+                                                         T11,
+                                                         T12,
+                                                         R]],
+                                     value: unsafe.CFuncPtr12[T1,
+                                                              T2,
+                                                              T3,
+                                                              T4,
+                                                              T5,
+                                                              T6,
+                                                              T7,
+                                                              T8,
+                                                              T9,
+                                                              T10,
+                                                              T11,
+                                                              T12,
+                                                              R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr11
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R]
       extends Tag[
-        unsafe.CFuncPtr11[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr11[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr11[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr13[T1,
+                          T2,
+                          T3,
+                          T4,
+                          T5,
+                          T6,
+                          T7,
+                          T8,
+                          T9,
+                          T10,
+                          T11,
+                          T12,
+                          T13,
+                          R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R]])
     @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr11[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr11[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
+                                       unsafe.CFuncPtr13[T1,
+                                                         T2,
+                                                         T3,
+                                                         T4,
+                                                         T5,
+                                                         T6,
+                                                         T7,
+                                                         T8,
+                                                         T9,
+                                                         T10,
+                                                         T11,
+                                                         T12,
+                                                         T13,
+                                                         R]],
+                                     value: unsafe.CFuncPtr13[T1,
+                                                              T2,
+                                                              T3,
+                                                              T4,
+                                                              T5,
+                                                              T6,
+                                                              T7,
+                                                              T8,
+                                                              T9,
+                                                              T10,
+                                                              T11,
+                                                              T12,
+                                                              T13,
+                                                              R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr12
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr14[
+      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R]
       extends Tag[
-        unsafe.CFuncPtr12[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr12[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr12[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr14[T1,
+                          T2,
+                          T3,
+                          T4,
+                          T5,
+                          T6,
+                          T7,
+                          T8,
+                          T9,
+                          T10,
+                          T11,
+                          T12,
+                          T13,
+                          T14,
+                          R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R]])
     @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr12[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr12[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
+                                       unsafe.CFuncPtr14[T1,
+                                                         T2,
+                                                         T3,
+                                                         T4,
+                                                         T5,
+                                                         T6,
+                                                         T7,
+                                                         T8,
+                                                         T9,
+                                                         T10,
+                                                         T11,
+                                                         T12,
+                                                         T13,
+                                                         T14,
+                                                         R]],
+                                     value: unsafe.CFuncPtr14[T1,
+                                                              T2,
+                                                              T3,
+                                                              T4,
+                                                              T5,
+                                                              T6,
+                                                              T7,
+                                                              T8,
+                                                              T9,
+                                                              T10,
+                                                              T11,
+                                                              T12,
+                                                              T13,
+                                                              T14,
+                                                              R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr13
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr15[
+      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R]
       extends Tag[
-        unsafe.CFuncPtr13[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr13[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr13[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr15[T1,
+                          T2,
+                          T3,
+                          T4,
+                          T5,
+                          T6,
+                          T7,
+                          T8,
+                          T9,
+                          T10,
+                          T11,
+                          T12,
+                          T13,
+                          T14,
+                          T15,
+                          R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R]])
     @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr13[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr13[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
+                                       unsafe.CFuncPtr15[T1,
+                                                         T2,
+                                                         T3,
+                                                         T4,
+                                                         T5,
+                                                         T6,
+                                                         T7,
+                                                         T8,
+                                                         T9,
+                                                         T10,
+                                                         T11,
+                                                         T12,
+                                                         T13,
+                                                         T14,
+                                                         T15,
+                                                         R]],
+                                     value: unsafe.CFuncPtr15[T1,
+                                                              T2,
+                                                              T3,
+                                                              T4,
+                                                              T5,
+                                                              T6,
+                                                              T7,
+                                                              T8,
+                                                              T9,
+                                                              T10,
+                                                              T11,
+                                                              T12,
+                                                              T13,
+                                                              T14,
+                                                              T15,
+                                                              R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr14
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr16[
+      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, R]
       extends Tag[
-        unsafe.CFuncPtr14[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr14[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr14[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr16[T1,
+                          T2,
+                          T3,
+                          T4,
+                          T5,
+                          T6,
+                          T7,
+                          T8,
+                          T9,
+                          T10,
+                          T11,
+                          T12,
+                          T13,
+                          T14,
+                          T15,
+                          T16,
+                          R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, R]])
     @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr14[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr14[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
+                                       unsafe.CFuncPtr16[T1,
+                                                         T2,
+                                                         T3,
+                                                         T4,
+                                                         T5,
+                                                         T6,
+                                                         T7,
+                                                         T8,
+                                                         T9,
+                                                         T10,
+                                                         T11,
+                                                         T12,
+                                                         T13,
+                                                         T14,
+                                                         T15,
+                                                         T16,
+                                                         R]],
+                                     value: unsafe.CFuncPtr16[T1,
+                                                              T2,
+                                                              T3,
+                                                              T4,
+                                                              T5,
+                                                              T6,
+                                                              T7,
+                                                              T8,
+                                                              T9,
+                                                              T10,
+                                                              T11,
+                                                              T12,
+                                                              T13,
+                                                              T14,
+                                                              T15,
+                                                              T16,
+                                                              R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr15
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr17[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      R]
       extends Tag[
-        unsafe.CFuncPtr15[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr15[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr15[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr17[T1,
+                          T2,
+                          T3,
+                          T4,
+                          T5,
+                          T6,
+                          T7,
+                          T8,
+                          T9,
+                          T10,
+                          T11,
+                          T12,
+                          T13,
+                          T14,
+                          T15,
+                          T16,
+                          T17,
+                          R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, R]])
     @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr15[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr15[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
+                                       unsafe.CFuncPtr17[T1,
+                                                         T2,
+                                                         T3,
+                                                         T4,
+                                                         T5,
+                                                         T6,
+                                                         T7,
+                                                         T8,
+                                                         T9,
+                                                         T10,
+                                                         T11,
+                                                         T12,
+                                                         T13,
+                                                         T14,
+                                                         T15,
+                                                         T16,
+                                                         T17,
+                                                         R]],
+                                     value: unsafe.CFuncPtr17[T1,
+                                                              T2,
+                                                              T3,
+                                                              T4,
+                                                              T5,
+                                                              T6,
+                                                              T7,
+                                                              T8,
+                                                              T9,
+                                                              T10,
+                                                              T11,
+                                                              T12,
+                                                              T13,
+                                                              T14,
+                                                              T15,
+                                                              T16,
+                                                              T17,
+                                                              R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr16
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr18[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      T18,
+      R]
       extends Tag[
-        unsafe.CFuncPtr16[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr16[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr16[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr18[T1,
+                          T2,
+                          T3,
+                          T4,
+                          T5,
+                          T6,
+                          T7,
+                          T8,
+                          T9,
+                          T10,
+                          T11,
+                          T12,
+                          T13,
+                          T14,
+                          T15,
+                          T16,
+                          T17,
+                          T18,
+                          R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, R]])
     @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr16[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr16[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
+                                       unsafe.CFuncPtr18[T1,
+                                                         T2,
+                                                         T3,
+                                                         T4,
+                                                         T5,
+                                                         T6,
+                                                         T7,
+                                                         T8,
+                                                         T9,
+                                                         T10,
+                                                         T11,
+                                                         T12,
+                                                         T13,
+                                                         T14,
+                                                         T15,
+                                                         T16,
+                                                         T17,
+                                                         T18,
+                                                         R]],
+                                     value: unsafe.CFuncPtr18[T1,
+                                                              T2,
+                                                              T3,
+                                                              T4,
+                                                              T5,
+                                                              T6,
+                                                              T7,
+                                                              T8,
+                                                              T9,
+                                                              T10,
+                                                              T11,
+                                                              T12,
+                                                              T13,
+                                                              T14,
+                                                              T15,
+                                                              T16,
+                                                              T17,
+                                                              T18,
+                                                              R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr17
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr19[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      T18,
+      T19,
+      R]
       extends Tag[
-        unsafe.CFuncPtr17[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr17[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr17[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr19[T1,
+                          T2,
+                          T3,
+                          T4,
+                          T5,
+                          T6,
+                          T7,
+                          T8,
+                          T9,
+                          T10,
+                          T11,
+                          T12,
+                          T13,
+                          T14,
+                          T15,
+                          T16,
+                          T17,
+                          T18,
+                          T19,
+                          R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, R]])
     @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr17[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr17[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
+                                       unsafe.CFuncPtr19[T1,
+                                                         T2,
+                                                         T3,
+                                                         T4,
+                                                         T5,
+                                                         T6,
+                                                         T7,
+                                                         T8,
+                                                         T9,
+                                                         T10,
+                                                         T11,
+                                                         T12,
+                                                         T13,
+                                                         T14,
+                                                         T15,
+                                                         T16,
+                                                         T17,
+                                                         T18,
+                                                         T19,
+                                                         R]],
+                                     value: unsafe.CFuncPtr19[T1,
+                                                              T2,
+                                                              T3,
+                                                              T4,
+                                                              T5,
+                                                              T6,
+                                                              T7,
+                                                              T8,
+                                                              T9,
+                                                              T10,
+                                                              T11,
+                                                              T12,
+                                                              T13,
+                                                              T14,
+                                                              T15,
+                                                              T16,
+                                                              T17,
+                                                              T18,
+                                                              T19,
+                                                              R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr18
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr20[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      T18,
+      T19,
+      T20,
+      R]
       extends Tag[
-        unsafe.CFuncPtr18[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr18[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr18[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr20[T1,
+                          T2,
+                          T3,
+                          T4,
+                          T5,
+                          T6,
+                          T7,
+                          T8,
+                          T9,
+                          T10,
+                          T11,
+                          T12,
+                          T13,
+                          T14,
+                          T15,
+                          T16,
+                          T17,
+                          T18,
+                          T19,
+                          T20,
+                          R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, R]])
     @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr18[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr18[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
+                                       unsafe.CFuncPtr20[T1,
+                                                         T2,
+                                                         T3,
+                                                         T4,
+                                                         T5,
+                                                         T6,
+                                                         T7,
+                                                         T8,
+                                                         T9,
+                                                         T10,
+                                                         T11,
+                                                         T12,
+                                                         T13,
+                                                         T14,
+                                                         T15,
+                                                         T16,
+                                                         T17,
+                                                         T18,
+                                                         T19,
+                                                         T20,
+                                                         R]],
+                                     value: unsafe.CFuncPtr20[T1,
+                                                              T2,
+                                                              T3,
+                                                              T4,
+                                                              T5,
+                                                              T6,
+                                                              T7,
+                                                              T8,
+                                                              T9,
+                                                              T10,
+                                                              T11,
+                                                              T12,
+                                                              T13,
+                                                              T14,
+                                                              T15,
+                                                              T16,
+                                                              T17,
+                                                              T18,
+                                                              T19,
+                                                              T20,
+                                                              R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr19
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr21[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      T18,
+      T19,
+      T20,
+      T21,
+      R]
       extends Tag[
-        unsafe.CFuncPtr19[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr19[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr19[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr21[T1,
+                          T2,
+                          T3,
+                          T4,
+                          T5,
+                          T6,
+                          T7,
+                          T8,
+                          T9,
+                          T10,
+                          T11,
+                          T12,
+                          T13,
+                          T14,
+                          T15,
+                          T16,
+                          T17,
+                          T18,
+                          T19,
+                          T20,
+                          T21,
+                          R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, R]])
     @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr19[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr19[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
+                                       unsafe.CFuncPtr21[T1,
+                                                         T2,
+                                                         T3,
+                                                         T4,
+                                                         T5,
+                                                         T6,
+                                                         T7,
+                                                         T8,
+                                                         T9,
+                                                         T10,
+                                                         T11,
+                                                         T12,
+                                                         T13,
+                                                         T14,
+                                                         T15,
+                                                         T16,
+                                                         T17,
+                                                         T18,
+                                                         T19,
+                                                         T20,
+                                                         T21,
+                                                         R]],
+                                     value: unsafe.CFuncPtr21[T1,
+                                                              T2,
+                                                              T3,
+                                                              T4,
+                                                              T5,
+                                                              T6,
+                                                              T7,
+                                                              T8,
+                                                              T9,
+                                                              T10,
+                                                              T11,
+                                                              T12,
+                                                              T13,
+                                                              T14,
+                                                              T15,
+                                                              T16,
+                                                              T17,
+                                                              T18,
+                                                              T19,
+                                                              T20,
+                                                              T21,
+                                                              R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr20
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 211)
+  class CFuncPtr22[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      T18,
+      T19,
+      T20,
+      T21,
+      T22,
+      R]
       extends Tag[
-        unsafe.CFuncPtr20[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr20[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr20[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
+        unsafe.CFuncPtr22[T1,
+                          T2,
+                          T3,
+                          T4,
+                          T5,
+                          T6,
+                          T7,
+                          T8,
+                          T9,
+                          T10,
+                          T11,
+                          T12,
+                          T13,
+                          T14,
+                          T15,
+                          T16,
+                          T17,
+                          T18,
+                          T19,
+                          T20,
+                          T21,
+                          T22,
+                          R]]
+      with CFuncPtrTag {
+    // @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CFuncPtr22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, R]])
     @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr20[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr20[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
+                                       unsafe.CFuncPtr22[T1,
+                                                         T2,
+                                                         T3,
+                                                         T4,
+                                                         T5,
+                                                         T6,
+                                                         T7,
+                                                         T8,
+                                                         T9,
+                                                         T10,
+                                                         T11,
+                                                         T12,
+                                                         T13,
+                                                         T14,
+                                                         T15,
+                                                         T16,
+                                                         T17,
+                                                         T18,
+                                                         T19,
+                                                         T20,
+                                                         T21,
+                                                         T22,
+                                                         R]],
+                                     value: unsafe.CFuncPtr22[T1,
+                                                              T2,
+                                                              T3,
+                                                              T4,
+                                                              T5,
+                                                              T6,
+                                                              T7,
+                                                              T8,
+                                                              T9,
+                                                              T10,
+                                                              T11,
+                                                              T12,
+                                                              T13,
+                                                              T14,
+                                                              T15,
+                                                              T16,
+                                                              T17,
+                                                              T18,
+                                                              T19,
+                                                              T20,
+                                                              T21,
+                                                              T22,
+                                                              R]): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr21
-      extends Tag[
-        unsafe.CFuncPtr21[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr21[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr21[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
-    @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr21[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr21[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
-      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
-  }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
-
-  object CFuncPtr22
-      extends Tag[
-        unsafe.CFuncPtr22[Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any,
-                          Any]] {
-    @alwaysinline def size: Int      = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(
-        ptr: unsafe.Ptr[
-          unsafe.CFuncPtr22[Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any,
-                            Any]]): unsafe.CFuncPtr22[Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any,
-                                                      Any] =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
-    @alwaysinline override def store(ptr: unsafe.Ptr[
-                                       unsafe.CFuncPtr22[Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any,
-                                                         Any]],
-                                     value: unsafe.CFuncPtr22[Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any,
-                                                              Any]): Unit =
-      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
-  }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 214)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 217)
 
   @alwaysinline implicit def materializePtrTag[T](
       implicit tag: Tag[T]): Tag[unsafe.Ptr[T]] =
@@ -10097,87 +9609,87 @@ object Tag {
       : Tag[T] =
     Tag.Class(
       implicitly[ClassTag[T]].runtimeClass.asInstanceOf[java.lang.Class[T]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeUnitTag: Tag[scala.Unit] =
     Unit
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeBooleanTag: Tag[scala.Boolean] =
     Boolean
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeCharTag: Tag[scala.Char] =
     Char
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeByteTag: Tag[scala.Byte] =
     Byte
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeUByteTag: Tag[unsigned.UByte] =
     UByte
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeShortTag: Tag[scala.Short] =
     Short
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeUShortTag: Tag[unsigned.UShort] =
     UShort
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeIntTag: Tag[scala.Int] =
     Int
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeUIntTag: Tag[unsigned.UInt] =
     UInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeLongTag: Tag[scala.Long] =
     Long
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeULongTag: Tag[unsigned.ULong] =
     ULong
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeFloatTag: Tag[scala.Float] =
     Float
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 220)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 223)
   @alwaysinline implicit def materializeDoubleTag: Tag[scala.Double] =
     Double
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 224)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 227)
   @alwaysinline implicit def materializeNat0Tag: Tag[unsafe.Nat._0] =
     Nat0
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 224)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 227)
   @alwaysinline implicit def materializeNat1Tag: Tag[unsafe.Nat._1] =
     Nat1
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 224)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 227)
   @alwaysinline implicit def materializeNat2Tag: Tag[unsafe.Nat._2] =
     Nat2
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 224)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 227)
   @alwaysinline implicit def materializeNat3Tag: Tag[unsafe.Nat._3] =
     Nat3
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 224)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 227)
   @alwaysinline implicit def materializeNat4Tag: Tag[unsafe.Nat._4] =
     Nat4
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 224)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 227)
   @alwaysinline implicit def materializeNat5Tag: Tag[unsafe.Nat._5] =
     Nat5
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 224)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 227)
   @alwaysinline implicit def materializeNat6Tag: Tag[unsafe.Nat._6] =
     Nat6
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 224)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 227)
   @alwaysinline implicit def materializeNat7Tag: Tag[unsafe.Nat._7] =
     Nat7
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 224)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 227)
   @alwaysinline implicit def materializeNat8Tag: Tag[unsafe.Nat._8] =
     Nat8
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 224)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 227)
   @alwaysinline implicit def materializeNat9Tag: Tag[unsafe.Nat._9] =
     Nat9
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 232)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 235)
   @alwaysinline implicit def materializeNatDigit2Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag]
       : Tag.Digit2[N1, N2] =
     Tag.Digit2(implicitly[Tag[N1]], implicitly[Tag[N2]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 232)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 235)
   @alwaysinline implicit def materializeNatDigit3Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag]
       : Tag.Digit3[N1, N2, N3] =
     Tag.Digit3(implicitly[Tag[N1]], implicitly[Tag[N2]], implicitly[Tag[N3]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 232)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 235)
   @alwaysinline implicit def materializeNatDigit4Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -10187,7 +9699,7 @@ object Tag {
                implicitly[Tag[N2]],
                implicitly[Tag[N3]],
                implicitly[Tag[N4]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 232)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 235)
   @alwaysinline implicit def materializeNatDigit5Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -10199,7 +9711,7 @@ object Tag {
                implicitly[Tag[N3]],
                implicitly[Tag[N4]],
                implicitly[Tag[N5]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 232)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 235)
   @alwaysinline implicit def materializeNatDigit6Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -10213,7 +9725,7 @@ object Tag {
                implicitly[Tag[N4]],
                implicitly[Tag[N5]],
                implicitly[Tag[N6]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 232)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 235)
   @alwaysinline implicit def materializeNatDigit7Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -10229,7 +9741,7 @@ object Tag {
                implicitly[Tag[N5]],
                implicitly[Tag[N6]],
                implicitly[Tag[N7]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 232)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 235)
   @alwaysinline implicit def materializeNatDigit8Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -10249,7 +9761,7 @@ object Tag {
       implicitly[Tag[N7]],
       implicitly[Tag[N8]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 232)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 235)
   @alwaysinline implicit def materializeNatDigit9Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -10271,21 +9783,21 @@ object Tag {
       implicitly[Tag[N8]],
       implicitly[Tag[N9]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct0Tag: Tag.CStruct0 =
     Tag.CStruct0()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct1Tag[T1: Tag]: Tag.CStruct1[T1] =
     Tag.CStruct1(implicitly[Tag[T1]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct2Tag[T1: Tag, T2: Tag]
       : Tag.CStruct2[T1, T2] =
     Tag.CStruct2(implicitly[Tag[T1]], implicitly[Tag[T2]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct3Tag[T1: Tag, T2: Tag, T3: Tag]
       : Tag.CStruct3[T1, T2, T3] =
     Tag.CStruct3(implicitly[Tag[T1]], implicitly[Tag[T2]], implicitly[Tag[T3]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct4Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -10295,7 +9807,7 @@ object Tag {
                  implicitly[Tag[T2]],
                  implicitly[Tag[T3]],
                  implicitly[Tag[T4]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct5Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -10307,7 +9819,7 @@ object Tag {
                  implicitly[Tag[T3]],
                  implicitly[Tag[T4]],
                  implicitly[Tag[T5]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct6Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -10321,7 +9833,7 @@ object Tag {
                  implicitly[Tag[T4]],
                  implicitly[Tag[T5]],
                  implicitly[Tag[T6]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct7Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -10337,7 +9849,7 @@ object Tag {
                  implicitly[Tag[T5]],
                  implicitly[Tag[T6]],
                  implicitly[Tag[T7]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct8Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -10357,7 +9869,7 @@ object Tag {
       implicitly[Tag[T7]],
       implicitly[Tag[T8]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct9Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -10379,7 +9891,7 @@ object Tag {
       implicitly[Tag[T8]],
       implicitly[Tag[T9]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct10Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10403,7 +9915,7 @@ object Tag {
       implicitly[Tag[T9]],
       implicitly[Tag[T10]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct11Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10429,7 +9941,7 @@ object Tag {
       implicitly[Tag[T10]],
       implicitly[Tag[T11]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct12Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10457,7 +9969,7 @@ object Tag {
       implicitly[Tag[T11]],
       implicitly[Tag[T12]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct13Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10487,7 +9999,7 @@ object Tag {
       implicitly[Tag[T12]],
       implicitly[Tag[T13]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct14Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10532,7 +10044,7 @@ object Tag {
       implicitly[Tag[T13]],
       implicitly[Tag[T14]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct15Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10580,7 +10092,7 @@ object Tag {
       implicitly[Tag[T14]],
       implicitly[Tag[T15]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct16Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10631,7 +10143,7 @@ object Tag {
       implicitly[Tag[T15]],
       implicitly[Tag[T16]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct17Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10685,7 +10197,7 @@ object Tag {
       implicitly[Tag[T16]],
       implicitly[Tag[T17]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct18Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10742,7 +10254,7 @@ object Tag {
       implicitly[Tag[T17]],
       implicitly[Tag[T18]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct19Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10802,7 +10314,7 @@ object Tag {
       implicitly[Tag[T18]],
       implicitly[Tag[T19]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct20Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10865,7 +10377,7 @@ object Tag {
       implicitly[Tag[T19]],
       implicitly[Tag[T20]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct21Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10931,7 +10443,7 @@ object Tag {
       implicitly[Tag[T20]],
       implicitly[Tag[T21]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 240)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
   @alwaysinline implicit def materializeCStruct22Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -11000,132 +10512,83 @@ object Tag {
       implicitly[Tag[T21]],
       implicitly[Tag[T22]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 243)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 246)
   @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]
       : Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
   @alwaysinline implicit def materializeCFuncPtr0[R]: Tag[unsafe.CFuncPtr0[R]] =
-    Tag.CFuncPtr0.asInstanceOf[Tag[unsafe.CFuncPtr0[R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr1[T1, R]
-      : Tag[unsafe.CFuncPtr1[T1, R]] =
-    Tag.CFuncPtr1.asInstanceOf[Tag[unsafe.CFuncPtr1[T1, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr2[T1, T2, R]
-      : Tag[unsafe.CFuncPtr2[T1, T2, R]] =
-    Tag.CFuncPtr2.asInstanceOf[Tag[unsafe.CFuncPtr2[T1, T2, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr3[T1, T2, T3, R]
-      : Tag[unsafe.CFuncPtr3[T1, T2, T3, R]] =
-    Tag.CFuncPtr3.asInstanceOf[Tag[unsafe.CFuncPtr3[T1, T2, T3, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr4[T1, T2, T3, T4, R]
-      : Tag[unsafe.CFuncPtr4[T1, T2, T3, T4, R]] =
-    Tag.CFuncPtr4.asInstanceOf[Tag[unsafe.CFuncPtr4[T1, T2, T3, T4, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr5[T1, T2, T3, T4, T5, R]
-      : Tag[unsafe.CFuncPtr5[T1, T2, T3, T4, T5, R]] =
-    Tag.CFuncPtr5.asInstanceOf[Tag[unsafe.CFuncPtr5[T1, T2, T3, T4, T5, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr6[T1, T2, T3, T4, T5, T6, R]
-      : Tag[unsafe.CFuncPtr6[T1, T2, T3, T4, T5, T6, R]] =
-    Tag.CFuncPtr6.asInstanceOf[Tag[unsafe.CFuncPtr6[T1, T2, T3, T4, T5, T6, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]
-      : Tag[unsafe.CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]] =
-    Tag.CFuncPtr7
-      .asInstanceOf[Tag[unsafe.CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr8[T1,
-                                                  T2,
-                                                  T3,
-                                                  T4,
-                                                  T5,
-                                                  T6,
-                                                  T7,
-                                                  T8,
-                                                  R]
-      : Tag[unsafe.CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]] =
-    Tag.CFuncPtr8
-      .asInstanceOf[Tag[unsafe.CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr9[T1,
-                                                  T2,
-                                                  T3,
-                                                  T4,
-                                                  T5,
-                                                  T6,
-                                                  T7,
-                                                  T8,
-                                                  T9,
-                                                  R]
-      : Tag[unsafe.CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]] =
-    Tag.CFuncPtr9.asInstanceOf[Tag[
-      unsafe.CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr10[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   R]
-      : Tag[unsafe.CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]] =
-    Tag.CFuncPtr10.asInstanceOf[Tag[
-      unsafe.CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr11[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   R]: Tag[
+    macro MacroImpl.materializeCFuncPtr0[R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr1[T1, R]: Tag[
+    unsafe.CFuncPtr1[T1, R]] =
+    macro MacroImpl.materializeCFuncPtr1[T1, R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr2[T1, T2, R]: Tag[
+    unsafe.CFuncPtr2[T1, T2, R]] =
+    macro MacroImpl.materializeCFuncPtr2[T1, T2, R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr3[T1, T2, T3, R]: Tag[
+    unsafe.CFuncPtr3[T1, T2, T3, R]] =
+    macro MacroImpl.materializeCFuncPtr3[T1, T2, T3, R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr4[T1, T2, T3, T4, R]: Tag[
+    unsafe.CFuncPtr4[T1, T2, T3, T4, R]] =
+    macro MacroImpl.materializeCFuncPtr4[T1, T2, T3, T4, R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr5[T1, T2, T3, T4, T5, R]: Tag[
+    unsafe.CFuncPtr5[T1, T2, T3, T4, T5, R]] =
+    macro MacroImpl.materializeCFuncPtr5[T1, T2, T3, T4, T5, R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr6[T1, T2, T3, T4, T5, T6, R]: Tag[
+    unsafe.CFuncPtr6[T1, T2, T3, T4, T5, T6, R]] =
+    macro MacroImpl.materializeCFuncPtr6[T1, T2, T3, T4, T5, T6, R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]: Tag[
+    unsafe.CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]] =
+    macro MacroImpl.materializeCFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr8[
+      T1, T2, T3, T4, T5, T6, T7, T8, R]: Tag[
+    unsafe.CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]] =
+    macro MacroImpl.materializeCFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr9[
+      T1, T2, T3, T4, T5, T6, T7, T8, T9, R]: Tag[
+    unsafe.CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]] =
+    macro MacroImpl.materializeCFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr10[
+      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]: Tag[
+    unsafe.CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]] =
+    macro MacroImpl
+      .materializeCFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr11[
+      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]: Tag[
     unsafe.CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]] =
-    Tag.CFuncPtr11.asInstanceOf[Tag[
-      unsafe.CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr12[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   T12,
-                                                   R]: Tag[
+    macro MacroImpl
+      .materializeCFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr12[
+      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R]: Tag[
     unsafe.CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R]] =
-    Tag.CFuncPtr12.asInstanceOf[Tag[
-      unsafe.CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr13[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   T12,
-                                                   T13,
-                                                   R]: Tag[
+    macro MacroImpl.materializeCFuncPtr12[T1,
+                                          T2,
+                                          T3,
+                                          T4,
+                                          T5,
+                                          T6,
+                                          T7,
+                                          T8,
+                                          T9,
+                                          T10,
+                                          T11,
+                                          T12,
+                                          R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr13[
+      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R]: Tag[
     unsafe.CFuncPtr13[T1,
                       T2,
                       T3,
@@ -11140,37 +10603,23 @@ object Tag {
                       T12,
                       T13,
                       R]] =
-    Tag.CFuncPtr13.asInstanceOf[Tag[
-      unsafe.CFuncPtr13[T1,
-                        T2,
-                        T3,
-                        T4,
-                        T5,
-                        T6,
-                        T7,
-                        T8,
-                        T9,
-                        T10,
-                        T11,
-                        T12,
-                        T13,
-                        R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr14[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   T12,
-                                                   T13,
-                                                   T14,
-                                                   R]: Tag[
+    macro MacroImpl.materializeCFuncPtr13[T1,
+                                          T2,
+                                          T3,
+                                          T4,
+                                          T5,
+                                          T6,
+                                          T7,
+                                          T8,
+                                          T9,
+                                          T10,
+                                          T11,
+                                          T12,
+                                          T13,
+                                          R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr14[
+      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R]: Tag[
     unsafe.CFuncPtr14[T1,
                       T2,
                       T3,
@@ -11186,39 +10635,24 @@ object Tag {
                       T13,
                       T14,
                       R]] =
-    Tag.CFuncPtr14.asInstanceOf[Tag[
-      unsafe.CFuncPtr14[T1,
-                        T2,
-                        T3,
-                        T4,
-                        T5,
-                        T6,
-                        T7,
-                        T8,
-                        T9,
-                        T10,
-                        T11,
-                        T12,
-                        T13,
-                        T14,
-                        R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr15[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   T12,
-                                                   T13,
-                                                   T14,
-                                                   T15,
-                                                   R]: Tag[
+    macro MacroImpl.materializeCFuncPtr14[T1,
+                                          T2,
+                                          T3,
+                                          T4,
+                                          T5,
+                                          T6,
+                                          T7,
+                                          T8,
+                                          T9,
+                                          T10,
+                                          T11,
+                                          T12,
+                                          T13,
+                                          T14,
+                                          R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr15[
+      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R]: Tag[
     unsafe.CFuncPtr15[T1,
                       T2,
                       T3,
@@ -11235,41 +10669,41 @@ object Tag {
                       T14,
                       T15,
                       R]] =
-    Tag.CFuncPtr15.asInstanceOf[Tag[
-      unsafe.CFuncPtr15[T1,
-                        T2,
-                        T3,
-                        T4,
-                        T5,
-                        T6,
-                        T7,
-                        T8,
-                        T9,
-                        T10,
-                        T11,
-                        T12,
-                        T13,
-                        T14,
-                        T15,
-                        R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr16[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   T12,
-                                                   T13,
-                                                   T14,
-                                                   T15,
-                                                   T16,
-                                                   R]: Tag[
+    macro MacroImpl.materializeCFuncPtr15[T1,
+                                          T2,
+                                          T3,
+                                          T4,
+                                          T5,
+                                          T6,
+                                          T7,
+                                          T8,
+                                          T9,
+                                          T10,
+                                          T11,
+                                          T12,
+                                          T13,
+                                          T14,
+                                          T15,
+                                          R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr16[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      R]: Tag[
     unsafe.CFuncPtr16[T1,
                       T2,
                       T3,
@@ -11287,43 +10721,43 @@ object Tag {
                       T15,
                       T16,
                       R]] =
-    Tag.CFuncPtr16.asInstanceOf[Tag[
-      unsafe.CFuncPtr16[T1,
-                        T2,
-                        T3,
-                        T4,
-                        T5,
-                        T6,
-                        T7,
-                        T8,
-                        T9,
-                        T10,
-                        T11,
-                        T12,
-                        T13,
-                        T14,
-                        T15,
-                        T16,
-                        R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr17[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   T12,
-                                                   T13,
-                                                   T14,
-                                                   T15,
-                                                   T16,
-                                                   T17,
-                                                   R]: Tag[
+    macro MacroImpl.materializeCFuncPtr16[T1,
+                                          T2,
+                                          T3,
+                                          T4,
+                                          T5,
+                                          T6,
+                                          T7,
+                                          T8,
+                                          T9,
+                                          T10,
+                                          T11,
+                                          T12,
+                                          T13,
+                                          T14,
+                                          T15,
+                                          T16,
+                                          R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr17[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      R]: Tag[
     unsafe.CFuncPtr17[T1,
                       T2,
                       T3,
@@ -11342,45 +10776,45 @@ object Tag {
                       T16,
                       T17,
                       R]] =
-    Tag.CFuncPtr17.asInstanceOf[Tag[
-      unsafe.CFuncPtr17[T1,
-                        T2,
-                        T3,
-                        T4,
-                        T5,
-                        T6,
-                        T7,
-                        T8,
-                        T9,
-                        T10,
-                        T11,
-                        T12,
-                        T13,
-                        T14,
-                        T15,
-                        T16,
-                        T17,
-                        R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr18[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   T12,
-                                                   T13,
-                                                   T14,
-                                                   T15,
-                                                   T16,
-                                                   T17,
-                                                   T18,
-                                                   R]: Tag[
+    macro MacroImpl.materializeCFuncPtr17[T1,
+                                          T2,
+                                          T3,
+                                          T4,
+                                          T5,
+                                          T6,
+                                          T7,
+                                          T8,
+                                          T9,
+                                          T10,
+                                          T11,
+                                          T12,
+                                          T13,
+                                          T14,
+                                          T15,
+                                          T16,
+                                          T17,
+                                          R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr18[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      T18,
+      R]: Tag[
     unsafe.CFuncPtr18[T1,
                       T2,
                       T3,
@@ -11400,47 +10834,47 @@ object Tag {
                       T17,
                       T18,
                       R]] =
-    Tag.CFuncPtr18.asInstanceOf[Tag[
-      unsafe.CFuncPtr18[T1,
-                        T2,
-                        T3,
-                        T4,
-                        T5,
-                        T6,
-                        T7,
-                        T8,
-                        T9,
-                        T10,
-                        T11,
-                        T12,
-                        T13,
-                        T14,
-                        T15,
-                        T16,
-                        T17,
-                        T18,
-                        R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr19[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   T12,
-                                                   T13,
-                                                   T14,
-                                                   T15,
-                                                   T16,
-                                                   T17,
-                                                   T18,
-                                                   T19,
-                                                   R]: Tag[
+    macro MacroImpl.materializeCFuncPtr18[T1,
+                                          T2,
+                                          T3,
+                                          T4,
+                                          T5,
+                                          T6,
+                                          T7,
+                                          T8,
+                                          T9,
+                                          T10,
+                                          T11,
+                                          T12,
+                                          T13,
+                                          T14,
+                                          T15,
+                                          T16,
+                                          T17,
+                                          T18,
+                                          R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr19[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      T18,
+      T19,
+      R]: Tag[
     unsafe.CFuncPtr19[T1,
                       T2,
                       T3,
@@ -11461,49 +10895,49 @@ object Tag {
                       T18,
                       T19,
                       R]] =
-    Tag.CFuncPtr19.asInstanceOf[Tag[
-      unsafe.CFuncPtr19[T1,
-                        T2,
-                        T3,
-                        T4,
-                        T5,
-                        T6,
-                        T7,
-                        T8,
-                        T9,
-                        T10,
-                        T11,
-                        T12,
-                        T13,
-                        T14,
-                        T15,
-                        T16,
-                        T17,
-                        T18,
-                        T19,
-                        R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr20[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   T12,
-                                                   T13,
-                                                   T14,
-                                                   T15,
-                                                   T16,
-                                                   T17,
-                                                   T18,
-                                                   T19,
-                                                   T20,
-                                                   R]: Tag[
+    macro MacroImpl.materializeCFuncPtr19[T1,
+                                          T2,
+                                          T3,
+                                          T4,
+                                          T5,
+                                          T6,
+                                          T7,
+                                          T8,
+                                          T9,
+                                          T10,
+                                          T11,
+                                          T12,
+                                          T13,
+                                          T14,
+                                          T15,
+                                          T16,
+                                          T17,
+                                          T18,
+                                          T19,
+                                          R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr20[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      T18,
+      T19,
+      T20,
+      R]: Tag[
     unsafe.CFuncPtr20[T1,
                       T2,
                       T3,
@@ -11525,51 +10959,51 @@ object Tag {
                       T19,
                       T20,
                       R]] =
-    Tag.CFuncPtr20.asInstanceOf[Tag[
-      unsafe.CFuncPtr20[T1,
-                        T2,
-                        T3,
-                        T4,
-                        T5,
-                        T6,
-                        T7,
-                        T8,
-                        T9,
-                        T10,
-                        T11,
-                        T12,
-                        T13,
-                        T14,
-                        T15,
-                        T16,
-                        T17,
-                        T18,
-                        T19,
-                        T20,
-                        R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr21[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   T12,
-                                                   T13,
-                                                   T14,
-                                                   T15,
-                                                   T16,
-                                                   T17,
-                                                   T18,
-                                                   T19,
-                                                   T20,
-                                                   T21,
-                                                   R]: Tag[
+    macro MacroImpl.materializeCFuncPtr20[T1,
+                                          T2,
+                                          T3,
+                                          T4,
+                                          T5,
+                                          T6,
+                                          T7,
+                                          T8,
+                                          T9,
+                                          T10,
+                                          T11,
+                                          T12,
+                                          T13,
+                                          T14,
+                                          T15,
+                                          T16,
+                                          T17,
+                                          T18,
+                                          T19,
+                                          T20,
+                                          R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr21[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      T18,
+      T19,
+      T20,
+      T21,
+      R]: Tag[
     unsafe.CFuncPtr21[T1,
                       T2,
                       T3,
@@ -11592,53 +11026,53 @@ object Tag {
                       T20,
                       T21,
                       R]] =
-    Tag.CFuncPtr21.asInstanceOf[Tag[
-      unsafe.CFuncPtr21[T1,
-                        T2,
-                        T3,
-                        T4,
-                        T5,
-                        T6,
-                        T7,
-                        T8,
-                        T9,
-                        T10,
-                        T11,
-                        T12,
-                        T13,
-                        T14,
-                        T15,
-                        T16,
-                        T17,
-                        T18,
-                        T19,
-                        T20,
-                        T21,
-                        R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 247)
-  @alwaysinline implicit def materializeCFuncPtr22[T1,
-                                                   T2,
-                                                   T3,
-                                                   T4,
-                                                   T5,
-                                                   T6,
-                                                   T7,
-                                                   T8,
-                                                   T9,
-                                                   T10,
-                                                   T11,
-                                                   T12,
-                                                   T13,
-                                                   T14,
-                                                   T15,
-                                                   T16,
-                                                   T17,
-                                                   T18,
-                                                   T19,
-                                                   T20,
-                                                   T21,
-                                                   T22,
-                                                   R]: Tag[
+    macro MacroImpl.materializeCFuncPtr21[T1,
+                                          T2,
+                                          T3,
+                                          T4,
+                                          T5,
+                                          T6,
+                                          T7,
+                                          T8,
+                                          T9,
+                                          T10,
+                                          T11,
+                                          T12,
+                                          T13,
+                                          T14,
+                                          T15,
+                                          T16,
+                                          T17,
+                                          T18,
+                                          T19,
+                                          T20,
+                                          T21,
+                                          R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+  @alwaysinline implicit def materializeCFuncPtr22[
+      T1,
+      T2,
+      T3,
+      T4,
+      T5,
+      T6,
+      T7,
+      T8,
+      T9,
+      T10,
+      T11,
+      T12,
+      T13,
+      T14,
+      T15,
+      T16,
+      T17,
+      T18,
+      T19,
+      T20,
+      T21,
+      T22,
+      R]: Tag[
     unsafe.CFuncPtr22[T1,
                       T2,
                       T3,
@@ -11662,29 +11096,913 @@ object Tag {
                       T21,
                       T22,
                       R]] =
-    Tag.CFuncPtr22.asInstanceOf[Tag[
-      unsafe.CFuncPtr22[T1,
-                        T2,
-                        T3,
-                        T4,
-                        T5,
-                        T6,
-                        T7,
-                        T8,
-                        T9,
-                        T10,
-                        T11,
-                        T12,
-                        T13,
-                        T14,
-                        T15,
-                        T16,
-                        T17,
-                        T18,
-                        T19,
-                        T20,
-                        T21,
-                        T22,
-                        R]]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 250)
+    macro MacroImpl.materializeCFuncPtr22[T1,
+                                          T2,
+                                          T3,
+                                          T4,
+                                          T5,
+                                          T6,
+                                          T7,
+                                          T8,
+                                          T9,
+                                          T10,
+                                          T11,
+                                          T12,
+                                          T13,
+                                          T14,
+                                          T15,
+                                          T16,
+                                          T17,
+                                          T18,
+                                          T19,
+                                          T20,
+                                          T21,
+                                          T22,
+                                          R]
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 253)
+
+  private class MacroImpl(val c: scala.reflect.macros.blackbox.Context) {
+    import c.universe._
+
+    val annotation = q"_root_.scala.scalanative.annotation"
+    val runtime    = q"_root_.scala.scalanative.runtime"
+    val unsafe     = q"_root_.scala.scalanative.unsafe"
+
+    val callCFunc = q"$runtime.Intrinsics.callCFuncPtr"
+    val unboxPtr  = q"$runtime.Boxes.unboxToPtr"
+
+    val fnPtr = q"$runtime.Intrinsics.loadRawPtr($runtime.toRawPtr(ptr))"
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr0[R: c.WeakTypeTag]: c.Tree = {
+      val R = weakTypeOf[R].dealias
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr0[$R] {
+					override def apply(): $R = $callCFunc[$R]($fnPtr)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr0[$R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr0[$R]]): $unsafe.CFuncPtr0[$R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr1[T1: c.WeakTypeTag, R: c.WeakTypeTag]: c.Tree = {
+      val R  = weakTypeOf[R].dealias
+      val T1 = weakTypeOf[T1].dealias
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr1[$T1, $R] {
+					override def apply(arg1: $T1): $R = $callCFunc[$T1, $R]($fnPtr, arg1)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr1[$T1, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr1[$T1, $R]]): $unsafe.CFuncPtr1[$T1, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr2[T1: c.WeakTypeTag,
+                             T2: c.WeakTypeTag,
+                             R: c.WeakTypeTag]: c.Tree = {
+      val R  = weakTypeOf[R].dealias
+      val T1 = weakTypeOf[T1].dealias
+      val T2 = weakTypeOf[T2].dealias
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr2[$T1, $T2, $R] {
+					override def apply(arg1: $T1, arg2: $T2): $R = $callCFunc[$T1, $T2, $R]($fnPtr, arg1, arg2)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr2[$T1, $T2, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr2[$T1, $T2, $R]]): $unsafe.CFuncPtr2[$T1, $T2, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr3[T1: c.WeakTypeTag,
+                             T2: c.WeakTypeTag,
+                             T3: c.WeakTypeTag,
+                             R: c.WeakTypeTag]: c.Tree = {
+      val R  = weakTypeOf[R].dealias
+      val T1 = weakTypeOf[T1].dealias
+      val T2 = weakTypeOf[T2].dealias
+      val T3 = weakTypeOf[T3].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr3[$T1, $T2, $T3, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3): $R = $callCFunc[$T1, $T2, $T3, $R]($fnPtr, arg1, arg2, arg3)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr3[$T1, $T2, $T3, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr3[$T1, $T2, $T3, $R]]): $unsafe.CFuncPtr3[$T1, $T2, $T3, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr4[T1: c.WeakTypeTag,
+                             T2: c.WeakTypeTag,
+                             T3: c.WeakTypeTag,
+                             T4: c.WeakTypeTag,
+                             R: c.WeakTypeTag]: c.Tree = {
+      val R  = weakTypeOf[R].dealias
+      val T1 = weakTypeOf[T1].dealias
+      val T2 = weakTypeOf[T2].dealias
+      val T3 = weakTypeOf[T3].dealias
+      val T4 = weakTypeOf[T4].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr4[$T1, $T2, $T3, $T4, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4): $R = $callCFunc[$T1, $T2, $T3, $T4, $R]($fnPtr, arg1, arg2, arg3, arg4)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr4[$T1, $T2, $T3, $T4, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr4[$T1, $T2, $T3, $T4, $R]]): $unsafe.CFuncPtr4[$T1, $T2, $T3, $T4, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr5[T1: c.WeakTypeTag,
+                             T2: c.WeakTypeTag,
+                             T3: c.WeakTypeTag,
+                             T4: c.WeakTypeTag,
+                             T5: c.WeakTypeTag,
+                             R: c.WeakTypeTag]: c.Tree = {
+      val R  = weakTypeOf[R].dealias
+      val T1 = weakTypeOf[T1].dealias
+      val T2 = weakTypeOf[T2].dealias
+      val T3 = weakTypeOf[T3].dealias
+      val T4 = weakTypeOf[T4].dealias
+      val T5 = weakTypeOf[T5].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr5[$T1, $T2, $T3, $T4, $T5, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr5[$T1, $T2, $T3, $T4, $T5, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr5[$T1, $T2, $T3, $T4, $T5, $R]]): $unsafe.CFuncPtr5[$T1, $T2, $T3, $T4, $T5, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr6[T1: c.WeakTypeTag,
+                             T2: c.WeakTypeTag,
+                             T3: c.WeakTypeTag,
+                             T4: c.WeakTypeTag,
+                             T5: c.WeakTypeTag,
+                             T6: c.WeakTypeTag,
+                             R: c.WeakTypeTag]: c.Tree = {
+      val R  = weakTypeOf[R].dealias
+      val T1 = weakTypeOf[T1].dealias
+      val T2 = weakTypeOf[T2].dealias
+      val T3 = weakTypeOf[T3].dealias
+      val T4 = weakTypeOf[T4].dealias
+      val T5 = weakTypeOf[T5].dealias
+      val T6 = weakTypeOf[T6].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr6[$T1, $T2, $T3, $T4, $T5, $T6, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr6[$T1, $T2, $T3, $T4, $T5, $T6, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr6[$T1, $T2, $T3, $T4, $T5, $T6, $R]]): $unsafe.CFuncPtr6[$T1, $T2, $T3, $T4, $T5, $T6, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr7[T1: c.WeakTypeTag,
+                             T2: c.WeakTypeTag,
+                             T3: c.WeakTypeTag,
+                             T4: c.WeakTypeTag,
+                             T5: c.WeakTypeTag,
+                             T6: c.WeakTypeTag,
+                             T7: c.WeakTypeTag,
+                             R: c.WeakTypeTag]: c.Tree = {
+      val R  = weakTypeOf[R].dealias
+      val T1 = weakTypeOf[T1].dealias
+      val T2 = weakTypeOf[T2].dealias
+      val T3 = weakTypeOf[T3].dealias
+      val T4 = weakTypeOf[T4].dealias
+      val T5 = weakTypeOf[T5].dealias
+      val T6 = weakTypeOf[T6].dealias
+      val T7 = weakTypeOf[T7].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr7[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr7[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr7[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $R]]): $unsafe.CFuncPtr7[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr8[T1: c.WeakTypeTag,
+                             T2: c.WeakTypeTag,
+                             T3: c.WeakTypeTag,
+                             T4: c.WeakTypeTag,
+                             T5: c.WeakTypeTag,
+                             T6: c.WeakTypeTag,
+                             T7: c.WeakTypeTag,
+                             T8: c.WeakTypeTag,
+                             R: c.WeakTypeTag]: c.Tree = {
+      val R  = weakTypeOf[R].dealias
+      val T1 = weakTypeOf[T1].dealias
+      val T2 = weakTypeOf[T2].dealias
+      val T3 = weakTypeOf[T3].dealias
+      val T4 = weakTypeOf[T4].dealias
+      val T5 = weakTypeOf[T5].dealias
+      val T6 = weakTypeOf[T6].dealias
+      val T7 = weakTypeOf[T7].dealias
+      val T8 = weakTypeOf[T8].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr8[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr8[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr8[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $R]]): $unsafe.CFuncPtr8[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr9[T1: c.WeakTypeTag,
+                             T2: c.WeakTypeTag,
+                             T3: c.WeakTypeTag,
+                             T4: c.WeakTypeTag,
+                             T5: c.WeakTypeTag,
+                             T6: c.WeakTypeTag,
+                             T7: c.WeakTypeTag,
+                             T8: c.WeakTypeTag,
+                             T9: c.WeakTypeTag,
+                             R: c.WeakTypeTag]: c.Tree = {
+      val R  = weakTypeOf[R].dealias
+      val T1 = weakTypeOf[T1].dealias
+      val T2 = weakTypeOf[T2].dealias
+      val T3 = weakTypeOf[T3].dealias
+      val T4 = weakTypeOf[T4].dealias
+      val T5 = weakTypeOf[T5].dealias
+      val T6 = weakTypeOf[T6].dealias
+      val T7 = weakTypeOf[T7].dealias
+      val T8 = weakTypeOf[T8].dealias
+      val T9 = weakTypeOf[T9].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr9[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr9[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr9[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $R]]): $unsafe.CFuncPtr9[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr10[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr10[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr10[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr10[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $R]]): $unsafe.CFuncPtr10[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr11[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr11[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr11[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr11[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $R]]): $unsafe.CFuncPtr11[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr12[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              T12: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+      val T12 = weakTypeOf[T12].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr12[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11, arg12: $T12): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr12[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr12[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $R]]): $unsafe.CFuncPtr12[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr13[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              T12: c.WeakTypeTag,
+                              T13: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+      val T12 = weakTypeOf[T12].dealias
+      val T13 = weakTypeOf[T13].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr13[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11, arg12: $T12, arg13: $T13): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr13[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr13[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $R]]): $unsafe.CFuncPtr13[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr14[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              T12: c.WeakTypeTag,
+                              T13: c.WeakTypeTag,
+                              T14: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+      val T12 = weakTypeOf[T12].dealias
+      val T13 = weakTypeOf[T13].dealias
+      val T14 = weakTypeOf[T14].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr14[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11, arg12: $T12, arg13: $T13, arg14: $T14): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr14[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr14[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $R]]): $unsafe.CFuncPtr14[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr15[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              T12: c.WeakTypeTag,
+                              T13: c.WeakTypeTag,
+                              T14: c.WeakTypeTag,
+                              T15: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+      val T12 = weakTypeOf[T12].dealias
+      val T13 = weakTypeOf[T13].dealias
+      val T14 = weakTypeOf[T14].dealias
+      val T15 = weakTypeOf[T15].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr15[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11, arg12: $T12, arg13: $T13, arg14: $T14, arg15: $T15): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr15[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr15[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $R]]): $unsafe.CFuncPtr15[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr16[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              T12: c.WeakTypeTag,
+                              T13: c.WeakTypeTag,
+                              T14: c.WeakTypeTag,
+                              T15: c.WeakTypeTag,
+                              T16: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+      val T12 = weakTypeOf[T12].dealias
+      val T13 = weakTypeOf[T13].dealias
+      val T14 = weakTypeOf[T14].dealias
+      val T15 = weakTypeOf[T15].dealias
+      val T16 = weakTypeOf[T16].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr16[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11, arg12: $T12, arg13: $T13, arg14: $T14, arg15: $T15, arg16: $T16): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr16[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr16[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $R]]): $unsafe.CFuncPtr16[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr17[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              T12: c.WeakTypeTag,
+                              T13: c.WeakTypeTag,
+                              T14: c.WeakTypeTag,
+                              T15: c.WeakTypeTag,
+                              T16: c.WeakTypeTag,
+                              T17: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+      val T12 = weakTypeOf[T12].dealias
+      val T13 = weakTypeOf[T13].dealias
+      val T14 = weakTypeOf[T14].dealias
+      val T15 = weakTypeOf[T15].dealias
+      val T16 = weakTypeOf[T16].dealias
+      val T17 = weakTypeOf[T17].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr17[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11, arg12: $T12, arg13: $T13, arg14: $T14, arg15: $T15, arg16: $T16, arg17: $T17): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr17[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr17[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $R]]): $unsafe.CFuncPtr17[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr18[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              T12: c.WeakTypeTag,
+                              T13: c.WeakTypeTag,
+                              T14: c.WeakTypeTag,
+                              T15: c.WeakTypeTag,
+                              T16: c.WeakTypeTag,
+                              T17: c.WeakTypeTag,
+                              T18: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+      val T12 = weakTypeOf[T12].dealias
+      val T13 = weakTypeOf[T13].dealias
+      val T14 = weakTypeOf[T14].dealias
+      val T15 = weakTypeOf[T15].dealias
+      val T16 = weakTypeOf[T16].dealias
+      val T17 = weakTypeOf[T17].dealias
+      val T18 = weakTypeOf[T18].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr18[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11, arg12: $T12, arg13: $T13, arg14: $T14, arg15: $T15, arg16: $T16, arg17: $T17, arg18: $T18): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr18[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr18[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $R]]): $unsafe.CFuncPtr18[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr19[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              T12: c.WeakTypeTag,
+                              T13: c.WeakTypeTag,
+                              T14: c.WeakTypeTag,
+                              T15: c.WeakTypeTag,
+                              T16: c.WeakTypeTag,
+                              T17: c.WeakTypeTag,
+                              T18: c.WeakTypeTag,
+                              T19: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+      val T12 = weakTypeOf[T12].dealias
+      val T13 = weakTypeOf[T13].dealias
+      val T14 = weakTypeOf[T14].dealias
+      val T15 = weakTypeOf[T15].dealias
+      val T16 = weakTypeOf[T16].dealias
+      val T17 = weakTypeOf[T17].dealias
+      val T18 = weakTypeOf[T18].dealias
+      val T19 = weakTypeOf[T19].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr19[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11, arg12: $T12, arg13: $T13, arg14: $T14, arg15: $T15, arg16: $T16, arg17: $T17, arg18: $T18, arg19: $T19): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr19[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr19[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $R]]): $unsafe.CFuncPtr19[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr20[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              T12: c.WeakTypeTag,
+                              T13: c.WeakTypeTag,
+                              T14: c.WeakTypeTag,
+                              T15: c.WeakTypeTag,
+                              T16: c.WeakTypeTag,
+                              T17: c.WeakTypeTag,
+                              T18: c.WeakTypeTag,
+                              T19: c.WeakTypeTag,
+                              T20: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+      val T12 = weakTypeOf[T12].dealias
+      val T13 = weakTypeOf[T13].dealias
+      val T14 = weakTypeOf[T14].dealias
+      val T15 = weakTypeOf[T15].dealias
+      val T16 = weakTypeOf[T16].dealias
+      val T17 = weakTypeOf[T17].dealias
+      val T18 = weakTypeOf[T18].dealias
+      val T19 = weakTypeOf[T19].dealias
+      val T20 = weakTypeOf[T20].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr20[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11, arg12: $T12, arg13: $T13, arg14: $T14, arg15: $T15, arg16: $T16, arg17: $T17, arg18: $T18, arg19: $T19, arg20: $T20): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr20[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr20[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $R]]): $unsafe.CFuncPtr20[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr21[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              T12: c.WeakTypeTag,
+                              T13: c.WeakTypeTag,
+                              T14: c.WeakTypeTag,
+                              T15: c.WeakTypeTag,
+                              T16: c.WeakTypeTag,
+                              T17: c.WeakTypeTag,
+                              T18: c.WeakTypeTag,
+                              T19: c.WeakTypeTag,
+                              T20: c.WeakTypeTag,
+                              T21: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+      val T12 = weakTypeOf[T12].dealias
+      val T13 = weakTypeOf[T13].dealias
+      val T14 = weakTypeOf[T14].dealias
+      val T15 = weakTypeOf[T15].dealias
+      val T16 = weakTypeOf[T16].dealias
+      val T17 = weakTypeOf[T17].dealias
+      val T18 = weakTypeOf[T18].dealias
+      val T19 = weakTypeOf[T19].dealias
+      val T20 = weakTypeOf[T20].dealias
+      val T21 = weakTypeOf[T21].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr21[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $T21, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11, arg12: $T12, arg13: $T13, arg14: $T14, arg15: $T15, arg16: $T16, arg17: $T17, arg18: $T18, arg19: $T19, arg20: $T20, arg21: $T21): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $T21, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr21[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $T21, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr21[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $T21, $R]]): $unsafe.CFuncPtr21[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $T21, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
+    def materializeCFuncPtr22[T1: c.WeakTypeTag,
+                              T2: c.WeakTypeTag,
+                              T3: c.WeakTypeTag,
+                              T4: c.WeakTypeTag,
+                              T5: c.WeakTypeTag,
+                              T6: c.WeakTypeTag,
+                              T7: c.WeakTypeTag,
+                              T8: c.WeakTypeTag,
+                              T9: c.WeakTypeTag,
+                              T10: c.WeakTypeTag,
+                              T11: c.WeakTypeTag,
+                              T12: c.WeakTypeTag,
+                              T13: c.WeakTypeTag,
+                              T14: c.WeakTypeTag,
+                              T15: c.WeakTypeTag,
+                              T16: c.WeakTypeTag,
+                              T17: c.WeakTypeTag,
+                              T18: c.WeakTypeTag,
+                              T19: c.WeakTypeTag,
+                              T20: c.WeakTypeTag,
+                              T21: c.WeakTypeTag,
+                              T22: c.WeakTypeTag,
+                              R: c.WeakTypeTag]: c.Tree = {
+      val R   = weakTypeOf[R].dealias
+      val T1  = weakTypeOf[T1].dealias
+      val T2  = weakTypeOf[T2].dealias
+      val T3  = weakTypeOf[T3].dealias
+      val T4  = weakTypeOf[T4].dealias
+      val T5  = weakTypeOf[T5].dealias
+      val T6  = weakTypeOf[T6].dealias
+      val T7  = weakTypeOf[T7].dealias
+      val T8  = weakTypeOf[T8].dealias
+      val T9  = weakTypeOf[T9].dealias
+      val T10 = weakTypeOf[T10].dealias
+      val T11 = weakTypeOf[T11].dealias
+      val T12 = weakTypeOf[T12].dealias
+      val T13 = weakTypeOf[T13].dealias
+      val T14 = weakTypeOf[T14].dealias
+      val T15 = weakTypeOf[T15].dealias
+      val T16 = weakTypeOf[T16].dealias
+      val T17 = weakTypeOf[T17].dealias
+      val T18 = weakTypeOf[T18].dealias
+      val T19 = weakTypeOf[T19].dealias
+      val T20 = weakTypeOf[T20].dealias
+      val T21 = weakTypeOf[T21].dealias
+      val T22 = weakTypeOf[T22].dealias
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 278)
+
+      val newCFuncPtr = q"""
+				new $unsafe.CFuncPtr22[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $T21, $T22, $R] {
+					override def apply(arg1: $T1, arg2: $T2, arg3: $T3, arg4: $T4, arg5: $T5, arg6: $T6, arg7: $T7, arg8: $T8, arg9: $T9, arg10: $T10, arg11: $T11, arg12: $T12, arg13: $T13, arg14: $T14, arg15: $T15, arg16: $T16, arg17: $T17, arg18: $T18, arg19: $T19, arg20: $T20, arg21: $T21, arg22: $T22): $R = $callCFunc[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $T21, $T22, $R]($fnPtr, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22)
+				}"""
+
+      q"""new $unsafe.Tag.CFuncPtr22[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $T21, $T22, $R] {
+				 override def load(ptr: $unsafe.Ptr[$unsafe.CFuncPtr22[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $T21, $T22, $R]]): $unsafe.CFuncPtr22[$T1, $T2, $T3, $T4, $T5, $T6, $T7, $T8, $T9, $T10, $T11, $T12, $T13, $T14, $T15, $T16, $T17, $T18, $T19, $T20, $T21, $T22, $R] = {
+					 $newCFuncPtr
+					}
+		 		}"""
+    }
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 291)
+  }
 }
