@@ -63,7 +63,7 @@ object Ptr {
 
   @alwaysinline implicit def ptrToCFuncPtr[F <: CFuncPtr](ptr: Ptr[Byte])(
       implicit tag: Tag.CFuncPtrTag[F]): F =
-    tag.load(ptr.asInstanceOf[Ptr[F]], loadPtr = false)
+    Boxes.boxToCFuncRawPtr(ptr.rawptr).as[F]
 
   @alwaysinline implicit def cFuncPtrToPtr[T](ptr: CFuncPtr): Ptr[Byte] = {
     Boxes.boxToPtr[Byte](Boxes.unboxToCFuncRawPtr(ptr))

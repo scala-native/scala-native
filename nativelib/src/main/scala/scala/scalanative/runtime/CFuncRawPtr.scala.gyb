@@ -20,10 +20,18 @@ final class CFuncRawPtr(val rawptr: RawPtr)
   ${kw} CFuncPtr${N}[${targs}]
 % end
 {
+  def as[F <: CFuncPtr](implicit tag: Tag.CFuncPtrTag[F]): F =
+    tag.load(Boxes.boxToPtr[F](rawptr), loadPtr = false)
+
+  def throwUnsupported(): Nothing = throw new UnsupportedOperationException(
+    "Invalid use of CFuncRawPtr.apply method. " +
+          "In order to apply underlying function convert this to concrete CFuncPtr type " +
+          "using `as` conversion method"
+  )
 % for N in range(0, 23):
 %   args  = ", ".join("arg" + str(i) + ": Any" for i in range(1, N+1))
 %   targs = ", ".join(["Any" for i in range(1, N+1)] + ["Any"])
 %   kw    = "extends" if N == 0 else "with"
-  def apply(${args}): Any = throwUndefined()
+  def apply(${args}): Any = throwUnsupported()
 % end
 }

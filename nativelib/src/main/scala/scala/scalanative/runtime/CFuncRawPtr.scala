@@ -249,35 +249,44 @@ final class CFuncRawPtr(val rawptr: RawPtr)
                     Any]
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 22)
     {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
-  def apply(): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
-  def apply(arg1: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
-  def apply(arg1: Any, arg2: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
-  def apply(arg1: Any, arg2: Any, arg3: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
-  def apply(arg1: Any, arg2: Any, arg3: Any, arg4: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+  def as[F <: CFuncPtr](implicit tag: Tag.CFuncPtrTag[F]): F =
+    tag.load(Boxes.boxToPtr[F](rawptr), loadPtr = false)
+
+  def throwUnsupported(): Nothing = throw new UnsupportedOperationException(
+    "Invalid use of CFuncRawPtr.apply method. " +
+      "In order to apply underlying function convert this to concrete CFuncPtr type " +
+      "using `as` conversion method"
+  )
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
+  def apply(): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
+  def apply(arg1: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
+  def apply(arg1: Any, arg2: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
+  def apply(arg1: Any, arg2: Any, arg3: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
+  def apply(arg1: Any, arg2: Any, arg3: Any, arg4: Any): Any =
+    throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any, arg2: Any, arg3: Any, arg4: Any, arg5: Any): Any =
-    throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+    throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
             arg4: Any,
             arg5: Any,
-            arg6: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg6: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
             arg4: Any,
             arg5: Any,
             arg6: Any,
-            arg7: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg7: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -285,8 +294,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg5: Any,
             arg6: Any,
             arg7: Any,
-            arg8: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg8: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -295,8 +304,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg6: Any,
             arg7: Any,
             arg8: Any,
-            arg9: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg9: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -306,8 +315,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg7: Any,
             arg8: Any,
             arg9: Any,
-            arg10: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg10: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -318,8 +327,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg8: Any,
             arg9: Any,
             arg10: Any,
-            arg11: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg11: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -331,8 +340,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg9: Any,
             arg10: Any,
             arg11: Any,
-            arg12: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg12: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -345,8 +354,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg10: Any,
             arg11: Any,
             arg12: Any,
-            arg13: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg13: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -360,8 +369,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg11: Any,
             arg12: Any,
             arg13: Any,
-            arg14: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg14: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -376,8 +385,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg12: Any,
             arg13: Any,
             arg14: Any,
-            arg15: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg15: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -393,8 +402,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg13: Any,
             arg14: Any,
             arg15: Any,
-            arg16: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg16: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -411,8 +420,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg14: Any,
             arg15: Any,
             arg16: Any,
-            arg17: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg17: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -430,8 +439,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg15: Any,
             arg16: Any,
             arg17: Any,
-            arg18: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg18: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -450,8 +459,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg16: Any,
             arg17: Any,
             arg18: Any,
-            arg19: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg19: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -471,8 +480,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg17: Any,
             arg18: Any,
             arg19: Any,
-            arg20: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg20: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -493,8 +502,8 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg18: Any,
             arg19: Any,
             arg20: Any,
-            arg21: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 27)
+            arg21: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 35)
   def apply(arg1: Any,
             arg2: Any,
             arg3: Any,
@@ -516,6 +525,6 @@ final class CFuncRawPtr(val rawptr: RawPtr)
             arg19: Any,
             arg20: Any,
             arg21: Any,
-            arg22: Any): Any = throwUndefined()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 29)
+            arg22: Any): Any = throwUnsupported()
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/CFuncRawPtr.scala.gyb", line: 37)
 }
