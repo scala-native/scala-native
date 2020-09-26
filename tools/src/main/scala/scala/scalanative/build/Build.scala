@@ -66,7 +66,8 @@ object Build {
     val nativelib    = NativeLib.findNativeLib(nativelibs)
     val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
 
-    val objectFiles = config.logger.time("Compiling to native code") {
+    val msg = s"Compiling to native code (${config.targetTriple})"
+    val objectFiles = config.logger.time(msg) {
       val nativelibConfig =
         config.withCompilerConfig(
           _.withCompileOptions("-O2" +: config.compileOptions))
