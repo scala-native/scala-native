@@ -1,6 +1,7 @@
 package scala.scalanative.runtime
 
 import scala.collection.mutable
+import scala.scalanative.libc.stdlib.atexit
 import scala.scalanative.unsafe._
 
 private[runtime] object Shutdown {
@@ -14,11 +15,5 @@ private[runtime] object Shutdown {
         case e: Exception => // Maybe add a system propery that adds logging of exceptions?
       }
     }
-  NativeShutdown.init(() => runHooks())
-}
-
-@extern
-private[runtime] object NativeShutdown {
-  @name("scalanative_native_shutdown_init")
-  def init(func: CFuncPtr0[Unit]): Unit = extern
+  atexit(() => runHooks())
 }
