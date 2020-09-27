@@ -12,7 +12,7 @@ private[runtime] object Shutdown {
       try {
         task()
       } catch {
-        case e: Exception => // Maybe add a system propery that adds logging of exceptions?
+        case e: Exception => // Maybe add a system property that adds logging of exceptions?
       }
     }
   atexit(() => runHooks())
