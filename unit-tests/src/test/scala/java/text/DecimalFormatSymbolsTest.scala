@@ -33,13 +33,30 @@ class DecimalFormatSymbolsTest {
   // Overrides
 
   @Test def overrideClone(): Unit = {
-    val dfs      = DecimalFormatSymbols.getInstance()
-    val dfsClone = dfs.clone()
+    val dfs   = DecimalFormatSymbols.getInstance()
+    val clone = dfs.clone()
 
-    assert(!dfs.eq(dfsClone),
+    assert(!dfs.eq(clone),
            s"cloned object should not be reference equal to original.")
 
-    assertEquals(dfs, dfsClone)
+    assertEquals(dfs, clone)
+
+    val newValue   = 'X'
+    val startValue = dfs.getZeroDigit()
+
+    // Do not set dfs value to what it already is, clone already has that.
+    assertNotEquals(startValue, newValue)
+
+    dfs.setZeroDigit(newValue)
+
+    // There is no way to distinguish a shallow copy from deep copy.
+    // The fields are either Char or immutable String. If
+    // handling of the Currency class is added later, this test is
+    // robust & correct, because Currency is immutable: no set methods.
+
+    // Indeed, the copies are independent.
+    val c = clone.asInstanceOf[DecimalFormatSymbols]
+    assertNotEquals(dfs.getZeroDigit(), c.getZeroDigit())
   }
 
   @Test def equalsOverride(): Unit = {

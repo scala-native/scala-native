@@ -39,6 +39,13 @@ class DecimalFormatSymbols(locale: Locale)
   private var _zeroDigit        = '0'
 
   override def clone(): Object = {
+    // clone(), especially overridden clone(), usually does a deep copy.
+    // The shallow clone of super/parent class (Object) is good enough here
+    // because all the fields of this class are either primitive or
+    // point to immutable objects.
+    // When this class supports getCurrency() and setCurrency() this method
+    // still works because the Currency class is immutable (no set methods).
+
     try {
       super.clone
     } catch {
