@@ -2,7 +2,7 @@ package scala.scalanative
 package nscplugin
 
 import scala.collection.mutable
-import scalanative.nir.{Position, _}
+import scalanative.nir._
 import scalanative.util.{StringUtils, unsupported}
 import scalanative.util.ScopedVar.scoped
 import scalanative.nscplugin.NirPrimitives._
@@ -131,7 +131,7 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genLabelDef(label: LabelDef): Val = {
-      assert(label.params.length == 0)
+      assert(label.params.isEmpty, "empty LabelDef params")
       buf.jump(Next(curMethodEnv.enterLabel(label)))(label.pos)
       genLabel(label)
     }
@@ -215,7 +215,7 @@ trait NirGenExpr { self: NirGenPhase =>
         case CaseDef(Ident(nme.WILDCARD), _, _) =>
           Seq()
         case CaseDef(pat, guard, body) =>
-          assert(guard.isEmpty)
+          assert(guard.isEmpty, "CaseDef guard was not empty")
           val vals: Seq[Val] = pat match {
             case lit: Literal =>
               List(genLiteralValue(lit))
@@ -1528,7 +1528,7 @@ trait NirGenExpr { self: NirGenPhase =>
                               _))))))),
             _),
             _) =>
-          val chars = Val.Chars(StringUtils.processEscapes(str))
+          val chars = Val.Chars(StringUtils.processEscapes(str).toIndexedSeq)
           val const = Val.Const(chars)
           buf.box(nir.Rt.BoxedPtr, const, unwind)(app.pos)
 
@@ -1739,7 +1739,7 @@ trait NirGenExpr { self: NirGenPhase =>
           }
 
         case Object_synchronized =>
-          assert(argsp.size == 1)
+          assert(argsp.size == 1, "synchronized with wrong number of args")
           genSynchronized(ValTree(boxed), argsp.head)
       }
     }
@@ -1826,7 +1826,7 @@ trait NirGenExpr { self: NirGenPhase =>
 
     def genLoadExtern(ty: nir.Type, externTy: nir.Type, sym: Symbol)(
         implicit pos: nir.Position): Val = {
-      assert(sym.owner.isExternModule)
+      assert(sym.owner.isExternModule, "loadExtern was not extern")
 
       val name = Val.Global(genName(sym), Type.Ptr)
 
@@ -1835,7 +1835,7 @@ trait NirGenExpr { self: NirGenPhase =>
 
     def genStoreExtern(externTy: nir.Type, sym: Symbol, value: Val)(
         implicit pos: nir.Position): Val = {
-      assert(sym.owner.isExternModule)
+      assert(sym.owner.isExternModule, "storeExtern was not extern")
       val name        = Val.Global(genName(sym), Type.Ptr)
       val externValue = toExtern(externTy, value)
 

@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 import scalanative.util.{ShowBuilder, unreachable}
+import scalanative.CrossCompileCompat.Converters._
 
 object Show {
   def newBuilder: NirShowBuilder = new NirShowBuilder(new InMemoryShowBuilder)

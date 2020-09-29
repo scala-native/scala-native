@@ -1,7 +1,6 @@
 import java.io.File.pathSeparator
 import scala.collection.mutable
 import scala.util.Try
-
 import build.ScalaVersions._
 
 // Convert "SomeName" to "some-name".
@@ -12,6 +11,14 @@ def convertCamelKebab(name: String): String = {
 // Generate project name from project id.
 def projectName(project: sbt.ResolvedProject): String = {
   convertCamelKebab(project.id)
+}
+
+def parallelCollectionsDependencies(scalaVersion: String): Seq[ModuleID] = {
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, n)) if n >= 13 =>
+      Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0")
+    case _ => Nil
+  }
 }
 
 // Provide consistent project name pattern.
@@ -42,7 +49,7 @@ inThisBuild(
   Def.settings(
     organization := "org.scala-native", // Maven <groupId>
     version := nativeVersion,           // Maven <version>
-    scalaVersion := scala212,
+    scalaVersion := libScalaVersion,
     crossScalaVersions := libCrossScalaVersions,
     scalacOptions ++= Seq(
       "-deprecation",
@@ -199,9 +206,16 @@ lazy val toolSettings: Seq[Setting[_]] =
   Def.settings(
     sbtVersion := sbt10Version,
     crossSbtVersions := List(sbt10Version),
+    scalaVersion := sbt10ScalaVersion,
     crossScalaVersions := Seq(sbt10ScalaVersion),
     javacOptions ++= Seq("-encoding", "utf8")
   )
+
+lazy val crossCompileCompatSettings = Def.settings(
+  libraryDependencies ++= Seq(
+    "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0"
+  ) ++ parallelCollectionsDependencies(scalaVersion.value)
+)
 
 lazy val buildInfoSettings: Seq[Setting[_]] =
   Def.settings(
@@ -238,8 +252,8 @@ lazy val nirparser =
     .settings(noPublishSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "com.lihaoyi" %% "fastparse"  % "1.0.0",
-        "com.lihaoyi" %% "scalaparse" % "1.0.0",
+        "com.lihaoyi" %% "fastparse"  % "2.3.0",
+        "com.lihaoyi" %% "scalaparse" % "2.3.0",
         scalacheckDep,
         scalatestDep
       )
@@ -296,6 +310,7 @@ lazy val nscplugin =
       ),
       exportJars := true
     )
+    .settings(crossCompileCompatSettings)
     .settings(scalacOptions += "-Xno-patmat-analysis")
 
 lazy val sbtPluginSettings: Seq[Setting[_]] =
@@ -319,7 +334,6 @@ lazy val sbtScalaNative =
     .settings(sbtPluginSettings)
     .settings(
       crossScalaVersions := Seq(sbt10ScalaVersion),
-      addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
       // publish the other projects before running scripted tests.
       scriptedDependencies := {

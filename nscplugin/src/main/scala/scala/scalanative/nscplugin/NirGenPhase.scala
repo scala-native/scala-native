@@ -4,6 +4,7 @@ package nscplugin
 import java.nio.file.Path
 import scala.collection.mutable
 import scala.language.implicitConversions
+import scala.scalanative.CrossCompileCompat.Converters._
 import scala.scalanative.nir._
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._

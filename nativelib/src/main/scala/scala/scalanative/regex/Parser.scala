@@ -746,7 +746,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
           case '*' | '+' | '?' =>
             repeatPos = t.pos()
             val op =
-              (t.pop: @scala.annotation.switch) match {
+              (t.pop(): @scala.annotation.switch) match {
                 case '*' => ROP.STAR
                 case '+' => ROP.PLUS
                 case '?' => ROP.QUEST
@@ -953,8 +953,8 @@ class Parser(wholeRegexp: String, _flags: Int) {
 
       if (!parseCompleted) {
         throw new PatternSyntaxException(ERR_INVALID_PERL_OP,
-                                         t.from(startPos) + t.rest,
-                                         t.pos - 1)
+                                         t.from(startPos) + t.rest(),
+                                         t.pos() - 1)
       }
     }
   }

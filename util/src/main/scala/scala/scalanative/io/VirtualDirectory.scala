@@ -1,6 +1,7 @@
 package scala.scalanative
 package io
 
+import scala.jdk.CollectionConverters._
 import java.io.Writer
 import java.net.URI
 import java.nio.ByteBuffer

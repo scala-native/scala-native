@@ -72,7 +72,7 @@ object Stats {
     counts.clear()
   }
   private def threadKey(key: String): String =
-    java.lang.Thread.currentThread.getId + ":" + key
+    "" + java.lang.Thread.currentThread.getId + ":" + key
   def in[T](f: => T): T = {
     clear()
     val res = f
