@@ -365,6 +365,9 @@ lazy val posixlib =
     .in(file("posixlib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
+    .settings(
+      exportJars := true
+    )
     .dependsOn(nscplugin % "plugin", clib)
 
 lazy val javalib =
