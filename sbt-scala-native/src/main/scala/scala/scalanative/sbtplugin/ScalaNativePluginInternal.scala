@@ -91,7 +91,7 @@ object ScalaNativePluginInternal {
         targetTriple
       }
     },
-    artifactPath in nativeLink := {
+    nativeLink / artifactPath := {
       crossTarget.value / (moduleName.value + "-out")
     },
     nativeWorkdir := {
@@ -115,7 +115,7 @@ object ScalaNativePluginInternal {
         .withDump(nativeDump.value)
     },
     nativeLink := {
-      val outpath = (artifactPath in nativeLink).value
+      val outpath = (nativeLink / artifactPath).value
       val config = {
         val mainClass = selectMainClass.value.getOrElse {
           throw new MessageOnlyException("No main class detected.")
@@ -141,7 +141,7 @@ object ScalaNativePluginInternal {
       outpath
     },
     run := {
-      val env    = (envVars in run).value.toSeq
+      val env    = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = nativeLink.value.getAbsolutePath
       val args   = spaceDelimited("<arg>").parsed
