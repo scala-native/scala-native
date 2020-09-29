@@ -21,9 +21,6 @@ object ScalaNativePluginInternal {
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
 
-  val nativeTarget =
-    taskKey[String]("Target triple.")
-
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
 
@@ -51,7 +48,8 @@ object ScalaNativePluginInternal {
     nativeLTO := nativeConfig.value.lto.name,
     nativeLinkStubs := nativeConfig.value.linkStubs,
     nativeCheck := nativeConfig.value.check,
-    nativeDump := nativeConfig.value.dump
+    nativeDump := nativeConfig.value.dump,
+    nativeTarget := ""
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -84,9 +82,14 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
     nativeTarget := interceptBuildException {
-      val cwd   = nativeWorkdir.value.toPath
-      val clang = nativeClang.value.toPath
-      Discover.targetTriple(clang, cwd)
+      val cwd          = nativeWorkdir.value.toPath
+      val clang        = nativeClang.value.toPath
+      val targetTriple = nativeTarget.value
+      if (targetTriple.isEmpty()) {
+        Discover.targetTriple(clang, cwd)
+      } else {
+        targetTriple
+      }
     },
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
