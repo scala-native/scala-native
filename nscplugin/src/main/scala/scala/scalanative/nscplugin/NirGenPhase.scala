@@ -1,14 +1,15 @@
 package scala.scalanative
 package nscplugin
 
-import java.nio.file.Path
+import java.nio.file.{Path => JPath}
+import java.util.function.{Consumer => JConsumer}
 import scala.collection.mutable
 import scala.language.implicitConversions
-import scala.scalanative.CrossCompileCompat.Converters._
 import scala.scalanative.nir._
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
 import scala.tools.nsc.{util => _, _}
+import scala.jdk.CollectionConverters._
 
 abstract class NirGenPhase[G <: NscGlobal](val global: G)
     extends PluginComponent
@@ -97,10 +98,19 @@ abstract class NirGenPhase[G <: NscGlobal](val global: G)
           (path, reflectiveInstBuf.toSeq)
       }.toMap
 
-      (files ++ reflectiveInstFiles).par.foreach {
-        case (path, stats) =>
-          genIRFile(path, stats)
-      }
+      val allFiles = files ++ reflectiveInstFiles
+
+      val generateIRFile: JConsumer[(JPath, Seq[Defn])] =
+        new JConsumer[(JPath, Seq[Defn])] {
+          override def accept(t: (JPath, Seq[Defn])): Unit = {
+            val (path, stats) = t
+            genIRFile(path, stats)
+          }
+        }
+
+      util
+        .parallelStream(allFiles)
+        .forEach(generateIRFile)
     }
   }
 

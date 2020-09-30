@@ -291,6 +291,7 @@ lazy val tools =
       Test / parallelExecution := false,
       mimaSettings
     )
+    .settings(crossCompileCompatSettings)
     .dependsOn(nir, util, testingCompilerInterface % Test)
 
 lazy val nscplugin =
@@ -333,7 +334,9 @@ lazy val sbtScalaNative =
     .enablePlugins(SbtPlugin)
     .settings(sbtPluginSettings)
     .settings(
+      scalaVersion := sbt10ScalaVersion,
       crossScalaVersions := Seq(sbt10ScalaVersion),
+      addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
       // publish the other projects before running scripted tests.
       scriptedDependencies := {
