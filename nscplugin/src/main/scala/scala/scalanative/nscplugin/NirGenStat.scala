@@ -8,7 +8,7 @@ import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
 import scalanative.nir.ControlFlow.removeDeadBlocks
 
-trait NirGenStat { self: NirGenPhase =>
+trait NirGenStat[G <: NscGlobal] { self: NirGenPhase[G] =>
 
   import global._
   import definitions._

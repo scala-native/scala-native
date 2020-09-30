@@ -1,7 +1,7 @@
 package scala.scalanative
 package nscplugin
 
-trait NirGenType { self: NirGenPhase =>
+trait NirGenType[G <: NscGlobal] { self: NirGenPhase[G] =>
   import SimpleType.{fromSymbol, fromType}
   import global._
   import definitions._

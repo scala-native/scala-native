@@ -3,7 +3,8 @@ package nscplugin
 
 import scala.tools.nsc._
 
-trait NirDefinitions { self: NirGlobalAddons =>
+trait NirDefinitions {
+  val global: Global
   import global._
   import definitions._
   import rootMirror._

@@ -1,11 +1,9 @@
 package scala.scalanative
 package nscplugin
 
-import scala.tools.nsc._
-import scala.reflect.internal.Flags._
 import scalanative.util.unreachable
 
-trait NirGenName { self: NirGenPhase =>
+trait NirGenName[G <: NscGlobal] { self: NirGenPhase[G] =>
   import global.{Name => _, _}, definitions._
   import nirAddons.nirDefinitions._
   import SimpleType.{fromSymbol, fromType}

@@ -6,7 +6,7 @@ import java.nio.file.{Path, Paths}
 import scala.scalanative.nir.serialization.serializeBinary
 import scala.tools.nsc.io.AbstractFile
 
-trait NirGenFile { self: NirGenPhase =>
+trait NirGenFile[G <: NscGlobal] { self: NirGenPhase[G] =>
   import global._
 
   def genPathFor(cunit: CompilationUnit, ownerName: nir.Global): Path = {

@@ -7,7 +7,7 @@ import scalanative.util.{StringUtils, unsupported}
 import scalanative.util.ScopedVar.scoped
 import scalanative.nscplugin.NirPrimitives._
 
-trait NirGenExpr { self: NirGenPhase =>
+trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G]   =>
   import global._
   import definitions._
   import treeInfo.hasSynthCaseSymbol

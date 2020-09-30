@@ -10,15 +10,17 @@ import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
 import scala.tools.nsc.{util => _, _}
 
-abstract class NirGenPhase
+abstract class NirGenPhase[G <: NscGlobal](val global: G)
     extends PluginComponent
-    with NirGenStat
-    with NirGenExpr
-    with NirGenUtil
-    with NirGenFile
-    with NirGenType
-    with NirGenName
-    with NirCompat {
+    with NirGenStat[G]
+    with NirGenExpr[G]
+    with NirGenUtil[G]
+    with NirGenFile[G]
+    with NirGenType[G]
+    with NirGenName[G]
+    with NirCompat[G] {
+
+  /** Not for use in the constructor body: only initialized afterwards. */
   val nirAddons: NirGlobalAddons {
     val global: NirGenPhase.this.global.type
   }

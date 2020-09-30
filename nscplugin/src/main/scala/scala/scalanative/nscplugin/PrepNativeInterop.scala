@@ -11,11 +11,12 @@ import scala.tools.nsc._
  * - Rewrite the body `scala.util.PropertiesTrait.scalaProps` to
  *   be statically determined at compile-time.
  */
-abstract class PrepNativeInterop
+abstract class PrepNativeInterop[G <: NscGlobal](val global: G)
     extends plugins.PluginComponent
     with transform.Transform {
   import PrepNativeInterop._
 
+  /** Not for use in the constructor body: only initialized afterwards. */
   val nirAddons: NirGlobalAddons {
     val global: PrepNativeInterop.this.global.type
   }
