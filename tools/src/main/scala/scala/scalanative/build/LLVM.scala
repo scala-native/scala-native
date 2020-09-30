@@ -210,9 +210,9 @@ private[scalanative] object LLVM {
       // * libpthread for process APIs and parallel garbage collection.
       "pthread" +: "dl" +: srclinks ++: gclinks
     }
-    val linkopts    = config.linkingOptions ++ links.map("-l" + _)
-    val targetopt   = target(config)
-    val flags       = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
+    val linkopts = config.linkingOptions ++ links.map("-l" + _)
+    val flags = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++
+      target(config)
     val objPatterns = NativeLib.destObjPatterns(workdir, nativelibs)
     val opaths      = IO.getAll(workdir, objPatterns).map(_.abs)
     val paths       = llPaths.map(_.abs) ++ opaths
