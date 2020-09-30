@@ -142,7 +142,8 @@ private[scalanative] object LLVM {
         val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
         val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
         val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++ Seq("-c", path, "-o", opath)
+          Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
+            Seq("-c", path, "-o", opath)
 
         config.logger.running(compilec)
         val result = Process(compilec, config.workdir.toFile) ! Logger
@@ -163,7 +164,7 @@ private[scalanative] object LLVM {
         case Mode.ReleaseFast => "-O2"
         case Mode.ReleaseFull => "-O3"
       }
-    val opts = optimizationOpt +: config.compileOptions
+    val opts = Seq(optimizationOpt) ++ target(config) ++ config.compileOptions
 
     llPaths.par
       .map { ll =>
@@ -210,7 +211,7 @@ private[scalanative] object LLVM {
       "pthread" +: "dl" +: srclinks ++: gclinks
     }
     val linkopts    = config.linkingOptions ++ links.map("-l" + _)
-    val targetopt   = Seq("-target", config.targetTriple)
+    val targetopt   = target(config)
     val flags       = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
     val objPatterns = NativeLib.destObjPatterns(workdir, nativelibs)
     val opaths      = IO.getAll(workdir, objPatterns).map(_.abs)
@@ -238,4 +239,7 @@ private[scalanative] object LLVM {
     lto(config).fold[Seq[String]] {
       Seq()
     } { name => Seq(s"-flto=$name") }
+
+  private def target(config: Config): Seq[String] =
+    Seq("-target", config.targetTriple)
 }
