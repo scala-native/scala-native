@@ -54,7 +54,8 @@ trait NirGenName { self: NirGenPhase =>
     val id    = nativeIdOf(sym)
     val scope = {
       /* Variables are internally private, but with public setter/getter.
-       Removing this check would cause problems with reachability  */
+       * Removing this check would cause problems with reachability
+       */
       if (sym.isPrivate && !sym.isVariable) nir.Sig.Scope.Private(owner)
       else nir.Sig.Scope.Public
     }
