@@ -34,9 +34,9 @@ object FileDescriptor {
 
   private[io] def openReadOnly(file: File): FileDescriptor =
     Zone { implicit z =>
-      val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY, 0.toUInt)
+      val fd = fcntl.open(toCString(file.getPath()), fcntl.O_RDONLY, 0.toUInt)
       if (fd == -1) {
-        throw new FileNotFoundException("No such file " + file.getPath)
+        throw new FileNotFoundException("No such file " + file.getPath())
       }
       new FileDescriptor(fd, true)
     }

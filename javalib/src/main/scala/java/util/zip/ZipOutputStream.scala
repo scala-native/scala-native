@@ -36,7 +36,7 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
     }
   }
 
-  def closeEntry() {
+  def closeEntry() = {
     if (cDir == null) {
       throw new IOException()
     } else if (currentEntry == null) {
@@ -46,7 +46,7 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
     }
 
     // Verify values for STORED types
-    if (currentEntry.getMethod == STORED) {
+    if (currentEntry.getMethod() == STORED) {
       if (crc.getValue() != currentEntry.crc) {
         throw new ZipException("Crc mismatch")
       } else if (currentEntry.size != crc.tbytes) {
@@ -61,11 +61,11 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
       writeLong(out, EXTSIG)
       writeLong(out, { currentEntry.crc = crc.getValue(); currentEntry.crc })
       writeLong(out, {
-        currentEntry.compressedSize = `def`.getTotalOut;
+        currentEntry.compressedSize = `def`.getTotalOut();
         currentEntry.compressedSize
       })
       writeLong(out, {
-        currentEntry.size = `def`.getTotalIn; currentEntry.size
+        currentEntry.size = `def`.getTotalIn(); currentEntry.size
       })
     }
     // Update the CentralDirectory
@@ -80,8 +80,8 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
     writeShort(cDir, currentEntry.modDate)
     writeLong(cDir, crc.getValue())
     if (currentEntry.getMethod() == DEFLATED) {
-      curOffset += writeLong(cDir, `def`.getTotalOut).toInt
-      writeLong(cDir, `def`.getTotalIn)
+      curOffset += writeLong(cDir, `def`.getTotalOut()).toInt
+      writeLong(cDir, `def`.getTotalIn())
     } else {
       curOffset += writeLong(cDir, crc.tbytes).toInt
       writeLong(cDir, crc.tbytes)

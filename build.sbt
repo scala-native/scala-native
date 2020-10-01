@@ -396,6 +396,7 @@ lazy val javalib =
     .in(file("javalib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
+    .settings(crossCompileCompatSettings)
     .settings(
       Compile / doc / sources := Nil, // doc generation currently broken
       // This is required to have incremental compilation to work in javalib.

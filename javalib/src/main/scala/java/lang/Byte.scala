@@ -74,7 +74,7 @@ final class Byte(val _value: scala.Byte) extends Number with Comparable[Byte] {
   protected def unary_+ : scala.Int = _value.toInt
   protected def unary_- : scala.Int = -_value.toInt
 
-  protected def +(x: String): String = _value + x
+  protected def +(x: String): String = "" + _value + x
 
   protected def <<(x: scala.Int): scala.Int   = _value << x
   protected def <<(x: scala.Long): scala.Int  = _value << x.toInt
@@ -194,7 +194,7 @@ object Byte {
     x - y
 
   @inline def decode(nm: String): Byte = {
-    val i = Integer.decode(nm).intValue
+    val i = Integer.decode(nm).intValue()
     val b = i.toByte
     if (b == i)
       valueOf(b)

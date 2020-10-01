@@ -82,10 +82,10 @@ private[net] class PlainSocketImpl extends SocketImpl {
     hints.ai_socktype = socket.SOCK_STREAM
 
     Zone { implicit z =>
-      val cIP = toCString(addr.getHostAddress)
+      val cIP = toCString(addr.getHostAddress())
       if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
         throw new BindException(
-          "Couldn't resolve address: " + addr.getHostAddress)
+          "Couldn't resolve address: " + addr.getHostAddress())
       }
     }
 
@@ -96,13 +96,14 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     if (bindRes < 0) {
       throw new BindException(
-        "Couldn't bind to an address: " + addr.getHostAddress +
+        "Couldn't bind to an address: " + addr.getHostAddress() +
           " on port: " + port.toString)
     }
 
     this.localport = fetchLocalPort(family).getOrElse {
       throw new BindException(
-        "Couldn't bind to address: " + addr.getHostAddress + " on port: " + port)
+        "Couldn't bind to address: " + addr
+          .getHostAddress() + " on port: " + port)
     }
   }
 
@@ -275,7 +276,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
     hints.ai_socktype = socket.SOCK_STREAM
-    val remoteAddress = inetAddr.getAddress.getHostAddress
+    val remoteAddress = inetAddr.getAddress.getHostAddress()
 
     Zone { implicit z =>
       val cIP   = toCString(remoteAddress)
@@ -318,7 +319,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     }
   }
 
-  override def close(): Unit = {
+  override def close: Unit = {
     if (fd.fd != -1) {
       cClose(fd.fd)
       fd = new FileDescriptor
@@ -345,7 +346,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     new SocketInputStream(this)
   }
 
-  override def shutdownOutput(): Unit = {
+  override def shutdownOutput: Unit = {
     socket.shutdown(fd.fd, 1) match {
       case 0 => shutOutput = true
       case _ =>
@@ -353,7 +354,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     }
   }
 
-  override def shutdownInput(): Unit = {
+  override def shutdownInput: Unit = {
     socket.shutdown(fd.fd, 0) match {
       case 0 => shutInput = true
       case _ =>

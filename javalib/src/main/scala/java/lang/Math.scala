@@ -135,10 +135,10 @@ object Math {
     cmath.log1p(a)
 
   @alwaysinline def max(a: scala.Double, b: scala.Double): scala.Double =
-    if (a.isNaN || b.isNaN) Double.NaN else `llvm.maxnum.f64`(a, b)
+    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.maxnum.f64`(a, b)
 
   @alwaysinline def max(a: scala.Float, b: scala.Float): scala.Float =
-    if (a.isNaN || b.isNaN) Float.NaN else `llvm.maxnum.f32`(a, b)
+    if (a.isNaN() || b.isNaN()) Float.NaN else `llvm.maxnum.f32`(a, b)
 
   @alwaysinline def max(a: scala.Int, b: scala.Int): scala.Int =
     if (a > b) a else b
@@ -147,10 +147,10 @@ object Math {
     if (a > b) a else b
 
   @alwaysinline def min(a: scala.Double, b: scala.Double): scala.Double =
-    if (a.isNaN || b.isNaN) Double.NaN else `llvm.minnum.f64`(a, b)
+    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.minnum.f64`(a, b)
 
   @alwaysinline def min(a: scala.Float, b: scala.Float): scala.Float =
-    if (a.isNaN || b.isNaN) Float.NaN else `llvm.minnum.f32`(a, b)
+    if (a.isNaN() || b.isNaN()) Float.NaN else `llvm.minnum.f32`(a, b)
 
   @alwaysinline def min(a: scala.Int, b: scala.Int): scala.Int =
     if (a < b) a else b
@@ -238,7 +238,7 @@ object Math {
     `llvm.rint.f64`(a)
 
   @inline def round(a: scala.Float): scala.Int = {
-    if (a.isNaN) {
+    if (a.isNaN()) {
       0
     } else if (a >= scala.Int.MaxValue.toFloat - 0.5f) {
       scala.Int.MaxValue
@@ -253,7 +253,7 @@ object Math {
   }
 
   @inline def round(a: scala.Double): scala.Long = {
-    if (a.isNaN) {
+    if (a.isNaN()) {
       0L
     } else if (a >= scala.Long.MaxValue.toDouble - 0.5d) {
       scala.Long.MaxValue

@@ -42,7 +42,7 @@ class ArrayDeque[E] private (private val inner: ArrayList[E])
   }
 
   def this(c: Collection[_ <: E]) = {
-    this(c.size)
+    this(c.size())
     addAll(c)
   }
 
@@ -82,21 +82,21 @@ class ArrayDeque[E] private (private val inner: ArrayList[E])
   }
 
   def removeFirst(): E = {
-    if (inner.isEmpty)
+    if (inner.isEmpty())
       throw new NoSuchElementException()
     else
       pollFirst()
   }
 
   def removeLast(): E = {
-    if (inner.isEmpty)
+    if (inner.isEmpty())
       throw new NoSuchElementException()
     else
       pollLast()
   }
 
   def pollFirst(): E = {
-    if (inner.isEmpty) null.asInstanceOf[E]
+    if (inner.isEmpty()) null.asInstanceOf[E]
     else {
       val res = inner.remove(0)
       status += 1
@@ -105,36 +105,36 @@ class ArrayDeque[E] private (private val inner: ArrayList[E])
   }
 
   def pollLast(): E = {
-    if (inner.isEmpty) null.asInstanceOf[E]
+    if (inner.isEmpty()) null.asInstanceOf[E]
     else {
-      val res = inner.remove(inner.size - 1)
+      val res = inner.remove(inner.size() - 1)
       status += 1
       res
     }
   }
 
   def getFirst(): E = {
-    if (inner.isEmpty)
+    if (inner.isEmpty())
       throw new NoSuchElementException()
     else
       peekFirst()
   }
 
   def getLast(): E = {
-    if (inner.isEmpty)
+    if (inner.isEmpty())
       throw new NoSuchElementException()
     else
       peekLast()
   }
 
   def peekFirst(): E = {
-    if (inner.isEmpty) null.asInstanceOf[E]
+    if (inner.isEmpty()) null.asInstanceOf[E]
     else inner.get(0)
   }
 
   def peekLast(): E = {
-    if (inner.isEmpty) null.asInstanceOf[E]
-    else inner.get(inner.size - 1)
+    if (inner.isEmpty()) null.asInstanceOf[E]
+    else inner.get(inner.size() - 1)
   }
 
   def removeFirstOccurrence(o: Any): Boolean = {
@@ -171,7 +171,7 @@ class ArrayDeque[E] private (private val inner: ArrayList[E])
 
   def pop(): E = removeFirst()
 
-  def size(): Int = inner.size
+  def size(): Int = inner.size()
 
   private def failFastIterator(startIndex: Int, nex: (Int) => Int) = {
     new Iterator[E] {
@@ -187,7 +187,7 @@ class ArrayDeque[E] private (private val inner: ArrayList[E])
       def hasNext(): Boolean = {
         checkStatus()
         val n = nex(index)
-        (n >= 0) && (n < inner.size)
+        (n >= 0) && (n < inner.size())
       }
 
       def next(): E = {
@@ -198,7 +198,7 @@ class ArrayDeque[E] private (private val inner: ArrayList[E])
 
       override def remove(): Unit = {
         checkStatus()
-        if (index < 0 || index >= inner.size) {
+        if (index < 0 || index >= inner.size()) {
           throw new IllegalStateException()
         } else {
           inner.remove(index)
@@ -211,14 +211,14 @@ class ArrayDeque[E] private (private val inner: ArrayList[E])
     failFastIterator(-1, x => (x + 1))
 
   def descendingIterator(): Iterator[E] =
-    failFastIterator(inner.size, x => (x - 1))
+    failFastIterator(inner.size(), x => (x - 1))
 
   override def contains(o: Any): Boolean = inner.contains(o)
 
   override def remove(o: Any): Boolean = removeFirstOccurrence(o)
 
   override def clear(): Unit = {
-    if (!inner.isEmpty) status += 1
+    if (!inner.isEmpty()) status += 1
     inner.clear()
   }
 

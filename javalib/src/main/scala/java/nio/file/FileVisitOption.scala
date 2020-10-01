@@ -9,7 +9,7 @@ object FileVisitOption {
   val _values                          = Array(FOLLOW_LINKS)
   def values(): Array[FileVisitOption] = _values.clone()
   def valueOf(name: String): FileVisitOption = {
-    _values.find(_.name == name).getOrElse {
+    _values.find(_.name() == name).getOrElse {
       throw new IllegalArgumentException(
         "No enum const FileVisitOption." + name)
     }

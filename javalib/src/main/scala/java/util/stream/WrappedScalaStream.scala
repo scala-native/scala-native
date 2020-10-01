@@ -1,19 +1,19 @@
 package java.util.stream
 
 import java.util.Iterator
+import scala.collection.compat.immutable.{LazyList => SStream}
 import java.util.function.{Function, Predicate}
-import scala.collection.immutable.{Stream => SStream}
 
 class WrappedScalaStream[T](private val underlying: SStream[T],
                             closeHandler: Option[Runnable])
     extends Stream[T] {
-  override def close(): Unit         = closeHandler.foreach(_.run)
+  override def close(): Unit         = closeHandler.foreach(_.run())
   override def isParallel(): Boolean = false
-  override def iterator(): Iterator[T] =
+  override def iterator: Iterator[T] =
     WrappedScalaStream.scala2javaIterator(underlying.iterator)
   override def parallel(): Stream[T]   = this
   override def sequential(): Stream[T] = this
-  override def unordered: Stream[T]    = this
+  override def unordered(): Stream[T]  = this
   override def onClose(closeHandler: Runnable): Stream[T] =
     new WrappedScalaStream(underlying, Some(closeHandler))
 
@@ -32,7 +32,7 @@ object WrappedScalaStream {
     val buffer                      = new scala.collection.mutable.ListBuffer[T]()
     override def accept(t: T): Unit = buffer += t
     override def build(): Stream[T] =
-      new WrappedScalaStream(buffer.toStream, None)
+      new WrappedScalaStream(buffer.to(SStream), None)
   }
 
   def scala2javaIterator[T](
@@ -52,13 +52,13 @@ private final class CompositeStream[T](substreams: Seq[Stream[T]],
     closeHandler.foreach(_.run())
   }
   override def isParallel(): Boolean = false
-  override def iterator(): Iterator[T] =
+  override def iterator: Iterator[T] =
     new Iterator[T] {
       private val its                         = substreams.iterator
       private var currentIt: Iterator[_ <: T] = EmptyIterator
 
       override def hasNext(): Boolean =
-        if (currentIt.hasNext) true
+        if (currentIt.hasNext()) true
         else if (its.hasNext) {
           currentIt = its.next().iterator
           hasNext()
@@ -77,7 +77,7 @@ private final class CompositeStream[T](substreams: Seq[Stream[T]],
 
   override def parallel(): Stream[T]   = this
   override def sequential(): Stream[T] = this
-  override def unordered: Stream[T]    = this
+  override def unordered(): Stream[T]  = this
   override def onClose(closeHandler: Runnable): Stream[T] =
     new CompositeStream(substreams, Some(closeHandler))
 

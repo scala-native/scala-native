@@ -9,7 +9,7 @@ object RetentionPolicy {
   final val RUNTIME = new RetentionPolicy("RUNTIME", 2)
 
   def valueOf(name: String): RetentionPolicy =
-    values.find(_.name() == name).getOrElse {
+    values().find(_.name() == name).getOrElse {
       throw new IllegalArgumentException(
         s"No enum constant java.lang.annotation.RetentionPolicy.$name")
     }

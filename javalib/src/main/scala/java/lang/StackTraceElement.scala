@@ -50,9 +50,9 @@ private[lang] object StackTraceElement {
     var methodName = ""
 
     def readSymbol(): Boolean = {
-      if (read != '_') {
+      if (read() != '_') {
         false
-      } else if (read != 'S') {
+      } else if (read() != 'S') {
         false
       } else {
         readGlobal()

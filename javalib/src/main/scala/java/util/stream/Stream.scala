@@ -1,8 +1,7 @@
 package java.util.stream
 
 import java.util.function.{Function, Predicate}
-
-import scala.collection.immutable.{Stream => SStream}
+import scala.collection.compat.immutable.{LazyList => SStream}
 
 trait Stream[+T] extends BaseStream[T, Stream[T]] {
   def flatMap[R](mapper: Function[_ >: T, _ <: Stream[_ <: R]]): Stream[R]
@@ -22,5 +21,5 @@ object Stream {
   def builder[T](): Builder[T] = new WrappedScalaStream.Builder[T]
   def empty[T](): Stream[T]    = new WrappedScalaStream(SStream.empty[T], None)
   def of[T](values: Array[AnyRef]): Stream[T] =
-    new WrappedScalaStream(values.asInstanceOf[Array[T]].toStream, None)
+    new WrappedScalaStream(values.asInstanceOf[Array[T]].to(SStream), None)
 }

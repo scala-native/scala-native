@@ -216,7 +216,7 @@ object Formatter {
     final val DECIMAL_FLOAT = new BigDecimalLayoutForm("DECIMAL_FLOAT", 1)
 
     def valueOf(name: String): BigDecimalLayoutForm =
-      _values.find(_.name == name).getOrElse {
+      _values.find(_.name() == name).getOrElse {
         throw new IllegalArgumentException(
           "No enum constant java.util.Formatter.BigDecimalLayoutForm." + name)
       }
@@ -1050,7 +1050,7 @@ object Formatter {
     }
 
     def transform_g(): Unit = {
-      var precision = formatToken.getPrecision
+      var precision = formatToken.getPrecision()
       precision = if (0 == precision) 1 else precision
       formatToken.setPrecision(precision)
 

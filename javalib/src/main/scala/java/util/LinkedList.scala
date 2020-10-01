@@ -110,10 +110,10 @@ class LinkedList[E]()
   }
 
   override def remove(o: Any): Boolean =
-    _removeOccurrence(listIterator, o)
+    _removeOccurrence(listIterator(), o)
 
   override def addAll(c: Collection[_ <: E]): Boolean = {
-    val iter    = c.iterator
+    val iter    = c.iterator()
     val changed = iter.hasNext()
     while (iter.hasNext()) addLast(iter.next())
 
@@ -128,15 +128,15 @@ class LinkedList[E]()
 
   private def getNodeAt(index: Int): Node[E] = {
     if (index == 0) head
-    else if (index == size - 1) last
+    else if (index == size() - 1) last
     else {
       var current: Node[E] = null
-      if (index <= size / 2) {
+      if (index <= size() / 2) {
         current = head
         for (_ <- 0 until index) current = current.next
       } else {
         current = last
-        for (_ <- index until (size - 1)) current = current.prev
+        for (_ <- index until (size() - 1)) current = current.prev
       }
       current
     }
@@ -228,7 +228,7 @@ class LinkedList[E]()
     else removeFirst()
 
   def pollLast(): E =
-    if (isEmpty) null.asInstanceOf[E]
+    if (isEmpty()) null.asInstanceOf[E]
     else removeLast()
 
   def push(e: E): Unit =
@@ -263,7 +263,7 @@ class LinkedList[E]()
       private var i: Long    = index
 
       private var currentNode: Node[E] =
-        if (index == size) null
+        if (index == size()) null
         else
           getNodeAt(index)
 
@@ -273,10 +273,10 @@ class LinkedList[E]()
           LinkedList.this.last
 
       def hasNext(): Boolean =
-        i < size
+        i < size()
 
       def next(): E = {
-        if (i >= size)
+        if (i >= size())
           throw new NoSuchElementException()
 
         last = i
@@ -292,7 +292,7 @@ class LinkedList[E]()
         i > 0
 
       def previous(): E = {
-        if (!hasPrevious)
+        if (!hasPrevious())
           throw new NoSuchElementException()
 
         i -= 1

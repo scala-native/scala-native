@@ -199,7 +199,7 @@ class Throwable protected (s: String,
     while (throwable != null) {
       println("Caused by: " + throwable)
 
-      val currentStack = throwable.getStackTrace
+      val currentStack = throwable.getStackTrace()
       if (currentStack.nonEmpty) {
         val duplicates = countDuplicates(currentStack, parentStack)
         var i          = 0
@@ -215,7 +215,7 @@ class Throwable protected (s: String,
       }
 
       parentStack = currentStack
-      throwable = throwable.getCause
+      throwable = throwable.getCause()
     }
   }
 

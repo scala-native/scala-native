@@ -116,7 +116,7 @@ object TimeUnit {
   def values(): Array[TimeUnit] = _values.clone()
 
   def valueOf(name: String): TimeUnit = {
-    _values.find(_.name == name).getOrElse {
+    _values.find(_.name() == name).getOrElse {
       throw new IllegalArgumentException("No enum const TimeUnit." + name)
     }
   }

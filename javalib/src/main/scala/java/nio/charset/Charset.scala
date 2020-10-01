@@ -9,16 +9,16 @@ abstract class Charset protected (canonicalName: String, aliases: Array[String])
   final def name(): String = canonicalName
 
   override final def equals(that: Any): Boolean = that match {
-    case that: Charset => this.name == that.name
+    case that: Charset => this.name() == that.name()
     case _             => false
   }
 
   override final def toString(): String = name()
 
-  override final def hashCode(): Int = name.##
+  override final def hashCode(): Int = name().##
 
   override final def compareTo(that: Charset): Int =
-    name.compareToIgnoreCase(that.name)
+    name().compareToIgnoreCase(that.name())
 
   def contains(cs: Charset): Boolean
 
@@ -50,14 +50,13 @@ abstract class Charset protected (canonicalName: String, aliases: Array[String])
   final def encode(str: String): ByteBuffer =
     encode(CharBuffer.wrap(str))
 
-  def displayName(): String = name
+  def displayName(): String = name()
 }
 
 object Charset {
   import StandardCharsets._
 
-  def defaultCharset(): Charset =
-    UTF_8
+  def defaultCharset(): Charset = UTF_8
 
   def forName(charsetName: String): Charset = {
     val m = CharsetMap

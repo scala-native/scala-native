@@ -10,8 +10,9 @@ abstract class AbstractSet[E] protected ()
     if (that.asInstanceOf[AnyRef] eq this) true
     else {
       that match {
-        case that: Collection[_] => that.size == this.size && containsAll(that)
-        case _                   => false
+        case that: Collection[_] =>
+          that.size() == this.size() && containsAll(that)
+        case _ => false
       }
     }
   }
@@ -25,7 +26,7 @@ abstract class AbstractSet[E] protected ()
     else {
       @tailrec
       def removeAll(iter: Iterator[E], modified: Boolean): Boolean = {
-        if (iter.hasNext) {
+        if (iter.hasNext()) {
           if (c.contains(iter.next())) {
             iter.remove()
             removeAll(iter, true)
@@ -34,7 +35,7 @@ abstract class AbstractSet[E] protected ()
         } else
           modified
       }
-      removeAll(this.iterator, false)
+      removeAll(this.iterator(), false)
     }
   }
 }

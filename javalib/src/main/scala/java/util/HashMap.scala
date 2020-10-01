@@ -138,12 +138,12 @@ class HashMap[K, V] protected (inner: mutable.Map[AnyRef, V])
 
     protected def getNextForm(key: AnyRef): E
 
-    final override def next: E = {
+    final override def next(): E = {
       lastKey = Some(innerIterator.next())
       getNextForm(lastKey.get)
     }
 
-    final override def hasNext: Boolean =
+    final override def hasNext(): Boolean =
       innerIterator.hasNext
 
     final override def remove(): Unit = {

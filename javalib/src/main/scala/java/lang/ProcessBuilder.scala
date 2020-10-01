@@ -11,26 +11,30 @@ import scala.scalanative.runtime.Platform
 import ProcessBuilder.Redirect
 
 final class ProcessBuilder(private var _command: List[String]) {
-  def this(command: Array[String]) {
+  def this(command: Array[String]) = {
     this(Arrays.asList(command))
   }
 
   def command(): List[String] = _command
 
   def command(command: Array[String]): ProcessBuilder =
-    set(_command = Arrays.asList(command))
+    set { _command = Arrays.asList(command); () }
 
-  def command(command: List[String]): ProcessBuilder = set(_command = command)
+  def command(command: List[String]): ProcessBuilder = set {
+    _command = command; ()
+  }
 
   def environment(): Map[String, String] = _environment
 
   def directory(): File = _directory
 
   def directory(dir: File): ProcessBuilder =
-    set(_directory = dir match {
-      case null => defaultDirectory
-      case _    => dir
-    })
+    set {
+      _directory = dir match {
+        case null => defaultDirectory
+        case _    => dir
+      }; ()
+    }
 
   def inheritIO(): ProcessBuilder = {
     redirectInput(Redirect.INHERIT)
@@ -39,38 +43,38 @@ final class ProcessBuilder(private var _command: List[String]) {
   }
 
   def redirectError(destination: Redirect): ProcessBuilder = destination match {
-    case null => set(_redirectOutput = Redirect.PIPE)
+    case null => set { _redirectOutput = Redirect.PIPE; () }
     case d =>
-      d.`type` match {
+      d.`type`() match {
         case Redirect.Type.READ =>
           throw new IllegalArgumentException(
             s"Redirect.READ cannot be used for error.")
         case _ =>
-          set(_redirectError = destination)
+          set { _redirectError = destination; () }
       }
   }
 
   def redirectInput(source: Redirect): ProcessBuilder = source match {
-    case null => set(_redirectInput = Redirect.PIPE)
+    case null => set { _redirectInput = Redirect.PIPE; () }
     case s =>
-      s.`type` match {
+      s.`type`() match {
         case Redirect.Type.WRITE | Redirect.Type.APPEND =>
           throw new IllegalArgumentException(s"$s cannot be used for input.")
         case _ =>
-          set(_redirectInput = source)
+          set { _redirectInput = source; () }
       }
   }
 
   def redirectOutput(destination: Redirect): ProcessBuilder =
     destination match {
-      case null => set(_redirectOutput = Redirect.PIPE)
+      case null => set { _redirectOutput = Redirect.PIPE; () }
       case s =>
-        s.`type` match {
+        s.`type`() match {
           case Redirect.Type.READ =>
             throw new IllegalArgumentException(
               s"Redirect.READ cannot be used for output.")
           case _ =>
-            set(_redirectOutput = destination)
+            set { _redirectOutput = destination; () }
         }
     }
 
@@ -95,12 +99,12 @@ final class ProcessBuilder(private var _command: List[String]) {
   def redirectErrorStream(): scala.Boolean = _redirectErrorStream
 
   def redirectErrorStream(redirectErrorStream: scala.Boolean): ProcessBuilder =
-    set(_redirectErrorStream = redirectErrorStream)
+    set { _redirectErrorStream = redirectErrorStream; () }
 
   def start(): Process = {
     if (_command.isEmpty()) throw new IndexOutOfBoundsException()
     if (_command.contains(null)) throw new NullPointerException()
-    if (Platform.isWindows) {
+    if (Platform.isWindows()) {
       val msg = "No windows implementation of java.lang.Process"
       throw new UnsupportedOperationException(msg)
     } else {
@@ -134,14 +138,14 @@ object ProcessBuilder {
     def `type`(): Redirect.Type
 
     override def equals(other: Any): scala.Boolean = other match {
-      case that: Redirect => file == that.file && `type` == that.`type`
+      case that: Redirect => file() == that.file() && `type`() == that.`type`()
       case _              => false
     }
 
     override def hashCode(): Int = {
       var hash = 1
-      hash = hash * 31 + file.hashCode()
-      hash = hash * 31 + `type`.hashCode()
+      hash = hash * 31 + file().hashCode()
+      hash = hash * 31 + `type`().hashCode()
       hash
     }
   }
@@ -188,7 +192,7 @@ object ProcessBuilder {
 
       def valueOf(name: String): Type = {
         if (name == null) throw new NullPointerException()
-        _values.toSeq.find(_.name == name) match {
+        _values.toSeq.find(_.name() == name) match {
           case Some(t) => t
           case None =>
             throw new IllegalArgumentException(

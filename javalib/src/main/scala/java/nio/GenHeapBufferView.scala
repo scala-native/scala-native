@@ -29,7 +29,7 @@ private[nio] object GenHeapBufferView {
                       byteBuffer._arrayOffset + byteBufferPos,
                       0,
                       viewCapacity,
-                      byteBuffer.isReadOnly,
+                      byteBuffer.isReadOnly(),
                       byteBuffer.isBigEndian)
   }
 }
@@ -43,26 +43,26 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
   @inline
   def generic_slice()(
       implicit newHeapBufferView: NewThisHeapBufferView): BufferType = {
-    val newCapacity  = remaining
+    val newCapacity  = remaining()
     val bytesPerElem = newHeapBufferView.bytesPerElem
     newHeapBufferView(newCapacity,
                       _byteArray,
-                      _byteArrayOffset + bytesPerElem * position,
+                      _byteArrayOffset + bytesPerElem * position(),
                       0,
                       newCapacity,
-                      isReadOnly,
+                      isReadOnly(),
                       isBigEndian)
   }
 
   @inline
   def generic_duplicate()(
       implicit newHeapBufferView: NewThisHeapBufferView): BufferType = {
-    val result = newHeapBufferView(capacity,
+    val result = newHeapBufferView(capacity(),
                                    _byteArray,
                                    _byteArrayOffset,
-                                   position,
-                                   limit,
-                                   isReadOnly,
+                                   position(),
+                                   limit(),
+                                   isReadOnly(),
                                    isBigEndian)
     result._mark = _mark
     result
@@ -71,11 +71,11 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
   @inline
   def generic_asReadOnlyBuffer()(
       implicit newHeapBufferView: NewThisHeapBufferView): BufferType = {
-    val result = newHeapBufferView(capacity,
+    val result = newHeapBufferView(capacity(),
                                    _byteArray,
                                    _byteArrayOffset,
-                                   position,
-                                   limit,
+                                   position(),
+                                   limit(),
                                    true,
                                    isBigEndian)
     result._mark = _mark
@@ -85,18 +85,18 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
   @inline
   def generic_compact()(
       implicit newHeapBufferView: NewThisHeapBufferView): BufferType = {
-    if (isReadOnly)
+    if (isReadOnly())
       throw new ReadOnlyBufferException
 
-    val len          = remaining
+    val len          = remaining()
     val bytesPerElem = newHeapBufferView.bytesPerElem
     System.arraycopy(_byteArray,
-                     _byteArrayOffset + bytesPerElem * position,
+                     _byteArrayOffset + bytesPerElem * position(),
                      _byteArray,
                      _byteArrayOffset,
                      bytesPerElem * len)
     _mark = -1
-    limit(capacity)
+    limit(capacity())
     position(len)
     self
   }

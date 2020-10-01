@@ -41,7 +41,7 @@ private[niocharset] abstract class UTF_16_Common protected (
       @inline
       @tailrec
       def loop(): CoderResult = {
-        if (in.remaining < 2) CoderResult.UNDERFLOW
+        if (in.remaining() < 2) CoderResult.UNDERFLOW
         else {
           val b1 = in.get() & 0xff
           val b2 = in.get() & 0xff
@@ -75,7 +75,7 @@ private[niocharset] abstract class UTF_16_Common protected (
               in.position(in.position() - 2)
               CoderResult.malformedForLength(2)
             } else if (!Character.isHighSurrogate(c1)) {
-              if (out.remaining == 0) {
+              if (out.remaining() == 0) {
                 in.position(in.position() - 2)
                 CoderResult.OVERFLOW
               } else {
@@ -83,7 +83,7 @@ private[niocharset] abstract class UTF_16_Common protected (
                 loop()
               }
             } else {
-              if (in.remaining < 2) {
+              if (in.remaining() < 2) {
                 in.position(in.position() - 2)
                 CoderResult.UNDERFLOW
               } else {
@@ -95,7 +95,7 @@ private[niocharset] abstract class UTF_16_Common protected (
                   in.position(in.position() - 4)
                   CoderResult.malformedForLength(2)
                 } else {
-                  if (out.remaining < 2) {
+                  if (out.remaining() < 2) {
                     in.position(in.position() - 4)
                     CoderResult.OVERFLOW
                   } else {
@@ -131,7 +131,7 @@ private[niocharset] abstract class UTF_16_Common protected (
 
     def encodeLoop(in: CharBuffer, out: ByteBuffer): CoderResult = {
       if (needToWriteBOM) {
-        if (out.remaining < 2) {
+        if (out.remaining() < 2) {
           return CoderResult.OVERFLOW // scalastyle:ignore
         } else {
           // Always encode in big endian
@@ -157,7 +157,7 @@ private[niocharset] abstract class UTF_16_Common protected (
       @inline
       @tailrec
       def loop(): CoderResult = {
-        if (in.remaining == 0) CoderResult.UNDERFLOW
+        if (in.remaining() == 0) CoderResult.UNDERFLOW
         else {
           val c1 = in.get()
 
@@ -165,7 +165,7 @@ private[niocharset] abstract class UTF_16_Common protected (
             in.position(in.position() - 1)
             CoderResult.malformedForLength(1)
           } else if (!Character.isHighSurrogate(c1)) {
-            if (out.remaining < 2) {
+            if (out.remaining() < 2) {
               in.position(in.position() - 1)
               CoderResult.OVERFLOW
             } else {
@@ -173,7 +173,7 @@ private[niocharset] abstract class UTF_16_Common protected (
               loop()
             }
           } else {
-            if (in.remaining < 1) {
+            if (in.remaining() < 1) {
               in.position(in.position() - 1)
               CoderResult.UNDERFLOW
             } else {
@@ -183,7 +183,7 @@ private[niocharset] abstract class UTF_16_Common protected (
                 in.position(in.position() - 2)
                 CoderResult.malformedForLength(1)
               } else {
-                if (out.remaining < 4) {
+                if (out.remaining() < 4) {
                   in.position(in.position() - 2)
                   CoderResult.OVERFLOW
                 } else {

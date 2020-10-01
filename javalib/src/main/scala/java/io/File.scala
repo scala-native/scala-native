@@ -31,7 +31,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     this(Option(parent).map(_.path).orNull, child)
 
   def this(uri: URI) = {
-    this(uri.getPath)
+    this(uri.getPath())
     checkURI(uri)
   }
 
@@ -122,7 +122,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def getCanonicalPath(): String =
     Zone { implicit z =>
-      if (exists) {
+      if (exists()) {
         fromCString(simplifyExistingPath(toCString(properPath)))
       } else {
         simplifyNonExistingPath(fromCString(resolve(toCString(properPath))))
@@ -153,7 +153,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         case (acc, seg)  => seg :: acc
       }
       .reverse
-      .filterNot(_.isEmpty)
+      .filterNot(_.isEmpty())
       .mkString(separator, separator, "")
 
   @throws(classOf[IOException])
@@ -166,11 +166,12 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def getParent(): String =
-    path.split(separatorChar).filterNot(_.isEmpty) match {
-      case Array() if !isAbsolute  => null
-      case Array(_) if !isAbsolute => null
-      case parts if !isAbsolute    => parts.init.mkString(separator)
-      case parts if isAbsolute     => parts.init.mkString(separator, separator, "")
+    path.split(separatorChar).filterNot(_.isEmpty()) match {
+      case Array() if !isAbsolute()  => null
+      case Array(_) if !isAbsolute() => null
+      case parts if !isAbsolute()    => parts.init.mkString(separator)
+      case parts if isAbsolute() =>
+        parts.init.mkString(separator, separator, "")
     }
 
   def getParentFile(): File = {
@@ -310,7 +311,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   override def toString(): String = path
 
-  def deleteOnExit(): Unit = DeleteOnExit.addFile(this.getAbsolutePath)
+  def deleteOnExit(): Unit = DeleteOnExit.addFile(this.getAbsolutePath())
 
   @stub
   def toURL(): java.net.URL = ???
@@ -419,7 +420,7 @@ object File {
             throw new IOException(
               "getcwd() error in trying to get user directory."))
 
-      if (path.isEmpty) userdir
+      if (path.isEmpty()) userdir
       else if (userdir.endsWith(separator)) userdir + path
       else userdir + separator + path
     }
@@ -521,16 +522,16 @@ object File {
     }
   }
 
-  val pathSeparatorChar: Char        = if (Platform.isWindows) ';' else ':'
+  val pathSeparatorChar: Char        = if (Platform.isWindows()) ';' else ':'
   val pathSeparator: String          = pathSeparatorChar.toString
-  val separatorChar: Char            = if (Platform.isWindows) '\\' else '/'
+  val separatorChar: Char            = if (Platform.isWindows()) '\\' else '/'
   val separator: String              = separatorChar.toString
   private var counter: Int           = 0
   private var counterBase: Int       = 0
-  private val caseSensitive: Boolean = !Platform.isWindows
+  private val caseSensitive: Boolean = !Platform.isWindows()
 
   def listRoots(): Array[File] =
-    if (Platform.isWindows) ???
+    if (Platform.isWindows()) ???
     else {
       var array = new Array[File](1)
       array(0) = new File("/")
@@ -556,19 +557,19 @@ object File {
     def compMsg(comp: String): String =
       s"Found $comp component in URI"
 
-    if (!uri.isAbsolute) {
+    if (!uri.isAbsolute()) {
       throwExc("URI is not absolute")
-    } else if (!uri.getRawSchemeSpecificPart.startsWith("/")) {
+    } else if (!uri.getRawSchemeSpecificPart().startsWith("/")) {
       throwExc("URI is not hierarchical")
-    } else if (uri.getScheme == null || !(uri.getScheme == "file")) {
+    } else if (uri.getScheme() == null || !(uri.getScheme() == "file")) {
       throwExc("Expected file scheme in URI")
-    } else if (uri.getRawPath == null || uri.getRawPath.length == 0) {
+    } else if (uri.getRawPath() == null || uri.getRawPath().length() == 0) {
       throwExc("Expected non-empty path in URI")
-    } else if (uri.getRawAuthority != null) {
+    } else if (uri.getRawAuthority() != null) {
       throwExc(compMsg("authority"))
-    } else if (uri.getRawQuery != null) {
+    } else if (uri.getRawQuery() != null) {
       throwExc(compMsg("query"))
-    } else if (uri.getRawFragment != null) {
+    } else if (uri.getRawFragment() != null) {
       throwExc(compMsg("fragment"))
     }
     // else URI is ok
