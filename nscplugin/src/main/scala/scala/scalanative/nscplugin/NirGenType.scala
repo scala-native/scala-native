@@ -25,17 +25,14 @@ trait NirGenType { self: NirGenPhase =>
     def isField: Boolean =
       !sym.isMethod && sym.isTerm && !isScalaModule
 
-    /** Tests if this type inherits from CFuncPtr with exclusion of CFuncRawPtr
-     * (wrapper for all CFuncPtr types) and should be handled differently.
-     */
+    /** Tests if this type inherits from CFuncPtr with exclusion of CFuncRawPtr */
     def isCFuncPtrClass: Boolean = sym != CFuncRawPtrClass && {
       sym == CFuncPtrClass ||
       sym.info.parents.exists(_.typeSymbol == CFuncPtrClass)
     }
 
-    /** Tests if this type inherits from CFuncPtr and contains function definition (apply method)
-     * CFuncPtr itself does not contain apply method */
-    def isCFuncPtrClassDef: Boolean =
+    /** Tests if this type is some of some CFuncPtrN types */
+    def isCFuncPtrNClass: Boolean =
       CFuncPtrNClass.contains(sym) || {
         sym.info.parents.exists { parent =>
           CFuncPtrNClass.contains(parent.typeSymbol)
