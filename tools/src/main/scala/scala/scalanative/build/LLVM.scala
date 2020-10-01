@@ -3,7 +3,7 @@ package build
 
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import java.util.Arrays
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath

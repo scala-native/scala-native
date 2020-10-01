@@ -100,7 +100,7 @@ private[scalanative] object IO {
   /** Look for a zip entry path string using a matcher function */
   def existsInJar(path: Path, matcher: String => Boolean): Boolean = {
     import java.util.zip.ZipFile
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val zf = new ZipFile(path.toFile)
     val it = zf.entries().asScala
     it.exists(e => matcher(e.getName))
