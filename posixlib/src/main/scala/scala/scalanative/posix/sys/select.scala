@@ -2,8 +2,6 @@ package scala.scalanative.posix.sys
 
 import scalanative.unsafe._
 import scalanative.unsafe.Nat._
-import scalanative.posix.inttypes._
-import scalanative.posix.time._
 
 @extern
 object select {
