@@ -57,6 +57,7 @@ object ExternSuite extends tests.Suite {
   test("allows to use generic function as argument") {
     val res0 = testlib.exec0(cb) //expected CFuncPtr0[Int]
     val res1 = testlib.exec(cb)  //expected CFuncPtr
-    assert(res0 == res1)
+    assert(res0 == 42)
+    assert(res1 == 42)
   }
 }
