@@ -92,11 +92,19 @@ object ScalaNativePluginInternal {
       workdir
     },
     nativeConfig := {
-      nativeConfig.value
+      val discoverWd = (crossTarget.value / "native").toPath
+      val config     = nativeConfig.value
+      val clang      = nativeClang.value.toPath
+      config
         .withClang(nativeClang.value.toPath)
         .withClangPP(nativeClangPP.value.toPath)
         .withCompileOptions(nativeCompileOptions.value)
         .withLinkingOptions(nativeLinkingOptions.value)
+        .withTargetTriple(
+          if (config.targetTriple.isEmpty)
+            interceptBuildException(Discover.targetTriple(clang, discoverWd))
+          else config.targetTriple
+        )
         .withGC(build.GC(nativeGC.value))
         .withMode(build.Mode(nativeMode.value))
         .withLTO(build.LTO(nativeLTO.value))
