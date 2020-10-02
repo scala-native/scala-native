@@ -7,6 +7,5 @@ object ScalaVersions {
 
   val sbt10Version: String               = "1.1.6" // minimum version
   val sbt10ScalaVersion: String          = scala212
-  val libScalaVersion: String            = scala212
   val libCrossScalaVersions: Seq[String] = Seq(scala211, scala212)
 }

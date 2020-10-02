@@ -409,12 +409,11 @@ lazy val scalalib =
     .in(file("scalalib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(
-      // This build uses libScalaVersion, which is currently 2.11.12
-      // to compile what appears to be 2.11.0 sources. This yields 114
+      // This build uses Scala 2.11 version 2.11.12 to compile
+      // what appears to be 2.11.0 sources. This yields 114
       // deprecations. Editing those sources is not an option (long story),
       // so do not spend compile time looking for the deprecations.
       // Keep the log file clean so that real issues stand out.
-      // This futzing can probably removed for scala >= 2.12.
       scalacOptions -= "-deprecation",
       scalacOptions += "-deprecation:false",
       // The option below is needed since Scala 2.12.12.
@@ -614,7 +613,6 @@ lazy val testingCompilerInterface =
     .in(file("testing-compiler-interface"))
     .settings(noPublishSettings)
     .settings(
-      crossScalaVersions := libCrossScalaVersions,
       crossPaths := false,
       crossVersion := CrossVersion.disabled,
       autoScalaLibrary := false
@@ -625,7 +623,6 @@ lazy val testingCompiler =
     .in(file("testing-compiler"))
     .settings(noPublishSettings)
     .settings(
-      crossScalaVersions := libCrossScalaVersions,
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
@@ -734,7 +731,6 @@ lazy val junitTestOutputsJVM =
     .in(file("junit-test/output-jvm"))
     .settings(
       commonJUnitTestOutputsSettings,
-      scalaVersion := libScalaVersion,
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.11" % "test"
       )
@@ -755,7 +751,6 @@ lazy val junitAsyncJVM =
   project
     .in(file("junit-async/jvm"))
     .settings(
-      scalaVersion := libScalaVersion,
       crossScalaVersions := Seq(sbt10ScalaVersion),
       nameSettings,
       publishArtifact := false
