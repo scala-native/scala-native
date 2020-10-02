@@ -16,7 +16,7 @@ private[testinterface] class NativeRPC(clientSocket: Socket) extends RPCCore {
 
   override def send(msg: String): Unit = {
     outStream.writeInt(msg.length)
-    outStream.write(msg.getBytes(StandardCharsets.UTF_16))
+    outStream.write(msg.getBytes(StandardCharsets.UTF_16BE))
   }
 
   @tailrec

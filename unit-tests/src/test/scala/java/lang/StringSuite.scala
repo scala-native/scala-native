@@ -1,4 +1,5 @@
 package java.lang
+import java.nio.charset.{Charset, StandardCharsets}
 
 object StringSuite extends tests.Suite {
 
@@ -262,8 +263,10 @@ object StringSuite extends tests.Suite {
     assert(new String(b) equals "test")
   }
 
-  test("getBytes(\"UTF-8\")") {
-
+  def testEncoding(charset: String, expectedInts: Seq[Int]): Unit = {
+    testEncoding(Charset.forName(charset), expectedInts)
+  }
+  def testEncoding(charset: Charset, expectedInts: Seq[Int]): Unit = {
     // Try to break getBytes, test with difficult characters.
     // \u00DF Greek lowercase beta; expect 2 output bytes
     // \u4E66 Han Character 'book, letter, document; writings' ; 3 output bytes
@@ -278,8 +281,13 @@ object StringSuite extends tests.Suite {
     // sanity check on character escapes, missing backslash or 'u', etc.
     assertEquals(text.length, 15)
 
-    val bytes = text.getBytes("UTF-8")
+    val bytes         = text.getBytes(charset)
+    val expectedBytes = expectedInts.map(i => java.lang.Byte.valueOf(i.toByte))
+    val expected      = Array[java.lang.Byte](expectedBytes: _*)
+    assert(bytes.sameElements(expected), "result != expected}")
+  }
 
+  test("getBytes(\"UTF-8\")") {
 // format: off
     val expectedInts =
       Seq(0, 9, 10, 65, 90, 97, 122, 48, 57, 64, 126,	// one byte unicode
@@ -288,11 +296,32 @@ object StringSuite extends tests.Suite {
 	  -31, -67, -112, 65				// four byte unicode
 	)
 // format: on
+    testEncoding(StandardCharsets.UTF_8, expectedInts)
+    testEncoding("UTF-8", expectedInts)
+  }
 
-    val expectedBytes = expectedInts.map(i => java.lang.Byte.valueOf(i.toByte))
-    val expected      = Array[Byte](expectedBytes: _*)
+  test("getBytes(\"UTF-16\"") {
+    // format: off
+    val expectedBE = Seq(
+      0, 0, 0, 9, 0, 10, 0, 65, 0, 90,
+      0, 97, 0, 122, 0, 48, 0, 57, 0, 64,
+      0, 126, 0, -33, 78, 102, 31, 80, 0, 65
+    )
+    // format: on
 
-    assert(bytes.sameElements(expected), s"result != expected")
+    val expectedLE = expectedBE
+      .sliding(2, 2)
+      .toSeq
+      .flatMap(_.reverse)
+
+    val expectedWithBOM = Seq(-2, -1) ++ expectedBE
+
+    testEncoding(StandardCharsets.UTF_16BE, expectedBE)
+    testEncoding("UTF-16BE", expectedBE)
+    testEncoding(StandardCharsets.UTF_16LE, expectedLE)
+    testEncoding("UTF-16LE", expectedLE)
+    testEncoding(StandardCharsets.UTF_16, expectedWithBOM)
+    testEncoding("UTF-16", expectedWithBOM)
   }
 
   test("getBytes unsupported encoding") {
