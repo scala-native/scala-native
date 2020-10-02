@@ -1,32 +1,45 @@
 package java.nio.file
 
+import java.lang.Iterable
 import java.io.{
   BufferedReader,
   BufferedWriter,
   File,
   FileOutputStream,
-  IOException,
   InputStream,
   InputStreamReader,
+  IOException,
   OutputStream,
   OutputStreamWriter
 }
+
 import java.nio.file.attribute._
 import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.channels.{FileChannel, SeekableByteChannel}
+
 import java.util.function.BiPredicate
-import java.util.{EnumSet, HashMap, HashSet, LinkedList, List, Map, Set}
+import java.util.{
+  EnumSet,
+  HashMap,
+  HashSet,
+  Iterator,
+  LinkedList,
+  List,
+  Map,
+  Set
+}
 import java.util.stream.{Stream, WrappedScalaStream}
+
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
-import scalanative.posix.{dirent, fcntl, limits, unistd}
-import dirent._
-import java.nio.file.StandardCopyOption._
+import scalanative.posix.{dirent, fcntl, limits, unistd}, dirent._
 import scalanative.posix.sys.stat
 import scalanative.nio.fs.{FileHelpers, UnixException}
 import scala.collection.compat.immutable.{LazyList => SStream}
+
 import scala.collection.immutable.{Map => SMap, Set => SSet}
+import StandardCopyOption._
 
 object Files {
 
@@ -708,8 +721,8 @@ object Files {
                           StandardOpenOption.WRITE)
       else _options
     val writer = newBufferedWriter(path, cs, options)
-    val it     = lines.iterator
-    while (it.hasNext) {
+    val it     = lines.iterator()
+    while (it.hasNext()) {
       writer.append(it.next())
       writer.newLine()
     }
