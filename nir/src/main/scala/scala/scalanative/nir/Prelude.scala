@@ -24,12 +24,7 @@ object Prelude {
     // and thus should be made reachable, no matter
     // what the reachability algorithm does
     // example: reflectively instantiatable classes
-    // since: compat = 4, revision = 7
-    val hasEntryPoints =
-      if (revision < 7)
-        false
-      else
-        buffer.get() != 0
+    val hasEntryPoints = buffer.get() != 0
 
     Prelude(magic, compat, revision, hasEntryPoints)
   }
