@@ -136,7 +136,7 @@ object Unmangle {
         error(s"expected nullable qualifier, but got $ch")
     }
 
-    def readTypes(): Seq[Type] = {
+    def readTypes(): collection.Seq[Type] = {
       val buf = collection.mutable.UnrolledBuffer.empty[Type]
       while (peek() != 'E') {
         buf += readType()

@@ -49,7 +49,7 @@ object Type {
   /** Aggregate value types. */
   sealed abstract class AggregateKind           extends ValueKind
   final case class ArrayValue(ty: Type, n: Int) extends AggregateKind
-  final case class StructValue(tys: Seq[Type])  extends AggregateKind
+  final case class StructValue(tys: collection.Seq[Type])  extends AggregateKind
 
   /** Reference types. */
   sealed abstract class RefKind extends Type {
@@ -86,7 +86,7 @@ object Type {
   final case object Nothing                             extends SpecialKind
   final case object Virtual                             extends SpecialKind
   final case class Var(ty: Type)                        extends SpecialKind
-  final case class Function(args: Seq[Type], ret: Type) extends SpecialKind
+  final case class Function(args: collection.Seq[Type], ret: Type) extends SpecialKind
 
   val boxesTo = Seq[(Type, Type)](
     Type.Ref(Global.Top("scala.scalanative.unsigned.UByte"))      -> Type.Byte,
@@ -142,7 +142,7 @@ object Type {
   def toArrayClass(ty: Type): Global = ty match {
     case _ if typeToArray.contains(ty) =>
       typeToArray(ty)
-    case Type.Ref(name, _, _) if name == Rt.BoxedUnit =>
+    case Type.Ref(name, _, _) if name == Rt.BoxedUnit.name =>
       typeToArray(Rt.BoxedUnit)
     case _ =>
       typeToArray(Rt.Object)

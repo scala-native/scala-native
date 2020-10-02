@@ -10,7 +10,7 @@ import scala.scalanative.nir.serialization.{Tags => T}
 final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
 
-  final def serialize(defns: Seq[Defn]): Unit = {
+  final def serialize(defns: collection.Seq[Defn]): Unit = {
     val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
@@ -41,7 +41,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     buffer.position(end)
   }
 
-  private def putSeq[T](seq: Seq[T])(putT: T => Unit) = {
+  private def putSeq[T](seq: collection.Seq[T])(putT: T => Unit) = {
     putInt(seq.length)
     seq.foreach(putT)
   }
@@ -106,7 +106,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Bin.Xor  => putInt(T.XorBin)
   }
 
-  private def putInsts(insts: Seq[Inst]) = putSeq(insts)(putInst)
+  private def putInsts(insts: collection.Seq[Inst]) = putSeq(insts)(putInst)
   private def putInst(cf: Inst) = cf match {
     case Inst.Label(name, params) =>
       putInt(T.LabelInst)
@@ -238,7 +238,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putGlobals(ifaces)
   }
 
-  private def putGlobals(globals: Seq[Global]): Unit =
+  private def putGlobals(globals: collection.Seq[Global]): Unit =
     putSeq(globals)(putGlobal)
   private def putGlobalOpt(globalopt: Option[Global]): Unit =
     putOpt(globalopt)(putGlobal)
@@ -425,13 +425,13 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(arr)
   }
 
-  private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)
+  private def putParams(params: collection.Seq[Val.Local]) = putSeq(params)(putParam)
   private def putParam(param: Val.Local) = {
     putLocal(param.name)
     putType(param.ty)
   }
 
-  private def putTypes(tys: Seq[Type]): Unit = putSeq(tys)(putType)
+  private def putTypes(tys: collection.Seq[Type]): Unit = putSeq(tys)(putType)
   private def putType(ty: Type): Unit = ty match {
     case Type.Vararg => putInt(T.VarargType)
     case Type.Ptr    => putInt(T.PtrType)
@@ -466,7 +466,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putBool(nullable)
   }
 
-  private def putVals(values: Seq[Val]): Unit = putSeq(values)(putVal)
+  private def putVals(values: collection.Seq[Val]): Unit = putSeq(values)(putVal)
   private def putVal(value: Val): Unit = value match {
     case Val.True            => putInt(T.TrueVal)
     case Val.False           => putInt(T.FalseVal)

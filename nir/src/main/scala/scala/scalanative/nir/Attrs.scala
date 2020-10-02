@@ -1,7 +1,7 @@
 package scala.scalanative
 package nir
 
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 import nir.Attr._
 
 sealed abstract class Attr {
@@ -39,8 +39,8 @@ final case class Attrs(inlineHint: Inline = MayInline,
                        isDyn: Boolean = false,
                        isStub: Boolean = false,
                        isAbstract: Boolean = false,
-                       links: Seq[Attr.Link] = Seq()) {
-  def toSeq: Seq[Attr] = {
+                       links: collection.Seq[Attr.Link] = collection.Seq()) {
+  def toSeq: collection.Seq[Attr] = {
     val out = mutable.UnrolledBuffer.empty[Attr]
 
     if (inlineHint != MayInline) out += inlineHint
@@ -66,7 +66,6 @@ object Attrs {
     var isDyn      = false
     var isStub     = false
     var isAbstract = false
-    val overrides  = mutable.UnrolledBuffer.empty[Global]
     val links      = mutable.UnrolledBuffer.empty[Attr.Link]
 
     attrs.foreach {

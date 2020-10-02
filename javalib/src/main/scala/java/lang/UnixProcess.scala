@@ -210,7 +210,7 @@ object UnixProcess {
     }
   }
 
-  @inline private def nullTerminate(seq: Seq[String])(implicit z: Zone) = {
+  @inline private def nullTerminate(seq: collection.Seq[String])(implicit z: Zone) = {
     val res = alloc[CString](seq.length + 1)
     seq.zipWithIndex foreach { case (s, i) => !(res + i) = toCString(s) }
     res

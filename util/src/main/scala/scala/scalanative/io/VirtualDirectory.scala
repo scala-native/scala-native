@@ -112,7 +112,9 @@ object VirtualDirectory {
       acquire {
         val uri = URI.create(s"jar:${path.toUri}")
         try {
-          FileSystems.newFileSystem(uri, Map("create" -> "false").asJava)
+          val env = new java.util.HashMap[String, String]()
+          env.put("create", "false")
+          FileSystems.newFileSystem(uri, env)
         } catch {
           case e: FileSystemAlreadyExistsException =>
             FileSystems.getFileSystem(uri)

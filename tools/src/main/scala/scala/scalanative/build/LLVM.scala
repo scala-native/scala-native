@@ -4,6 +4,7 @@ package build
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import java.util.Arrays
 import scala.collection.JavaConverters._
+import scala.collection.parallel.mutable.ParArray
 import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath
@@ -134,7 +135,7 @@ private[scalanative] object LLVM {
     }
 
     // generate .o files for all included source files in parallel
-    paths.par.foreach { path =>
+    ParArray.handoff(paths.toArray).foreach { path =>
       val opath = path + oExt
       if (include(path) && !Files.exists(Paths.get(opath))) {
         val isCpp    = path.endsWith(cppExt)

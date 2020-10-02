@@ -65,16 +65,18 @@ object Sig {
       extends Unmangled
 
   final case class Method(id: String,
-                          types: Seq[Type],
+                          types: collection.Seq[Type],
                           scope: Scope = Scope.Public)
       extends Unmangled
 
-  final case class Ctor(types: Seq[Type])               extends Unmangled
-  final case class Clinit()                             extends Unmangled
-  final case class Proxy(id: String, types: Seq[Type])  extends Unmangled
-  final case class Extern(id: String)                   extends Unmangled
-  final case class Generated(id: String)                extends Unmangled
-  final case class Duplicate(of: Sig, types: Seq[Type]) extends Unmangled
+  final case class Ctor(types: collection.Seq[Type]) extends Unmangled
+  final case class Clinit()                          extends Unmangled
+  final case class Proxy(id: String, types: collection.Seq[Type])
+      extends Unmangled
+  final case class Extern(id: String)    extends Unmangled
+  final case class Generated(id: String) extends Unmangled
+  final case class Duplicate(of: Sig, types: collection.Seq[Type])
+      extends Unmangled
 
   implicit def unmangledToMangled(sig: Sig.Unmangled): Sig = sig.mangled
 }

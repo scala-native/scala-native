@@ -7,11 +7,11 @@ class Buffer(implicit fresh: Fresh) {
   private val buffer = mutable.UnrolledBuffer.empty[Inst]
   def +=(inst: Inst): Unit =
     buffer += inst
-  def ++=(insts: Seq[Inst]): Unit =
+  def ++=(insts: collection.Seq[Inst]): Unit =
     buffer ++= insts
   def ++=(other: Buffer): Unit =
     buffer ++= other.buffer
-  def toSeq: Seq[Inst] =
+  def toSeq: collection.Seq[Inst] =
     buffer
   def size: Int =
     buffer.size
@@ -19,7 +19,7 @@ class Buffer(implicit fresh: Fresh) {
   // Control-flow ops
   def label(name: Local): Unit =
     this += Inst.Label(name, Seq.empty)
-  def label(name: Local, params: Seq[Val.Local]): Unit =
+  def label(name: Local, params: collection.Seq[Val.Local]): Unit =
     this += Inst.Label(name, params)
   def unreachable(unwind: Next): Unit =
     this += Inst.Unreachable(unwind)
@@ -43,7 +43,7 @@ class Buffer(implicit fresh: Fresh) {
   }
   def let(op: Op, unwind: Next): Val =
     let(fresh(), op, unwind)
-  def call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next): Val =
+  def call(ty: Type, ptr: Val, args: collection.Seq[Val], unwind: Next): Val =
     let(Op.Call(ty, ptr, args), unwind)
   def load(ty: Type, ptr: Val, unwind: Next): Val =
     let(Op.Load(ty, ptr), unwind)

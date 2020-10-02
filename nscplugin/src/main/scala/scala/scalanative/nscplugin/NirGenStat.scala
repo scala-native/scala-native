@@ -68,8 +68,8 @@ trait NirGenStat { self: NirGenPhase =>
   }
 
   class StatBuffer {
-    private val buf          = mutable.UnrolledBuffer.empty[nir.Defn]
-    def toSeq: Seq[nir.Defn] = buf
+    private val buf                     = mutable.UnrolledBuffer.empty[nir.Defn]
+    def toSeq: collection.Seq[nir.Defn] = buf
 
     def +=(defn: nir.Defn): Unit = {
       buf += defn
@@ -321,8 +321,8 @@ trait NirGenStat { self: NirGenPhase =>
     // Allocate and construct an object, using the provided ExprBuffer.
     private def allocAndConstruct(exprBuf: ExprBuffer,
                                   name: Global,
-                                  argTypes: Seq[nir.Type],
-                                  args: Seq[Val]): Val = {
+                                  argTypes: collection.Seq[nir.Type],
+                                  args: collection.Seq[Val]): Val = {
       val alloc = exprBuf.classalloc(name, unwind(curFresh))
       exprBuf.call(
         Type.Function(Type.Ref(name) +: argTypes, Type.Unit),
@@ -334,7 +334,7 @@ trait NirGenStat { self: NirGenPhase =>
     }
 
     def genRegisterReflectiveInstantiationForModuleClass(
-        cd: ClassDef): Seq[Inst] = {
+        cd: ClassDef): collection.Seq[Inst] = {
       import NirGenSymbols._
 
       val fqSymId   = curClassSym.fullName + "$"
@@ -400,7 +400,7 @@ trait NirGenStat { self: NirGenPhase =>
     }
 
     def genRegisterReflectiveInstantiationForNormalClass(
-        cd: ClassDef): Seq[Inst] = {
+        cd: ClassDef): collection.Seq[Inst] = {
       import NirGenSymbols._
 
       val fqSymId   = curClassSym.fullName
@@ -685,7 +685,7 @@ trait NirGenStat { self: NirGenPhase =>
     def genMethodBody(dd: DefDef,
                       bodyp: Tree,
                       isStatic: Boolean,
-                      isExtern: Boolean): Seq[nir.Inst] = {
+                      isExtern: Boolean): collection.Seq[nir.Inst] = {
       val fresh = curFresh.get
       val buf   = new ExprBuffer()(fresh)
 

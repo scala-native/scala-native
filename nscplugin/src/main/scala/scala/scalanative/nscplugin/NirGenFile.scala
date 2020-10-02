@@ -29,7 +29,7 @@ trait NirGenFile { self: NirGenPhase =>
     Paths.get(file.file.getAbsolutePath)
   }
 
-  def genIRFile(path: Path, defns: Seq[nir.Defn]): Unit =
+  def genIRFile(path: Path, defns: collection.Seq[nir.Defn]): Unit =
     withScratchBuffer { buffer =>
       serializeBinary(defns, buffer)
       buffer.flip

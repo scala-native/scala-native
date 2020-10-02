@@ -18,7 +18,7 @@ object Defn {
   final case class Define(attrs: Attrs,
                           name: Global,
                           ty: Type,
-                          insts: Seq[Inst])
+                          insts: collection.Seq[Inst])
       extends Defn
 
   // high-level
@@ -27,15 +27,15 @@ object Defn {
   final case class Class(attrs: Attrs,
                          name: Global,
                          parent: Option[Global],
-                         traits: Seq[Global])
+                         traits: collection.Seq[Global])
       extends Defn
   final case class Module(attrs: Attrs,
                           name: Global,
                           parent: Option[Global],
-                          traits: Seq[Global])
+                          traits: collection.Seq[Global])
       extends Defn
 
-  def existsEntryPoint(defns: Seq[Defn]): Boolean = {
+  def existsEntryPoint(defns: collection.Seq[Defn]): Boolean = {
     defns.exists {
       case defn: Defn.Define =>
         val Global.Member(_, sig) = defn.name

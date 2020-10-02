@@ -55,7 +55,7 @@ object select {
              readfds: Ptr[fd_set],
              writefds: Ptr[fd_set],
              exceptfds: Ptr[fd_set],
-             timeout: Ptr[time.timeval]): CInt = extern
+             timeout: Ptr[CStruct2[time_t, suseconds_t]]): CInt = extern
 
   @name("scalanative_FD_SETSIZE")
   def FD_SETSIZE: CInt = extern

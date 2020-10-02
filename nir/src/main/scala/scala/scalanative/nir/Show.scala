@@ -3,6 +3,7 @@ package nir
 
 import java.nio.charset.StandardCharsets
 import scala.collection.mutable
+import scala.collection.parallel.mutable.ParArray
 import scalanative.util.{ShowBuilder, unreachable}
 
 object Show {
@@ -35,9 +36,7 @@ object Show {
   def dump(defns: Seq[Defn], fileName: String): Unit = {
     val pw = new java.io.PrintWriter(fileName)
     try {
-      util
-        .partitionBy(defns.filter(_ != null))(_.name)
-        .par
+      ParArray.handoff(util.partitionBy(defns.filter(_ != null))(_.name).toArray)
         .map {
           case (_, defns) =>
             defns.collect {
@@ -69,7 +68,7 @@ object Show {
         attrs_(attrs.toSeq)
       }
 
-    def attrs_(attrs: Seq[Attr]): Unit = {
+    def attrs_(attrs: collection.Seq[Attr]): Unit = {
       rep(attrs, sep = " ")(attr_)
       str(" ")
     }

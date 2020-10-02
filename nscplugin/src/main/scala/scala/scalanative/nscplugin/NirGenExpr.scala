@@ -44,7 +44,7 @@ trait NirGenExpr { self: NirGenPhase =>
       }
     }
 
-    override def ++=(insts: Seq[Inst]): Unit =
+    override def ++=(insts: collection.Seq[Inst]): Unit =
       insts.foreach { inst =>
         this += inst
       }
@@ -130,7 +130,7 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genLabelDef(label: LabelDef): Val = {
-      assert(label.params.length == 0)
+      assert(label.params.length == 0, "")
       buf.jump(Next(curMethodEnv.enterLabel(label)))
       genLabel(label)
     }
@@ -213,7 +213,7 @@ trait NirGenExpr { self: NirGenPhase =>
         case CaseDef(Ident(nme.WILDCARD), _, _) =>
           Seq()
         case CaseDef(pat, guard, body) =>
-          assert(guard.isEmpty)
+          assert(guard.isEmpty, "")
           val vals: Seq[Val] = pat match {
             case lit: Literal =>
               List(genLiteralValue(lit))
@@ -359,7 +359,7 @@ trait NirGenExpr { self: NirGenPhase =>
       wrap(cases)
     }
 
-    def genTryFinally(finallyp: Tree, insts: Seq[nir.Inst]): Seq[Inst] = {
+    def genTryFinally(finallyp: Tree, insts: collection.Seq[nir.Inst]): collection.Seq[Inst] = {
       val labels =
         insts.collect {
           case Inst.Label(n, _) => n
@@ -1699,7 +1699,7 @@ trait NirGenExpr { self: NirGenPhase =>
           }
 
         case Object_synchronized =>
-          assert(argsp.size == 1)
+          assert(argsp.size == 1, "")
           genSynchronized(ValTree(boxed), argsp.head)
       }
     }
@@ -1782,7 +1782,7 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genLoadExtern(ty: nir.Type, externTy: nir.Type, sym: Symbol): Val = {
-      assert(sym.owner.isExternModule)
+      assert(sym.owner.isExternModule, "")
 
       val name = Val.Global(genName(sym), Type.Ptr)
 
@@ -1790,7 +1790,7 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genStoreExtern(externTy: nir.Type, sym: Symbol, value: Val): Val = {
-      assert(sym.owner.isExternModule)
+      assert(sym.owner.isExternModule, "")
 
       val name        = Val.Global(genName(sym), Type.Ptr)
       val externValue = toExtern(externTy, value)
@@ -1860,7 +1860,7 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genMethodArgs(sym: Symbol,
-                      argsp: Seq[Tree]): Seq[Val] =
+                      argsp: Seq[Tree]): collection.Seq[Val] =
       if (!sym.owner.isExternModule) {
         genSimpleArgs(argsp)
       } else {

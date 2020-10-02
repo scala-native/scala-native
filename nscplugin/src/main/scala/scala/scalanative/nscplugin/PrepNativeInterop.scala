@@ -250,16 +250,16 @@ abstract class PrepNativeInterop
 
   }
 
-  private object ScalaEnumValue extends {
-    protected val methSym = getMemberMethod(EnumerationClass, nativenme.Value)
-  } with ScalaEnumFctExtractors
+  private object ScalaEnumValue extends ScalaEnumFctExtractors {
+    protected lazy val methSym = getMemberMethod(EnumerationClass, nativenme.Value)
+  }
 
-  private object ScalaEnumVal extends {
-    protected val methSym = {
+  private object ScalaEnumVal extends ScalaEnumFctExtractors {
+    protected lazy val methSym = {
       val valSym = getMemberClass(EnumerationClass, nativenme.Val)
       valSym.tpe.member(nme.CONSTRUCTOR)
     }
-  } with ScalaEnumFctExtractors
+  }
 
   /**
    * Construct a call to Enumeration.Value

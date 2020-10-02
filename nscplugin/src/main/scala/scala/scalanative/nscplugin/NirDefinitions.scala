@@ -227,22 +227,22 @@ trait NirDefinitions { self: NirGlobalAddons =>
     )
 
     lazy val RuntimeArrayModule: Map[Char, Symbol] =
-      RuntimeArrayClass.mapValues(_.companion)
+      RuntimeArrayClass.mapValues(_.companion).toMap
 
     lazy val RuntimeArrayAllocMethod: Map[Char, Symbol] =
-      RuntimeArrayModule.mapValues(getMember(_, TermName("alloc")))
+      RuntimeArrayModule.mapValues(getMember(_, TermName("alloc"))).toMap
 
     lazy val RuntimeArrayApplyMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.mapValues(getMember(_, TermName("apply")))
+      RuntimeArrayClass.mapValues(getMember(_, TermName("apply"))).toMap
 
     lazy val RuntimeArrayUpdateMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.mapValues(getMember(_, TermName("update")))
+      RuntimeArrayClass.mapValues(getMember(_, TermName("update"))).toMap
 
     lazy val RuntimeArrayLengthMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.mapValues(getMember(_, TermName("length")))
+      RuntimeArrayClass.mapValues(getMember(_, TermName("length"))).toMap
 
     lazy val RuntimeArrayCloneMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.mapValues(getMember(_, TermName("clone")))
+      RuntimeArrayClass.mapValues(getMember(_, TermName("clone"))).toMap
 
     lazy val RuntimeBoxesModule = getRequiredModule(
       "scala.scalanative.runtime.Boxes")

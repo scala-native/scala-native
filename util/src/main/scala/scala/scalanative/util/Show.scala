@@ -15,7 +15,7 @@ final class ShowBuilder {
     newline()
   }
 
-  def rep[T](values: Seq[T], sep: String = "")(f: T => Unit): Unit =
+  def rep[T](values: collection.Seq[T], sep: String = "")(f: T => Unit): Unit =
     if (values.nonEmpty) {
       values.init.foreach { value =>
         f(value)

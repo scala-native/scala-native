@@ -15,7 +15,7 @@ object Fresh {
   def apply(start: Long = 0L): Fresh =
     new Fresh(start)
 
-  def apply(insts: Seq[Inst]): Fresh = {
+  def apply(insts: collection.Seq[Inst]): Fresh = {
     var max = -1L
     insts.foreach {
       case Inst.Let(local, _, Next.Unwind(Val.Local(exc, _), _)) =>

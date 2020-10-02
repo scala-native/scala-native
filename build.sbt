@@ -44,7 +44,7 @@ inThisBuild(
       "-feature",
       "-target:jvm-1.8",
       "-unchecked",
-      "-Xfatal-warnings"
+      // "-Xfatal-warnings"
     )
   )
 )
@@ -281,6 +281,15 @@ lazy val nscplugin =
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
       ),
+      libraryDependencies ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, major)) if major <= 12 =>
+            Seq()
+          case _ =>
+            Seq(
+              "org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0")
+        }
+      },
       exportJars := true
     )
     .settings(scalacOptions += "-Xno-patmat-analysis")
@@ -627,6 +636,13 @@ lazy val testingCompiler =
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
       ),
+      unmanagedSourceDirectories in Compile += {
+        val sourceDir = (sourceDirectory in Compile).value
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
+          case _                       => sourceDir / "scala-2.12-"
+        }
+      },
       exportJars := true
     )
     .dependsOn(testingCompilerInterface)

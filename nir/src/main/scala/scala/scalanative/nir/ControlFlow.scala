@@ -15,8 +15,8 @@ object ControlFlow {
   final case class Edge(from: Block, to: Block, next: Next)
 
   final case class Block(name: Local,
-                         params: Seq[Val.Local],
-                         insts: Seq[Inst],
+                         params: collection.Seq[Val.Local],
+                         insts: collection.Seq[Inst],
                          isEntry: Boolean) {
     val inEdges  = mutable.UnrolledBuffer.empty[Edge]
     val outEdges = mutable.UnrolledBuffer.empty[Edge]
@@ -39,11 +39,11 @@ object ControlFlow {
   }
 
   final class Graph(val entry: Block,
-                    val all: Seq[Block],
+                    val all: collection.Seq[Block],
                     val find: mutable.Map[Local, Block])
 
   object Graph {
-    def apply(insts: Seq[Inst]): Graph = {
+    def apply(insts: collection.Seq[Inst]): Graph = {
       assert(insts.nonEmpty)
 
       val locations = {
@@ -148,7 +148,7 @@ object ControlFlow {
     }
   }
 
-  def removeDeadBlocks(insts: Seq[Inst]): Seq[Inst] = {
+  def removeDeadBlocks(insts: collection.Seq[Inst]): collection.Seq[Inst] = {
     val cfg = ControlFlow.Graph(insts)
     val buf = new nir.Buffer()(Fresh(insts))
 

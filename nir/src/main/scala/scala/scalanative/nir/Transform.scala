@@ -22,7 +22,7 @@ trait Transform {
       defn
   }
 
-  def onInsts(insts: Seq[Inst]): Seq[Inst] =
+  def onInsts(insts: collection.Seq[Inst]): collection.Seq[Inst] =
     insts.map(onInst)
 
   def onInst(inst: Inst): Inst = inst match {

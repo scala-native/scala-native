@@ -459,5 +459,5 @@ private[math] object Multiplication {
   }
 
   private def newArrayOfPows(len: Int, pow: Int) =
-    new Array[Int](len - 1).scanLeft[Int, Array[Int]](1)((z, _) => z * pow)
+    new Array[Int](len - 1).scanLeft(1)((z, _) => z * pow)
 }

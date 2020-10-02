@@ -4,6 +4,7 @@ package nscplugin
 import java.nio.file.Path
 
 import scala.collection.mutable
+import scala.collection.parallel.mutable.ParArray
 import scala.scalanative.nir._
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
@@ -94,7 +95,7 @@ abstract class NirGenPhase
           (path, reflectiveInstBuf.toSeq)
       }.toMap
 
-      (files ++ reflectiveInstFiles).par.foreach {
+      ParArray.handoff((files ++ reflectiveInstFiles).toArray).foreach {
         case (path, stats) =>
           genIRFile(path, stats)
       }
