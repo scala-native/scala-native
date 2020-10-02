@@ -269,24 +269,16 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.DoubleVal      => Val.Double(getDouble)
     case T.StructValueVal => Val.StructValue(getVals)
     case T.ArrayValueVal  => Val.ArrayValue(getType, getVals)
-    case T.CharsVal =>
-      Val.Chars {
-        if (prelude.revision < 7)
-          StringUtils.processEscapes(getUTF8String)
-        else getBytes()
-      }
-    case T.LocalVal  => Val.Local(getLocal, getType)
-    case T.GlobalVal => Val.Global(getGlobal, getType)
+    case T.CharsVal       => Val.Chars(getBytes())
+    case T.LocalVal       => Val.Local(getLocal, getType)
+    case T.GlobalVal      => Val.Global(getGlobal, getType)
 
     case T.UnitVal  => Val.Unit
     case T.ConstVal => Val.Const(getVal)
     case T.StringVal =>
       Val.String {
-        if (prelude.revision < 7) getUTF8String()
-        else {
-          val chars = Array.fill(getInt)(getChar)
-          new String(chars)
-        }
+        val chars = Array.fill(getInt)(getChar)
+        new String(chars)
       }
     case T.VirtualVal => Val.Virtual(getLong)
   }
