@@ -47,9 +47,9 @@ object Type {
   final case object Double extends F(64)
 
   /** Aggregate value types. */
-  sealed abstract class AggregateKind           extends ValueKind
-  final case class ArrayValue(ty: Type, n: Int) extends AggregateKind
-  final case class StructValue(tys: collection.Seq[Type])  extends AggregateKind
+  sealed abstract class AggregateKind                     extends ValueKind
+  final case class ArrayValue(ty: Type, n: Int)           extends AggregateKind
+  final case class StructValue(tys: collection.Seq[Type]) extends AggregateKind
 
   /** Reference types. */
   sealed abstract class RefKind extends Type {
@@ -81,12 +81,13 @@ object Type {
       extends RefKind
 
   /** Second-class types. */
-  sealed abstract class SpecialKind                     extends Type
-  final case object Vararg                              extends SpecialKind
-  final case object Nothing                             extends SpecialKind
-  final case object Virtual                             extends SpecialKind
-  final case class Var(ty: Type)                        extends SpecialKind
-  final case class Function(args: collection.Seq[Type], ret: Type) extends SpecialKind
+  sealed abstract class SpecialKind extends Type
+  final case object Vararg          extends SpecialKind
+  final case object Nothing         extends SpecialKind
+  final case object Virtual         extends SpecialKind
+  final case class Var(ty: Type)    extends SpecialKind
+  final case class Function(args: collection.Seq[Type], ret: Type)
+      extends SpecialKind
 
   val boxesTo = Seq[(Type, Type)](
     Type.Ref(Global.Top("scala.scalanative.unsigned.UByte"))      -> Type.Byte,

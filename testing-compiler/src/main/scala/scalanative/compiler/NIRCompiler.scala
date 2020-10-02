@@ -55,7 +55,8 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
    * Reporter that ignores INFOs and WARNINGs, but directly aborts the compilation
    * on ERRORs.
    */
-  private class TestReporter(override val settings: Settings) extends CompatReporter {
+  private class TestReporter(override val settings: Settings)
+      extends CompatReporter {
     override def add(pos: Position, msg: String, severity: Severity): Unit =
       severity match {
         case INFO | WARNING => ()

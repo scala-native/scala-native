@@ -3,7 +3,7 @@ package scala.scalanative
 import scala.tools.nsc.reporters.FilteringReporter
 import scala.reflect.internal.util.Position
 
-private [scalanative] trait CompatReporter extends FilteringReporter {
+private[scalanative] trait CompatReporter extends FilteringReporter {
   def add(pos: Position, msg: String, severity: Severity): Unit
 
   override def doReport(pos: Position, msg: String, severity: Severity): Unit =

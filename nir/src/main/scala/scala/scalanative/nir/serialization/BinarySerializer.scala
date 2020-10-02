@@ -425,7 +425,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(arr)
   }
 
-  private def putParams(params: collection.Seq[Val.Local]) = putSeq(params)(putParam)
+  private def putParams(params: collection.Seq[Val.Local]) =
+    putSeq(params)(putParam)
   private def putParam(param: Val.Local) = {
     putLocal(param.name)
     putType(param.ty)
@@ -466,7 +467,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putBool(nullable)
   }
 
-  private def putVals(values: collection.Seq[Val]): Unit = putSeq(values)(putVal)
+  private def putVals(values: collection.Seq[Val]): Unit =
+    putSeq(values)(putVal)
   private def putVal(value: Val): Unit = value match {
     case Val.True            => putInt(T.TrueVal)
     case Val.False           => putInt(T.FalseVal)

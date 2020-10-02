@@ -43,7 +43,7 @@ inThisBuild(
       "utf8",
       "-feature",
       "-target:jvm-1.8",
-      "-unchecked",
+      "-unchecked"
       // "-Xfatal-warnings"
     )
   )

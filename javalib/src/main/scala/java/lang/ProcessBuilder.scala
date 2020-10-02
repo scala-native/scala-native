@@ -20,7 +20,9 @@ final class ProcessBuilder(private var _command: List[String]) {
   def command(command: Array[String]): ProcessBuilder =
     set { _command = Arrays.asList(command) }
 
-  def command(command: List[String]): ProcessBuilder = set { _command = command }
+  def command(command: List[String]): ProcessBuilder = set {
+    _command = command
+  }
 
   def environment(): Map[String, String] = _environment
 
@@ -65,7 +67,7 @@ final class ProcessBuilder(private var _command: List[String]) {
 
   def redirectOutput(destination: Redirect): ProcessBuilder =
     destination match {
-      case null => set {_redirectOutput = Redirect.PIPE }
+      case null => set { _redirectOutput = Redirect.PIPE }
       case s =>
         s.`type` match {
           case Redirect.Type.READ =>

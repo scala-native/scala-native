@@ -6,8 +6,9 @@ sealed abstract class Inst {
 }
 
 object Inst {
-  final case class Label(name: Local, params: collection.Seq[Val.Local]) extends Inst
-  final case class Let(name: Local, op: Op, unwind: Next)     extends Inst
+  final case class Label(name: Local, params: collection.Seq[Val.Local])
+      extends Inst
+  final case class Let(name: Local, op: Op, unwind: Next) extends Inst
   object Let {
     def apply(op: Op, unwind: Next)(implicit fresh: Fresh): Let =
       Let(fresh(), op, unwind)

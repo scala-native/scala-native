@@ -36,7 +36,8 @@ object Show {
   def dump(defns: Seq[Defn], fileName: String): Unit = {
     val pw = new java.io.PrintWriter(fileName)
     try {
-      ParArray.handoff(util.partitionBy(defns.filter(_ != null))(_.name).toArray)
+      ParArray
+        .handoff(util.partitionBy(defns.filter(_ != null))(_.name).toArray)
         .map {
           case (_, defns) =>
             defns.collect {
