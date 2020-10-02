@@ -10,7 +10,6 @@ object MyScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = ScalaNativePlugin
 
   override def projectSettings: Seq[Setting[_]] = Def.settings(
-    crossScalaVersions := ScalaVersions.libCrossScalaVersions,
     /* Remove libraryDependencies on ourselves; we use .dependsOn() instead
      * inside this build.
      */

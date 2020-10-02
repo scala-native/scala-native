@@ -68,7 +68,7 @@ object SuiteSuite extends Suite {
       case exc: Throwable =>
         exc match {
           case _: AssertionFailed =>
-            // got case object, expected case class
+            // got class instance, expected case object
             throw AssertionFailed("expected message yet none found")
           case _ => throw exc
         }

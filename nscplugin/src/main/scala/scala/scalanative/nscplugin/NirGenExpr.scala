@@ -2,7 +2,6 @@ package scala.scalanative
 package nscplugin
 
 import scala.collection.mutable
-import scala.scalanative.nir.Type.isPtr
 import scalanative.nir._
 import scalanative.util.{StringUtils, unsupported}
 import scalanative.util.ScopedVar.scoped
@@ -776,15 +775,16 @@ trait NirGenExpr { self: NirGenPhase =>
         val samsBuilder    = List.newBuilder[Symbol]
         val seenSignatures = mutable.Set.empty[Sig]
 
-        // scala/bug#10512: any methods which `samInfo.sam` overrides need
-        // bridges made for them.
         // On Scala < 2.12.5, `synthCls` is polyfilled to `NoSymbol` and hence
         // `samBridges` will always be empty. This causes our compiler to be
         // bug-compatible on these versions.
         val synthCls = samInfo.synthCls
-        val samBridges = if (synthCls == NoSymbol) {
-          Nil
-        } else {
+        // On Scala < 2.12.5, `synthCls` is polyfilled to `NoSymbol`
+        // and hence `samBridges` will always be empty (scala/bug#10512).
+        // Since we only support Scala 2.12.12 and up,
+        // we assert that this is not the case.
+        assert(synthCls != NoSymbol)
+        val samBridges = {
           import scala.reflect.internal.Flags.BRIDGE
           synthCls.info.findMembers(excludedFlags = 0L, requiredFlags = BRIDGE).toList
         }
@@ -1840,7 +1840,7 @@ trait NirGenExpr { self: NirGenPhase =>
         }
       val args = genMethodArgs(sym, argsp)
       val method =
-        if (isImplClass(owner) || statically || owner.isStruct || owner.isExternModule || isPtr(self.ty)) {
+        if (isImplClass(owner) || statically || owner.isStruct || owner.isExternModule) {
           Val.Global(name, nir.Type.Ptr)
         } else {
           val Global.Member(_, sig) = name

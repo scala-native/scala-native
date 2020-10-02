@@ -125,11 +125,6 @@ object Type {
       false
   }
 
-  def isPtr(ty: Type): Boolean = ty match {
-    case Type.Ptr => true
-    case _        => false
-  }
-
   val typeToArray = Map[Type, Global](
     Type.Bool    -> Global.Top("scala.scalanative.runtime.BooleanArray"),
     Type.Char    -> Global.Top("scala.scalanative.runtime.CharArray"),

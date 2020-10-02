@@ -48,18 +48,22 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     // past what's known now, so it's safe to do this.
     infos.values.foreach {
       case cls: Class =>
-        cls.responds.foreach {
+        val responds = cls.responds.toArray
+        responds.foreach {
           case (sig, name) =>
             if (!done.contains(name)) {
               cls.responds -= sig
             }
         }
-        cls.defaultResponds.foreach {
+
+        val defaultResponds = cls.defaultResponds.toArray
+        defaultResponds.foreach {
           case (sig, name) =>
             if (!done.contains(name)) {
               cls.defaultResponds -= sig
             }
         }
+
       case _ =>
         ()
     }
@@ -212,9 +216,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         loaded(info.name).foreach {
           case (_, defn: Defn.Define) =>
             val Global.Member(_, sig) = defn.name
-
             info.responds(sig) = defn.name
-
           case _ =>
             ()
         }

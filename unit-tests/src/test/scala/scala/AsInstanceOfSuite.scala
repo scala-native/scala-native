@@ -33,7 +33,7 @@ object AsInstanceOfSuite extends tests.Suite {
     assert(anyNull.asInstanceOf[Unit] == anyNull)
   }
 
-  test("null.asInstanceOf[Unit]", cond = scalaVersion.startsWith("2.12.")) {
+  test("null.asInstanceOf[Unit]", cond = !scalaVersion.startsWith("2.11.")) {
     assert(anyNull.asInstanceOf[Unit] != anyNull)
   }
 
@@ -61,7 +61,7 @@ object AsInstanceOfSuite extends tests.Suite {
     assertThrows[ClassCastException](any42.asInstanceOf[Unit])
   }
 
-  test("42.asInstanceOf[Unit]", cond = scalaVersion.startsWith("2.12.")) {
+  test("42.asInstanceOf[Unit]", cond = !scalaVersion.startsWith("2.11.")) {
     assertNotNull(any42.asInstanceOf[Unit])
   }
 
@@ -89,7 +89,7 @@ object AsInstanceOfSuite extends tests.Suite {
     assertThrows[ClassCastException](anyC.asInstanceOf[Unit])
   }
 
-  test("c.asInstanceOf[Unit]", cond = scalaVersion.startsWith("2.12.")) {
+  test("c.asInstanceOf[Unit]", cond = !scalaVersion.startsWith("2.11.")) {
     assertNotNull(c.asInstanceOf[Unit])
   }
 }

@@ -21,9 +21,8 @@ object ClassLoader {
     new FromDisk(classpath)
   }
 
-  def fromMemory(defns: Seq[Defn]): ClassLoader = {
+  def fromMemory(defns: Seq[Defn]): ClassLoader =
     new FromMemory(defns)
-  }
 
   final class FromDisk(classpath: Seq[ClassPath]) extends ClassLoader {
     lazy val classesWithEntryPoints: Iterable[Global] = {
