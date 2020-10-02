@@ -667,7 +667,7 @@ trait NirGenExpr { self: NirGenPhase =>
         val funName = anonName.member(funSig)
 
         val selfType = Type.Ref(anonName)
-        val nir.Sig.Method(_, sigTypes :+ retType) = funSig.unmangled
+        val Sig.Method(_, sigTypes :+ retType, _) = funSig.unmangled
         val paramTypes = selfType +: sigTypes
 
         val bodyFresh = Fresh()
