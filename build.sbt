@@ -213,6 +213,7 @@ lazy val nir =
     .in(file("nir"))
     .settings(toolSettings)
     .settings(mavenPublishSettings)
+    .settings(parallelCollectionsSettings)
     .dependsOn(util)
 
 lazy val scalacheckDep = "org.scalacheck" %% "scalacheck" % "1.14.3" % "test"
@@ -264,6 +265,7 @@ lazy val tools =
       Test / parallelExecution := false,
       mimaSettings
     )
+    .settings(parallelCollectionsSettings)
     .dependsOn(nir, util, testingCompilerInterface % Test)
 
 lazy val nscplugin =
@@ -281,18 +283,23 @@ lazy val nscplugin =
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
       ),
-      libraryDependencies ++= {
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, major)) if major <= 12 =>
-            Seq()
-          case _ =>
-            Seq(
-              "org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0")
-        }
-      },
       exportJars := true
     )
+    .settings(parallelCollectionsSettings)
     .settings(scalacOptions += "-Xno-patmat-analysis")
+
+lazy val parallelCollectionsSettings: Seq[Setting[_]] =
+  Seq(
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, major)) if major <= 12 =>
+          Seq()
+        case _ =>
+          Seq(
+            "org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0")
+      }
+    }
+  )
 
 lazy val sbtPluginSettings: Seq[Setting[_]] =
   toolSettings ++
