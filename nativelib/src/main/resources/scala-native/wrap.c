@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <math.h>
-#include <errno.h>
 #include <float.h>
 
 // This file contains functions that wrap libc
@@ -81,16 +80,6 @@ int scalanative_libc_math_errhandling() { return math_errhandling; }
 int scalanative_libc_math_errno() { return MATH_ERRNO; }
 
 int scalanative_libc_math_errexcept() { return MATH_ERREXCEPT; }
-
-int scalanative_errno() { return errno; }
-
-void scalanative_set_errno(int value) { errno = value; }
-
-int scalanative_edom() { return EDOM; }
-
-int scalanative_eilseq() { return EILSEQ; }
-
-int scalanative_erange() { return ERANGE; }
 
 float scalanative_float_flt_min() { return FLT_MIN; }
 
