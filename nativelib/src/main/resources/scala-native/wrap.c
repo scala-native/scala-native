@@ -1,8 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
-#include <math.h>
-#include <float.h>
 
 // This file contains functions that wrap libc
 // built-in macros. We need this because Scala Native
@@ -43,40 +40,4 @@ int scalanative_libc_exit_success() { return EXIT_SUCCESS; }
 
 int scalanative_libc_exit_failure() { return EXIT_FAILURE; }
 
-typedef void (*sig_handler_t)(int);
-
-sig_handler_t scalanative_libc_sig_dfl() { return SIG_DFL; }
-
-sig_handler_t scalanative_libc_sig_ign() { return SIG_IGN; }
-
-sig_handler_t scalanative_libc_sig_err() { return SIG_ERR; }
-
-int scalanative_libc_sigabrt() { return SIGABRT; }
-
-int scalanative_libc_sigfpe() { return SIGFPE; }
-
-int scalanative_libc_sigill() { return SIGILL; }
-
-int scalanative_libc_sigint() { return SIGINT; }
-
-int scalanative_libc_sigsegv() { return SIGSEGV; }
-
-int scalanative_libc_sigterm() { return SIGTERM; }
-
-int scalanative_libc_sigusr1() { return SIGUSR1; }
-
 int scalanative_libc_rand_max() { return RAND_MAX; }
-
-float scalanative_libc_huge_valf() { return HUGE_VALF; }
-
-double scalanative_libc_huge_val() { return HUGE_VAL; }
-
-float scalanative_libc_infinity() { return INFINITY; }
-
-float scalanative_libc_nan() { return NAN; }
-
-int scalanative_libc_math_errhandling() { return math_errhandling; }
-
-int scalanative_libc_math_errno() { return MATH_ERRNO; }
-
-int scalanative_libc_math_errexcept() { return MATH_ERREXCEPT; }
