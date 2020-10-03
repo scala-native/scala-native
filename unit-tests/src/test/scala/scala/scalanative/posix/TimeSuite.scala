@@ -7,8 +7,8 @@ import timeOps.tmOps
 
 object TimeSuite extends tests.Suite {
   tzset()
-  val now_time_t: time_t = time.time(null)
-  val epoch: time_t      = 0
+  val now_time_t: time_t = time(null)
+  val epoch: time_t      = 0L
 
   test("asctime() with a given known state should match its representation") {
     Zone { implicit z =>
