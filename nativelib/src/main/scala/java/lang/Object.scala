@@ -22,13 +22,13 @@ class _Object {
     new _Class(runtime.getRawType(this))
 
   @inline def __notify(): Unit =
-    runtime.getMonitor(this)._notify
+    runtime.getMonitor(this)._notify()
 
   @inline def __notifyAll(): Unit =
-    runtime.getMonitor(this)._notifyAll
+    runtime.getMonitor(this)._notifyAll()
 
   @inline def __wait(): Unit =
-    runtime.getMonitor(this)._wait
+    runtime.getMonitor(this)._wait()
 
   @inline def __wait(timeout: scala.Long): Unit =
     runtime.getMonitor(this)._wait(timeout)

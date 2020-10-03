@@ -1497,7 +1497,7 @@ trait NirGenExpr { self: NirGenPhase =>
                               _))))))),
             _),
             _) =>
-          val chars = Val.Chars(StringUtils.processEscapes(str))
+          val chars = Val.Chars(StringUtils.processEscapes(str).toSeq)
           val const = Val.Const(chars)
           buf.box(nir.Rt.BoxedPtr, const, unwind)
 
