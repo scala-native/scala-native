@@ -146,7 +146,7 @@ object ScalaNativePluginInternal {
       logger.running(binary +: args)
       val exitCode = Process(binary +: args, None, env: _*)
         .run(connectInput = false)
-        .exitValue
+        .exitValue()
 
       val message =
         if (exitCode == 0) None

@@ -86,7 +86,7 @@ class OutputStreamWriter(private[this] var out: OutputStream,
     }
 
     loopEncode()
-    if (cbuf1.hasRemaining)
+    if (cbuf1.hasRemaining())
       inBuf = cbuf1.toString
   }
 
@@ -103,14 +103,14 @@ class OutputStreamWriter(private[this] var out: OutputStream,
     def loopEncode(): Unit = {
       val cbuf   = CharBuffer.wrap(inBuf)
       val result = enc.encode(cbuf, outBuf, true)
-      if (result.isUnderflow) {
+      if (result.isUnderflow()) {
         assert(
-          !cbuf.hasRemaining,
+          !cbuf.hasRemaining(),
           "CharsetEncoder.encode() should not have returned UNDERFLOW when " +
             "both endOfInput and inBuf.hasRemaining are true. It should have " +
             "returned a MalformedInput error instead."
         )
-      } else if (result.isOverflow) {
+      } else if (result.isOverflow()) {
         makeRoomInOutBuf()
         loopEncode()
       } else {

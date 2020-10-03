@@ -98,7 +98,7 @@ object CodeGen {
     def gen(): ByteBuffer = {
       genDefns(defns)
       val body = builder.toString.getBytes("UTF-8")
-      builder.clear
+      builder.clear()
       genPrelude()
       genConsts()
       genDeps()
@@ -697,7 +697,7 @@ object CodeGen {
               else call.copy(ptr = Val.Global(glob, valty))
             case _ => call
           }
-          genCall(genBind, callDef, unwind)
+          genCall(genBind(), callDef, unwind)
 
         case Op.Load(ty, ptr) =>
           val pointee = fresh()

@@ -123,7 +123,7 @@ final class ProcessBuilder(private var _command: List[String]) {
   private var _directory = defaultDirectory
   private val _environment = {
     import scala.collection.JavaConverters._
-    val env = System.getenv
+    val env = System.getenv()
     val res = new java.util.HashMap[String, String]
     env.asScala foreach { case (k, v) => res.put(k, v) }
     res
