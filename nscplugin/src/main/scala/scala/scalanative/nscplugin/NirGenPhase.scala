@@ -4,7 +4,7 @@ package nscplugin
 import java.nio.file.Path
 
 import scala.collection.mutable
-import scala.collection.parallel.mutable.ParArray
+// import scala.collection.parallel.mutable.ParArray
 import scala.scalanative.nir._
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
@@ -95,10 +95,15 @@ abstract class NirGenPhase
           (path, reflectiveInstBuf.toSeq)
       }.toMap
 
-      ParArray.handoff((files ++ reflectiveInstFiles).toArray).foreach {
-        case (path, stats) =>
-          genIRFile(path, stats)
-      }
+      // Commented because it fails at runtime with
+      // java.lang.NoClassDefFoundError: scala/collection/parallel/mutable/ParArray$
+      // ParArray.handoff(
+      (files ++ reflectiveInstFiles)
+      // .toArray)
+        .foreach {
+          case (path, stats) =>
+            genIRFile(path, stats)
+        }
     }
   }
 }
