@@ -731,6 +731,7 @@ lazy val junitTestOutputsJVM =
     .in(file("junit-test/output-jvm"))
     .settings(
       commonJUnitTestOutputsSettings,
+      crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.11" % "test"
       )

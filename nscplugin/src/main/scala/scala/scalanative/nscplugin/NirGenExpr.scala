@@ -775,9 +775,6 @@ trait NirGenExpr { self: NirGenPhase =>
         val samsBuilder    = List.newBuilder[Symbol]
         val seenSignatures = mutable.Set.empty[Sig]
 
-        // On Scala < 2.12.5, `synthCls` is polyfilled to `NoSymbol` and hence
-        // `samBridges` will always be empty. This causes our compiler to be
-        // bug-compatible on these versions.
         val synthCls = samInfo.synthCls
         // On Scala < 2.12.5, `synthCls` is polyfilled to `NoSymbol`
         // and hence `samBridges` will always be empty (scala/bug#10512).
