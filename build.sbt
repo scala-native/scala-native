@@ -451,7 +451,8 @@ lazy val scalalib =
       // The option below is needed since Scala 2.12.12.
       scalacOptions += "-language:postfixOps",
       // The option below is needed since Scala 2.13.0.
-      scalacOptions += "-language:implicitConversions"
+      scalacOptions += "-language:implicitConversions",
+      scalacOptions += "-language:higherKinds"
     )
     .settings(mavenPublishSettings)
     .settings(
