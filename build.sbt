@@ -234,6 +234,7 @@ lazy val util =
     .in(file("util"))
     .settings(toolSettings)
     .settings(mavenPublishSettings)
+    .settings(crossCompileCompatSettings)
 
 lazy val nir =
   project
