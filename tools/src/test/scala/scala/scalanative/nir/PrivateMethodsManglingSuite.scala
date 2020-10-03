@@ -67,12 +67,16 @@ class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
 
     link("Main$", sources) {
       case (_, result) =>
-        val testedDefns = result.defns.collect {
-          case Defn.Define(_, Global.Member(owner, sig), _, _)
-              if tops.contains(owner) &&
-                !sig.isCtor =>
-            sig.mangle
-        }.toSet
+        val testedDefns = result.defns
+          .collect {
+            case Defn.Define(_, Global.Member(owner, sig), _, _)
+                if tops.contains(owner) =>
+              sig.unmangled
+          }
+          .collect {
+            case sig: Sig.Method => sig
+          }
+          .toSet
 
         val loopType = Seq(Type.Int, Rt.String, Type.Bool, Rt.String)
         val fooType  = Seq(Type.Int, Type.Int)
@@ -90,9 +94,21 @@ class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
           privateMethodSig("foo", fooType, "xyz.A"),
           privateMethodSig("foo", fooType, "xyz.B$"),
           privateMethodSig("foo", fooType, "foo.B$")
-        ).map(_.mangle)
+        )
 
-        expected.foreach { sig => assert(testedDefns.contains(sig)) }
+        expected.foreach {
+          case sig @ Sig.Method(id, tpe, scope) =>
+            def containsExactlySig = testedDefns.contains(sig)
+            // In 2.12, the order of method arguments in closures has changed,
+            // that's why this "hack" is needed.
+            def containsSig = testedDefns.exists {
+              case Sig.Method(`id`, sigTpe, `scope`)
+                  if sigTpe.toSet == tpe.toSet =>
+                true
+              case _ => false
+            }
+            assert(containsExactlySig || containsSig)
+        }
     }
 
   }
