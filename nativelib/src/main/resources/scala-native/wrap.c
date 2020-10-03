@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 
 // This file contains functions that wrap libc
 // built-in macros. We need this because Scala Native
@@ -35,9 +34,3 @@ int scalanative_libc_seek_end() { return SEEK_END; }
 unsigned int scalanative_libc_tmp_max() { return TMP_MAX; }
 
 unsigned int scalanative_libc_l_tmpnam() { return L_tmpnam; }
-
-int scalanative_libc_exit_success() { return EXIT_SUCCESS; }
-
-int scalanative_libc_exit_failure() { return EXIT_FAILURE; }
-
-int scalanative_libc_rand_max() { return RAND_MAX; }
