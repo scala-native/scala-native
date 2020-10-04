@@ -51,7 +51,7 @@ object unistd {
 
   // NULL, see POSIX stddef
 
-  @name("scalanative_f_setown")
+  @name("scalanative_f_ok")
   def F_OK: CInt = extern
 
   @name("scalanative_r_ok")
