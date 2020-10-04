@@ -13,6 +13,16 @@ int scalanative_w_ok() { return W_OK; }
 
 int scalanative_x_ok() { return X_OK; }
 
+// SEEK_CUR, SEEK_END, SEEK_SET in clib stdio
+
+int scalanative_f_lock() { return F_LOCK; }
+
+int scalanative_f_test() { return F_TEST; }
+
+int scalanative_f_tlock() { return F_TLOCK; }
+
+int scalanative_f_ulock() { return F_ULOCK; }
+
 int scalanative_stdin_fileno() { return STDIN_FILENO; }
 
 int scalanative_stdout_fileno() { return STDOUT_FILENO; }
