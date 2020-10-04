@@ -202,7 +202,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     System.arraycopy(value, start, dest, destStart, end - start)
   }
 
-  final def insert0(index: scala.Int, chars: Array[Char]) {
+  final def insert0(index: scala.Int, chars: Array[Char]): Unit = {
     if (0 > index || index > count) {
       throw new StringIndexOutOfBoundsException(index)
     }
@@ -510,7 +510,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
           while (!found && i < count) {
             if (value(i) == firstChar) {
               found = true
-              break
+              break()
             }
             i += 1
           }
@@ -523,9 +523,9 @@ abstract class AbstractStringBuilder private (unit: Unit) {
         breakable {
           while (true) {
             o2 += 1
-            if (!(o2 < subCount)) break
+            if (!(o2 < subCount)) break()
             o1 += 1
-            if (!(value(o1) == subString.charAt(o2))) break
+            if (!(value(o1) == subString.charAt(o2))) break()
           }
         }
         if (o2 == subCount) {
@@ -556,7 +556,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
             while (!found && i >= 0) {
               if (value(i) == firstChar) {
                 found = true
-                break
+                break()
               }
               i -= 1
             }
@@ -569,9 +569,9 @@ abstract class AbstractStringBuilder private (unit: Unit) {
           breakable {
             while (true) {
               o2 += 1
-              if (!(o2 < subCount)) break
+              if (!(o2 < subCount)) break()
               o1 += 1
-              if (!(value(o1) == subString.charAt(o2))) break
+              if (!(value(o1) == subString.charAt(o2))) break()
             }
           }
           if (o2 == subCount) {

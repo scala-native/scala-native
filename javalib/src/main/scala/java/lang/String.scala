@@ -44,8 +44,8 @@ final class _String()
     this()
     offset = 0
     val charBuffer = encoding.decode(ByteBuffer.wrap(data, start, length))
-    value = charBuffer.array
-    count = charBuffer.length
+    value = charBuffer.array()
+    count = charBuffer.length()
   }
 
   def this(data: Array[scala.Byte],
@@ -109,14 +109,14 @@ final class _String()
     count = string.length()
   }
 
-  def this(sb: StringBuffer) {
+  def this(sb: StringBuffer) = {
     this()
     offset = 0
-    value = sb.getValue
-    count = sb.length
+    value = sb.getValue()
+    count = sb.length()
   }
 
-  def this(codePoints: Array[Int], offset: Int, count: Int) {
+  def this(codePoints: Array[Int], offset: Int, count: Int) = {
     this()
     if (offset < 0 || count < 0 || offset > codePoints.length - count) {
       throw new StringIndexOutOfBoundsException()
@@ -135,10 +135,10 @@ final class _String()
     }
   }
 
-  def this(sb: java.lang.StringBuilder) {
+  def this(sb: java.lang.StringBuilder) = {
     this()
     offset = 0
-    count = sb.length
+    count = sb.length()
     value = new Array[Char](count)
     sb.getChars(0, count, value, 0)
   }
@@ -616,7 +616,7 @@ final class _String()
       }
 
       val buffer = new java.lang.StringBuilder(count + rs.length)
-      val tl     = target.length
+      val tl     = target.length()
       var tail   = 0
       do {
         buffer.append(value, offset + tail, index - tail)
@@ -669,14 +669,14 @@ final class _String()
   def toLowerCase(locale: Locale): _String =
     toCase(locale, Character.toLowerCase)
 
-  def toLowerCase(): _String = toLowerCase(Locale.getDefault)
+  def toLowerCase(): _String = toLowerCase(Locale.getDefault())
 
   override def toString(): String = this
 
   def toUpperCase(locale: Locale): _String =
     toCase(locale, Character.toUpperCase)
 
-  def toUpperCase(): _String = toUpperCase(Locale.getDefault)
+  def toUpperCase(): _String = toUpperCase(Locale.getDefault())
 
   private[this] def toCase(locale: Locale, convert: Int => Int): _String = {
     if (count == 0) return this
@@ -730,16 +730,16 @@ final class _String()
   }
 
   def contentEquals(sb: StringBuffer): scala.Boolean = {
-    val size = sb.length
+    val size = sb.length()
     if (count != size) {
       false
     } else {
-      regionMatches(0, new _String(0, size, sb.getValue), 0, size)
+      regionMatches(0, new _String(0, size, sb.getValue()), 0, size)
     }
   }
 
   def contentEquals(cs: CharSequence): scala.Boolean = {
-    val len = cs.length
+    val len = cs.length()
     if (len != count) {
       false
     } else if (len == 0 && count == 0) {
@@ -800,10 +800,10 @@ final class _String()
     split(expr, 0)
 
   def split(expr: _String, max: Int): Array[String] =
-    if (isEmpty) {
+    if (isEmpty()) {
       Array("")
     } else {
-      expr.length match {
+      expr.length() match {
         case 1 if !isRegexMeta(expr.charAt(0)) => fastSplit(expr.charAt(0), max)
         case 2 if expr.charAt(0) == '\\' && isRegexMeta(expr.charAt(1)) =>
           fastSplit(expr.charAt(1), max)
@@ -909,8 +909,8 @@ object _String {
       throw new NullPointerException("null format argument")
     } else {
       val bufferSize =
-        if (args == null) fmt.length + 0
-        else fmt.length + args.length * 10
+        if (args == null) fmt.length() + 0
+        else fmt.length() + args.length * 10
       val f = new Formatter(new java.lang.StringBuilder(bufferSize), loc)
       f.format(fmt, args).toString
     }

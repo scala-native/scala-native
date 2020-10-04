@@ -15,7 +15,7 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     with SortedSet[E] {
 
   def size(): Int =
-    iterator.asScala.size
+    iterator().asScala.size
 
   override def contains(o: Any): Boolean =
     inner().contains(Box(o.asInstanceOf[E]))
@@ -64,7 +64,7 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     _iterator(inner().iterator.map(_.inner))
 
   def descendingIterator(): Iterator[E] =
-    _iterator(iterator.asScala.toList.reverse.iterator)
+    _iterator(iterator().asScala.toList.reverse.iterator)
 
   override def removeAll(c: Collection[_]): Boolean = {
     val iter    = c.iterator()

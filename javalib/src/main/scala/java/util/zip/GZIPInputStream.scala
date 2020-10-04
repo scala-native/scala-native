@@ -115,7 +115,7 @@ class GZIPInputStream(in: InputStream, size: Int)
     }
   }
 
-  private def readFully(buffer: Array[Byte], offset: Int, length: Int) {
+  private def readFully(buffer: Array[Byte], offset: Int, length: Int): Unit = {
     var result: Int = 0
     var off: Int    = offset
     var l: Int      = length

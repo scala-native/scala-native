@@ -1050,7 +1050,7 @@ object Formatter {
     }
 
     def transform_g(): Unit = {
-      var precision = formatToken.getPrecision
+      var precision = formatToken.getPrecision()
       precision = if (0 == precision) 1 else precision
       formatToken.setPrecision(precision)
 

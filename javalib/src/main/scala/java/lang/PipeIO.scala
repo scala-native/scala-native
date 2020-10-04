@@ -20,7 +20,7 @@ private[lang] object PipeIO {
       childFd: Int,
       redirect: ProcessBuilder.Redirect
   )(implicit ioStream: PipeIO[T]): T = {
-    redirect.`type` match {
+    redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.PIPE =>
         ioStream.fdStream(process, new FileDescriptor(childFd))
       case _ =>
@@ -61,7 +61,7 @@ private[lang] object PipeIO {
       var toRead                     = 0
       var readBuf: Array[scala.Byte] = Array()
       while ({
-        toRead = availableFD
+        toRead = availableFD()
         toRead > 0
       }) {
         val size = if (readBuf == null) 0 else readBuf.size
@@ -80,7 +80,7 @@ private[lang] object PipeIO {
     private[this] var drained = false
     private def availableFD() = {
       val res = stackalloc[CInt]
-      ioctl(is.getFD.fd, FIONREAD, res.asInstanceOf[Ptr[scala.Byte]]) match {
+      ioctl(is.getFD().fd, FIONREAD, res.asInstanceOf[Ptr[scala.Byte]]) match {
         case -1 => 0
         case _  => !res
       }

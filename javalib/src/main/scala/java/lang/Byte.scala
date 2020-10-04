@@ -194,7 +194,7 @@ object Byte {
     x - y
 
   @inline def decode(nm: String): Byte = {
-    val i = Integer.decode(nm).intValue
+    val i = Integer.decode(nm).intValue()
     val b = i.toByte
     if (b == i)
       valueOf(b)

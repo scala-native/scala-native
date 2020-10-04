@@ -293,7 +293,7 @@ class LinkedList[E]()
         i > 0
 
       def previous(): E = {
-        if (!hasPrevious)
+        if (!hasPrevious())
           throw new NoSuchElementException()
 
         i -= 1

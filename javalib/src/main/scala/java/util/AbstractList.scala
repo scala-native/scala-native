@@ -7,7 +7,7 @@ abstract class AbstractList[E] protected ()
     with List[E] { self =>
 
   override def add(element: E): Boolean = {
-    add(size, element)
+    add(size(), element)
     true
   }
 
@@ -38,11 +38,11 @@ abstract class AbstractList[E] protected ()
   def lastIndexOf(o: Any): Int = {
     @tailrec
     def findIndex(iter: ListIterator[E]): Int = {
-      if (!iter.hasPrevious) -1
-      else if (iter.previous() === o) iter.nextIndex
+      if (!iter.hasPrevious()) -1
+      else if (iter.previous() === o) iter.nextIndex()
       else findIndex(iter)
     }
-    findIndex(listIterator(size))
+    findIndex(listIterator(size()))
   }
 
   override def clear(): Unit =
@@ -183,7 +183,7 @@ private abstract class AbstractListView[E](protected val list: List[E],
   }
 
   override def addAll(c: Collection[_ <: E]): Boolean =
-    addAll(size, c)
+    addAll(size(), c)
 
   def get(index: Int): E = {
     checkIndexInBounds(index)

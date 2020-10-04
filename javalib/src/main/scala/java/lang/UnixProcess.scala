@@ -84,11 +84,11 @@ private[lang] class UnixProcess private (
   }
 
   private[this] val _inputStream =
-    PipeIO[PipeIO.Stream](this, !outfds, builder.redirectOutput)
+    PipeIO[PipeIO.Stream](this, !outfds, builder.redirectOutput())
   private[this] val _errorStream =
-    PipeIO[PipeIO.Stream](this, !errfds, builder.redirectError)
+    PipeIO[PipeIO.Stream](this, !errfds, builder.redirectError())
   private[this] val _outputStream =
-    PipeIO[OutputStream](this, !(infds + 1), builder.redirectInput)
+    PipeIO[OutputStream](this, !(infds + 1), builder.redirectInput())
 
   private[this] var _exitValue = -1
   private[lang] def checkResult(): CInt = {
@@ -132,17 +132,17 @@ object UnixProcess {
     val infds  = stackalloc[CInt](2)
     val outfds = stackalloc[CInt](2)
     val errfds =
-      if (builder.redirectErrorStream) outfds else stackalloc[CInt](2)
+      if (builder.redirectErrorStream()) outfds else stackalloc[CInt](2)
 
     throwOnError(unistd.pipe(infds), s"Couldn't create pipe.")
     throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
-    if (!builder.redirectErrorStream)
+    if (!builder.redirectErrorStream())
       throwOnError(unistd.pipe(errfds), s"Couldn't create pipe.")
-    val cmd      = builder.command.asScala
-    val binaries = binaryPaths(builder.environment, cmd.head)
-    val dir      = builder.directory
+    val cmd      = builder.command().asScala
+    val binaries = binaryPaths(builder.environment(), cmd.head)
+    val dir      = builder.directory()
     val argv     = nullTerminate(cmd)
-    val envp = nullTerminate(builder.environment.asScala.map {
+    val envp = nullTerminate(builder.environment().asScala.map {
       case (k, v) => s"$k=$v"
     }.toSeq)
 
@@ -168,13 +168,13 @@ object UnixProcess {
          */
         def invokeChildProcess(): Process = {
           if (dir != null) unistd.chdir(toCString(dir.toString))
-          setupChildFDS(!infds, builder.redirectInput, unistd.STDIN_FILENO)
+          setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
           setupChildFDS(!(outfds + 1),
-                        builder.redirectOutput,
+                        builder.redirectOutput(),
                         unistd.STDOUT_FILENO)
           setupChildFDS(!(errfds + 1),
-                        if (builder.redirectErrorStream) Redirect.PIPE
-                        else builder.redirectError,
+                        if (builder.redirectErrorStream()) Redirect.PIPE
+                        else builder.redirectError(),
                         unistd.STDERR_FILENO)
           unistd.close(!infds)
           unistd.close(!(infds + 1))
@@ -221,7 +221,7 @@ object UnixProcess {
                                     redirect: ProcessBuilder.Redirect,
                                     procFd: CInt): Unit = {
     import fcntl.{open => _, _}
-    redirect.`type` match {
+    redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.INHERIT =>
       case ProcessBuilder.Redirect.Type.PIPE =>
         if (unistd.dup2(childFd, procFd) == -1) {
@@ -235,13 +235,13 @@ object UnixProcess {
             s"Couldn't duplicate read file descriptor $errno")
         }
       case r @ ProcessBuilder.Redirect.Type.WRITE =>
-        val fd = open(redirect.file, O_CREAT | O_WRONLY | O_TRUNC)
+        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_TRUNC)
         if (unistd.dup2(fd, procFd) == -1) {
           throw new IOException(
             s"Couldn't duplicate write file descriptor $errno")
         }
       case r @ ProcessBuilder.Redirect.Type.APPEND =>
-        val fd = open(redirect.file, O_CREAT | O_WRONLY | O_APPEND)
+        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_APPEND)
         if (unistd.dup2(fd, procFd) == -1) {
           throw new IOException(
             s"Couldn't duplicate append file descriptor $errno")
@@ -250,7 +250,7 @@ object UnixProcess {
   }
 
   @inline def open(f: File, flags: CInt) = Zone { implicit z =>
-    fcntl.open(toCString(f.getAbsolutePath), flags, 0.toUInt) match {
+    fcntl.open(toCString(f.getAbsolutePath()), flags, 0.toUInt) match {
       case -1 => throw new IOException(s"Unable to open file $f ($errno)")
       case fd => fd
     }
@@ -269,7 +269,7 @@ object UnixProcess {
       path split ":" map { absPath =>
         new File(s"$absPath/$bin")
       } collect {
-        case f if f.canExecute => f.toString
+        case f if f.canExecute() => f.toString
       }
     }
   }

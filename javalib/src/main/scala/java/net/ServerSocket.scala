@@ -18,7 +18,7 @@ class ServerSocket(private var port: Int,
   }
 
   if (port >= 0) {
-    startup
+    startup()
   }
 
   def startup(): Unit = {
@@ -79,7 +79,7 @@ class ServerSocket(private var port: Int,
     val addr =
       if (endpoint == null ||
           endpoint.asInstanceOf[InetSocketAddress].getAddress == null)
-        new InetSocketAddress(InetAddress.getLoopbackAddress, 0)
+        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0)
       else {
         endpoint.asInstanceOf[InetSocketAddress]
       }
@@ -135,7 +135,7 @@ class ServerSocket(private var port: Int,
   }
 
   override def close: Unit = {
-    impl.close
+    impl.close()
     closed = true
   }
 

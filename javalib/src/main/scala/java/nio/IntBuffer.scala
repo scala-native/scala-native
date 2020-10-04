@@ -106,7 +106,7 @@ abstract class IntBuffer private[nio] (_capacity: Int,
   def isDirect(): Boolean
 
   // HERE
-  def isReadOnly: Boolean
+  def isReadOnly(): Boolean
 
   // toString(): String inherited from Buffer
 

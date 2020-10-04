@@ -5,11 +5,11 @@ import java.time.Instant
 
 final class FileTime private (instant: Instant) extends Comparable[FileTime] {
   def compareTo(other: FileTime) =
-    instant.compareTo(other.toInstant)
+    instant.compareTo(other.toInstant())
 
   override def equals(obj: Any): Boolean =
     obj match {
-      case other: FileTime => instant == other.toInstant
+      case other: FileTime => instant == other.toInstant()
       case _               => false
     }
 
@@ -20,7 +20,7 @@ final class FileTime private (instant: Instant) extends Comparable[FileTime] {
     unit.convert(toMillis(), TimeUnit.MILLISECONDS)
 
   def toMillis(): Long =
-    instant.toEpochMilli
+    instant.toEpochMilli()
 
   def toInstant(): Instant =
     instant

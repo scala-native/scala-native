@@ -15,7 +15,7 @@ object Collections {
     new ImmutableSet(new AbstractSet[Any] with Serializable {
       override def size(): Int = 0
 
-      override def iterator(): Iterator[Any] = emptyIterator[Any]
+      override def iterator(): Iterator[Any] = emptyIterator[Any]()
     })
   }
 
@@ -821,7 +821,7 @@ object Collections {
     protected val eagerThrow: Boolean = true
 
     override def clear(): Unit = {
-      if (eagerThrow || !isEmpty)
+      if (eagerThrow || !isEmpty())
         throw new UnsupportedOperationException
     }
 
@@ -931,18 +931,18 @@ object Collections {
     }
 
     override def clear(): Unit = {
-      if (eagerThrow || !isEmpty)
+      if (eagerThrow || !isEmpty())
         throw new UnsupportedOperationException
     }
 
     override def keySet(): Set[K] =
-      unmodifiableSet(super.keySet)
+      unmodifiableSet(super.keySet())
 
     override def values(): Collection[V] =
-      unmodifiableCollection(super.values)
+      unmodifiableCollection(super.values())
 
     override def entrySet(): Set[Map.Entry[K, V]] =
-      unmodifiableSet(super.entrySet)
+      unmodifiableSet(super.entrySet())
   }
 
   private class ImmutableMap[K, V](inner: Map[K, V])

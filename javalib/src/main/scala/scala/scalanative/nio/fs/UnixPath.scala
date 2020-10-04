@@ -43,7 +43,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
 
   private lazy val _isAbsolute = rawPath.startsWith("/")
 
-  private lazy val root = if (isAbsolute) new UnixPath(fs, "/") else null
+  private lazy val root = if (isAbsolute()) new UnixPath(fs, "/") else null
 
   private lazy val fileName =
     if (path == "/") null
@@ -52,8 +52,8 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
 
   private lazy val parent = {
     val nameCount = getNameCount()
-    if (nameCount == 0 || (nameCount == 1 && !isAbsolute)) null
-    else if (isAbsolute)
+    if (nameCount == 0 || (nameCount == 1 && !isAbsolute())) null
+    else if (isAbsolute())
       new UnixPath(fs, "/" + subpath(0, nameCount - 1).toString)
     else subpath(0, nameCount - 1)
   }
@@ -69,7 +69,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     else new UnixPath(fs, toFile().getAbsolutePath())
 
   private lazy val file =
-    if (isAbsolute) new File(path)
+    if (isAbsolute()) new File(path)
     else new File(s"${fs.defaultDirectory}/$path")
 
   private lazy val uri =
@@ -94,7 +94,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
   override def getNameCount(): Int = offsets.size - 1
 
   @inline private def getNameString(index: Int): String = {
-    val nameCount = getNameCount
+    val nameCount = getNameCount()
     if (index < 0 || nameCount == 0 || index >= nameCount)
       throw new IllegalArgumentException
     else {
@@ -117,7 +117,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
       val thisLength  = getNameCount()
 
       if (otherLength > thisLength) false
-      else if (isAbsolute ^ other.isAbsolute) false
+      else if (isAbsolute() ^ other.isAbsolute) false
       else {
         (0 until otherLength).forall(i => getName(i) == other.getName(i))
       }
@@ -136,7 +136,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
       else if (!other.isAbsolute) {
         (0 until otherLength).forall(i =>
           getName(thisLength - 1 - i) == other.getName(otherLength - 1 - i))
-      } else if (isAbsolute) {
+      } else if (isAbsolute()) {
         this == other
       } else {
         false
@@ -168,12 +168,12 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     resolveSibling(new UnixPath(fs, other))
 
   override def relativize(other: Path): Path = {
-    if (isAbsolute ^ other.isAbsolute) {
+    if (isAbsolute() ^ other.isAbsolute) {
       throw new IllegalArgumentException("'other' is different type of Path")
     } else if (path.isEmpty) {
       other
     } else if (other.startsWith(this)) {
-      other.subpath(getNameCount, other.getNameCount)
+      other.subpath(getNameCount(), other.getNameCount)
     } else if (getParent() == null) {
       new UnixPath(fs, "../" + other.toString())
     } else {
@@ -205,7 +205,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
       override def remove(): Unit     = throw new UnsupportedOperationException()
       override def hasNext(): Boolean = i < getNameCount()
       override def next(): Path =
-        if (hasNext) {
+        if (hasNext()) {
           val name = getName(i)
           i += 1
           name

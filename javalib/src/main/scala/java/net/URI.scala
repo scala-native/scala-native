@@ -32,7 +32,7 @@ final class URI private () extends Comparable[URI] with Serializable {
 
   import URI._
 
-  private val serialVersionUID = -6052424284110960213l
+  private val serialVersionUID = -6052424284110960213L
 
   private var string: String = _
 
@@ -870,7 +870,7 @@ final class URI private () extends Comparable[URI] with Serializable {
 
   override def hashCode(): Int = {
     if (hash == -1) {
-      hash = getHashString.hashCode
+      hash = getHashString().hashCode
     }
     hash
   }

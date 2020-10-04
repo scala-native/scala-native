@@ -58,7 +58,7 @@ final class FileChannelImpl(path: Path,
                     number: Int): Long = {
     ensureOpen()
 
-    var bytesRead = 0l
+    var bytesRead = 0L
     var i         = 0
 
     while (i < number) {
@@ -138,10 +138,10 @@ final class FileChannelImpl(path: Path,
   override def write(buffer: ByteBuffer, pos: Long): Int = {
     ensureOpen()
     position(pos)
-    val srcPos: Int = buffer.position
-    val srcLim: Int = buffer.limit
+    val srcPos: Int = buffer.position()
+    val srcLim: Int = buffer.limit()
     val lim         = math.abs(srcLim - srcPos)
-    raf.write(buffer.array, 0, lim)
+    raf.write(buffer.array(), 0, lim)
     buffer.position(srcPos + lim)
     lim
   }
@@ -192,7 +192,7 @@ private object FileChannelImpl {
       mode.append("s")
     }
 
-    val raf = new RandomAccessFile(path.toFile, mode.toString)
+    val raf = new RandomAccessFile(path.toFile(), mode.toString)
 
     if (writing && options.contains(TRUNCATE_EXISTING)) {
       raf.setLength(0L)

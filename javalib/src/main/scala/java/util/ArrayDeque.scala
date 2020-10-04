@@ -42,7 +42,7 @@ class ArrayDeque[E] private (private val inner: ArrayList[E])
   }
 
   def this(c: Collection[_ <: E]) = {
-    this(c.size)
+    this(c.size())
     addAll(c)
   }
 

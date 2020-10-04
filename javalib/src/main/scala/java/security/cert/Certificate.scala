@@ -13,7 +13,7 @@ abstract class Certificate(private val `type`: String) extends Serializable {
       case otherCertificate: Certificate =>
         try {
           java.util.Arrays
-            .equals(this.getEncoded(), otherCertificate.getEncoded)
+            .equals(this.getEncoded(), otherCertificate.getEncoded())
         } catch {
           case e: CertificateEncodingException =>
             throw new RuntimeException(e)

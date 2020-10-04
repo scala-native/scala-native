@@ -116,7 +116,7 @@ class Socket protected (private[net] val impl: SocketImpl,
     val addr =
       if (bindpoint == null ||
           bindpoint.asInstanceOf[InetSocketAddress].getAddress == null)
-        new InetSocketAddress(InetAddress.getLoopbackAddress, 0)
+        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0)
       else {
         bindpoint.asInstanceOf[InetSocketAddress]
       }

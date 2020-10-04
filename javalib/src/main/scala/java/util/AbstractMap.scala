@@ -48,7 +48,7 @@ object AbstractMap {
       entryHashCode(this)
 
     override def toString(): String =
-      getKey + "=" + getValue
+      getKey() + "=" + getValue()
   }
 
   class SimpleImmutableEntry[K, V](key: K, value: V)
@@ -72,7 +72,7 @@ object AbstractMap {
       entryHashCode(this)
 
     override def toString(): String =
-      getKey + "=" + getValue
+      getKey() + "=" + getValue()
   }
 }
 
@@ -177,8 +177,8 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
     entrySet.asScala.foldLeft(0)((prev, item) => item.hashCode + prev)
 
   override def toString(): String = {
-    entrySet.iterator.asScala
-      .map(e => s"${e.getKey}=${e.getValue}")
+    entrySet.iterator().asScala
+      .map(e => s"${e.getKey()}=${e.getValue()}")
       .mkString("{", ", ", "}")
   }
 }

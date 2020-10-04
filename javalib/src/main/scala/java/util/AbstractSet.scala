@@ -20,12 +20,12 @@ abstract class AbstractSet[E] protected ()
     iterator.asScala.foldLeft(0)((prev, item) => item.hashCode + prev)
 
   override def removeAll(c: Collection[_]): Boolean = {
-    if (size > c.size)
+    if (size() > c.size())
       c.asScala.foldLeft(false)((prev, elem) => this.remove(elem) || prev)
     else {
       @tailrec
       def removeAll(iter: Iterator[E], modified: Boolean): Boolean = {
-        if (iter.hasNext) {
+        if (iter.hasNext()) {
           if (c.contains(iter.next())) {
             iter.remove()
             removeAll(iter, true)
@@ -34,7 +34,7 @@ abstract class AbstractSet[E] protected ()
         } else
           modified
       }
-      removeAll(this.iterator, false)
+      removeAll(this.iterator(), false)
     }
   }
 }

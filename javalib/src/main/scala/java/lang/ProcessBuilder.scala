@@ -11,7 +11,7 @@ import scala.scalanative.runtime.Platform
 import ProcessBuilder.Redirect
 
 final class ProcessBuilder(private var _command: List[String]) {
-  def this(command: Array[String]) {
+  def this(command: Array[String]) = {
     this(Arrays.asList(command))
   }
 
@@ -45,7 +45,7 @@ final class ProcessBuilder(private var _command: List[String]) {
   def redirectError(destination: Redirect): ProcessBuilder = destination match {
     case null => set { _redirectOutput = Redirect.PIPE }
     case d =>
-      d.`type` match {
+      d.`type`() match {
         case Redirect.Type.READ =>
           throw new IllegalArgumentException(
             s"Redirect.READ cannot be used for error.")
@@ -57,7 +57,7 @@ final class ProcessBuilder(private var _command: List[String]) {
   def redirectInput(source: Redirect): ProcessBuilder = source match {
     case null => set { _redirectInput = Redirect.PIPE }
     case s =>
-      s.`type` match {
+      s.`type`() match {
         case Redirect.Type.WRITE | Redirect.Type.APPEND =>
           throw new IllegalArgumentException(s"$s cannot be used for input.")
         case _ =>
@@ -69,7 +69,7 @@ final class ProcessBuilder(private var _command: List[String]) {
     destination match {
       case null => set { _redirectOutput = Redirect.PIPE }
       case s =>
-        s.`type` match {
+        s.`type`() match {
           case Redirect.Type.READ =>
             throw new IllegalArgumentException(
               s"Redirect.READ cannot be used for output.")
@@ -104,7 +104,7 @@ final class ProcessBuilder(private var _command: List[String]) {
   def start(): Process = {
     if (_command.isEmpty()) throw new IndexOutOfBoundsException()
     if (_command.contains(null)) throw new NullPointerException()
-    if (Platform.isWindows) {
+    if (Platform.isWindows()) {
       val msg = "No windows implementation of java.lang.Process"
       throw new UnsupportedOperationException(msg)
     } else {
@@ -141,14 +141,14 @@ object ProcessBuilder {
     def `type`(): Redirect.Type
 
     override def equals(other: Any): scala.Boolean = other match {
-      case that: Redirect => file == that.file && `type` == that.`type`
+      case that: Redirect => file() == that.file() && `type`() == that.`type`()
       case _              => false
     }
 
     override def hashCode(): Int = {
       var hash = 1
-      hash = hash * 31 + file.hashCode()
-      hash = hash * 31 + `type`.hashCode()
+      hash = hash * 31 + file().hashCode()
+      hash = hash * 31 + `type`().hashCode()
       hash
     }
   }
@@ -195,7 +195,7 @@ object ProcessBuilder {
 
       def valueOf(name: String): Type = {
         if (name == null) throw new NullPointerException()
-        _values.toSeq.find(_.name == name) match {
+        _values.toSeq.find(_.name() == name) match {
           case Some(t) => t
           case None =>
             throw new IllegalArgumentException(

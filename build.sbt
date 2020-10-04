@@ -49,6 +49,14 @@ inThisBuild(
   )
 )
 
+// build.sbt
+inThisBuild(List(
+  semanticdbEnabled := true,
+  semanticdbOptions += "-P:semanticdb:synthetics:on", // make sure to add this
+  semanticdbVersion := scalafixSemanticdb.revision,
+  scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value),
+))
+
 addCommandAlias(
   "test-all",
   Seq(
@@ -382,6 +390,7 @@ lazy val javalib =
     .in(file("javalib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
+    // .settings(scalacOptions += "-Xfatal-warnings")
     .settings(
       Compile / doc / sources := Nil, // doc generation currently broken
       // This is required to have incremental compilation to work in javalib.

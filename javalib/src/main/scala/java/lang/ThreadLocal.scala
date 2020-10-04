@@ -8,7 +8,7 @@ class ThreadLocal[T] {
 
   def get(): T = {
     if (!hasValue)
-      set(initialValue)
+      set(initialValue())
     v
   }
 

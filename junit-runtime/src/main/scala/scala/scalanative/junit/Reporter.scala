@@ -232,14 +232,14 @@ private[junit] final class Reporter(eventHandler: EventHandler,
 
   private def findTestFileName(trace: Array[StackTraceElement]): String =
     trace
-      .find(_.getClassName == taskDef.fullyQualifiedName)
+      .find(_.getClassName == taskDef.fullyQualifiedName())
       .map(_.getFileName)
       .orNull
 
   private def stackTraceElementToString(e: StackTraceElement,
                                         testFileName: String): String = {
     val highlight = settings.color && {
-      taskDef.fullyQualifiedName == e.getClassName ||
+      taskDef.fullyQualifiedName() == e.getClassName ||
       (testFileName != null && testFileName == e.getFileName)
     }
     var r = ""

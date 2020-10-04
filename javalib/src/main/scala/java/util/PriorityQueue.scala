@@ -73,7 +73,7 @@ class PriorityQueue[E] protected (ordering: Ordering[_ >: E],
         part: mutable.PriorityQueue[Box[E]]): mutable.PriorityQueue[Box[E]] = {
       if (inner.isEmpty) part
       else {
-        val next = inner.dequeue
+        val next = inner.dequeue()
         if (boxed == next) part
         else if (BoxOrdering.compare(boxed, next) > 0)
           part += next

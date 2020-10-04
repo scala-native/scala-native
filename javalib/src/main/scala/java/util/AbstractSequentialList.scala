@@ -4,7 +4,7 @@ abstract class AbstractSequentialList[E] protected () extends AbstractList[E] {
 
   def get(index: Int): E = {
     val iter = listIterator(index)
-    if (iter.hasNext) iter.next()
+    if (iter.hasNext()) iter.next()
     else throw new IndexOutOfBoundsException(index.toString)
   }
 

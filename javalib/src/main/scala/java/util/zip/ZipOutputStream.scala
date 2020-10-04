@@ -36,7 +36,7 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
     }
   }
 
-  def closeEntry() {
+  def closeEntry(): Unit = {
     if (cDir == null) {
       throw new IOException()
     } else if (currentEntry == null) {

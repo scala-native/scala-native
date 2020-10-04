@@ -61,7 +61,7 @@ private[math] object BitLevel {
     if (bi.sign == 0) {
       0
     } else {
-      var i = bi.getFirstNonzeroDigit
+      var i = bi.getFirstNonzeroDigit()
       if (bi.sign > 0) {
         while (i < bi.numberLength) {
           bCount += java.lang.Integer.bitCount(bi.digits(i))
@@ -94,7 +94,7 @@ private[math] object BitLevel {
       var bLength   = bi.numberLength << 5
       var highDigit = bi.digits(bi.numberLength - 1)
       if (bi.sign < 0) {
-        val i = bi.getFirstNonzeroDigit
+        val i = bi.getFirstNonzeroDigit()
         // We reduce the problem to the positive case.
         if (i == bi.numberLength - 1)
           highDigit -= 1
@@ -125,7 +125,7 @@ private[math] object BitLevel {
       if (intCount >= bi.numberLength) {
         resDigits(intCount) = bitNumber
       } else {
-        val firstNonZeroDigit = bi.getFirstNonzeroDigit
+        val firstNonZeroDigit = bi.getFirstNonzeroDigit()
         if (intCount > firstNonZeroDigit) {
           resDigits(intCount) ^= bitNumber
         } else if (intCount < firstNonZeroDigit) {

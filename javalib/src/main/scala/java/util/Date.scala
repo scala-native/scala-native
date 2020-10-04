@@ -22,7 +22,7 @@ class Date(var milliseconds: Long)
     milliseconds.compareTo(anotherDate.getTime())
 
   override def equals(obj: Any): Boolean = obj match {
-    case d: Date => d.getTime == milliseconds
+    case d: Date => d.getTime() == milliseconds
     case _       => false
   }
 

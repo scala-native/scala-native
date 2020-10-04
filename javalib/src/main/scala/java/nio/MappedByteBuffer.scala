@@ -166,5 +166,5 @@ abstract class MappedByteBuffer(mode: FileChannel.MapMode,
     underlying.store(index, elem)
 
   private def ensureWritable(): Unit =
-    if (isReadOnly) throw new NonWritableChannelException()
+    if (isReadOnly()) throw new NonWritableChannelException()
 }

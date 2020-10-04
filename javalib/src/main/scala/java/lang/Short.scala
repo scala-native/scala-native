@@ -196,7 +196,7 @@ object Short {
     x - y
 
   @inline def decode(nm: String): Short = {
-    val i = Integer.decode(nm).intValue
+    val i = Integer.decode(nm).intValue()
     val r = i.toShort
     if (r == i)
       valueOf(r)
