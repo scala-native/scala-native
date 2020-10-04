@@ -1,12 +1,29 @@
 package java.util
 
 // Ported from Scala.js
+///test-suite/js/src/test/scala/org/scalajs/testsuite/jsinterop/MapTest.scala
+// Approximate commit SHA could not be found because of re-organization
+// of Scala.js repository or lack of skill. Original port to SN happened
+// approximately 2017-11-23.
+//
+// With original additions for Scala Native.
+// There are enough Scala Native changes that this file has evolved
+// quite a bit from the Scala.js original.
+//
+// putIfAbsent test comes from Scala.js ConcurrentHashMapTest.scala
 
-import java.{util => ju}
+// Implementation Note:
+//   The ugly explicit implementations of Function, BiFunction, BiConsumer
+//   arguments required for Scala 2.11. They can be simplified & beautified
+//   for Scala 2.12 and above.
+
+import scala.reflect.ClassTag
+
 import scala.collection.JavaConversions._
 import scala.collection.{immutable => im}
 import scala.collection.{mutable => mu}
-import scala.reflect.ClassTag
+
+import java.{util => ju}
 
 trait MapSuite extends tests.Suite {
   def factory: MapFactory
@@ -541,6 +558,534 @@ trait MapSuite extends tests.Suite {
     assertTrue(mp.containsKey("ONE"))
     assertTrue(mp.containsKey("TWO"))
     assertFalse(mp.containsKey("THREE"))
+  }
+
+  // Tests of concrete default methods in Map.scala.
+  // These are selected as being default methods, then listed
+  // according to the order of their full, not summary,
+  // description in the Java 8 documentation. That is a subset of the
+  // Scala.js practice.
+
+  test("getOrDefault(key, d) should return value when key is present") {
+    val mp = factory.empty[Int, Int]
+
+    val presentKey   = 400
+    val presentValue = 876234
+
+    mp.put(100, 12345)
+    mp.put(300, 98765)
+    mp.put(presentKey, presentValue)
+    assertEquals(3, mp.size())
+
+    assertEquals(presentValue, mp.getOrDefault(presentKey, presentValue))
+  }
+
+  test("getOrDefault(key, d) should return default when key is absent") {
+    type K = Int
+    type V = Int
+    val mp = factory.empty[K, V]
+
+    val presentKey   = 400
+    val presentValue = 876234
+    val missingKey   = 200
+    val defaultValue = 9999
+
+    mp.put(100, 12345)
+    mp.put(300, 98765)
+    mp.put(presentKey, presentValue)
+    assertEquals(3, mp.size())
+
+    assertEquals(defaultValue, mp.getOrDefault(missingKey, defaultValue))
+  }
+
+  test("forEach(action) should invoke action on every element") {
+    type K = Int
+    type V = Double
+    val mp = factory.empty[K, V]
+
+    val startIdx = -2
+    val endIdx   = 5
+    val total    = 12
+    var sum      = 0
+
+    (startIdx to endIdx).foreach(i => mp.put(i, (i * 5.0)))
+
+    mp.forEach(new function.BiConsumer[K, V]() {
+      def accept(key: K, value: V) = (sum += key)
+    })
+
+    assertEquals(total, sum)
+  }
+
+  test("replaceAll(f) should change every element value to function result") {
+    type K = Int
+    type V = Double
+    val mp = factory.empty[K, V]
+
+    val startIdx = 1
+    val endIdx   = 10
+    val factor   = 2
+
+    (startIdx to endIdx).foreach(i => mp.put(i, i))
+
+    val replaceFunc = new function.BiFunction[K, V, V]() {
+      def apply(key: K, value: V): V = {
+        value * factor
+      }
+    }
+
+    mp.replaceAll(replaceFunc)
+
+    (startIdx to endIdx).foreach(i => assertEquals(i * factor, mp.get(i)))
+  }
+
+  test("putIfAbsent(k, v) should conditionally insert & return expected") {
+    type K = String
+    type V = String
+    val mp = factory.empty[K, V]
+
+    assertNull(mp.putIfAbsent("abc", "def"))
+    assertEquals("def", mp.get("abc"))
+
+    assertNull(mp.putIfAbsent("123", "456"))
+    assertEquals("456", mp.get("123"))
+
+    assertEquals("def", mp.putIfAbsent("abc", "def"))
+    assertEquals("def", mp.putIfAbsent("abc", "ghi"))
+    assertEquals("456", mp.putIfAbsent("123", "789"))
+    assertEquals("def", mp.putIfAbsent("abc", "jkl"))
+  }
+
+  test("remove(k, v) should remove entry only if mapped to specified value") {
+    type K = String
+    type V = String
+    val mp = factory.empty[K, V]
+
+    val testWord        = "tres"
+    val removeWhenValue = "si"
+    val keepWhenValue   = "no"
+    val data            = Array("uno", "dos", "tres", "cuatro", "cinqo", "seis")
+    var expectedSize    = data.size
+
+    data.foreach(key =>
+      mp.put(key,
+             if (key == testWord) removeWhenValue
+             else keepWhenValue))
+
+    assertFalse(mp.remove(testWord, keepWhenValue))
+    assertEquals(removeWhenValue, mp.get(testWord))
+    assertEquals(expectedSize, mp.size())
+
+    assertTrue(mp.remove(testWord, removeWhenValue))
+    assertNull(mp.get(testWord))
+    expectedSize -= 1
+
+    // Intended change happened and nobody else was disturbed.
+    assertEquals(expectedSize, mp.size())
+    mp.foreach { case (key: K, value: V) => assertEquals(keepWhenValue, value) }
+  }
+
+  test("replace(k, o, n) should act only when key mapped to old value") {
+    type K = String
+    type V = String
+    val mp = factory.empty[K, V]
+
+    val initialValue     = "no"
+    val notInitialValue  = "tal vez" // "maybe"
+    val replaceWithValue = "si"
+    val missingKey       = "missing"
+    val replaceKey       = "cuatro"
+    val data             = Array("dos", "tres", "cuatro", "cinqo", "seis")
+    var expectedSize     = data.size
+
+    data.foreach(key => mp.put(key, initialValue))
+
+    assertFalse(mp.replace(missingKey, initialValue, replaceWithValue))
+    assertFalse(mp.replace(replaceKey, notInitialValue, replaceWithValue))
+
+    assertTrue(mp.replace(replaceKey, initialValue, replaceWithValue))
+
+    // Intended change happened and nobody else was disturbed.
+    assertEquals(expectedSize, mp.size())
+    mp.foreach {
+      case (key, value) =>
+        val expected =
+          if (key == replaceKey) replaceWithValue
+          else initialValue
+        assertEquals(expected, value)
+    }
+  }
+
+  test("replace(k, v) should act only if the key is present") {
+    type K = String
+    type V = String
+    val mp = factory.empty[K, V]
+
+    val replaceKey       = "dos"
+    val replaceWithValue = "si"
+    val initialValue     = "no"
+    val missingKey       = "uno"
+    val data             = Array(replaceKey, "tres", "cuatro", "cinqo", "seis")
+    var expectedSize     = data.size
+
+    data.foreach(key => mp.put(key, initialValue))
+
+    assertNull(mp.replace(missingKey, replaceWithValue))
+    assertEquals(initialValue, mp.replace(replaceKey, replaceWithValue))
+
+    // Intended change happened and nobody else was disturbed.
+    assertEquals(expectedSize, mp.size())
+    mp.foreach {
+      case (key, value) => {
+        val expected =
+          if (key == replaceKey) replaceWithValue
+          else initialValue
+        assertEquals(expected, value)
+      }
+    }
+  }
+
+  test("computeIfAbsent(k, r) should change as documented") {
+    type K = String
+    type V = String
+    val mp = factory.empty[K, V]
+
+    val initialValue     = "Covid"
+    val replacementValue = "HPV"
+    val changeKey        = "sigma"
+    val noChangeKey      = "zeta"
+    val skipKey          = "upsilon"
+    val data             = Array("zeta", "eta", "theta", "iota", "kappa", "lambda")
+    var expectedSize     = data.size
+
+    data.foreach(key => mp.put(key, initialValue))
+
+    val computeFuncChangeKey = new function.Function[K, V]() {
+      def apply(key: K): V =
+        if (key == changeKey) replacementValue
+        else null.asInstanceOf[V]
+    }
+
+    val computeFuncAlwaysReturnsNull = new function.Function[K, V]() {
+      def apply(key: K): V = null.asInstanceOf[V]
+    }
+
+    assertEquals(replacementValue,
+                 mp.computeIfAbsent(changeKey, computeFuncChangeKey))
+    assertEquals(replacementValue, mp.get(changeKey))
+    expectedSize += 1
+    assertEquals(expectedSize, mp.size())
+
+    assertEquals(initialValue,
+                 mp.computeIfAbsent(noChangeKey, computeFuncChangeKey))
+    assertEquals(initialValue, mp.get(noChangeKey))
+    assertEquals(expectedSize, mp.size())
+
+    assertNull(mp.computeIfAbsent(skipKey, computeFuncAlwaysReturnsNull))
+    assertNull(mp.get(skipKey))
+
+    // Intended change happened and nobody else was disturbed.
+    assertEquals(expectedSize, mp.size())
+    mp.foreach {
+      case (key: K, value: V) => {
+        val expected =
+          if (key == changeKey) replacementValue
+          else initialValue
+        assertEquals(expected, value)
+      }
+    }
+  }
+
+  test("computeIfAbsent(k, r) exceptions in r should not change map.") {
+    type K = String
+    type V = String
+    val mp = factory.empty[K, V]
+
+    val initialValue = "Covid"
+    val absentKey    = "sigma"
+    val data         = Array("zeta", "eta", "theta", "iota", "kappa", "lambda")
+    var expectedSize = data.size
+
+    data.foreach(key => mp.put(key, initialValue))
+
+    type ExpectedException = IllegalArgumentException
+
+    val computeFuncAlwaysThrows = new function.Function[K, V]() {
+      def apply(key: K): V =
+        throw new ExpectedException("Exceptions should not cause a change")
+    }
+
+    assertThrows[ExpectedException] {
+      mp.computeIfAbsent(absentKey, computeFuncAlwaysThrows)
+    }
+
+    // Verify nothing changed.
+    assertEquals(expectedSize, mp.size())
+    mp.foreach { case (key: K, value: V) => assertEquals(initialValue, value) }
+  }
+
+  test("computeIfPresent(k, r) should change as documented") {
+    type K = String
+    type V = String
+    val mp = factory.empty[K, V]
+
+    val initialValue     = "Incumbent"
+    val replacementValue = "Challenger" // test below assume non-null
+    val changeKey        = "iota"
+    val noChangeKey      = "xi"
+    val removeKey        = "lambda"
+    val data             = Array("zeta", "eta", "theta", "iota", "kappa", "lambda")
+    var expectedSize     = data.size
+
+    data.foreach(key => mp.put(key, initialValue))
+
+    val computeFuncChangeKey = new function.BiFunction[K, V, V]() {
+      def apply(key: K, value: V): V =
+        if (key == changeKey) replacementValue else value
+    }
+
+    val computeFuncAlwaysReturnsNull = new function.BiFunction[K, V, V]() {
+      def apply(key: K, value: V): V = null.asInstanceOf[V]
+    }
+
+    assertNull(mp.computeIfPresent(noChangeKey, computeFuncChangeKey))
+    assertNull(mp.get(noChangeKey))
+    assertEquals(expectedSize, mp.size())
+
+    assertEquals(replacementValue,
+                 mp.computeIfPresent(changeKey, computeFuncChangeKey))
+    assertEquals(replacementValue, mp.get(changeKey))
+    assertEquals(expectedSize, mp.size())
+
+    assertNull(mp.computeIfPresent(removeKey, computeFuncAlwaysReturnsNull))
+    assertNull(mp.get(removeKey))
+    expectedSize -= 1
+
+    // Intended change happened and nobody else was disturbed.
+    assertEquals(expectedSize, mp.size())
+    mp.foreach {
+      case (key: K, value: V) => {
+        val expected =
+          if (key == changeKey) replacementValue
+          else initialValue
+        assertEquals(expected, value)
+      }
+    }
+  }
+
+  test("computeIfPresent(k, r) exceptions in r should not change map.") {
+    type K = String
+    type V = String
+    val mp = factory.empty[K, V]
+
+    val initialValue = "Covid"
+    val presentKey   = "zeta"
+    val data         = Array("zeta", "eta", "theta", "iota", "kappa", "lambda")
+    var expectedSize = data.size
+
+    type ExpectedException = IllegalArgumentException
+
+    data.foreach(key => mp.put(key, initialValue))
+
+    val computeBiFuncAlwaysThrows = new function.BiFunction[K, V, V]() {
+      def apply(key: K, value: V): V =
+        throw new ExpectedException("Exceptions should not cause a change")
+    }
+
+    assertThrows[ExpectedException] {
+      mp.computeIfPresent(presentKey, computeBiFuncAlwaysThrows)
+    }
+
+    // Verify nothing changed.
+    assertEquals(expectedSize, mp.size())
+    mp.foreach { case (key: K, value: V) => assertEquals(initialValue, value) }
+  }
+
+  test("compute(k, r) key not found, should pass null value to BiFunction") {
+    type K = String
+    type V = String
+    // Ints complicate null handling. null.asInstanceOf[Int] is 0,
+    // meaning the two can not be distinguished.
+    val mp = factory.empty[K, V]
+
+    val missingKey       = "kappa"
+    val changeKey        = "iota"
+    val initialValue     = "Incumbent"
+    val replacementValue = "Challenger" // test below assume non-null
+    val nullValue        = "None of the above"
+    val data             = Array("zeta", "eta", "theta", "iota", "kappa", "lambda")
+    var expectedSize     = data.size
+
+    data.foreach(key => if (key != missingKey) mp.put(key, initialValue))
+
+    val computeFuncExpectNullValue = new function.BiFunction[K, V, V]() {
+      def apply(key: K, value: V): V = {
+        if (value != null.asInstanceOf[V]) "FAIL!"
+        else replacementValue
+      }
+    }
+
+    // Eliminate  "null as missing key" before testing for
+    // "null as missing replacement function".
+    assertNull(mp.get(missingKey))
+
+    assertThrows[NullPointerException] {
+      mp.compute(missingKey, null.asInstanceOf[function.BiFunction[K, V, V]])
+    }
+
+    assertNull(mp.compute(missingKey, computeFuncExpectNullValue))
+
+    // Intended change happened and nobody else was disturbed.
+    assertEquals(expectedSize, mp.size())
+    mp.foreach {
+      case (key, value) => {
+        val expected =
+          if (key == missingKey) replacementValue
+          else initialValue
+        assertEquals(expected, value)
+      }
+    }
+  }
+
+  test("compute(k, r) key found, should pass (key, value) to BiFunction") {
+    type K = String
+    type V = String
+    val mp = factory.empty[K, V]
+
+    val changeKey        = "eta"
+    val noChangeKey      = "zeta"
+    val initialValue     = "Incumbent"
+    val replacementValue = "Challenger"
+    val data             = Array("zeta", "eta", "theta", "iota", "kappa", "lambda")
+    var expectedSize     = data.size
+
+    data.foreach(key => mp.put(key, initialValue))
+
+    val computeFuncChangeKey = new function.BiFunction[K, V, V]() {
+      def apply(key: K, value: V): V = {
+        if (key == changeKey) replacementValue
+        else value
+      }
+    }
+
+    mp.compute(changeKey, computeFuncChangeKey)
+    assertEquals(replacementValue, mp.get(changeKey))
+
+    mp.compute(noChangeKey, computeFuncChangeKey)
+    assertEquals(initialValue, mp.get(noChangeKey))
+
+    // Intended change happened and nobody else was disturbed.
+    assertEquals(expectedSize, mp.size())
+    mp.foreach {
+      case (key, value) => {
+        val expected =
+          if (key == changeKey) replacementValue
+          else initialValue
+        assertEquals(expected, value)
+      }
+    }
+  }
+
+  test("compute(k, r) key found, BiFunction result null, should remove key") {
+    type K = String
+    type V = String
+    val mp = factory.empty[K, V]
+
+    val initialValue = "ab ovo"
+    val removeKey    = "lambda"
+    val data         = Array("zeta", "eta", "theta", "iota", "kappa", "lambda")
+    var expectedSize = data.size - 1
+
+    data.foreach(key => mp.put(key, initialValue))
+
+    val computeFuncAlwaysReturnsNull = new function.BiFunction[K, V, V]() {
+      def apply(key: K, value: V): V = null.asInstanceOf[V]
+    }
+
+    assertEquals(initialValue,
+                 mp.compute(removeKey, computeFuncAlwaysReturnsNull))
+
+    assertNull(mp.get(removeKey)) // key is gone! and other keys are not
+
+    // Intended change happened and nobody else was disturbed.
+    assertEquals(expectedSize, mp.size)
+    mp.foreach { case (key, value) => assertEquals(initialValue, value) }
+  }
+
+  test("compute(k, r) exceptions in r should not change map.") {
+    type K = String
+    type V = String
+    val mp = factory.empty[K, V]
+
+    val initialValue = "Covid"
+    val presentKey   = "zeta"
+    val data         = Array("zeta", "eta", "theta", "iota", "kappa", "lambda")
+    var expectedSize = data.size
+
+    type ExpectedException = IllegalArgumentException
+
+    data.foreach(key => mp.put(key, initialValue))
+
+    val computeBiFuncAlwaysThrows = new function.BiFunction[K, V, V]() {
+      def apply(key: K, value: V): V =
+        throw new ExpectedException("Exceptions should not cause a change")
+    }
+
+    assertThrows[ExpectedException] {
+      mp.compute(presentKey, computeBiFuncAlwaysThrows)
+    }
+
+    // Verify nothing changed.
+    assertEquals(expectedSize, mp.size())
+    mp.foreach { case (key: K, value: V) => assertEquals(initialValue, value) }
+  }
+
+  test("merge(k, v, r) should replace existing elements as directed") {
+    type K = String
+    type V = Int
+    val mp = factory.empty[K, V]
+
+    // Central idea: count how many times a word has been seen.
+
+    val unseenWord                  = "upsilon"
+    val changeWord                  = "tau"
+    val realWorldStartOfCount       = 1
+    val computerScienceStartOfCount = 0
+    val expectedUnseenWordCount     = 0
+    val expectedUnchangedCount      = 1
+    val expectedChangedCount        = 2
+    val data                        = Array("tau", "upsilon", "phi", "chi", "psi", "omega")
+    var expectedSize                = data.size
+
+    data.foreach(key =>
+      if (key != unseenWord)
+        mp.put(key, realWorldStartOfCount))
+
+    val mergeFunc = new function.BiFunction[V, V, V]() {
+      def apply(currentValue: V, mergee: V): V = {
+        currentValue + mergee
+      }
+    }
+
+    assertNull(mp.get(unseenWord))
+
+    mp.merge(unseenWord, computerScienceStartOfCount, mergeFunc)
+    mp.merge(changeWord, 1, mergeFunc)
+
+    // New word has not been remapped and selected previously seen word has.
+    // Values for unselected words have have not changed.
+    assertEquals(expectedSize, mp.size())
+    mp.foreach {
+      case (key, value) =>
+        val expected =
+          if (key == unseenWord)
+            expectedUnseenWordCount
+          else if (key == changeWord)
+            expectedChangedCount
+          else
+            expectedUnchangedCount
+        assertEquals(expected, value)
+    }
   }
 }
 
