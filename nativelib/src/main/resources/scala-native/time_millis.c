@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <sys/time.h>
 
 long long scalanative_current_time_millis() {
