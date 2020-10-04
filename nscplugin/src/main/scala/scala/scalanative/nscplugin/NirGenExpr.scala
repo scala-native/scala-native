@@ -209,19 +209,20 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G]   =>
 
     def genMatch(m: Match): Val = {
       val Match(scrutp, allcaseps) = m
+      type Case = (Local, Val, Tree)
 
       // Extract switch cases and assign unique names to them.
-      val caseps: Seq[(Local, Val, Tree)] = allcaseps.flatMap {
+      val caseps: Seq[Case] = allcaseps.flatMap {
         case CaseDef(Ident(nme.WILDCARD), _, _) =>
           Seq()
         case CaseDef(pat, guard, body) =>
           assert(guard.isEmpty, "CaseDef guard was not empty")
           val vals: Seq[Val] = pat match {
             case lit: Literal =>
-              List(genLiteralValue(lit))
+              List(genExpr(lit))
             case Alternative(alts) =>
               alts.map {
-                case lit: Literal => genLiteralValue(lit)
+                case lit: Literal => genExpr(lit)
               }
             case _ =>
               Nil
@@ -234,29 +235,61 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G]   =>
         case c @ CaseDef(Ident(nme.WILDCARD), _, body) => body
       }.get
 
-      // Generate some more fresh names and types.
-      val retty       = genType(m.tpe)
-      val casenexts   = caseps.map { case (n, v, _) => Next.Case(v, n) }
-      val defaultnext = Next(fresh())
-      val merge       = fresh()
-      val mergev      = Val.Local(fresh(), retty)
-
-      implicit val pos: nir.Position = m.pos
+      val retty = genType(m.tpe)
+      val scrut = genExpr(scrutp)
 
       // Generate code for the switch and its cases.
-      val scrut = genExpr(scrutp)
-      buf.switch(scrut, defaultnext, casenexts)
-      buf.label(defaultnext.name)(defaultp.pos)
-      val defaultres = genExpr(defaultp)
-      buf.jump(merge, Seq(defaultres))(defaultp.pos)
-      caseps.foreach {
-        case (n, _, expr) =>
-          buf.label(n)(expr.pos)
-          val caseres = genExpr(expr)
-          buf.jump(merge, Seq(caseres))
+      def genSwitch(): Val = {
+        // Generate some more fresh names and types.
+        val casenexts   = caseps.map { case (n, v, _) => Next.Case(v, n) }
+        val defaultnext = Next(fresh())
+        val merge       = fresh()
+        val mergev      = Val.Local(fresh(), retty)
+
+        implicit val pos: nir.Position = m.pos
+
+        // Generate code for the switch and its cases.
+        val scrut = genExpr(scrutp)
+        buf.switch(scrut, defaultnext, casenexts)
+        buf.label(defaultnext.name)(defaultp.pos)
+        buf.jump(merge, Seq(genExpr(defaultp)))(defaultp.pos)
+        caseps.foreach {
+          case (n, _, expr) =>
+            buf.label(n)(expr.pos)
+            val caseres = genExpr(expr)
+            buf.jump(merge, Seq(caseres))
+        }
+        buf.label(merge, Seq(mergev))
+        mergev
       }
-      buf.label(merge, Seq(mergev))
-      mergev
+
+      def genIfsChain(): Val = {
+        def loop(cases: List[Case]): Val = {
+          cases match {
+            case (_, caze, body) :: elsep =>
+              val cond =
+                buf.genClassEquality(leftp = ValTree(scrut),
+                                     rightp = ValTree(caze),
+                                     ref = false,
+                                     negated = false)
+              buf.genIf(retty = retty,
+                        condp = ValTree(cond),
+                        thenp = ContTree(() => genExpr(body)),
+                        elsep = ContTree(() => loop(elsep)))
+
+            case Nil => genExpr(defaultp)
+          }
+        }
+        loop(caseps.toList)
+      }
+
+      /* Since 2.13 we need to enforce that only Int switch cases reach backend
+       * For all other cases we're generating If-else chain */
+      val isIntMatch = scrut.ty == Type.Int &&
+        caseps.forall(_._2.ty == Type.Int)
+
+      if (isIntMatch) genSwitch()
+      else genIfsChain()
     }
 
     def genMatch(prologue: List[Tree], lds: List[LabelDef]): Val = {
