@@ -1,6 +1,10 @@
 #include <unistd.h>
 #include "types.h"
 
+extern char **environ;
+
+char **scalanative_environ() { return environ; }
+
 int scalanative_f_ok() { return F_OK; }
 
 int scalanative_r_ok() { return R_OK; }
