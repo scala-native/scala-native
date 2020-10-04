@@ -100,7 +100,7 @@ object Pattern {
   }
 
   def matches(regex: String, input: CharSequence): Boolean =
-    compile(regex).matcher(input).matches
+    compile(regex).matcher(input).matches()
 
   def quote(s: String): String = s"\\Q${s}\\E"
 }

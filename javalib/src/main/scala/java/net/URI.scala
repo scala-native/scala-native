@@ -270,7 +270,7 @@ final class URI private () extends Comparable[URI] with Serializable {
           throw new URISyntaxException(uri,
                                        "Illegal character in scheme",
                                        index
-                                         + e.getIndex)
+                                         + e.getIndex())
       }
     }
 
@@ -280,8 +280,8 @@ final class URI private () extends Comparable[URI] with Serializable {
       } catch {
         case e: URISyntaxException =>
           throw new URISyntaxException(uri,
-                                       e.getReason + " in scheme specific part",
-                                       index + e.getIndex)
+                                       e.getReason() + " in scheme specific part",
+                                       index + e.getIndex())
       }
     }
 
@@ -291,8 +291,8 @@ final class URI private () extends Comparable[URI] with Serializable {
       } catch {
         case e: URISyntaxException =>
           throw new URISyntaxException(uri,
-                                       e.getReason + " in authority",
-                                       index + e.getIndex)
+                                       e.getReason() + " in authority",
+                                       index + e.getIndex())
       }
     }
 
@@ -302,8 +302,8 @@ final class URI private () extends Comparable[URI] with Serializable {
       } catch {
         case e: URISyntaxException =>
           throw new URISyntaxException(uri,
-                                       e.getReason + " in path",
-                                       index + e.getIndex)
+                                       e.getReason() + " in path",
+                                       index + e.getIndex())
       }
     }
 
@@ -313,8 +313,8 @@ final class URI private () extends Comparable[URI] with Serializable {
       } catch {
         case e: URISyntaxException =>
           throw new URISyntaxException(uri,
-                                       e.getReason + " in query",
-                                       index + e.getIndex)
+                                       e.getReason() + " in query",
+                                       index + e.getIndex())
       }
     }
 
@@ -324,8 +324,8 @@ final class URI private () extends Comparable[URI] with Serializable {
       } catch {
         case e: URISyntaxException =>
           throw new URISyntaxException(uri,
-                                       e.getReason + " in fragment",
-                                       index + e.getIndex)
+                                       e.getReason() + " in fragment",
+                                       index + e.getIndex())
       }
     }
 
@@ -450,7 +450,7 @@ final class URI private () extends Comparable[URI] with Serializable {
       }
       var label: String       = null
       val st: StringTokenizer = new StringTokenizer(host, ".")
-      while (st.hasMoreTokens) {
+      while (st.hasMoreTokens()) {
         label = st.nextToken()
         if (label.startsWith("-") || label.endsWith("-")) {
           return false
@@ -937,7 +937,7 @@ final class URI private () extends Comparable[URI] with Serializable {
     }
     if (!path.endsWith("/") && seglist.length > 0 &&
         include(seglist.length - 1)) {
-      newpath.deleteCharAt(newpath.length - 1)
+      newpath.deleteCharAt(newpath.length() - 1)
     }
     var result: String = newpath.toString
     // prepend "./" to normalize

@@ -112,12 +112,12 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     new UnixPath(fs, (beginIndex until endIndex).map(getName).mkString("/"))
 
   override def startsWith(other: Path): Boolean =
-    if (fs.provider == other.getFileSystem.provider) {
+    if (fs.provider == other.getFileSystem().provider()) {
       val otherLength = other.getNameCount()
       val thisLength  = getNameCount()
 
       if (otherLength > thisLength) false
-      else if (isAbsolute() ^ other.isAbsolute) false
+      else if (isAbsolute() ^ other.isAbsolute()) false
       else {
         (0 until otherLength).forall(i => getName(i) == other.getName(i))
       }
@@ -129,11 +129,11 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     startsWith(new UnixPath(fs, other))
 
   override def endsWith(other: Path): Boolean =
-    if (fs.provider == other.getFileSystem.provider) {
+    if (fs.provider == other.getFileSystem().provider()) {
       val otherLength = other.getNameCount()
       val thisLength  = getNameCount()
       if (otherLength > thisLength) false
-      else if (!other.isAbsolute) {
+      else if (!other.isAbsolute()) {
         (0 until otherLength).forall(i =>
           getName(thisLength - 1 - i) == other.getName(otherLength - 1 - i))
       } else if (isAbsolute()) {
@@ -151,7 +151,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
   override def normalize(): Path = normalizedPath
 
   override def resolve(other: Path): Path =
-    if (other.isAbsolute || path.isEmpty) other
+    if (other.isAbsolute() || path.isEmpty) other
     else if (other.toString.isEmpty) this
     else new UnixPath(fs, path + "/" + other.toString())
 
@@ -168,12 +168,12 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     resolveSibling(new UnixPath(fs, other))
 
   override def relativize(other: Path): Path = {
-    if (isAbsolute() ^ other.isAbsolute) {
+    if (isAbsolute() ^ other.isAbsolute()) {
       throw new IllegalArgumentException("'other' is different type of Path")
     } else if (path.isEmpty) {
       other
     } else if (other.startsWith(this)) {
-      other.subpath(getNameCount(), other.getNameCount)
+      other.subpath(getNameCount(), other.getNameCount())
     } else if (getParent() == null) {
       new UnixPath(fs, "../" + other.toString())
     } else {
@@ -215,7 +215,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     }
 
   override def compareTo(other: Path): Int =
-    if (fs.provider == other.getFileSystem.provider) {
+    if (fs.provider == other.getFileSystem().provider()) {
       this.toString.compareTo(other.toString)
     } else {
       throw new ClassCastException()
@@ -268,7 +268,7 @@ private object UnixPath {
           val buffer: StringBuffer = new StringBuffer(str)
           var previous             = '/'
           var i                    = idx + 1
-          while (i < buffer.length) {
+          while (i < buffer.length()) {
             val current = buffer.charAt(i)
             if (previous == '/' && current == '/') {
               buffer.deleteCharAt(i)

@@ -69,7 +69,7 @@ private[util] class NavigableView[E](original: NavigableSet[E],
   override def removeAll(c: Collection[_]): Boolean = {
     val iter    = c.iterator()
     var changed = false
-    while (iter.hasNext) changed = remove(iter.next) || changed
+    while (iter.hasNext()) changed = remove(iter.next()) || changed
     changed
   }
 
@@ -117,13 +117,13 @@ private[util] class NavigableView[E](original: NavigableSet[E],
 
   def first(): E = {
     val iter = iterator()
-    if (iter.hasNext) iter.next
+    if (iter.hasNext()) iter.next()
     else null.asInstanceOf[E]
   }
 
   def last(): E = {
     val iter = iterator()
-    if (iter.hasNext) iter.asScala.toTraversable.last
+    if (iter.hasNext()) iter.asScala.toTraversable.last
     else null.asInstanceOf[E]
   }
 

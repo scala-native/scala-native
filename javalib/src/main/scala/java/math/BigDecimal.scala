@@ -104,7 +104,7 @@ object BigDecimal {
   }
 
   def valueOf(d: Double): BigDecimal = {
-    if (d.isInfinite || d.isNaN)
+    if (d.isInfinite() || d.isNaN())
       throw new NumberFormatException("Infinity or NaN: " + d)
 
     new BigDecimal(d.toString)
@@ -124,7 +124,7 @@ object BigDecimal {
     } else {
       val bi =
         Multiplication.multiplyByTenPow(augend.getUnscaledValue(), diffScale)
-      new BigDecimal(thisValue.getUnscaledValue().add(bi), thisValue.scale)
+      new BigDecimal(thisValue.getUnscaledValue().add(bi), thisValue.scale())
     }
   }
 
@@ -471,7 +471,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
 
   def this(dVal: Double) = {
     this()
-    if (dVal.isInfinite || dVal.isNaN)
+    if (dVal.isInfinite() || dVal.isNaN())
       throw new NumberFormatException("Infinity or NaN: " + dVal)
 
     val bits = java.lang.Double.doubleToLongBits(dVal)

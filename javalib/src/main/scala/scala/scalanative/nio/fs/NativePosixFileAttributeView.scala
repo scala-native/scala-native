@@ -38,7 +38,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
   override def setOwner(owner: UserPrincipal): Unit =
     Zone { implicit z =>
-      val passwd = getPasswd(toCString(owner.getName))
+      val passwd = getPasswd(toCString(owner.getName()))
       if (unistd.chown(toCString(path.toString), passwd._2, -1.toUInt) != 0)
         throwIOException()
     }
@@ -54,11 +54,11 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
       }
     }
 
-  override def getOwner(): UserPrincipal = attributes.owner
+  override def getOwner(): UserPrincipal = attributes.owner()
 
   override def setGroup(group: GroupPrincipal): Unit =
     Zone { implicit z =>
-      val _group = getGroup(toCString(group.getName))
+      val _group = getGroup(toCString(group.getName()))
       val err    = unistd.chown(toCString(path.toString), -1.toUInt, _group._2)
 
       if (err != 0) {
@@ -107,7 +107,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
       private def fileGroup()(implicit z: Zone) =
         getGroup(st_gid)
 
-      override def fileKey = st_ino.asInstanceOf[Object]
+      override def fileKey() = st_ino.asInstanceOf[Object]
 
       override lazy val isDirectory =
         stat.S_ISDIR(st_mode) == 1
@@ -121,26 +121,26 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
       override lazy val isOther =
         !isDirectory && !isRegularFile && !isSymbolicLink
 
-      override def lastAccessTime =
+      override def lastAccessTime() =
         FileTime.from(st_atime, TimeUnit.SECONDS)
 
-      override def lastModifiedTime =
+      override def lastModifiedTime() =
         FileTime.from(st_mtime, TimeUnit.SECONDS)
 
-      override def creationTime =
+      override def creationTime() =
         FileTime.from(st_ctime, TimeUnit.SECONDS)
 
-      override def group = new GroupPrincipal {
+      override def group() = new GroupPrincipal {
         override val getName =
           Zone { implicit z => fromCString(fileGroup()._1) }
       }
 
-      override def owner = new UserPrincipal {
+      override def owner() = new UserPrincipal {
         override val getName =
           Zone { implicit z => fromCString(filePasswd()._1) }
       }
 
-      override def permissions = {
+      override def permissions() = {
         val set = new HashSet[PosixFilePermission]
         NativePosixFileAttributeView.permMap.foreach {
           case (flag, value) =>
@@ -149,24 +149,24 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
         set
       }
 
-      override def size = st_size
+      override def size() = st_size
     }
 
   override def asMap(): HashMap[String, Object] = {
     val attrs = attributes
     val values =
       List(
-        "lastModifiedTime" -> attrs.lastModifiedTime,
-        "lastAccessTime"   -> attrs.lastAccessTime,
-        "creationTime"     -> attrs.creationTime,
-        "size"             -> Long.box(attrs.size),
+        "lastModifiedTime" -> attrs.lastModifiedTime(),
+        "lastAccessTime"   -> attrs.lastAccessTime(),
+        "creationTime"     -> attrs.creationTime(),
+        "size"             -> Long.box(attrs.size()),
         "isRegularFile"    -> Boolean.box(attrs.isRegularFile),
         "isDirectory"      -> Boolean.box(attrs.isDirectory),
         "isSymbolicLink"   -> Boolean.box(attrs.isSymbolicLink),
         "isOther"          -> Boolean.box(attrs.isOther),
-        "fileKey"          -> attrs.fileKey,
-        "permissions"      -> attrs.permissions,
-        "group"            -> attrs.group
+        "fileKey"          -> attrs.fileKey(),
+        "permissions"      -> attrs.permissions(),
+        "group"            -> attrs.group()
       )
 
     val map = new HashMap[String, Object]()

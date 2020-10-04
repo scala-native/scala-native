@@ -11,7 +11,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
 
   // Normal implementation of Buffer
 
-  private var _limit: Int     = capacity
+  private var _limit: Int     = capacity()
   private var _position: Int  = 0
   private[nio] var _mark: Int = -1
 
@@ -57,7 +57,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   def clear(): Buffer = {
     _mark = -1
     _position = 0
-    _limit = capacity
+    _limit = capacity()
     this
   }
 
@@ -74,9 +74,9 @@ abstract class Buffer private[nio] (val _capacity: Int) {
     this
   }
 
-  @inline final def remaining(): Int = limit - position
+  @inline final def remaining(): Int = limit() - position()
 
-  @inline final def hasRemaining(): Boolean = position != limit
+  @inline final def hasRemaining(): Boolean = position() != limit()
 
   def isReadOnly(): Boolean
 

@@ -55,7 +55,7 @@ object Files {
         true
       else throw new UnsupportedOperationException()
 
-    val targetFile = target.toFile
+    val targetFile = target.toFile()
 
     val out =
       if (!targetFile.exists() || (targetFile.isFile() && replaceExisting)) {

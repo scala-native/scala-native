@@ -261,7 +261,7 @@ class DecimalFormat extends NumberFormat {
               0.0
           }
         val toBeRounded = (whole.mkString.toDouble + fracd) * signum
-        Math.round(toBeRounded())
+        Math.round(toBeRounded).toDouble
       }
     }
 

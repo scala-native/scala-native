@@ -10,14 +10,14 @@ abstract class AbstractSet[E] protected ()
     if (that.asInstanceOf[AnyRef] eq this) true
     else {
       that match {
-        case that: Collection[_] => that.size == this.size && containsAll(that)
+        case that: Collection[_] => that.size() == this.size() && containsAll(that)
         case _                   => false
       }
     }
   }
 
   override def hashCode(): Int =
-    iterator.asScala.foldLeft(0)((prev, item) => item.hashCode + prev)
+    iterator().asScala.foldLeft(0)((prev, item) => item.hashCode + prev)
 
   override def removeAll(c: Collection[_]): Boolean = {
     if (size() > c.size())

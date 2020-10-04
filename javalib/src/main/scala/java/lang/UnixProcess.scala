@@ -229,7 +229,7 @@ object UnixProcess {
             s"Couldn't duplicate pipe file descriptor $errno")
         }
       case r @ ProcessBuilder.Redirect.Type.READ =>
-        val fd = open(redirect.file, O_RDONLY)
+        val fd = open(redirect.file(), O_RDONLY)
         if (unistd.dup2(fd, procFd) == -1) {
           throw new IOException(
             s"Couldn't duplicate read file descriptor $errno")

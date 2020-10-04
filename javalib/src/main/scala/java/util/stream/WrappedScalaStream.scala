@@ -7,13 +7,13 @@ import scala.collection.immutable.{Stream => SStream}
 class WrappedScalaStream[T](private val underlying: SStream[T],
                             closeHandler: Option[Runnable])
     extends Stream[T] {
-  override def close(): Unit         = closeHandler.foreach(_.run)
+  override def close(): Unit         = closeHandler.foreach(_.run())
   override def isParallel(): Boolean = false
   override def iterator(): Iterator[T] =
     WrappedScalaStream.scala2javaIterator(underlying.iterator)
   override def parallel(): Stream[T]   = this
   override def sequential(): Stream[T] = this
-  override def unordered: Stream[T]    = this
+  override def unordered(): Stream[T]    = this
   override def onClose(closeHandler: Runnable): Stream[T] =
     new WrappedScalaStream(underlying, Some(closeHandler))
 
@@ -58,7 +58,7 @@ private final class CompositeStream[T](substreams: Seq[Stream[T]],
       private var currentIt: Iterator[_ <: T] = EmptyIterator
 
       override def hasNext(): Boolean =
-        if (currentIt.hasNext) true
+        if (currentIt.hasNext()) true
         else if (its.hasNext) {
           currentIt = its.next().iterator
           hasNext()
@@ -77,7 +77,7 @@ private final class CompositeStream[T](substreams: Seq[Stream[T]],
 
   override def parallel(): Stream[T]   = this
   override def sequential(): Stream[T] = this
-  override def unordered: Stream[T]    = this
+  override def unordered(): Stream[T]    = this
   override def onClose(closeHandler: Runnable): Stream[T] =
     new CompositeStream(substreams, Some(closeHandler))
 

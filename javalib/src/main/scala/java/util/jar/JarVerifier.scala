@@ -50,7 +50,7 @@ private[jar] class JarVerifier(jarName: String) {
   }
 
   private[jar] def initEntry(name: String): VerifierEntry =
-    if (man == null || signatures.size == 0) {
+    if (man == null || signatures.size() == 0) {
       null
     } else {
       val attributes = man.getAttributes(name)
@@ -110,7 +110,7 @@ private[jar] class JarVerifier(jarName: String) {
     } else {
       var result = true
       val it     = metaEntries.keySet().iterator()
-      while (result && it.hasNext) {
+      while (result && it.hasNext()) {
         val key = it.next()
         if (key.endsWith(".DSA") || key.endsWith(".RSA")) {
           verifyCertificate(key)
@@ -202,7 +202,7 @@ private[jar] class JarVerifier(jarName: String) {
                     false,
                     false)) {
           val it = entries.entrySet().iterator()
-          while (it.hasNext) {
+          while (it.hasNext()) {
             val entry = it.next()
             val key   = entry.getKey()
             val value = entry.getValue()
@@ -233,7 +233,7 @@ private[jar] class JarVerifier(jarName: String) {
     man = mf
 
   private[jar] def isSignedJar(): Boolean =
-    certificates.size > 0
+    certificates.size() > 0
 
   private def verify(attributes: Attributes,
                      entry: String,

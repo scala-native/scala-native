@@ -62,7 +62,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
 
   def group(name: String): String = underlying.group(name)
 
-  def groupCount: Int = underlying.groupCount()
+  def groupCount(): Int = underlying.groupCount()
 
   def hasAnchoringBounds(): Boolean = anchoringBoundsInUse
 

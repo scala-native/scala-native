@@ -94,7 +94,7 @@ final class Locale(val language: String,
       buf.append('_')
       buf.append(country)
     }
-    if (variant.length > 0 && buf.length > 0) {
+    if (variant.length > 0 && buf.length() > 0) {
       if (0 == country.length) {
         buf.append("__")
       } else {

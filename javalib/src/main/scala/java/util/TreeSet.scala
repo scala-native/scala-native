@@ -107,7 +107,7 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
   override def add(e: E): Boolean = {
     val boxed = Box(e)
 
-    if (isEmpty)
+    if (isEmpty())
       BoxOrdering.compare(boxed, boxed)
 
     inner.add(boxed)
@@ -122,16 +122,16 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
   override def addAll(c: Collection[_ <: E]): Boolean = {
     val iter    = c.iterator()
     var changed = false
-    while (iter.hasNext) changed = add(iter.next()) || changed
+    while (iter.hasNext()) changed = add(iter.next()) || changed
     changed
   }
 
   override def removeAll(c: Collection[_]): Boolean = {
     val iter    = c.iterator()
     var changed = false
-    while (iter.hasNext)
+    while (iter.hasNext())
       changed =
-        inner.remove(Box(iter.next).asInstanceOf[Box[E]]) || changed
+        inner.remove(Box(iter.next()).asInstanceOf[Box[E]]) || changed
     changed
   }
 

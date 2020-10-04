@@ -134,7 +134,7 @@ class ServerSocket(private var port: Int,
     impl.setOption(SocketOptions.SO_TIMEOUT, Integer.valueOf(timeout))
   }
 
-  override def close: Unit = {
+  override def close(): Unit = {
     impl.close()
     closed = true
   }

@@ -26,7 +26,7 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   def size(): Int =
     inner.size
 
-  def isEmpty: Boolean =
+  def isEmpty(): Boolean =
     inner.isEmpty
 
   def keys(): ju.Enumeration[K] =
@@ -92,8 +92,8 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
     class UnboxedEntry(
         private[UnboxedEntry] val boxedEntry: ju.Map.Entry[Box[Any], V])
         extends ju.Map.Entry[K, V] {
-      def getKey(): K           = boxedEntry.getKey.inner.asInstanceOf[K]
-      def getValue(): V         = boxedEntry.getValue
+      def getKey(): K           = boxedEntry.getKey().inner.asInstanceOf[K]
+      def getValue(): V         = boxedEntry.getValue()
       def setValue(value: V): V = boxedEntry.setValue(value)
       override def equals(o: Any): Boolean = o match {
         case o: UnboxedEntry => boxedEntry.equals(o.boxedEntry)
@@ -109,5 +109,5 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   }
 
   def values(): ju.Collection[V] =
-    inner.asJava.values
+    inner.asJava.values()
 }

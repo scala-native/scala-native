@@ -787,7 +787,7 @@ object Arrays {
                                                  start: Int,
                                                  end: Int): Unit = {
     if (start > end)
-      throw new IllegalArgumentException(start + " > " + end)
+      throw new IllegalArgumentException(s"$start > $end")
     if (start < 0 || start > len)
       throw new ArrayIndexOutOfBoundsException
   }

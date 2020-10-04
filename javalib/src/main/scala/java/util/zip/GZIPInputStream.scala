@@ -131,7 +131,7 @@ class GZIPInputStream(in: InputStream, size: Int)
 
   private def readZeroTerminated(hcrc: Boolean): Unit = {
     var result: Int = 0
-    while ({ result = in.read; result > 0 }) {
+    while ({ result = in.read(); result > 0 }) {
       if (hcrc) {
         crc.update(result)
       }

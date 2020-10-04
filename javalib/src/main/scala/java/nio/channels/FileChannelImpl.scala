@@ -82,8 +82,8 @@ final class FileChannelImpl(path: Path,
   override def read(buffer: ByteBuffer, pos: Long): Int = {
     ensureOpen()
     position(pos)
-    val bufPosition: Int = buffer.position
-    raf.read(buffer.array, bufPosition, buffer.limit() - bufPosition) match {
+    val bufPosition: Int = buffer.position()
+    raf.read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
       case bytesRead if bytesRead < 0 => bytesRead
       case bytesRead =>
         buffer.position(bufPosition + bytesRead)

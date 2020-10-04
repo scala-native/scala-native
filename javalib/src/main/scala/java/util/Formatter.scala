@@ -216,7 +216,7 @@ object Formatter {
     final val DECIMAL_FLOAT = new BigDecimalLayoutForm("DECIMAL_FLOAT", 1)
 
     def valueOf(name: String): BigDecimalLayoutForm =
-      _values.find(_.name == name).getOrElse {
+      _values.find(_.name() == name).getOrElse {
         throw new IllegalArgumentException(
           "No enum constant java.util.Formatter.BigDecimalLayoutForm." + name)
       }
