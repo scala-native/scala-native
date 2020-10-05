@@ -91,7 +91,7 @@ object System {
   var err: PrintStream =
     new PrintStream(new FileOutputStream(FileDescriptor.err))
 
-  private val systemProperties = loadProperties()
+  private lazy val systemProperties = loadProperties()
   Platform.setOSProps(new CFuncPtr2[CString, CString, Unit] {
     def apply(key: CString, value: CString): Unit =
       systemProperties.setProperty(fromCString(key), fromCString(value))

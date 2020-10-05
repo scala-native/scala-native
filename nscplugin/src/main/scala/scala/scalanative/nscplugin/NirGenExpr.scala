@@ -826,7 +826,7 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G]   =>
         // and hence `samBridges` will always be empty (scala/bug#10512).
         // Since we only support Scala 2.12.12 and up,
         // we assert that this is not the case.
-        assert(synthCls != NoSymbol)
+        assert(synthCls != NoSymbol, "Unexpected NoSymbol")
         val samBridges = {
           import scala.reflect.internal.Flags.BRIDGE
           synthCls.info.findMembers(excludedFlags = 0L, requiredFlags = BRIDGE).toList
