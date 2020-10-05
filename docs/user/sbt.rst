@@ -20,7 +20,7 @@ This generates the following files:
 
 * ``project/build.properties`` to specify the sbt version::
 
-    sbt.version = 1.3.13
+    sbt.version = 1.4.0
 
 * ``build.sbt`` to enable the plugin and specify Scala version::
 
@@ -234,9 +234,9 @@ support Scala/JVM or Scala.js if the Native portions have replacement
 code on the respective platforms.
 
 The primary purpose of this feature is to allow libraries to support
-Scala Native that need native `glue` code to operate. The current
+Scala Native that need native "glue" code to operate. The current
 C interopt does not allow direct access to macro defined constants and
-functions or allow passing `struct`s from the stack to C functions.
+functions or allow passing "struct"s from the stack to C functions.
 Future versions of Scala Native may relax these restrictions making
 this feature obsolete.
 

@@ -32,6 +32,14 @@ lazy val mimaSettings: Seq[Setting[_]] = Seq(
   }
 )
 
+// Sbt 1.4.0 introduces mandatory key lining.
+// The val crossSbtVersions is used in toolsSettings below.
+// toolsSettings are used by nir, test-runner, util, etc.
+// but Sbt 1.4.0 still complains about crossSbtVersions.
+// Disable the linting for it, rather than upsetting the apple cart by
+// deleting the probably essential crossSbeVersions. Minimal change.
+Global / excludeLintKeys += crossSbtVersions
+
 // Common start but individual sub-projects may add or remove scalacOptions.
 // project/build.sbt uses a less stringent set to bootstrap.
 inThisBuild(
