@@ -73,4 +73,20 @@ object Statics {
     case x: java.lang.Float  => floatHash(x.floatValue)
     case _                   => x.hashCode
   }
+
+  /** Used as a marker object to return from PartialFunctions */
+  def pfMarker: AnyRef = PFMarker
+
+  private object PFMarker extends AnyRef
+
+  def releaseFence(): Unit = ()
+
+  /** Just throws an exception.
+   *
+   *  Used by the synthetic `productElement` and `productElementName` methods
+   *  in case classes. Delegating the exception-throwing to this function
+   *  reduces the bytecode size of the case class.
+   */
+  final def ioobe[T](n: Int): T =
+    throw new IndexOutOfBoundsException(String.valueOf(n))
 }
