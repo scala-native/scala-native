@@ -110,6 +110,18 @@ addCommandAlias(
 lazy val publishSnapshot =
   taskKey[Unit]("Publish snapshot to sonatype on every commit to master.")
 
+val collectionsCompatLib = {
+  "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0"
+}
+
+def parallelCollectionsLib(scalaVersion: String): Seq[ModuleID] = {
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, n)) if n >= 13 =>
+      Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0")
+    case _ => Nil
+  }
+}
+
 // to publish plugin (we only need to do this once, it's already done!)
 // follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html
 // then add a new package
@@ -211,12 +223,6 @@ lazy val toolSettings: Seq[Setting[_]] =
     javacOptions ++= Seq("-encoding", "utf8")
   )
 
-lazy val crossCompileCompatSettings = Def.settings(
-  libraryDependencies ++= Seq(
-    "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0"
-  ) ++ parallelCollectionsDependencies(scalaVersion.value)
-)
-
 lazy val buildInfoSettings: Seq[Setting[_]] =
   Def.settings(
     buildInfoPackage := "scala.scalanative.buildinfo",
@@ -234,7 +240,9 @@ lazy val util =
     .in(file("util"))
     .settings(toolSettings)
     .settings(mavenPublishSettings)
-    .settings(crossCompileCompatSettings)
+    .settings(
+      libraryDependencies += collectionsCompatLib
+    )
 
 lazy val nir =
   project
@@ -252,6 +260,7 @@ lazy val nirparser =
     .settings(toolSettings)
     .settings(noPublishSettings)
     .settings(
+      crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies ++= Seq(
         "com.lihaoyi" %% "fastparse"  % "2.3.0",
         "com.lihaoyi" %% "scalaparse" % "2.3.0",
@@ -271,8 +280,9 @@ lazy val tools =
     .settings(
       libraryDependencies ++= Seq(
         scalacheckDep,
-        scalatestDep
-      ),
+        scalatestDep,
+        collectionsCompatLib
+      ) ++ parallelCollectionsLib(scalaVersion.value),
       Test / fork := true,
       Test / javaOptions ++= {
         val nscpluginjar = (nscplugin / Compile / Keys.`package`).value
@@ -292,7 +302,6 @@ lazy val tools =
       Test / parallelExecution := false,
       mimaSettings
     )
-    .settings(crossCompileCompatSettings)
     .dependsOn(nir, util, testingCompilerInterface % Test)
 
 lazy val nscplugin =
@@ -308,11 +317,11 @@ lazy val nscplugin =
       ),
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-        "org.scala-lang" % "scala-reflect"  % scalaVersion.value
+        "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
+        collectionsCompatLib
       ),
       exportJars := true
     )
-    .settings(crossCompileCompatSettings)
     .settings(scalacOptions += "-Xno-patmat-analysis")
 
 lazy val sbtPluginSettings: Seq[Setting[_]] =
@@ -397,8 +406,10 @@ lazy val javalib =
     .in(file("javalib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
-    .settings(crossCompileCompatSettings)
     .settings(
+      libraryDependencies ++= Seq(
+        collectionsCompatLib
+      ) ++ parallelCollectionsLib(scalaVersion.value),
       Compile / doc / sources := Nil, // doc generation currently broken
       // This is required to have incremental compilation to work in javalib.
       // We put our classes on scalac's `javabootclasspath` so that it uses them
@@ -787,6 +798,7 @@ lazy val junitAsyncJVM =
   project
     .in(file("junit-async/jvm"))
     .settings(
+      scalaVersion := sbt10ScalaVersion,
       crossScalaVersions := Seq(sbt10ScalaVersion),
       nameSettings,
       publishArtifact := false
