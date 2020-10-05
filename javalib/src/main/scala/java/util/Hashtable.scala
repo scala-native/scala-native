@@ -24,12 +24,13 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   }
 
   def size(): Int =
-    inner.size
+    inner.size()
 
   def isEmpty(): Boolean =
-    inner.isEmpty
+    inner.isEmpty()
 
-  def keys(): ju.Enumeration[K] = Collections.enumeration(keySet())
+  def keys(): ju.Enumeration[K] =
+    Collections.enumeration(keySet())
 
   def elements(): ju.Enumeration[V] =
     Collections.enumeration(values())
