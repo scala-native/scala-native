@@ -196,8 +196,44 @@ int scalanative_recv(int socket, void *buffer, size_t length, int flags) {
     return recv(socket, buffer, length, flags);
 }
 
+int scalanative_recvfrom(int socket, void *buffer, size_t length, int flags,
+		       struct scalanative_sockaddr *address, socklen_t address_len) {
+    struct sockaddr *converted_address;
+    int convert_result =
+        scalanative_convert_sockaddr(address, &converted_address, &address_len);
+
+    int result;
+
+    if (convert_result == 0) {
+        result = recvfrom(socket, buffer, length, flags, converted_address, address_len);
+    } else {
+        errno = convert_result;
+        result = -1;
+    }
+    free(converted_address);
+    return result;
+}
+
 int scalanative_send(int socket, void *buffer, size_t length, int flags) {
     return send(socket, buffer, length, flags);
+}
+
+int scalanative_sendto(int socket, void *buffer, size_t length, int flags,
+		       struct scalanative_sockaddr *address, socklen_t address_len) {
+    struct sockaddr *converted_address;
+    int convert_result =
+        scalanative_convert_sockaddr(address, &converted_address, &address_len);
+
+    int result;
+
+    if (convert_result == 0) {
+        result = sendto(socket, buffer, length, flags, converted_address, address_len);
+    } else {
+        errno = convert_result;
+        result = -1;
+    }
+    free(converted_address);
+    return result;
 }
 
 int scalanative_shutdown(int socket, int how) { return shutdown(socket, how); }
