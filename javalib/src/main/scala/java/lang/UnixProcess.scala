@@ -146,6 +146,7 @@ object UnixProcess {
         .scalaOps
         .toSeq
         .map(e => s"${e.getKey()}=${e.getValue()}")
+        }
     }
 
     /*
@@ -268,13 +269,14 @@ object UnixProcess {
         case null => "/bin:/usr/bin:/usr/local/bin"
         case p    => p
       }
-      ArraySeq
-        .unsafeWrapArray(path.split(":"))
-        .map { absPath =>
-          new File(s"$absPath/$bin")
-        } collect {
-        case f if f.canExecute() => f.toString
-      }
+
+      path
+        .split(':')
+        .toIndexedSeq
+        .map { absPath => new File(s"$absPath/$bin") }
+        .collect {
+          case f if f.canExecute() => f.toString
+        }
     }
   }
 }
