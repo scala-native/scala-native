@@ -1,6 +1,6 @@
 package java.io
 
-import scala.collection.compat.immutable.{LazyList => SStream}
+import scala.scalanative.compat.StreamsCompat._
 import java.util.stream.{Stream, WrappedScalaStream}
 
 class BufferedReader(in: Reader, sz: Int) extends Reader {

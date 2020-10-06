@@ -1,7 +1,7 @@
 package java.util.stream
 
 import java.util.Iterator
-import scala.collection.compat.immutable.{LazyList => SStream}
+import scalanative.compat.StreamsCompat._
 import java.util.function.{Function, Predicate}
 
 class WrappedScalaStream[T](private val underlying: SStream[T],
@@ -19,7 +19,7 @@ class WrappedScalaStream[T](private val underlying: SStream[T],
 
   override def flatMap[R](
       mapper: Function[_ >: T, _ <: Stream[_ <: R]]): Stream[R] = {
-    val streams: Seq[Stream[R]] = underlying.map(v => mapper(v))
+    val streams = underlying.map(v => mapper(v).asInstanceOf[Stream[R]])
     new CompositeStream(streams, closeHandler)
   }
 
@@ -32,7 +32,7 @@ object WrappedScalaStream {
     val buffer                      = new scala.collection.mutable.ListBuffer[T]()
     override def accept(t: T): Unit = buffer += t
     override def build(): Stream[T] =
-      new WrappedScalaStream(buffer.to(SStream), None)
+      new WrappedScalaStream(buffer.toScalaStream, None)
   }
 
   def scala2javaIterator[T](

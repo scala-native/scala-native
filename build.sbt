@@ -407,9 +407,6 @@ lazy val javalib =
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
     .settings(
-      libraryDependencies ++= Seq(
-        collectionsCompatLib
-      ) ++ parallelCollectionsLib(scalaVersion.value),
       Compile / doc / sources := Nil, // doc generation currently broken
       // This is required to have incremental compilation to work in javalib.
       // We put our classes on scalac's `javabootclasspath` so that it uses them

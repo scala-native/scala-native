@@ -36,7 +36,7 @@ import scalanative.libc._
 import scalanative.posix.{dirent, fcntl, limits, unistd}, dirent._
 import scalanative.posix.sys.stat
 import scalanative.nio.fs.{FileHelpers, UnixException}
-import scala.collection.compat.immutable.{LazyList => SStream}
+import scalanative.compat.StreamsCompat._
 
 import scala.collection.immutable.{Map => SMap, Set => SSet}
 import StandardCopyOption._
@@ -258,7 +258,7 @@ object Files {
 
       matcher.test(p, attributes)
     }
-    new WrappedScalaStream(stream.to(SStream), None)
+    new WrappedScalaStream(stream, None)
   }
 
   def getAttribute(path: Path,
@@ -356,7 +356,7 @@ object Files {
 
   def list(dir: Path): Stream[Path] =
     new WrappedScalaStream(
-      FileHelpers.list(dir.toString, (n, _) => dir.resolve(n)).to(SStream),
+      FileHelpers.list(dir.toString, (n, _) => dir.resolve(n)).toScalaStream,
       None)
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
@@ -578,13 +578,12 @@ object Files {
                    currentDepth: Int,
                    options: Array[FileVisitOption],
                    visited: SSet[Path]): SStream[Path] = {
-
     start #:: {
       if (!isDirectory(start, linkOptsFromFileVisitOpts(options))) SStream.empty
       else {
         FileHelpers
           .list(start.toString, (n, t) => (n, t))
-          .to(SStream)
+          .toScalaStream
           .flatMap {
             case (name: String, tpe)
                 if tpe == DT_LNK() && options.contains(
