@@ -9,7 +9,6 @@ import scala.scalanative.nir._
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
 import scala.tools.nsc.{util => _, _}
-import scala.jdk.CollectionConverters._
 
 abstract class NirGenPhase[G <: NscGlobal](val global: G)
     extends PluginComponent

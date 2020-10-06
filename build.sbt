@@ -13,14 +13,6 @@ def projectName(project: sbt.ResolvedProject): String = {
   convertCamelKebab(project.id)
 }
 
-def parallelCollectionsDependencies(scalaVersion: String): Seq[ModuleID] = {
-  CrossVersion.partialVersion(scalaVersion) match {
-    case Some((2, n)) if n >= 13 =>
-      Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0")
-    case _ => Nil
-  }
-}
-
 // Provide consistent project name pattern.
 lazy val nameSettings: Seq[Setting[_]] = Seq(
   name := projectName(thisProject.value) // Maven <name>
@@ -612,6 +604,7 @@ lazy val tests =
     )
     .settings(noPublishSettings)
     .settings(
+      libraryDependencies += collectionsCompatLib,
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
       // nativeLinkerReporter := LinkerReporter.toFile(
