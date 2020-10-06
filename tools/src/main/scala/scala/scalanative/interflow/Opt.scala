@@ -83,18 +83,22 @@ trait Opt { self: Interflow =>
     val rets = insts.collect {
       case Inst.Ret(v) => v.ty
     }
-    val retty = rets match {
-      case Seq()   => Type.Nothing
-      case Seq(ty) => ty
-      case tys     => Sub.lub(tys, Type.Ref(Global.Top("java.lang.Object")))
-    }
 
-    val resRetty = {
+    // Interflow usually infers better types on our erased type system
+    // than scalac, yet we live it a benefit of the doubt and make sure
+    // that if original return type is more specific, we keep it as is.
+    val origRetty = {
       val Type.Function(_, ty) = origdefn.ty
       ty
     }
 
-    result(resRetty, insts)
+    val retty = rets match {
+      case Seq()   => Type.Nothing
+      case Seq(ty) => ty
+      case tys     => Sub.lub(tys, origRetty)
+    }
+
+    result(retty, insts)
   }
 
   def process(insts: Array[Inst],
