@@ -37,7 +37,7 @@ lazy val mimaSettings: Seq[Setting[_]] = Seq(
 // toolsSettings are used by nir, test-runner, util, etc.
 // but Sbt 1.4.0 still complains about crossSbtVersions.
 // Disable the linting for it, rather than upsetting the apple cart by
-// deleting the probably essential crossSbeVersions. Minimal change.
+// deleting the probably essential crossSbtVersions. Minimal change.
 Global / excludeLintKeys += crossSbtVersions
 
 // Common start but individual sub-projects may add or remove scalacOptions.
