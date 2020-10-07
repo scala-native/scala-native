@@ -39,7 +39,7 @@ trait NirGenName { self: NirGenPhase =>
         genTypeName(sym.moduleClass)
       case _ =>
         val idWithSuffix =
-          if (sym.isModuleClass && !nme.isImplClassName(sym.name)) {
+          if (sym.isModuleClass && !isImplClass(sym)) {
             id + "$"
           } else {
             id

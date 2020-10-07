@@ -3,15 +3,14 @@ package linker
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.codegen.Metadata
 
 class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val unavailable = mutable.Set.empty[Global]
   val loaded      = mutable.Map.empty[Global, mutable.Map[Global, Defn]]
   val enqueued    = mutable.Set.empty[Global]
-  val todo        = mutable.Stack.empty[Global]
+  var todo        = List.empty[Global]
   val done        = mutable.Map.empty[Global, Defn]
-  val stack       = mutable.Stack.empty[Global]
+  var stack       = List.empty[Global]
   val links       = mutable.Set.empty[Attr.Link]
   val infos       = mutable.Map.empty[Global, Info]
   val from        = mutable.Map.empty[Global, Global]
@@ -27,7 +26,10 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     cleanup()
 
     val defns = mutable.UnrolledBuffer.empty[Defn]
-    defns ++= done.valuesIterator
+
+    // drop the null values that have been introduced
+    // in reachUnavailable
+    defns ++= done.valuesIterator.filter(_ != null)
 
     new Result(infos,
                entries,
@@ -41,18 +43,27 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def cleanup(): Unit = {
     // Remove all unreachable methods from the
-    // responds map of every class. Optimizer and
-    // codegen may never increase reachability past
-    // what's known now, so it's safe to do this.
+    // responds and defaultResponds of every class.
+    // Optimizer and codegen may never increase reachability
+    // past what's known now, so it's safe to do this.
     infos.values.foreach {
       case cls: Class =>
-        val entries = cls.responds.toArray
-        entries.foreach {
+        val responds = cls.responds.toArray
+        responds.foreach {
           case (sig, name) =>
             if (!done.contains(name)) {
               cls.responds -= sig
             }
         }
+
+        val defaultResponds = cls.defaultResponds.toArray
+        defaultResponds.foreach {
+          case (sig, name) =>
+            if (!done.contains(name)) {
+              cls.defaultResponds -= sig
+            }
+        }
+
       case _ =>
         ()
     }
@@ -76,14 +87,15 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def process(): Unit =
     while (todo.nonEmpty) {
-      val name = todo.pop()
+      val name = todo.head
+      todo = todo.tail
       if (!done.contains(name)) {
         reachDefn(name)
       }
     }
 
   def reachDefn(name: Global): Unit = {
-    stack.push(name)
+    stack ::= name
     lookup(name).fold[Unit] {
       reachUnavailable(name)
     } { defn =>
@@ -93,7 +105,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         reachDefn(defn)
       }
     }
-    stack.pop()
+    stack = stack.tail
   }
 
   def reachDefn(defn: Defn): Unit = {
@@ -156,7 +168,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     if (!enqueued.contains(name) && name.ne(Global.None)) {
       enqueued += name
       from(name) = if (stack.isEmpty) Global.None else stack.head
-      todo.push(name)
+      todo ::= name
     }
 
   def reachGlobalNow(name: Global): Unit =
@@ -183,11 +195,31 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
             ()
         }
       case info: Trait =>
+        // Register given trait as a subtrait of
+        // all its transitive parent traits.
         def loopTraits(traitInfo: Trait): Unit = {
           traitInfo.subtraits += info
           traitInfo.traits.foreach(loopTraits)
         }
         info.traits.foreach(loopTraits)
+
+        // Initialize default method implementations that
+        // can be resolved on a given trait. It includes both
+        // all of its parent default methods and any of the
+        // non-abstract method declared directly in this trait.
+        info.linearized.foreach {
+          case parentTraitInfo: Trait =>
+            info.responds ++= parentTraitInfo.responds
+          case _ =>
+            util.unreachable
+        }
+        loaded(info.name).foreach {
+          case (_, defn: Defn.Define) =>
+            val Global.Member(_, sig) = defn.name
+            info.responds(sig) = defn.name
+          case _ =>
+            ()
+        }
       case info: Class =>
         // Register given class as a subclass of all
         // transitive parents and as an implementation
@@ -217,7 +249,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
           case (_, defn: Defn.Define) =>
             val Global.Member(_, sig) = defn.name
             def update(sig: Sig): Unit = {
-              info.responds(sig) = resolve(info, sig).get
+              info.responds(sig) = lookup(info, sig).get
             }
             sig match {
               case Rt.JavaEqualsSig =>
@@ -232,6 +264,16 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
               case _ =>
                 ()
             }
+          case _ =>
+            ()
+        }
+
+        // Initialize the scope of the default methods that can
+        // be used as a fallback if no method implementation is given
+        // in a given class.
+        info.linearized.foreach {
+          case traitInfo: Trait =>
+            info.defaultResponds ++= traitInfo.responds
           case _ =>
             ()
         }
@@ -631,7 +673,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     }
   }
 
-  def resolve(cls: Class, sig: Sig): Option[Global] = {
+  def lookup(cls: Class, sig: Sig): Option[Global] = {
     assert(loaded.contains(cls.name))
 
     def lookupSig(cls: Class, sig: Sig): Option[Global] = {

@@ -2,10 +2,7 @@ import java.io.File.pathSeparator
 import scala.collection.mutable
 import scala.util.Try
 
-val sbt10Version          = "1.1.6" // minimum version
-val sbt10ScalaVersion     = "2.12.11"
-val libScalaVersion       = "2.11.12"
-val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
+import build.ScalaVersions._
 
 // Convert "SomeName" to "some-name".
 def convertCamelKebab(name: String): String = {
@@ -38,7 +35,8 @@ inThisBuild(
   Def.settings(
     organization := "org.scala-native", // Maven <groupId>
     version := nativeVersion,           // Maven <version>
-    scalaVersion := libScalaVersion,
+    scalaVersion := scala212,
+    crossScalaVersions := libCrossScalaVersions,
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",
@@ -48,7 +46,8 @@ inThisBuild(
       "-unchecked",
       "-Xfatal-warnings"
     )
-  ))
+  )
+)
 
 addCommandAlias(
   "test-all",
@@ -187,8 +186,20 @@ lazy val toolSettings: Seq[Setting[_]] =
   Def.settings(
     sbtVersion := sbt10Version,
     crossSbtVersions := List(sbt10Version),
-    scalaVersion := sbt10ScalaVersion,
+    crossScalaVersions := Seq(sbt10ScalaVersion),
     javacOptions ++= Seq("-encoding", "utf8")
+  )
+
+lazy val buildInfoSettings: Seq[Setting[_]] =
+  Def.settings(
+    buildInfoPackage := "scala.scalanative.buildinfo",
+    buildInfoObject := "ScalaNativeBuildInfo",
+    buildInfoKeys := Seq[BuildInfoKey](
+      version,
+      sbtVersion,
+      scalaVersion,
+      "nativeScalaVersion" -> (nativelib / scalaVersion).value
+    )
   )
 
 lazy val util =
@@ -227,6 +238,8 @@ lazy val tools =
     .in(file("tools"))
     .settings(toolSettings)
     .settings(mavenPublishSettings)
+    .enablePlugins(BuildInfoPlugin)
+    .settings(buildInfoSettings)
     .settings(
       libraryDependencies ++= Seq(
         scalacheckDep,
@@ -280,8 +293,9 @@ lazy val sbtPluginSettings: Seq[Setting[_]] =
         scriptedLaunchOpts.value ++
           Seq("-Xmx1024M",
               "-XX:MaxMetaspaceSize=256M",
-              "-Dplugin.version=" + version.value) ++
-          ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=${home}").toSeq
+              "-Dplugin.version=" + version.value,
+              "-Dscala.version=" + (nativelib / scalaVersion).value) ++
+          ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq
       }
     )
 
@@ -291,7 +305,7 @@ lazy val sbtScalaNative =
     .enablePlugins(SbtPlugin)
     .settings(sbtPluginSettings)
     .settings(
-      crossScalaVersions := libCrossScalaVersions,
+      crossScalaVersions := Seq(sbt10ScalaVersion),
       addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
       // publish the other projects before running scripted tests.
@@ -395,14 +409,15 @@ lazy val scalalib =
     .in(file("scalalib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(
-      // This build uses libScalaVersion, which is currently 2.11.12
-      // to compile what appears to be 2.11.0 sources. This yields 114
+      // This build uses Scala 2.11 version 2.11.12 to compile
+      // what appears to be 2.11.0 sources. This yields 114
       // deprecations. Editing those sources is not an option (long story),
       // so do not spend compile time looking for the deprecations.
       // Keep the log file clean so that real issues stand out.
-      // This futzing can probably removed for scala >= 2.12.
       scalacOptions -= "-deprecation",
-      scalacOptions += "-deprecation:false"
+      scalacOptions += "-deprecation:false",
+      // The option below is needed since Scala 2.12.12.
+      scalacOptions += "-language:postfixOps"
     )
     .settings(mavenPublishSettings)
     .settings(
@@ -546,7 +561,8 @@ lazy val allCoreLibs: Project =
 lazy val tests =
   project
     .in(file("unit-tests"))
-    .enablePlugins(MyScalaNativePlugin)
+    .enablePlugins(MyScalaNativePlugin, BuildInfoPlugin)
+    .settings(buildInfoSettings)
     .settings(
       scalacOptions -= "-deprecation",
       scalacOptions += "-deprecation:false"
@@ -615,7 +631,7 @@ lazy val testingCompiler =
     )
     .dependsOn(testingCompilerInterface)
 
-lazy val testInterfaceCommonSourcesSettings = Seq(
+lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = Seq(
   unmanagedSourceDirectories in Compile += baseDirectory.value.getParentFile / "test-interface-common/src/main/scala",
   unmanagedSourceDirectories in Test += baseDirectory.value.getParentFile / "test-interface-common/src/test/scala"
 )
@@ -647,7 +663,6 @@ lazy val testRunner =
     .settings(mavenPublishSettings)
     .settings(testInterfaceCommonSourcesSettings)
     .settings(
-      crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies ++= Seq(
         "org.scala-sbt" % "test-interface"  % "1.0",
         "com.novocode"  % "junit-interface" % "0.11" % "test"
@@ -716,7 +731,7 @@ lazy val junitTestOutputsJVM =
     .in(file("junit-test/output-jvm"))
     .settings(
       commonJUnitTestOutputsSettings,
-      scalaVersion := sbt10ScalaVersion,
+      crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.11" % "test"
       )
@@ -737,7 +752,7 @@ lazy val junitAsyncJVM =
   project
     .in(file("junit-async/jvm"))
     .settings(
-      scalaVersion := sbt10ScalaVersion,
+      crossScalaVersions := Seq(sbt10ScalaVersion),
       nameSettings,
       publishArtifact := false
     )

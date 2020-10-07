@@ -68,7 +68,7 @@ object Generate {
       val result           = Val.Local(fresh(), Type.Bool)
 
       buf += Defn.Define(
-        Attrs(inline = Attr.AlwaysInline),
+        Attrs(inlineHint = Attr.AlwaysInline),
         ClassHasTraitName,
         ClassHasTraitSig,
         Seq(
@@ -99,7 +99,7 @@ object Generate {
       val result          = Val.Local(fresh(), Type.Bool)
 
       buf += Defn.Define(
-        Attrs(inline = Attr.AlwaysInline),
+        Attrs(inlineHint = Attr.AlwaysInline),
         TraitHasTraitName,
         TraitHasTraitSig,
         Seq(
@@ -223,7 +223,7 @@ object Generate {
             val loadName = name.member(Sig.Generated("load"))
             val loadSig  = Type.Function(Seq(), clsTy)
             val loadDefn = Defn.Define(
-              Attrs(inline = Attr.NoInline),
+              Attrs(inlineHint = Attr.NoInline),
               loadName,
               loadSig,
               Seq(

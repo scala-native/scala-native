@@ -2,6 +2,7 @@ sudo: required
 
 scala:
   - "2.11.12"
+  - "2.12.12"
 
 os: linux
 dist: trusty
@@ -36,7 +37,7 @@ script:
   - java -version
   - if [ "$MODE" == "source-checks" ]; then ./scripts/source-checks; fi
   - if [ "$MODE" == "test-tools" ]; then
-      sbt "-no-colors" "-J-Xmx3G" test-tools;
+      sbt "++ $TRAVIS_SCALA_VERSION -v" "-no-colors" "-J-Xmx3G" test-tools;
     fi
   - if [ "$MODE" == "test-runtime" ]; then
       ./ci-docker/load-cached-images.sh

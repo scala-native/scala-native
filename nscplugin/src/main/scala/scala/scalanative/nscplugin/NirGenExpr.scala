@@ -15,8 +15,8 @@ trait NirGenExpr { self: NirGenPhase =>
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
 
-  final case class ValTree(value: nir.Val)    extends Tree
-  final case class ContTree(f: () => nir.Val) extends Tree
+  sealed case class ValTree(value: nir.Val)    extends Tree
+  sealed case class ContTree(f: () => nir.Val) extends Tree
 
   class FixupBuffer(implicit fresh: Fresh) extends nir.Buffer {
     private var labeled = false
@@ -549,14 +549,14 @@ trait NirGenExpr { self: NirGenPhase =>
 
       lhsp match {
         case sel @ Select(qualp, _) =>
-          val ty   = genType(sel.tpe)
           val qual = genExpr(qualp)
           val rhs  = genExpr(rhsp)
           val name = genFieldName(sel.symbol)
           if (sel.symbol.owner.isExternModule) {
-            val externTy = genExternType(sel.tpe)
+            val externTy = genExternType(sel.symbol.tpe)
             genStoreExtern(externTy, sel.symbol, rhs)
           } else {
+            val ty = genType(sel.symbol.tpe)
             buf.fieldstore(ty, qual, name, rhs, unwind)
           }
 
@@ -575,8 +575,228 @@ trait NirGenExpr { self: NirGenPhase =>
         genExpr(expr)
     }
 
-    def genFunction(tree: Function): Val =
-      unsupported(tree)
+    // On Scala 2.12 (and on 2.11 with -Ydelambdafy:method), closures are preserved
+    // until the backend to be compiled using LambdaMetaFactory.
+    //
+    // Scala Native does not have any special treatment for closures.
+    // We reimplement the anonymous class generation which was originally used on
+    // Scala 2.11 and earlier.
+    //
+    // Each anonymous function gets a generated class for it,
+    // similarly to closure encoding on Scala 2.11 and earlier:
+    //
+    //   class AnonFunX extends java.lang.Object with FunctionalInterface {
+    //     var capture1: T1
+    //     ...
+    //     var captureN: TN
+    //     def <init>(this, v1: T1, ..., vN: TN): Unit = {
+    //       java.lang.Object.<init>(this)
+    //       this.capture1 = v1
+    //       ...
+    //       this.captureN = vN
+    //     }
+    //     def samMethod(param1: Tp1, ..., paramK: TpK): Tret = {
+    //       EnclsoingClass.this.staticMethod(param1, ..., paramK, this.capture1, ..., this.captureN)
+    //     }
+    //   }
+    //
+    // Bridges might require multiple samMethod variants to be created.
+    def genFunction(tree: Function): Val = {
+      val Function(paramTrees,
+                   callTree @ Apply(targetTree @ Select(_, _), functionArgs)) = tree
+
+      val funSym    = tree.tpe.typeSymbolDirect
+      val paramSyms = paramTrees.map(_.symbol)
+      val captureSyms =
+        global.delambdafy.FreeVarTraverser.freeVarsOf(tree).toSeq
+
+      val statBuf = curStatBuffer.get
+
+      // Generate an anonymous class definition.
+
+      val suffix    = "$$Lambda$" + curClassFresh.get.apply().id
+      val anonName  = nir.Global.Top(genName(curClassSym).top.id + suffix)
+      val traitName = genName(funSym)
+
+      statBuf += nir.Defn.Class(Attrs.None, anonName, Some(nir.Rt.Object.name), Seq(traitName))
+
+      // Generate fields to store the captures.
+
+      // enclosing class `this` reference + capture symbols
+      val captureSymsWithEnclThis = curClassSym.get +: captureSyms
+
+      val captureTypes = captureSymsWithEnclThis.map(sym => genType(sym.tpe))
+      val captureNames =
+        captureSymsWithEnclThis.zipWithIndex.map {
+          case (sym, idx) =>
+            val name = anonName.member(nir.Sig.Field("capture" + idx))
+            val ty   = genType(sym.tpe)
+            statBuf += nir.Defn.Var(Attrs.None, name, ty, Val.Zero(ty))
+            name
+        }
+
+      // Generate an anonymous class constructor that initializes all the fields.
+
+      val ctorName = anonName.member(Sig.Ctor(captureTypes))
+      val ctorTy   = nir.Type.Function(Type.Ref(anonName) +: captureTypes, Type.Unit)
+      val ctorBody = {
+        val fresh          = Fresh()
+        val buf            = new nir.Buffer()(fresh)
+        val self           = Val.Local(fresh(), Type.Ref(anonName))
+        val captureFormals = captureTypes.map { ty => Val.Local(fresh(), ty) }
+        buf.label(fresh(), self +: captureFormals)
+        val superTy   = nir.Type.Function(Seq(Rt.Object), Type.Unit)
+        val superName = Rt.Object.name.member(Sig.Ctor(Seq()))
+        val superCtor = Val.Global(superName, Type.Ptr)
+        buf.call(superTy, superCtor, Seq(self), Next.None)
+        captureNames.zip(captureFormals).foreach {
+          case (name, capture) =>
+            buf.fieldstore(capture.ty, self, name, capture, Next.None)
+        }
+        buf.ret(Val.Unit)
+        buf.toSeq
+      }
+
+      statBuf += Defn.Define(Attrs.None, ctorName, ctorTy, ctorBody)
+
+      // Generate methods that implement SAM interface each of the required signatures.
+
+      functionMethodSymbols(tree).foreach { funSym =>
+        val funSig  = genName(funSym).asInstanceOf[nir.Global.Member].sig
+        val funName = anonName.member(funSig)
+
+        val selfType = Type.Ref(anonName)
+        val Sig.Method(_, sigTypes :+ retType, _) = funSig.unmangled
+        val paramTypes = selfType +: sigTypes
+
+        val bodyFresh = Fresh()
+        val bodyEnv   = new MethodEnv(fresh)
+
+        val body = scoped(
+          curMethodEnv     := bodyEnv,
+          curMethodInfo    := (new CollectMethodInfo).collect(EmptyTree),
+          curFresh         := bodyFresh,
+          curUnwindHandler := None
+        ) {
+          val fresh  = Fresh()
+          val buf    = new ExprBuffer()(fresh)
+          val self   = Val.Local(fresh(), selfType)
+          val params = sigTypes.map { ty => Val.Local(fresh(), ty) }
+          buf.label(fresh(), self +: params)
+
+          // At this point, the type parameter symbols are all Objects.
+          // We need to transform them, so that their type conforms to
+          // what the apply method expects:
+          // - values that can be unboxed, are unboxed
+          // - otherwise, the value is cast to the appropriate type
+          paramSyms.zip(functionArgs.takeRight(sigTypes.length)).zip(params).foreach {
+            case ((sym, arg), value) =>
+              val unboxedOrCast = {
+                val unboxed = buf.unboxValue(sym.tpe, partial = true, value)
+                if (unboxed == value) // no need to or cannot unbox, we should cast
+                  buf.genCastOp(genType(sym.tpe), genType(arg.tpe), value)
+                else
+                  unboxed
+              }
+              curMethodEnv.enter(sym, unboxedOrCast)
+          }
+
+          captureSymsWithEnclThis.zip(captureNames).foreach {
+            case (sym, name) =>
+              val value = buf.fieldload(genType(sym.tpe), self, name, Next.None)
+              curMethodEnv.enter(sym, value)
+          }
+
+          val sym      = targetTree.symbol
+          val method   = Val.Global(genMethodName(sym), Type.Ptr)
+          val values   = buf.genMethodArgs(sym, Ident(curClassSym.get) +: functionArgs)
+          val sig      = genMethodSig(sym)
+          val res      = buf.call(sig, method, values, Next.None)
+
+          // Get the result type of the lambda after erasure, when entering posterasure.
+          // This allows to recover the correct type in case value classes are involved.
+          // In that case, the type will be an ErasedValueType.
+          val resTyEnteringPosterasure = enteringPhase(currentRun.posterasurePhase) {
+            targetTree.symbol.tpe.resultType
+          }
+
+          val boxedRes = ensureBoxed(res, resTyEnteringPosterasure, callTree.tpe)(buf)
+          buf.ret(boxedRes)
+          buf.toSeq
+        }
+
+        statBuf += Defn.Define(Attrs.None, funName, Type.Function(paramTypes, retType), body)
+      }
+
+      // Generate call site of the closure allocation to
+      // instantiante the anonymous class and call its constructor
+      // passing all of the captures as arguments.
+
+      val alloc       = buf.classalloc(anonName, unwind)
+      val captureVals = curMethodThis.get.get +: captureSyms.map { sym => genExpr(Ident(sym)) }
+      buf.call(ctorTy, Val.Global(ctorName, Type.Ptr), alloc +: captureVals, unwind)
+      alloc
+    }
+
+    def ensureBoxed(value: Val, tpeEnteringPosterasure: Type, targetTpe: Type)(
+        implicit buf: ExprBuffer): Val = {
+      tpeEnteringPosterasure match {
+        case tpe if isPrimitiveValueType(tpe) =>
+          buf.boxValue(targetTpe, value)
+
+        case tpe: ErasedValueType =>
+          val boxedClass = tpe.valueClazz
+          val ctorName = genMethodName(boxedClass.primaryConstructor)
+          val ctorSig = genMethodSig(boxedClass.primaryConstructor)
+
+          val alloc = buf.classalloc(Global.Top(boxedClass.fullName), unwind)
+          val ctor = buf.method(alloc, ctorName.asInstanceOf[nir.Global.Member].sig, unwind)
+          buf.call(ctorSig, ctor, Seq(alloc, value), unwind)
+
+          alloc
+
+        case _ =>
+          value
+      }
+    }
+
+    // Compute a set of method symbols that SAM-generated class needs to implement.
+    def functionMethodSymbols(tree: Function): Seq[Symbol] = {
+      val funSym = tree.tpe.typeSymbolDirect
+
+      if (isFunctionSymbol(funSym)) {
+        unspecializedSymbol(funSym).info.members.filter(_.name.toString == "apply").toSeq
+      } else {
+        val samInfo = tree.attachments.get[SAMFunctionCompat].getOrElse {
+          println(tree.attachments)
+          abort(s"Cannot find the SAMFunction attachment on $tree at ${tree.pos}")
+        }
+
+        val samsBuilder    = List.newBuilder[Symbol]
+        val seenSignatures = mutable.Set.empty[Sig]
+
+        val synthCls = samInfo.synthCls
+        // On Scala < 2.12.5, `synthCls` is polyfilled to `NoSymbol`
+        // and hence `samBridges` will always be empty (scala/bug#10512).
+        // Since we only support Scala 2.12.12 and up,
+        // we assert that this is not the case.
+        assert(synthCls != NoSymbol)
+        val samBridges = {
+          import scala.reflect.internal.Flags.BRIDGE
+          synthCls.info.findMembers(excludedFlags = 0L, requiredFlags = BRIDGE).toList
+        }
+
+        for (sam <- samInfo.sam :: samBridges) {
+          // Remove duplicates, e.g., if we override the same method declared
+          // in two super traits.
+          val sig = genName(sam).asInstanceOf[Global.Member].sig
+          if (seenSignatures.add(sig))
+            samsBuilder += sam
+        }
+
+        samsBuilder.result()
+      }
+    }
 
     def genApplyDynamic(app: ApplyDynamic): Val = {
       val ApplyDynamic(obj, args) = app
@@ -745,7 +965,8 @@ trait NirGenExpr { self: NirGenPhase =>
       } else if (isCoercion(code)) {
         genCoercion(app, receiver, code)
       } else if (code == SYNCHRONIZED) {
-        genSynchronized(app)
+        val Apply(Select(receiverp, _), List(argp)) = app
+        genSynchronized(receiverp, argp)
       } else if (code == STACKALLOC) {
         genStackalloc(app)
       } else if (code == CQUOTE) {
@@ -1112,7 +1333,7 @@ trait NirGenExpr { self: NirGenPhase =>
                              BoxUnsignedMethod(st.sym),
                              Seq(ValTree(value)))
       case _ =>
-        if (genPrimCode(st.sym) == 'O') {
+        if (genPrimCode(st) == 'O') {
           value
         } else {
           genApplyBox(st, ValTree(value))
@@ -1310,9 +1531,7 @@ trait NirGenExpr { self: NirGenPhase =>
         buf.bin(bin, ty, left, right, unwind)
     }
 
-    def genSynchronized(app: Apply): Val = {
-      val Apply(Select(receiverp, _), List(argp)) = app
-
+    def genSynchronized(receiverp: Tree, argp: Tree): Val = {
       val monitor =
         genApplyModuleMethod(RuntimeModule, GetMonitorMethod, Seq(receiverp))
       val enter = genApplyMethod(RuntimeMonitorEnterMethod,
@@ -1444,7 +1663,7 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genApplyTypeApply(app: Apply): Val = {
-      val Apply(TypeApply(fun @ Select(receiverp, _), targs), _) = app
+      val Apply(TypeApply(fun @ Select(receiverp, _), targs), argsp) = app
 
       val fromty = genType(receiverp.tpe)
       val toty   = genType(targs.head.tpe)
@@ -1478,6 +1697,10 @@ trait NirGenExpr { self: NirGenPhase =>
               val cast = buf.as(boxty, boxed, unwind)
               unboxValue(app.tpe, partial = true, cast)
           }
+
+        case Object_synchronized =>
+          assert(argsp.size == 1)
+          genSynchronized(ValTree(boxed), argsp.head)
       }
     }
 
@@ -1531,9 +1754,6 @@ trait NirGenExpr { self: NirGenPhase =>
       val self = genModule(module)
       genApplyMethod(method, statically = true, self, args)
     }
-
-    def isImplClass(sym: Symbol): Boolean =
-      sym.isModuleClass && nme.isImplClassName(sym.name)
 
     def genApplyMethod(sym: Symbol,
                       statically: Boolean,
@@ -1624,7 +1844,7 @@ trait NirGenExpr { self: NirGenPhase =>
           buf.method(self, sig, unwind)
         }
       val values =
-        if (owner.isExternModule || owner.isImplClass)
+        if (owner.isExternModule || isImplClass(owner))
           args
         else
           self +: args

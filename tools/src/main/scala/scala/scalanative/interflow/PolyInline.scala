@@ -115,7 +115,13 @@ trait PolyInline { self: Interflow =>
         emit.jump(Next.Label(mergeLabel, Seq(res)))
     }
 
-    val result = Val.Local(fresh(), Sub.lub(rettys))
+    // !!! CAUTION: j.l.Object is provided here as the most generic upper bound type.
+    // !!! In case `tys` have more than one common super-type and a type which is more
+    // !!! specific than j.l.Object is expected as the return type, then Sub.lub may
+    // !!! calculate the wrong type.
+    val result = Val.Local(
+      fresh(),
+      Sub.lub(rettys, Type.Ref(Global.Top("java.lang.Object"))))
     emit.label(mergeLabel, Seq(result))
 
     result

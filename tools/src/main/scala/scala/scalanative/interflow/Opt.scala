@@ -62,7 +62,7 @@ trait Opt { self: Interflow =>
     val blocks =
       try {
         pushBlockFresh(fresh)
-        process(origdefn.insts.toArray, args, state, inline = false)
+        process(origdefn.insts.toArray, args, state, doInline = false)
       } finally {
         popBlockFresh()
       }
@@ -83,11 +83,6 @@ trait Opt { self: Interflow =>
     val rets = insts.collect {
       case Inst.Ret(v) => v.ty
     }
-    val retty = rets match {
-      case Seq()   => Type.Nothing
-      case Seq(ty) => ty
-      case tys     => Sub.lub(tys)
-    }
 
     // Interflow usually infers better types on our erased type system
     // than scalac, yet we live it a benefit of the doubt and make sure
@@ -96,24 +91,22 @@ trait Opt { self: Interflow =>
       val Type.Function(_, ty) = origdefn.ty
       ty
     }
-    val resRetty =
-      if (!Sub.is(retty, origRetty)) {
-        log(
-          s"inferred type ${retty.show} is less precise than ${origRetty.show}")
-        origRetty
-      } else {
-        retty
-      }
 
-    result(resRetty, insts)
+    val retty = rets match {
+      case Seq()   => Type.Nothing
+      case Seq(ty) => ty
+      case tys     => Sub.lub(tys, origRetty)
+    }
+
+    result(retty, insts)
   }
 
   def process(insts: Array[Inst],
               args: Seq[Val],
               state: State,
-              inline: Boolean): Seq[MergeBlock] = {
+              doInline: Boolean): Seq[MergeBlock] = {
     val processor =
-      MergeProcessor.fromEntry(insts, args, state, inline, blockFresh, this)
+      MergeProcessor.fromEntry(insts, args, state, doInline, blockFresh, this)
 
     try {
       pushMergeProcessor(processor)
@@ -125,6 +118,6 @@ trait Opt { self: Interflow =>
       popMergeProcessor()
     }
 
-    processor.toSeq()
+    processor.toSeq
   }
 }

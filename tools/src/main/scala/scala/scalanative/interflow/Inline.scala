@@ -35,11 +35,11 @@ trait Inline { self: Interflow =>
         val noOpt =
           defn.attrs.opt == Attr.NoOpt
         val noInline =
-          defn.attrs.inline == Attr.NoInline
+          defn.attrs.inlineHint == Attr.NoInline
         val alwaysInline =
-          defn.attrs.inline == Attr.AlwaysInline
+          defn.attrs.inlineHint == Attr.AlwaysInline
         val hintInline =
-          defn.attrs.inline == Attr.InlineHint
+          defn.attrs.inlineHint == Attr.InlineHint
         val isRecursive =
           hasContext(s"inlining ${name.show}")
         val isBlacklisted =
@@ -140,7 +140,7 @@ trait Inline { self: Interflow =>
 
       val inlineArgs  = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
-      val blocks      = process(inlineInsts, inlineArgs, state, inline = true)
+      val blocks      = process(inlineInsts, inlineArgs, state, doInline = true)
 
       val emit = new nir.Buffer()(state.fresh)
 
