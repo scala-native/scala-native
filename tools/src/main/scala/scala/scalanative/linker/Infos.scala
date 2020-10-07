@@ -7,7 +7,7 @@ import scalanative.nir._
 sealed abstract class Info {
   def attrs: Attrs
   def name: Global
-  implicit def position: Position
+  def position: Position
 }
 
 sealed abstract class ScopeInfo extends Info {

@@ -400,7 +400,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachVar(defn: Defn.Var): Unit = {
     val Defn.Var(attrs, name, ty, rhs) = defn
-    import defn.pos
+    implicit val pos: nir.Position     = defn.pos
     newInfo(
       new Field(attrs,
                 scopeInfoOrUnavailable(name.top),
@@ -415,7 +415,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachConst(defn: Defn.Const): Unit = {
     val Defn.Const(attrs, name, ty, rhs) = defn
-    import defn.pos
+    implicit val pos: nir.Position       = defn.pos
     newInfo(
       new Field(attrs,
                 scopeInfoOrUnavailable(name.top),
@@ -430,7 +430,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachDeclare(defn: Defn.Declare): Unit = {
     val Defn.Declare(attrs, name, ty) = defn
-    import defn.pos
+    implicit val pos: nir.Position    = defn.pos
     newInfo(
       new Method(attrs, scopeInfoOrUnavailable(name.top), name, ty, Array()))
     reachAttrs(attrs)
@@ -439,7 +439,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachDefine(defn: Defn.Define): Unit = {
     val Defn.Define(attrs, name, ty, insts) = defn
-    import defn.pos
+    implicit val pos: nir.Position          = defn.pos
     newInfo(
       new Method(attrs,
                  scopeInfoOrUnavailable(name.top),
@@ -453,14 +453,14 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachTrait(defn: Defn.Trait): Unit = {
     val Defn.Trait(attrs, name, traits) = defn
-    import defn.pos
+    implicit val pos: nir.Position      = defn.pos
     newInfo(new Trait(attrs, name, traits.flatMap(traitInfo)))
     reachAttrs(attrs)
   }
 
   def reachClass(defn: Defn.Class): Unit = {
     val Defn.Class(attrs, name, parent, traits) = defn
-    import defn.pos
+    implicit val pos: nir.Position              = defn.pos
     newInfo(
       new Class(attrs,
                 name,
@@ -472,7 +472,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachModule(defn: Defn.Module): Unit = {
     val Defn.Module(attrs, name, parent, traits) = defn
-    import defn.pos
+    implicit val pos: nir.Position               = defn.pos
     newInfo(
       new Class(attrs,
                 name,
