@@ -1,6 +1,7 @@
 import java.io.File.pathSeparator
 import scala.collection.mutable
 import scala.util.Try
+
 import build.ScalaVersions._
 
 // Convert "SomeName" to "some-name".
@@ -210,7 +211,6 @@ lazy val toolSettings: Seq[Setting[_]] =
   Def.settings(
     sbtVersion := sbt10Version,
     crossSbtVersions := List(sbt10Version),
-    scalaVersion := sbt10ScalaVersion,
     crossScalaVersions := Seq(sbt10ScalaVersion),
     javacOptions ++= Seq("-encoding", "utf8")
   )
@@ -252,7 +252,6 @@ lazy val nirparser =
     .settings(toolSettings)
     .settings(noPublishSettings)
     .settings(
-      crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies ++= Seq(
         "com.lihaoyi" %% "fastparse"  % "1.0.0",
         "com.lihaoyi" %% "scalaparse" % "1.0.0",
@@ -441,7 +440,7 @@ lazy val scalalib =
     .in(file("scalalib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(
-      // This build uses Scala 2.11 version 2.11.12 to compile
+      // This build uses Scala 2.11 to compile
       // what appears to be 2.11.0 sources. This yields 114
       // deprecations. Editing those sources is not an option (long story),
       // so do not spend compile time looking for the deprecations.
@@ -605,10 +604,6 @@ lazy val tests =
     .settings(noPublishSettings)
     .settings(
       libraryDependencies += collectionsCompatLib,
-      // nativeOptimizerReporter := OptimizerReporter.toDirectory(
-      //   crossTarget.value),
-      // nativeLinkerReporter := LinkerReporter.toFile(
-      //   target.value / "out.dot"),
       testFrameworks ++= Seq(
         new TestFramework("tests.NativeFramework"),
         new TestFramework("com.novocode.junit.JUnitFramework")
@@ -638,10 +633,6 @@ lazy val sandbox =
     .enablePlugins(MyScalaNativePlugin)
     .settings(scalacOptions -= "-Xfatal-warnings")
     .settings(noPublishSettings)
-    .settings(
-      // nativeOptimizerReporter := OptimizerReporter.toDirectory(
-      //   crossTarget.value),
-    )
     .dependsOn(nscplugin % "plugin", allCoreLibs, testInterface % Test)
 
 lazy val testingCompilerInterface =
@@ -753,7 +744,8 @@ lazy val junitTestOutputsNative =
       Test / scalacOptions ++= {
         val jar = (junitPlugin / Compile / packageBin).value
         Seq(s"-Xplugin:$jar")
-      }
+      },
+      libraryDependencies += collectionsCompatLib
     )
     .dependsOn(
       nscplugin        % "plugin",
