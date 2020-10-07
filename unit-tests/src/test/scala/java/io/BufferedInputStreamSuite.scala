@@ -38,6 +38,17 @@ object BufferedInputStreamSuite extends tests.Suite {
 
   }
 
+  test("read value bigger than 0x7f") {
+    val inputArray = Array[Byte](0x85.toByte)
+
+    val arrayIn = new ByteArrayInputStream(inputArray)
+
+    val in = new BufferedInputStream(arrayIn)
+
+    assert(in.read() == 0x85)
+    assert(in.read() == -1)
+  }
+
   test("read to closed buffer throws IOException") {
 
     val inputArray =
