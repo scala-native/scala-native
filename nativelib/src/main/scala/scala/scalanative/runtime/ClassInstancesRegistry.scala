@@ -1,13 +1,13 @@
-package java.lang
+package scala.scalanative.runtime
 
 /** Registry for created instances of java.lang.Class
  * Its only purpose is to prevent the GC from collecting instances of java.lang.Class
  **/
-private[lang] object ClassInstancesRegistry {
-  type Bucket = Array[_Class[_]]
+private[runtime] object ClassInstancesRegistry {
+  type Bucket = scala.Array[_Class[_]]
 
   private final val BucketSize = 256
-  private var buckets          = new Array[Bucket](2)
+  private var buckets          = new scala.Array[Bucket](2)
   private var lastId           = -1
   private var bucketId         = -1
   private var itemId           = -1
@@ -22,7 +22,7 @@ private[lang] object ClassInstancesRegistry {
     nextIds()
     if (bucketId >= buckets.length) {
       val newSize: Int = buckets.length * 2
-      val newArr       = new Array[Bucket](newSize)
+      val newArr       = new scala.Array[Bucket](newSize)
       System.arraycopy(buckets, 0, newArr, 0, buckets.length)
       buckets = newArr
     }

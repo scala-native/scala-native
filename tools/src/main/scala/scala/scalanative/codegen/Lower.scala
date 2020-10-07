@@ -185,8 +185,9 @@ object Lower {
     }
 
     def genClassOf(buf: Buffer, node: ScopeInfo): Val = {
-      val tpePtr = Val.Const(rtti(node).const)
-      buf.call(JavaGetClassSig, JavaGetClass, Seq(tpePtr), Next.None)
+      val tpePtr = rtti(node).const
+      val recv   = Val.Global(Rt.Runtime.name, Rt.Runtime)
+      buf.call(toClassSig, toClass, Seq(recv, tpePtr), Next.None)
     }
 
     def genVal(buf: Buffer, value: Val): Val = value match {
@@ -1134,9 +1135,9 @@ object Lower {
   val throwSig  = Type.Function(Seq(Type.Ptr), Type.Nothing)
   val throw_    = Val.Global(throwName, Type.Ptr)
 
-  val JavaGetClassName = Rt.Object.name.member(Rt.JavaGetClassSig)
-  val JavaGetClassSig  = Type.Function(Seq(Type.Ptr), Rt.Class)
-  val JavaGetClass     = Val.Global(JavaGetClassName, Type.Ptr)
+  val toClassName = Rt.Runtime.name.member(Rt.ToClassSig)
+  val toClassSig  = Type.Function(Seq(Rt.Runtime, Type.Ptr), Rt.Class)
+  val toClass     = Val.Global(toClassName, Type.Ptr)
 
   val arrayAlloc = Type.typeToArray.map {
     case (ty, arrname) =>
@@ -1291,7 +1292,7 @@ object Lower {
     buf += throwNoSuchMethod
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
-    buf += JavaGetClass.name
+    buf += toClass.name
     buf
   }
 }
