@@ -27,6 +27,7 @@ object Generate {
       genClassHasTrait()
       genTraitMetadata()
       genTraitHasTrait()
+      genClassInitializers()
       genTraitDispatchTables()
       genModuleAccessors()
       genModuleArray()
@@ -115,6 +116,31 @@ object Generate {
       )
     }
 
+    def genClassInitializers(): Unit = {
+      val insts          = mutable.UnrolledBuffer.empty[Inst]
+      implicit val fresh = Fresh()
+
+      insts += Inst.Label(fresh(), Seq())
+
+      defns.foreach {
+        case Defn.Define(_, name: Global.Member, _, _) if name.sig.isClinit =>
+          insts += Inst.Let(Op.Call(Type.Function(Seq(), Type.Unit),
+                                    Val.Global(name, Type.Ref(name)),
+                                    Seq()),
+                            Next.None)
+        case _ => ()
+      }
+
+      insts += Inst.Ret(Val.Unit)
+
+      buf += Defn.Define(
+        attrs = Attrs.None,
+        name = InitClassesName,
+        ty = InitClassesSig,
+        insts = insts
+      )
+    }
+
     def genMain(): Unit = {
       implicit val fresh = Fresh()
       val entryMainTy =
@@ -151,31 +177,21 @@ object Generate {
                             Val.Global(stackBottomName, Type.Ptr),
                             stackBottom),
                    unwind),
-          Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
+          Inst.Let(Op.Call(InitSig, Init, Seq()), unwind),
+          Inst.Let(Op.Call(InitClassesSig, InitClasses, Seq()), unwind),
+          Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
+          Inst.Let(arr.name,
+                   Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
+                   unwind),
+          Inst.Let(module.name, Op.Module(entry.top), unwind),
+          Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr)), unwind),
+          Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(module)), unwind),
+          Inst.Ret(Val.Int(0)),
+          Inst.Label(handler, Seq(exc)),
+          Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
+                   Next.None),
+          Inst.Ret(Val.Int(1))
         )
-          ++ // generate the class initialisers
-            defns.collect {
-              case Defn.Define(_, name: Global.Member, _, _)
-                  if name.sig.isClinit =>
-                Inst.Let(Op.Call(Type.Function(Seq(), Type.Unit),
-                                 Val.Global(name, Type.Ref(name)),
-                                 Seq()),
-                         unwind)
-            }
-          ++ Seq(
-            Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
-            Inst.Let(arr.name,
-                     Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
-                     unwind),
-            Inst.Let(module.name, Op.Module(entry.top), unwind),
-            Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr)), unwind),
-            Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(module)), unwind),
-            Inst.Ret(Val.Int(0)),
-            Inst.Label(handler, Seq(exc)),
-            Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
-                     Next.None),
-            Inst.Ret(Val.Int(1))
-          )
       )
     }
 
@@ -308,7 +324,6 @@ object Generate {
       buf += Defn.Var(Attrs.None, arrayIdsMinName, Type.Int, Val.Int(min))
 
       buf += Defn.Var(Attrs.None, arrayIdsMaxName, Type.Int, Val.Int(max))
-
     }
 
     def genTraitDispatchTables(): Unit = {
@@ -339,6 +354,11 @@ object Generate {
     val RuntimeInitName =
       Runtime.name.member(
         Sig.Method("init", Seq(Type.Int, Type.Ptr, Type.Array(Rt.String))))
+
+    val InitClassesName = extern("scalanative_class_initializers")
+    val InitClassesSig  = Type.Function(Seq(), Type.Unit)
+    val InitClasses     = Val.Global(InitClassesName, InitClassesSig)
+
     val RuntimeInit =
       Val.Global(RuntimeInitName, Type.Ptr)
     val RuntimeLoopSig =
