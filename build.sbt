@@ -59,16 +59,8 @@ inThisBuild(
 addCommandAlias(
   "test-all",
   Seq(
-    "sandbox/run",
-    "testRunner/test",
-    "testInterface/test",
-    "tools/test",
-    "tests/test",
-    "nirparser/test",
-    "sbtScalaNative/scripted",
-    "tools/mimaReportBinaryIssues",
-    "junitTestOutputsJVM/test",
-    "junitTestOutputsNative/test"
+    "test-tools",
+    "test-runtime"
   ).mkString(";")
 )
 
@@ -210,6 +202,7 @@ lazy val noPublishSettings: Seq[Setting[_]] = Seq(
 lazy val toolSettings: Seq[Setting[_]] =
   Def.settings(
     sbtVersion := sbt10Version,
+    scalaVersion := sbt10ScalaVersion,
     crossSbtVersions := List(sbt10Version),
     crossScalaVersions := Seq(sbt10ScalaVersion),
     javacOptions ++= Seq("-encoding", "utf8")
@@ -780,6 +773,8 @@ lazy val junitAsyncJVM =
   project
     .in(file("junit-async/jvm"))
     .settings(
+      scalaVersion := sbt10ScalaVersion,
+      crossScalaVersions := Seq(sbt10ScalaVersion),
       nameSettings,
       publishArtifact := false
     )
