@@ -31,5 +31,4 @@ object Position {
     def apply(f: String): SourceFile       = new java.net.URI(f)
   }
   val NoPosition = Position(SourceFile(""), 0, 0)
-  val generated  = NoPosition
 }

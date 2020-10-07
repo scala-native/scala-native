@@ -11,7 +11,7 @@ class InstParserTest extends AnyFunSuite {
   val noTpe        = Type.Unit
   val value        = Val.Int(42)
   val unwind       = Next.Unwind(Val.Local(local, nir.Rt.Object), next)
-  implicit val pos = Position.generated
+  implicit val pos = Position.NoPosition
   Seq[Inst](
     Inst.Label(local, Seq.empty),
     Inst.Let(local, Op.As(noTpe, value), Next.None),

@@ -5,7 +5,7 @@ import scalanative.nir._
 import scalanative.linker.{Trait, Class}
 
 class HasTraitTables(meta: Metadata) {
-  private implicit val pos: Position = Position.generated
+  private implicit val pos: Position = Position.NoPosition
 
   val classHasTraitName       = Global.Top("__class_has_trait")
   val classHasTraitVal        = Val.Global(classHasTraitName, Type.Ptr)

@@ -138,7 +138,7 @@ object Lower {
           buf += inst
       }
 
-      implicit val pos: Position = Position.generated
+      implicit val pos: Position = Position.NoPosition
       genNullPointerSlowPath(buf)
       genDivisionByZeroSlowPath(buf)
       genClassCastSlowPath(buf)
@@ -1177,7 +1177,7 @@ object Lower {
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
 
   val injects: Seq[Defn] = {
-    implicit val pos = Position.generated
+    implicit val pos = Position.NoPosition
     val buf          = mutable.UnrolledBuffer.empty[Defn]
     buf += Defn.Declare(Attrs.None, allocSmallName, allocSig)
     buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)

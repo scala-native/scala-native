@@ -93,7 +93,7 @@ class TraitDispatchTable(meta: Metadata) {
     dispatchOffset = offsets
     dispatchTy = Type.Ptr
     dispatchDefn =
-      Defn.Const(Attrs.None, dispatchName, value.ty, value)(Position.generated)
+      Defn.Const(Attrs.None, dispatchName, value.ty, value)(Position.NoPosition)
   }
 
   // Generate a compressed representation of the dispatch table

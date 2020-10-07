@@ -8,7 +8,7 @@ import org.scalatest.funsuite.AnyFunSuite
 class DefnParserTest extends AnyFunSuite {
   val ty           = Type.Int
   val global       = Global.Top("global")
-  implicit val pos = Position.generated
+  implicit val pos = Position.NoPosition
   Seq[Defn](
     Defn.Var(Attrs.None, global, ty, Val.Zero(ty)),
     Defn.Const(Attrs.None, global, ty, Val.Zero(ty)),

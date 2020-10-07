@@ -7,7 +7,7 @@ import fastparse.all._
 object Defn extends Base[nir.Defn] {
 
   import Base.IgnoreWhitespace._
-  implicit val pos = Position.generated
+  implicit val pos = Position.NoPosition
 
   val Var =
     P(Attrs.parser ~ "var" ~ Global.parser ~ ":" ~ Type.parser ~ "=" ~ Val.parser map {

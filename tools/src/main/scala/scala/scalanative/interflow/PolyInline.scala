@@ -6,8 +6,6 @@ import scalanative.nir._
 import scalanative.linker._
 
 trait PolyInline { self: Interflow =>
-//  private implicit val pos = Position.generated
-
   private def polyTargets(op: Op.Method)(
       implicit state: State): Seq[(Class, Global)] = {
     val Op.Method(obj, sig) = op
