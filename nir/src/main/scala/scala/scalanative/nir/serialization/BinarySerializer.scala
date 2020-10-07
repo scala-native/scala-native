@@ -2,7 +2,6 @@ package scala.scalanative
 package nir
 package serialization
 
-import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -17,6 +16,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   final def serialize(defns: Seq[Defn]): Unit = {
     val names     = defns.map(_.name)
+    val filenames = initFiles(defns)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
     Prelude.writeTo(buffer,
@@ -25,13 +25,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
                             Versions.revision,
                             Defn.existsEntryPoint(defns)))
 
-    // Init map with all possible filenames as they must be serialized before other definitions
-    initFiles(defns)
-    putSeq {
-      fileIndexMap.toVector.sortBy(_._2)
-    } {
-      case (file, _) => putUTF8tring(file.toString)
-    }
+    putSeq(filenames)(putUTF8tring)
 
     putSeq(names) { n =>
       putGlobal(n)
@@ -554,11 +548,16 @@ final class BinarySerializer(buffer: ByteBuffer) {
     }
   }
 
-  private def initFiles(defns: Seq[Defn]): Unit = {
+  private def initFiles(defns: Seq[Defn]): Seq[String] = {
+    val filesList = mutable.UnrolledBuffer.empty[String]
+
     def initFile(pos: Position): Unit = {
       val file = pos.source
       if (pos.isDefined)
-        fileIndexMap.getOrElseUpdate(file, fileIndexMap.size)
+        fileIndexMap.getOrElseUpdate(file, {
+          filesList += file.toString
+          fileIndexMap.size
+        })
     }
     defns.foreach {
       case defn @ Defn.Define(_, _, _, insts) =>
@@ -566,5 +565,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
         insts.foreach(inst => initFile(inst.pos))
       case defn => initFile(defn.pos)
     }
+    filesList
   }
 }
