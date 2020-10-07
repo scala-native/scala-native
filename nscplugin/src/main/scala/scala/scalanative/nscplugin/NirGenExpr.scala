@@ -474,21 +474,20 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genArrayValue(av: ArrayValue): Val = {
-      val ArrayValue(tpt, elems) = av
+      val ArrayValue(tpt, elems)     = av
+      implicit val pos: nir.Position = av.pos
+
       val elemty = genType(tpt.tpe)
       val values = genSimpleArgs(elems)
-      implicit val pos: nir.Position = av.pos
 
       if (values.forall(_.isCanonical) && values.exists(v => !v.isZero)) {
         buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), unwind)
       } else {
         val alloc = buf.arrayalloc(elemty, Val.Int(elems.length), unwind)
-        val elemsVec = elems.toVector
-        values.zipWithIndex.foreach {
-          case (v, i) =>
+        values.zip(elems).zipWithIndex.foreach {
+          case ((v, elem), i) =>
             if (!v.isZero) {
-              buf.arraystore(elemty, alloc, Val.Int(i), v, unwind)(
-                elemsVec(i).pos)
+              buf.arraystore(elemty, alloc, Val.Int(i), v, unwind)(elem.pos)
             }
         }
         alloc
