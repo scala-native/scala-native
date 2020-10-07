@@ -330,7 +330,6 @@ trait NirGenExpr { self: NirGenPhase =>
                     implicit exprPos: nir.Position): Val = {
       val cases = catches.map {
         case cd @ CaseDef(pat, _, body) =>
-          implicit val pos: nir.Position = cd.pos
           val (excty, symopt) = pat match {
             case Typed(Ident(nme.WILDCARD), tpt) =>
               (genType(tpt.tpe), None)
@@ -341,14 +340,14 @@ trait NirGenExpr { self: NirGenPhase =>
           }
           val f = { () =>
             symopt.foreach { sym =>
-              val cast = buf.as(excty, exc, unwind)
+              val cast = buf.as(excty, exc, unwind)(cd.pos)
               curMethodEnv.enter(sym, cast)
             }
             val res = genExpr(body)
             buf.jump(mergen, Seq(res))
             Val.Unit
           }
-          (excty, f, pos)
+          (excty, f, exprPos)
       }
 
       def wrap(cases: Seq[(nir.Type, () => Val, nir.Position)]): Val =
@@ -618,6 +617,7 @@ trait NirGenExpr { self: NirGenPhase =>
     def genFunction(tree: Function): Val = {
       val Function(paramTrees,
                    callTree @ Apply(targetTree @ Select(_, _), functionArgs)) = tree
+      implicit val pos: nir.Position = tree.pos
 
       val funSym    = tree.tpe.typeSymbolDirect
       val paramSyms = paramTrees.map(_.symbol)
@@ -706,9 +706,9 @@ trait NirGenExpr { self: NirGenPhase =>
           paramSyms.zip(functionArgs.takeRight(sigTypes.length)).zip(params).foreach {
             case ((sym, arg), value) =>
               val unboxedOrCast = {
-                val unboxed = buf.unboxValue(sym.tpe, partial = true, value)
+                val unboxed = buf.unboxValue(sym.tpe, partial = true, value)(arg.pos)
                 if (unboxed == value) // no need to or cannot unbox, we should cast
-                  buf.genCastOp(genType(sym.tpe), genType(arg.tpe), value)
+                  buf.genCastOp(genType(sym.tpe), genType(arg.tpe), value)(arg.pos)
                 else
                   unboxed
               }
@@ -734,7 +734,7 @@ trait NirGenExpr { self: NirGenPhase =>
             targetTree.symbol.tpe.resultType
           }
 
-          val boxedRes = ensureBoxed(res, resTyEnteringPosterasure, callTree.tpe)(buf)
+          val boxedRes = ensureBoxed(res, resTyEnteringPosterasure, callTree.tpe)(buf, callTree.pos)
           buf.ret(boxedRes)
           buf.toSeq
         }
@@ -753,7 +753,7 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def ensureBoxed(value: Val, tpeEnteringPosterasure: Type, targetTpe: Type)(
-        implicit buf: ExprBuffer): Val = {
+        implicit buf: ExprBuffer, pos: nir.Position): Val = {
       tpeEnteringPosterasure match {
         case tpe if isPrimitiveValueType(tpe) =>
           buf.boxValue(targetTpe, value)
@@ -1315,7 +1315,7 @@ trait NirGenExpr { self: NirGenPhase =>
         stringify(typesym, boxed)(rightp.pos)
       }
 
-      genApplyMethod(String_+, statically = true, left, Seq(ValTree(right)))
+      genApplyMethod(String_+, statically = true, left, Seq(ValTree(right)))(leftp.pos)
     }
 
     def genHashCode(argp: Tree)(implicit pos: nir.Position): Val = {

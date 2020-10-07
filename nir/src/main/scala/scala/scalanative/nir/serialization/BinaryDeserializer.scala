@@ -23,7 +23,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
     val files =
       if (prelude.revision < 7) Array.empty[java.net.URI]
-      else Array.fill(getInt())(new URI(getString()))
+      else Array.fill(getInt())(new URI(getUTF8String()))
 
     val pairs = getSeq((getGlobal, getInt))
     (prelude, pairs, files)

@@ -30,7 +30,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     putSeq {
       fileIndexMap.toVector.sortBy(_._2)
     } {
-      case (file, _) => putString(file.toString)
+      case (file, _) => putUTF8tring(file.toString)
     }
 
     putSeq(names) { n =>
