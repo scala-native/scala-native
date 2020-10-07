@@ -21,9 +21,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
     val prelude = Prelude.readFrom(buffer)
 
-    val files =
-      if (prelude.revision < 7) Array.empty[java.net.URI]
-      else Array.fill(getInt())(new URI(getUTF8String()))
+    val files = Array.fill(getInt())(new URI(getUTF8String()))
 
     val pairs = getSeq((getGlobal, getInt))
     (prelude, pairs, files)
@@ -335,7 +333,6 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
       }
     }
 
-    if (prelude.revision < 7) Position.NoPosition
-    else readPosition()
+    readPosition()
   }
 }
