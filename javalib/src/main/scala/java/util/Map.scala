@@ -37,7 +37,7 @@ trait Map[K, V] {
       throw new NullPointerException
 
     val it = this.entrySet.iterator
-    while (it.hasNext) {
+    while (it.hasNext()) {
       val entry = it.next()
       action.accept(entry.getKey(), entry.getValue())
     }
@@ -48,7 +48,7 @@ trait Map[K, V] {
       throw new NullPointerException
 
     val it = this.entrySet.iterator
-    while (it.hasNext) {
+    while (it.hasNext()) {
       val entry = it.next()
       entry.setValue(function.apply(entry.getKey(), entry.getValue()))
     }
