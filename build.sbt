@@ -81,9 +81,15 @@ addCommandAlias(
   Seq(
     "sandbox/run",
     "tests/test",
-    "sbtScalaNative/scripted",
     "junitTestOutputsJVM/test",
     "junitTestOutputsNative/test"
+  ).mkString(";")
+)
+
+addCommandAlias(
+  "test-scripted",
+  Seq(
+    "sbtScalaNative/scripted"
   ).mkString(";")
 )
 

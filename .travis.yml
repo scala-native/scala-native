@@ -26,6 +26,8 @@ env:
     - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_OPTIMIZE=true SCALANATIVE_GC=boehm TEST_COMMAND="test-runtime"
     - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_OPTIMIZE=true SCALANATIVE_GC=immix TEST_COMMAND="test-runtime"
     - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_OPTIMIZE=true SCALANATIVE_GC=commix TEST_COMMAND="test-runtime"
+    # scripted tests
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_MODE=release-fast SCALANATIVE_OPTIMIZE=true SCALANATIVE_GC=immix TEST_COMMAND="test-scripted"
 
   global:
     - MAVEN_REALM="Sonatype Nexus Repository Manager"
