@@ -1,12 +1,10 @@
 package scala.scalanative
 package nscplugin
 
+import java.io.FileOutputStream
 import java.nio.file.{Path, Paths}
-import scala.tools.nsc._
+import scala.scalanative.nir.serialization.serializeBinary
 import scala.tools.nsc.io.AbstractFile
-import scalanative.nir.serialization.{serializeText, serializeBinary}
-import scalanative.io.withScratchBuffer
-import scalanative.io.VirtualDirectory
 
 trait NirGenFile { self: NirGenPhase =>
   import global._
@@ -29,10 +27,8 @@ trait NirGenFile { self: NirGenPhase =>
     Paths.get(file.file.getAbsolutePath)
   }
 
-  def genIRFile(path: Path, defns: Seq[nir.Defn]): Unit =
-    withScratchBuffer { buffer =>
-      serializeBinary(defns, buffer)
-      buffer.flip
-      VirtualDirectory.local(path.getParent).write(path, buffer)
-    }
+  def genIRFile(path: Path, defns: Seq[nir.Defn]): Unit = {
+    val outStream = new FileOutputStream(path.toFile)
+    serializeBinary(defns, outStream)
+  }
 }

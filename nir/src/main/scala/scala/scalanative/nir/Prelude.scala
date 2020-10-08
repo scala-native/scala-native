@@ -2,6 +2,7 @@ package scala.scalanative
 package nir
 
 import java.nio.ByteBuffer
+import java.io.DataOutputStream
 
 case class Prelude(magic: Int,
                    compat: Int,
@@ -29,11 +30,12 @@ object Prelude {
     Prelude(magic, compat, revision, hasEntryPoints)
   }
 
-  def writeTo(buffer: ByteBuffer, prelude: Prelude): ByteBuffer = {
+  def writeTo(out: DataOutputStream, prelude: Prelude): DataOutputStream = {
     val Prelude(magic, compat, revision, hasEntryPoints) = prelude
-    buffer.putInt(magic)
-    buffer.putInt(compat)
-    buffer.putInt(revision)
-    buffer.put((if (hasEntryPoints) 1 else 0).toByte)
+    out.writeInt(magic)
+    out.writeInt(compat)
+    out.writeInt(revision)
+    out.write((if (hasEntryPoints) 1 else 0).toByte)
+    out
   }
 }
