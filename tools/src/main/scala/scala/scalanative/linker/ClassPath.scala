@@ -46,10 +46,14 @@ object ClassPath {
     def contains(name: Global) =
       files.contains(name.top)
 
+    private def makeBufferName(directory: VirtualDirectory, file: Path) =
+      directory.uri.toString + file
+
     def load(name: Global): Option[Seq[Defn]] =
       cache.getOrElseUpdate(name, {
         files.get(name.top).map { file =>
-          deserializeBinary(directory.read(file))
+          deserializeBinary(directory.read(file),
+                            makeBufferName(directory, file))
         }
       })
 
@@ -57,7 +61,9 @@ object ClassPath {
       files.filter {
         case (_, file) =>
           val buffer = directory.read(file, len = NirPrelude.length)
-          NirPrelude.readFrom(buffer).hasEntryPoints
+          NirPrelude
+            .readFrom(buffer, makeBufferName(directory, file))
+            .hasEntryPoints
       }.keySet
     }
   }

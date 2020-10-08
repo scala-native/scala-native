@@ -15,6 +15,6 @@ package object serialization {
   def serializeBinary(defns: Seq[Defn], buffer: ByteBuffer): Unit =
     (new BinarySerializer(buffer)).serialize(defns)
 
-  def deserializeBinary(buffer: ByteBuffer): Seq[Defn] =
-    (new BinaryDeserializer(buffer)).deserialize()
+  def deserializeBinary(buffer: ByteBuffer, bufferName: String): Seq[Defn] =
+    (new BinaryDeserializer(buffer, bufferName)).deserialize()
 }
