@@ -2,10 +2,30 @@ package java.util
 
 // Ported from Scala.js
 
+import java.{util => ju}
+
 import scala.reflect.ClassTag
 
-object IdentityHashMapSuite extends MapSuite {
-  override def factory: IdentityMapSuiteFactory = new IdentityMapSuiteFactory
+import org.junit.Assert._
+import org.junit.Test
+
+class IdentityHashMapTest extends MapTest {
+  import MapTest._
+
+  override def factory: IdentityHashMapFactory = new IdentityHashMapFactory
+
+  private val testObjCache = new ju.HashMap[Int, TestObj]()
+
+  override def testObj(i: Int): TestObj = {
+    val existing = testObjCache.get(i)
+    if (existing ne null) {
+      existing
+    } else {
+      val newTestObj = TestObj(i)
+      testObjCache.put(i, newTestObj)
+      newTestObj
+    }
+  }
 
   // tests from Harmony
   // tests with null keys and values
@@ -14,7 +34,7 @@ object IdentityHashMapSuite extends MapSuite {
   var value: AnyRef        = _
   var anothervalue: AnyRef = _
 
-  test("null key and value") { //
+  @Test def nullKeyAndValue(): Unit = {
     result = map.put(null, null)
     assertTrue(map.containsKey(null))
     assertTrue(map.containsValue(null))
@@ -22,7 +42,7 @@ object IdentityHashMapSuite extends MapSuite {
     assertNull(result)
   }
 
-  test("null key replaces") {
+  @Test def nullKeyReplaces(): Unit = {
     value = "a value"
     result = map.put(null, value)
     assertTrue(map.containsKey(null))
@@ -31,7 +51,7 @@ object IdentityHashMapSuite extends MapSuite {
     assertNull(result)
   }
 
-  test("null value") {
+  @Test def nullValue(): Unit = {
     val key = "a key"
     result = map.put(key, null)
     assertTrue(map.containsKey(key))
@@ -40,7 +60,7 @@ object IdentityHashMapSuite extends MapSuite {
     assertNull(result)
   }
 
-  test("another null key replaces old val") {
+  @Test def anotherNullKeyReplacesOldVal(): Unit = {
     anothervalue = "another value"
     result = map.put(null, anothervalue)
     assertTrue(map.containsKey(null))
@@ -49,7 +69,7 @@ object IdentityHashMapSuite extends MapSuite {
     assertTrue(result eq value)
   }
 
-  test("remove a null key") {
+  @Test def removeANullKey(): Unit = {
     result = map.remove(null)
     assertTrue(result eq anothervalue)
     assertTrue(!map.containsKey(null))
@@ -57,7 +77,7 @@ object IdentityHashMapSuite extends MapSuite {
     assertNull(map.get(null))
   }
 
-  test("check put, null key, null value") {
+  @Test def checkPutNullKeyNullValue(): Unit = {
     val map   = factory.empty[AnyRef, AnyRef]
     val value = "Some value"
     map.put(null, value)
@@ -67,7 +87,7 @@ object IdentityHashMapSuite extends MapSuite {
     assertNull(map.get(key))
   }
 
-  test("check remove") {
+  @Test def checkRemove(): Unit = {
     val map = factory.empty[AnyRef, AnyRef]
     map.put(null, null)
     map.put("key1", "value1")
@@ -81,7 +101,7 @@ object IdentityHashMapSuite extends MapSuite {
     assertNull(map.get(null)) // Modified null entry
   }
 
-  test("Regression for HARMONY-37") {
+  @Test def regressionForHarmony37(): Unit = {
     // cannot link: @java.util.IdentityHashMap::field.size
     // requires size()
     val map = factory.empty[String, String]
@@ -89,10 +109,8 @@ object IdentityHashMapSuite extends MapSuite {
     assertEquals(0, map.size()) // Size is incorrect
     map.put("key", "value")
     map.remove("key")
-    assertEquals(
-      0,
-      map.size()
-    ) // After removing non-null element size is incorrect
+    // After removing non-null element size is incorrect
+    assertEquals(0, map.size())
     map.put(null, null)
     assertEquals(1, map.size()) // adding literal null failed
     map.remove(null)
@@ -101,15 +119,15 @@ object IdentityHashMapSuite extends MapSuite {
   // other Harmony tests available
 }
 
-class IdentityMapSuiteFactory extends AbstractMapSuiteFactory {
+class IdentityHashMapFactory extends MapFactory {
   override def implementationName: String =
     "java.util.IdentityHashMap"
 
   override def empty[K: ClassTag, V: ClassTag]: IdentityHashMap[K, V] =
     new IdentityHashMap[K, V]
 
-  def allowsNullKeys: Boolean                   = true
-  def allowsNullValues: Boolean                 = true
-  override def allowsIdentityBasedKeys: Boolean = true
+  def allowsNullKeys: Boolean           = true
+  def allowsNullValues: Boolean         = true
+  override def isIdentityBased: Boolean = true
 
 }

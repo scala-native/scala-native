@@ -1,13 +1,16 @@
 package java.util
 
-object RandomSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
+
+class RandomTest {
 
   /** Helper class to access next */
   class HackRandom(seed: Long) extends Random(seed) {
     override def next(bits: Int): Int = super.next(bits)
   }
 
-  test("seed 10") {
+  @Test def seed10(): Unit = {
     val random = new HackRandom(10)
 
     assert(random.next(10) == 747)
@@ -17,7 +20,7 @@ object RandomSuite extends tests.Suite {
     assert(random.next(32) == 254270492)
   }
 
-  test("seed -5") {
+  @Test def seedNegative5(): Unit = {
     val random = new HackRandom(-5)
 
     assert(random.next(10) == 275)
@@ -27,7 +30,7 @@ object RandomSuite extends tests.Suite {
     assert(random.next(32) == 1635930704)
   }
 
-  test("seed max long") {
+  @Test def seedMaxLong(): Unit = {
     val random = new HackRandom(Long.MaxValue)
 
     assert(random.next(10) == 275)
@@ -37,7 +40,7 @@ object RandomSuite extends tests.Suite {
     assert(random.next(32) == -1451336087)
   }
 
-  test("seed max int") {
+  @Test def seedMaxInt(): Unit = {
     val random = new HackRandom(Int.MinValue)
 
     assert(random.next(10) == 388)
@@ -47,7 +50,7 @@ object RandomSuite extends tests.Suite {
     assert(random.next(32) == -2140124682)
   }
 
-  test("seed reset") {
+  @Test def seedReset(): Unit = {
     val random = new HackRandom(11)
     assert(random.next(10) == 747)
     assert(random.next(1) == 1)
@@ -59,14 +62,14 @@ object RandomSuite extends tests.Suite {
     assert(random.next(6) == 27)
   }
 
-  test("reset nextGaussian") {
+  @Test def resetNextGaussian(): Unit = {
     val random = new Random(-1)
     assert(random.nextGaussian() == 1.7853314409882288)
     random.setSeed(-1)
     assert(random.nextGaussian() == 1.7853314409882288)
   }
 
-  test("nextDouble") {
+  @Test def nextDouble(): Unit = {
     val random = new Random(-45)
     assert(random.nextDouble() == 0.27288421395636253)
     assert(random.nextDouble() == 0.5523165360074201)
@@ -80,7 +83,7 @@ object RandomSuite extends tests.Suite {
     assert(random.nextDouble() == 0.7426529384056163)
   }
 
-  test("nextBoolean") {
+  @Test def nextBoolean(): Unit = {
     val random = new Random(4782934)
     assert(random.nextBoolean() == false)
     assert(random.nextBoolean() == true)
@@ -92,7 +95,7 @@ object RandomSuite extends tests.Suite {
     assert(random.nextBoolean() == false)
   }
 
-  test("nextInt") {
+  @Test def nextInt(): Unit = {
     val random = new Random(-84638)
     assert(random.nextInt() == -1217585344)
     assert(random.nextInt() == 1665699216)
@@ -106,7 +109,7 @@ object RandomSuite extends tests.Suite {
     assert(random.nextInt() == 1397525728)
   }
 
-  test("nextIntN") {
+  @Test def nextIntN(): Unit = {
     val random = new Random(7)
     assert(random.nextInt(76543) == 32736)
     assert {
@@ -125,7 +128,7 @@ object RandomSuite extends tests.Suite {
     assert(random.nextInt(10) == 8)
   }
 
-  test("nextInt2Pow") {
+  @Test def nextInt2Pow(): Unit = {
     val random = new Random(-56938)
 
     assert(random.nextInt(32) == 8)
@@ -140,7 +143,7 @@ object RandomSuite extends tests.Suite {
     assert(random.nextInt(32) == 31)
   }
 
-  test("nextLong") {
+  @Test def nextLong(): Unit = {
     val random = new Random(205620432625028L)
     assert(random.nextLong() == 3710537363280377478L)
     assert(random.nextLong() == 4121778334981170700L)
@@ -154,7 +157,7 @@ object RandomSuite extends tests.Suite {
     assert(random.nextLong() == -1998975913933474L)
   }
 
-  test("nextFloat") {
+  @Test def nextFloat(): Unit = {
     val random = new Random(-3920005825473L)
 
     def closeTo(num: Float, exp: Double): Boolean =
@@ -172,7 +175,7 @@ object RandomSuite extends tests.Suite {
     assert(closeTo(random.nextFloat(), 0.06482434))
   }
 
-  test("nextBytes") {
+  @Test def nextBytes(): Unit = {
     val random = new Random(7399572013373333L)
 
     def test(exps: Array[Int]) = {
@@ -200,7 +203,7 @@ object RandomSuite extends tests.Suite {
     test(Array[Int](57, -106, 42, -100, -47, -84, 67, -48, 45))
   }
 
-  test("nextGaussian") {
+  @Test def nextGaussian(): Unit = {
     val random = new Random(2446004)
     assert(random.nextGaussian() == -0.5043346938630431)
     assert(random.nextGaussian() == -0.3250983270156675)
@@ -224,7 +227,7 @@ object RandomSuite extends tests.Suite {
     assert(random.nextGaussian() == 2.0051627385915154)
   }
 
-  test("default seed") {
+  @Test def defaultSeed(): Unit = {
     // added for #849
     val random1 = new Random()
     val random2 = new Random()

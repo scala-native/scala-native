@@ -3,15 +3,34 @@ package java.util
 // Ported from Scala.js
 
 import java.{util => ju}
+
+import org.junit.Test
+import org.junit.Assert._
+import org.junit.Assume._
+
+import scala.scalanative.junit.utils.AssertThrows._
+
 import scala.collection.JavaConversions._
 import scala.collection.{immutable => im}
 import scala.collection.{mutable => mu}
+
 import scala.reflect.ClassTag
 
-trait MapSuite extends tests.Suite {
+trait MapTest {
+  import MapTest._
+
   def factory: MapFactory
 
-  test("should store strings") {
+  def testObj(i: Int): TestObj = TestObj(i)
+
+  // temporary until Platform is introduced
+  val executingInJVM = false
+
+  private def assumeNotIdentityHashMapOnJVM(): Unit =
+    assumeFalse("JVM vs JS cache differences",
+                executingInJVM && factory.isIdentityBased)
+
+  @Test def shouldStoreStrings(): Unit = {
     val mp = factory.empty[String, String]
 
     assertEquals(0, mp.size())
@@ -23,8 +42,8 @@ trait MapSuite extends tests.Suite {
     assertEquals("two", mp.get("TWO"))
   }
 
-  test("should store integers",
-       cond = !factory.isInstanceOf[IdentityMapSuiteFactory]) {
+  @Test def shouldStoreIntegers(): Unit = {
+    assumeNotIdentityHashMapOnJVM()
     val mp = factory.empty[Int, Int]
 
     mp.put(100, 12345)
@@ -33,8 +52,9 @@ trait MapSuite extends tests.Suite {
     assertEquals(12345, one)
   }
 
-  test("should store doubles also in corner cases",
-       cond = !factory.isInstanceOf[IdentityMapSuiteFactory]) {
+  @Test def shouldStoreDoublesAlsoInCornerCases() {
+    assumeNotIdentityHashMapOnJVM()
+
     val mp = factory.empty[Double, Double]
 
     mp.put(1.2345, 11111.0)
@@ -58,14 +78,14 @@ trait MapSuite extends tests.Suite {
     assertEquals(44444.0, four, 0.0)
   }
 
-  test("should store custom objects") {
+  @Test def shouldStoreCustomObjects(): Unit = {
     case class TestObj(num: Int)
     val mp = factory.empty[TestObj, TestObj]
 
     val testKey = TestObj(100)
     mp.put(testKey, TestObj(12345))
     assertEquals(1, mp.size())
-    if (factory.allowsIdentityBasedKeys) {
+    if (factory.isIdentityBased) {
       val one = mp.get(testKey)
       assertEquals(12345, one.num)
     } else {
@@ -74,7 +94,7 @@ trait MapSuite extends tests.Suite {
     }
   }
 
-  test("should remove stored elements") {
+  @Test def shouldRemoveStoredElements(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -84,8 +104,9 @@ trait MapSuite extends tests.Suite {
     assertNull(mp.get("ONE"))
   }
 
-  test("should remove stored elements on double corner cases",
-       cond = !factory.isInstanceOf[IdentityMapSuiteFactory]) {
+  @Test def shouldRemoveStoredElementsOnDoubleCornerCases() {
+    assumeNotIdentityHashMapOnJVM()
+
     val mp = factory.empty[Double, String]
 
     mp.put(1.2345, "11111.0")
@@ -118,7 +139,7 @@ trait MapSuite extends tests.Suite {
     assertTrue(mp.isEmpty)
   }
 
-  test("should put or fail on null keys") {
+  @Test def shouldPutOrFailOnNullKeys(): Unit = {
     if (factory.allowsNullKeys) {
       val mp = factory.empty[String, String]
       mp.put(null, "one")
@@ -129,7 +150,7 @@ trait MapSuite extends tests.Suite {
     }
   }
 
-  test("should put or fail on null values") {
+  @Test def shouldPutOrFailOnNullValues(): Unit = {
     if (factory.allowsNullValues) {
       val mp = factory.empty[String, String]
       mp.put("one", null)
@@ -140,7 +161,7 @@ trait MapSuite extends tests.Suite {
     }
   }
 
-  test("should be cleared with one operation") {
+  @Test def shouldBeClearedWithOneOperation(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -150,7 +171,7 @@ trait MapSuite extends tests.Suite {
     assertEquals(0, mp.size())
   }
 
-  test("should check contained key presence") {
+  @Test def shouldCheckContainedKeyPresence(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -162,7 +183,7 @@ trait MapSuite extends tests.Suite {
       expectThrows(classOf[Throwable], mp.containsKey(null))
   }
 
-  test("should check contained value presence") {
+  @Test def shouldCheckContainedValuePresence(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -174,7 +195,7 @@ trait MapSuite extends tests.Suite {
       expectThrows(classOf[Throwable], mp.containsValue(null))
   }
 
-  test("should give proper Collection over values") {
+  @Test def shouldGiveProperCollectionOverValues(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -186,7 +207,7 @@ trait MapSuite extends tests.Suite {
     assertFalse(iter.hasNext)
   }
 
-  test("should give proper EntrySet over key value pairs") {
+  @Test def shouldGiveProperEntrySetOverKeyValuePairs(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -202,7 +223,7 @@ trait MapSuite extends tests.Suite {
     assertEquals("one", next.getValue)
   }
 
-  test("should give proper KeySet over keys") {
+  @Test def shouldGiveProperKeySetOverKeys(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -216,7 +237,7 @@ trait MapSuite extends tests.Suite {
     assertFalse(iter.hasNext)
   }
 
-  test("should put a whole map into") {
+  @Test def shouldPutAWholeMapInto(): Unit = {
     val mp = factory.empty[String, String]
 
     val m = mu.Map[String, String]("X" -> "y")
@@ -245,7 +266,7 @@ trait MapSuite extends tests.Suite {
     }
   }
 
-  test("values should mirror the related map size") {
+  @Test def valuesShouldMirrorTheRelatedMapSize(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -281,7 +302,7 @@ trait MapSuite extends tests.Suite {
     assertEquals(2, new SimpleQueryableMap(hm4).values().size())
   }
 
-  test("values should check single and multiple objects presence") {
+  @Test def valuesShouldCheckSingleAndMultipleObjectsPresence(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -340,7 +361,7 @@ trait MapSuite extends tests.Suite {
     assertTrue(new SimpleQueryableMap(hm3).values().contains(null))
   }
 
-  test("values should side effect clear remove retain on the related map") {
+  @Test def valuesShouldSideEffectClearRemoveRetainOnTheRelatedMap(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -392,7 +413,7 @@ trait MapSuite extends tests.Suite {
     assertFalse(mp.containsKey("THREE"))
   }
 
-  test("keySet should mirror the related map size") {
+  @Test def keySetShouldMirrorTheRelatedMapSize(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -428,7 +449,7 @@ trait MapSuite extends tests.Suite {
     assertEquals(2, new SimpleQueryableMap(hm4).keySet().size())
   }
 
-  test("keySet should check single and multiple objects presence") {
+  @Test def keySetShouldCheckSingleAndMultipleObjectsPresence(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -490,7 +511,7 @@ trait MapSuite extends tests.Suite {
     assertTrue(new SimpleQueryableMap(hm3).keySet().contains(null))
   }
 
-  test("keySet should side effect clear remove retain on the related map") {
+  @Test def keySetShouldSideEffectClearRemoveRetainOnTheRelatedMap(): Unit = {
     val mp = factory.empty[String, String]
 
     mp.put("ONE", "one")
@@ -544,9 +565,8 @@ trait MapSuite extends tests.Suite {
   }
 }
 
-object MapFactory {
-  def allFactories: Iterator[MapFactory] =
-    HashMapSuiteFactory.allFactories
+object MapTest {
+  final case class TestObj(num: Int)
 }
 
 trait MapFactory {
@@ -562,5 +582,7 @@ trait MapFactory {
 
   def allowsNullValuesQueries: Boolean = true
 
-  def allowsIdentityBasedKeys: Boolean = false
+  def withSizeLimit: Option[Int] = None
+
+  def isIdentityBased: Boolean = false
 }

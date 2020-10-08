@@ -2,27 +2,32 @@ package java.util
 
 // Ported from Apache Harmony
 
-object StringTokenizerSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("Constructor(String, String)") {
+import scala.scalanative.junit.utils.AssertThrows._
+
+class StringTokenizerTest {
+
+  @Test def constructorStringString(): Unit = {
     val st = new StringTokenizer("This:is:a:test:String", ":")
     assert(st.countTokens() == 5)
     assert(st.nextElement() == "This")
   }
 
-  test("Constructor(String, String, Boolean)") {
+  @Test def constructorStringStringBoolean(): Unit = {
     val st = new StringTokenizer("This:is:a:test:String", ":", true)
     st.nextElement()
     assert(st.countTokens() == 8)
     assert(st.nextElement() == ":")
   }
 
-  test("countTokens()") {
+  @Test def countTokens(): Unit = {
     val st = new StringTokenizer("This is a test String")
     assert(st.countTokens() == 5)
   }
 
-  test("hasMoreElements()") {
+  @Test def hasMoreElements(): Unit = {
     val st = new StringTokenizer("This is a test String")
     st.nextElement()
     assert(st.hasMoreElements())
@@ -33,7 +38,7 @@ object StringTokenizerSuite extends tests.Suite {
     assert(!st.hasMoreElements())
   }
 
-  test("hasMoreTokens()") {
+  @Test def hasMoreTokens(): Unit = {
     val st      = new StringTokenizer("This is a test String")
     var counter = 0
     while (counter < 5) {
@@ -44,7 +49,7 @@ object StringTokenizerSuite extends tests.Suite {
     assert(!st.hasMoreTokens())
   }
 
-  test("nextElement()") {
+  @Test def nextElement(): Unit = {
     val st = new StringTokenizer("This is a test String")
     assert(st.nextElement() == "This")
     assert(st.nextElement() == "is")
@@ -52,12 +57,10 @@ object StringTokenizerSuite extends tests.Suite {
     assert(st.nextElement() == "test")
     assert(st.nextElement() == "String")
 
-    assertThrows[NoSuchElementException] {
-      st.nextElement()
-    }
+    assertThrows(classOf[NoSuchElementException], st.nextElement())
   }
 
-  test("nextToken()") {
+  @Test def nextToken(): Unit = {
     val st = new StringTokenizer("This is a test String")
     assert(st.nextToken() == "This")
     assert(st.nextToken() == "is")
@@ -65,52 +68,38 @@ object StringTokenizerSuite extends tests.Suite {
     assert(st.nextToken() == "test")
     assert(st.nextToken() == "String")
 
-    assertThrows[NoSuchElementException] {
-      st.nextToken()
-    }
+    assertThrows(classOf[NoSuchElementException], st.nextToken())
   }
 
-  test("nextToken(String)") {
+  @Test def nextTokenString(): Unit = {
     val st = new StringTokenizer("This is a test String")
     assert(st.nextToken(" ") == "This")
     assert(st.nextToken("tr") == " is a ")
     assert(st.nextToken() == "es")
   }
 
-  test("hasMoreElements_NPE") {
+  @Test def hasMoreElementsNPE(): Unit = {
     val st = new StringTokenizer(new String(), null, true)
-    assertThrows[NullPointerException] {
-      st.hasMoreElements()
-    }
+    assertThrows(classOf[NullPointerException], st.hasMoreElements())
 
     val st2 = new StringTokenizer(new String(), null)
-    assertThrows[NullPointerException] {
-      st2.hasMoreElements()
-    }
+    assertThrows(classOf[NullPointerException], st2.hasMoreElements())
   }
 
-  test("hasMoreTokens_NPE") {
+  @Test def hasMoreTokensNPE(): Unit = {
     val st = new StringTokenizer(new String, null, true)
-    assertThrows[NullPointerException] {
-      st.hasMoreTokens()
-    }
+    assertThrows(classOf[NullPointerException], st.hasMoreTokens())
 
     val st2 = new StringTokenizer(new String, null)
-    assertThrows[NullPointerException] {
-      st2.hasMoreTokens()
-    }
+    assertThrows(classOf[NullPointerException], st2.hasMoreTokens())
   }
 
-  test("nextToken_NPE") {
+  @Test def nextTokenNPE(): Unit = {
     val st = new StringTokenizer(new String, null, true)
-    assertThrows[NullPointerException] {
-      st.nextToken()
-    }
+    assertThrows(classOf[NullPointerException], st.nextToken())
 
     val st2 = new StringTokenizer(new String, null)
-    assertThrows[NullPointerException] {
-      st2.nextToken()
-    }
+    assertThrows(classOf[NullPointerException], st2.nextToken())
   }
 
 }

@@ -3,35 +3,40 @@ package java.util
 // Ported from Scala.js
 
 import java.{util => ju, lang => jl}
+
+import org.junit.Test
+import org.junit.Assert._
+
 import scala.collection.JavaConversions._
 import scala.collection.{immutable => im}
 import scala.reflect.ClassTag
 
-object LinkedHashMapInsertionOrderSuite extends LinkedHashMapSuite
+class LinkedHashMapInsertionOrderTest extends LinkedHashMapTest
 
-object LinkedHashMapInsertionOrderLimitedSuite extends LinkedHashMapSuite {
-  override def factory: LinkedHashMapSuiteFactory =
-    new LinkedHashMapSuiteFactory(accessOrder = false, withSizeLimit = Some(50))
+class LinkedHashMapInsertionOrderLimitedTest extends LinkedHashMapTest {
+  override def factory: LinkedHashMapFactory =
+    new LinkedHashMapFactory(accessOrder = false, withSizeLimit = Some(50))
 }
 
-object LinkedHashMapAccessOrderSuite extends LinkedHashMapSuite {
-  override def factory: LinkedHashMapSuiteFactory =
-    new LinkedHashMapSuiteFactory(accessOrder = true, withSizeLimit = None)
+class LinkedHashMapAccessOrderTest extends LinkedHashMapTest {
+  override def factory: LinkedHashMapFactory =
+    new LinkedHashMapFactory(accessOrder = true, withSizeLimit = None)
 }
 
-object LinkedHashMapAccessOrderLimitedSuite extends LinkedHashMapSuite {
-  override def factory: LinkedHashMapSuiteFactory =
-    new LinkedHashMapSuiteFactory(accessOrder = true, withSizeLimit = Some(50))
+class LinkedHashMapAccessOrderLimitedTest extends LinkedHashMapTest {
+  override def factory: LinkedHashMapFactory =
+    new LinkedHashMapFactory(accessOrder = true, withSizeLimit = Some(50))
 }
 
-abstract class LinkedHashMapSuite extends MapSuite {
-  override def factory: LinkedHashMapSuiteFactory =
-    new LinkedHashMapSuiteFactory(accessOrder = false, withSizeLimit = None)
+abstract class LinkedHashMapTest extends HashMapTest {
+
+  override def factory: LinkedHashMapFactory =
+    new LinkedHashMapFactory(accessOrder = false, withSizeLimit = None)
 
   val accessOrder   = factory.accessOrder
   val withSizeLimit = factory.withSizeLimit
 
-  test("should iterate in insertion order after building") {
+  @Test def shouldIterateInInsertionOrderAfterBuilding(): Unit = {
     val lhm = factory.empty[jl.Integer, String]
     (0 until 100).foreach(key => lhm.put(key, s"elem $key"))
 
@@ -58,7 +63,7 @@ abstract class LinkedHashMapSuite extends MapSuite {
       assertEquals(expectedValue(index), value)
   }
 
-  test("should iterate in the same order after removal of elements") {
+  @Test def shouldIterateInTheSameOrderAfterRemovalOfElements(): Unit = {
     val lhm = factory.empty[jl.Integer, String]
     (0 until 100).foreach(key => lhm.put(key, s"elem $key"))
 
@@ -87,7 +92,7 @@ abstract class LinkedHashMapSuite extends MapSuite {
       assertEquals(expectedValue(index), value)
   }
 
-  test("should iterate in order after adding elements") {
+  @Test def shouldIterateInOrderAfterAddingElements(): Unit = {
     val lhm = factory.empty[jl.Integer, String]
     (0 until 100).foreach(key => lhm.put(key, s"elem $key"))
 
@@ -136,7 +141,7 @@ abstract class LinkedHashMapSuite extends MapSuite {
       assertEquals(expectedElem(index), value)
   }
 
-  test("should iterate in after accessing elements") {
+  @Test def shouldIterateInAfterAccessingElements(): Unit = {
     val lhm = factory.empty[jl.Integer, String]
     (0 until 100).foreach(key => lhm.put(key, s"elem $key"))
 
@@ -191,20 +196,9 @@ abstract class LinkedHashMapSuite extends MapSuite {
   }
 }
 
-object LinkedHashMapSuiteFactory {
-  def allFactories: scala.Iterator[MapFactory] = {
-    scala.Iterator(
-      new LinkedHashMapSuiteFactory(true, Some(50)),
-      new LinkedHashMapSuiteFactory(true, None),
-      new LinkedHashMapSuiteFactory(false, Some(50)),
-      new LinkedHashMapSuiteFactory(false, None)
-    )
-  }
-}
-
-class LinkedHashMapSuiteFactory(val accessOrder: Boolean,
-                                val withSizeLimit: Option[Int])
-    extends HashMapSuiteFactory {
+class LinkedHashMapFactory(val accessOrder: Boolean,
+                           override val withSizeLimit: Option[Int])
+    extends HashMapFactory {
   def orderName: String =
     if (accessOrder) "access-order"
     else "insertion-order"
