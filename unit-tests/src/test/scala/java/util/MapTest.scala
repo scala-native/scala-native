@@ -26,9 +26,14 @@ trait MapTest {
   // temporary until Platform is introduced
   val executingInJVM = false
 
+  // replace when new IdentityHashMap from Scala.js
+  // private def assumeNotIdentityHashMapOnJVM(): Unit =
+  //   assumeFalse("JVM vs Native cache differences",
+  //               executingInJVM && factory.isIdentityBased)
+
+  // temp implementation
   private def assumeNotIdentityHashMapOnJVM(): Unit =
-    assumeFalse("JVM vs JS cache differences",
-                executingInJVM && factory.isIdentityBased)
+    assumeFalse("JVM vs Native cache differences", factory.isIdentityBased)
 
   @Test def shouldStoreStrings(): Unit = {
     val mp = factory.empty[String, String]
