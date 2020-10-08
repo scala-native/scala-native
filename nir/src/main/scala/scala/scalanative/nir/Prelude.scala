@@ -19,7 +19,10 @@ object Prelude {
     assert(magic == Versions.magic, "Can't read non-NIR file.")
     assert(
       compat == Versions.compat && revision <= Versions.revision,
-      "Can't read binary-incompatible version of NIR from '" + bufferName + "'.")
+      "Can't read binary-incompatible version of NIR from '" + bufferName +
+        "' (expected compat=" + Versions.compat + ", got " + compat +
+        "; expected revision=" + Versions.revision + ", got " + revision + ")."
+    )
 
     // indicates whether this NIR file has entry points
     // and thus should be made reachable, no matter
