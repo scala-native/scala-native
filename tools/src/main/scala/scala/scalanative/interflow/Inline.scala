@@ -129,7 +129,8 @@ trait Inline { self: Interflow =>
   }
 
   def inline(name: Global, args: Seq[Val])(implicit state: State,
-                                           linked: linker.Result): Val =
+                                           linked: linker.Result,
+                                           origPos: Position): Val =
     in(s"inlining ${name.show}") {
       val defn = mode match {
         case build.Mode.Debug =>

@@ -2,8 +2,8 @@ package scala.scalanative
 package nscplugin
 
 import java.nio.file.Path
-
 import scala.collection.mutable
+import scala.language.implicitConversions
 import scala.scalanative.nir._
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
@@ -97,6 +97,43 @@ abstract class NirGenPhase
       (files ++ reflectiveInstFiles).par.foreach {
         case (path, stats) =>
           genIRFile(path, stats)
+      }
+    }
+  }
+
+  protected implicit def toNirPosition(pos: Position): nir.Position = {
+    if (!pos.isDefined) nir.Position.NoPosition
+    else
+      nir.Position(
+        source = nirPositionCachedConverter.toNIRSource(pos.source),
+        line = pos.line - 1,
+        column = pos.column - 1
+      )
+  }
+
+  private[this] object nirPositionCachedConverter {
+    import scala.reflect.internal.util._
+    private[this] var lastNscSource: SourceFile              = _
+    private[this] var lastNIRSource: nir.Position.SourceFile = _
+
+    def toNIRSource(nscSource: SourceFile): nir.Position.SourceFile = {
+      if (nscSource != lastNscSource) {
+        lastNIRSource = convert(nscSource)
+        lastNscSource = nscSource
+      }
+      lastNIRSource
+    }
+
+    private[this] def convert(
+        nscSource: SourceFile): nir.Position.SourceFile = {
+      nscSource.file.file match {
+        case null =>
+          new java.net.URI(
+            "virtualfile",       // Pseudo-Scheme
+            nscSource.file.path, // Scheme specific part
+            null                 // Fragment
+          )
+        case file => file.toURI
       }
     }
   }

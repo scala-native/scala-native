@@ -63,7 +63,8 @@ final class State(block: Local) {
       value
     }
   }
-  def emit(op: Op, idempotent: Boolean = false): Val = {
+  def emit(op: Op, idempotent: Boolean = false)(
+      implicit position: Position): Val = {
     if (op.isIdempotent || idempotent) {
       if (emitted.contains(op)) {
         emitted(op)
@@ -220,7 +221,8 @@ final class State(block: Local) {
     case _ =>
       false
   }
-  def materialize(rootValue: Val)(implicit linked: linker.Result): Val = {
+  def materialize(rootValue: Val)(implicit linked: linker.Result,
+                                  origPos: Position): Val = {
     val locals = mutable.Map.empty[Addr, Val]
 
     def reachAddr(addr: Addr): Unit = {

@@ -7,6 +7,7 @@ import scalanative.nir._
 sealed abstract class Info {
   def attrs: Attrs
   def name: Global
+  def position: Position
 }
 
 sealed abstract class ScopeInfo extends Info {
@@ -56,9 +57,13 @@ sealed abstract class MemberInfo extends Info {
 final class Unavailable(val name: Global) extends Info {
   def attrs: Attrs =
     util.unsupported(s"unavailable ${name.show} has no attrs")
+
+  def position: Position =
+    util.unsupported(s"unavailable ${name.show} has no position")
 }
 
-final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])
+final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])(
+    implicit val position: Position)
     extends ScopeInfo {
   val implementors = mutable.Set.empty[Class]
   val subtraits    = mutable.Set.empty[Trait]
@@ -93,7 +98,7 @@ final class Class(val attrs: Attrs,
                   val name: Global,
                   val parent: Option[Class],
                   val traits: Seq[Trait],
-                  val isModule: Boolean)
+                  val isModule: Boolean)(implicit val position: Position)
     extends ScopeInfo {
   val implementors    = mutable.Set[Class](this)
   val subclasses      = mutable.Set.empty[Class]
@@ -176,7 +181,7 @@ final class Method(val attrs: Attrs,
                    val owner: Info,
                    val name: Global,
                    val ty: Type,
-                   val insts: Array[Inst])
+                   val insts: Array[Inst])(implicit val position: Position)
     extends MemberInfo {
   val value: Val =
     if (isConcrete) {
@@ -193,7 +198,7 @@ final class Field(val attrs: Attrs,
                   val name: Global,
                   val isConst: Boolean,
                   val ty: nir.Type,
-                  val init: Val)
+                  val init: Val)(implicit val position: Position)
     extends MemberInfo {
   lazy val index: Int =
     owner.asInstanceOf[Class].fields.indexOf(this)
