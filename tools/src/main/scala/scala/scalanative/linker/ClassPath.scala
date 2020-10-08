@@ -47,7 +47,7 @@ object ClassPath {
       files.contains(name.top)
 
     private def makeBufferName(directory: VirtualDirectory, file: Path) =
-      directory.uri.toString + file
+      directory.uri.resolve(file.toUri).toString
 
     def load(name: Global): Option[Seq[Defn]] =
       cache.getOrElseUpdate(name, {
