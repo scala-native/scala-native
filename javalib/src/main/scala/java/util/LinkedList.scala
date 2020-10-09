@@ -41,7 +41,7 @@ class LinkedList[E]()
       peekLast()
   }
 
-  override def removeFirst(): E = {
+  def removeFirst(): E = {
     if (isEmpty())
       throw new NoSuchElementException()
 
