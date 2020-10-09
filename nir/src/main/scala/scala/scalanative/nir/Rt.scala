@@ -16,7 +16,6 @@ object Rt {
   val BoxedUnitModule = Ref(Global.Top("scala.scalanative.runtime.BoxedUnit$"))
 
   val GetRawTypeSig    = Sig.Method("getRawType", Seq(Rt.Object, Ptr)).mangled
-  val ToClassSig       = Sig.Method("toClass", Seq(Ptr, Class)).mangled
   val JavaEqualsSig    = Sig.Method("equals", Seq(Object, Bool)).mangled
   val JavaHashCodeSig  = Sig.Method("hashCode", Seq(Int)).mangled
   val ScalaEqualsSig   = Sig.Method("scala_==", Seq(Object, Bool)).mangled

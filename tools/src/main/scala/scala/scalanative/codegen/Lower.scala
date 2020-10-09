@@ -189,8 +189,7 @@ object Lower {
     def genClassOf(buf: Buffer, node: ScopeInfo)(
         implicit pos: Position): Val = {
       val tpePtr = rtti(node).const
-      val recv   = Val.Global(Rt.Runtime.name, Rt.Runtime)
-      buf.call(toClassSig, toClass, Seq(recv, tpePtr), Next.None)
+      buf.call(toClassTy, toClassVal, Seq(Val.Null, tpePtr), Next.None)
     }
 
     def genVal(buf: Buffer, value: Val)(implicit pos: Position): Val =
@@ -1143,10 +1142,6 @@ object Lower {
   val throwSig  = Type.Function(Seq(Type.Ptr), Type.Nothing)
   val throw_    = Val.Global(throwName, Type.Ptr)
 
-  val toClassName = Rt.Runtime.name.member(Rt.ToClassSig)
-  val toClassSig  = Type.Function(Seq(Rt.Runtime, Type.Ptr), Rt.Class)
-  val toClass     = Val.Global(toClassName, Type.Ptr)
-
   val arrayAlloc = Type.typeToArray.map {
     case (ty, arrname) =>
       val Global.Top(id) = arrname
@@ -1259,6 +1254,11 @@ object Lower {
   val throwNoSuchMethodVal =
     Val.Global(throwNoSuchMethod, Type.Ptr)
 
+  val toClassTy = Type.Function(Seq(Type.Ptr, Type.Ptr), Rt.Class)
+  val toClass = Global.Member(Rt.Runtime.name,
+                              Sig.Method("toClass", Seq(Type.Ptr, Rt.Class)))
+  val toClassVal = Val.Global(toClass, Type.Ptr)
+
   val RuntimeNull    = Type.Ref(Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
 
@@ -1300,7 +1300,7 @@ object Lower {
     buf += throwNoSuchMethod
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
-    buf += toClass.name
+    buf += toClassVal.name
     buf
   }
 }
