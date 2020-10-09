@@ -11,71 +11,71 @@ class StringTokenizerTest {
 
   @Test def constructorStringString(): Unit = {
     val st = new StringTokenizer("This:is:a:test:String", ":")
-    assert(st.countTokens() == 5)
-    assert(st.nextElement() == "This")
+    assertTrue(st.countTokens() == 5)
+    assertTrue(st.nextElement() == "This")
   }
 
   @Test def constructorStringStringBoolean(): Unit = {
     val st = new StringTokenizer("This:is:a:test:String", ":", true)
     st.nextElement()
-    assert(st.countTokens() == 8)
-    assert(st.nextElement() == ":")
+    assertTrue(st.countTokens() == 8)
+    assertTrue(st.nextElement() == ":")
   }
 
   @Test def countTokens(): Unit = {
     val st = new StringTokenizer("This is a test String")
-    assert(st.countTokens() == 5)
+    assertTrue(st.countTokens() == 5)
   }
 
   @Test def hasMoreElements(): Unit = {
     val st = new StringTokenizer("This is a test String")
     st.nextElement()
-    assert(st.hasMoreElements())
+    assertTrue(st.hasMoreElements())
     st.nextElement()
     st.nextElement()
     st.nextElement()
     st.nextElement()
-    assert(!st.hasMoreElements())
+    assertFalse(st.hasMoreElements())
   }
 
   @Test def hasMoreTokens(): Unit = {
     val st      = new StringTokenizer("This is a test String")
     var counter = 0
     while (counter < 5) {
-      assert(st.hasMoreTokens())
+      assertTrue(st.hasMoreTokens())
       st.nextToken()
       counter += 1
     }
-    assert(!st.hasMoreTokens())
+    assertFalse(st.hasMoreTokens())
   }
 
   @Test def nextElement(): Unit = {
     val st = new StringTokenizer("This is a test String")
-    assert(st.nextElement() == "This")
-    assert(st.nextElement() == "is")
-    assert(st.nextElement() == "a")
-    assert(st.nextElement() == "test")
-    assert(st.nextElement() == "String")
+    assertTrue(st.nextElement() == "This")
+    assertTrue(st.nextElement() == "is")
+    assertTrue(st.nextElement() == "a")
+    assertTrue(st.nextElement() == "test")
+    assertTrue(st.nextElement() == "String")
 
     assertThrows(classOf[NoSuchElementException], st.nextElement())
   }
 
   @Test def nextToken(): Unit = {
     val st = new StringTokenizer("This is a test String")
-    assert(st.nextToken() == "This")
-    assert(st.nextToken() == "is")
-    assert(st.nextToken() == "a")
-    assert(st.nextToken() == "test")
-    assert(st.nextToken() == "String")
+    assertTrue(st.nextToken() == "This")
+    assertTrue(st.nextToken() == "is")
+    assertTrue(st.nextToken() == "a")
+    assertTrue(st.nextToken() == "test")
+    assertTrue(st.nextToken() == "String")
 
     assertThrows(classOf[NoSuchElementException], st.nextToken())
   }
 
   @Test def nextTokenString(): Unit = {
     val st = new StringTokenizer("This is a test String")
-    assert(st.nextToken(" ") == "This")
-    assert(st.nextToken("tr") == " is a ")
-    assert(st.nextToken() == "es")
+    assertTrue(st.nextToken(" ") == "This")
+    assertTrue(st.nextToken("tr") == " is a ")
+    assertTrue(st.nextToken() == "es")
   }
 
   @Test def hasMoreElementsNPE(): Unit = {
