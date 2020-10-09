@@ -19,7 +19,15 @@ import java.math.BigInteger
 import java.math.MathContext
 import java.nio.charset.Charset
 
-object DefaultFormatterSuite extends tests.Suite {
+import org.junit.Ignore
+import org.junit.Test
+import org.junit.Before
+import org.junit.After
+import org.junit.Assert._
+
+import scala.scalanative.junit.utils.AssertThrows._
+
+class DefaultFormatterTest {
   private var root: Boolean             = false
   private var notExist: File            = _
   private var fileWithContent: File     = _
@@ -27,6 +35,7 @@ object DefaultFormatterSuite extends tests.Suite {
   private var defaultTimeZone: TimeZone = _
 
   // setup resource files for testing
+  @Before
   protected def setUp(): Unit = {
     // disabled, doesn't work on Scala Native right now
     // root = System.getProperty("user.name").equalsIgnoreCase("root")
@@ -52,32 +61,13 @@ object DefaultFormatterSuite extends tests.Suite {
   }
 
   // delete the resource files if they exist
+  @After
   protected def tearDown(): Unit = {
     if (notExist.exists()) notExist.delete()
     if (fileWithContent.exists()) fileWithContent.delete()
     if (readOnly.exists()) readOnly.delete()
     // TimeZone.setDefault(defaultTimeZone)
   }
-
-  override def test(name: String, cond: Boolean = true)(body: => Unit): Unit =
-    super.test(name, cond) {
-      setUp()
-      try {
-        body
-      } finally {
-        tearDown()
-      }
-    }
-
-  override def testFails(name: String, issue: Int)(body: => Unit): Unit =
-    super.testFails(name, issue) {
-      setUp()
-      try {
-        body
-      } finally {
-        tearDown()
-      }
-    }
 
   private class MockAppendable extends Appendable {
     def append(arg0: CharSequence): Appendable = null
@@ -119,7 +109,7 @@ object DefaultFormatterSuite extends tests.Suite {
     override def toString(): String = ""
   }
 
-  test("Constructor()") {
+  @Test def constructor(): Unit = {
     val f = new Formatter()
     assertNotNull(f)
     assertTrue(f.out().isInstanceOf[StringBuilder])
@@ -127,7 +117,7 @@ object DefaultFormatterSuite extends tests.Suite {
     assertNotNull(f.toString())
   }
 
-  test("Constructor(Appendable)") {
+  @Test def constructorAppendable(): Unit = {
     val ma = new MockAppendable()
     val f1 = new Formatter(ma)
     assertEquals(ma, f1.out())
@@ -146,7 +136,7 @@ object DefaultFormatterSuite extends tests.Suite {
     assertNotNull(f2.toString())
   }
 
-  test("Constructor(Locale)") {
+  @Test def constructorLocale(): Unit = {
     val f1 = new Formatter(Locale.FRANCE)
     assertTrue(f1.out().isInstanceOf[StringBuilder])
     assertEquals(f1.locale(), Locale.FRANCE)
@@ -158,7 +148,7 @@ object DefaultFormatterSuite extends tests.Suite {
     assertNotNull(f2.toString())
   }
 
-  test("Constructor(Appendable, Locale)") {
+  @Test def constructorAppendableLocale(): Unit = {
     val ma = new MockAppendable()
     val f1 = new Formatter(ma, Locale.CANADA)
     assertEquals(ma, f1.out())
@@ -173,8 +163,9 @@ object DefaultFormatterSuite extends tests.Suite {
     assertTrue(f3.out().isInstanceOf[StringBuilder])
   }
 
-  test("Constructor(String)") {
-    assertThrows[NullPointerException](new Formatter(null.asInstanceOf[String]))
+  @Test def constructorString(): Unit = {
+    assertThrows(classOf[NullPointerException],
+                 new Formatter(null.asInstanceOf[String]))
 
     locally {
       val f = new Formatter(notExist.getPath())
@@ -189,12 +180,14 @@ object DefaultFormatterSuite extends tests.Suite {
     }
 
     if (!root) {
-      assertThrows[FileNotFoundException](new Formatter(readOnly.getPath()))
+      assertThrows(classOf[FileNotFoundException],
+                   new Formatter(readOnly.getPath()))
     }
   }
 
-  test("Constructor(String, String)") {
-    assertThrows[NullPointerException](
+  @Test def constructorStringString(): Unit = {
+    assertThrows(
+      classOf[NullPointerException],
       new Formatter(null.asInstanceOf[String], Charset.defaultCharset().name()))
 
     locally {
@@ -204,8 +197,8 @@ object DefaultFormatterSuite extends tests.Suite {
       f.close()
     }
 
-    assertThrows[UnsupportedEncodingException](
-      new Formatter(notExist.getPath(), "ISO 111-1"))
+    assertThrows(classOf[UnsupportedEncodingException],
+                 new Formatter(notExist.getPath(), "ISO 111-1"))
 
     locally {
       val f = new Formatter(fileWithContent.getPath(), "UTF-16BE")
@@ -214,16 +207,16 @@ object DefaultFormatterSuite extends tests.Suite {
     }
 
     if (!root) {
-      assertThrows[FileNotFoundException](
-        new Formatter(readOnly.getPath(), "UTF-16BE"))
+      assertThrows(classOf[FileNotFoundException],
+                   new Formatter(readOnly.getPath(), "UTF-16BE"))
     }
   }
 
-  test("Constructor(String, String, Locale)") {
-    assertThrows[NullPointerException](
-      new Formatter(null.asInstanceOf[String],
-                    Charset.defaultCharset().name(),
-                    Locale.KOREA))
+  @Test def constructorStringStringLocale(): Unit = {
+    assertThrows(classOf[NullPointerException],
+                 new Formatter(null.asInstanceOf[String],
+                               Charset.defaultCharset().name(),
+                               Locale.KOREA))
 
     locally {
       val f =
@@ -240,8 +233,8 @@ object DefaultFormatterSuite extends tests.Suite {
       f.close()
     }
 
-    assertThrows[UnsupportedEncodingException](
-      new Formatter(notExist.getPath(), "ISO 1111-1", Locale.CHINA))
+    assertThrows(classOf[UnsupportedEncodingException],
+                 new Formatter(notExist.getPath(), "ISO 1111-1", Locale.CHINA))
 
     locally {
       val f = new Formatter(fileWithContent.getPath(),
@@ -252,14 +245,14 @@ object DefaultFormatterSuite extends tests.Suite {
     }
 
     if (!root) {
-      assertThrows[FileNotFoundException](
-        new Formatter(readOnly.getPath(),
-                      Charset.defaultCharset().name(),
-                      Locale.ITALY))
+      assertThrows(classOf[FileNotFoundException],
+                   new Formatter(readOnly.getPath(),
+                                 Charset.defaultCharset().name(),
+                                 Locale.ITALY))
     }
   }
 
-  test("Constructor(File)") {
+  @Test def constructorFile(): Unit = {
     locally {
       val f = new Formatter(notExist)
       assertEquals(f.locale(), Locale.getDefault())
@@ -273,11 +266,11 @@ object DefaultFormatterSuite extends tests.Suite {
     }
 
     if (!root) {
-      assertThrows[FileNotFoundException](new Formatter(readOnly))
+      assertThrows(classOf[FileNotFoundException], new Formatter(readOnly))
     }
   }
 
-  test("Constructor(File, String)") {
+  @Test def constructorFileString(): Unit = {
 
     locally {
       val f = new Formatter(notExist, Charset.defaultCharset().name())
@@ -292,13 +285,13 @@ object DefaultFormatterSuite extends tests.Suite {
     }
 
     if (!root) {
-      assertThrows[FileNotFoundException](
-        new Formatter(readOnly, Charset.defaultCharset().name()))
+      assertThrows(classOf[FileNotFoundException],
+                   new Formatter(readOnly, Charset.defaultCharset().name()))
     }
 
     try {
-      assertThrows[UnsupportedEncodingException](
-        new Formatter(notExist, "ISO 1111-1"))
+      assertThrows(classOf[UnsupportedEncodingException],
+                   new Formatter(notExist, "ISO 1111-1"))
     } finally if (notExist.exists()) {
       // Fail on RI on Windows, because output stream is created and
       // not closed when exception thrown
@@ -306,7 +299,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("Constructor(File, String, Locale)") {
+  @Test def constructorFileStringLocale(): Unit = {
 
     locally {
       val f = new Formatter(notExist, Charset.defaultCharset().name(), null)
@@ -321,8 +314,8 @@ object DefaultFormatterSuite extends tests.Suite {
       f.close()
     }
 
-    assertThrows[UnsupportedEncodingException](
-      new Formatter(notExist, "ISO 1111-1", Locale.CHINA))
+    assertThrows(classOf[UnsupportedEncodingException],
+                 new Formatter(notExist, "ISO 1111-1", Locale.CHINA))
 
     locally {
       val f =
@@ -332,16 +325,16 @@ object DefaultFormatterSuite extends tests.Suite {
     }
 
     if (!root) {
-      assertThrows[FileNotFoundException](
-        new Formatter(readOnly.getPath,
-                      Charset.defaultCharset().name(),
-                      Locale.ITALY))
+      assertThrows(classOf[FileNotFoundException],
+                   new Formatter(readOnly.getPath,
+                                 Charset.defaultCharset().name(),
+                                 Locale.ITALY))
     }
   }
 
-  test("Constructor(PrintStream)") {
-    assertThrows[NullPointerException](
-      new Formatter(null.asInstanceOf[PrintStream]))
+  @Test def constructorPrintStream(): Unit = {
+    assertThrows(classOf[NullPointerException],
+                 new Formatter(null.asInstanceOf[PrintStream]))
 
     val ps = new PrintStream(notExist, "UTF-16BE")
     val f  = new Formatter(ps)
@@ -349,9 +342,9 @@ object DefaultFormatterSuite extends tests.Suite {
     f.close()
   }
 
-  test("Constructor(OutputStream)") {
-    assertThrows[NullPointerException](
-      new Formatter(null.asInstanceOf[OutputStream]))
+  @Test def constructorOutputStream(): Unit = {
+    assertThrows(classOf[NullPointerException],
+                 new Formatter(null.asInstanceOf[OutputStream]))
 
     val os = new FileOutputStream(notExist)
     val f  = new Formatter(os)
@@ -359,11 +352,11 @@ object DefaultFormatterSuite extends tests.Suite {
     f.close()
   }
 
-  test("Constructor(OutputStream, String)") {
+  @Test def constructorOutputStreamString(): Unit = {
 
-    assertThrows[NullPointerException](
-      new Formatter(null.asInstanceOf[OutputStream],
-                    Charset.defaultCharset().name()))
+    assertThrows(classOf[NullPointerException],
+                 new Formatter(null.asInstanceOf[OutputStream],
+                               Charset.defaultCharset().name()))
 
     locally {
       // Porting note: PipedOutputStream is not essential to this test.
@@ -371,7 +364,8 @@ object DefaultFormatterSuite extends tests.Suite {
       // a harmless one.
       // val os = new PipedOutputStream()
       val os = new ByteArrayOutputStream
-      assertThrows[UnsupportedEncodingException](new Formatter(os, "TMP-1111"))
+      assertThrows(classOf[UnsupportedEncodingException],
+                   new Formatter(os, "TMP-1111"))
     }
 
     locally {
@@ -382,12 +376,12 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("Constructor(OutputStream, String, Locale)") {
+  @Test def constructorOutputStreamStringLocale(): Unit = {
 
-    assertThrows[NullPointerException](
-      new Formatter(null.asInstanceOf[OutputStream],
-                    Charset.defaultCharset().name(),
-                    Locale.getDefault))
+    assertThrows(classOf[NullPointerException],
+                 new Formatter(null.asInstanceOf[OutputStream],
+                               Charset.defaultCharset().name(),
+                               Locale.getDefault))
 
     locally {
       val os = new FileOutputStream(notExist)
@@ -401,8 +395,8 @@ object DefaultFormatterSuite extends tests.Suite {
       // a harmless one.
       // val os = new PipedOutputStream()
       val os = new ByteArrayOutputStream
-      assertThrows[UnsupportedEncodingException](
-        new Formatter(os, "TMP-1111", Locale.getDefault))
+      assertThrows(classOf[UnsupportedEncodingException],
+                   new Formatter(os, "TMP-1111", Locale.getDefault))
     }
 
     locally {
@@ -413,28 +407,28 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("locale()") {
+  @Test def locale(): Unit = {
     val f = new Formatter(null.asInstanceOf[Locale])
     assertNull(f.locale())
 
     f.close()
-    assertThrows[FormatterClosedException](f.locale())
+    assertThrows(classOf[FormatterClosedException], f.locale())
   }
 
-  test("out()") {
+  @Test def out(): Unit = {
     val f = new Formatter()
     assertNotNull(f.out())
     assertTrue(f.out().isInstanceOf[StringBuilder])
     f.close()
-    assertThrows[FormatterClosedException](f.out())
+    assertThrows(classOf[FormatterClosedException], f.out())
   }
 
-  test("flush()") {
+  @Test def flush(): Unit = {
     locally {
       val f = new Formatter(notExist)
       assertTrue(f.isInstanceOf[Flushable])
       f.close()
-      assertThrows[FormatterClosedException](f.out())
+      assertThrows(classOf[FormatterClosedException], f.out())
     }
 
     locally {
@@ -445,7 +439,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("close()") {
+  @Test def close(): Unit = {
     val f = new Formatter(notExist)
     assertTrue(f.isInstanceOf[Closeable])
     f.close()
@@ -454,15 +448,15 @@ object DefaultFormatterSuite extends tests.Suite {
     assertNull(f.ioException())
   }
 
-  test("toString()") {
+  @Test def testToString(): Unit = {
     val f = new Formatter()
     assertNotNull(f.toString())
     assertEquals(f.out().toString(), f.toString())
     f.close()
-    assertThrows[FormatterClosedException](f.toString())
+    assertThrows(classOf[FormatterClosedException], f.toString())
   }
 
-  test("ioException()") {
+  @Test def ioException(): Unit = {
     locally {
       val f = new Formatter(new MockDestination())
       assertNull(f.ioException())
@@ -481,7 +475,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("format(String, Array[Object]) for null parameter") {
+  @Test def formatForNullParameter(): Unit = {
     locally {
       val f = new Formatter()
       f.format("hello", null.asInstanceOf[Array[Object]])
@@ -489,7 +483,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("format(String, Array[Object]) for argument index") {
+  @Test def formatForArgumentIndex(): Unit = {
     locally {
       val f = new Formatter(Locale.US)
       f.format("%1$s%2$s%3$s%4$s%5$s%6$s%7$s%8$s%9$s%11$s%10$s",
@@ -515,19 +509,20 @@ object DefaultFormatterSuite extends tests.Suite {
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[UnknownFormatConversionException](
-        f.format("%-1$s", "1", "2"))
+      assertThrows(classOf[UnknownFormatConversionException],
+                   f.format("%-1$s", "1", "2"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[UnknownFormatConversionException](
-        f.format("%$s", "hello", "2"))
+      assertThrows(classOf[UnknownFormatConversionException],
+                   f.format("%$s", "hello", "2"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[UnknownFormatConversionException](f.format("%", "string"))
+      assertThrows(classOf[UnknownFormatConversionException],
+                   f.format("%", "string"))
     }
 
     locally {
@@ -562,27 +557,30 @@ object DefaultFormatterSuite extends tests.Suite {
                "10",
                "11")
       assertEquals("xx12221155&7288233suffix", f.toString())
-      assertThrows[MissingFormatArgumentException](f.format("%<s", "hello"))
+      assertThrows(classOf[MissingFormatArgumentException],
+                   f.format("%<s", "hello"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[MissingFormatArgumentException](f.format("%123$s", "hello"))
+      assertThrows(classOf[MissingFormatArgumentException],
+                   f.format("%123$s", "hello"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
       // 2147483648 is the value of Integer.MAX_VALUE + 1
-      assertThrows[MissingFormatArgumentException](
-        f.format("%2147483648$s", "hello"))
+      assertThrows(classOf[MissingFormatArgumentException],
+                   f.format("%2147483648$s", "hello"))
       // 2147483647 is the value of Integer.MAX_VALUE
-      assertThrows[MissingFormatArgumentException](
-        f.format("%2147483647$s", "hello"))
+      assertThrows(classOf[MissingFormatArgumentException],
+                   f.format("%2147483647$s", "hello"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[MissingFormatArgumentException](f.format("%s%s", "hello"))
+      assertThrows(classOf[MissingFormatArgumentException],
+                   f.format("%s%s", "hello"))
     }
 
     locally {
@@ -598,7 +596,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("format(String, Array[Object]) for width") {
+  @Test def formatForWidth(): Unit = {
     locally {
       val f = new Formatter(Locale.US)
       f.format("%1$8s", "1")
@@ -619,7 +617,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("format(String, Array[Object]) for precision") {
+  @Test def formatForPrecision(): Unit = {
     locally {
       val f = new Formatter(Locale.US)
       f.format("%.5s", "123456")
@@ -647,20 +645,20 @@ object DefaultFormatterSuite extends tests.Suite {
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[UnknownFormatConversionException](
-        f.format("%.s", "hello", "2"))
+      assertThrows(classOf[UnknownFormatConversionException],
+                   f.format("%.s", "hello", "2"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[UnknownFormatConversionException](
-        f.format("%.-5s", "123456"))
+      assertThrows(classOf[UnknownFormatConversionException],
+                   f.format("%.-5s", "123456"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[UnknownFormatConversionException](
-        f.format("%1.s", "hello", "2"))
+      assertThrows(classOf[UnknownFormatConversionException],
+                   f.format("%1.s", "hello", "2"))
     }
 
     locally {
@@ -676,7 +674,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("format(String, Array[Object]) for line separator") {
+  @Test def formatForLineSeparator(): Unit = {
     val oldSeparator = System.getProperty("line.separator")
     System.setProperty("line.separator", "!\n")
     try {
@@ -703,39 +701,39 @@ object DefaultFormatterSuite extends tests.Suite {
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[IllegalFormatFlagsException](f.format("%-n"))
-      assertThrows[IllegalFormatFlagsException](f.format("%+n"))
-      assertThrows[IllegalFormatFlagsException](f.format("%#n"))
-      assertThrows[IllegalFormatFlagsException](f.format("% n"))
-      assertThrows[IllegalFormatFlagsException](f.format("%0n"))
-      assertThrows[IllegalFormatFlagsException](f.format("%,n"))
-      assertThrows[IllegalFormatFlagsException](f.format("%(n"))
+      assertThrows(classOf[IllegalFormatFlagsException], f.format("%-n"))
+      assertThrows(classOf[IllegalFormatFlagsException], f.format("%+n"))
+      assertThrows(classOf[IllegalFormatFlagsException], f.format("%#n"))
+      assertThrows(classOf[IllegalFormatFlagsException], f.format("% n"))
+      assertThrows(classOf[IllegalFormatFlagsException], f.format("%0n"))
+      assertThrows(classOf[IllegalFormatFlagsException], f.format("%,n"))
+      assertThrows(classOf[IllegalFormatFlagsException], f.format("%(n"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[IllegalFormatWidthException](f.format("%4n"))
+      assertThrows(classOf[IllegalFormatWidthException], f.format("%4n"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[IllegalFormatWidthException](f.format("%-4n"))
+      assertThrows(classOf[IllegalFormatWidthException], f.format("%-4n"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[IllegalFormatPrecisionException](f.format("%.9n"))
+      assertThrows(classOf[IllegalFormatPrecisionException], f.format("%.9n"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[IllegalFormatPrecisionException](f.format("%5.9n"))
+      assertThrows(classOf[IllegalFormatPrecisionException], f.format("%5.9n"))
     }
 
     System.setProperty("line.separator", oldSeparator)
   }
 
-  test("format(String, Array[Object]) for percent") {
+  @Test def formatForPercent(): Unit = {
     locally {
       val f = new Formatter(Locale.ENGLISH)
       f.format("%1$%", 100.asInstanceOf[Object])
@@ -756,12 +754,12 @@ object DefaultFormatterSuite extends tests.Suite {
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[IllegalFormatPrecisionException](f.format("%.9%"))
+      assertThrows(classOf[IllegalFormatPrecisionException], f.format("%.9%"))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[IllegalFormatPrecisionException](f.format("%5.9%"))
+      assertThrows(classOf[IllegalFormatPrecisionException], f.format("%5.9%"))
     }
 
     locally {
@@ -803,14 +801,14 @@ object DefaultFormatterSuite extends tests.Suite {
      * error on RI, throw IllegalFormatFlagsException specification
      * says FormatFlagsConversionMismatchException should be thrown
      */
-    assertThrows[FormatFlagsConversionMismatchException](f.format(str))
+    assertThrows(classOf[FormatFlagsConversionMismatchException], f.format(str))
   }
 
-  test("format(String, Array[Object]) for flag") {
+  @Test def formatForFlag(): Unit = {
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[DuplicateFormatFlagsException](
-        f.format("%1$-#-8s", "something"))
+      assertThrows(classOf[DuplicateFormatFlagsException],
+                   f.format("%1$-#-8s", "something"))
     }
 
     locally {
@@ -824,14 +822,14 @@ object DefaultFormatterSuite extends tests.Suite {
           // Do not test 0-9, a-z, A-Z and characters in the chars array.
           // They are characters used as flags, width or conversions
         } else {
-          assertThrows[UnknownFormatConversionException](
-            f.format("%" + i + "s", 1.asInstanceOf[Object]))
+          assertThrows(classOf[UnknownFormatConversionException],
+                       f.format("%" + i + "s", 1.asInstanceOf[Object]))
         }
       }
     }
   }
 
-  test("format(String, Array[Object]) for general conversion b/B") {
+  @Test def formatForGeneralConversionType_bB(): Unit = {
     val triple = Array(
       Array(Boolean.box(false), "%3.2b", " fa"),
       Array(Boolean.box(false), "%-4.6b", "false"),
@@ -892,7 +890,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("format(String, Array[Object]) for general conversion type 's' and 'S'") {
+  @Test def formatForGeneralConversionType_sS(): Unit = {
     val triple = Array(
       Array(Boolean.box(false), "%2.3s", "fal"),
       Array(Boolean.box(false), "%-6.4s", "fals  "),
@@ -959,7 +957,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("format(String, Array[Object]) for general conversion type 'h' and 'H'") {
+  @Test def formatForGeneralConversionType_hH(): Unit = {
     val input = Array(
       false.asInstanceOf[Object],
       true.asInstanceOf[Object],
@@ -992,7 +990,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("format(String, Array[Object]) for general conversion other cases") {
+  @Test def formatForGeneralConversionOtherCases(): Unit = {
     locally {
       /*
        * In Turkish locale, the upper case of '\u0069' is '\u0130'. The
@@ -1026,8 +1024,8 @@ object DefaultFormatterSuite extends tests.Suite {
          * argument is not a Formattable , then a
          * FormatFlagsConversionMismatchException will be thrown.
          */
-        assertThrows[FormatFlagsConversionMismatchException](
-          f.format("%#s", input(i)))
+        assertThrows(classOf[FormatFlagsConversionMismatchException],
+                     f.format("%#s", input(i)))
       } else {
         f.format("%#s%<-#8s", input(i))
         assertEquals(
@@ -1037,7 +1035,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("format(String, Array[Object]) for general conversion exception") {
+  @Test def formatForGeneralConversionException(): Unit = {
     locally {
       val flagMismatch = Array(
         "%#b",
@@ -1079,50 +1077,50 @@ object DefaultFormatterSuite extends tests.Suite {
       val f = new Formatter(Locale.US)
 
       for (i <- 0 until flagMismatch.length) {
-        assertThrows[FormatFlagsConversionMismatchException](
-          f.format(flagMismatch(i), "something"))
+        assertThrows(classOf[FormatFlagsConversionMismatchException],
+                     f.format(flagMismatch(i), "something"))
       }
 
       val missingWidth = Array("%-b", "%-B", "%-h", "%-H", "%-s", "%-S")
       for (i <- 0 until missingWidth.length) {
-        assertThrows[MissingFormatWidthException](
-          f.format(missingWidth(i), "something"))
+        assertThrows(classOf[MissingFormatWidthException],
+                     f.format(missingWidth(i), "something"))
       }
     }
 
     // Regression test
     locally {
       val f = new Formatter()
-      assertThrows[IllegalFormatCodePointException](
-        f.format("%c", -0x0001.toByte.asInstanceOf[Object]))
+      assertThrows(classOf[IllegalFormatCodePointException],
+                   f.format("%c", -0x0001.toByte.asInstanceOf[Object]))
     }
 
     locally {
       val f = new Formatter()
-      assertThrows[IllegalFormatCodePointException](
-        f.format("%c", -0x0001.toShort.asInstanceOf[Object]))
+      assertThrows(classOf[IllegalFormatCodePointException],
+                   f.format("%c", -0x0001.toShort.asInstanceOf[Object]))
     }
 
     locally {
       val f = new Formatter()
-      assertThrows[IllegalFormatCodePointException](
-        f.format("%c", -0x0001.asInstanceOf[Object]))
+      assertThrows(classOf[IllegalFormatCodePointException],
+                   f.format("%c", -0x0001.asInstanceOf[Object]))
     }
   }
 
-  test("format(String, Array[Object]) for Character conversion") {
+  @Test def formatForCharacterConversion(): Unit = {
     val f       = new Formatter(Locale.US)
     val illArgs = Array(true, 1.1f, 1.1d, "string content", 1.1f, new Date())
     for (i <- (0 until illArgs.length)) {
-      assertThrows[IllegalFormatConversionException](
-        f.format("%c", illArgs(i).asInstanceOf[Object]))
+      assertThrows(classOf[IllegalFormatConversionException],
+                   f.format("%c", illArgs(i).asInstanceOf[Object]))
     }
 
-    assertThrows[IllegalFormatCodePointException](
-      f.format("%c", Integer.MAX_VALUE.asInstanceOf[Object]))
+    assertThrows(classOf[IllegalFormatCodePointException],
+                 f.format("%c", Integer.MAX_VALUE.asInstanceOf[Object]))
 
-    assertThrows[FormatFlagsConversionMismatchException](
-      f.format("%#c", 'c'.asInstanceOf[Object]))
+    assertThrows(classOf[FormatFlagsConversionMismatchException],
+                 f.format("%#c", 'c'.asInstanceOf[Object]))
 
     val triple = Array(
       Array('c', "%c", "c"),
@@ -1152,8 +1150,8 @@ object DefaultFormatterSuite extends tests.Suite {
       f.format("%c", 0x10000.asInstanceOf[Object])
       assertEquals(0x10000, f.toString().codePointAt(0))
 
-      assertThrows[IllegalFormatPrecisionException](
-        f.format("%2.2c", 'c'.asInstanceOf[Object]))
+      assertThrows(classOf[IllegalFormatPrecisionException],
+                   f.format("%2.2c", 'c'.asInstanceOf[Object]))
     }
 
     locally {
@@ -1173,9 +1171,8 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for legal Byte/Short/Integer/Long conversion type 'd'",
-    1443) {
+  @Ignore // #1443
+  @Test def formatForLegalByteShortIntegerLongConversionType_d(): Unit = {
     val triple = Array(
       Array(0, "%d", "0"),
       Array(0, "%10d", "         0"),
@@ -1260,8 +1257,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test(
-    "format(String, Array[Object]) for legal Byte/Short/Integer/Long conversion type 'o'") {
+  @Test def formatForLegalByteShortIntegerLongConversionType_o(): Unit = {
     val triple = Array(
       Array(0, "%o", "0"),
       Array(0, "%-6o", "0     "),
@@ -1318,8 +1314,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test(
-    "format(String, Array[Object]) for legal Byte/Short/Integer/Long conversion type 'x' and 'X'") {
+  @Test def formatForLegalByteShortIntegerLongConversionType_xX(): Unit = {
     val triple = Array(
       Array(0, "%x", "0"),
       Array(0, "%-8x", "0       "),
@@ -1385,7 +1380,8 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  testFails("format(String, Array[Object]) for Date/Time conversion", 0) {
+  @Ignore // no issue filed
+  @Test def formatForDateTimeConversion(): Unit = {
     // issue not filed yet
     // calls to the methods of Calender throws NotImplementedError
     // even if we comment out all of `paris` and `china` below,
@@ -2134,8 +2130,8 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test(
-    "format(String, Array[Object]) for null argument for Byte/Short/Integer/Long/BigInteger conversion") {
+  @Test def formatForNullArgumentForByteShortIntegerLongBigIntegerConversion()
+      : Unit = {
     locally {
       val f = new Formatter(Locale.FRANCE)
       f.format("%d%<o%<x%<5X", null.asInstanceOf[java.lang.Integer])
@@ -2167,9 +2163,8 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for legal BigInteger conversion type 'd'",
-    1443) {
+  @Ignore // #1443
+  @Test def formatForLegalBigIntegerConversionType_d(): Unit = {
     val tripleD = Array(
       Array(new BigInteger("123456789012345678901234567890"),
             "%d",
@@ -2339,9 +2334,8 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for padding of BigInteger conversion",
-    1443) {
+  @Ignore // #1443
+  @Test def formatForPaddingOfBigIntegerConversion(): Unit = {
     val bigInt = new BigInteger("123456789012345678901234567890")
     locally {
       val f = new Formatter(Locale.GERMAN)
@@ -2384,12 +2378,12 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("format(String, Array[Object]) for BigInteger conversion exception") {
+  @Test def formatForBigIntegerConversionException(): Unit = {
     val flagsConversionMismatches = Array("%#d", "%,o", "%,x", "%,X")
     for (i <- 0 until flagsConversionMismatches.length) {
       val f = new Formatter(Locale.CHINA)
-      assertThrows[FormatFlagsConversionMismatchException](
-        f.format(flagsConversionMismatches(i), new BigInteger("1")))
+      assertThrows(classOf[FormatFlagsConversionMismatchException],
+                   f.format(flagsConversionMismatches(i), new BigInteger("1")))
     }
 
     val missingFormatWidths = Array("%-0d",
@@ -2406,45 +2400,46 @@ object DefaultFormatterSuite extends tests.Suite {
                                     "%-X")
     for (i <- 0 until missingFormatWidths.length) {
       val f = new Formatter(Locale.KOREA)
-      assertThrows[MissingFormatWidthException](
-        f.format(missingFormatWidths(i), new BigInteger("1")))
+      assertThrows(classOf[MissingFormatWidthException],
+                   f.format(missingFormatWidths(i), new BigInteger("1")))
     }
 
     val illFlags =
       Array("%+ d", "%-08d", "%+ o", "%-08o", "%+ x", "%-08x", "%+ X", "%-08X")
     for (i <- 0 until illFlags.length) {
       val f = new Formatter(Locale.CANADA)
-      assertThrows[IllegalFormatFlagsException](
-        f.format(illFlags(i), new BigInteger("1")))
+      assertThrows(classOf[IllegalFormatFlagsException],
+                   f.format(illFlags(i), new BigInteger("1")))
     }
 
     val precisionExceptions = Array("%.4d", "%2.5o", "%8.6x", "%11.17X")
     for (i <- 0 until precisionExceptions.length) {
       val f = new Formatter(Locale.US)
-      assertThrows[IllegalFormatPrecisionException](
-        f.format(precisionExceptions(i), new BigInteger("1")))
+      assertThrows(classOf[IllegalFormatPrecisionException],
+                   f.format(precisionExceptions(i), new BigInteger("1")))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[UnknownFormatConversionException](
-        f.format("%D", new BigInteger("1")))
+      assertThrows(classOf[UnknownFormatConversionException],
+                   f.format("%D", new BigInteger("1")))
     }
 
     locally {
       val f = new Formatter(Locale.US)
-      assertThrows[UnknownFormatConversionException](
-        f.format("%O", new BigInteger("1")))
+      assertThrows(classOf[UnknownFormatConversionException],
+                   f.format("%O", new BigInteger("1")))
     }
 
     locally {
       val f = new Formatter()
-      assertThrows[MissingFormatWidthException](
+      assertThrows(
+        classOf[MissingFormatWidthException],
         f.format("%010000000000000000000000000000000001d", new BigInteger("1")))
     }
   }
 
-  test("format(String, Array[Object]) for BigInteger exception throwing order") {
+  @Test def formatForBigIntegerExceptionThrowingOrder(): Unit = {
     val big = new BigInteger("100")
 
     /*
@@ -2457,30 +2452,31 @@ object DefaultFormatterSuite extends tests.Suite {
     val f = new Formatter(Locale.US)
     // compare IllegalFormatConversionException and
     // FormatFlagsConversionMismatchException
-    assertThrows[IllegalFormatConversionException](
-      f.format("%(o", false.asInstanceOf[Object]))
+    assertThrows(classOf[IllegalFormatConversionException],
+                 f.format("%(o", false.asInstanceOf[Object]))
 
     // compare IllegalFormatPrecisionException and
     // IllegalFormatConversionException
-    assertThrows[IllegalFormatPrecisionException](
-      f.format("%.4o", false.asInstanceOf[Object]))
+    assertThrows(classOf[IllegalFormatPrecisionException],
+                 f.format("%.4o", false.asInstanceOf[Object]))
 
     // compare IllegalFormatFlagsException and
     // IllegalFormatPrecisionException
-    assertThrows[IllegalFormatFlagsException](f.format("%+ .4o", big))
+    assertThrows(classOf[IllegalFormatFlagsException], f.format("%+ .4o", big))
 
     // compare MissingFormatWidthException and
     // IllegalFormatFlagsException
-    assertThrows[MissingFormatWidthException](f.format("%+ -o", big))
+    assertThrows(classOf[MissingFormatWidthException], f.format("%+ -o", big))
 
     // compare UnknownFormatConversionException and
     // MissingFormatWidthException
-    assertThrows[UnknownFormatConversionException](f.format("%-O", big))
+    assertThrows(classOf[UnknownFormatConversionException],
+                 f.format("%-O", big))
   }
 
-  testFails(
-    "format(String, Array[Object]) for Float/Double conversion type 'e' and 'E'",
-    1443) { // Fails because No Locale support. See LOCALE.German below.
+  @Ignore // #1443
+  @Test def formatForFloatDoubleConversionType_eE(): Unit = {
+    // Fails because No Locale support. See LOCALE.German below.
     // Number conversions pass after PR #1296, see FormatterUSSuite.scala.
     val tripleE = Array(
       Array(0f, "%e", "0.000000e+00"),
@@ -2680,9 +2676,8 @@ object DefaultFormatterSuite extends tests.Suite {
     assertEquals("1,001000e+03", f.toString())
   }
 
-  testFails(
-    "format(String, Array[Object]) for Float/Double conversion type 'g' and 'G'",
-    1443) {
+  @Ignore // #1443
+  @Test def formatForFloatDoubleConversionType_gG(): Unit = {
     val tripleG = Array(
       Array(1001f, "%g", "1001.00"),
       Array(1001f, "%- (,9.8g", " 1,001.0000"),
@@ -2862,8 +2857,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test(
-    "format(String, Array[Object]) for Float/Double conversion type 'g' and 'G' overflow") {
+  @Test def formatForFloatDoubleConversionType_gG_Overflow(): Unit = {
     locally {
       val f = new Formatter()
       f.format("%g", 999999.5.asInstanceOf[Object])
@@ -2913,9 +2907,8 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for Float/Double conversion type 'f'",
-    1443) {
+  @Ignore // #1443
+  @Test def formatForFloatDoubleConversionType_f(): Unit = {
     val tripleF: Array[Array[Any]] = Array(
       Array(0f, "%f", "0,000000"),
       Array(0f, "%#.3f", "0,000"),
@@ -3160,8 +3153,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test(
-    "format(String, Array[Object]) for Float/Double conversion type 'a' and 'A'") {
+  @Test def formatForFloatDoubleConversionType_aA(): Unit = {
     val tripleA: Array[Array[Any]] = Array(
       Array(-0f, "%a", "-0x0.0p0"),
       Array(-0f, "%#.3a", "-0x0.000p0"),
@@ -3314,8 +3306,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test(
-    "format(String, Array[Object]) for BigDecimal conversion type 'e' and 'E'") {
+  @Test def formatForBigDecimalConversionType_eE(): Unit = {
     val tripleE: Array[Array[Any]] = Array(
       Array(BigDecimal.ZERO, "%e", "0.000000e+00"),
       Array(BigDecimal.ZERO, "%#.0e", "0.e+00"),
@@ -3376,9 +3367,8 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for BigDecimal conversion type 'g' and 'G'",
-    1443) {
+  @Ignore // #1443
+  @Test def formatForBigDecimalConversionType_gG(): Unit = {
     val tripleG: Array[Array[Any]] = Array(
       Array(BigDecimal.ZERO, "%g", "0.00000"),
       Array(BigDecimal.ZERO, "%.5g", "0.0000"),
@@ -3460,7 +3450,7 @@ object DefaultFormatterSuite extends tests.Suite {
     assertEquals(" 4,00000e+06", f.toString)
   }
 
-  test("format(String, Array[Object]) for BigDecimal conversion type 'f'") {
+  @Test def formatForBigDecimalConversionType_f(): Unit = {
     val input: Int   = 0
     val pattern: Int = 1
     val output: Int  = 2
@@ -3550,8 +3540,8 @@ object DefaultFormatterSuite extends tests.Suite {
     assertEquals("5000000000.000000", f.toString)
   }
 
-  test(
-    "format(String, Array[Object]) for exceptions in Float/Double/BigDecimal conversion type 'e', 'E', 'g', 'G', 'f', 'a', 'A'") {
+  @Test def formatForExceptionsInFloatDoubleBigDecimalConversionType_eEgGfaA()
+      : Unit = {
     val conversions: Array[Char] = Array('e', 'E', 'g', 'G', 'f', 'a', 'A')
     val illArgs: Array[Any] = Array(false,
                                     1.toByte,
@@ -3567,19 +3557,20 @@ object DefaultFormatterSuite extends tests.Suite {
       j <- 0 until conversions.length
     } {
       val f = new Formatter(Locale.UK)
-      assertThrows[IllegalFormatConversionException](
+      assertThrows(
+        classOf[IllegalFormatConversionException],
         f.format("%" + conversions(j), illArgs(i).asInstanceOf[Object]))
 
     }
     locally {
       val f = new Formatter(Locale.UK)
-      assertThrows[IllegalFormatConversionException](
-        f.format("%a", new BigDecimal(1)))
+      assertThrows(classOf[IllegalFormatConversionException],
+                   f.format("%a", new BigDecimal(1)))
     }
     locally {
       val f = new Formatter(Locale.UK)
-      assertThrows[IllegalFormatConversionException](
-        f.format("%A", new BigDecimal(1)))
+      assertThrows(classOf[IllegalFormatConversionException],
+                   f.format("%A", new BigDecimal(1)))
     }
 
     val flagsConversionMismatches: Array[String] =
@@ -3587,12 +3578,13 @@ object DefaultFormatterSuite extends tests.Suite {
     for (i <- 0 until flagsConversionMismatches.length) {
       locally {
         val f = new Formatter(Locale.CHINA)
-        assertThrows[FormatFlagsConversionMismatchException](
-          f.format(flagsConversionMismatches(i), new BigDecimal(1)))
+        assertThrows(classOf[FormatFlagsConversionMismatchException],
+                     f.format(flagsConversionMismatches(i), new BigDecimal(1)))
       }
       locally {
         val f = new Formatter(Locale.JAPAN)
-        assertThrows[FormatFlagsConversionMismatchException](
+        assertThrows(
+          classOf[FormatFlagsConversionMismatchException],
           f.format(flagsConversionMismatches(i), null.asInstanceOf[BigDecimal]))
       }
     }
@@ -3621,12 +3613,13 @@ object DefaultFormatterSuite extends tests.Suite {
     for (i <- 0 until missingFormatWidths.length) {
       locally {
         val f = new Formatter(Locale.KOREA)
-        assertThrows[MissingFormatWidthException](
-          f.format(missingFormatWidths(i), 1f.asInstanceOf[Object]))
+        assertThrows(classOf[MissingFormatWidthException],
+                     f.format(missingFormatWidths(i), 1f.asInstanceOf[Object]))
       }
       locally {
         val f = new Formatter(Locale.KOREA)
-        assertThrows[MissingFormatWidthException](
+        assertThrows(
+          classOf[MissingFormatWidthException],
           f.format(missingFormatWidths(i), null.asInstanceOf[java.lang.Float]))
       }
     }
@@ -3648,22 +3641,21 @@ object DefaultFormatterSuite extends tests.Suite {
     for (i <- 0 until illFlags.length) {
       locally {
         val f = new Formatter(Locale.CANADA)
-        assertThrows[IllegalFormatFlagsException](
-          f.format(illFlags(i), 1.23d.asInstanceOf[Object]))
+        assertThrows(classOf[IllegalFormatFlagsException],
+                     f.format(illFlags(i), 1.23d.asInstanceOf[Object]))
       }
       locally {
         val f = new Formatter(Locale.CANADA)
-        assertThrows[IllegalFormatFlagsException](
-          f.format(illFlags(i), null.asInstanceOf[java.lang.Double]))
+        assertThrows(classOf[IllegalFormatFlagsException],
+                     f.format(illFlags(i), null.asInstanceOf[java.lang.Double]))
       }
     }
     val f = new Formatter(Locale.US)
-    assertThrows[UnknownFormatConversionException](
-      f.format("%F", 1.asInstanceOf[Object]))
+    assertThrows(classOf[UnknownFormatConversionException],
+                 f.format("%F", 1.asInstanceOf[Object]))
   }
 
-  test(
-    "format(String, Array[Object]) for Float/Double/BigDecimal exception throwing order") { // Porting note: sic
+  @Test def formatForFloatDoubleBigDecimalExceptionThrowingOrder(): Unit = {
     /*
      * Summary: UnknownFormatConversionException >
      * MissingFormatWidthException > IllegalFormatFlagsException >
@@ -3675,36 +3667,36 @@ object DefaultFormatterSuite extends tests.Suite {
       // compare FormatFlagsConversionMismatchException and
       // IllegalFormatConversionException
       val f = new Formatter(Locale.US)
-      assertThrows[FormatFlagsConversionMismatchException](
-        f.format("%,e", 1.toByte.asInstanceOf[Object]))
+      assertThrows(classOf[FormatFlagsConversionMismatchException],
+                   f.format("%,e", 1.toByte.asInstanceOf[Object]))
     }
 
     locally {
       // compare IllegalFormatFlagsException and
       // FormatFlagsConversionMismatchException
       val f = new Formatter(Locale.US)
-      assertThrows[IllegalFormatFlagsException](
-        f.format("%+ ,e", 1f.asInstanceOf[Object]))
+      assertThrows(classOf[IllegalFormatFlagsException],
+                   f.format("%+ ,e", 1f.asInstanceOf[Object]))
     }
 
     locally {
       // compare MissingFormatWidthException and
       // IllegalFormatFlagsException
       val f = new Formatter(Locale.US)
-      assertThrows[MissingFormatWidthException](
-        f.format("%+ -e", 1f.asInstanceOf[Object]))
+      assertThrows(classOf[MissingFormatWidthException],
+                   f.format("%+ -e", 1f.asInstanceOf[Object]))
     }
 
     locally {
       // compare UnknownFormatConversionException and
       // MissingFormatWidthException
       val f = new Formatter(Locale.US)
-      assertThrows[UnknownFormatConversionException](
-        f.format("%-F", 1f.asInstanceOf[Object]))
+      assertThrows(classOf[UnknownFormatConversionException],
+                   f.format("%-F", 1f.asInstanceOf[Object]))
     }
   }
 
-  test("format(String, Array[Object]) for BigDecimal exception throwing order") { // Porting note: sic
+  @Test def formatForBigDecimalExceptionThrowingOrder(): Unit = {
     val bd = new BigDecimal("1.0")
     /*
      * Summary: UnknownFormatConversionException >
@@ -3717,34 +3709,34 @@ object DefaultFormatterSuite extends tests.Suite {
       // compare FormatFlagsConversionMismatchException and
       // IllegalFormatConversionException
       val f = new Formatter(Locale.US)
-      assertThrows[FormatFlagsConversionMismatchException](
-        f.format("%,e", 1.toByte.asInstanceOf[Object]))
+      assertThrows(classOf[FormatFlagsConversionMismatchException],
+                   f.format("%,e", 1.toByte.asInstanceOf[Object]))
     }
 
     locally {
       // compare IllegalFormatFlagsException and
       // FormatFlagsConversionMismatchException
       val f = new Formatter(Locale.US)
-      assertThrows[IllegalFormatFlagsException](f.format("%+ ,e", bd))
+      assertThrows(classOf[IllegalFormatFlagsException], f.format("%+ ,e", bd))
     }
 
     locally {
       // compare MissingFormatWidthException and
       // IllegalFormatFlagsException
       val f = new Formatter(Locale.US)
-      assertThrows[MissingFormatWidthException](f.format("%+ -e", bd))
+      assertThrows(classOf[MissingFormatWidthException], f.format("%+ -e", bd))
     }
 
     locally {
       // compare UnknownFormatConversionException and
       // MissingFormatWidthException
       val f = new Formatter(Locale.US)
-      assertThrows[UnknownFormatConversionException](f.format("%-F", bd))
+      assertThrows(classOf[UnknownFormatConversionException],
+                   f.format("%-F", bd))
     }
   }
 
-  test(
-    "format(String, Array[Object]) for null argument for Float/Double/BigDecimal conversion") {
+  @Test def formatForNullArgumentForFloatDoubleBigDecimalConversion(): Unit = {
     // test (Float)null
     locally {
       val f = new Formatter(Locale.FRANCE)
@@ -3860,7 +3852,7 @@ object DefaultFormatterSuite extends tests.Suite {
     }
   }
 
-  test("Formatter.BigDecimalLayoutForm.values()") {
+  @Test def formatterBigDecimalLayoutFormValues(): Unit = {
     import Formatter.BigDecimalLayoutForm
     val vals: Array[BigDecimalLayoutForm] = BigDecimalLayoutForm.values()
     assertEquals(2, vals.length)
@@ -3868,7 +3860,7 @@ object DefaultFormatterSuite extends tests.Suite {
     assertEquals(BigDecimalLayoutForm.DECIMAL_FLOAT, vals(1))
   }
 
-  test("Formatter.BigDecimalLayoutForm.valueOf(String)") {
+  @Test def formatterBigDecimalLayoutFormValueOfString(): Unit = {
     import Formatter.BigDecimalLayoutForm
     val sci: BigDecimalLayoutForm = BigDecimalLayoutForm.valueOf("SCIENTIFIC")
     assertEquals(BigDecimalLayoutForm.SCIENTIFIC, sci)
@@ -3881,7 +3873,7 @@ object DefaultFormatterSuite extends tests.Suite {
    * Regression test for Harmony-5845
    * test the short name for timezone whether uses DaylightTime or not
    */
-  test("DaylightTime") {
+  @Test def DaylightTime(): Unit = {
     // 2018-09-05 Implementation note:
     // The TimeZone.getAvailableIDs() now stub returns an empty array,
     // no longer throwing NotImplementedError.That allows his test to be
@@ -3912,7 +3904,7 @@ object DefaultFormatterSuite extends tests.Suite {
    * Regression test for Harmony-5845
    * test scientific notation to follow RI's behavior
    */
-  test("ScientificNotation") {
+  @Test def ScientificNotation(): Unit = {
     val f: Formatter      = new Formatter()
     val mc: MathContext   = new MathContext(30)
     val value: BigDecimal = new BigDecimal(0.1, mc)
