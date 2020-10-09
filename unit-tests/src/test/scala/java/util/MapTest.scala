@@ -109,7 +109,7 @@ trait MapTest {
     assertNull(mp.get("ONE"))
   }
 
-  @Test def shouldRemoveStoredElementsOnDoubleCornerCases() {
+  @Test def shouldRemoveStoredElementsInDoubleCornerCases() {
     assumeNotIdentityHashMapOnJVM()
 
     val mp = factory.empty[Double, String]
