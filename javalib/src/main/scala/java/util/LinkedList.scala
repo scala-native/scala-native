@@ -41,7 +41,7 @@ class LinkedList[E]()
       peekLast()
   }
 
-  def removeFirst(): E = {
+  override def removeFirst(): E = {
     if (isEmpty())
       throw new NoSuchElementException()
 
@@ -313,7 +313,7 @@ class LinkedList[E]()
 
       def previousIndex(): Int = (i - 1).toInt
 
-      def remove(): Unit = {
+      override def remove(): Unit = {
         checkThatHasLast()
 
         if (currentNode eq null) {
@@ -373,7 +373,7 @@ class LinkedList[E]()
         ret.value
       }
 
-      def remove(): Unit = {
+      override def remove(): Unit = {
         if (!removeEnabled)
           throw new IllegalStateException()
 

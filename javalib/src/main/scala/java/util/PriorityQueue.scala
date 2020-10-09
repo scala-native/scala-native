@@ -103,7 +103,7 @@ class PriorityQueue[E] protected (ordering: Ordering[_ >: E],
         last.get
       }
 
-      def remove(): Unit = {
+      override def remove(): Unit = {
         if (last.isEmpty) {
           throw new IllegalStateException()
         } else {
