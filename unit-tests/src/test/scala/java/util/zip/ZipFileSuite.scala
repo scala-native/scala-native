@@ -2,8 +2,7 @@ package java.util.zip
 
 // Ported from Apache Harmony
 
-import java.io.{File, InputStream}
-import java.nio.file.Files
+import java.io.InputStream
 
 import ZipBytes._
 

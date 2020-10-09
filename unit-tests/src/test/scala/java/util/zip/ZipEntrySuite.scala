@@ -2,9 +2,6 @@ package java.util.zip
 
 // Ported from Apache Harmony
 
-import java.io.{ByteArrayOutputStream, File, IOException, InputStream}
-import java.nio.file.Files
-
 import ZipBytes._
 
 object ZipEntrySuite extends tests.Suite {

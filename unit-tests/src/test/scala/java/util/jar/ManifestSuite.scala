@@ -8,7 +8,6 @@ import java.io.{
   InputStream,
   IOException
 }
-import java.nio.file.Files
 import JarBytes._
 
 object ManifestSuite extends tests.Suite {

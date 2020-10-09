@@ -5,11 +5,9 @@ package java.util.zip
 import java.io.{
   ByteArrayInputStream,
   ByteArrayOutputStream,
-  File,
   FilterInputStream,
   IOException
 }
-import java.nio.file.Files
 
 import ZipBytes.{brokenManifestBytes, zipFile}
 
