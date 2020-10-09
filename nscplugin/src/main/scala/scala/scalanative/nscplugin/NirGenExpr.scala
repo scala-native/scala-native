@@ -1539,6 +1539,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genCallCFuncPtr(app: Apply, code: Int): Val = {
       val Apply(_, aargs) = app
 
+      implicit val pos: nir.Position = app.pos
+
       val targetp   = aargs.head
       val argsp     = if (aargs.size > 2) aargs.slice(1, aargs.length / 2) else Nil
       val evidences = aargs.drop(aargs.length / 2)
@@ -1561,9 +1563,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             /* buf.unboxValue does not handle Ref( Ptr | CArray | ... ) unboxing
              * That's why we're doint it directly */
             if (Type.unbox.isDefinedAt(tpe)) {
-              buf.unbox(tpe, obj, Next.None)
+              buf.unbox(tpe, obj, Next.None)(arg.pos)
             } else {
-              buf.unboxValue(tag, partial = false, obj)
+              buf.unboxValue(tag, partial = false, obj)(arg.pos)
             }
         }
       val argTypes = args.map(_.ty)
