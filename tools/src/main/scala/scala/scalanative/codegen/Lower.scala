@@ -7,7 +7,7 @@ import scalanative.nir._
 import scalanative.linker.{
   Class,
   Trait,
-  Ref,
+  ScopeInfo,
   ScopeRef,
   ClassRef,
   TraitRef,
@@ -86,7 +86,7 @@ object Lower {
         super.onDefn(defn)
     }
 
-    def genNext(buf: Buffer, next: Next): Next = {
+    def genNext(buf: Buffer, next: Next)(implicit pos: Position): Next = {
       next match {
         case Next.Unwind(exc, next) => Next.Unwind(exc, genNext(buf, next))
         case Next.Case(value, next) =>
@@ -145,10 +145,12 @@ object Lower {
             genUnreachable(buf)(inst.pos)
           }
 
-        case Inst.Ret(v) =>
+        case inst @ Inst.Ret(v) =>
+          implicit val pos: Position = inst.pos
           buf += Inst.Ret(genVal(buf, v))
 
-        case Inst.Jump(next) =>
+        case inst @ Inst.Jump(next) =>
+          implicit val pos: Position = inst.pos
           buf += Inst.Jump(genNext(buf, next))
 
         case inst =>
@@ -184,23 +186,25 @@ object Lower {
       case _                             => super.onVal(value)
     }
 
-    def genClassOf(buf: Buffer, node: ScopeInfo): Val = {
+    def genClassOf(buf: Buffer, node: ScopeInfo)(
+        implicit pos: Position): Val = {
       val tpePtr = rtti(node).const
       val recv   = Val.Global(Rt.Runtime.name, Rt.Runtime)
       buf.call(toClassSig, toClass, Seq(recv, tpePtr), Next.None)
     }
 
-    def genVal(buf: Buffer, value: Val): Val = value match {
-      case Val.ClassOf(ScopeRef(node)) => genClassOf(buf, node)
-      case Val.Const(v)                => Val.Const(genVal(buf, v))
-      case Val.StructValue(values) =>
-        Val.StructValue(values.map(genVal(buf, _)))
-      case Val.ArrayValue(ty, values) =>
-        Val.ArrayValue(onType(ty), values.map(genVal(buf, _)))
-      case _ => onVal(value)
-    }
+    def genVal(buf: Buffer, value: Val)(implicit pos: Position): Val =
+      value match {
+        case Val.ClassOf(ScopeRef(node)) => genClassOf(buf, node)
+        case Val.Const(v)                => Val.Const(genVal(buf, v))
+        case Val.StructValue(values) =>
+          Val.StructValue(values.map(genVal(buf, _)))
+        case Val.ArrayValue(ty, values) =>
+          Val.ArrayValue(onType(ty), values.map(genVal(buf, _)))
+        case _ => onVal(value)
+      }
 
-    def genNullPointerSlowPath(buf: Buffer): Unit = {
+    def genNullPointerSlowPath(buf: Buffer)(implicit pos: Position): Unit = {
       nullPointerSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -326,7 +330,7 @@ object Lower {
       buf.jump(Next(failL))
     }
 
-    def genOp(buf: Buffer, n: Local, op: Op)(implicit pos: Position): Unit =
+    def genOp(buf: Buffer, n: Local, op: Op)(implicit pos: Position): Unit = {
       op match {
         case op: Op.Fieldload =>
           genFieldloadOp(buf, n, op)
@@ -377,6 +381,7 @@ object Lower {
         case _ =>
           buf.let(n, op, unwind)
       }
+    }
 
     def genGuardNotNull(buf: Buffer, obj: Val)(implicit pos: Position): Unit =
       obj.ty match {
@@ -441,19 +446,22 @@ object Lower {
       genStoreOp(buf, n, Op.Store(ty, elem, value))
     }
 
-    def genStoreOp(buf: Buffer, n: Local, op: Op.Store) = {
+    def genStoreOp(buf: Buffer, n: Local, op: Op.Store)(
+        implicit pos: Position) = {
       val Op.Store(ty, ptr, value) = op
       buf.let(n, Op.Store(ty, genVal(buf, ptr), genVal(buf, value)), unwind)
     }
 
-    def genCompOp(buf: Buffer, n: Local, op: Op.Comp): Unit = {
+    def genCompOp(buf: Buffer, n: Local, op: Op.Comp)(
+        implicit pos: Position): Unit = {
       val Op.Comp(comp, ty, l, r) = op
       val left                    = genVal(buf, l)
       val right                   = genVal(buf, r)
       buf.let(n, Op.Comp(comp, ty, left, right), unwind)
     }
 
-    def genCallOp(buf: Buffer, n: Local, op: Op.Call): Unit = {
+    def genCallOp(buf: Buffer, n: Local, op: Op.Call)(
+        implicit pos: Position): Unit = {
       val Op.Call(ty, ptr, args) = op
       buf.let(n,
               Op.Call(ty = ty,
