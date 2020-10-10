@@ -7,13 +7,18 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.ISO_8859_1
 import java.util.Base64.Decoder
 
-object Base64Suite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
+
+import scala.scalanative.junit.utils.AssertThrows._
+
+class Base64Test {
 
   // --------------------------------------------------------------------------
   // ENCODERS
   // --------------------------------------------------------------------------
 
-  test("encodeToString") {
+  @Test def encodeToString(): Unit = {
     val results =
       for ((name, in, enc) <- encoders) yield (name -> enc.encodeToString(in))
     assertEquals(encodedResults.length, results.size)
@@ -21,7 +26,7 @@ object Base64Suite extends tests.Suite {
       assertEquals(exp, enc)
   }
 
-  test("encodeOneArray") {
+  @Test def encodeOneArray(): Unit = {
     val results =
       for ((name, in, enc) <- encoders) yield (name -> enc.encode(in))
     assertEquals(encodedResults.length, results.size)
@@ -30,7 +35,7 @@ object Base64Suite extends tests.Suite {
     }
   }
 
-  test("encodeTwoArrays") {
+  @Test def encodeTwoArrays(): Unit = {
     for (((name, in, enc), exp) <- encoders.zip(encodedResults)) {
       val dst     = new Array[Byte](exp.length + 10) // array too big on purpose
       val written = enc.encode(in, dst)
@@ -41,15 +46,14 @@ object Base64Suite extends tests.Suite {
     }
   }
 
-  test("encodeTwoArraysThrowsWithTooSmallDestination") {
+  @Test def encodeTwoArraysThrowsWithTooSmallDestination(): Unit = {
     val in  = "Man"
     val dst = new Array[Byte](3) // too small
-    assertThrows[IllegalArgumentException](
-      Base64.getEncoder.encode(in.getBytes, dst)
-    )
+    assertThrows(classOf[IllegalArgumentException],
+                 Base64.getEncoder.encode(in.getBytes, dst))
   }
 
-  test("encodeByteBuffer") {
+  @Test def encodeByteBuffer(): Unit = {
     for (((name, in, enc), exp) <- encoders.zip(encodedResults)) {
       val result1 = enc.encode(ByteBuffer.wrap(in))
       assertEquals(exp, new String(result1.array(), ISO_8859_1))
@@ -64,7 +68,7 @@ object Base64Suite extends tests.Suite {
     }
   }
 
-  test("encodeOutputStream") {
+  @Test def encodeOutputStream(): Unit = {
     for (((name, in, enc), exp) <- encoders.zip(encodedResults)) {
       val baos = new ByteArrayOutputStream()
       val out  = enc.wrap(baos)
@@ -76,7 +80,7 @@ object Base64Suite extends tests.Suite {
     }
   }
 
-  test("encodeOutputStreamFailsOnJVM") {
+  @Test def encodeOutputStreamFailsOnJVM(): Unit = {
     // The `1` below will create a buggy encoder on the JVM
     val encoder  = Base64.getMimeEncoder(1, Array('@'))
     val input    = "Man"
@@ -89,34 +93,32 @@ object Base64Suite extends tests.Suite {
     assertEquals(expected, result)
   }
 
-  test("encodeOutputStreamTooMuch") {
+  @Test def encodeOutputStreamTooMuch(): Unit = {
     val enc = Base64.getEncoder
     val out = enc.wrap(new ByteArrayOutputStream())
-    assertThrows[IndexOutOfBoundsException](
-      out.write(Array.empty[Byte], 0, 5)
-    )
+    assertThrows(classOf[IndexOutOfBoundsException],
+                 out.write(Array.empty[Byte], 0, 5))
   }
 
-  test("testIllegalLineSeparator") {
-    assertThrows[IllegalArgumentException](
-      Base64.getMimeEncoder(8, Array[Byte]('A'))
-    )
+  @Test def testIllegalLineSeparator(): Unit = {
+    assertThrows(classOf[IllegalArgumentException],
+                 Base64.getMimeEncoder(8, Array[Byte]('A')))
   }
 
   // --------------------------------------------------------------------------
   // DECODERS
   // --------------------------------------------------------------------------
 
-  test("decodeFromString") {
+  @Test def decodeFromString(): Unit = {
     assertEquals(encoders.length, decodersAndInputs.length)
     for ((encoded, (decoder, in)) <- encodedResults.zip(decodersAndInputs)) {
-      assert(
-        java.util.Arrays.equals(in.getBytes(ISO_8859_1),
-                                decoder.decode(encoded)))
+      assertTrue(
+        java.util.Arrays
+          .equals(in.getBytes(ISO_8859_1), decoder.decode(encoded)))
     }
   }
 
-  test("decodeFromArray") {
+  @Test def decodeFromArray(): Unit = {
     for ((encoded, (decoder, in)) <- encodedResults.zip(decodersAndInputs)) {
       val encodedBytes = encoded.getBytes(ISO_8859_1)
       val result       = decoder.decode(encodedBytes)
@@ -124,74 +126,66 @@ object Base64Suite extends tests.Suite {
     }
   }
 
-  test("decodeFromArrayToDest") {
+  @Test def decodeFromArrayToDest(): Unit = {
     for ((encoded, (decoder, in)) <- encodedResults.zip(decodersAndInputs)) {
       val dst        = new Array[Byte](in.length)
       val encInBytes = encoded.getBytes(ISO_8859_1)
       val dec        = decoder.decode(encInBytes, dst)
       assertEquals(in.length, dec)
-      assert(java.util.Arrays.equals(in.getBytes(ISO_8859_1), dst))
+      assertTrue(java.util.Arrays.equals(in.getBytes(ISO_8859_1), dst))
     }
   }
 
-  test("decodeFromByteBuffer") {
+  @Test def decodeFromByteBuffer(): Unit = {
     for ((encoded, (decoder, in)) <- encodedResults.zip(decodersAndInputs)) {
       val bb      = ByteBuffer.wrap(encoded.getBytes(ISO_8859_1))
       val decoded = decoder.decode(bb)
       val array   = new Array[Byte](decoded.limit)
       decoded.get(array)
-      assert(java.util.Arrays.equals(in.getBytes(ISO_8859_1), array))
+      assertTrue(java.util.Arrays.equals(in.getBytes(ISO_8859_1), array))
     }
   }
 
-  test("decodeToArrayTooSmall") {
+  @Test def decodeToArrayTooSmall(): Unit = {
     val encoded = "TWFu"
     val dst     = new Array[Byte](2) // too small
-    assertThrows[IllegalArgumentException](
-      Base64.getDecoder.decode(encoded.getBytes, dst)
-    )
+    assertThrows(classOf[IllegalArgumentException],
+                 Base64.getDecoder.decode(encoded.getBytes, dst))
   }
 
-  test("decodeIllegalCharacter") {
+  @Test def decodeIllegalCharacter(): Unit = {
     val encoded = "TWE*"
-    assertThrows[IllegalArgumentException](
-      Base64.getDecoder.decode(encoded)
-    )
-    assertThrows[IllegalArgumentException](
-      Base64.getUrlDecoder.decode(encoded)
-    )
+    assertThrows(classOf[IllegalArgumentException],
+                 Base64.getDecoder.decode(encoded))
+    assertThrows(classOf[IllegalArgumentException],
+                 Base64.getUrlDecoder.decode(encoded))
 
     assertEquals("Ma",
                  new String(Base64.getMimeDecoder.decode(encoded), ISO_8859_1))
   }
 
-  test("decodeIllegalLength") {
+  @Test def decodeIllegalLength(): Unit = {
     val encoded = "TWFuu"
-    assertThrows[IllegalArgumentException](
-      Base64.getDecoder.decode(encoded)
-    )
-    assertThrows[IllegalArgumentException](
-      Base64.getUrlDecoder.decode(encoded)
-    )
-    assertThrows[IllegalArgumentException](
-      Base64.getMimeDecoder.decode(encoded)
-    )
+    assertThrows(classOf[IllegalArgumentException],
+                 Base64.getDecoder.decode(encoded))
+    assertThrows(classOf[IllegalArgumentException],
+                 Base64.getUrlDecoder.decode(encoded))
+    assertThrows(classOf[IllegalArgumentException],
+                 Base64.getMimeDecoder.decode(encoded))
   }
 
-  test("decodeIllegalPadding") {
+  @Test def decodeIllegalPadding(): Unit = {
     val encoded = "TQ=*"
-    assertThrows[IllegalArgumentException](
-      Base64.getDecoder.decode(encoded)
-    )
-    assertThrows[IllegalArgumentException](
-      Base64.getUrlDecoder.decode(encoded)
-    )
+    assertThrows(classOf[IllegalArgumentException],
+                 Base64.getDecoder.decode(encoded))
+    assertThrows(classOf[IllegalArgumentException],
+                 Base64.getUrlDecoder.decode(encoded))
 
     assertEquals("M",
                  new String(Base64.getMimeDecoder.decode(encoded), ISO_8859_1))
   }
 
-  test("decodeInputStream") {
+  @Test def decodeInputStream(): Unit = {
     for ((encoded, (decoder, expected)) <- encodedResults.zip(
            decodersAndInputs)) {
       val byteInstream = new ByteArrayInputStream(encoded.getBytes(ISO_8859_1))
@@ -204,41 +198,34 @@ object Base64Suite extends tests.Suite {
     }
   }
 
-  test("decodeIllegalsInputStream") {
+  @Test def decodeIllegalsInputStream(): Unit = {
     val encoded = "TQ=*"
-    assertThrows[IOException](
-      decodeInputStream(basic, encoded)
-    )
-    assertThrows[IOException](
-      decodeInputStream(url, encoded)
-    )
-    assertThrows[IOException](
-      decodeInputStream(mime, "TWFu", Array('a'))
-    )
-    assertThrows[IOException](
-      decodeInputStream(basic, "TWFu", Array(0.toByte))
-    )
+    assertThrows(classOf[IOException], decodeInputStream(basic, encoded))
+    assertThrows(classOf[IOException], decodeInputStream(url, encoded))
+    assertThrows(classOf[IOException],
+                 decodeInputStream(mime, "TWFu", Array('a')))
+    assertThrows(classOf[IOException],
+                 decodeInputStream(basic, "TWFu", Array(0.toByte)))
   }
 
-  test("decodeIllegalsInputStreamIllegalPadding") {
+  @Test def decodeIllegalsInputStreamIllegalPadding(): Unit = {
     val encoded = "TQ=*"
     assertEquals("M", decodeInputStream(mime, encoded))
   }
 
-  test("decodeBufferWithJustPaddingNonMime") {
+  @Test def decodeBufferWithJustPaddingNonMime(): Unit = {
     for (decoder <- Seq(Base64.getDecoder, Base64.getUrlDecoder)) {
       // Should pass for empty and throw IllegalArgumentException for = and ==
       val bb = decoder.decode(ByteBuffer.allocate(0))
       assertEquals(0, bb.limit())
       for (input <- Seq("=", "==")) {
-        assertThrows[IllegalArgumentException](
-          decoder.decode(ByteBuffer.wrap(input.getBytes))
-        )
+        assertThrows(classOf[IllegalArgumentException],
+                     decoder.decode(ByteBuffer.wrap(input.getBytes)))
       }
     }
   }
 
-  test("decodeBufferWithJustPaddingMime") {
+  @Test def decodeBufferWithJustPaddingMime(): Unit = {
     for (input <- Seq("", "=", "==")) {
       val bb = Base64.getMimeDecoder.decode(ByteBuffer.wrap(input.getBytes))
       assertEquals(0, bb.limit())
