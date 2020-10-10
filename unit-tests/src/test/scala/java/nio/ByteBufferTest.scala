@@ -143,7 +143,7 @@ abstract class ByteBufferTest extends BaseBufferTest {
 
         buf.order(ByteOrder.BIG_ENDIAN)
         val charBuf1 = buf.asCharBuffer()
-        charBuf1.put(1, 0x7e7f)
+        charBuf1.put(1, 0x7e7f.toChar)
         assertEquals(0x7e, buf.get(3))
         assertEquals(0x7f, buf.get(4))
         assertEquals(0, charBuf1.position())
@@ -154,7 +154,7 @@ abstract class ByteBufferTest extends BaseBufferTest {
 
         buf.order(ByteOrder.LITTLE_ENDIAN)
         val charBuf2 = buf.asCharBuffer()
-        charBuf2.put(1, 0x7e7f)
+        charBuf2.put(1, 0x7e7f.toChar)
         assertEquals(0x7f, buf.get(3))
         assertEquals(0x7e, buf.get(4))
         assertEquals(0, charBuf2.position())
@@ -167,7 +167,9 @@ abstract class ByteBufferTest extends BaseBufferTest {
         buf.limit(8).position(1)
 
         val charBuf1 = buf.asReadOnlyBuffer().asCharBuffer()
-        assertThrows[ReadOnlyBufferException] { charBuf1.put(1, 0x7e7f) }
+        assertThrows[ReadOnlyBufferException] {
+          charBuf1.put(1, 0x7e7f.toChar)
+        }
       }
     }
 
@@ -297,7 +299,7 @@ abstract class ByteBufferTest extends BaseBufferTest {
 
         buf.order(ByteOrder.BIG_ENDIAN)
         val shortBuf1 = buf.asShortBuffer()
-        shortBuf1.put(1, 0x7e7f)
+        shortBuf1.put(1, 0x7e7f.toShort)
         assertEquals(0x7e, buf.get(3))
         assertEquals(0x7f, buf.get(4))
         assertEquals(0, shortBuf1.position())
@@ -308,7 +310,7 @@ abstract class ByteBufferTest extends BaseBufferTest {
 
         buf.order(ByteOrder.LITTLE_ENDIAN)
         val shortBuf2 = buf.asShortBuffer()
-        shortBuf2.put(1, 0x7e7f)
+        shortBuf2.put(1, 0x7e7f.toShort)
         assertEquals(0x7f, buf.get(3))
         assertEquals(0x7e, buf.get(4))
         assertEquals(0, shortBuf2.position())
@@ -321,7 +323,9 @@ abstract class ByteBufferTest extends BaseBufferTest {
         buf.limit(8).position(1)
 
         val shortBuf1 = buf.asReadOnlyBuffer().asShortBuffer()
-        assertThrows[ReadOnlyBufferException] { shortBuf1.put(1, 0x7e7f) }
+        assertThrows[ReadOnlyBufferException] {
+          shortBuf1.put(1, 0x7e7f.toShort)
+        }
       }
     }
 
