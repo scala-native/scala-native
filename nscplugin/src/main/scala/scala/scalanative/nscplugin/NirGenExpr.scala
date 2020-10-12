@@ -650,7 +650,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     //   }
     //
     // Bridges might require multiple samMethod variants to be created.
-    def genFunction(tree: Function, genExternForwarder: Boolean = false): Val = {
+    def genFunction(tree: Function): Val = {
       val Function(paramTrees,
                    callTree @ Apply(targetTree @ Select(_, _), functionArgs)) = tree
       implicit val pos: nir.Position = tree.pos
@@ -791,10 +791,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
 
         statBuf += Defn.Define(Attrs.None, funName, Type.Function(paramTypes, retType), body)
-
-        if (genExternForwarder && funSym.nameString == "apply") {
-          statBuf += genFuncExternForwarder(anonName, targetTree.symbol)
-        }
       }
 
       // Generate call site of the closure allocation to
@@ -805,38 +801,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val captureVals = curMethodThis.get.get +: captureSyms.map { sym => genExpr(Ident(sym)) }
       buf.call(ctorTy, Val.Global(ctorName, Type.Ptr), alloc +: captureVals, unwind)
       alloc
-    }
-
-  def genFuncExternForwarder(funcName: Global, treeSym: Symbol)(implicit pos: nir.Position): Defn = {
-      val attrs = Attrs(isExtern = true)
-      val forwarderName =
-        funcName.member(nir.Sig.Generated("$extern$forwarder"))
-
-      val method    = Val.Global(genMethodName(treeSym), Type.Ptr)
-      val sig       = genMethodSig(treeSym)
-      val externSig = genExternMethodSig(treeSym)
-
-      val forwarderBody = scoped(
-        curUnwindHandler := None
-      ) {
-        val fresh = Fresh()
-        val buf   = new ExprBuffer()(fresh)
-
-        val Type.Function(origtys, _)      = sig
-        val Type.Function(paramtys, retty) = externSig
-
-        val params = paramtys.map(ty => Val.Local(fresh(), ty))
-        buf.label(fresh(), params)
-        val boxedParams = params.zip(origtys.tail).map {
-          case (param, ty) => buf.fromExtern(ty, param)
-        }
-        val res        = buf.call(sig, method, Val.Null +: boxedParams, Next.None)
-        val unboxedRes = buf.toExtern(retty, res)
-        buf.ret(unboxedRes)
-
-        buf.toSeq
-      }
-      Defn.Define(attrs, forwarderName, externSig, forwarderBody)
     }
 
     def ensureBoxed(value: Val, tpeEnteringPosterasure: Type, targetTpe: Type)(
@@ -1091,44 +1055,84 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
+    private final val ExternForwarderSig = Sig.Generated("$extern$forwarder")
+
+    def genFuncExternForwarder(funcName: Global, treeSym: Symbol)(implicit pos: nir.Position): Defn = {
+      val attrs         = Attrs(isExtern = true)
+
+      val method    = Val.Global(genMethodName(treeSym), Type.Ptr)
+      val sig       = genMethodSig(treeSym)
+      val externSig = genExternMethodSig(treeSym)
+
+      val forwarderName = funcName.member(ExternForwarderSig)
+      val forwarderBody = scoped(
+        curUnwindHandler := None
+      ) {
+        val fresh = Fresh()
+        val buf   = new ExprBuffer()(fresh)
+
+        val Type.Function(origtys, _)      = sig
+        val Type.Function(paramtys, retty) = externSig
+
+        val params = paramtys.map(ty => Val.Local(fresh(), ty))
+        buf.label(fresh(), params)
+        val boxedParams = params.zip(origtys.tail).map {
+          case (param, ty) => buf.fromExtern(ty, param)
+        }
+        val res        = buf.call(sig, method, Val.Null +: boxedParams, Next.None)
+        val unboxedRes = buf.toExtern(retty, res)
+        buf.ret(unboxedRes)
+
+        buf.toSeq
+      }
+      Defn.Define(attrs, forwarderName, externSig, forwarderBody)
+    }
+
     def genCFuncFromScalaFunction(app: Apply): Val = {
       implicit val pos: nir.Position = app.pos
       val fn                         = app.args.head
 
+      def withGeneratedForwarder(fnRef: Val)(sym: Symbol): Val = {
+        val Type.Ref(className, _, _) = fnRef.ty
+        curStatBuffer += genFuncExternForwarder(className, sym)
+        fnRef
+      }
+
       @tailrec
       def resolveFunction(tree: Tree): Val = tree match {
-          case Typed(expr, _) => resolveFunction(expr)
-          case Block(_, expr) => resolveFunction(expr)
-          case fn: Function => // Scala 2.12+
-            genFunction(fn, genExternForwarder = true)
-          case fnApp: Apply => // Scala 2.11 only
+        case Typed(expr, _) => resolveFunction(expr)
+        case Block(_, expr) => resolveFunction(expr)
+        case fn @ Function(_, Apply(targetTree, _)) => // Scala 2.12+
+          withGeneratedForwarder {
+            genFunction(fn)
+          }(targetTree.symbol)
 
-            val alternatives = fnApp.tpe
-              .member(nme.apply)
-              .alternatives
+        case fn: Apply => // Scala 2.11 only
+          val alternatives = fn.tpe
+            .member(nme.apply)
+            .alternatives
 
-            val fnSym = alternatives
-              .find { sym =>
-                sym.tpe != ObjectTpe ||
-                sym.tpe.params.exists(_.tpe != ObjectTpe)
-              }
-              .orElse(alternatives.headOption)
-              .getOrElse(unsupported(
-                s"not found any apply method in ${fn.tpe}"))
-              .asMethod
+          val fnSym = alternatives
+            .find { sym =>
+              sym.tpe != ObjectTpe ||
+              sym.tpe.params.exists(_.tpe != ObjectTpe)
+            }
+            .orElse(alternatives.headOption)
+            .getOrElse(unsupported(s"not found any apply method in ${fn.tpe}"))
+            .asMethod
 
-            val fnRef                     = genExpr(tree)
-            val Type.Ref(className, _, _) = fnRef.ty
-            curStatBuffer += genFuncExternForwarder(className, fnSym)
-            fnRef
-          case _ =>
-            unsupported(
-              "Failed to resolve function ref for extern forwarder "
-                + s"in ${showRaw(fn)} [$pos]"
-            )
-        }
+          withGeneratedForwarder {
+            genExpr(tree)
+          }(fnSym)
 
-      val function  = resolveFunction(fn)
+        case _ =>
+          unsupported(
+            "Failed to resolve function ref for extern forwarder "
+              + s"in ${showRaw(fn)} [$pos]"
+          )
+      }
+
+      val fnRef     = resolveFunction(fn)
       val className = genTypeName(app.tpe.sym)
 
       val ctorTy = nir.Type.Function(
@@ -1136,8 +1140,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         Type.Unit
       )
       val ctorName = className.member(Sig.Ctor(Seq(Type.Ptr)))
-      val rawptr =
-        buf.method(function, Sig.Generated("$extern$forwarder"), unwind)
+      val rawptr   = buf.method(fnRef, ExternForwarderSig, unwind)
 
       val alloc = buf.classalloc(className, unwind)
       buf.call(ctorTy,
