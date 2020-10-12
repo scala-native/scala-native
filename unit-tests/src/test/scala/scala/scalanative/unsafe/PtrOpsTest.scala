@@ -62,7 +62,7 @@ class PtrOpsTest {
 
   type StructA = CStruct2[CInt, CString]
   val fn2: CFuncPtr2[CString, StructA, StructA] =
-    (arg1: CString, arg2: StructA) => {
+    CFuncPtr2.fromScalaFunction2 { (arg1: CString, arg2: StructA) =>
       arg2._2 = arg1
       arg2._1 = 42
       arg2

@@ -91,4 +91,9 @@ trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
     unwrapTagOption(tree).getOrElse {
       unsupported(s"can't recover runtime tag from $tree")
     }
+
+  def unwrapClassTag(tree: Tree): Symbol =
+    unwrapClassTagOption(tree).getOrElse {
+      unsupported(s"can't recover runtime class tag from $tree")
+    }
 }

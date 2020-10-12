@@ -1093,21 +1093,48 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genCFuncFromScalaFunction(app: Apply): Val = {
       implicit val pos: nir.Position = app.pos
+      val fn                         = app.args.head
 
       @tailrec
-      def resolveFunction(tree: Tree): Function = tree match {
-        case Block(_, b: Block)     => resolveFunction(b)
-        case Block(_, fn: Function) => fn
-        case _ =>
-          unsupported(
-            s"Failed to resolve function for extern forwarder at $pos \n - ${app}\n - ${showRaw(app)}")
-      }
-      val fn       = resolveFunction(app.args.head)
-      val function = genFunction(fn, genExternForwarder = true)
+      def resolveFunction(tree: Tree): Val = tree match {
+          case Typed(expr, _) => resolveFunction(expr)
+          case Block(_, expr) => resolveFunction(expr)
+          case fn: Function => // Scala 2.12+
+            genFunction(fn, genExternForwarder = true)
+          case fnApp: Apply => // Scala 2.11 only
 
+            val alternatives = fnApp.tpe
+              .member(nme.apply)
+              .alternatives
+
+            val fnSym = alternatives
+              .find { sym =>
+                sym.tpe != ObjectTpe ||
+                sym.tpe.params.exists(_.tpe != ObjectTpe)
+              }
+              .orElse(alternatives.headOption)
+              .getOrElse(unsupported(
+                s"not found any apply method in ${fn.tpe}"))
+              .asMethod
+
+            val fnRef                     = genExpr(tree)
+            val Type.Ref(className, _, _) = fnRef.ty
+            curStatBuffer += genFuncExternForwarder(className, fnSym)
+            fnRef
+          case _ =>
+            unsupported(
+              "Failed to resolve function ref for extern forwarder "
+                + s"in ${showRaw(fn)} [$pos]"
+            )
+        }
+
+      val function  = resolveFunction(fn)
       val className = genTypeName(app.tpe.sym)
-      val ctorTy =
-        nir.Type.Function(Seq(Type.Ref(className), Type.Ptr), Type.Unit)
+
+      val ctorTy = nir.Type.Function(
+        Seq(Type.Ref(className), Type.Ptr),
+        Type.Unit
+      )
       val ctorName = className.member(Sig.Ctor(Seq(Type.Ptr)))
       val rawptr =
         buf.method(function, Sig.Generated("$extern$forwarder"), unwind)
@@ -1639,8 +1666,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
       val argTypes = args.map(_.ty)
       val funcSig  = Type.Function(argTypes, unboxedRetType)
-
-
 
       val selfName = genTypeName(receiverp.tpe.sym)
       val getRawPtrName = selfName
