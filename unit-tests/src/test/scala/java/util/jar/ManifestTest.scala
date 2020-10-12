@@ -2,36 +2,37 @@ package java.util.jar
 
 // Ported from Apache Harmony
 
-import java.io.{
-  ByteArrayInputStream,
-  ByteArrayOutputStream,
-  InputStream,
-  IOException
-}
+import java.io._
+
+import org.junit.Test
+import org.junit.Assert._
+
+import scala.scalanative.junit.utils.AssertThrows._
+
 import JarBytes._
 
-object ManifestSuite extends tests.Suite {
+class ManifestTest {
 
-  test("Constructor()") {
+  @Test def constructor(): Unit = {
     val emptyManifest = new Manifest()
-    assert(emptyManifest.getEntries().isEmpty())
-    assert(emptyManifest.getMainAttributes().isEmpty())
+    assertTrue(emptyManifest.getEntries().isEmpty())
+    assertTrue(emptyManifest.getMainAttributes().isEmpty())
   }
 
-  test("Constructor(Manifest)") {
+  @Test def constructorManifest(): Unit = {
     val firstManifest = new Manifest(
       new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1")))
     val secondManifest = new Manifest(firstManifest)
-    assert(firstManifest == secondManifest)
+    assertTrue(firstManifest == secondManifest)
   }
 
-  test("Constructor(InputStream)") {
+  @Test def constructorInputStream(): Unit = {
     val m    = getManifest(hyts_attBytes)
     val baos = new ByteArrayOutputStream()
     m.write(baos)
     val is    = new ByteArrayInputStream(baos.toByteArray())
     val mCopy = new Manifest(is)
-    assert(m == mCopy)
+    assertTrue(m == mCopy)
 
     val manifest = new Manifest(
       new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1")))
@@ -42,86 +43,86 @@ object ManifestSuite extends tests.Suite {
     val bis = new ByteArrayInputStream(manifestContent.getBytes("ISO-8859-1"))
 
     val mf = new Manifest(bis)
-    assert(mf.getMainAttributes().size() == 4)
+    assertTrue(mf.getMainAttributes().size() == 4)
 
     val entries = mf.getEntries()
-    assert(entries.size() == 1)
+    assertTrue(entries.size() == 1)
 
     val namedEntryAttributes = entries.get("").asInstanceOf[Attributes]
-    assert(namedEntryAttributes.size() == 6)
+    assertTrue(namedEntryAttributes.size() == 6)
 
     new Manifest(
       new ByteArrayInputStream(MANIFEST_CONTENTS_2.getBytes("ISO-8859-1")))
   }
 
-  test("clear()") {
+  @Test def clear(): Unit = {
     val m = getManifest(hyts_attBytes)
     m.clear()
-    assert(m.getEntries().isEmpty())
-    assert(m.getMainAttributes().isEmpty())
+    assertTrue(m.getEntries().isEmpty())
+    assertTrue(m.getMainAttributes().isEmpty())
   }
 
-  test("clone()") {
+  @Test def testClone(): Unit = {
     val m = getManifest(hyts_attBytes)
-    assert(m == m.clone())
+    assertTrue(m == m.clone())
   }
 
-  test("equals()") {
+  @Test def equals(): Unit = {
     var firstManifest = new Manifest(
       new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1")))
     val secondManifest = new Manifest(
       new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1")))
-    assert(firstManifest == secondManifest)
+    assertTrue(firstManifest == secondManifest)
 
     val thirdManifest = new Manifest(
       new ByteArrayInputStream(MANIFEST_CONTENTS_1.getBytes("ISO-8859-1")))
-    assert(firstManifest != thirdManifest)
+    assertTrue(firstManifest != thirdManifest)
 
     firstManifest = null
-    assert(secondManifest != firstManifest)
-    assert(!secondManifest.equals(new String("abc")))
+    assertTrue(secondManifest != firstManifest)
+    assertTrue(!secondManifest.equals(new String("abc")))
   }
 
-  test("hashCode()") {
+  @Test def testHashCode(): Unit = {
     val m = getManifest(hyts_attBytes)
-    assert(m.hashCode() == m.clone().hashCode())
+    assertTrue(m.hashCode() == m.clone().hashCode())
   }
 
-  test("getAttributes()") {
+  @Test def getAttributes(): Unit = {
     val m = getManifest(hyts_attBytes)
-    assert(m.getAttributes("Doesn't Exist") == null)
-    assert(
+    assertTrue(m.getAttributes("Doesn't Exist") == null)
+    assertTrue(
       m.getAttributes(ATT_ENTRY_NAME)
         .get(new Attributes.Name(ATT_ATT_NAME)) == "OK")
   }
 
-  test("getEntries()") {
+  @Test def getEntries(): Unit = {
     val m     = getManifest(hyts_attBytes)
     val myMap = m.getEntries()
-    assert(myMap.get("Doesn't exist") == null)
-    assert(
+    assertTrue(myMap.get("Doesn't exist") == null)
+    assertTrue(
       myMap.get(ATT_ENTRY_NAME).get(new Attributes.Name(ATT_ATT_NAME)) == "OK")
   }
 
-  test("getMainAttributes()") {
+  @Test def getMainAttributes(): Unit = {
     val m = getManifest(hyts_attBytes)
     val a = m.getMainAttributes()
-    assert(a.get(Attributes.Name.MANIFEST_VERSION) == "1.0")
+    assertTrue(a.get(Attributes.Name.MANIFEST_VERSION) == "1.0")
   }
 
-  test("write(OutputStream)") {
+  @Test def writeOutputStream(): Unit = {
     val baos = new ByteArrayOutputStream()
     val m    = getManifest(hyts_attBytes)
     // maximum allowed length is 72 for a header, colong and a following
     // space
     var headerName = "Manifest-" + ("0" * (70 - "Manifest-".length))
-    assert(headerName.length == 70)
+    assertTrue(headerName.length == 70)
     m.getMainAttributes()
       .put(new Attributes.Name(headerName.toString()), "Value")
     m.write(baos) // ok
   }
 
-  test("testNul") {
+  @Test def testNull(): Unit = {
     val manifestContent =
       "Manifest-Version: 1.0\nCreated-By: nasty gcc tool\n\n\u0000"
     val bytes = manifestContent.getBytes("ISO-8859-1")
@@ -134,12 +135,11 @@ object ManifestSuite extends tests.Suite {
     new Manifest(new ByteArrayInputStream(bytes))
 
     bytes(2) = 0 // NUL char in Manifest
-    assertThrows[IOException] {
-      new Manifest(new ByteArrayInputStream(bytes))
-    }
+    assertThrows(classOf[IOException],
+                 new Manifest(new ByteArrayInputStream(bytes)))
   }
 
-  test("Decoding") {
+  @Test def decoding(): Unit = {
     var m = getManifest(hyts_attBytes)
     val bVendor =
       Array[Byte](-48, -100, -48, -72, -48, -69, -48, -80, -47, -113, 32, -48,
@@ -203,33 +203,31 @@ object ManifestSuite extends tests.Suite {
     m.write(baos)
     m = new Manifest(new ByteArrayInputStream(baos.toByteArray()))
 
-    assert(
+    assertTrue(
       vendor == m
         .getMainAttributes()
         .get(Attributes.Name.IMPLEMENTATION_VENDOR))
-    assert(
+    assertTrue(
       vendor == m
         .getEntries()
         .get(ATT_ENTRY_NAME)
         .get(Attributes.Name.IMPLEMENTATION_VENDOR))
-    assert(
+    assertTrue(
       spec == m
         .getAttributes(ATT_ENTRY_NAME)
         .get(Attributes.Name.SPECIFICATION_TITLE))
 
   }
 
-  test("read()") {
+  @Test def read(): Unit = {
     val is = new InputStreamImpl()
-    assertThrows[IOException] {
-      new Manifest().read(is)
-    }
+    assertThrows(classOf[IOException], new Manifest().read(is))
   }
 
   private def assertAttribute(attr: Attributes,
                               name: String,
                               value: String): Unit = {
-    assert(value == attr.getValue(name))
+    assertTrue(value == attr.getValue(name))
   }
 
   private val ATT_ENTRY_NAME = "HasAttributes.txt"
