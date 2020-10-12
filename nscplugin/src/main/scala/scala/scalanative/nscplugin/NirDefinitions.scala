@@ -41,18 +41,19 @@ trait NirDefinitions {
       "scala.scalanative.unsafe.package$CQuote")
     lazy val CQuoteMethod = getDecl(CQuoteClass, TermName("c"))
 
-    lazy val CCastClass = getRequiredClass(
-      "scala.scalanative.unsafe.package$CCast")
-    lazy val CCastMethod = getDecl(CCastClass, TermName("cast"))
-
     lazy val CFuncPtrNClass = (0 to 22).map { n =>
-      getRequiredClass("scala.scalanative.unsafe.CFuncPtr" + n)
+      getRequiredClass(s"scala.scalanative.unsafe.CFuncPtr$n")
     }
-    lazy val CFuncPtrClass = getRequiredClass(
-      "scala.scalanative.unsafe.CFuncPtr")
+
+    lazy val CFuncPtrNModule = (0 to 22).map { n =>
+      getRequiredModule(s"scala.scalanative.unsafe.CFuncPtr$n")
+    }
+
+    lazy val CFuncPtrClass =
+      getRequiredClass("scala.scalanative.unsafe.CFuncPtr")
 
     lazy val CFuncRawPtrClass =
-      getRequiredClass("scala.scalanative.runtime.CFuncRawPtr")
+      getRequiredClass("scala.scalanative.unsafe.CFuncRawPtr")
 
     lazy val NatBaseClass = (0 to 9).map { n =>
       getRequiredClass("scala.scalanative.unsafe.Nat$_" + n)
@@ -214,15 +215,16 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("castLongToRawPtr"))
     lazy val StackallocMethod =
       getMember(IntrinsicsModule, TermName("stackalloc"))
-    lazy val ResolveCFuncPtrMethod =
-      getMember(IntrinsicsModule, TermName("resolveCFuncPtr"))
-    lazy val CallCFuncPtrMethods = {
-      val member = getMember(IntrinsicsModule, TermName("callCFuncPtr"))
-      member.info match {
-        case OverloadedType(_, alternatives) => alternatives
-        case _                               => member :: Nil
+
+    lazy val CFuncPtrApplyMethods = CFuncPtrNClass.map(
+      getMember(_, TermName("apply"))
+    )
+
+    lazy val CFuncPtrFromFunctionMethods =
+      CFuncPtrNModule.zipWithIndex.map {
+        case (module, n) =>
+          getMember(module, TermName(s"fromScalaFunction$n"))
       }
-    }
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
       'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),

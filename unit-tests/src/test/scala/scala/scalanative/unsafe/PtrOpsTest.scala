@@ -29,21 +29,18 @@ class PtrOpsTest {
     }
   }
 
-  val fn0: CFuncPtr0[CInt] = new CFuncPtr0[CInt] {
-    override def apply(): CInt = 1
-  }
+  val fn0: CFuncPtr0[CInt] = () => 1
 
   @Test def castsPtrByteToCFuncPtr(): Unit = {
     val fnPtr: Ptr[Byte] = Ptr.cFuncPtrToPtr(fn0)
     val fnFromPtr        = Ptr.ptrToCFuncPtr[CFuncPtr0[CInt]](fnPtr)
     val expectedResult   = 1
+
     assertEquals(expectedResult, fn0())
     assertEquals(expectedResult, fnFromPtr())
   }
 
-  val fn1 = new CFuncPtr1[CInt, CInt] {
-    override def apply(n: Int): Int = n + 1
-  }
+  val fn1: CFuncPtr1[Int, Int] = (n: Int) => n + 1
 
   @Test def castedCFuncPtrHandlesArguments(): Unit = {
     type Add1Fn = CFuncPtr1[Int, Int]
@@ -51,22 +48,25 @@ class PtrOpsTest {
     val fnFromPtr      = Ptr.ptrToCFuncPtr[CFuncPtr1[Int, Int]](ptr)
     val aliasedFn      = Ptr.ptrToCFuncPtr[Add1Fn](ptr)
 
-    val res0 = fn1(1)
-    val res1 = fnFromPtr(1)
-    val res2 = aliasedFn(1)
+    val in          = 1
+    val expectedOut = 2
 
-    assertEquals(res0, res1)
-    assertEquals(res0, res2)
+    val res0 = fn1(in)
+    val res1 = fnFromPtr(in)
+    val res2 = aliasedFn(in)
+
+    assertEquals(expectedOut, res0)
+    assertEquals(expectedOut, res1)
+    assertEquals(expectedOut, res2)
   }
 
   type StructA = CStruct2[CInt, CString]
-  val fn2 = new CFuncPtr2[CString, StructA, StructA] {
-    override def apply(arg1: CString, arg2: StructA): StructA = {
+  val fn2: CFuncPtr2[CString, StructA, StructA] =
+    (arg1: CString, arg2: StructA) => {
       arg2._2 = arg1
       arg2._1 = 42
       arg2
     }
-  }
 
   @Test def castedCFuncPtrHandlesPointersAndStructs(): Unit = {
     type AssignCString = CFuncPtr2[CString, StructA, StructA]
@@ -96,15 +96,11 @@ class PtrOpsTest {
 
   type ArrLen = Nat.Digit3[Nat._1, Nat._2, Nat._9]
   type LLArr  = CArray[CUnsignedLongLong, ArrLen]
-  val fn3 = new CFuncPtr3[CInt, CUnsignedLongLong, LLArr, LLArr] {
-    override def apply(idx: CInt,
-                       value: CUnsignedLongLong,
-                       arr: LLArr): LLArr = {
+  val fn3: CFuncPtr3[CInt, CUnsignedLongLong, LLArr, LLArr] =
+    (idx: CInt, value: CUnsignedLongLong, arr: LLArr) => {
       arr.update(idx, value)
       arr
     }
-  }
-
   @Test def castedCFuncPtrHandlesArrays(): Unit = {
     def test(fn: CFuncPtr3[CInt, CUnsignedLongLong, LLArr, LLArr]) = Zone {
       implicit z =>

@@ -89,22 +89,22 @@ object Type {
   final case class Function(args: Seq[Type], ret: Type) extends SpecialKind
 
   val boxesTo = Seq[(Type, Type)](
-    Type.Ref(Global.Top("scala.scalanative.unsigned.UByte"))      -> Type.Byte,
-    Type.Ref(Global.Top("scala.scalanative.unsigned.UShort"))     -> Type.Short,
-    Type.Ref(Global.Top("scala.scalanative.unsigned.UInt"))       -> Type.Int,
-    Type.Ref(Global.Top("scala.scalanative.unsigned.ULong"))      -> Type.Long,
-    Type.Ref(Global.Top("scala.scalanative.unsafe.CArray"))       -> Type.Ptr,
-    Type.Ref(Global.Top("scala.scalanative.unsafe.CVarArgList"))  -> Type.Ptr,
-    Type.Ref(Global.Top("scala.scalanative.runtime.CFuncRawPtr")) -> Type.Ptr,
-    Type.Ref(Global.Top("scala.scalanative.unsafe.Ptr"))          -> Type.Ptr,
-    Type.Ref(Global.Top("java.lang.Boolean"))                     -> Type.Bool,
-    Type.Ref(Global.Top("java.lang.Character"))                   -> Type.Char,
-    Type.Ref(Global.Top("java.lang.Byte"))                        -> Type.Byte,
-    Type.Ref(Global.Top("java.lang.Short"))                       -> Type.Short,
-    Type.Ref(Global.Top("java.lang.Integer"))                     -> Type.Int,
-    Type.Ref(Global.Top("java.lang.Long"))                        -> Type.Long,
-    Type.Ref(Global.Top("java.lang.Float"))                       -> Type.Float,
-    Type.Ref(Global.Top("java.lang.Double"))                      -> Type.Double
+    Type.Ref(Global.Top("scala.scalanative.unsigned.UByte"))     -> Type.Byte,
+    Type.Ref(Global.Top("scala.scalanative.unsigned.UShort"))    -> Type.Short,
+    Type.Ref(Global.Top("scala.scalanative.unsigned.UInt"))      -> Type.Int,
+    Type.Ref(Global.Top("scala.scalanative.unsigned.ULong"))     -> Type.Long,
+    Type.Ref(Global.Top("scala.scalanative.unsafe.CArray"))      -> Type.Ptr,
+    Type.Ref(Global.Top("scala.scalanative.unsafe.CVarArgList")) -> Type.Ptr,
+    Type.Ref(Global.Top("scala.scalanative.unsafe.CFuncRawPtr")) -> Type.Ptr,
+    Type.Ref(Global.Top("scala.scalanative.unsafe.Ptr"))         -> Type.Ptr,
+    Type.Ref(Global.Top("java.lang.Boolean"))                    -> Type.Bool,
+    Type.Ref(Global.Top("java.lang.Character"))                  -> Type.Char,
+    Type.Ref(Global.Top("java.lang.Byte"))                       -> Type.Byte,
+    Type.Ref(Global.Top("java.lang.Short"))                      -> Type.Short,
+    Type.Ref(Global.Top("java.lang.Integer"))                    -> Type.Int,
+    Type.Ref(Global.Top("java.lang.Long"))                       -> Type.Long,
+    Type.Ref(Global.Top("java.lang.Float"))                      -> Type.Float,
+    Type.Ref(Global.Top("java.lang.Double"))                     -> Type.Double
   )
 
   val unbox = boxesTo.toMap

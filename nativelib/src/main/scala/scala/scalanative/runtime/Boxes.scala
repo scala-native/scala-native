@@ -35,13 +35,7 @@ object Boxes {
   @inline def unboxToCArray(o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CArray[_, _]].rawptr
   @inline def unboxToCFuncRawPtr(o: java.lang.Object): RawPtr =
-    if (o == null) {
-      null
-    } else if (o.isInstanceOf[CFuncRawPtr]) {
-      o.asInstanceOf[CFuncRawPtr].rawptr
-    } else {
-      Intrinsics.resolveCFuncPtr(o.asInstanceOf[CFuncPtr])
-    }
+    if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
   @inline def unboxToCVarArgList(o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CVarArgList].rawptr
 }

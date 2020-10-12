@@ -11,9 +11,7 @@ class IssuesTest {
   def foo(arg: Int): Unit                    = ()
   def crash(arg: CFuncPtr1[Int, Unit]): Unit = ()
   def lifted208Test(): Unit =
-    crash(new CFuncPtr1[Int, Unit] {
-      def apply(value: Int): Unit = ()
-    })
+    crash((_: Int) => ())
 
   @Test def test_Issue208(): Unit = {
     // If we put the test directly, behind the scenes, this will
@@ -118,17 +116,11 @@ class IssuesTest {
     assertTrue(h equals world)
   }
 
-  val fptrBoxed: CFuncPtr0[Integer] = new CFuncPtr0[Integer] {
-    def apply() = new Integer(1)
-  }
-  val fptr: CFuncPtr0[CInt] = new CFuncPtr0[CInt] { def apply() = 1 }
-  val fptrFloat: CFuncPtr0[CFloat] = new CFuncPtr0[CFloat] {
-    def apply() = 1.0.toFloat
-  }
-  val fptrDouble: CFuncPtr0[CDouble] = new CFuncPtr0[CDouble] {
-    def apply() = 1.0
-  }
-  def intIdent(x: Int): Int = x
+  val fptrBoxed: CFuncPtr0[Integer]  = () => new Integer(1)
+  val fptr: CFuncPtr0[CInt]          = () => 1
+  val fptrFloat: CFuncPtr0[CFloat]   = () => 1.0f
+  val fptrDouble: CFuncPtr0[CDouble] = () => 1.0
+  def intIdent(x: Int): Int          = x
 
   @Test def test_Issue382(): Unit = {
     /// that gave NPE

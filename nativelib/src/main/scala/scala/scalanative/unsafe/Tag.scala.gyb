@@ -15,8 +15,6 @@ import scalanative.annotation.alwaysinline
 import scalanative.unsigned._
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
-import scala.language.experimental.macros
-
 
 sealed abstract class Tag[T] {
   def size: Int
@@ -249,46 +247,21 @@ object Tag {
   @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]: Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
   % for N in range(0, 23):
-  %   targs = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
-  @alwaysinline implicit def materializeCFuncPtr${N}[${targs}]: CFuncPtrTag[unsafe.CFuncPtr${N}[${targs}]] =
-		macro MacroImpl.materializeCFuncPtr${N}[${targs}]
+	%   tps 		  = ", ".join(["T" + str(i) 										for i in range(1, N+1)] + ["R"])
+	%   tpsDecl   = ", ".join(["T" + str(i) + ": Tag" 					for i in range(1, N+1)] + ["R: Tag"])
+	%   args		  = ", ".join(["$fnPtr"] + ["arg" + str(i) 			for i in range(1, N+1)])
+	%   argsDecl  = ", ".join("arg" + str(i) + ": $T" + str(i) 	for i in range(1, N+1))
+	%   CFuncPtrN 	  = "CFuncPtr{}[{}]".format(N, tps)
+	%   CFuncPtrNDecl = "CFuncPtr{}[{}]".format(N, tpsDecl)
+
+  @alwaysinline implicit def materialize${CFuncPtrNDecl}: CFuncPtrTag[unsafe.${CFuncPtrN}] = {
+		new CFuncPtrTag[unsafe.${CFuncPtrN}] {
+			override def load(ptr: unsafe.Ptr[unsafe.${CFuncPtrN}],
+												loadPtr: Boolean): unsafe.${CFuncPtrN} = {
+				val rawPtr = if (loadPtr) loadRawPtr(ptr.rawptr) else ptr.rawptr
+				unsafe.CFuncPtr${N}.fromRawPtr[${tps}](rawPtr)
+			}
+		}
+  }
   % end
-
-  private class MacroImpl(val c: scala.reflect.macros.blackbox.Context) {
-    import c.universe._
-
-    val annotation = q"_root_.scala.scalanative.annotation"
-    val runtime    = q"_root_.scala.scalanative.runtime"
-    val unsafe     = q"_root_.scala.scalanative.unsafe"
-
-    val callCFunc = q"$runtime.Intrinsics.callCFuncPtr"
-    val fnPtr     = q"""
-      val _rawPtr = $runtime.toRawPtr(ptr)
-      if(loadPtr) $runtime.Intrinsics.loadRawPtr(_rawPtr)
-      else _rawPtr"""
-
-	% for N in range(0, 23):
-	%   targs 		= ", ".join(["T" + str(i) 											for i in range(1, N+1)] + ["R"])
-	%   tArgsDecl = ", ".join(["T" + str(i) + " : c.WeakTypeTag" 	for i in range(1, N+1)] + ["R: c.WeakTypeTag"])
-	%   tps	 			= ", ".join(["$T" + str(i) 											for i in range(1, N+1)] + ["$R"])
-	%   tpsDef		= "\n".join(["val T" + str(i) + " = weakTypeOf[T" + str(i) + "].dealias" for i in range(1, N+1)])
-	%   args		  = ", ".join(["$fnPtr"] + ["arg" + str(i) 									for i in range(1, N+1)])
-	%   argsDecl  = ", ".join("arg" + str(i) + ": $T" + str(i) 							for i in range(1, N+1))
-	%   CFuncPtr  = "CFuncPtr{}[{}]".format(N, tps)
-    def materializeCFuncPtr${N}[${tArgsDecl}]: c.Tree = {
-      val R = weakTypeOf[R].dealias
-      ${tpsDef}
-      q"""
-        type CFuncPtr = $unsafe.${CFuncPtr}
-        type Tag      = $unsafe.Tag.${CFuncPtr}
-        new Tag {
-          def load(ptr: $unsafe.Ptr[CFuncPtr], loadPtr: Boolean): CFuncPtr = {
-            new CFuncPtr {
-              override def apply(${argsDecl}): $R = $callCFunc[${tps}](${args})
-            }
-          }
-        }"""
-    }
-	% end
-	}
 }
