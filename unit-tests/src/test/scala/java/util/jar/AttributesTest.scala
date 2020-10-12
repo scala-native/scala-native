@@ -14,7 +14,7 @@ class AttributesTest {
   private var a: Attributes = null
 
   @Before
-  private def setUp(): Unit = {
+  protected def setUp(): Unit = {
     a = new Attributes()
     a.putValue("1", "one")
     a.putValue("2", "two")
