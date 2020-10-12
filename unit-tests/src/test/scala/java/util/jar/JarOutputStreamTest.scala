@@ -5,9 +5,13 @@ package java.util.jar
 import java.io.{File, FileOutputStream, IOException}
 import java.util.zip.ZipEntry
 
-object JarOutputStreamSuite extends tests.Suite {
+import org.junit.Test
 
-  test("Constructor(OutputStream, Manifest)") {
+import scala.scalanative.junit.utils.AssertThrows._
+
+class JarOutputStreamTest {
+
+  @Test def constructorOutputStreamManifest(): Unit = {
     val fooJar = File.createTempFile("hyts_", ".jar")
     val barZip = File.createTempFile("hyts_", ".zip")
 
@@ -20,16 +24,12 @@ object JarOutputStreamSuite extends tests.Suite {
     att.put(Attributes.Name.CLASS_PATH, barZip.getName())
 
     fos.close()
-    assertThrows[IOException] {
-      new JarOutputStream(fos, man)
-    }
+    assertThrows(classOf[IOException], new JarOutputStream(fos, man))
 
-    assertThrows[NullPointerException] {
-      new JarOutputStream(fos, null)
-    }
+    assertThrows(classOf[NullPointerException], new JarOutputStream(fos, null))
   }
 
-  test("Constructor(OutputStream)") {
+  @Test def constructorOutputStream(): Unit = {
     val fooJar = File.createTempFile("hyts_", ".jar")
     val fos    = new FileOutputStream(fooJar)
     val ze     = new ZipEntry("Test")
@@ -41,10 +41,10 @@ object JarOutputStreamSuite extends tests.Suite {
     fos.close()
     fooJar.delete()
 
-    assertThrows[IOException] {
+    assertThrows(classOf[IOException], {
       val joutFoo = new JarOutputStream(fos)
       joutFoo.putNextEntry(ze)
-    }
+    })
   }
 
 }
