@@ -2,29 +2,32 @@ package java.util.stream
 
 import java.util.function.Function
 
-object StreamSuite extends tests.Suite {
-  test("Stream.builder can build an empty stream") {
+import org.junit.Test
+import org.junit.Assert._
+
+class StreamTest {
+  @Test def StreamBuilderCanBuildAnEmptyStream(): Unit = {
     val s  = Stream.builder().build()
     val it = s.iterator()
-    assert(!it.hasNext())
+    assertFalse(it.hasNext())
   }
 
-  test("Stream.empty is empty") {
+  @Test def StreamEmptyIsEmpty(): Unit = {
     val s  = Stream.empty[Int]()
     val it = s.iterator()
-    assert(!it.hasNext())
+    assertFalse(it.hasNext())
   }
 
-  test("Stream.of can put elements in a stream") {
+  @Test def StreamOfCanPutElementsInStream(): Unit = {
     val s  = Stream.of(1, 2, 3)
     val it = s.iterator()
-    assert(it.next() == 1)
-    assert(it.next() == 2)
-    assert(it.next() == 3)
-    assert(!it.hasNext())
+    assertTrue(it.next() == 1)
+    assertTrue(it.next() == 2)
+    assertTrue(it.next() == 3)
+    assertFalse(it.hasNext())
   }
 
-  test("Stream.flatMap works") {
+  @Test def StreamFlatMapWorks(): Unit = {
     val s = Stream.of(1, 2, 3)
     val mapper = new Function[Int, Stream[Int]] {
       override def apply(v: Int): Stream[Int] =
@@ -33,16 +36,16 @@ object StreamSuite extends tests.Suite {
     val s2 = s.flatMap(mapper)
     val it = s2.iterator()
 
-    assert(it.next() == 1)
-    assert(it.next() == 1)
-    assert(it.next() == 2)
-    assert(it.next() == 1)
-    assert(it.next() == 2)
-    assert(it.next() == 3)
-    assert(!it.hasNext())
+    assertTrue(it.next() == 1)
+    assertTrue(it.next() == 1)
+    assertTrue(it.next() == 2)
+    assertTrue(it.next() == 1)
+    assertTrue(it.next() == 2)
+    assertTrue(it.next() == 3)
+    assertFalse(it.hasNext())
   }
 
-  test("Stream.flatMap works twice") {
+  @Test def StreamFlatMapWorksTwice(): Unit = {
     val stream = Stream.of(1, 2, 3)
     val mapper1 = new Function[Int, Stream[Int]] {
       override def apply(v: Int): Stream[Int] =
@@ -60,15 +63,15 @@ object StreamSuite extends tests.Suite {
     while (it.hasNext()) {
       result += it.next()
     }
-    assert(result == expected)
+    assertTrue(result == expected)
   }
 
-  test("Stream.onClose works") {
+  @Test def StreamOnCloseWorks(): Unit = {
     var success = false
     val handler = new Runnable { override def run(): Unit = success = true }
     val s       = Stream.empty[Int]().onClose(handler)
-    assert(!success)
+    assertFalse(success)
     s.close()
-    assert(success)
+    assertTrue(success)
   }
 }
