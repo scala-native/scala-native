@@ -4,17 +4,24 @@ package java.util.jar
 
 import java.io.{ByteArrayInputStream, IOException}
 import java.util.zip.{ZipEntry, ZipException}
+
+import org.junit.Ignore
+import org.junit.Test
+import org.junit.Assert._
+
+import scala.scalanative.junit.utils.AssertThrows._
+
 import JarBytes._
 
-object JarInputStreamSuite extends tests.Suite {
+class JarInputStreamTest {
 
   private val entryName = "foo/bar/A.class"
 
-  test("Constructor(InputStream)") {
+  @Test def constructorInputStream(): Unit = {
     val is              = new ByteArrayInputStream(hyts_patchBytes)
     var hasCorrectEntry = false
     val jis             = new JarInputStream(is)
-    assert(jis.getManifest() != null)
+    assertTrue(jis.getManifest() != null)
     var je = jis.getNextJarEntry()
     while (je != null) {
       if (je.getName() == entryName) {
@@ -22,23 +29,19 @@ object JarInputStreamSuite extends tests.Suite {
       }
       je = jis.getNextJarEntry()
     }
-    assert(hasCorrectEntry)
+    assertTrue(hasCorrectEntry)
   }
 
-  test("Close after exception") {
+  @Test def closeAfterException(): Unit = {
     val is  = new ByteArrayInputStream(brokenEntryBytes)
     val jis = new JarInputStream(is, false)
     jis.getNextEntry()
-    assertThrows[ZipException] {
-      jis.getNextEntry()
-    }
+    assertThrows(classOf[ZipException], jis.getNextEntry())
     jis.close()
-    assertThrows[IOException] {
-      jis.getNextEntry()
-    }
+    assertThrows(classOf[IOException], jis.getNextEntry())
   }
 
-  test("getNextJarEntry_Ex") {
+  @Test def getNextJarEntryEx(): Unit = {
     val desired = Set("foo/", "foo/bar/", "foo/bar/A.class", "Blah.txt")
     val actual  = scala.collection.mutable.Set.empty[String]
     var is      = new ByteArrayInputStream(hyts_patchBytes)
@@ -48,34 +51,30 @@ object JarInputStreamSuite extends tests.Suite {
       actual.add(je.toString())
       je = jis.getNextJarEntry()
     }
-    assert(actual == desired)
+    assertTrue(actual == desired)
     jis.close()
 
-    assertThrows[IOException] {
-      jis.getNextJarEntry()
-    }
+    assertThrows(classOf[IOException], jis.getNextJarEntry())
 
     is = new ByteArrayInputStream(brokenEntryBytes)
     jis = new JarInputStream(is, false)
     jis.getNextJarEntry()
-    assertThrows[ZipException] {
-      jis.getNextJarEntry()
-    }
+    assertThrows(classOf[ZipException], jis.getNextJarEntry())
   }
 
-  test("getManifest()") {
+  @Test def getManifest(): Unit = {
     var is  = new ByteArrayInputStream(hyts_patch2Bytes)
     var jis = new JarInputStream(is)
     var m   = jis.getManifest()
-    assert(m == null)
+    assertTrue(m == null)
 
     is = new ByteArrayInputStream(hyts_patchBytes)
     jis = new JarInputStream(is)
     m = jis.getManifest()
-    assert(m != null)
+    assertTrue(m != null)
   }
 
-  test("getNextJarEntry()") {
+  @Test def getNextJarEntry(): Unit = {
     val desired = Set("foo/", "foo/bar/", "foo/bar/A.class", "Blah.txt")
     val actual  = scala.collection.mutable.Set.empty[String]
     val is      = new ByteArrayInputStream(hyts_patchBytes)
@@ -85,10 +84,10 @@ object JarInputStreamSuite extends tests.Suite {
       actual.add(je.toString())
       je = jis.getNextJarEntry()
     }
-    assert(actual == desired)
+    assertTrue(actual == desired)
   }
 
-  test("getNextEntry on Integrate.jar") {
+  @Test def getNextEntryOnIntegrateJar(): Unit = {
     val is              = new ByteArrayInputStream(integrateBytes)
     val jis             = new JarInputStream(is, true)
     var entry: ZipEntry = null
@@ -97,11 +96,12 @@ object JarInputStreamSuite extends tests.Suite {
       count += 1
       entry = jis.getNextEntry()
     }
-    assert(count == 5)
+    assertTrue(count == 5)
     jis.close()
   }
 
-  testFails("getNextEntry on Modified_Class.jar", issue = 956) {
+  @Ignore("#956")
+  @Test def getNextEntryOnModifiedClassJar(): Unit = {
     val is                 = new ByteArrayInputStream(modifiedClassBytes)
     val jis                = new JarInputStream(is, true)
     var zipEntry: ZipEntry = null
@@ -112,32 +112,31 @@ object JarInputStreamSuite extends tests.Suite {
       try {
         zipEntry = jis.getNextEntry()
         if (count == indexOfTestClass + 1) {
-          assert(false) // should have thrown Security Exception
+          assertTrue(false) // should have thrown Security Exception
         }
       } catch {
         case e: SecurityException if count == indexOfTestClass + 1 =>
         // expected
       }
     }
-    assert(count == 6)
+    assertTrue(count == 6)
     jis.close()
   }
 
-  testFails("getNextEntry on Modified_MainAttributes.jar", issue = 956) {
+  @Ignore("#956")
+  @Test def getNextEntryOnModifiedMainAttributesJar(): Unit = {
     val is  = new ByteArrayInputStream(modifiedManifestMainAttributesBytes)
     val jis = new JarInputStream(is, true)
-    assert(jis.getNextEntry().getName() == "META-INF/TESTROOT.SF")
-    assert(jis.getNextEntry().getName() == "META-INF/TESTROOT.DSA")
-    assertThrows[SecurityException] {
-      jis.getNextEntry()
-    }
-    assert(jis.getNextEntry().getName() == "META-INF/")
-    assert(jis.getNextEntry().getName() == "Test.class")
+    assertTrue(jis.getNextEntry().getName() == "META-INF/TESTROOT.SF")
+    assertTrue(jis.getNextEntry().getName() == "META-INF/TESTROOT.DSA")
+    assertThrows(classOf[SecurityException], jis.getNextEntry())
+    assertTrue(jis.getNextEntry().getName() == "META-INF/")
+    assertTrue(jis.getNextEntry().getName() == "Test.class")
     jis.close()
   }
 
-  testFails("getNextEntry on Modified_Manifest_EntryAttributes.jar",
-            issue = 956) {
+  @Ignore("#956")
+  @Test def getNextEntryOnModifiedManifestEntryAttributesJar(): Unit = {
     val is                 = new ByteArrayInputStream(modifiedManifestEntryAttributesBytes)
     val jis                = new JarInputStream(is, true)
     var zipEntry: ZipEntry = null
@@ -148,18 +147,19 @@ object JarInputStreamSuite extends tests.Suite {
       try {
         zipEntry = jis.getNextEntry()
         if (count == indexofDSA + 1) {
-          assert(false) // Should have throws Security Exception
+          assertTrue(false) // Should have throws Security Exception
         }
       } catch {
         case _: SecurityException if count == indexofDSA + 1 =>
         // expected
       }
     }
-    assert(count == 5)
+    assertTrue(count == 5)
     jis.close()
   }
 
-  testFails("getNextEntry on Modified_SF_EntryAttributes.jar", issue = 956) {
+  @Ignore("#956")
+  @Test def getNextEntryOnModifiedSfEntryAttributesJar(): Unit = {
     val is                 = new ByteArrayInputStream(modifiedSFEntryAttributesBytes)
     val jis                = new JarInputStream(is, true)
     var zipEntry: ZipEntry = null
@@ -170,18 +170,19 @@ object JarInputStreamSuite extends tests.Suite {
       try {
         zipEntry = jis.getNextEntry()
         if (count == indexofDSA + 1) {
-          assert(false) // Should have throws Security Exception
+          assertTrue(false) // Should have throws Security Exception
         }
       } catch {
         case _: SecurityException if count == indexofDSA + 1 =>
         // expected
       }
     }
-    assert(count == 5)
+    assertTrue(count == 5)
     jis.close()
   }
 
-  testFails("read Modified_Class.jar", issue = 956) {
+  @Ignore("#956")
+  @Test def readModifiedClassJar(): Unit = {
     val is                 = new ByteArrayInputStream(modifiedClassBytes)
     val jis                = new JarInputStream(is, true)
     val indexOfTestClass   = 4
@@ -197,18 +198,18 @@ object JarInputStreamSuite extends tests.Suite {
           length = jis.read(buffer)
         }
         if (count == indexOfTestClass) {
-          assert(false) // should have thrown Security Exception
+          assertTrue(false) // should have thrown Security Exception
         }
       } catch {
         case _: SecurityException if count == indexOfTestClass =>
         // expected
       }
     }
-    assert(count == 5)
+    assertTrue(count == 5)
     jis.close()
   }
 
-  test("read Integrate.jar") {
+  @Test def readIntegrateJar(): Unit = {
     val is                 = new ByteArrayInputStream(integrateBytes)
     val jis                = new JarInputStream(is)
     var count              = 0
@@ -222,11 +223,12 @@ object JarInputStreamSuite extends tests.Suite {
         length = jis.read(buffer)
       }
     }
-    assert(count == 5)
+    assertTrue(count == 5)
     jis.close()
   }
 
-  testFails("read Modified_Manifest_MainAttributes.jar", issue = 956) {
+  @Ignore("#956")
+  @Test def readModifiedManifestMainAttributesJar(): Unit = {
     val is                 = new ByteArrayInputStream(modifiedManifestMainAttributesBytes)
     val jis                = new JarInputStream(is)
     val indexofDSA         = 2
@@ -242,18 +244,19 @@ object JarInputStreamSuite extends tests.Suite {
           length = jis.read(buffer)
         }
         if (count == indexofDSA) {
-          assert(false) // should have throws Security Exception
+          assertTrue(false) // should have throws Security Exception
         }
       } catch {
         case _: SecurityException if count == indexofDSA =>
         // expected
       }
     }
-    assert(count == 5)
+    assertTrue(count == 5)
     jis.close()
   }
 
-  testFails("read Modified_SF_EntryAttributes.jar", issue = 956) {
+  @Ignore("#956")
+  @Test def readModifiedSfEntryAttributesJar(): Unit = {
     val is                 = new ByteArrayInputStream(modifiedSFEntryAttributesBytes)
     val jis                = new JarInputStream(is)
     val indexofDSA         = 2
@@ -269,29 +272,27 @@ object JarInputStreamSuite extends tests.Suite {
           length = jis.read(buffer)
         }
         if (count == indexofDSA) {
-          assert(false) // should have thrown Security Exception
+          assertTrue(false) // should have thrown Security Exception
         }
       } catch {
         case _: SecurityException if count == indexofDSA =>
         // expected
       }
     }
-    assert(count == 5)
+    assertTrue(count == 5)
     jis.close()
   }
 
-  test("getNextEntry() on Broken_entry.jar") {
+  @Test def getNextEntryOnBrokenEntryJar(): Unit = {
     val is  = new ByteArrayInputStream(brokenEntryBytes)
     val jis = new JarInputStream(is)
     jis.getNextEntry()
-    assertThrows[ZipException] {
-      jis.getNextEntry()
-    }
+    assertThrows(classOf[ZipException], jis.getNextEntry())
 
-    assertThrows[IOException] {
+    assertThrows(classOf[IOException], {
       jis.close()        // Android throws exception here, already!
       jis.getNextEntry() // But RI here, only!
-    }
+    })
   }
 
 }
