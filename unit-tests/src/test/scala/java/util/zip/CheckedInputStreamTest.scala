@@ -4,42 +4,45 @@ package java.util.zip
 
 import java.io.ByteArrayInputStream
 
-object CheckedInputStreamSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("Constructor") {
+class CheckedInputStreamSuite {
+
+  @Test def constructor(): Unit = {
     val checkIn =
       new CheckedInputStream(new ByteArrayInputStream(checkInput), new CRC32())
-    assert(checkIn.getChecksum().getValue() == 0)
+    assertTrue(checkIn.getChecksum().getValue() == 0)
   }
 
-  test("getChecksum()") {
+  @Test def getChecksum(): Unit = {
     val outBuf     = new Array[Byte](100)
     val emptyIn    = new ByteArrayInputStream(Array.empty[Byte])
     val checkEmpty = new CheckedInputStream(emptyIn, new CRC32())
     while (checkEmpty.read() >= 0) {}
-    assert(checkEmpty.getChecksum().getValue() == 0)
+    assertTrue(checkEmpty.getChecksum().getValue() == 0)
     emptyIn.close()
 
     val checkIn =
       new CheckedInputStream(new ByteArrayInputStream(checkInput), new CRC32())
     while (checkIn.read() >= 0) {}
-    assert(checkIn.getChecksum().getValue() == 2036203193)
+    assertTrue(checkIn.getChecksum().getValue() == 2036203193)
     checkIn.close()
 
     val checkIn2 =
       new CheckedInputStream(new ByteArrayInputStream(checkInput), new CRC32())
     checkIn2.read(outBuf, 0, 10)
-    assert(checkIn2.getChecksum().getValue() == 2235765342L)
+    assertTrue(checkIn2.getChecksum().getValue() == 2235765342L)
     checkIn2.close()
   }
 
-  test("skipJ") {
+  @Test def skipJ(): Unit = {
     val checkIn =
       new CheckedInputStream(new ByteArrayInputStream(checkInput), new CRC32())
     val skipValue = 5
-    assert(checkIn.skip(skipValue) == skipValue)
-    assert(checkIn.getChecksum().getValue() == 668091412L)
-    assert(checkIn.skip(0) == 0)
+    assertTrue(checkIn.skip(skipValue) == skipValue)
+    assertTrue(checkIn.getChecksum().getValue() == 668091412L)
+    assertTrue(checkIn.skip(0) == 0)
     checkIn.close()
   }
 
