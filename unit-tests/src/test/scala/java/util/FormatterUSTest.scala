@@ -1394,8 +1394,8 @@ class FormatterUSTest {
     }
   }
 
-  @Ignore
-  @Test def formatForDateTimeConversion(): Unit = { // issue not filed yet
+  @Ignore("no issue filed")
+  @Test def formatForDateTimeConversion(): Unit = {
     // calls to the methods of Calender throws NotImplementedError
     // even if we comment out all of `paris` and `china` below,
     // Calendar$.getInstance still gets called from

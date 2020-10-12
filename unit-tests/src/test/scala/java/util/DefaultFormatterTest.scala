@@ -1171,7 +1171,7 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore // #1443
+  @Ignore("#1443")
   @Test def formatForLegalByteShortIntegerLongConversionType_d(): Unit = {
     val triple = Array(
       Array(0, "%d", "0"),
@@ -1380,9 +1380,8 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore // no issue filed
+  @Ignore("no issue filed")
   @Test def formatForDateTimeConversion(): Unit = {
-    // issue not filed yet
     // calls to the methods of Calender throws NotImplementedError
     // even if we comment out all of `paris` and `china` below,
     // Calendar$.getInstance still gets called from
@@ -2163,7 +2162,7 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore // #1443
+  @Ignore("#1443")
   @Test def formatForLegalBigIntegerConversionType_d(): Unit = {
     val tripleD = Array(
       Array(new BigInteger("123456789012345678901234567890"),
@@ -2334,7 +2333,7 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore // #1443
+  @Ignore("#1443")
   @Test def formatForPaddingOfBigIntegerConversion(): Unit = {
     val bigInt = new BigInteger("123456789012345678901234567890")
     locally {
@@ -2474,7 +2473,7 @@ class DefaultFormatterTest {
                  f.format("%-O", big))
   }
 
-  @Ignore // #1443
+  @Ignore("#1443")
   @Test def formatForFloatDoubleConversionType_eE(): Unit = {
     // Fails because No Locale support. See LOCALE.German below.
     // Number conversions pass after PR #1296, see FormatterUSSuite.scala.
@@ -2676,7 +2675,7 @@ class DefaultFormatterTest {
     assertEquals("1,001000e+03", f.toString())
   }
 
-  @Ignore // #1443
+  @Ignore("#1443")
   @Test def formatForFloatDoubleConversionType_gG(): Unit = {
     val tripleG = Array(
       Array(1001f, "%g", "1001.00"),
@@ -2907,7 +2906,7 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore // #1443
+  @Ignore("#1443")
   @Test def formatForFloatDoubleConversionType_f(): Unit = {
     val tripleF: Array[Array[Any]] = Array(
       Array(0f, "%f", "0,000000"),
@@ -3367,7 +3366,7 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore // #1443
+  @Ignore("#1443")
   @Test def formatForBigDecimalConversionType_gG(): Unit = {
     val tripleG: Array[Array[Any]] = Array(
       Array(BigDecimal.ZERO, "%g", "0.00000"),

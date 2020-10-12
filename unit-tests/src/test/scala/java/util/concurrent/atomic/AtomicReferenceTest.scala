@@ -4,7 +4,12 @@ package atomic
 
 import java.util.function.UnaryOperator
 
-object AtomicReferenceSuite extends tests.Suite {
+import org.junit.Ignore
+import org.junit.Test
+import org.junit.Assert._
+
+@Ignore("tests disabled but ignore on class doesn't work")
+class AtomicReferenceTest {
 
   // This test suite is INCOMPLETE (obviously!).
   //
@@ -16,17 +21,20 @@ object AtomicReferenceSuite extends tests.Suite {
   // how to test concurrent and contended access patterns within
   // the scope of unit-tests.
 
-  test("get") {
+  @Ignore
+  @Test def get(): Unit = {
 
     val expected = -1
     val ar       = new AtomicReference(expected)
 
     val result = ar.get()
 
-    assert(result == expected, s"result: ${result} != expected: ${expected}")
+    assertTrue(s"result: ${result} != expected: ${expected}",
+               result == expected)
   }
 
-  test("getAndUpdate(updateFunction)") {
+  @Ignore
+  @Test def getAndUpdateUpdateFunction(): Unit = {
 
     val expectedValue    = 100
     val expectedNewValue = expectedValue / 2
@@ -39,17 +47,19 @@ object AtomicReferenceSuite extends tests.Suite {
 
     val value = ar.getAndUpdate(tax)
 
-    assert(value == expectedValue,
-           s"result before function: ${value} != expected: ${expectedValue}")
+    assertTrue(
+      s"result before function: ${value} != expected: ${expectedValue}",
+      value == expectedValue)
 
     val newValue = ar.get()
 
-    assert(newValue == expectedNewValue,
-           s"newValue after function: ${newValue} != " +
-             s"expected: ${expectedNewValue}")
+    assertTrue(s"newValue after function: ${newValue} != " +
+                 s"expected: ${expectedNewValue}",
+               newValue == expectedNewValue)
   }
 
-  test("updateAndGet(updateFunction)") {
+  @Ignore
+  @Test def updateAndGetUpdateFunction(): Unit = {
 
     val initialValue = 100
     val expected     = initialValue * 3
@@ -62,8 +72,8 @@ object AtomicReferenceSuite extends tests.Suite {
 
     val result = ar.updateAndGet(reward)
 
-    assert(result == expected,
-           s"result after function: ${result} != expected: ${expected}")
+    assertTrue(s"result after function: ${result} != expected: ${expected}",
+               result == expected)
   }
 
 }

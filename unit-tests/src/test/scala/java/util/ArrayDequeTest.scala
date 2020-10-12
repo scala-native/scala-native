@@ -859,8 +859,7 @@ class ArrayDequeTest {
     assertTrue(in.toArray sameElements aout)
   }
 
-  // Issue 1694
-  @Ignore
+  @Ignore("#1694")
   @Test def toArrayArrayThrowsArrayStoreExceptionWhenNotSuperClass(): Unit = {
     class NotSuperClass
     class SubClass
