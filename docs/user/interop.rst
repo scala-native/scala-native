@@ -197,15 +197,32 @@ One can declare it as follows in Scala Native:
 
     def test(f: unsafe.CFuncPtr1[CString, Unit]): Unit = unsafe.extern
 
-`CFuncPtrN` types are SAM (single abstract method) traits. You
-can define them by creating a class that inherits from the corresponding
-trait:
+`CFuncPtrN` types are final classes containing pointer to underlying
+C function pointer. They automatically handle boxing call arguments
+and unboxing result. You can create them from C pointer using `Ptr` helper methods:
 
 .. code-block:: scala
 
-   val myfuncptr = new unsafe.CFuncPtr0[Unit] {
-     def apply(): Unit = println("hi there!")
-   }
+    def fnDef(str: CString): CInt = ???
+
+    val anyPtr: Ptr[Byte] = Ptr.cFuncPtrToPtr {
+      CFuncPtr1.fromScalaFunction1(fnDef)
+    }
+
+		type StringLengthFn = CFuncPtr1[CString, CInt]
+    val func: StringLengthFn = Ptr.ptrToCFuncPtr[StringLengthFn](anyPtr)
+    func(c"hello")
+
+It's also possible to create `CFuncPtrN` from Scala `FunctionN`.
+You can do this by using implicit method conversion method
+from the corresponding companion object.
+
+.. code-block:: scala
+	 def myFunc(): Unit = println("hi there!")
+
+   val myFuncPtr: CFuncPtr0[Unit] = CFuncPtr0.fromScalaFunction0(myFunc)
+	 val myImplFn: CFuncPtr[Unit] = myFunc
+   val myLambdaFuncPtr: CFuncPtr0[Unit] = () => println("hello!")
 
 On Scala 2.12 or newer, the Scala language automatically converts
 from closures to SAM types:
