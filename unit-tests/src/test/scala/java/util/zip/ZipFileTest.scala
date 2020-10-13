@@ -4,38 +4,42 @@ package java.util.zip
 
 import java.io.InputStream
 
+import org.junit.Test
+import org.junit.Assert._
+
+import scala.scalanative.junit.utils.AssertThrows._
+
 import ZipBytes._
 
-object ZipFileSuite extends tests.Suite {
+class ZipFileTest {
 
-  test("Constructor(File)") {
+  @Test def constructorFile(): Unit = {
     val file = getFile(zipFile)
     val zip  = new ZipFile(file)
-    assert(file.exists())
+    assertTrue(file.exists())
     zip.close()
   }
 
-  test("Constructor(File, Int)") {
+  @Test def constructorFileInt(): Unit = {
     val file = getFile(zipFile)
     val zip  = new ZipFile(file, ZipFile.OPEN_DELETE | ZipFile.OPEN_READ)
     zip.close()
-    assert(!file.exists())
+    assertTrue(!file.exists())
 
-    assertThrows[IllegalArgumentException] {
+    assertThrows(classOf[IllegalArgumentException], {
       val error = 3
       new ZipFile(file, error)
-    }
+    })
   }
 
-  test("close()") {
+  @Test def close(): Unit = {
     val zip = getZipFile(zipFile)
     zip.close()
-    assertThrows[IllegalStateException] {
-      zip.getInputStream(zip.getEntry("ztest/file1.txt"))
-    }
+    assertThrows(classOf[IllegalStateException],
+                 zip.getInputStream(zip.getEntry("ztest/file1.txt")))
   }
 
-  test("entries()") {
+  @Test def entries(): Unit = {
     val zip    = getZipFile(zipFile)
     val enumer = zip.entries()
     var c      = 0
@@ -43,60 +47,56 @@ object ZipFileSuite extends tests.Suite {
       c += 1
       enumer.nextElement()
     }
-    assert(c == 6)
+    assertTrue(c == 6)
 
     val enumeration = zip.entries()
     zip.close()
-    assertThrows[IllegalStateException] {
-      enumeration.hasMoreElements()
-    }
+    assertThrows(classOf[IllegalStateException], enumeration.hasMoreElements())
   }
 
-  test("getEntry(String)") {
+  @Test def getEntryString(): Unit = {
     val zip    = getZipFile(zipFile)
     var zentry = zip.getEntry("File1.txt")
-    assert(zentry != null)
+    assertTrue(zentry != null)
 
     zentry = zip.getEntry("testdir1/File1.txt")
-    assert(zentry != null)
+    assertTrue(zentry != null)
 
     var r               = 0
     var in: InputStream = null
     zentry = zip.getEntry("testdir1/")
-    assert(zentry != null)
+    assertTrue(zentry != null)
     in = zip.getInputStream(zentry)
-    assert(in != null)
+    assertTrue(in != null)
     r = in.read()
     in.close()
-    assert(r == -1)
+    assertTrue(r == -1)
 
     zentry = zip.getEntry("testdir1")
-    assert(zentry != null)
+    assertTrue(zentry != null)
     in = zip.getInputStream(zentry)
     r = in.read()
     in.close()
-    assert(r == -1)
+    assertTrue(r == -1)
 
     zentry = zip.getEntry("testdir1/testdir1")
-    assert(zentry != null)
+    assertTrue(zentry != null)
     in = zip.getInputStream(zentry)
     val buf = new Array[Byte](256)
     r = in.read(buf)
-    assert(new String(buf, 0, r, "UTF-8") == "This is also text")
+    assertTrue(new String(buf, 0, r, "UTF-8") == "This is also text")
   }
 
-  test("getEntry(String) throws an exception when the zip is closed") {
+  @Test def getEntryStringThrowsAnExceptionWhenTheZipIsClosed(): Unit = {
     val zip    = getZipFile(zipFile)
     val zentry = zip.getEntry("File1.txt")
-    assert(zentry != null)
+    assertTrue(zentry != null)
 
     zip.close()
-    assertThrows[IllegalStateException] {
-      zip.getEntry("File2.txt")
-    }
+    assertThrows(classOf[IllegalStateException], zip.getEntry("File2.txt"))
   }
 
-  test("getInputStream(ZipEntry)") {
+  @Test def getInputStreamZipEntry(): Unit = {
     val zip             = getZipFile(zipFile)
     var is: InputStream = null
 
@@ -106,14 +106,14 @@ object ZipFileSuite extends tests.Suite {
       val rbuf = new Array[Byte](1000)
       var r    = zentry.getSize().toInt
       is.read(rbuf, 0, r)
-      assert(new String(rbuf, 0, r, "UTF-8") == "This is text")
+      assertTrue(new String(rbuf, 0, r, "UTF-8") == "This is text")
     } finally {
       is.close()
     }
   }
 
-  test("size()") {
+  @Test def size(): Unit = {
     val zip = getZipFile(zipFile)
-    assert(zip.size() == 6)
+    assertTrue(zip.size() == 6)
   }
 }
