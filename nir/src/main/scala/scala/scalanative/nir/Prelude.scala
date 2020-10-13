@@ -35,7 +35,7 @@ object Prelude {
     out.writeInt(magic)
     out.writeInt(compat)
     out.writeInt(revision)
-    out.write((if (hasEntryPoints) 1 else 0).toByte)
+    out.writeBoolean(hasEntryPoints)
     out
   }
 }

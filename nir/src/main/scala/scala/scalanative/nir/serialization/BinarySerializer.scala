@@ -27,6 +27,7 @@ final class BinarySerializer {
     writeShort => putShort
   }
   import bufferUnderyling.currentPosition
+
   def serialize(defns: Seq[Defn], outputStream: OutputStream): Unit = {
     val names     = defns.map(_.name)
     val filenames = initFiles(defns)
@@ -57,8 +58,8 @@ final class BinarySerializer {
           putDefn(defn)
       }
 
-    bufferUnderyling.writeTo(outputStream)
     buffer.flush()
+    bufferUnderyling.writeTo(outputStream)
   }
 
   private def putSeq[T](seq: Seq[T])(putT: T => Unit) = {
