@@ -5,65 +5,68 @@ package regex
 // j2objc: https://github.com/google/j2objc/blob/master/jre_emul/Tests/java/util/regex/MatcherTest.java#L1
 // re2: https://github.com/google/re2/blob/master/re2/testing/re2_test.cc
 
-object MatcherSuite extends tests.Suite {
+import org.junit.Ignore
+import org.junit.Test
+import org.junit.Assert._
+
+import scala.scalanative.junit.utils.AssertThrows._
+
+import ThrowsHelper._
+
+class MatcherTest {
 
   private def matcher(regex: String, text: String): Matcher =
     Pattern.compile(regex).matcher(text)
 
   private def checkGroupCount(m: Matcher, expected: Int): Boolean = {
     val result = m.groupCount()
-    assert(result == expected,
-           s"pattern: ${m.pattern} result: ${result} != expected: ${expected}")
+    assertTrue(
+      s"pattern: ${m.pattern} result: ${result} != expected: ${expected}",
+      result == expected)
     true
   }
 
-  test("region - invalid values") {
+  @Test def regionInvalidValues(): Unit = {
     val needle         = "needle"
     val haystack       = "haystack"
     val haystackLength = haystack.length
 
     val m = matcher(needle, haystack)
 
-    assertThrows[IndexOutOfBoundsException] {
-      m.region(-1, haystackLength)
-    }
+    assertThrows(classOf[IndexOutOfBoundsException],
+                 m.region(-1, haystackLength))
 
-    assertThrows[IndexOutOfBoundsException] {
-      m.region(haystackLength + 1, haystackLength)
-    }
+    assertThrows(classOf[IndexOutOfBoundsException],
+                 m.region(haystackLength + 1, haystackLength))
 
-    assertThrows[IndexOutOfBoundsException] {
-      m.region(0, -1)
-    }
+    assertThrows(classOf[IndexOutOfBoundsException], m.region(0, -1))
 
-    assertThrows[IndexOutOfBoundsException] {
-      m.region(0, haystackLength + 1)
-    }
+    assertThrows(classOf[IndexOutOfBoundsException],
+                 m.region(0, haystackLength + 1))
 
-    assertThrows[IndexOutOfBoundsException] {
-      m.region(haystackLength + 1, haystackLength - 1)
-    }
+    assertThrows(classOf[IndexOutOfBoundsException],
+                 m.region(haystackLength + 1, haystackLength - 1))
   }
 
-  test("find") {
+  @Test def find(): Unit = {
     locally { // Expect success
-
       val needle   = "Cutty"
       val haystack = "Weel done, Cutty-sark!"
 
       val m = Pattern.compile(needle).matcher(haystack)
-      assert(m.find(), s"should have found '${needle}' in '${haystack}'")
+      assertTrue(s"should have found '${needle}' in '${haystack}'", m.find())
     }
 
     locally { // Expect failure
       val needle   = "vermin"
       val haystack = "haystack & needle"
       val m        = Pattern.compile(needle).matcher(haystack)
-      assert(!m.find(), s"should not have found '${needle}' in '${haystack}'")
+      assertFalse(s"should not have found '${needle}' in '${haystack}'",
+                  m.find())
     }
   }
 
-  test("find() - advanced") {
+  @Test def findAdvanced(): Unit = {
     val prefix  = "0123"
     val pattern = "abc"
     val noise   = "def"
@@ -73,24 +76,24 @@ object MatcherSuite extends tests.Suite {
 
     val expectedStart1 = prefix.length
     val expectedEnd1   = prefix.length + pattern.length
-    assert(m.find(), s"initial find() failed.")
+    assertTrue(s"initial find() failed.", m.find())
 
-    assert(m.start == expectedStart1,
-           s"first start: ${m.start} != expected: $expectedStart1")
-    assert(m.end == expectedEnd1,
-           s"first end: ${m.end} != expected: $expectedEnd1")
+    assertTrue(s"first start: ${m.start()} != expected: $expectedStart1",
+               m.start() == expectedStart1)
+    assertTrue(s"first end: ${m.end} != expected: $expectedEnd1",
+               m.end == expectedEnd1)
 
     val expectedStart2 = expectedEnd1 + noise.length
     val expectedEnd2   = expectedStart2 + pattern.length
 
-    assert(m.find(), s"second find() failed.")
-    assert(m.start == expectedStart2,
-           s"second start: ${m.start} != expected: $expectedStart2")
-    assert(m.end == expectedEnd2,
-           s"second end: ${m.start} != expected: $expectedEnd2")
+    assertTrue(s"second find() failed.", m.find())
+    assertTrue(s"second start: ${m.start()} != expected: $expectedStart2",
+               m.start() == expectedStart2)
+    assertTrue(s"second end: ${m.start()} != expected: $expectedEnd2",
+               m.end == expectedEnd2)
   }
 
-  test("find - group & start/end positions") {
+  @Test def findGroupStartEndPositions(): Unit = {
     val needle = "Twinkle"
     val prefix = "Sing the song: "
     // "Sing the song: Twinkle, Twinkle, Little Star"
@@ -98,49 +101,48 @@ object MatcherSuite extends tests.Suite {
 
     val m = Pattern.compile(needle).matcher(haystack)
 
-    assert(m.find(), s"should have found '${needle}' in '${haystack}'")
+    assertTrue(s"should have found '${needle}' in '${haystack}'", m.find())
 
     val expectedGroup = needle
     val foundGroup    = m.group
-    assert(foundGroup == expectedGroup,
-           s"group: ${foundGroup} != expected: ${expectedGroup}")
+    assertTrue(s"group: ${foundGroup} != expected: ${expectedGroup}",
+               foundGroup == expectedGroup)
 
     val expectedStart = prefix.length
-    val foundStart    = m.start
-    assert(foundStart == expectedStart,
-           s"start index: ${foundStart} != expected: ${expectedStart}")
+    val foundStart    = m.start()
+    assertTrue(s"start index: ${foundStart} != expected: ${expectedStart}",
+               foundStart == expectedStart)
 
     val expectedEnd = expectedStart + needle.length
     val foundEnd    = m.end
-    assert(foundEnd == expectedEnd,
-           s"end index: ${foundEnd} != expected: ${expectedEnd}")
+    assertTrue(s"end index: ${foundEnd} != expected: ${expectedEnd}",
+               foundEnd == expectedEnd)
   }
 
   // find(start) uses reset. reset uses find().
   // So reset test needs to be before find(start) and after find()
 
-  test("reset - before use in find(start)") {
+  @Test def resetBeforeUseInFindStart(): Unit = {
     val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
-    import m._
 
-    assert(find(), "Assert_1")
-    assert(start == 1, s"Assert_2 start: ${start}")
-    assert(end == 5, s"Assert_3, end: ${end}")
+    assertTrue("Assert_1", m.find())
+    assertTrue(s"Assert_2 start: ${m.start()}", m.start() == 1)
+    assertTrue(s"Assert_3, end: ${m.end}", m.end == 5)
 
-    reset()
+    m.reset()
 
-    assert(find(), "Assert_4")
-    assert(start == 1, s"Assert_5 start: ${start}")
-    assert(end == 5, s"Assert_6, end: ${end}")
+    assertTrue("Assert_4", m.find())
+    assertTrue(s"Assert_5 start: ${m.start()}", m.start() == 1)
+    assertTrue(s"Assert_6, end: ${m.end}", m.end == 5)
 
-    assert(find(), "Assert_7")
-    assert(start == 6, s"Assert_8 start: ${start}")
-    assert(end == 10, s"Assert_9, end: ${end}")
+    assertTrue("Assert_7", m.find())
+    assertTrue(s"Assert_8 start: ${m.start()}", m.start() == 6)
+    assertTrue(s"Assert_9, end: ${m.end}", m.end == 10)
 
-    assert(!find(), "Assert_10")
+    assertFalse("Assert_10", m.find())
   }
 
-  test("find - after reset") {
+  @Test def findAfterReset(): Unit = {
     val needle = "Twinkle"
     val prefix = "Sing the song: "
     // "Sing the song: Twinkle, Twinkle, Little Star"
@@ -148,41 +150,39 @@ object MatcherSuite extends tests.Suite {
 
     val m = Pattern.compile(needle).matcher(haystack)
 
-    assert(m.find(),
-           s"first find should have found '${needle}' in '${haystack}'")
+    assertTrue(s"first find should have found '${needle}' in '${haystack}'",
+               m.find())
 
     val expectedStart = prefix.length
-    val foundStart    = m.start
-    assert(foundStart == expectedStart,
-           s"first start index: ${foundStart} != expected: ${expectedStart}")
+    val foundStart    = m.start()
+    assertTrue(
+      s"first start index: ${foundStart} != expected: ${expectedStart}",
+      foundStart == expectedStart)
 
     m.reset()
 
-    assert(m.find(),
-           s"second find should have found '${needle}' in '${haystack}'")
+    assertTrue(s"second find should have found '${needle}' in '${haystack}'",
+               m.find())
 
-    val resetStart = m.start
+    val resetStart = m.start()
 
-    assert(resetStart == expectedStart,
-           s"reset start index: ${foundStart} != expected: ${expectedStart}")
+    assertTrue(
+      s"reset start index: ${foundStart} != expected: ${expectedStart}",
+      resetStart == expectedStart)
   }
 
-  test("find(start) - invalid start values") {
+  @Test def findStartInvalidStartValues(): Unit = {
     val pattern = "Isaac"
     val sample  = "Asimov"
 
     val m = Pattern.compile(pattern).matcher(sample)
 
-    assertThrows[IndexOutOfBoundsException] {
-      m.find(-1)
-    }
+    assertThrows(classOf[IndexOutOfBoundsException], m.find(-1))
 
-    assertThrows[IndexOutOfBoundsException] {
-      m.find(sample.length + 1)
-    }
+    assertThrows(classOf[IndexOutOfBoundsException], m.find(sample.length + 1))
   }
 
-  test("find(start)") {
+  @Test def findStart(): Unit = {
     val prefix  = "0"
     val pattern = "abc"
     val noise   = "def"
@@ -199,37 +199,39 @@ object MatcherSuite extends tests.Suite {
     // having being found. Calling either if no match was found throws
     // an exception.
     if (m1f1Result) {
-      assert(false,
-             s"find(${index}) wrongly found start: ${m1.start} end: ${m1.end}")
+      assertTrue(
+        s"find(${index}) wrongly found start: ${m1.start} end: ${m1.end}",
+        false)
     }
 
     val m2 = Pattern.compile(pattern).matcher(sample2)
 
-    assert(m2.find(index),
-           s"find(${index}) did not find ${pattern} in ${sample2}")
+    assertTrue(s"find(${index}) did not find ${pattern} in ${sample2}",
+               m2.find(index))
 
     val m2ExpectedStart1 = prefix.length + pattern.length + noise.length
     val m2ExpectedEnd1   = m2ExpectedStart1 + pattern.length
 
-    assert(m2.start == m2ExpectedStart1,
-           s"first start: ${m2.start} != expected: $m2ExpectedStart1")
-    assert(m2.end == m2ExpectedEnd1,
-           s"first end: ${m2.end} != expected: $m2ExpectedEnd1")
+    assertTrue(s"first start: ${m2.start} != expected: $m2ExpectedStart1",
+               m2.start == m2ExpectedStart1)
+    assertTrue(s"first end: ${m2.end} != expected: $m2ExpectedEnd1",
+               m2.end == m2ExpectedEnd1)
 
     // Simple find() after a find(index) should succeed.
 
-    assert(m2.find(), s"second find() did not find ${pattern} in ${sample2}")
+    assertTrue(s"second find() did not find ${pattern} in ${sample2}",
+               m2.find())
 
     val m2ExpectedStart2 = m2ExpectedEnd1
     val m2ExpectedEnd2   = m2ExpectedStart2 + pattern.length
 
-    assert(m2.start == m2ExpectedStart2,
-           s"first start: ${m2.start} != expected: $m2ExpectedStart2")
-    assert(m2.end == m2ExpectedEnd2,
-           s"first end: ${m2.end} != expected: $m2ExpectedEnd2")
+    assertTrue(s"first start: ${m2.start} != expected: $m2ExpectedStart2",
+               m2.start == m2ExpectedStart2)
+    assertTrue(s"first end: ${m2.end} != expected: $m2ExpectedEnd2",
+               m2.end == m2ExpectedEnd2)
   }
 
-  test("find(start) - group") { // As reported in Issue #1506
+  @Test def findStartGroup(): Unit = { // As reported in Issue #1506
     val needle     = ".*[aeiou]"
     val haystack   = "abcdefgh"
     val startAt    = 1
@@ -238,38 +240,39 @@ object MatcherSuite extends tests.Suite {
 
     val m = Pattern.compile(needle).matcher(haystack)
 
-    assert(m.find(), s"find() should have found '${needle}' in '${haystack}'")
+    assertTrue(s"find() should have found '${needle}' in '${haystack}'",
+               m.find())
 
     val foundF0 = m.group
-    assert(foundF0 == expectedF0,
-           s"group: ${foundF0} != expected: ${expectedF0}")
+    assertTrue(s"group: ${foundF0} != expected: ${expectedF0}",
+               foundF0 == expectedF0)
 
-    assert(m.find(startAt),
-           s"find(1) should have found '${needle}' in '${haystack}'")
+    assertTrue(s"find(1) should have found '${needle}' in '${haystack}'",
+               m.find(startAt))
 
     val foundF1 = m.group
-    assert(foundF1 == expectedF1,
-           s"group: ${foundF1} != expected: ${expectedF1}")
+    assertTrue(s"group: ${foundF1} != expected: ${expectedF1}",
+               foundF1 == expectedF1)
 
     val expectedF1Start = startAt
     val foundF1Start    = m.start
-    assert(foundF1Start == expectedF1Start,
-           s"start index: ${foundF1Start} != expected: ${expectedF1Start}")
+    assertTrue(s"start index: ${foundF1Start} != expected: ${expectedF1Start}",
+               foundF1Start == expectedF1Start)
 
     val expectedF1End = expectedF1Start + expectedF1.length
     val foundF1End    = m.end
-    assert(foundF1End == expectedF1End,
-           s"end index: ${foundF1End} != expected: ${expectedF1End}")
+    assertTrue(s"end index: ${foundF1End} != expected: ${expectedF1End}",
+               foundF1End == expectedF1End)
   }
 
-  test("replaceAll") {
+  @Test def testReplaceAll(): Unit = {
     assertEquals(
       matcher("abc", "abcabcabc").replaceAll("z"),
       "zzz"
     )
   }
 
-  test("find - second find uses remembered position") {
+  @Test def findSecondFindUsesRememberedPosition(): Unit = {
     val needle = "Twinkle"
     val prefix = "Sing the song: "
     // "Sing the song: Twinkle, Twinkle, Little Star"
@@ -277,26 +280,27 @@ object MatcherSuite extends tests.Suite {
 
     val m = Pattern.compile(needle).matcher(haystack)
 
-    assert(m.find(),
-           s"first find should have found '${needle}' in '${haystack}'")
+    assertTrue(s"first find should have found '${needle}' in '${haystack}'",
+               m.find())
 
     val firstEnd = m.end
 
-    assert(m.find(),
-           s"second find should have found '${needle}' in '${haystack}'")
+    assertTrue(s"second find should have found '${needle}' in '${haystack}'",
+               m.find())
 
     val expectedStart = firstEnd + 2
     val foundStart    = m.start
-    assert(foundStart == expectedStart,
-           s"start index: ${foundStart} != expected: ${expectedStart}")
+    assertTrue(s"start index: ${foundStart} != expected: ${expectedStart}",
+               foundStart == expectedStart)
 
     val expectedEnd = expectedStart + needle.length
     val foundEnd    = m.end
-    assert(foundEnd == expectedEnd,
-           s"end index: ${foundEnd} != expected: ${expectedEnd}")
+    assertTrue(s"end index: ${foundEnd} != expected: ${expectedEnd}",
+               foundEnd == expectedEnd)
   }
 
-  testFails("find region - needle before region", 0) {
+  @Ignore
+  @Test def findRegionNeedleBeforeRegion(): Unit = {
     val needle   = "a"
     val haystack = "haystack"
 
@@ -308,11 +312,12 @@ object MatcherSuite extends tests.Suite {
 
     m.region(regionBegin, regionEnd)
 
-    assert(!m.find(),
-           s"should not have found '${needle}' in region '${regionString}'")
+    assertFalse(
+      s"should not have found '${needle}' in region '${regionString}'",
+      m.find())
   }
 
-  test("find region - needle in region") {
+  @Test def findRegionNeedleInRegion(): Unit = {
     val needle   = "s"
     val haystack = "haystack"
 
@@ -324,11 +329,12 @@ object MatcherSuite extends tests.Suite {
 
     m.region(regionBegin, regionEnd)
 
-    assert(m.find(),
-           s"should have found '${needle}' in region '${regionString}'")
+    assertTrue(s"should have found '${needle}' in region '${regionString}'",
+               m.find())
   }
 
-  testFails("find region - needle after region", 0) {
+  @Ignore
+  @Test def findRegionNeedleAfterRegion(): Unit = {
     val needle   = "ck"
     val haystack = "haystack"
 
@@ -340,11 +346,12 @@ object MatcherSuite extends tests.Suite {
 
     m.region(regionBegin, regionEnd)
 
-    assert(!m.find(),
-           s"should not have found '${needle}' in region '${regionString}'")
+    assertFalse(
+      s"should not have found '${needle}' in region '${regionString}'",
+      m.find())
   }
 
-  test("find(start)") {
+  @Test def findStart2(): Unit = {
     val needle = "Twinkle"
     val prefix = "Sing the song: "
     // "Sing the song: Twinkle, Twinkle, Twinkle, Little Star"
@@ -352,16 +359,17 @@ object MatcherSuite extends tests.Suite {
 
     val m = Pattern.compile(needle).matcher(haystack)
 
-    assert(m.find(),
-           s"first find should have found '${needle}' in '${haystack}'")
+    assertTrue(s"first find should have found '${needle}' in '${haystack}'",
+               m.find())
 
     // startAt some arbitrary point in second "Twinkle" _after_ the
     // initial 'T'. Here that is the 'w'.
 
     val startAt = m.end + 4
 
-    assert(m.find(startAt),
-           s"find(${startAt}) should have found '${needle}' in '${haystack}'")
+    assertTrue(
+      s"find(${startAt}) should have found '${needle}' in '${haystack}'",
+      m.find(startAt))
 
     val find2Start = m.start
     val find2End   = m.end
@@ -370,14 +378,14 @@ object MatcherSuite extends tests.Suite {
     val expectedStart = 33
     val expectedEnd   = expectedStart + needle.length
 
-    assert(find2Start == expectedStart,
-           s"start index: ${find2Start} != expected: ${expectedStart}")
+    assertTrue(s"start index: ${find2Start} != expected: ${expectedStart}",
+               find2Start == expectedStart)
 
-    assert(find2End == expectedEnd,
-           s"start index: ${find2End} != expected: ${expectedEnd}")
+    assertTrue(s"start index: ${find2End} != expected: ${expectedEnd}",
+               find2End == expectedEnd)
   }
 
-  test("find(start) - region") {
+  @Test def findStartRegion(): Unit = {
 
     val needle = "Twinkle"
     val prefix = "Sing the song: "
@@ -396,9 +404,9 @@ object MatcherSuite extends tests.Suite {
 
       val startAt = prefix.length
 
-      assert(m.find(startAt),
-             s"find(${startAt}) should not have found '${needle}' " +
-               s"in region '${haystack.slice(regionStart, regionEnd)}'")
+      assertTrue(s"find(${startAt}) should not have found '${needle}' " +
+                   s"in region '${haystack.slice(regionStart, regionEnd)}'",
+                 m.find(startAt))
     }
 
     locally {
@@ -411,9 +419,9 @@ object MatcherSuite extends tests.Suite {
 
       val startAt = prefix.length
 
-      assert(m.find(startAt),
-             s"find(${startAt}) should have found '${needle}' " +
-               s"in region '${haystack.slice(regionStart, regionEnd)}'")
+      assertTrue(s"find(${startAt}) should have found '${needle}' " +
+                   s"in region '${haystack.slice(regionStart, regionEnd)}'",
+                 m.find(startAt))
     }
 
     locally {
@@ -427,115 +435,116 @@ object MatcherSuite extends tests.Suite {
 
       val startAt = prefix.length
 
-      assert(m.find(startAt),
-             s"find(${startAt}) should not have found '${needle}' " +
-               s"in region '${haystack.slice(regionStart, regionEnd)}'")
+      assertTrue(s"find(${startAt}) should not have found '${needle}' " +
+                   s"in region '${haystack.slice(regionStart, regionEnd)}'",
+                 m.find(startAt))
     }
 
   }
 
-  test("group") {
+  @Test def testGroup(): Unit = {
     val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
-    import m._
 
-    assertEquals(groupCount, 2)
+    assertEquals(m.groupCount, 2)
 
-    assertThrowsAnd[IllegalStateException](group)(
+    assertThrowsAnd(classOf[IllegalStateException], m.group)(
       _.getMessage == "No match found"
     )
 
-    assert(find())
-    assertEquals(group, "a12z")
-    assertEquals(group(0), "a12z")
-    assertEquals(group(1), "1")
-    assertEquals(group(2), "2")
-    assertThrowsAnd[IndexOutOfBoundsException](group(42))(
+    assertTrue(m.find())
+    assertEquals(m.group(), "a12z")
+    assertEquals(m.group(0), "a12z")
+    assertEquals(m.group(1), "1")
+    assertEquals(m.group(2), "2")
+    assertThrowsAnd(classOf[IndexOutOfBoundsException], m.group(42))(
       _.getMessage == "No group 42"
     )
 
-    assert(find())
-    assertEquals(group, "a34z")
-    assertEquals(group(0), "a34z")
-    assertEquals(group(1), "3")
-    assertEquals(group(2), "4")
+    assertTrue(m.find())
+    assertEquals(m.group(), "a34z")
+    assertEquals(m.group(0), "a34z")
+    assertEquals(m.group(1), "3")
+    assertEquals(m.group(2), "4")
 
-    assert(!find())
+    assertFalse(m.find())
   }
 
-  test("hasAnchoringBounds") {
+  @Test def hasAnchoringBounds(): Unit = {
     val needle   = "needle"
     val haystack = "haystack"
 
     val m = matcher(needle, haystack)
 
-    assert(m.hasAnchoringBounds()) // Expect true, same as JVM default.
+    assertTrue(m.hasAnchoringBounds()) // Expect true, same as JVM default.
   }
 
   // we don't support lookahead
-  testFails("hasTransparentBounds/useTransparentBounds (not supported)", 640) {
+  @Ignore("#640")
+  @Test def hasTransparentBoundsUseTransparentBoundsNotSupported(): Unit = {
 
     // ?=  <==>  zero-width positive look-ahead
     val m1 = Pattern.compile("foo(?=buzz)").matcher("foobuzz")
     m1.region(0, 3)
     m1.useTransparentBounds(false)
-    assert(!m1.matches()) // opaque
+    assertFalse(m1.matches()) // opaque
 
     m1.useTransparentBounds(true)
-    assert(m1.matches()) // transparent
+    assertTrue(m1.matches()) // transparent
 
     // ?!  <==>  zero-width negative look-ahead
     val m2 = Pattern.compile("foo(?!buzz)").matcher("foobuzz")
     m2.region(0, 3)
     m2.useTransparentBounds(false)
-    assert(!m2.matches()) // opaque
+    assertFalse(m2.matches()) // opaque
 
     m2.useTransparentBounds(true)
-    assert(m2.matches()) // transparent
+    assertTrue(m2.matches()) // transparent
   }
 
-  test("hitEnd") {
+  @Test def testHitEnd(): Unit = {
     val needle   = "needle"
     val haystack = "haystack"
 
     val m = matcher(needle, haystack)
 
-    assertThrows[UnsupportedOperationException] {
-      m.hitEnd()
-    }
+    assertThrows(classOf[UnsupportedOperationException], m.hitEnd())
   }
 
-  testFails("lookingAt - region", 0) {
+  @Ignore("no issue")
+  @Test def lookingAtRegion(): Unit = {
     val needle   = "Boston"
     val haystack = "Boston Boston"
 
     val m = matcher(needle, haystack)
 
-    assert(m.lookingAt(), s"should be looking at '${needle}' in '${haystack}'")
+    assertTrue(s"should be looking at '${needle}' in '${haystack}'",
+               m.lookingAt())
 
     m.region(m.end, haystack.length - 2)
 
-    assert(!m.lookingAt(),
-           s"should not be looking at '${needle}' in '${haystack}'")
+    assertFalse(s"should not be looking at '${needle}' in '${haystack}'",
+                m.lookingAt())
   }
 
-  test("matches") {
+  @Test def testMatches(): Unit = {
     locally {
       val needle   = "foo"
       val haystack = "foobar"
       val m        = matcher(needle, haystack)
-      assert(!m.matches(),
-             s"should not have found '${needle}' in '${haystack}'")
+      assertFalse(s"should not have found '${needle}' in '${haystack}'",
+                  m.matches())
     }
 
     locally {
       val needle   = "foobar"
       val haystack = needle
       val m        = matcher(needle, haystack)
-      assert(m.matches(), s"should have found '${needle}' in '${haystack}'")
+      assertTrue(s"should have found '${needle}' in '${haystack}'", m.matches())
     }
   }
 
-  testFails("matches - region", 0) {
+  @Ignore("0")
+  @Test def matchesRegion(): Unit = {
     locally {
       val needle   = "Peace"
       val haystack = "War & Peace by Leo Tolstoy"
@@ -543,52 +552,50 @@ object MatcherSuite extends tests.Suite {
       val m = matcher(needle, haystack)
       m.region(6, 11)
 
-      assert(m.matches(),
-             s"should have matched '${needle}' in " +
-               s"region '${haystack.slice(6, 11)}'")
+      assertTrue(s"should have matched '${needle}' in " +
+                   s"region '${haystack.slice(6, 11)}'",
+                 m.matches())
     }
 
   }
 
-  test("named group (java syntax)") {
+  @Test def namedGroupJavaSyntax(): Unit = {
     val m = matcher(
       "from (?<S>.*) to (?<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
     )
-    import m._
 
-    assert(find())
-    assertEquals(group("S"), "Montreal, Canada")
-    assertEquals(group("D"), "Lausanne, Switzerland")
+    assertTrue(m.find())
+    assertEquals(m.group("S"), "Montreal, Canada")
+    assertEquals(m.group("D"), "Lausanne, Switzerland")
   }
 
   // Do not expect support for re2 syntax in java.util.regex with
   // scalanative.regex.
-  // No Issue number necessary.
-  testFails("named group (re2 syntax)", 0) {
+  @Ignore("no issue needed")
+  @Test def namedGroupRe2Syntax(): Unit = {
     // scalanative.regex behavior change, so no Issue #
     // change pattern to java: "from (?<S>.*) to (?<D>.*)"
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
     )
-    import m._
 
-    assert(find(), "A1")
-    assert(group("S") == "Montreal, Canada", "A2")
-    assert(group("D") == "Lausanne, Switzerland", "A3")
-    assertThrowsAnd[IllegalArgumentException](group("foo"))(
+    assertTrue("A1", m.find())
+    assertTrue("A2", m.group("S") == "Montreal, Canada")
+    assertTrue("A3", m.group("D") == "Lausanne, Switzerland")
+    assertThrowsAnd(classOf[IllegalArgumentException], m.group("foo"))(
       _.getMessage == "No group with name <foo>"
     )
   }
 
-  test("optional match - empty strings") {
+  @Test def optionalMatchEmptyStrings(): Unit = {
     val OptionalA = "(a?)".r
-    "a" match { case OptionalA("a") => assert(true) }
-    "" match { case OptionalA("")   => assert(true) }
+    "a" match { case OptionalA("a") => assertTrue(true) }
+    "" match { case OptionalA("")   => assertTrue(true) }
   }
 
-  test("pattern") {
+  @Test def testPattern(): Unit = {
     val p = Pattern.compile("foo")
     assertEquals(
       p.matcher("foobar").pattern(),
@@ -596,11 +603,11 @@ object MatcherSuite extends tests.Suite {
     )
   }
 
-  test("quoteReplacement") {
+  @Test def quoteReplacement(): Unit = {
     assertEquals(Matcher.quoteReplacement(""), "")
   }
 
-  test("quoteReplacement should quote backslash and $") {
+  @Test def quoteReplacementShouldQuoteBackslashAndDollarSign(): Unit = {
     // SN Issue #1070 described a condition where String.replaceAllLiterally()
     // would fail with the cre2 based j.u.regex. The resolution
     // of that issue led to an SN idiosyncratic implementation of
@@ -623,7 +630,7 @@ object MatcherSuite extends tests.Suite {
     )
   }
 
-  test("regionEnd") {
+  @Test def regionEnd(): Unit = {
     val needle   = "needle"
     val haystack = "haystack"
     val expected = 6
@@ -634,10 +641,11 @@ object MatcherSuite extends tests.Suite {
 
     val result = m.regionEnd
 
-    assert(result == expected, s"result: ${result} != expected: ${expected}")
+    assertTrue(s"result: ${result} != expected: ${expected}",
+               result == expected)
   }
 
-  test("regionStart") {
+  @Test def regionStart(): Unit = {
     val needle   = "needle"
     val haystack = "haystack"
     val expected = 3
@@ -648,189 +656,183 @@ object MatcherSuite extends tests.Suite {
 
     val result = m.regionStart
 
-    assert(result == expected, s"result: ${result} != expected: ${expected}")
+    assertTrue(s"result: ${result} != expected: ${expected}",
+               result == expected)
   }
 
-  test("replaceAll") {
+  @Test def replaceAll2(): Unit = {
     assertEquals(matcher("abc", "abcabcabc").replaceAll("z"), "zzz")
   }
 
-  test("replaceFirst") {
+  @Test def replaceFirst(): Unit = {
     assertEquals(
       matcher("abc", "abcabcabc").replaceFirst("z"),
       "zabcabc"
     )
   }
 
-  test("appendReplacement/appendTail") {
+  @Test def appendReplacementAppendTail(): Unit = {
     val buf = new StringBuffer()
 
     val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
-    import m._
 
-    while (find()) {
-      appendReplacement(buf, "{" + group + "}")
+    while (m.find()) {
+      m.appendReplacement(buf, "{" + m.group() + "}")
     }
-    appendTail(buf)
+    m.appendTail(buf)
     assertEquals(buf.toString, "_{a12z}_{a34z}_")
   }
 
-  test("appendReplacement/appendTail with group replacement by index") {
+  @Test def appendReplacementAppendTailWithGroupReplacementByIndex(): Unit = {
     val buf = new StringBuffer()
     val m   = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
-    import m._
-    while (find()) {
-      appendReplacement(buf, "{$0}")
+
+    while (m.find()) {
+      m.appendReplacement(buf, "{$0}")
     }
-    appendTail(buf)
+    m.appendTail(buf)
     assertEquals(buf.toString, "_{a12z}_{a34z}_")
   }
 
-  test("appendReplacement/appendTail with group replacement by name") {
+  @Test def appendReplacementAppendTailWithGroupReplacementByName(): Unit = {
     val buf = new StringBuffer()
     val m = matcher(
       "from (?<S>.*) to (?<D>.*)", // java syntax
       "from Montreal, Canada to Lausanne, Switzerland"
     )
-    import m._
-    while (find()) {
-      appendReplacement(buf, "such ${S}, wow ${D}")
+
+    while (m.find()) {
+      m.appendReplacement(buf, "such ${S}, wow ${D}")
     }
-    appendTail(buf)
+    m.appendTail(buf)
     assertEquals(buf.toString,
                  "such Montreal, Canada, wow Lausanne, Switzerland")
   }
 
-  test("requireEnd") {
+  @Test def requireEnd(): Unit = {
     val needle   = "needle"
     val haystack = "haystack"
 
     val m = matcher(needle, haystack)
 
-    assertThrows[UnsupportedOperationException] {
-      m.requireEnd()
-    }
+    assertThrows(classOf[UnsupportedOperationException], m.requireEnd())
   }
 
-  test("start(i)/end(i)") {
+  @Test def startEndIndices(): Unit = {
     val m = matcher("a(\\d)(\\d)z", "012345_a12z_012345")
-    import m._
 
-    assertThrowsAnd[IllegalStateException](start)(
+    assertThrowsAnd(classOf[IllegalStateException], m.start())(
       _.getMessage == "No match found"
     )
 
-    assertThrowsAnd[IllegalStateException](end)(
+    assertThrowsAnd(classOf[IllegalStateException], m.end())(
       _.getMessage == "No match found"
     )
 
-    assert(find())
+    assertTrue(m.find())
 
-    assertEquals(start, 7)
-    assertEquals(end, 11)
+    assertEquals(m.start(), 7)
+    assertEquals(m.end(), 11)
 
-    assertEquals(start(0), 7)
-    assertEquals(end(0), 11)
+    assertEquals(m.start(0), 7)
+    assertEquals(m.end(0), 11)
 
-    assertEquals(start(1), 8)
-    assertEquals(end(1), 9)
+    assertEquals(m.start(1), 8)
+    assertEquals(m.end(1), 9)
 
-    assertEquals(start(2), 9)
-    assertEquals(end(2), 10)
+    assertEquals(m.start(2), 9)
+    assertEquals(m.end(2), 10)
 
-    assertThrowsAnd[IndexOutOfBoundsException](start(42))(
+    assertThrowsAnd(classOf[IndexOutOfBoundsException], m.start(42))(
       _.getMessage == "No group 42"
     )
 
-    assertThrowsAnd[IndexOutOfBoundsException](end(42))(
+    assertThrowsAnd(classOf[IndexOutOfBoundsException], m.end(42))(
       _.getMessage == "No group 42"
     )
   }
 
-  test("start/end") {
+  @Test def startEnd(): Unit = {
     val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
-    import m._
 
-    assert(find())
-    assertEquals(start, 1)
-    assertEquals(end, 5)
+    assertTrue(m.find())
+    assertEquals(m.start(), 1)
+    assertEquals(m.end(), 5)
 
-    assert(find())
-    assertEquals(start, 6)
-    assertEquals(end, 10)
+    assertTrue(m.find())
+    assertEquals(m.start(), 6)
+    assertEquals(m.end(), 10)
 
-    assert(!find())
+    assertFalse(m.find())
   }
 
-  test("start/end 0,0 on empty match") {
+  @Test def startEndZeroZeroOnEmptyMatch(): Unit = {
     val m = Pattern.compile(".*").matcher("")
-    assert(m.find(), "Assert_1")
-    assert(m.start == 0, s"Assert_2 m.start: ${m.start}")
-    assert(m.end == 0, s"Assert_3, m.end: ${m.end}")
+    assertTrue("Assert_1", m.find())
+    assertTrue(s"Assert_2 m.start: ${m.start}", m.start == 0)
+    assertTrue(s"Assert_3, m.end: ${m.end}", m.end == 0)
   }
 
-  test("start(name)/end(name) java syntax") {
+  @Test def startNameEndNameJavaSyntax(): Unit = {
     // change pattern to java: "from (?<S>.*) to (?<D>.*)"
     val m = matcher(
       "from (?<S>.*) to (?<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
     )
-    import m._
 
-    assert(find())
-    assertEquals(start("S"), 5)
-    assertEquals(end("S"), 21)
+    assertTrue(m.find())
+    assertEquals(m.start("S"), 5)
+    assertEquals(m.end("S"), 21)
 
-    assertEquals(start("D"), 25)
-    assertEquals(end("D"), 46)
+    assertEquals(m.start("D"), 25)
+    assertEquals(m.end("D"), 46)
   }
 
   // Do not support re2 syntax in java.util.regex with scalanative.regex.
-  // No Issue number.
-  testFails("start(name)/end(name) re2 syntax", 0) {
+  @Ignore("no issue needed")
+  @Test def startNameEndNameRe2Syntax(): Unit = {
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
     )
-    import m._
 
-    assert(find())
-    assertEquals(start("S"), 5)
-    assertEquals(end("S"), 21)
+    assertTrue(m.find())
+    assertEquals(m.start("S"), 5)
+    assertEquals(m.end("S"), 21)
 
-    assertEquals(start("D"), 25)
-    assertEquals(end("D"), 46)
+    assertEquals(m.start("D"), 25)
+    assertEquals(m.end("D"), 46)
 
-    assertThrowsAnd[IllegalArgumentException](start("foo"))(
+    assertThrowsAnd(classOf[IllegalArgumentException], m.start("foo"))(
       _.getMessage == "No group with name <foo>"
     )
 
-    assertThrowsAnd[IllegalArgumentException](end("foo"))(
+    assertThrowsAnd(classOf[IllegalArgumentException], m.end("foo"))(
       _.getMessage == "No group with name <foo>"
     )
   }
 
-  test("issue #852, StringIndexOutOfBoundsException") {
+  @Test def issue852StringIndexOutOfBoundsException(): Unit = {
     val JsonNumberRegex =
       """(-)?((?:[1-9][0-9]*|0))(?:\.([0-9]+))?(?:[eE]([-+]?[0-9]+))?""".r
     val JsonNumberRegex(negative, intStr, decStr, expStr) = "0.000000"
-    assert(negative == null, "Assert_1")
-    assert(intStr == "0", "Assert_2")
-    assert(decStr == "000000", "Assert_3")
-    assert(expStr == null, "Assert_3")
+    assertTrue("Assert_1", negative == null)
+    assertTrue("Assert_2", intStr == "0")
+    assertTrue("Assert_3", decStr == "000000")
+    assertTrue("Assert_3", expStr == null)
   }
 
-  test("toString - no prior match") {
+  @Test def toStringNoPriorMatch(): Unit = {
     val m1 = matcher("needle", "sharp needle")
     val expected =
       "java.util.regex.Matcher[pattern=needle region=0,12 lastmatch=]"
     val result = m1.toString
 
-    assert(result == expected,
-           s"toString result: ${result} != expected: ${expected}")
+    assertTrue(s"toString result: ${result} != expected: ${expected}",
+               result == expected)
   }
 
-  test("toString - prior match") {
+  @Test def toStringPriorMatch(): Unit = {
     val m1 = matcher("needle", "sharp needle")
     val expected =
       "java.util.regex.Matcher[pattern=needle region=0,12 lastmatch=needle]"
@@ -838,22 +840,21 @@ object MatcherSuite extends tests.Suite {
     m1.find
     val result = m1.toString
 
-    assert(result == expected,
-           s"toString result: ${result} != expected: ${expected}")
+    assertTrue(s"toString result: ${result} != expected: ${expected}",
+               result == expected)
   }
 
-  test("useAnchoringBounds") {
+  @Test def useAnchoringBounds(): Unit = {
     val needle   = "needle"
     val haystack = "haystack"
 
     val m = matcher(needle, haystack)
 
-    assertThrows[UnsupportedOperationException] {
-      m.useAnchoringBounds(false)
-    }
+    assertThrows(classOf[UnsupportedOperationException],
+                 m.useAnchoringBounds(false))
   }
 
-  test("usePattern") {
+  @Test def usePattern(): Unit = {
 
     val oldNeedle = "(h)(.*)(y)"
     val newNeedle = "t.+(c+)k" // group count decreases
@@ -861,13 +862,11 @@ object MatcherSuite extends tests.Suite {
 
     val m = matcher(oldNeedle, haystack)
 
-    assertThrows[IllegalArgumentException] {
-      m.usePattern(null)
-    }
+    assertThrows(classOf[IllegalArgumentException], m.usePattern(null))
 
     checkGroupCount(m, 3)
 
-    assert(m.find(), s"should have found '${oldNeedle}' in '${haystack}'")
+    assertTrue(s"should have found '${oldNeedle}' in '${haystack}'", m.find())
 
     m.usePattern(Pattern.compile(newNeedle))
 
@@ -876,13 +875,13 @@ object MatcherSuite extends tests.Suite {
     // all prior groups have been forgotten/cleared.
     for (i <- 0 until m.groupCount) {
       val grp = m.group(i)
-      assert(grp == null, s"group(${i}): ${grp} != expected: null")
+      assertTrue(s"group(${i}): ${grp} != expected: null", grp == null)
     }
 
-    assert(m.find(), s"should have found '${newNeedle}' in '${haystack}'")
+    assertTrue(s"should have found '${newNeedle}' in '${haystack}'", m.find())
   }
 
-  test("usePattern - append position unchanged") {
+  @Test def usePatternAppendPositionUnchanged(): Unit = {
 
     val oldNeedle = "for "
     val newNeedle = "man"
@@ -892,7 +891,7 @@ object MatcherSuite extends tests.Suite {
 
     val m = matcher(oldNeedle, original)
 
-    assert(m.find(), s"should have found '${oldNeedle}' in '${original}'")
+    assertTrue(s"should have found '${oldNeedle}' in '${original}'", m.find())
 
     val found = m.group
 
@@ -905,12 +904,12 @@ object MatcherSuite extends tests.Suite {
       .appendTail(sb)
       .toString
 
-    assert(result == expected,
-           s"append position changed; result: ${result} != " +
-             s"expected: ${expected}'")
+    assertTrue(s"append position changed; result: ${result} != " +
+                 s"expected: ${expected}'",
+               result == expected)
   }
 
-  test("usePattern - region unchanged") {
+  @Test def usePatternRegionUnchanged(): Unit = {
 
     val needle    = "leap"
     val newNeedle = "Mankind"
@@ -931,16 +930,16 @@ object MatcherSuite extends tests.Suite {
     val startAfter = m.regionStart
     val endAfter   = m.regionEnd
 
-    assert(startAfter == startBefore,
-           s"region start changed; after: ${startAfter} != " +
-             s"before: ${startBefore}'")
+    assertTrue(s"region start changed; after: ${startAfter} != " +
+                 s"before: ${startBefore}'",
+               startAfter == startBefore)
 
-    assert(endAfter == endBefore,
-           s"region end changed; after: ${endAfter} != " +
-             s"before: ${endBefore}'")
+    assertTrue(s"region end changed; after: ${endAfter} != " +
+                 s"before: ${endBefore}'",
+               endAfter == endBefore)
   }
 
-  test("toMatchResult") {
+  @Test def toMatchResult(): Unit = {
     // Out of alphabetical order because of critical dependence on usePattern.
     // Test usePattern before using it here.
 
@@ -988,45 +987,45 @@ object MatcherSuite extends tests.Suite {
 
       val newGroupCount         = m.groupCount
       val expectedNewGroupCount = 3
-      assert(newGroupCount == expectedNewGroupCount,
-             s"groupCount: ${newGroupCount} != " +
-               "expected: ${expectedNewGroupCount}")
+      assertTrue(s"groupCount: ${newGroupCount} != " +
+                   "expected: ${expectedNewGroupCount}",
+                 newGroupCount == expectedNewGroupCount)
 
       val newGroup1         = m.group(1)
       val expectedNewGroup1 = "hold"
-      assert(newGroup1 == expectedNewGroup1,
-             s"group(1): '${newGroup1} != " +
-               "expected: '${expectedNewGroup1}'")
+      assertTrue(s"group(1): '${newGroup1} != " +
+                   "expected: '${expectedNewGroup1}'",
+                 newGroup1 == expectedNewGroup1)
 
       val newGroup1Start         = m.start(1)
       val expectedNewGroup1Start = 3
-      assert(newGroup1Start == expectedNewGroup1Start,
-             s"group(1).start: '${newGroup1Start} != " +
-               "expected: '${expectedNewGroup1Start}'")
+      assertTrue(s"group(1).start: '${newGroup1Start} != " +
+                   "expected: '${expectedNewGroup1Start}'",
+                 newGroup1Start == expectedNewGroup1Start)
 
       val newGroup1End         = m.end(1)
       val expectedNewGroup1End = 7
-      assert(newGroup1End == expectedNewGroup1End,
-             s"group(1).end: '${newGroup1End} != " +
-               "expected: '${expectedNewGroup1End}'")
+      assertTrue(s"group(1).end: '${newGroup1End} != " +
+                   "expected: '${expectedNewGroup1End}'",
+                 newGroup1End == expectedNewGroup1End)
 
       val newGroup2         = m.group(2)
       val expectedNewGroup2 = "truths"
-      assert(newGroup2 == expectedNewGroup2,
-             s"group(2): '${newGroup2}' != " +
-               s"expected: '${expectedNewGroup2}'")
+      assertTrue(s"group(2): '${newGroup2}' != " +
+                   s"expected: '${expectedNewGroup2}'",
+                 newGroup2 == expectedNewGroup2)
 
       val newGroup2Start         = m.start(2)
       val expectedNewGroup2Start = 14
-      assert(newGroup2Start == expectedNewGroup2Start,
-             s"group(2).start: '${newGroup2Start} != " +
-               "expected: '${expectedNewGroup2Start}'")
+      assertTrue(s"group(2).start: '${newGroup2Start} != " +
+                   "expected: '${expectedNewGroup2Start}'",
+                 newGroup2Start == expectedNewGroup2Start)
 
       val newGroup2End         = m.end(2)
       val expectedNewGroup2End = 20
-      assert(newGroup2End == expectedNewGroup2End,
-             s"group(2).end: '${newGroup2End} != " +
-               "expected: '${expectedNewGroup2End}'")
+      assertTrue(s"group(2).end: '${newGroup2End} != " +
+                   "expected: '${expectedNewGroup2End}'",
+                 newGroup2End == expectedNewGroup2End)
     }
 
     // group count increases. Force scalanative.regex Matcher.scala to
@@ -1038,7 +1037,7 @@ object MatcherSuite extends tests.Suite {
 
     val m = matcher(oldNeedle, haystack)
 
-    assert(m.find(), s"should have found '${oldNeedle}' in '${haystack}'")
+    assertTrue(s"should have found '${oldNeedle}' in '${haystack}'", m.find())
 
     val match1Cyst = encystMatcherState(m)
 
@@ -1050,36 +1049,36 @@ object MatcherSuite extends tests.Suite {
         "self-evident",27,39)
 // format: on
 
-    assert(match1Cyst == expectedMatch1Cyst,
-           s"initial matcher state: ${match1Cyst} != " +
-             s"expected: ${expectedMatch1Cyst}")
+    assertTrue(s"initial matcher state: ${match1Cyst} != " +
+                 s"expected: ${expectedMatch1Cyst}",
+               match1Cyst == expectedMatch1Cyst)
 
     val mr     = m.toMatchResult
     val mrCyst = encystMatchResultState(mr)
 
-    assert(mrCyst == match1Cyst,
-           s"MatchResult state: ${mrCyst} != " +
-             s"expected: ${match1Cyst}")
+    assertTrue(s"MatchResult state: ${mrCyst} != " +
+                 s"expected: ${match1Cyst}",
+               mrCyst == match1Cyst)
 
     m.usePattern(Pattern.compile(newNeedle))
 
     // find(0) does a reset and starts searching again at the start of input.
-    assert(m.find(0), s"should have found '${newNeedle}' in '${haystack}'")
+    assertTrue(s"should have found '${newNeedle}' in '${haystack}'", m.find(0))
 
     val match2Cyst = encystMatcherState(m)
 
     // First a course grain examination.
-    assert(match2Cyst != match1Cyst,
-           s"matchState did not change when should have.")
+    assertTrue(s"matchState did not change when should have.",
+               match2Cyst != match1Cyst)
 
     // Now a fine grain examination.
     // group, start, & end should not have changed, but others should.
     validateNewMatchState(m)
 
     // Matcher state changed to expected but MatchResult's should not have.
-    assert(mrCyst == match1Cyst,
-           s"MatchResult state: ${mrCyst} != " +
-             s"expected: ${match1Cyst}")
+    assertTrue(s"MatchResult state: ${mrCyst} != " +
+                 s"expected: ${match1Cyst}",
+               mrCyst == match1Cyst)
   }
 
 }
