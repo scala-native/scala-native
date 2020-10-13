@@ -2,36 +2,35 @@ package java.util.zip
 
 // Ported from Apache Harmony
 
-import java.io.{
-  ByteArrayInputStream,
-  ByteArrayOutputStream,
-  InputStream,
-  IOException
-}
+import java.io._
 
-object GZIPInputStreamSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("Constructor(InputStream)") {
+import scala.scalanative.junit.utils.AssertThrows._
+
+class GZIPInputStreamTest {
+
+  @Test def constructorInputStream(): Unit = {
     val inGZIP = new TestGZIPInputStream(new ByteArrayInputStream(gInput))
-    assert(inGZIP != null)
-    assert(inGZIP.getChecksum().getValue() == 0)
+    assertTrue(inGZIP != null)
+    assertTrue(inGZIP.getChecksum().getValue() == 0)
   }
 
-  test("Constructor(InputStream, Int)") {
+  @Test def constructorInputStreamInt(): Unit = {
     val inGZIP = new TestGZIPInputStream(new ByteArrayInputStream(gInput), 200)
-    assert(inGZIP != null)
-    assert(inGZIP.getChecksum().getValue() == 0)
+    assertTrue(inGZIP != null)
+    assertTrue(inGZIP.getChecksum().getValue() == 0)
 
-    assertThrows[IllegalArgumentException] {
-      new TestGZIPInputStream(new ByteArrayInputStream(gInput), 0)
-    }
+    assertThrows(classOf[IllegalArgumentException],
+                 new TestGZIPInputStream(new ByteArrayInputStream(gInput), 0))
 
-    assertThrows[IOException] {
-      new TestGZIPInputStream(new ByteArrayInputStream(testInput), 200)
-    }
+    assertThrows(
+      classOf[IOException],
+      new TestGZIPInputStream(new ByteArrayInputStream(testInput), 200))
   }
 
-  test("read(Array[Byte], Int, Int)") {
+  @Test def readArrayByteIntInt(): Unit = {
     val orgBuf = Array[Byte]('3', '5', '2', 'r', 'g', 'e', 'f', 'd', 'e', 'w')
     var outBuf = new Array[Byte](100)
     var result = 0
@@ -39,16 +38,16 @@ object GZIPInputStreamSuite extends tests.Suite {
     while (!inGZIP.endofInput()) {
       result += inGZIP.read(outBuf, result, outBuf.length - result)
     }
-    assert(inGZIP.getChecksum().getValue() == 2074883667L)
+    assertTrue(inGZIP.getChecksum().getValue() == 2074883667L)
 
     var i = 0
     while (i < orgBuf.length) {
-      assert(orgBuf(i) == outBuf(i))
+      assertTrue(orgBuf(i) == outBuf(i))
       i += 1
     }
 
     // We're at the end of the stream, so boundary check doesn't matter.
-    assert(inGZIP.read(outBuf, 100, 1) == -1)
+    assertTrue(inGZIP.read(outBuf, 100, 1) == -1)
 
     val test = new Array[Byte](507)
     i = 0
@@ -72,9 +71,9 @@ object GZIPInputStreamSuite extends tests.Suite {
       total += result
     }
 
-    assert(gin2.read() == -1)
+    assertTrue(gin2.read() == -1)
     gin2.close()
-    assert(test.length == total)
+    assertTrue(test.length == total)
 
     gin2 = new GZIPInputStream(new ByteArrayInputStream(comp), 512)
     total = 0
@@ -82,24 +81,22 @@ object GZIPInputStreamSuite extends tests.Suite {
       total += result
     }
 
-    assert(gin2.read() == -1)
+    assertTrue(gin2.read() == -1)
     gin2.close()
-    assert(test.length == total)
+    assertTrue(test.length == total)
 
     gin2 = new GZIPInputStream(new ByteArrayInputStream(comp), 516)
     total = 0
     while ({ result = gin2.read(new Array[Byte](200)); result != -1 }) {
       total += result
     }
-    assert(gin2.read() == -1)
+    assertTrue(gin2.read() == -1)
     gin2.close()
-    assert(test.length == total)
+    assertTrue(test.length == total)
 
     comp(40) = 0
     gin2 = new GZIPInputStream(new ByteArrayInputStream(comp), 512)
-    assertThrows[IOException] {
-      while (gin2.read(test) != -1) {}
-    }
+    assertThrows(classOf[IOException], while (gin2.read(test) != -1) {})
 
     val baos   = new ByteArrayOutputStream()
     val zipout = new GZIPOutputStream(baos)
@@ -107,9 +104,8 @@ object GZIPInputStreamSuite extends tests.Suite {
     zipout.close()
     outBuf = new Array[Byte](530)
     val in = new GZIPInputStream(new ByteArrayInputStream(baos.toByteArray()))
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      in.read(outBuf, 530, 1)
-    }
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 in.read(outBuf, 530, 1))
 
     var eofReached = false
     while (!eofReached) {
@@ -125,43 +121,41 @@ object GZIPInputStreamSuite extends tests.Suite {
     result = in.read(outBuf, -1, 1)
   }
 
-  test("close()") {
+  @Test def close(): Unit = {
     val outBuf = new Array[Byte](100)
     var result = 0
     val inGZIP = new TestGZIPInputStream(new ByteArrayInputStream(gInput))
     while (!inGZIP.endofInput()) {
       result += inGZIP.read(outBuf, result, outBuf.length - result)
     }
-    assert(inGZIP.getChecksum().getValue() == 2074883667L)
+    assertTrue(inGZIP.getChecksum().getValue() == 2074883667L)
     inGZIP.close()
 
-    assertThrows[IOException] {
-      inGZIP.read()
+    assertThrows(classOf[IOException], inGZIP.read())
+  }
+
+  @Test def read(): Unit = {
+    var result = 0
+    var buffer = Array[Byte](1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+    val out    = new ByteArrayOutputStream()
+    val gout   = new GZIPOutputStream(out)
+
+    var i = 0
+    while (i < 10) {
+      gout.write(buffer)
+      i += 1
     }
+    gout.finish()
+    out.write(1)
 
-    test("read()") {
-      var result = 0
-      var buffer = Array[Byte](1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-      val out    = new ByteArrayOutputStream()
-      val gout   = new GZIPOutputStream(out)
+    val gis =
+      new GZIPInputStream(new ByteArrayInputStream(out.toByteArray()))
+    buffer = new Array[Byte](100)
+    gis.read(buffer)
+    result = gis.read()
+    gis.close()
 
-      var i = 0
-      while (i < 10) {
-        gout.write(buffer)
-        i += 1
-      }
-      gout.finish()
-      out.write(1)
-
-      val gis =
-        new GZIPInputStream(new ByteArrayInputStream(out.toByteArray()))
-      buffer = new Array[Byte](100)
-      gis.read(buffer)
-      result = gis.read()
-      gis.close()
-
-      assert(result == -1)
-    }
+    assertTrue(result == -1)
   }
 
   private val testInput =
