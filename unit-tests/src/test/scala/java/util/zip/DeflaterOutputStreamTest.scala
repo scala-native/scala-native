@@ -1,18 +1,15 @@
 package java.util.zip
 
-import java.io.{
-  ByteArrayOutputStream,
-  EOFException,
-  File,
-  FileInputStream,
-  FileOutputStream,
-  IOException,
-  OutputStream
-}
+import java.io._
 
-object DeflaterOutputStreamSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("DeflaterOutputStream can deflate a few bytes") {
+import scala.scalanative.junit.utils.AssertThrows._
+
+class DeflaterOutputStreamTest {
+
+  @Test def deflaterOutputStreamCanDeflateSomeBytes(): Unit = {
     val bos      = new ByteArrayOutputStream()
     val out      = new DeflaterOutputStream(bos)
     val expected = Array[Byte](120, -100, 99, 100, 98, 6, 0, 0, 13, 0, 7)
@@ -21,13 +18,13 @@ object DeflaterOutputStreamSuite extends tests.Suite {
 
     val result = bos.toByteArray()
 
-    assert(result.length == expected.length)
+    assertTrue(result.length == expected.length)
     result.zip(expected).foreach {
-      case (a, b) => assert(a == b)
+      case (a, b) => assertTrue(a == b)
     }
   }
 
-  test("DeflaterOutputStream can deflate more bytes than its buffer size") {
+  @Test def deflaterOutputStreamCanDeflateMoreBytesThanItsBufferSize(): Unit = {
     val bos = new ByteArrayOutputStream
     val out = new DeflaterOutputStream(bos, new Deflater, 16)
     val expected = Array(120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84, 0, 0,
@@ -38,13 +35,13 @@ object DeflaterOutputStreamSuite extends tests.Suite {
 
     val result = bos.toByteArray()
 
-    assert(result.length == expected.length)
+    assertTrue(result.length == expected.length)
     result.zip(expected).foreach {
-      case (a, b) => assert(a == b)
+      case (a, b) => assertTrue(a == b)
     }
   }
 
-  test("DeflaterOutputStream can be flushed with `SYNC_FLUSH`") {
+  @Test def deflaterOutputStreamCanBeFlushedWithSyncFlush(): Unit = {
     val bos = new ByteArrayOutputStream
     val out =
       new DeflaterOutputStream(bos, new Deflater, 16, /* syncFlush = */ true)
@@ -57,9 +54,9 @@ object DeflaterOutputStreamSuite extends tests.Suite {
 
     val result = bos.toByteArray()
 
-    assert(result.length == expected.length)
+    assertTrue(result.length == expected.length)
     result.zip(expected).foreach {
-      case (a, b) => assert(a == b)
+      case (a, b) => assertTrue(a == b)
     }
   }
 
@@ -95,20 +92,20 @@ object DeflaterOutputStreamSuite extends tests.Suite {
     deflate.end()
   }
 
-  test("constructor(OutputStream, Deflater)") {
+  @Test def constructorOutputStreamDeflater(): Unit = {
     val byteArray = Array[Byte](1, 3, 4, 7, 8)
     val f1        = File.createTempFile("hyts_constru(OD)", ".tst")
     val fos       = new FileOutputStream(f1)
     val defl      = new Deflater()
     val dos       = new MyDeflaterOutputStream(fos, defl)
 
-    assert(dos.getBuf.length == 512)
+    assertTrue(dos.getBuf.length == 512)
     dos.write(byteArray)
     dos.close()
     f1.delete()
   }
 
-  test("constructor(OutputStream, Deflater, Int)") {
+  @Test def constructorOutputStreamDeflaterInt(): Unit = {
     val buf       = 5
     val negBuf    = -5
     val zeroBuf   = 0
@@ -117,27 +114,23 @@ object DeflaterOutputStreamSuite extends tests.Suite {
     val fos       = new FileOutputStream(f1)
     val defl      = new Deflater()
 
-    assertThrows[IllegalArgumentException] {
-      new MyDeflaterOutputStream(fos, defl, negBuf)
-    }
+    assertThrows(classOf[IllegalArgumentException],
+                 new MyDeflaterOutputStream(fos, defl, negBuf))
 
-    assertThrows[IllegalArgumentException] {
-      new MyDeflaterOutputStream(fos, defl, zeroBuf)
-    }
+    assertThrows(classOf[IllegalArgumentException],
+                 new MyDeflaterOutputStream(fos, defl, zeroBuf))
 
     val dos = new MyDeflaterOutputStream(fos, defl, buf)
-    assert(dos.getBuf.length == 5)
+    assertTrue(dos.getBuf.length == 5)
     dos.write(byteArray)
     dos.close()
     f1.delete()
   }
 
-  test("DeflaterOutputStream.close") {
+  @Test def deflaterOutputStreamClose(): Unit = {
     val f1  = File.createTempFile("close", ".tst")
     var iis = new InflaterInputStream(new FileInputStream(f1))
-    assertThrows[EOFException] {
-      iis.read()
-    }
+    assertThrows(classOf[EOFException], iis.read())
     iis.close()
 
     val fos       = new FileOutputStream(f1)
@@ -147,30 +140,22 @@ object DeflaterOutputStreamSuite extends tests.Suite {
     dos.close()
 
     iis = new InflaterInputStream(new FileInputStream(f1))
-    assert(iis.read() == 1)
-    assert(iis.read() == 3)
-    assert(iis.read() == 4)
-    assert(iis.read() == 6)
-    assert(iis.read() == -1)
-    assert(iis.read() == -1)
+    assertTrue(iis.read() == 1)
+    assertTrue(iis.read() == 3)
+    assertTrue(iis.read() == 4)
+    assertTrue(iis.read() == 6)
+    assertTrue(iis.read() == -1)
+    assertTrue(iis.read() == -1)
     iis.close()
 
     val fos2 = new FileOutputStream(f1)
     val dos2 = new DeflaterOutputStream(fos2)
     fos2.close()
-    assertThrows[IOException] {
-      dos2.close()
-    }
+    assertThrows(classOf[IOException], dos2.close())
 
-    assertThrows[IOException] {
-      dos.write(5)
-    }
+    assertThrows(classOf[IOException], dos.write(5))
 
-    assertThrows[IOException] {
-      fos.write("testing".getBytes())
-    }
+    assertThrows(classOf[IOException], fos.write("testing".getBytes()))
     f1.delete()
-
   }
-
 }
