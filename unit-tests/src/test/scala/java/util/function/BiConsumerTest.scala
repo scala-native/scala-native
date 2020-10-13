@@ -33,9 +33,6 @@ class BiConsumerTest {
   @Test def biConsumerAndThen(): Unit = {
     assertTrue(result == 0)
     addT.andThen(timesT).accept(2, 3)
-
-    // addT will add 2 + 2 = 4 to result which is zero = 4
-    // then 2*3 = 6 will be added to result which is 4, =  11
     assertTrue(result == 11)
   }
 }
