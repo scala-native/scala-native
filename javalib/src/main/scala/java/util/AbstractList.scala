@@ -21,7 +21,7 @@ abstract class AbstractList[E] protected ()
   def add(index: Int, element: E): Unit =
     throw new UnsupportedOperationException
 
-  def remove(index: Int): E =
+  override def remove(index: Int): E =
     throw new UnsupportedOperationException
 
   def indexOf(o: Any): Int = {
@@ -237,7 +237,7 @@ private class BackedUpListIterator[E](innerIterator: ListIterator[E],
 
   def previousIndex(): Int = i - 1
 
-  def remove(): Unit = {
+  override def remove(): Unit = {
     innerIterator.remove()
     changeSize(-1)
   }

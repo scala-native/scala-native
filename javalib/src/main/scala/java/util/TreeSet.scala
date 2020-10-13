@@ -50,7 +50,7 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
         last.get
       }
 
-      def remove(): Unit = {
+      override def remove(): Unit = {
         if (last.isEmpty) {
           throw new IllegalStateException()
         } else {
@@ -75,7 +75,7 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
         nxt
       }
 
-      def remove(): Unit = {
+      override def remove(): Unit = {
         if (last.isEmpty) {
           throw new IllegalStateException()
         } else {
