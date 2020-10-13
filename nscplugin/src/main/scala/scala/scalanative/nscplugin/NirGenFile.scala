@@ -29,6 +29,8 @@ trait NirGenFile { self: NirGenPhase =>
 
   def genIRFile(path: Path, defns: Seq[nir.Defn]): Unit = {
     val outStream = new FileOutputStream(path.toFile)
-    serializeBinary(defns, outStream)
+    try {
+      serializeBinary(defns, outStream)
+    } finally outStream.close()
   }
 }
