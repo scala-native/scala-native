@@ -6,9 +6,7 @@ import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import scala.collection.mutable
-import scala.collection.compat.immutable.ArraySeq
 import scala.scalanative.nir.serialization.{Tags => T}
-import scala.scalanative.util.StringUtils
 
 final class BinaryDeserializer(buffer: ByteBuffer) {
   import buffer._
@@ -282,14 +280,9 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.DoubleVal      => Val.Double(getDouble)
     case T.StructValueVal => Val.StructValue(getVals())
     case T.ArrayValueVal  => Val.ArrayValue(getType(), getVals())
-    case T.CharsVal =>
-      Val.Chars {
-        ArraySeq.unsafeWrapArray {
-          getBytes()
-        }
-      }
-    case T.LocalVal  => Val.Local(getLocal(), getType())
-    case T.GlobalVal => Val.Global(getGlobal(), getType())
+    case T.CharsVal       => Val.Chars(getBytes().toIndexedSeq)
+    case T.LocalVal       => Val.Local(getLocal(), getType())
+    case T.GlobalVal      => Val.Global(getGlobal(), getType())
 
     case T.UnitVal  => Val.Unit
     case T.ConstVal => Val.Const(getVal())

@@ -570,8 +570,10 @@ final class BinarySerializer {
       val file = pos.source
       if (pos.isDefined)
         fileIndexMap.getOrElse(file, {
+          val idx = filesList.size
           filesList += file.toString
-          fileIndexMap = fileIndexMap.updated(file, filesList.size)
+          fileIndexMap = fileIndexMap.updated(file, idx)
+          idx
         })
     }
     defns.foreach {

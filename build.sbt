@@ -60,7 +60,8 @@ addCommandAlias(
   "test-all",
   Seq(
     "test-tools",
-    "test-runtime"
+    "test-runtime",
+    "test-scripted"
   ).mkString(";")
 )
 

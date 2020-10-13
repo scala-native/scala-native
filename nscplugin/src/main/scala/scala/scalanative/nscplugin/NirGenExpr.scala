@@ -209,13 +209,13 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G]   =>
 
     def genMatch(m: Match): Val = {
       val Match(scrutp, allcaseps) = m
-      type Case = (Local, Val, Tree)
+      type Case = (Local, Val, Tree, nir.Position)
 
       // Extract switch cases and assign unique names to them.
       val caseps: Seq[Case] = allcaseps.flatMap {
         case CaseDef(Ident(nme.WILDCARD), _, _) =>
           Seq()
-        case CaseDef(pat, guard, body) =>
+        case cd @ CaseDef(pat, guard, body) =>
           assert(guard.isEmpty, "CaseDef guard was not empty")
           val vals: Seq[Val] = pat match {
             case lit: Literal =>
@@ -227,7 +227,8 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G]   =>
             case _ =>
               Nil
           }
-          vals.map((fresh(), _, body))
+          val pos: nir.Position = cd.pos
+          vals.map((fresh(), _, body, pos))
       }
 
       // Extract default case.
@@ -241,7 +242,7 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G]   =>
       // Generate code for the switch and its cases.
       def genSwitch(): Val = {
         // Generate some more fresh names and types.
-        val casenexts   = caseps.map { case (n, v, _) => Next.Case(v, n) }
+        val casenexts   = caseps.map { case (n, v, _,_) => Next.Case(v, n) }
         val defaultnext = Next(fresh())
         val merge       = fresh()
         val mergev      = Val.Local(fresh(), retty)
@@ -254,10 +255,10 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G]   =>
         buf.label(defaultnext.name)(defaultp.pos)
         buf.jump(merge, Seq(genExpr(defaultp)))(defaultp.pos)
         caseps.foreach {
-          case (n, _, expr) =>
-            buf.label(n)(expr.pos)
+          case (n, _, expr, pos) =>
+            buf.label(n)(pos)
             val caseres = genExpr(expr)
-            buf.jump(merge, Seq(caseres))
+            buf.jump(merge, Seq(caseres))(pos)
         }
         buf.label(merge, Seq(mergev))
         mergev
@@ -266,7 +267,9 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G]   =>
       def genIfsChain(): Val = {
         def loop(cases: List[Case]): Val = {
           cases match {
-            case (_, caze, body) :: elsep =>
+            case (_, caze, body, p) :: elsep =>
+              implicit val pos: nir.Position = p
+
               val cond =
                 buf.genClassEquality(leftp = ValTree(scrut),
                                      rightp = ValTree(caze),
