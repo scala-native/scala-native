@@ -1,47 +1,49 @@
 package java.util
 package regex
 
+import java.util.stream.{Stream => jStream}
+
 import scala.collection.immutable.List
 import scala.collection.JavaConverters._
 
-import java.util.stream.{Stream => jStream}
+import org.junit.Ignore
+import org.junit.Test
+import org.junit.Assert._
 
-object PatternSuite extends tests.Suite {
+import scala.scalanative.junit.utils.AssertThrows._
 
-  test(s"compile(regex)") {
+import ThrowsHelper._
+
+class PatternTest {
+
+  @Test def compileRegex(): Unit = {
     val p1 = Pattern.compile("xyz")
   }
 
-  test(s"compile(regex, flags) - invalid flag") {
-    assertThrows[IllegalArgumentException] {
-      val p1 = Pattern.compile(":", 0xA0000000)
-    }
+  @Test def compileRegexFlagsInvalidFlag(): Unit = {
+    assertThrows(classOf[IllegalArgumentException],
+                 Pattern.compile(":", 0xA0000000))
   }
 
-  test("compile(regex, flags) - unsupported flags") {
+  @Test def compileRegexFlagsUnsupportedFlags(): Unit = {
 
-    assertThrows[UnsupportedOperationException] {
-      val p1 = Pattern.compile("m", Pattern.CANON_EQ)
-    }
+    assertThrows(classOf[UnsupportedOperationException],
+                 Pattern.compile("m", Pattern.CANON_EQ))
 
-    assertThrows[UnsupportedOperationException] {
-      val p1 = Pattern.compile("n", Pattern.COMMENTS)
-    }
+    assertThrows(classOf[UnsupportedOperationException],
+                 Pattern.compile("n", Pattern.COMMENTS))
 
-    assertThrows[UnsupportedOperationException] {
-      val p1 = Pattern.compile("o", Pattern.UNICODE_CASE)
-    }
+    assertThrows(classOf[UnsupportedOperationException],
+                 Pattern.compile("o", Pattern.UNICODE_CASE))
 
-    assertThrows[UnsupportedOperationException] {
-      val p1 = Pattern.compile("p", Pattern.UNICODE_CHARACTER_CLASS)
-    }
+    assertThrows(classOf[UnsupportedOperationException],
+                 Pattern.compile("p", Pattern.UNICODE_CHARACTER_CLASS))
 
-    assertThrows[UnsupportedOperationException] {
-      val p1 = Pattern.compile("q", Pattern.UNIX_LINES)
-    }
+    assertThrows(classOf[UnsupportedOperationException],
+                 Pattern.compile("q", Pattern.UNIX_LINES))
   }
 
-  test("Exercise Matcher methods before using them.") {
+  @Test def exerciseMatcherMethodsBeforeUsingThem(): Unit = {
     // Establish a baseline for correctness.
     // Many tests below assume that Matcher methods matcher() and find() are
     // available and correct.
@@ -51,48 +53,48 @@ object PatternSuite extends tests.Suite {
     val needle   = "needle"
     val haystack = "haystack & needle"
     val m        = Pattern.compile(needle).matcher(haystack)
-    assert(m.find(), s"should have found ${needle} in ${haystack}")
+    assertTrue(s"should have found ${needle} in ${haystack}", m.find())
   }
 
-  test("compile(regex, flags) - Pattern.CASE_INSENSITIVE") {
+  @Test def compileRegexFlagsPatternCaseInsensitive(): Unit = {
     val needle   = "hubble telescope"
     val haystack = "Hubble Telescope"
     val m = Pattern
       .compile(needle, Pattern.CASE_INSENSITIVE)
       .matcher(haystack)
-    assert(m.find(), s"should have found '${needle}' in '${haystack}'")
+    assertTrue(s"should have found '${needle}' in '${haystack}'", m.find())
   }
 
-  test("compile(regex, flags) - Pattern.CASE_DOTALL") {
+  @Test def compileRegexFlagsPatternCaseDotall(): Unit = {
     val needle   = "Four score.*Units"
     val haystack = "Four score and seven years ago\nOur Parental Units"
 
     val m = Pattern.compile(needle).matcher(haystack)
-    assert(!m.find(), s"should not have found '${needle}' in '${haystack}'")
+    assertFalse(s"should not have found '${needle}' in '${haystack}'", m.find())
 
     val m2 = Pattern.compile(needle, Pattern.DOTALL).matcher(haystack)
-    assert(m2.find(), s"should have found '${needle}' in '${haystack}'")
+    assertTrue(s"should have found '${needle}' in '${haystack}'", m2.find())
   }
 
-  test("compile(regex, flags) - Pattern.LITERAL") {
+  @Test def compileRegexFlagsPatternLiteral(): Unit = {
     val needle   = "(a)(b$)?(b)?"
     val haystack = "(a)(b$)?(b)?"
     val m = Pattern
       .compile(needle, Pattern.LITERAL)
       .matcher(haystack)
-    assert(m.find(), s"should have found '${needle}' in '${haystack}'")
+    assertTrue(s"should have found '${needle}' in '${haystack}'", m.find())
   }
 
-  test("compile(regex, flags) - (CASE_INSENSITIVE | LITERAL)") {
+  @Test def compileRegexFlagsCaseInsensitiveLiteral(): Unit = {
     val needle   = "(a)(b$)?(b)?"
     val haystack = "(a)(B$)?(b)?"
     val m = Pattern
       .compile(needle, Pattern.CASE_INSENSITIVE | Pattern.LITERAL)
       .matcher(haystack)
-    assert(m.find(), s"should have found '${needle}' in '${haystack}'")
+    assertTrue(s"should have found '${needle}' in '${haystack}'", m.find())
   }
 
-  test("asPredicate") {
+  @Test def testAsPredicate(): Unit = {
 
     val needle   = "needle"
     val haystack = needle
@@ -100,8 +102,8 @@ object PatternSuite extends tests.Suite {
 
     val pred = p.asPredicate()
 
-    assert(pred.test(haystack),
-           s"should have found '${needle}' in '${haystack}'")
+    assertTrue(s"should have found '${needle}' in '${haystack}'",
+               pred.test(haystack))
 
     // Let's get complicated to show that asPredicate() uses
     // full 'matches' not partial 'find'.
@@ -117,36 +119,38 @@ object PatternSuite extends tests.Suite {
 
     val shouldNotFind = Array("L9", "Life ", "LovePotion#9", "funny")
 
-    assert(shouldNotFind.filter(pred2.test).length == 0,
-           s"should not have found '${needle2}' in" +
-             s" '${shouldNotFind.toString}'")
+    assertTrue(s"should not have found '${needle2}' in" +
+                 s" '${shouldNotFind.toString}'",
+               shouldNotFind.filter(pred2.test).length == 0)
 
     val shouldFind = Array("Life", "Liberty", "Love")
 
     val expectedLength = shouldFind.length
     val resultLength   = shouldFind.filter(pred2.test).length
 
-    assert(resultLength == expectedLength,
-           s"number found: ${resultLength} != expected: ${expectedLength}")
+    assertTrue(s"number found: ${resultLength} != expected: ${expectedLength}",
+               resultLength == expectedLength)
   }
 
-  test("split/split(n)") {
+  @Test def splitSplitN(): Unit = {
     val input = "boo:and:foo"
 
     val p1 = Pattern.compile(":")
-    assert(p1.split(input).toList == List("boo", "and", "foo"), s"A1")
-    assert(p1.split(input, 2).toList == List("boo", "and:foo"), s"A2")
-    assert(p1.split(input, 5).toList == List("boo", "and", "foo"), s"A3")
-    assert(p1.split(input, -2).toList == List("boo", "and", "foo"), s"A4")
+    assertTrue(s"A1", p1.split(input).toList == List("boo", "and", "foo"))
+    assertTrue(s"A2", p1.split(input, 2).toList == List("boo", "and:foo"))
+    assertTrue(s"A3", p1.split(input, 5).toList == List("boo", "and", "foo"))
+    assertTrue(s"A4", p1.split(input, -2).toList == List("boo", "and", "foo"))
 
     val p2 = Pattern.compile("o")
-    assert(p2.split(input).toList == List("b", "", ":and:f"), s"A5")
-    assert(p2.split(input, 5).toList == List("b", "", ":and:f", "", ""), s"A6")
-    assert(p2.split(input, -2).toList == List("b", "", ":and:f", "", ""), s"A7")
-    assert(p2.split(input, 0).toList == List("b", "", ":and:f"), s"A8")
+    assertTrue(s"A5", p2.split(input).toList == List("b", "", ":and:f"))
+    assertTrue(s"A6",
+               p2.split(input, 5).toList == List("b", "", ":and:f", "", ""))
+    assertTrue(s"A7",
+               p2.split(input, -2).toList == List("b", "", ":and:f", "", ""))
+    assertTrue(s"A8", p2.split(input, 0).toList == List("b", "", ":and:f"))
   }
 
-  test("splitAsStream") {
+  @Test def testSplitAsStream(): Unit = {
     val input = "boo:and:foo"
 
     val p1 = Pattern.compile(":")
@@ -160,11 +164,11 @@ object PatternSuite extends tests.Suite {
     essaySplitAsStream(p2.splitAsStream(input), Array("b", "", ":and:f"), "A5")
   }
 
-  test("quote") {
+  @Test def testQuote(): Unit = {
     assertEquals(Pattern.quote("1.5-2.0?"), "\\Q1.5-2.0?\\E")
   }
 
-  test("characters") {
+  @Test def characters(): Unit = {
     pass("a", "a")
 
     // backslash
@@ -184,7 +188,7 @@ object PatternSuite extends tests.Suite {
     pass("\\a", "\u0007") // alert (bell)
   }
 
-  test("Unicode block") {
+  @Test def unicodeBlock(): Unit = {
     pass("\\p{InGreek}", "α")
     pass("\\p{Greek}", "Ω")
     fail("\\p{InGreek}", "a")
@@ -196,21 +200,22 @@ object PatternSuite extends tests.Suite {
     pass("\\P{InLatin}", "α") // not in block
   }
 
-  testFails("(not supported) character classes", 620) {
+  @Ignore("#620")
+  @Test def notSupportedCharacterClasses(): Unit = {
     pass("\\0100", "\u0040") // 100 octal = 40 hex
     pass("\\uBEEF", "\uBEEF")
     pass("\\e", "\u001B")  // escape
     pass("\\cZ", s"\\x1A") // Control-Z
   }
 
-  test("character classes") {
+  @Test def characterClasses(): Unit = {
     pass("[abc]", "a")
     fail("[^abc]", "c")
     pass("[a-zA-Z]", "T")
     pass("\\xFF", "\u00FF")
   }
 
-  test("predefined character classes") {
+  @Test def predefinedCharacterClasses(): Unit = {
     pass(".", "a")
     pass("\\d", "0")
     pass("\\D", "a")
@@ -220,7 +225,7 @@ object PatternSuite extends tests.Suite {
     pass("\\W", "-")
   }
 
-  test("POSIX character classes") {
+  @Test def posixCharacterClasses(): Unit = {
     pass("\\p{Alnum}", "a")
     pass("\\p{Alpha}", "a")
     pass("\\p{ASCII}", "a")
@@ -236,21 +241,21 @@ object PatternSuite extends tests.Suite {
     pass("\\p{XDigit}", "a")
   }
 
-  test("Unicode classes") {
+  @Test def unicodeClasses(): Unit = {
     pass("\\p{Lu}", "A")
     pass("\\p{Sc}", "$")
 
     fail("\\p{Lu}", "@") // should not be in Uppercase class
     pass("\\P{Lu}", "@") // but should be in negated class. Thanks, Aristotle!
   }
-
-  testFails("(not supported) Unicode classes", 620) {
+  @Ignore("#620")
+  @Test def notSupportedUnicodeClasses(): Unit = {
     // not supported: IsAlphabetic binary property.
     pass("\\p{IsAlphabetic}", "a")
     fail("\\p{IsAlphabetic}", "-")
   }
 
-  test("Unicode script") {
+  @Test def unicodeScript(): Unit = {
     // "\u03b1" is Greek alpha character, "\u0061" is Latin lowercase 'a'
     pass("\\p{IsGreek}", "\u03b1") // behavior changes in Java 9
     fail("\\p{IsGreek}", "\u0061")
@@ -261,7 +266,7 @@ object PatternSuite extends tests.Suite {
     pass("\\P{IsLatin}", "\u03b1") // not in block
   }
 
-  test("boundary matchers") {
+  @Test def boundaryMatchers(): Unit = {
     pass("^a", "a")
     pass("$", "")
     pass("foo\\b", "foo")
@@ -273,12 +278,13 @@ object PatternSuite extends tests.Suite {
     find("foo\\z", "foo\n", pass = false)
   }
 
-  testFails("boundary matchers", 620) {
+  @Ignore("#620")
+  @Test def boundaryMatchersPrevious(): Unit = {
     // \G = at the end of the previous match
     val m1 = Pattern.compile("\\Gfoo").matcher("foofoo foo")
-    assert(m1.find())
-    assert(m1.find())
-    assert(!m1.find())
+    assertTrue(m1.find())
+    assertTrue(m1.find())
+    assertTrue(!m1.find())
 
     // \Z = end of input of the final terminator
     find("foo\\Z", "foo")
@@ -288,8 +294,8 @@ object PatternSuite extends tests.Suite {
     pass("\\R", "\u000D\u000A")
   }
 
-  testFails("boundary matchers - region", 0) {
-
+  @Ignore("no issue")
+  @Test def boundaryMatchersRegion(): Unit = {
     locally {
       val needle   = "^a"
       val haystack = "01234abcabc"
@@ -302,13 +308,13 @@ object PatternSuite extends tests.Suite {
 
       m.region(5, 9)
 
-      assert(m.find(), s"should have found ${needle} in ${regionString}")
+      assertTrue(s"should have found ${needle} in ${regionString}", m.find())
 
       val foundPos    = m.start
       val expectedPos = 5
 
-      assert(foundPos == expectedPos,
-             s"found position: ${foundPos} != expected: ${expectedPos}")
+      assertTrue(s"found position: ${foundPos} != expected: ${expectedPos}",
+                 foundPos == expectedPos)
     }
 
     locally {
@@ -318,13 +324,13 @@ object PatternSuite extends tests.Suite {
 
       m.region(4, 9)
 
-      assert(!m.find(),
-             s"should not have found ${needle} at " +
-               s"position: ${m.start} in ${haystack}")
+      assertFalse(s"should not have found ${needle} at " +
+                    s"position: ${m.start} in ${haystack}",
+                  m.find())
     }
   }
 
-  test("greedy quantifiers") {
+  @Test def greedyQuantifiers(): Unit = {
     // once or zero
     pass("X?", "")
     pass("X?", "X")
@@ -356,7 +362,7 @@ object PatternSuite extends tests.Suite {
     fail("^X{3,5}$", "XXXXXX")
   }
 
-  test("lazy quantifiers") {
+  @Test def lazyQuantifiers(): Unit = {
     // zero or one, prefer zero
     pass("X??", "")
     pass("X??", "X")
@@ -385,7 +391,7 @@ object PatternSuite extends tests.Suite {
     fail("^X{3,5}?$", "XXXXXX")
   }
 
-  test("composite operators") {
+  @Test def compositeOperators(): Unit = {
     pass("abc", "abc")
 
     // x or y, prefer x
@@ -394,34 +400,36 @@ object PatternSuite extends tests.Suite {
     fail("a|b", "c")
   }
 
-  test("quotation") {
+  @Test def quotation(): Unit = {
     pass("\\Qa|b|c\\E", "a|b|c")
   }
 
-  test("java named groups") {
+  @Test def javaNamedGroups(): Unit = {
     pass("(?<foo>a)", "a")
   }
 
   // Do not support re2 syntax in java.util.regex.
-  testFails("(Not supported) re2 named groups", 0) { // Intended, No Issue
+  @Ignore("no issue")
+  @Test def notSupportedRe2NamedGroups(): Unit = {
     pass("(?P<foo>a)", "a")
   }
 
-  test("non-capturing groups") {
+  @Test def nonCapturingGroups(): Unit = {
     pass("(?:a)", "a")
   }
 
-  test("flags in regex") {
+  @Test def flagsInRegex(): Unit = {
     pass("(?i)iNsEnSiTiVe", "insensitive")
     pass("(?i:iNsEnSiTiVe)", "insensitive")
   }
 
-  test("toString") {
+  @Test def testToString(): Unit = {
     val in = "foo|bar"
     assertEquals(Pattern.compile(in).toString, in)
   }
 
-  testFails("(Not supported) character classes (union and intersection)", 620) {
+  @Ignore("#620")
+  @Test def notSupportedCharacterClassesUnionAndIntersection(): Unit = {
     pass("[a-d[m-p]]", "acn")
     pass("[[a-z] && [b-y] && [c-x]]", "g")
     pass("[a-z&&[def]]", "e")
@@ -431,17 +439,16 @@ object PatternSuite extends tests.Suite {
     fail("[a-z&&[^m-p]]", "n")
   }
 
-  testFails(
-    "(Not Supported) predefined character classes (horizontal and vertical)",
-    620) {
-
+  @Ignore("#620")
+  @Test def notSupportedPredefinedCharClassesHorizontalAndVertical(): Unit = {
     pass("\\h", " ")
     pass("\\H", "a")
     pass("\\v", "\n")
     pass("\\V", "a")
   }
 
-  testFails("(not supported)java character function classes", 620) {
+  @Ignore("#620")
+  @Test def notSupportedJavaCharacterFunctionClasses(): Unit = {
     pass("\\p{javaLowerCase}", "a")
     pass("\\p{javaUpperCase}", "A")
     pass("\\p{javaWhitespace}", " ")
@@ -454,12 +461,14 @@ object PatternSuite extends tests.Suite {
     https://github.com/google/re2/wiki/WhyRE2
     https://github.com/google/re2/blob/2017-03-01/doc/syntax.txt
    */
-  testFails("(not supported) back references", 620) {
+  @Ignore("#620")
+  @Test def notSupportedBackReferences(): Unit = {
     pass("(a)\\1", "aa")
     pass("(?<foo>a)\\k<foo>", "aa")
   }
 
-  testFails("(not supported) lookaheads", 620) {
+  @Ignore("#620")
+  @Test def notSupportedLookaheads(): Unit = {
     // positive lookahead
     passAndFail(".*\\.(?=log$).*$", "a.b.c.log", "a.b.c.log.")
 
@@ -482,7 +491,8 @@ object PatternSuite extends tests.Suite {
     passAndFail(".*(?<=abc)*\\.log$", "cde.log", "cde.log")
   }
 
-  testFails("(not supported) possessive quantifiers", 620) {
+  @Ignore("#620")
+  @Test def notSupportedPossessiveQuantifiers(): Unit = {
     // zero or one, prefer more
     pass("X?+", "")
     pass("X?+", "X")
@@ -513,66 +523,66 @@ object PatternSuite extends tests.Suite {
     fail("^X{3,5}+$", "XXXXXX")
   }
 
-  test("multibyte characters") {
+  @Test def multibyteCharacters(): Unit = {
     find("こんにちは", "こんにちはみなさま")
   }
 
-  test("character class consisting of multibyte characters") {
+  @Test def characterClassConsistingOfMultibyteCharacters(): Unit = {
     pass(
       "^[\u0000-\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\u2028\u2029]$",
       "\u200a"
     )
   }
 
-  test("group not containing multibyte characters") {
+  @Test def groupNotContainingMultibyteCharacters(): Unit = {
     val pat   = "abcdef(ghi)jkl"
     val input = "abcdefghijkl"
 
     val m = Pattern.compile(pat).matcher(input)
 
-    assert(m.matches(), s"A_1")
-    assert(m.group(0) == input, s"A_2")
-    assert(m.group(1) == "ghi", s"A_3")
-    assert(m.group() == input, s"A_4")
+    assertTrue(s"A_1", m.matches())
+    assertTrue(s"A_2", m.group(0) == input)
+    assertTrue(s"A_3", m.group(1) == "ghi")
+    assertTrue(s"A_4", m.group() == input)
   }
 
-  test("group containing multibyte characters") {
+  @Test def groupContainingMultibyteCharacters(): Unit = {
     val pat   = "abcあいう(えお)def"
     val input = "abcあいうえおdef"
     val m     = Pattern.compile(pat).matcher(input)
-    assert(m.matches())
-    assertEquals(m.group(0), input)
-    assertEquals(m.group(1), "えお")
-    assertEquals(m.group(), input)
+    assertTrue(m.matches())
+    assertEquals(input, m.group(0))
+    assertEquals("えお", m.group(1))
+    assertEquals(input, m.group())
   }
 
-  test("compiling a lot of patterns") {
+  @Test def compilingLotsOfPatterns(): Unit = {
     val pats = (0 until 200).map(i => Pattern.compile(i.toString))
     // pick a newer pattern (likely in cache).
     locally {
       val pat = pats(198)
       val m   = pat.matcher("198")
-      assert(m.matches())
+      assertTrue(m.matches())
     }
     // pick an older pattern (likely out of cache).
     locally {
       val pat = pats(1)
       val m   = pat.matcher("1")
-      assert(m.matches())
+      assertTrue(m.matches())
     }
   }
 
-  test("syntax exceptions") {
-
-    assertThrowsAnd[PatternSyntaxException](Pattern.compile("foo\\L"))(e => {
-      e.getDescription == "Illegal/unsupported escape sequence" &&
-        e.getIndex == 4 &&
-        e.getPattern == "foo\\L" &&
-        e.getMessage ==
-          """|Illegal/unsupported escape sequence near index 4
+  @Test def syntaxExceptions(): Unit = {
+    assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile("foo\\L"))(
+      e => {
+        e.getDescription == "Illegal/unsupported escape sequence" &&
+          e.getIndex == 4 &&
+          e.getPattern == "foo\\L" &&
+          e.getMessage ==
+            """|Illegal/unsupported escape sequence near index 4
              |foo\L
              |    ^""".stripMargin
-    })
+      })
 
     /// Ordered alphabetical by description (second arg).
     /// Helps ensuring that each scalanative/regex Parser description
@@ -611,11 +621,12 @@ object PatternSuite extends tests.Suite {
   }
 
   private def syntax(pattern: String, description: String, index: Int): Unit = {
-    assertThrowsAnd[PatternSyntaxException](Pattern.compile(pattern))(e => {
-      (e.getDescription == description) &&
-        (e.getPattern == pattern) &&
-        (e.getIndex == index)
-    })
+    assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile(pattern))(
+      e => {
+        (e.getDescription == description) &&
+          (e.getPattern == pattern) &&
+          (e.getIndex == index)
+      })
   }
 
   private def pass(pattern: String, input: String): Unit =
@@ -640,7 +651,7 @@ object PatternSuite extends tests.Suite {
       if (pass) ret
       else !ret
 
-    assert(ret0)
+    assertTrue(ret0)
   }
 
   private def matches(pattern: String, input: String, pass: Boolean): Unit = {
@@ -648,7 +659,7 @@ object PatternSuite extends tests.Suite {
     val ret = Pattern.matches(pattern, input)
 
     val mid =
-      if (pass) "does not matches"
+      if (pass) "does not match"
       else "should not match"
 
     assertRegex(pass, ret, mid, pattern, input)
@@ -660,7 +671,7 @@ object PatternSuite extends tests.Suite {
     val ret = Pattern.compile(pattern).matcher(input).find()
 
     val mid =
-      if (pass) "does not matches"
+      if (pass) "does not match"
       else "should not match"
 
     assertRegex(pass, ret, mid, pattern, input)
@@ -672,13 +683,13 @@ object PatternSuite extends tests.Suite {
 
     val result = st.iterator.asScala.toArray
 
-    assert(result.size == expected.size,
-           s"${marker} result.size: ${result.size} != ${expected.size}")
+    assertTrue(s"${marker} result.size: ${result.size} != ${expected.size}",
+               result.size == expected.size)
 
     for (i <- 0 until result.size) {
-      assert(result(i) == expected(i),
-             s"${marker} result(${i}): ${result(i)} != " +
-               s"expected: ${expected(i)}")
+      assertTrue(s"${marker} result(${i}): ${result(i)} != " +
+                   s"expected: ${expected(i)}",
+                 result(i) == expected(i))
     }
   }
 
