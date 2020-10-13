@@ -4,43 +4,45 @@ package java.util.zip
 
 import java.io.{ByteArrayOutputStream, IOException, OutputStream}
 
-object GZIPOutputStreamSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("Constructor(OutputStream)") {
+import scala.scalanative.junit.utils.AssertThrows._
+
+class GZIPOutputStreamTest {
+
+  @Test def constructorOutputStream(): Unit = {
     val out     = new ByteArrayOutputStream()
     val outGZIP = new TestGZIPOutputStream(out)
-    assert(outGZIP != null)
-    assert(outGZIP.getChecksum().getValue() == 0)
+    assertTrue(outGZIP != null)
+    assertTrue(outGZIP.getChecksum().getValue() == 0)
   }
 
-  test("Constructor(OutputStream, Int)") {
+  @Test def constructorOutputStreamInt(): Unit = {
     val out     = new ByteArrayOutputStream()
     val outGZIP = new TestGZIPOutputStream(out, 100)
-    assert(outGZIP != null)
-    assert(outGZIP.getChecksum().getValue() == 0)
+    assertTrue(outGZIP != null)
+    assertTrue(outGZIP.getChecksum().getValue() == 0)
   }
 
-  test("finish()") {
+  @Test def finish(): Unit = {
     val byteArray = Array[Byte](3, 5, 2, 'r', 'g', 'e', 'f', 'd', 'e', 'w')
     val out       = new ByteArrayOutputStream()
     val outGZIP   = new TestGZIPOutputStream(out)
 
     outGZIP.finish()
-    assertThrows[IOException] {
-      outGZIP.write(byteArray, 0, 1)
-    }
+    assertThrows(classOf[IOException], outGZIP.write(byteArray, 0, 1))
   }
 
-  test("write(Array[Byte], Int, Int)") {
+  @Test def writeArrayByteIntInt(): Unit = {
     val byteArray = Array[Byte](3, 5, 2, 'r', 'g', 'e', 'f', 'd', 'e', 'w')
     val out       = new ByteArrayOutputStream
     val outGZIP   = new TestGZIPOutputStream(out)
     outGZIP.write(byteArray, 0, 10)
-    assert(outGZIP.getChecksum().getValue() == 3097700292L)
+    assertTrue(outGZIP.getChecksum().getValue() == 3097700292L)
 
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      outGZIP.write(byteArray, 0, 11)
-    }
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 outGZIP.write(byteArray, 0, 11))
   }
 
   private class TestGZIPOutputStream(out: OutputStream, size: Int)
