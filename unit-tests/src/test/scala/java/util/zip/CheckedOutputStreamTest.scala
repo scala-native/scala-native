@@ -4,41 +4,44 @@ package java.util.zip
 
 import java.io.ByteArrayOutputStream
 
-object CheckedOutputStreamSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("Constructor()") {
+class CheckedOutputStreamTest {
+
+  @Test def constructor(): Unit = {
     val out    = new ByteArrayOutputStream()
     val chkOut = new CheckedOutputStream(out, new CRC32())
-    assert(chkOut.getChecksum().getValue() == 0)
+    assertTrue(chkOut.getChecksum().getValue() == 0)
   }
 
-  test("getChecksum()") {
+  @Test def getChecksum(): Unit = {
     val byteArray = Array[Byte](1, 2, 3, 'e', 'r', 't', 'g', 3, 6)
     val out       = new ByteArrayOutputStream()
     val chkOut    = new CheckedOutputStream(out, new Adler32())
     chkOut.write(byteArray(4))
 
-    assert(chkOut.getChecksum().getValue() == 7536755)
+    assertTrue(chkOut.getChecksum().getValue() == 7536755)
     chkOut.getChecksum().reset()
     chkOut.write(byteArray, 5, 4)
 
-    assert(chkOut.getChecksum().getValue() == 51708133)
+    assertTrue(chkOut.getChecksum().getValue() == 51708133)
   }
 
-  test("write(Int)") {
+  @Test def writeInt(): Unit = {
     val byteArray = Array[Byte](1, 2, 3, 'e', 'r', 't', 'g', 3, 6)
     val out       = new ByteArrayOutputStream()
     val chkOut    = new CheckedOutputStream(out, new CRC32())
     byteArray.foreach(b => chkOut.write(b))
-    assert(chkOut.getChecksum().getValue() != 0)
+    assertTrue(chkOut.getChecksum().getValue() != 0)
   }
 
-  test("write(Array[Byte], Int, Int)") {
+  @Test def writeArrayByteIntInt(): Unit = {
     val byteArray = Array[Byte](1, 2, 3, 'e', 'r', 't', 'g', 3, 6)
     val out       = new ByteArrayOutputStream()
     val chkOut    = new CheckedOutputStream(out, new CRC32())
     chkOut.write(byteArray, 4, 5)
-    assert(chkOut.getChecksum().getValue != 0)
+    assertTrue(chkOut.getChecksum().getValue != 0)
   }
 
 }
