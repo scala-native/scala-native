@@ -1058,11 +1058,17 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     private final val ExternForwarderSig = Sig.Generated("$extern$forwarder")
 
     def genFuncExternForwarder(funcName: Global, treeSym: Symbol)(implicit pos: nir.Position): Defn = {
-      val attrs         = Attrs(isExtern = true)
+      val attrs = Attrs(isExtern = true)
 
-      val method    = Val.Global(genMethodName(treeSym), Type.Ptr)
       val sig       = genMethodSig(treeSym)
       val externSig = genExternMethodSig(treeSym)
+
+      val Type.Function(origtys, _)      = sig
+      val Type.Function(paramtys, retty) = externSig
+
+      val methodName = genMethodName(treeSym)
+      val method     = Val.Global(methodName, Type.Ptr)
+      val methodRef  = Val.Global(methodName, origtys.head)
 
       val forwarderName = funcName.member(ExternForwarderSig)
       val forwarderBody = scoped(
@@ -1071,18 +1077,12 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val fresh = Fresh()
         val buf   = new ExprBuffer()(fresh)
 
-        val Type.Function(origtys, _)      = sig
-        val Type.Function(paramtys, retty) = externSig
-
         val params = paramtys.map(ty => Val.Local(fresh(), ty))
         buf.label(fresh(), params)
         val boxedParams = params.zip(origtys.tail).map {
           case (param, ty) => buf.fromExtern(ty, param)
         }
 
-        /* In most cases we could just pass Val.Null here, however in 2.11 with disabled optimization
-         * null guard in `method` is triggered resulting in NullPointerException */
-        val methodRef = method.copy(valty = Type.Ref(funcName))
         val res        = buf.call(sig, method, methodRef +: boxedParams, Next.None)
         val unboxedRes = buf.toExtern(retty, res)
         buf.ret(unboxedRes)
