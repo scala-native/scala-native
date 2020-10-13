@@ -62,6 +62,11 @@ object CStringSuite extends tests.Suite {
     assertEquals("\\'", fromCString(c"\\'"))
   }
 
+  // Issue 1796
+  test("fromCString(null) returns null") {
+    assertNull(fromCString(null.asInstanceOf[CString]))
+  }
+
   test("fromCString") {
     val cstrFrom = c"1234"
     val szTo     = fromCString(cstrFrom)
@@ -71,6 +76,11 @@ object CStringSuite extends tests.Suite {
     assert(szTo.charAt(1) == '2')
     assert(szTo.charAt(2) == '3')
     assert(szTo.charAt(3) == '4')
+  }
+
+  // Issue 1796
+  test("toCString(null) return null") {
+    Zone { implicit z => assertNull(toCString(null.asInstanceOf[String])) }
   }
 
   test("toCString") {
