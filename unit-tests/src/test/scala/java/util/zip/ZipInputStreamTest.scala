@@ -2,16 +2,17 @@ package java.util.zip
 
 // Ported from Apache Harmony
 
-import java.io.{
-  ByteArrayInputStream,
-  ByteArrayOutputStream,
-  FilterInputStream,
-  IOException
-}
+import java.io._
+
+import org.junit.Before
+import org.junit.Test
+import org.junit.Assert._
+
+import scala.scalanative.junit.utils.AssertThrows._
 
 import ZipBytes.{brokenManifestBytes, zipFile}
 
-object ZipInputStreamSuite extends tests.Suite {
+class ZipInputStreamTest {
 
   private var zis: ZipInputStream    = null
   private var zipBytes: Array[Byte]  = null
@@ -19,68 +20,57 @@ object ZipInputStreamSuite extends tests.Suite {
   private var zip: ZipInputStream    = null
   private var zentry: ZipEntry       = null
 
-  test("Constructor(InputStream)") {
-    setUp()
+  @Test def constructorInputStream(): Unit = {
     zentry = zis.getNextEntry()
     zis.closeEntry()
   }
 
-  test("close()") {
-    setUp()
+  @Test def close(): Unit = {
     zis.close()
     val rbuf = new Array[Byte](10)
 
-    assertThrows[IOException] {
-      zis.read(rbuf, 0, 1)
-    }
+    assertThrows(classOf[IOException], zis.read(rbuf, 0, 1))
   }
 
-  test("close() can be called several times") {
-    setUp()
+  @Test def closeCanBeCalledSeveralTimes(): Unit = {
     zis.close()
     zis.close()
   }
 
-  test("closeEntry()") {
-    setUp()
+  @Test def closeEntry(): Unit = {
     zentry = zis.getNextEntry()
     zis.closeEntry()
   }
 
-  test("close() after exception") {
+  @Test def closeAfterException(): Unit = {
     val bis  = new ByteArrayInputStream(brokenManifestBytes)
     val zis1 = new ZipInputStream(bis)
 
-    assertThrows[ZipException] {
+    assertThrows(classOf[ZipException], {
       var i = 0
       while (i < 6) {
         zis1.getNextEntry()
         i += 1
       }
-    }
+    })
 
     zis1.close()
-    assertThrows[IOException] {
-      zis1.getNextEntry()
-    }
+    assertThrows(classOf[IOException], zis1.getNextEntry())
   }
 
-  test("getNextEntry()") {
-    setUp()
-    assert(zis.getNextEntry() != null)
+  @Test def getNextEntry(): Unit = {
+    assertTrue(zis.getNextEntry() != null)
   }
 
-  test("read(Array[Byte], Int, Int)") {
-    setUp()
+  @Test def readArrayByteIntInt(): Unit = {
     zentry = zis.getNextEntry()
     val rbuf = new Array[Byte](zentry.getSize().toInt)
     val r    = zis.read(rbuf, 0, rbuf.length)
     new String(rbuf, 0, r)
-    assert(r == 12)
+    assertTrue(r == 12)
   }
 
-  test("Read only byte at a time") {
-    setUp()
+  @Test def readOnlyByteEachTime(): Unit = {
     val in = new FilterInputStream(new ByteArrayInputStream(zipFile)) {
       override def read(buffer: Array[Byte], offset: Int, count: Int): Int =
         super.read(buffer, offset, 1) // one byte at a time
@@ -96,59 +86,53 @@ object ZipInputStreamSuite extends tests.Suite {
     zis.close()
   }
 
-  test("skip(Long)") {
-    setUp()
+  @Test def skipLong(): Unit = {
     zentry = zis.getNextEntry()
     val rbuf = new Array[Byte](zentry.getSize().toInt)
     zis.skip(2)
     val r = zis.read(rbuf, 0, rbuf.length)
-    assert(r == 10)
+    assertTrue(r == 10)
 
     zentry = zis.getNextEntry()
     zentry = zis.getNextEntry()
     val s = zis.skip(1025)
-    assert(s == 1025)
+    assertTrue(s == 1025)
 
     val zis2 = new ZipInputStream(new ByteArrayInputStream(zipBytes))
     zis2.getNextEntry()
     val skipLen = dataBytes.length / 2
-    assert(skipLen == zis2.skip(skipLen))
+    assertTrue(skipLen == zis2.skip(skipLen))
     zis2.skip(dataBytes.length)
-    assert(0 == zis2.skip(1))
-    assert(0 == zis2.skip(0))
-    assertThrows[IllegalArgumentException] {
-      zis2.skip(-1)
-    }
+    assertTrue(0 == zis2.skip(1))
+    assertTrue(0 == zis2.skip(0))
+    assertThrows(classOf[IllegalArgumentException], zis2.skip(-1))
   }
 
-  test("available()") {
-    setUp()
+  @Test def available(): Unit = {
     val zis1  = new ZipInputStream(new ByteArrayInputStream(zipFile))
     val entry = zis1.getNextEntry()
-    assert(entry != null)
+    assertTrue(entry != null)
     val entrySize = entry.getSize()
-    assert(entrySize > 0)
+    assertTrue(entrySize > 0)
 
     var i = 0
     while (zis1.available() > 0) {
       zis1.skip(1)
       i += 1
     }
-    assert(i == entrySize)
-    assert(zis1.skip(1) == 0)
-    assert(zis1.available() == 0)
+    assertTrue(i == entrySize)
+    assertTrue(zis1.skip(1) == 0)
+    assertTrue(zis1.available() == 0)
     zis1.closeEntry()
-    assert(zis.available() == 1)
+    assertTrue(zis.available() == 1)
     zis1.close()
 
-    assertThrows[IOException] {
-      zis1.available()
-    }
+    assertThrows(classOf[IOException], zis1.available())
   }
 
-  private def setUp() {
+  @Before
+  protected def setUp() {
     zis = new ZipInputStream(new ByteArrayInputStream(zipFile))
-
     val bos   = new ByteArrayOutputStream()
     val zos   = new ZipOutputStream(bos)
     val entry = new ZipEntry("myFile")
@@ -158,5 +142,4 @@ object ZipInputStreamSuite extends tests.Suite {
     zos.close()
     zipBytes = bos.toByteArray()
   }
-
 }
