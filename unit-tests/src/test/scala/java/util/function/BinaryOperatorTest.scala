@@ -2,18 +2,21 @@ package java.util.function
 
 import java.util.Collections
 
-object BinaryOperatorSuite extends tests.Suite {
-  test("minBy") {
+import org.junit.Test
+import org.junit.Assert._
+
+class BinaryOperatorTest {
+  @Test def testMinBy(): Unit = {
     val binaryOperator = BinaryOperator.minBy(Collections.reverseOrder())
     val min            = binaryOperator.apply(2004, 2018)
 
-    assert(min == 2018)
+    assertTrue(min == 2018)
   }
 
-  test("maxBy") {
+  @Test def testMaxBy(): Unit = {
     val binaryOperator = BinaryOperator.maxBy(Collections.reverseOrder())
     val max            = binaryOperator.apply(2004, 2018)
 
-    assert(max == 2004)
+    assertTrue(max == 2004)
   }
 }
