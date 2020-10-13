@@ -2,27 +2,31 @@ package java.util.zip
 
 import java.io.ByteArrayOutputStream
 
-object DeflaterSuite extends tests.Suite {
-  test("Deflater.setInput doesn't throw an exception") {
+import org.junit.Test
+import org.junit.Assert._
+
+class DeflaterTest {
+
+  @Test def deflaterSetInputDoesNotThrowAnException(): Unit = {
     val deflater = new Deflater()
     val bytes    = Array[Byte](1, 2, 3)
     deflater.setInput(bytes, 0, 3)
   }
 
-  test("Deflater needs input right after being created") {
+  @Test def deflaterNeedsInputRightAfterBeingCreated(): Unit = {
     val deflater = new Deflater()
-    assert(deflater.needsInput())
+    assertTrue(deflater.needsInput())
   }
 
-  test("Deflater doesn't need input after input has been set") {
+  @Test def deflaterDoesNotNeedInputAfterInputHasBeenSet(): Unit = {
     val deflater = new Deflater()
     val bytes    = Array[Byte](1, 2, 3)
-    assert(deflater.needsInput())
+    assertTrue(deflater.needsInput())
     deflater.setInput(bytes)
-    assert(!deflater.needsInput())
+    assertTrue(!deflater.needsInput())
   }
 
-  test("Deflater can deflate byte arrays with default compression level") {
+  @Test def deflaterCanDeflateByteArraysWithDefaultCompressionLevel(): Unit = {
     val bytes = Array.fill[Byte](1024)(1)
     val expected = Array[Byte](120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84,
       0, 0, 6, 120, 4, 1)
@@ -38,13 +42,13 @@ object DeflaterSuite extends tests.Suite {
     }
     val compressed = bos.toByteArray()
 
-    assert(compressed.length == expected.length)
+    assertTrue(compressed.length == expected.length)
     compressed.zip(expected).foreach {
-      case (a, b) => assert(a == b)
+      case (a, b) => assertTrue(a == b)
     }
   }
 
-  test("Deflater can deflate with best compression level") {
+  @Test def deflaterCanDeflateWithBestCompressionLevel(): Unit = {
     val bytes = Array.fill[Byte](1024)(1)
     val expected = Array[Byte](120, -38, 99, 100, 28, 5, -93, 96, 20, -116, 84,
       0, 0, 6, 120, 4, 1)
@@ -62,13 +66,14 @@ object DeflaterSuite extends tests.Suite {
     }
     val compressed = bos.toByteArray()
 
-    assert(compressed.length == expected.length)
+    assertTrue(compressed.length == expected.length)
     compressed.zip(expected).foreach {
-      case (a, b) => assert(a == b)
+      case (a, b) => assertTrue(a == b)
     }
   }
 
-  test("Deflater can deflate given a buffer smaller than total amount of data") {
+  @Test def deflaterCanDeflateGivenBufferSmallerThanTotalAmountOfData()
+      : Unit = {
     val bytes = Array.fill[Byte](1024)(1)
     val expected = Array[Byte](120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84,
       0, 0, 6, 120, 4, 1)
@@ -86,9 +91,9 @@ object DeflaterSuite extends tests.Suite {
     }
     val compressed = bos.toByteArray()
 
-    assert(compressed.length == expected.length)
+    assertTrue(compressed.length == expected.length)
     compressed.zip(expected).foreach {
-      case (a, b) => assert(a == b)
+      case (a, b) => assertTrue(a == b)
     }
   }
 }
