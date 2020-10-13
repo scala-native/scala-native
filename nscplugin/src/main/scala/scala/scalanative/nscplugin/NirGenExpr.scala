@@ -1079,7 +1079,11 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val boxedParams = params.zip(origtys.tail).map {
           case (param, ty) => buf.fromExtern(ty, param)
         }
-        val res        = buf.call(sig, method, Val.Null +: boxedParams, Next.None)
+
+        /* In most cases we could just pass Val.Null here, however in 2.11 with disabled optimization
+         * null guard in `method` is triggered resulting in NullPointerException */
+        val methodRef = method.copy(valty = Type.Ref(funcName))
+        val res        = buf.call(sig, method, methodRef +: boxedParams, Next.None)
         val unboxedRes = buf.toExtern(retty, res)
         buf.ret(unboxedRes)
 
@@ -1638,7 +1642,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
      *  - return type evidence
      */
     def genCFuncPtrApply(app: Apply, code: Int): Val = {
-      val Apply(Select(receiverp, _), aargs) = app
+      val Apply(appRec @ Select(receiverp, _), aargs) = app
 
       implicit val pos: nir.Position = app.pos
       val argsp     = if (aargs.size > 2) aargs.take(aargs.length / 2) else Nil
