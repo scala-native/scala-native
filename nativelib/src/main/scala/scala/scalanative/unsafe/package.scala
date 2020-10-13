@@ -140,8 +140,8 @@ package object unsafe {
   /** Convert a CString to a String using given charset. */
   def fromCString(cstr: CString,
                   charset: Charset = Charset.defaultCharset()): String = {
-    if (cstr == null.asInstanceOf[CString]) {
-      null.asInstanceOf[String]
+    if (cstr == null) {
+      null
     } else {
       val len   = libc.strlen(cstr).toInt
       val bytes = new Array[Byte](len)
@@ -165,8 +165,8 @@ package object unsafe {
   /** Convert a java.lang.String to a CString using given charset and allocator.
    */
   def toCString(str: String, charset: Charset)(implicit z: Zone): CString = {
-    if (str == null.asInstanceOf[String]) {
-      null.asInstanceOf[CString]
+    if (str == null) {
+      null
     } else {
       val bytes = str.getBytes(charset)
       val cstr  = z.alloc(bytes.length + 1)

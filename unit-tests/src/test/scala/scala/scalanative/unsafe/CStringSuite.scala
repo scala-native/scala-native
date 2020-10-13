@@ -64,7 +64,7 @@ object CStringSuite extends tests.Suite {
 
   // Issue 1796
   test("fromCString(null) returns null") {
-    assertNull(fromCString(null.asInstanceOf[CString]))
+    assertNull(fromCString(null))
   }
 
   test("fromCString") {
@@ -80,7 +80,7 @@ object CStringSuite extends tests.Suite {
 
   // Issue 1796
   test("toCString(null) return null") {
-    Zone { implicit z => assertNull(toCString(null.asInstanceOf[String])) }
+    Zone { implicit z => assertNull(toCString(null)) }
   }
 
   test("toCString") {
