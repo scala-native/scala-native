@@ -48,7 +48,7 @@ class MatcherTest {
                  m.region(haystackLength + 1, haystackLength - 1))
   }
 
-  @Test def find(): Unit = {
+  @Test def testFind(): Unit = {
     locally { // Expect success
       val needle   = "Cutty"
       val haystack = "Weel done, Cutty-sark!"
