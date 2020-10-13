@@ -5,6 +5,7 @@ package serialization
 import java.net.URI
 import java.io.{DataOutputStream, OutputStream}
 import java.nio.charset.StandardCharsets
+import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.scalanative.nir.serialization.{Tags => T}
 
@@ -13,7 +14,7 @@ final class BinarySerializer {
   private[this] val buffer           = new DataOutputStream(bufferUnderyling)
 
   private[this] var lastPosition: Position = Position.NoPosition
-  private[this] val fileIndexMap           = mutable.ListMap.empty[URI, Int]
+  private[this] var fileIndexMap           = ListMap.empty[URI, Int]
 
   // Methods were renamed in order to not pollute git blame history.
   // Original implementation used ByteBuffers
@@ -568,9 +569,9 @@ final class BinarySerializer {
     def initFile(pos: Position): Unit = {
       val file = pos.source
       if (pos.isDefined)
-        fileIndexMap.getOrElseUpdate(file, {
+        fileIndexMap.getOrElse(file, {
           filesList += file.toString
-          fileIndexMap.size
+          fileIndexMap = fileIndexMap.updated(file, filesList.size)
         })
     }
     defns.foreach {
