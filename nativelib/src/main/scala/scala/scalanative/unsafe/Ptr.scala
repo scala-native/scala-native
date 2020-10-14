@@ -35,15 +35,15 @@ final class Ptr[T] private[scalanative] (
     tag.store(this, value)
 
   @alwaysinline def +(offset: Word)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, offset * sizeof[T]))
+    new Ptr(elemRawPtr(rawptr, offset * sizeof[T].toLong))
 
   @alwaysinline def -(offset: Word)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, -offset * sizeof[T]))
+    new Ptr(elemRawPtr(rawptr, -offset * sizeof[T].toLong))
 
   @alwaysinline def -(other: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = {
     val left  = castRawPtrToLong(rawptr)
     val right = castRawPtrToLong(other.rawptr)
-    (left - right) / sizeof[T]
+    (left - right) / sizeof[T].toLong
   }
 
   @alwaysinline def apply(offset: Word)(implicit tag: Tag[T]): T =

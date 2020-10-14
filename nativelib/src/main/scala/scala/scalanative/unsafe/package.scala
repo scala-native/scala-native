@@ -6,6 +6,7 @@ import scalanative.annotation.alwaysinline
 import scalanative.unsigned._
 import scalanative.runtime.{libc, intrinsic, fromRawPtr}
 import scalanative.runtime.Intrinsics.{castIntToRawPtr, castLongToRawPtr}
+import scalanative.unsigned._
 
 package object unsafe {
 
@@ -73,7 +74,7 @@ package object unsafe {
   type CBool = Boolean
 
   /** The C/C++ 'size_t' type. */
-  type CSize = Word
+  type CSize = UWord
 
   /** The C/C++ 'ssize_t' type. */
   type CSSize = Word
@@ -169,7 +170,7 @@ package object unsafe {
       null
     } else {
       val bytes = str.getBytes(charset)
-      val cstr  = z.alloc(bytes.length + 1)
+      val cstr  = z.alloc((bytes.length + 1).toULong)
 
       var c = 0
       while (c < bytes.length) {
