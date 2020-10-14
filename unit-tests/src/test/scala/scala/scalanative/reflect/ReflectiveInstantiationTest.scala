@@ -11,6 +11,7 @@ import scalanative.junit.utils.AssertThrows._
 import scala.scalanative.reflect._
 import scala.scalanative.reflect.annotation._
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 class ReflectiveInstantiationTest {
   import ReflectTest.{Accessors, PtrAccessors, VC}
@@ -213,7 +214,7 @@ class ReflectiveInstantiationTest {
     // test with array of bytes
     Zone { implicit z =>
       val size   = 64
-      val buffer = alloc[Byte](size)
+      val buffer = alloc[Byte](size.toUInt)
 
       def fn(idx: Int) = size - idx
 

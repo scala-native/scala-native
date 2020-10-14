@@ -114,6 +114,9 @@ package object unsafe {
    *  This method takes argument of type `CSSize` for easier interop,
    *  but it' always converted into `CSize`
    */
+  @deprecated(
+    "alloc with signed type is deprecated, convert size to unsigned value",
+    "0.4.0")
   def alloc[T](n: CSSize)(implicit tag: Tag[T], z: Zone): Ptr[T] =
     macro MacroImpl.allocN[T]
 
@@ -137,6 +140,9 @@ package object unsafe {
    *  This method takes argument of type `CSSize` for easier interop,
    *  but it's always converted into `CSize`
    */
+  @deprecated(
+    "alloc with signed type is deprecated, convert size to unsigned value",
+    "0.4.0")
   def stackalloc[T](n: CSSize)(implicit tag: Tag[T]): Ptr[T] =
     macro MacroImpl.stackallocN[T]
 

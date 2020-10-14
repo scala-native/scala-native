@@ -119,7 +119,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     throwIfClosed(fd.fd, "accept") // Do not send negative fd.fd to poll()
 
     if (timeout > 0) {
-      val nAlloc = 1
+      val nAlloc = 1.toUInt
 
       val pollFdPtr = stackalloc[struct_pollfd](nAlloc)
 
@@ -127,7 +127,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       pollFdPtr.events = POLLIN
       pollFdPtr.revents = 0
 
-      val pollRes = poll(pollFdPtr, nAlloc.toUInt, timeout)
+      val pollRes = poll(pollFdPtr, nAlloc, timeout)
 
       pollRes match {
         case err if err < 0 =>
@@ -166,7 +166,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     }
     val family =
       storage.asInstanceOf[Ptr[socket.sockaddr_storage]].ss_family.toInt
-    val ipstr = stackalloc[CChar](in.INET6_ADDRSTRLEN)
+    val ipstr = stackalloc[CChar](in.INET6_ADDRSTRLEN.toULong)
 
     if (family == socket.AF_INET) {
       val sa = storage.asInstanceOf[Ptr[in.sockaddr_in]]
@@ -232,7 +232,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   private def connectPollTimeout(timeout: Int, fdFd: Int, opts: Int): Unit = {
-    val nAlloc = 1
+    val nAlloc = 1.toUInt
 
     val pollFdPtr = stackalloc[struct_pollfd](nAlloc)
 

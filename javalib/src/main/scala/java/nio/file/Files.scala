@@ -514,7 +514,7 @@ object Files {
       throw new NotLinkException(link.toString)
     } else
       Zone { implicit z =>
-        val buf: CString = alloc[Byte](limits.PATH_MAX)
+        val buf: CString = alloc[Byte](limits.PATH_MAX.toUInt)
         if (unistd.readlink(toCString(link.toString),
                             buf,
                             limits.PATH_MAX.toUInt) == -1) {

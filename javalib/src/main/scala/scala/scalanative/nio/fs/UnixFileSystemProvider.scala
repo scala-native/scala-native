@@ -138,7 +138,7 @@ class UnixFileSystemProvider extends FileSystemProvider {
     Files.setAttribute(path, attribute, value, options)
 
   private def getUserDir(): String = {
-    val buff = stackalloc[CChar](4096)
+    val buff = stackalloc[CChar](4096.toUInt)
     val res  = unistd.getcwd(buff, 4095.toUInt)
     if (res == null)
       throw UnixException("Could not determine current working directory",

@@ -12,8 +12,8 @@ private[lang] object StackTrace {
   private def makeStackTraceElement(
       cursor: Ptr[scala.Byte]): StackTraceElement = {
     val nameMax = 1024
-    val name    = stackalloc[CChar](nameMax)
-    val offset  = stackalloc[scala.Byte](8)
+    val name    = stackalloc[CChar](nameMax.toUInt)
+    val offset  = stackalloc[scala.Byte](8.toUInt)
 
     unwind.get_proc_name(cursor, name, nameMax.toUInt, offset)
 
@@ -34,9 +34,9 @@ private[lang] object StackTrace {
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    val cursor  = stackalloc[scala.Byte](2048)
-    val context = stackalloc[scala.Byte](2048)
-    val offset  = stackalloc[scala.Byte](8)
+    val cursor  = stackalloc[scala.Byte](2048.toUInt)
+    val context = stackalloc[scala.Byte](2048.toUInt)
+    val offset  = stackalloc[scala.Byte](8.toUInt)
     val ip      = stackalloc[CUnsignedLongLong]
     var buffer  = mutable.ArrayBuffer.empty[StackTraceElement]
 

@@ -126,10 +126,10 @@ object UnixProcess {
   private def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt =
     ProcessMonitor.waitForPid(pid, ts, res)
   def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
-    val infds  = stackalloc[CInt](2)
-    val outfds = stackalloc[CInt](2)
+    val infds  = stackalloc[CInt](2.toUInt)
+    val outfds = stackalloc[CInt](2.toUInt)
     val errfds =
-      if (builder.redirectErrorStream()) outfds else stackalloc[CInt](2)
+      if (builder.redirectErrorStream()) outfds else stackalloc[CInt](2.toUInt)
 
     throwOnError(unistd.pipe(infds), s"Couldn't create pipe.")
     throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
@@ -214,7 +214,7 @@ object UnixProcess {
 
   @inline private def nullTerminate(seq: collection.Seq[String])(
       implicit z: Zone) = {
-    val res = alloc[CString](seq.size + 1)
+    val res = alloc[CString]((seq.size + 1).toUInt)
     seq.zipWithIndex foreach { case (s, i) => !(res + i) = toCString(s) }
     res
   }
