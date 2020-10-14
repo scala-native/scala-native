@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scalanative.unsafe._
+import scalanative.unsigned._
 
 object ExternTest {
   /* These can be nested inside an object but not a class - see #897
@@ -26,7 +27,7 @@ object ExternTest {
   // workaround for CI
   def runTest(): Unit = {
     import scalanative.libc.string
-    val bufsize = 10L
+    val bufsize = 10.toUInt
     val buf1    = stackalloc[Byte](bufsize)
     val buf2    = stackalloc[Byte](bufsize)
     Ext1.snprintf(buf1, bufsize, c"%s", c"hello")
