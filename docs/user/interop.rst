@@ -369,6 +369,9 @@ It's worth to remember that ``unsafe.toCString`` and `c"..."` interpreter cannot
 Helper methods ``unsafe.fromCString` and ``unsafe.toCString`` are charset aware.
 They will always assume `String` is UTF-16, and take a `Charset` parameter to know what encoding to assume for the byte string (`CString`) - if not present it is UTF-8.
 
+If passed a null as an argument, they will return a null of the appropriate
+type instead of throwing a NullPointerException.
+
 
 Platform-specific types
 -----------------------
