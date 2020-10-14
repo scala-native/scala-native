@@ -21,6 +21,7 @@ sealed abstract class Tag[T] {
   def size: CSize
   def alignment: CSize
   @noinline def offset(idx: CSize): CSize                 = throwUndefined()
+  @noinline def offset(idx: CSSize): CSize                = offset(idx.toULong)
   @noinline def load(ptr: unsafe.Ptr[T]): T               = throwUndefined()
   @noinline def store(ptr: unsafe.Ptr[T], value: T): Unit = throwUndefined()
 }
