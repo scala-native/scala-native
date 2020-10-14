@@ -1,10 +1,12 @@
 package scala.scalanative
 package runtime
 
+import scalanative.unsafe._
+
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: Long): RawPtr = intrinsic
+  def stackalloc(size: CSize): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
