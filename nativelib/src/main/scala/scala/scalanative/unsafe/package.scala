@@ -91,6 +91,9 @@ package object unsafe {
   /** The C 'sizeof' operator. */
   @alwaysinline def sizeof[T](implicit tag: Tag[T]): CSize = tag.size
 
+  /** The C 'ssizeof' operator. */
+  @alwaysinline def ssizeof[T](implicit tag: Tag[T]): CSSize = tag.size.toLong
+
   /** C-style alignment operator. */
   @alwaysinline def alignmentof[T](implicit tag: Tag[T]): CSize = tag.alignment
 
