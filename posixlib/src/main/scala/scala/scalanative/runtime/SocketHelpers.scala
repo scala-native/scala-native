@@ -75,7 +75,7 @@ object SocketHelpers {
           return false
         }
 
-        val sentBytes = send(sock, toCString("echo"), 4, 0)
+        val sentBytes = send(sock, toCString("echo"), 4.toUInt, 0)
         if (sentBytes < 4) {
           return false
         }
@@ -90,7 +90,7 @@ object SocketHelpers {
           return false
         } else {
           val buf      = alloc[CChar](5)
-          val recBytes = recv(sock, buf, 5, 0)
+          val recBytes = recv(sock, buf, 5.toUInt, 0)
           if (recBytes < 4) {
             return false
           }

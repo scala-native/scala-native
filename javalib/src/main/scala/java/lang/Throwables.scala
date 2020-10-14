@@ -2,6 +2,7 @@ package java.lang
 
 import scala.collection.mutable
 import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.runtime.unwind
 
 private[lang] object StackTrace {
@@ -14,12 +15,12 @@ private[lang] object StackTrace {
     val name    = stackalloc[CChar](nameMax)
     val offset  = stackalloc[scala.Byte](8)
 
-    unwind.get_proc_name(cursor, name, nameMax, offset)
+    unwind.get_proc_name(cursor, name, nameMax.toUInt, offset)
 
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's
     // behavior is not defined for non-zero-terminated strings.
-    name(nameMax - 1) = 0
+    name(nameMax - 1) = 0.toByte
 
     StackTraceElement.fromSymbol(name)
   }

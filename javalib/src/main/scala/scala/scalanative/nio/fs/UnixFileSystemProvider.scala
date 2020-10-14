@@ -1,6 +1,7 @@
 package scala.scalanative.nio.fs
 
 import scala.scalanative.unsafe.{CChar, fromCString, stackalloc}
+import scala.scalanative.unsigned._
 import scala.scalanative.posix.unistd
 import scala.collection.immutable.{Map => SMap}
 
@@ -138,7 +139,7 @@ class UnixFileSystemProvider extends FileSystemProvider {
 
   private def getUserDir(): String = {
     val buff = stackalloc[CChar](4096)
-    val res  = unistd.getcwd(buff, 4095)
+    val res  = unistd.getcwd(buff, 4095.toUInt)
     if (res == null)
       throw UnixException("Could not determine current working directory",
                           errno.errno)

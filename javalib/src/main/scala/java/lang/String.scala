@@ -1,6 +1,7 @@
 package java.lang
 
 import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.libc.string.memcmp
 import scalanative.runtime.CharArray
 import java.io.Serializable
@@ -244,7 +245,7 @@ final class _String()
                 .asInstanceOf[CharArray]
                 .at(s.offset)
                 .asInstanceOf[Ptr[scala.Byte]]
-            memcmp(data1, data2, count * 2) == 0
+            memcmp(data1, data2, (count * 2).toUInt) == 0
           }
         }
       }

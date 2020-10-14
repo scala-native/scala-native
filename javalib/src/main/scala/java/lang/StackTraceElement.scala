@@ -141,7 +141,7 @@ private[lang] object StackTraceElement {
     }
 
     def inBounds(pos: Int) =
-      pos >= 0 && pos < len
+      pos >= 0 && pos < len.toLong
 
     if (!readSymbol()) {
       className = "<none>"
