@@ -1,7 +1,6 @@
 package scala.scalanative.build
 
 import java.lang.System.{err, out, lineSeparator => nl}
-
 import scala.sys.process.ProcessLogger
 
 /** Interface to report and/or collect messages given by the toolchain. */

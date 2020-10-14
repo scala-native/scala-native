@@ -680,7 +680,6 @@ lazy val testInterfaceSbtDefs =
 lazy val testRunner =
   project
     .in(file("test-runner"))
-    .settings(toolSettings)
     .settings(mavenPublishSettings)
     .settings(testInterfaceCommonSourcesSettings)
     .settings(
@@ -689,7 +688,7 @@ lazy val testRunner =
         "com.novocode"  % "junit-interface" % "0.11" % "test"
       )
     )
-    .dependsOn(tools, junitAsyncJVM % "test")
+    .dependsOn(util, junitAsyncJVM % "test")
 
 // JUnit modules and settings ------------------------------------------------
 
@@ -774,8 +773,6 @@ lazy val junitAsyncJVM =
   project
     .in(file("junit-async/jvm"))
     .settings(
-      scalaVersion := sbt10ScalaVersion,
-      crossScalaVersions := Seq(sbt10ScalaVersion),
       nameSettings,
       publishArtifact := false
     )
