@@ -109,6 +109,14 @@ package object unsafe {
   def alloc[T](n: CSize)(implicit tag: Tag[T], z: Zone): Ptr[T] =
     macro MacroImpl.allocN[T]
 
+  /** Heap allocate and zero-initialize n values
+   *  using current implicit allocator.
+   *  This method takes argument of type `CSSize` for easier interop,
+   *  but it' always converted into `CSize`
+   */
+  def alloc[T](n: CSSize)(implicit tag: Tag[T], z: Zone): Ptr[T] =
+    macro MacroImpl.allocN[T]
+
   /** Stack allocate a value of given type.
    *
    *  Note: unlike alloc, the memory is not zero-initialized.
@@ -121,6 +129,15 @@ package object unsafe {
    *  Note: unlike alloc, the memory is not zero-initialized.
    */
   def stackalloc[T](n: CSize)(implicit tag: Tag[T]): Ptr[T] =
+    macro MacroImpl.stackallocN[T]
+
+  /** Stack allocate n values of given type.
+   *
+   *  Note: unlike alloc, the memory is not zero-initialized.
+   *  This method takes argument of type `CSSize` for easier interop,
+   *  but it's always converted into `CSize`
+   */
+  def stackalloc[T](n: CSSize)(implicit tag: Tag[T]): Ptr[T] =
     macro MacroImpl.stackallocN[T]
 
   /** Used as right hand side of external method and field declarations. */
@@ -231,7 +248,8 @@ package object unsafe {
       val runtime = q"_root_.scala.scalanative.runtime"
 
       q"""{
-        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
+        import _root_.scala.scalanative.unsigned.UnsignedRichLong
+        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n.toULong
         val $ptr    = $z.alloc($size)
         val $rawptr = $runtime.toRawPtr($ptr)
         $runtime.libc.memset($rawptr, 0, $size)
@@ -267,7 +285,8 @@ package object unsafe {
       val runtime = q"_root_.scala.scalanative.runtime"
 
       q"""{
-        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
+        import _root_.scala.scalanative.unsigned.UnsignedRichLong
+        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n.toULong
         val $rawptr = $runtime.Intrinsics.stackalloc($size)
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)
