@@ -7,7 +7,7 @@ import java.io.ByteArrayInputStream
 import org.junit.Test
 import org.junit.Assert._
 
-class CheckedInputStreamSuite {
+class CheckedInputStreamTest {
 
   @Test def constructor(): Unit = {
     val checkIn =

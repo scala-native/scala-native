@@ -7,7 +7,7 @@ import org.junit.Assert._
 
 import scala.scalanative.junit.utils.AssertThrows._
 
-class ArrayListSuite {
+class ArrayListTest {
   @Test def constructor(): Unit = {
     val al = new ArrayList()
     assertTrue(al.size() == 0)
