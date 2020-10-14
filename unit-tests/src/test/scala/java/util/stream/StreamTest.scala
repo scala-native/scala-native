@@ -6,19 +6,19 @@ import org.junit.Test
 import org.junit.Assert._
 
 class StreamTest {
-  @Test def StreamBuilderCanBuildAnEmptyStream(): Unit = {
+  @Test def streamBuilderCanBuildAnEmptyStream(): Unit = {
     val s  = Stream.builder().build()
     val it = s.iterator()
     assertFalse(it.hasNext())
   }
 
-  @Test def StreamEmptyIsEmpty(): Unit = {
+  @Test def streamEmptyIsEmpty(): Unit = {
     val s  = Stream.empty[Int]()
     val it = s.iterator()
     assertFalse(it.hasNext())
   }
 
-  @Test def StreamOfCanPutElementsInStream(): Unit = {
+  @Test def streamOfCanPutElementsInStream(): Unit = {
     val s  = Stream.of(1, 2, 3)
     val it = s.iterator()
     assertTrue(it.next() == 1)
@@ -27,7 +27,7 @@ class StreamTest {
     assertFalse(it.hasNext())
   }
 
-  @Test def StreamFlatMapWorks(): Unit = {
+  @Test def streamFlatMapWorks(): Unit = {
     val s = Stream.of(1, 2, 3)
     val mapper = new Function[Int, Stream[Int]] {
       override def apply(v: Int): Stream[Int] =
@@ -45,7 +45,7 @@ class StreamTest {
     assertFalse(it.hasNext())
   }
 
-  @Test def StreamFlatMapWorksTwice(): Unit = {
+  @Test def streamFlatMapWorksTwice(): Unit = {
     val stream = Stream.of(1, 2, 3)
     val mapper1 = new Function[Int, Stream[Int]] {
       override def apply(v: Int): Stream[Int] =
@@ -66,7 +66,7 @@ class StreamTest {
     assertTrue(result == expected)
   }
 
-  @Test def StreamOnCloseWorks(): Unit = {
+  @Test def streamOnCloseWorks(): Unit = {
     var success = false
     val handler = new Runnable { override def run(): Unit = success = true }
     val s       = Stream.empty[Int]().onClose(handler)
