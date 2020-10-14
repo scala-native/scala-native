@@ -68,11 +68,11 @@ addCommandAlias(
 addCommandAlias(
   "test-tools",
   Seq(
-    "testRunner/test",
-    "testInterface/test",
-    "tools/test",
     "nirparser/test",
-    "tools/mimaReportBinaryIssues"
+    "tools/test",
+    "tools/mimaReportBinaryIssues",
+    "testRunner/test",
+    "testInterface/test"
   ).mkString(";")
 )
 
@@ -357,9 +357,16 @@ lazy val sbtScalaNative =
             testRunner / publishLocal
           )
           .value
-      }
+      },
+      /* Unmanaged dependencies were used instead of dependsOn(testRunner) in order remove errors (invalid version suffix)
+       * and allow to cross-build junitTestOutputs. We also need to add testRunner dependencies  */
+      Compile / unmanagedSourceDirectories ++= Seq(
+        (testRunner / Compile / scalaSource).value,
+        baseDirectory.value.getParentFile / "test-interface-common/src/main/scala"
+      ),
+      libraryDependencies += collectionsCompatLib
     )
-    .dependsOn(tools, testRunner)
+    .dependsOn(tools)
 
 lazy val nativelib =
   project
@@ -686,9 +693,12 @@ lazy val testRunner =
       libraryDependencies ++= Seq(
         "org.scala-sbt" % "test-interface"  % "1.0",
         "com.novocode"  % "junit-interface" % "0.11" % "test"
-      )
+      ),
+      // Fix for invalid version suffix in cross-build, see sbtScalaNative comment
+      Compile / unmanagedSourceDirectories += (util / Compile / scalaSource).value,
+      libraryDependencies += collectionsCompatLib
     )
-    .dependsOn(util, junitAsyncJVM % "test")
+    .dependsOn(junitAsyncJVM % "test")
 
 // JUnit modules and settings ------------------------------------------------
 
