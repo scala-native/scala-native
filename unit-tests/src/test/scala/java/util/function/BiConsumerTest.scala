@@ -1,5 +1,6 @@
 package java.util.function
 
+import org.junit.Ignore
 import org.junit.Before
 import org.junit.Test
 import org.junit.Assert._
@@ -30,9 +31,10 @@ class BiConsumerTest {
     assertTrue(result == 4)
   }
 
+  @Ignore("#1229 - 2.11 does not have default method support")
   @Test def biConsumerAndThen(): Unit = {
-    assertTrue(result == 0)
-    addT.andThen(timesT).accept(2, 3)
-    assertTrue(result == 11)
+    // assertTrue(result == 0)
+    // addT.andThen(timesT).accept(2, 3)
+    // assertTrue(result == 11)
   }
 }
