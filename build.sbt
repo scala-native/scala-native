@@ -16,8 +16,7 @@ def projectName(project: sbt.ResolvedProject): String = {
 
 // Provide consistent project name pattern.
 lazy val nameSettings: Seq[Setting[_]] = Seq(
-  normalizedName := projectName(thisProject.value),         // Maven <artifactId>
-  name := s"Scala Native ${projectName(thisProject.value)}" // Maven <name>
+  name := projectName(thisProject.value) // Maven <name>
 )
 
 // The previous releases of Scala Native with which this version is binary compatible.
