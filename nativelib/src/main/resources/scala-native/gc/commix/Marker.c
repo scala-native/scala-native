@@ -22,7 +22,7 @@ extern word_t **__stack_bottom;
 // could return an older state with allocated. This can cause us to re-trace
 // a single object multiple times, but it is not as bad as the overhead caused
 // by something like test-and-set or compare-and-swap. Marking uses grey packets
-// to synchronize between threads. A grey packet is a fixes size list that
+// to synchronize between threads. A grey packet is a fixed size list that
 // contains pointers to objects for marking. Grey packets are kept in it own
 // separate memory region (see heap->greyPacketsStart).
 //
