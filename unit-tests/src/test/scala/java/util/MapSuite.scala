@@ -571,13 +571,14 @@ trait MapSuite extends tests.Suite {
 
     val presentKey   = 400
     val presentValue = 876234
+    val defaultValue = 9999
 
     mp.put(100, 12345)
     mp.put(300, 98765)
     mp.put(presentKey, presentValue)
     assertEquals(3, mp.size())
 
-    assertEquals(presentValue, mp.getOrDefault(presentKey, presentValue))
+    assertEquals(presentValue, mp.getOrDefault(presentKey, defaultValue))
   }
 
   test("getOrDefault(key, d) should return default when key is absent") {

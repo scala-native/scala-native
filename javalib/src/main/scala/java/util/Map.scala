@@ -26,10 +26,13 @@ trait Map[K, V] {
 
   def getOrDefault(key: Any, default: V): V = {
     val v = this.get(key)
-    if ((v == null.asInstanceOf[V]) && this.containsKey(key))
+    if (v != null.asInstanceOf[V]) {
+      v
+    } else if (this.containsKey(key)) {
       null.asInstanceOf[V]
-    else
+    } else {
       default
+    }
   }
 
   def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
