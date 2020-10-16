@@ -738,17 +738,32 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           // what the apply method expects:
           // - values that can be unboxed, are unboxed
           // - otherwise, the value is cast to the appropriate type
-          paramSyms.zip(functionArgs.takeRight(sigTypes.length)).zip(params).foreach {
-            case ((sym, arg), value) =>
-              val unboxedOrCast = {
-                val unboxed = buf.unboxValue(sym.tpe, partial = true, value)(arg.pos)
-                if (unboxed == value) // no need to or cannot unbox, we should cast
-                  buf.genCastOp(genType(sym.tpe), genType(arg.tpe), value)(arg.pos)
-                else
-                  unboxed
-              }
-              curMethodEnv.enter(sym, unboxedOrCast)
-          }
+          paramSyms
+            .zip(functionArgs.takeRight(sigTypes.length))
+            .zip(params).foreach {
+              case ((sym, arg), value) =>
+                implicit val pos: nir.Position = arg.pos
+
+                val result =
+                  enteringPhase(currentRun.posterasurePhase)(sym.tpe) match {
+                    case ErasedValueType(valueClazz, _) =>
+                      val unboxMethod = valueClazz.derivedValueClassUnbox
+                      val casted =
+                        buf.genCastOp(value.ty, genType(valueClazz), value)
+                      buf.genApplyMethod(sym = unboxMethod,
+                                         statically = false,
+                                         self = casted,
+                                         argsp = Nil)
+
+                    case _ =>
+                      val unboxed =
+                        buf.unboxValue(sym.tpe, partial = true, value)
+                      if (unboxed == value) // no need to or cannot unbox, we should cast
+                        buf.genCastOp(genType(sym.tpe), genType(arg.tpe), value)
+                      else unboxed
+                  }
+                curMethodEnv.enter(sym, result)
+            }
 
           captureSymsWithEnclThis.zip(captureNames).foreach {
             case (sym, name) =>
