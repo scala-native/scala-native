@@ -417,6 +417,18 @@ class IssuesTest {
     import issue1909._
     assertNotNull(new RandomWrapper().nextInt())
   }
+
+  @Test def test_Issue1950(): Unit = {
+    import issue1950._
+    List(new ValueClass(1.0f))
+      .map(_.value)
+      .foreach(assertEquals(1.0f, _, 0.00001))
+
+    List(ValueClass2("hello"))
+      .map(_.string)
+      .foreach(assertEquals("hello", _))
+  }
+
 }
 
 package issue1090 {
@@ -461,4 +473,9 @@ package issue1909 {
       this()
     }
   }
+}
+
+package issue1950 {
+  final class ValueClass(val value: Float)     extends AnyVal
+  final case class ValueClass2(string: String) extends AnyVal
 }
