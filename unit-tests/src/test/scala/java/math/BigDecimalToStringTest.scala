@@ -19,9 +19,12 @@
 
 package java.math
 
-object BigDecimalToStringSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("testToStringWithCornerCaseScales") {
+class BigDecimalToStringTest {
+
+  @Test def testToStringWithCornerCaseScales(): Unit = {
     val bigIntOne = BigInteger.valueOf(1)
 
     assertEquals("1", new BigDecimal(bigIntOne, 0).toString())
