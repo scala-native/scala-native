@@ -29,7 +29,7 @@ class SocketTest {
     }
   }
 
-  @Test def OOBInline(): Unit = {
+  @Test def oobInline(): Unit = {
     val s = new Socket()
     try {
       val prevValue = s.getOOBInline
