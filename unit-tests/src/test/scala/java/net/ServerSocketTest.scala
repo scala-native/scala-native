@@ -1,8 +1,13 @@
 package java.net
 
-object ServerSocketSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("bind") {
+import scalanative.junit.utils.AssertThrows._
+
+class ServerSocketTest {
+
+  @Test def bind(): Unit = {
     val s1 = new ServerSocket
     try {
       val addr = new InetSocketAddress(InetAddress.getLoopbackAddress, 0)
@@ -12,13 +17,13 @@ object ServerSocketSuite extends tests.Suite {
 
       assertEquals(s1.getLocalSocketAddress,
                    new InetSocketAddress(InetAddress.getLoopbackAddress, port))
-      assert(s1.isBound)
+      assertTrue(s1.isBound)
 
       val s2 = new ServerSocket
       val s3 = new ServerSocket // creating new socket unlikely to throw.
       try {
         s2.bind(addr)
-        assertThrows[BindException] { s3.bind(s2.getLocalSocketAddress) }
+        assertThrows(classOf[BindException], s3.bind(s2.getLocalSocketAddress))
       } finally {
         s3.close()
         s2.close()
@@ -29,9 +34,9 @@ object ServerSocketSuite extends tests.Suite {
 
     val s4 = new ServerSocket
     try {
-      assertThrows[BindException] {
-        s4.bind(new InetSocketAddress(InetAddress.getByName("101.0.0.0"), 0))
-      }
+      assertThrows(
+        classOf[BindException],
+        s4.bind(new InetSocketAddress(InetAddress.getByName("101.0.0.0"), 0)))
     } finally {
       s4.close()
     }
@@ -40,32 +45,31 @@ object ServerSocketSuite extends tests.Suite {
 
     val s5 = new ServerSocket
     try {
-      assertThrows[IllegalArgumentException] {
-        s5.bind(new UnsupportedSocketAddress)
-      }
+      assertThrows(classOf[IllegalArgumentException],
+                   s5.bind(new UnsupportedSocketAddress))
     } finally {
       s5.close()
     }
   }
 
-  test("accept") {
+  @Test def accept(): Unit = {
     val s = new ServerSocket(0)
     try {
       s.setSoTimeout(1)
-      assertThrows[SocketTimeoutException] { s.accept }
+      assertThrows(classOf[SocketTimeoutException], s.accept)
     } finally {
       s.close()
     }
   }
 
-  test("close") {
+  @Test def close(): Unit = {
     val s = new ServerSocket(0)
     s.close
-    assertThrows[SocketException] { s.accept }
+    assertThrows(classOf[SocketException], s.accept)
     // socket already closed, all paths.
   }
 
-  test("soTimeout") {
+  @Test def soTimeout(): Unit = {
     val s = new ServerSocket(0)
     try {
       val prevValue = s.getSoTimeout
@@ -76,7 +80,7 @@ object ServerSocketSuite extends tests.Suite {
     }
   }
 
-  test("toString") {
+  @Test def testToString(): Unit = {
     val s1 = new ServerSocket(0)
     try {
       val port1 = s1.getLocalPort

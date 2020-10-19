@@ -1,8 +1,13 @@
 package java.net
 
-object SocketSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("keepAlive") {
+import scalanative.junit.utils.AssertThrows._
+
+class SocketTest {
+
+  @Test def keepAlive(): Unit = {
     val s = new Socket()
     try {
       val prevValue = s.getKeepAlive
@@ -13,7 +18,7 @@ object SocketSuite extends tests.Suite {
     }
   }
 
-  test("reuseAddr") {
+  @Test def reuseAddr(): Unit = {
     val s = new Socket()
     try {
       val prevValue = s.getReuseAddress
@@ -24,7 +29,7 @@ object SocketSuite extends tests.Suite {
     }
   }
 
-  test("OOBInline") {
+  @Test def oobInline(): Unit = {
     val s = new Socket()
     try {
       val prevValue = s.getOOBInline
@@ -35,7 +40,7 @@ object SocketSuite extends tests.Suite {
     }
   }
 
-  test("tcpNoDelay") {
+  @Test def tcpNoDelay(): Unit = {
     val s = new Socket()
     try {
       val prevValue = s.getTcpNoDelay
@@ -46,7 +51,7 @@ object SocketSuite extends tests.Suite {
     }
   }
 
-  test("soLinger") {
+  @Test def soLinger(): Unit = {
     val s = new Socket()
     try {
       s.setSoLinger(true, 100)
@@ -58,7 +63,7 @@ object SocketSuite extends tests.Suite {
     }
   }
 
-  test("soTimeout") {
+  @Test def soTimeout(): Unit = {
     val s = new Socket()
     try {
       val prevValue = s.getSoTimeout
@@ -69,7 +74,7 @@ object SocketSuite extends tests.Suite {
     }
   }
 
-  test("receiveBufferSize") {
+  @Test def receiveBufferSize(): Unit = {
     // This test basically checks that getReceiveBufferSize &
     // setReceiveBufferSize do not unexpectedly throw and that the former
     // returns a minimally sane value.
@@ -97,14 +102,14 @@ object SocketSuite extends tests.Suite {
 
     try {
       val prevValue = s.getReceiveBufferSize
-      assert(prevValue > 0)
+      assertTrue(prevValue > 0)
       s.setReceiveBufferSize(prevValue + 100)
     } finally {
       s.close()
     }
   }
 
-  test("sendBufferSize") {
+  @Test def sendBufferSize(): Unit = {
     // This test basically checks that getSendBufferSize &
     // setSendBufferSize do not unexpectedly throw and that the former
     // returns a minimally sane value.
@@ -114,14 +119,14 @@ object SocketSuite extends tests.Suite {
 
     try {
       val prevValue = s.getSendBufferSize
-      assert(prevValue > 0)
+      assertTrue(prevValue > 0)
       s.setSendBufferSize(prevValue + 100)
     } finally {
       s.close()
     }
   }
 
-  test("trafficClass") {
+  @Test def trafficClass(): Unit = {
     val s = new Socket()
     try {
       s.setTrafficClass(0x28)
@@ -131,23 +136,23 @@ object SocketSuite extends tests.Suite {
     }
   }
 
-  test("connect with timeout") {
+  @Test def connectWithTimeout(): Unit = {
     val s = new Socket()
     try {
-      assertThrows[SocketTimeoutException] {
-        s.connect(new InetSocketAddress("123.123.123.123", 12341), 100)
-      }
+      assertThrows(
+        classOf[SocketTimeoutException],
+        s.connect(new InetSocketAddress("123.123.123.123", 12341), 100))
     } finally {
       s.close()
     }
   }
 
-  test("bind") {
+  @Test def bind(): Unit = {
     val s1 = new Socket
     try {
       val nonLocalAddr =
         new InetSocketAddress(InetAddress.getByName("123.123.123.123"), 0)
-      assertThrows[BindException] { s1.bind(nonLocalAddr) }
+      assertThrows(classOf[BindException], s1.bind(nonLocalAddr))
     } finally {
       s1.close()
     }
@@ -165,7 +170,7 @@ object SocketSuite extends tests.Suite {
     val s3 = new Socket
     try {
       s3.bind(null)
-      assert(s3.getLocalSocketAddress != null)
+      assertTrue(s3.getLocalSocketAddress != null)
     } finally {
       s3.close()
     }
@@ -175,7 +180,7 @@ object SocketSuite extends tests.Suite {
       s4.bind(new InetSocketAddress(InetAddress.getLoopbackAddress, 0))
       val s5 = new Socket
       try {
-        assertThrows[BindException] { s5.bind(s4.getLocalSocketAddress) }
+        assertThrows(classOf[BindException], s5.bind(s4.getLocalSocketAddress))
       } finally {
         s5.close()
       }
@@ -186,9 +191,8 @@ object SocketSuite extends tests.Suite {
     class UnsupportedSocketAddress extends SocketAddress
     val s6 = new Socket
     try {
-      assertThrows[IllegalArgumentException] {
-        s6.bind(new UnsupportedSocketAddress)
-      }
+      assertThrows(classOf[IllegalArgumentException],
+                   s6.bind(new UnsupportedSocketAddress))
     } finally {
       s6.close()
     }

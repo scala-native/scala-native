@@ -1,17 +1,23 @@
 package java.net
 
 // Ported from Apache Harmony
-object InetSocketAddressSuite extends tests.Suite {
 
-  test("this(String, Int)") {
+import org.junit.Test
+import org.junit.Assert._
+
+import scalanative.junit.utils.AssertThrows._
+
+class InetSocketAddressTest {
+
+  @Test def thisStringInt(): Unit = {
     val address = new InetSocketAddress("127.0.0.1", 0)
     assertEquals("/127.0.0.1:0", address.toString)
     val localhostName = address.getHostName
-    assertNot(localhostName == null)
+    assertFalse(localhostName == null)
     assertEquals(localhostName + "/127.0.0.1:0", address.toString)
   }
 
-  test("createUnresolved") {
+  @Test def createUnresolved(): Unit = {
     val pairs = Array(("127.0.0.1", 1234),
                       ("192.168.0.1", 10000),
                       ("127.0.0", 0),
@@ -19,20 +25,19 @@ object InetSocketAddressSuite extends tests.Suite {
                       ("strange host", 65535))
     for ((host, port) <- pairs) {
       val addr = InetSocketAddress.createUnresolved(host, port)
-      assert(addr.isUnresolved)
-      assert(addr.getAddress == null)
+      assertTrue(addr.isUnresolved)
+      assertTrue(addr.getAddress == null)
       assertEquals(addr.getHostString, host)
       assertEquals(addr.getHostName, host)
       assertEquals(addr.getPort, port)
     }
   }
 
-  test("createUnresolved should throw IllegalArgumentException") {
+  @Test def createUnresolvedShouldThrowIllegalArgumentException(): Unit = {
     val pairs = Array((null, 1), ("host", -1), ("host", 65536))
     for ((host, port) <- pairs) {
-      assertThrows[IllegalArgumentException] {
-        InetSocketAddress.createUnresolved(host, port)
-      }
+      assertThrows(classOf[IllegalArgumentException],
+                   InetSocketAddress.createUnresolved(host, port))
     }
   }
 }
