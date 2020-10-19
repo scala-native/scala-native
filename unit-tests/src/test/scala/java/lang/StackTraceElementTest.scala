@@ -1,5 +1,10 @@
 package java.lang
 
+import org.junit.Test
+import org.junit.Assert._
+
+import scalanative.junit.utils.AssertThrows._
+
 class StackTraceDummy1 @noinline() {
   def dummy1: StackTraceElement =
     (new Exception).getStackTrace
@@ -26,30 +31,30 @@ class StackTraceDummy4 @noinline() {
       .head
 }
 
-object StackTraceElementSuite extends tests.Suite {
+class StackTraceElementTest {
   def dummy1 = (new StackTraceDummy1).dummy1
   def dummy2 = (new StackTraceDummy1)._dummy2
   def dummy3 = (new StackTraceDummy3_::).dummy3
   def dummy4 = (new StackTraceDummy4).dummy4
 
-  test("getClassName") {
-    assert(dummy1.getClassName == "java.lang.StackTraceDummy1")
-    assert(dummy2.getClassName == "java.lang.StackTraceDummy1")
-    assert(dummy3.getClassName == "java.lang.StackTraceDummy3_$colon$colon")
-    assert(dummy4.getClassName == "java.lang.StackTraceDummy4")
+  @Test def getClassName(): Unit = {
+    assertTrue(dummy1.getClassName == "java.lang.StackTraceDummy1")
+    assertTrue(dummy2.getClassName == "java.lang.StackTraceDummy1")
+    assertTrue(dummy3.getClassName == "java.lang.StackTraceDummy3_$colon$colon")
+    assertTrue(dummy4.getClassName == "java.lang.StackTraceDummy4")
   }
 
-  test("getMethodName") {
-    assert(dummy1.getMethodName == "dummy1")
-    assert(dummy2.getMethodName == "_dummy2")
-    assert(dummy3.getMethodName == "dummy3")
-    assert(dummy4.getMethodName == "<init>")
+  @Test def getMethodName(): Unit = {
+    assertTrue(dummy1.getMethodName == "dummy1")
+    assertTrue(dummy2.getMethodName == "_dummy2")
+    assertTrue(dummy3.getMethodName == "dummy3")
+    assertTrue(dummy4.getMethodName == "<init>")
   }
 
-  test("isNativeMethod") {
-    assert(!dummy1.isNativeMethod)
-    assert(!dummy2.isNativeMethod)
-    assert(!dummy3.isNativeMethod)
-    assert(!dummy4.isNativeMethod)
+  @Test def isNativeMethod(): Unit = {
+    assertFalse(dummy1.isNativeMethod)
+    assertFalse(dummy2.isNativeMethod)
+    assertFalse(dummy3.isNativeMethod)
+    assertFalse(dummy4.isNativeMethod)
   }
 }
