@@ -3,7 +3,6 @@ package java.lang
 import org.junit.Test
 import org.junit.Assert._
 
-
 class StackTraceDummy1 @noinline() {
   def dummy1: StackTraceElement =
     (new Exception).getStackTrace

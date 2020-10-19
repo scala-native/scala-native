@@ -12,7 +12,8 @@ class RuntimeTest {
     val proc = Runtime.getRuntime.exec(Array("ls", resourceDir))
     val out  = readInputStream(proc.getInputStream)
     assertTrue(proc.waitFor(5, TimeUnit.SECONDS))
-    assertTrue(out.split("\n").toSet == Set("echo.sh", "err.sh", "hello.sh", "ls"))
+    assertTrue(
+      out.split("\n").toSet == Set("echo.sh", "err.sh", "hello.sh", "ls"))
   }
   @Test def execEnvp(): Unit = {
     val envp = Array(s"PATH=$resourceDir")
@@ -25,6 +26,7 @@ class RuntimeTest {
     val proc = Runtime.getRuntime.exec(Array("ls"), null, new File(resourceDir))
     val out  = readInputStream(proc.getInputStream)
     assertTrue(proc.waitFor(5, TimeUnit.SECONDS))
-    assertTrue(out.split("\n").toSet == Set("echo.sh", "err.sh", "hello.sh", "ls"))
+    assertTrue(
+      out.split("\n").toSet == Set("echo.sh", "err.sh", "hello.sh", "ls"))
   }
 }
