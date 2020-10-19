@@ -7,7 +7,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 class RuntimeTest {
-  import ProcessSuite._
+  import ProcessUtils._
   @Test def execCommand(): Unit = {
     val proc = Runtime.getRuntime.exec(Array("ls", resourceDir))
     val out  = readInputStream(proc.getInputStream)
