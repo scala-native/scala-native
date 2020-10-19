@@ -1,6 +1,10 @@
 #include <unistd.h>
 #include "types.h"
 
+extern char **environ;
+
+char **scalanative_environ() { return environ; }
+
 int scalanative_f_ok() { return F_OK; }
 
 int scalanative_r_ok() { return R_OK; }
@@ -8,6 +12,16 @@ int scalanative_r_ok() { return R_OK; }
 int scalanative_w_ok() { return W_OK; }
 
 int scalanative_x_ok() { return X_OK; }
+
+// SEEK_CUR, SEEK_END, SEEK_SET in clib stdio
+
+int scalanative_f_lock() { return F_LOCK; }
+
+int scalanative_f_test() { return F_TEST; }
+
+int scalanative_f_tlock() { return F_TLOCK; }
+
+int scalanative_f_ulock() { return F_ULOCK; }
 
 int scalanative_stdin_fileno() { return STDIN_FILENO; }
 
