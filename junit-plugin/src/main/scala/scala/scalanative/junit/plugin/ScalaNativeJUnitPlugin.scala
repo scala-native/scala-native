@@ -171,6 +171,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
         sym.setInfoAndEnter(MethodType(Nil, definitions.UnitTpe))
 
         val calls = annotatedMethods(module, annot)
+          .map(_.makePublic)
           .map(gen.mkMethodCall(Ident(module), _, Nil, Nil))
           .toList
 
@@ -191,6 +192,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
 
         val instance = castParam(instanceParam, testClass)
         val calls = annotatedMethods(testClass, annot)
+          .map(_.makePublic)
           .map(gen.mkMethodCall(instance, _, Nil, Nil))
           .toList
 
