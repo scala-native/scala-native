@@ -15,14 +15,14 @@ class RandomAccessFileTest {
   var raf: RandomAccessFile = _
 
   @Before
-  protected def setUp(): Unit = {
+  def setUp(): Unit = {
     // some tests do not use this
     val file = File.createTempFile("tmp", "")
     raf = new RandomAccessFile(file, "rw")
   }
 
   @After
-  protected def tearDown(): Unit = {
+  def tearDown(): Unit = {
     try raf.close()
     catch {
       case _: Throwable =>
