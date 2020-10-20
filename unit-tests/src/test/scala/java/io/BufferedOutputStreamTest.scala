@@ -86,7 +86,7 @@ class BufferedOutputStreamTest {
     assertEquals("ab", mos.getWritten())
   }
 
-  @Test def writeArrayByteIntIntOutOfBoundsException(): Unit = {
+  @Test def writeArrayByteIntIntThrowsArrayIndexOutOfBoundsException(): Unit = {
     val bos                        = new BufferedOutputStream(new ByteArrayOutputStream())
     val nullByteArray: Array[Byte] = null
     val byteArray                  = new Array[Byte](10)
@@ -325,7 +325,7 @@ class BufferedOutputStreamTest {
     assertTrue(ans(0) == 0 && ans(1) == 1 && ans(2) == 2)
   }
 
-  @Test def writeArrayWithBadIndexOrLengthThrowExceptions(): Unit = {
+  @Test def writeArrayWithBadIndexOrLengthThrowsException(): Unit = {
     val array    = List(0, 1, 2).map(_.toByte).toArray[Byte]
     val arrayOut = new ByteArrayOutputStream()
     val out      = new BufferedOutputStream(arrayOut)
