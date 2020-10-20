@@ -1,34 +1,38 @@
 package java.io
 
 // Ported from Apache Harmony
-object BufferedOutputStreamSuite extends tests.Suite {
+
+import org.junit.Test
+import org.junit.Assert._
+
+import scalanative.junit.utils.AssertThrows._
+
+class BufferedOutputStreamTest {
 
   val fileString =
     "Test_All_Tests\nTest_java_io_BufferedInputStream\nTest_BufferedOutputStream\nTest_java_io_ByteArrayInputStream\nTest_java_io_ByteArrayOutputStream\nTest_java_io_DataInputStream\nTest_java_io_File\nTest_java_io_FileDescriptor\nTest_java_io_FileInputStream\nTest_java_io_FileNotFoundException\nTest_java_io_FileOutputStream\nTest_java_io_FilterInputStream\nTest_java_io_FilterOutputStream\nTest_java_io_InputStream\nTest_java_io_IOException\nTest_java_io_OutputStream\nTest_java_io_PrintStream\nTest_java_io_RandomAccessFile\nTest_java_io_SyncFailedException\nTest_java_lang_AbstractMethodError\nTest_java_lang_ArithmeticException\nTest_java_lang_ArrayIndexOutOfBoundsException\nTest_java_lang_ArrayStoreException\nTest_java_lang_Boolean\nTest_java_lang_Byte\nTest_java_lang_Character\nTest_java_lang_Class\nTest_java_lang_ClassCastException\nTest_java_lang_ClassCircularityError\nTest_java_lang_ClassFormatError\nTest_java_lang_ClassLoader\nTest_java_lang_ClassNotFoundException\nTest_java_lang_CloneNotSupportedException\nTest_java_lang_Double\nTest_java_lang_Error\nTest_java_lang_Exception\nTest_java_lang_ExceptionInInitializerError\nTest_java_lang_Float\nTest_java_lang_IllegalAccessError\nTest_java_lang_IllegalAccessException\nTest_java_lang_IllegalArgumentException\nTest_java_lang_IllegalMonitorStateException\nTest_java_lang_IllegalThreadStateException\nTest_java_lang_IncompatibleClassChangeError\nTest_java_lang_IndexOutOfBoundsException\nTest_java_lang_InstantiationError\nTest_java_lang_InstantiationException\nTest_java_lang_Integer\nTest_java_lang_InternalError\nTest_java_lang_InterruptedException\nTest_java_lang_LinkageError\nTest_java_lang_Long\nTest_java_lang_Math\nTest_java_lang_NegativeArraySizeException\nTest_java_lang_NoClassDefFoundError\nTest_java_lang_NoSuchFieldError\nTest_java_lang_NoSuchMethodError\nTest_java_lang_NullPointerException\nTest_java_lang_Number\nTest_java_lang_NumberFormatException\nTest_java_lang_Object\nTest_java_lang_OutOfMemoryError\nTest_java_lang_RuntimeException\nTest_java_lang_SecurityManager\nTest_java_lang_Short\nTest_java_lang_StackOverflowError\nTest_java_lang_String\nTest_java_lang_StringBuffer\nTest_java_lang_StringIndexOutOfBoundsException\nTest_java_lang_System\nTest_java_lang_Thread\nTest_java_lang_ThreadDeath\nTest_java_lang_ThreadGroup\nTest_java_lang_Throwable\nTest_java_lang_UnknownError\nTest_java_lang_UnsatisfiedLinkError\nTest_java_lang_VerifyError\nTest_java_lang_VirtualMachineError\nTest_java_lang_vm_Image\nTest_java_lang_vm_MemorySegment\nTest_java_lang_vm_ROMStoreException\nTest_java_lang_vm_VM\nTest_java_lang_Void\nTest_java_net_BindException\nTest_java_net_ConnectException\nTest_java_net_DatagramPacket\nTest_java_net_DatagramSocket\nTest_java_net_DatagramSocketImpl\nTest_java_net_InetAddress\nTest_java_net_NoRouteToHostException\nTest_java_net_PlainDatagramSocketImpl\nTest_java_net_PlainSocketImpl\nTest_java_net_Socket\nTest_java_net_SocketException\nTest_java_net_SocketImpl\nTest_java_net_SocketInputStream\nTest_java_net_SocketOutputStream\nTest_java_net_UnknownHostException\nTest_java_util_ArrayEnumerator\nTest_java_util_Date\nTest_java_util_EventObject\nTest_java_util_HashEnumerator\nTest_java_util_Hashtable\nTest_java_util_Properties\nTest_java_util_ResourceBundle\nTest_java_util_tm\nTest_java_util_Vector\n"
 
-  test("Constructor(OutputStream)") {
+  @Test def constructorOutputStream(): Unit = {
     val baos = new java.io.ByteArrayOutputStream()
     val os   = new java.io.BufferedOutputStream(baos)
     os.write(fileString.getBytes(), 0, 500)
   }
 
-  test("Constructor(OutputStream, Int)") {
+  @Test def constructorOutputStreamInt(): Unit = {
     val baos = new java.io.ByteArrayOutputStream()
     val os   = new java.io.BufferedOutputStream(baos, 1024)
     os.write(fileString.getBytes(), 0, 500)
   }
 
-  test("Size must be > 0") {
-    assertThrows[IllegalArgumentException] {
-      new BufferedOutputStream(null, 0)
-    }
+  @Test def sizeMustGreaterThan0(): Unit = {
+    assertThrows(classOf[IllegalArgumentException],
+                 new BufferedOutputStream(null, 0))
 
-    assertThrows[IllegalArgumentException] {
-      new BufferedOutputStream(null, -1)
-    }
+    assertThrows(classOf[IllegalArgumentException],
+                 new BufferedOutputStream(null, -1))
   }
 
-  test("flush()") {
+  @Test def flush(): Unit = {
     val baos = new ByteArrayOutputStream()
     val os   = new java.io.BufferedOutputStream(baos, 600)
     os.write(fileString.getBytes(), 0, 500)
@@ -50,7 +54,7 @@ object BufferedOutputStreamSuite extends tests.Suite {
     }
   }
 
-  test("write(Array[Byte], Int, Int)") {
+  @Test def writeArrayByteIntInt(): Unit = {
     val baos = new ByteArrayOutputStream()
     val os   = new BufferedOutputStream(baos, 512)
     os.write(fileString.getBytes(), 0, 500)
@@ -61,7 +65,7 @@ object BufferedOutputStreamSuite extends tests.Suite {
     assertEquals(500, bais.available())
     os.write(fileString.getBytes(), 500, 513)
     bais = new ByteArrayInputStream(baos.toByteArray())
-    assert(bais.available() >= 1000)
+    assertTrue(bais.available() >= 1000)
     val wbytes = new Array[Byte](1013)
     bais.read(wbytes, 0, 1013)
     assertEquals(new String(wbytes, 0, wbytes.length),
@@ -82,77 +86,48 @@ object BufferedOutputStreamSuite extends tests.Suite {
     assertEquals("ab", mos.getWritten())
   }
 
-  test("write(Array[Byte], Int, Int)") {
+  @Test def writeArrayByteIntIntOutOfBoundsException(): Unit = {
     val bos                        = new BufferedOutputStream(new ByteArrayOutputStream())
     val nullByteArray: Array[Byte] = null
     val byteArray                  = new Array[Byte](10)
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, -1, -1)
-    }
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, -1, 0)
-    }
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, -1, 1)
-    }
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, 0, -1)
-    }
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, 0, byteArray.length + 1)
-    }
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, 1, byteArray.length)
-    }
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, -1, byteArray.length)
-    }
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, byteArray.length, -1)
-    }
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, -1, -1))
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, -1, 0))
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, -1, 1))
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, 0, -1))
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, 0, byteArray.length + 1))
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, 1, byteArray.length))
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, -1, byteArray.length))
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, byteArray.length, -1))
     bos.write(byteArray, byteArray.length, 0)
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, byteArray.length, 1)
-    }
-
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, byteArray.length, 1))
     bos.write(byteArray, 0, 0)
     bos.write(byteArray, 0, 1)
     bos.write(byteArray, 1, byteArray.length - 1)
     bos.write(byteArray, 0, byteArray.length)
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, 1, -1)
-    }
-
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, 1, -1))
     bos.write(byteArray, 1, 0)
     bos.write(byteArray, 1, 1)
-
     bos.write(byteArray, byteArray.length, 0)
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, byteArray.length + 1, 0)
-    }
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, byteArray.length + 1, 1)
-    }
-
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, byteArray.length + 1, 0))
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, byteArray.length + 1, 1))
     bos.close()
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      bos.write(byteArray, -1, -1)
-    }
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 bos.write(byteArray, -1, -1))
   }
 
-  test("write(Int)") {
+  @Test def writeInt(): Unit = {
     val baos = new java.io.ByteArrayOutputStream()
     val os   = new java.io.BufferedOutputStream(baos)
     os.write('t')
@@ -166,7 +141,7 @@ object BufferedOutputStreamSuite extends tests.Suite {
     assertEquals('t', wbytes(0))
   }
 
-  test("close()") {
+  @Test def close(): Unit = {
     val buffos = new BufferedOutputStream(new ByteArrayOutputStream())
     buffos.write(new Array[Byte](0))
     val buffer = "1234567890".getBytes()
@@ -179,7 +154,7 @@ object BufferedOutputStreamSuite extends tests.Suite {
     buffos.close()
   }
 
-  test("Write scenario 1") {
+  @Test def writeScenario1(): Unit = {
     val byteArrayos                       = new ByteArrayOutputStream()
     var byteArrayis: ByteArrayInputStream = null
     val buffer                            = "1234567890".getBytes("UTF-8")
@@ -219,7 +194,7 @@ object BufferedOutputStreamSuite extends tests.Suite {
     (0 until 10).foreach { i => assertEquals(buffer(i), byteArrayis.read()) }
   }
 
-  test("Write scenario 2") {
+  @Test def writeScenario2(): Unit = {
     val byteArrayos                       = new ByteArrayOutputStream()
     var byteArrayis: ByteArrayInputStream = null
     val buffer                            = "1234567890".getBytes("UTF-8")
@@ -272,7 +247,7 @@ object BufferedOutputStreamSuite extends tests.Suite {
     buffos.close()
   }
 
-  test("Write scenario 3") {
+  @Test def writeScenario3(): Unit = {
     val byteArrayos                       = new ByteArrayOutputStream()
     var byteArrayis: ByteArrayInputStream = null
     val buffer                            = "1234567890".getBytes("UTF-8")
@@ -301,99 +276,66 @@ object BufferedOutputStreamSuite extends tests.Suite {
   }
 
   // Regression test for flush on closed stream
-  test("flush on closed stream") {
+  @Test def flushOnClosedStream(): Unit = {
     val bos =
       new BufferedOutputStream(new ByteArrayOutputStream())
     bos.close()
     bos.flush() // RI does not throw exception
   }
 
-  test("creating a buffer of negative size throws IllegalArgumentException") {
-    assertThrows[IllegalArgumentException] {
-      val out = new BufferedOutputStream(new ByteArrayOutputStream(), -1)
-    }
+  @Test def creatingBufferOfNegativeSizeThrowsIllegalArgumentException()
+      : Unit = {
+    assertThrows(classOf[IllegalArgumentException],
+                 new BufferedOutputStream(new ByteArrayOutputStream(), -1))
   }
 
-  test("write to closed Buffer throws IOException") {
-
+  @Test def writeToClosedBufferThrowsIOException(): Unit = {
     val out = new BufferedOutputStream(new ByteArrayOutputStream())
-
     out.close()
-
-    assertThrows[java.io.IOException](out.write(1))
-
+    assertThrows(classOf[java.io.IOException], out.write(1))
   }
 
-  test("simple write") {
-
+  @Test def simpleWrite(): Unit = {
     val arrayOut = new ByteArrayOutputStream()
-
-    val out = new BufferedOutputStream(arrayOut)
-
+    val out      = new BufferedOutputStream(arrayOut)
     out.write(0)
     out.write(1)
     out.write(2)
-
     out.flush()
-
     val ans = arrayOut.toByteArray
-
-    assert(ans(0) == 0 && ans(1) == 1 && ans(2) == 2)
+    assertTrue(ans(0) == 0 && ans(1) == 1 && ans(2) == 2)
   }
 
-  test("write without flush does nothing") {
+  @Test def writeWithoutFlushDoesNothing(): Unit = {
     val arrayOut = new ByteArrayOutputStream()
-
-    val out = new BufferedOutputStream(arrayOut)
-
+    val out      = new BufferedOutputStream(arrayOut)
     out.write(0)
     out.write(1)
     out.write(2)
-
-    assert(arrayOut.toByteArray.isEmpty)
+    assertTrue(arrayOut.toByteArray.isEmpty)
   }
 
-  test("simple write Array") {
-
-    val array = List(0, 1, 2).map(_.toByte).toArray[Byte]
-
+  @Test def simpleWriteArray(): Unit = {
+    val array    = List(0, 1, 2).map(_.toByte).toArray[Byte]
     val arrayOut = new ByteArrayOutputStream()
-
-    val out = new BufferedOutputStream(arrayOut)
-
+    val out      = new BufferedOutputStream(arrayOut)
     out.write(array, 0, 3)
-
     out.flush()
-
     val ans = arrayOut.toByteArray
-    assert(ans(0) == 0 && ans(1) == 1 && ans(2) == 2)
-
+    assertTrue(ans(0) == 0 && ans(1) == 1 && ans(2) == 2)
   }
 
-  test("write array with bad index or length throw exceptions") {
-
-    val array = List(0, 1, 2).map(_.toByte).toArray[Byte]
-
+  @Test def writeArrayWithBadIndexOrLengthThrowExceptions(): Unit = {
+    val array    = List(0, 1, 2).map(_.toByte).toArray[Byte]
     val arrayOut = new ByteArrayOutputStream()
-
-    val out = new BufferedOutputStream(arrayOut)
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      out.write(array, 0, 4)
-    }
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      out.write(array, 4, 3)
-    }
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      out.write(array, -1, 3)
-    }
-
-    assertThrows[ArrayIndexOutOfBoundsException] {
-      out.write(array, 4, -1)
-    }
-
+    val out      = new BufferedOutputStream(arrayOut)
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 out.write(array, 0, 4))
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 out.write(array, 4, 3))
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 out.write(array, -1, 3))
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                 out.write(array, 4, -1))
   }
-
 }
