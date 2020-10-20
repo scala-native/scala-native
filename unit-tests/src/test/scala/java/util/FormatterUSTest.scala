@@ -64,7 +64,7 @@ class FormatterUSTest {
 
   // delete the resource files if they exist
   @After
-  protected def tearDown(): Unit = {
+  def tearDown(): Unit = {
     if (notExist.exists()) notExist.delete()
     if (fileWithContent.exists()) fileWithContent.delete()
     if (readOnly.exists()) readOnly.delete()
