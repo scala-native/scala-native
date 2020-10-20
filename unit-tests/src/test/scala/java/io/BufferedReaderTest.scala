@@ -1,6 +1,9 @@
 package java.io
 
-object BufferedReaderSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
+
+class BufferedReaderTest {
   class MockReader extends Reader {
     var isClosed: Boolean = false
 
@@ -9,14 +12,14 @@ object BufferedReaderSuite extends tests.Suite {
     def read(cbuf: Array[Char], off: Int, len: Int): Int = 0
   }
 
-  test("Closing a `BufferedReader` closes its inner reader") {
+  @Test def closingBufferedReaderClosesInnerReader(): Unit = {
     val inner  = new MockReader
     val reader = new BufferedReader(inner)
     reader.close()
-    assert(inner.isClosed)
+    assertTrue(inner.isClosed)
   }
 
-  test("Closing twice is harmless") {
+  @Test def closingTwiceIsHarmless(): Unit = {
     val inner  = new MockReader
     val reader = new BufferedReader(inner)
     reader.close()
