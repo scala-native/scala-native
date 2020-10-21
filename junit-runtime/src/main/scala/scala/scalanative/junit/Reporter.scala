@@ -30,8 +30,8 @@ private[junit] final class Reporter(eventHandler: EventHandler,
     log(infoOrDebug, msg)
   }
 
-  def reportIgnored(method: Option[String], reason: Option[String]): Unit = {
-    logTestInfo(_.info, method, s"ignored ${reason.getOrElse("")}")
+  def reportIgnored(method: Option[String]): Unit = {
+    logTestInfo(_.info, method, "ignored")
     emitEvent(method, Status.Skipped)
   }
 

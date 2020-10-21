@@ -37,6 +37,5 @@ trait Bootstrapper {
 final class TestMetadata(
     val name: String,
     val ignored: Boolean,
-    val ignoreReason: Option[String],
     val annotation: org.junit.Test
 )
