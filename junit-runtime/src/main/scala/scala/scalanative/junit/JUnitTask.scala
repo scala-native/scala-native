@@ -34,10 +34,14 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
 
     @tailrec
     def runTests(tests: List[TestMetadata]): Try[Unit] = {
-      val (nextIgnored, other) = tests.span(_.ignored)
-
-      nextIgnored.foreach(t => reporter.reportIgnored(Some(t.name)))
-      ignored += nextIgnored.size
+      val (nextIgnored, other) = tests.span(_.testIgnored)
+      if (tests.exists(_.testClassIgnored)) {
+        reporter.reportIgnored(None)
+        ignored += 1
+      } else {
+        nextIgnored.foreach(t => reporter.reportIgnored(Some(t.name)))
+        ignored += nextIgnored.size
+      }
 
       other match {
         case t :: ts =>
