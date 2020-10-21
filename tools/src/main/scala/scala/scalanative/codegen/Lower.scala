@@ -438,8 +438,6 @@ object Lower {
 
       def genMethodLookup(): Unit = {
         val targets = obj.ty match {
-          case ScopeRef(scope) if sig.isCtor =>
-            scope.targets(sig).find(_.top == scope.name).toSeq
           case ScopeRef(scope) =>
             scope.targets(sig).toSeq
           case _ =>

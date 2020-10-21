@@ -159,7 +159,9 @@ final class Class(val attrs: Attrs,
       }
 
     add(this)
-    subclasses.foreach(add)
+    if (sig.isVirtual || out.isEmpty) {
+      subclasses.foreach(add)
+    }
 
     out
   }
