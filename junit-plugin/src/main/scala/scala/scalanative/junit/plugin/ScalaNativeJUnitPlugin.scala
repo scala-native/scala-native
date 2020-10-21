@@ -140,7 +140,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
                           JUnitAnnots.AfterClass),
           genCallOnParam(bootSym, Names.before, testClass, JUnitAnnots.Before),
           genCallOnParam(bootSym, Names.after, testClass, JUnitAnnots.After),
-          genTests(bootSym, testMethods),
+          genTests(bootSym, testClass, testMethods),
           genInvokeTest(bootSym, testClass, testMethods),
           genNewInstance(bootSym, testClass)
         )
@@ -197,8 +197,12 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
         typer.typedDefDef(newDefDef(sym, Block(calls: _*))())
       }
 
-      private def genTests(owner: ClassSymbol, tests: Scope): DefDef = {
-        val sym = owner.newMethodSymbol(Names.tests)
+      private def genTests(owner: ClassSymbol,
+                           testClass: ClassSymbol,
+                           tests: Scope): DefDef = {
+        val sym              = owner.newMethodSymbol(Names.tests)
+        val testClassIgnored = testClass.getAnnotation(JUnitAnnots.Ignore)
+
         sym.setInfoAndEnter(
           MethodType(Nil,
                      typeRef(NoType, ArrayClass, List(TestMetadataClass.tpe))))
@@ -209,10 +213,12 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
             test.getAnnotation(JUnitAnnots.Test).get.args: _*)
 
           val name = Literal(Constant(test.name.toString))
-          val ignored = Literal(
-            Constant(test.hasAnnotation(JUnitAnnots.Ignore)))
 
-          New(TestMetadataClass, name, ignored, reifiedAnnot)
+          val testIgnored = test.getAnnotation(JUnitAnnots.Ignore)
+          val ignored     = testIgnored.orElse(testClassIgnored)
+          val isIgnored   = Literal(Constant(ignored.isDefined))
+
+          New(TestMetadataClass, name, isIgnored, reifiedAnnot)
         }
 
         val rhs = ArrayValue(TypeTree(TestMetadataClass.tpe), metadata.toList)
