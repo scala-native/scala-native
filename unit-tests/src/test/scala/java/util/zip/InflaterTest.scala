@@ -112,7 +112,7 @@ class InflaterTest {
   var outPutDiction: Array[Byte] = null
 
   @Before
-  protected def setUp(): Unit = {
+  def setUp(): Unit = {
     outPutBuff1 = Array[Byte](120, 94, 99, 100, 102, 97, -25, 72, 45, 42, -87,
       52, 5, 0, 6, -12, 2, 17) ++ Array.fill[Byte](483)(0)
     outPutDiction = Array[Byte](120, 63, 13, 10, 107, 2, 20, 99, 97, 101, 102,

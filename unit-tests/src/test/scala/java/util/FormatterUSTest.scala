@@ -38,7 +38,7 @@ class FormatterUSTest {
 
   // setup resource files for testing
   @Before
-  protected def setUp(): Unit = {
+  def setUp(): Unit = {
     // disabled, doesn't work on Scala Native right now
     // root = System.getProperty("user.name").equalsIgnoreCase("root")
     notExist = File.createTempFile("notexist", null)
@@ -64,7 +64,7 @@ class FormatterUSTest {
 
   // delete the resource files if they exist
   @After
-  protected def tearDown(): Unit = {
+  def tearDown(): Unit = {
     if (notExist.exists()) notExist.delete()
     if (fileWithContent.exists()) fileWithContent.delete()
     if (readOnly.exists()) readOnly.delete()

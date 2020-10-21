@@ -1,8 +1,11 @@
 package java.io
 
-object FileWriterSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("write to new file") {
+class FileWriterTest {
+
+  @Test def writeToNewFile(): Unit = {
     val path    = "/tmp/new.file"
     val toWrite = "something"
 
@@ -13,8 +16,8 @@ object FileWriterSuite extends tests.Suite {
     val buffer    = new Array[Char](20)
     val fr        = new FileReader(path)
     val charsRead = fr.read(buffer)
-    assert(charsRead == toWrite.length)
-    assert(buffer.take(charsRead).mkString == toWrite)
+    assertTrue(charsRead == toWrite.length)
+    assertTrue(buffer.take(charsRead).mkString == toWrite)
     fr.close()
   }
 }

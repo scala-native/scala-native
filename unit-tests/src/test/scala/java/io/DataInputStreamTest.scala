@@ -1,10 +1,15 @@
 package java.io
 
-object DataInputStreamSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
+
+import scalanative.junit.utils.AssertThrows._
+
+class DataInputStreamTest {
 
   // readFully
 
-  test("readFully(b, off, len) - null buffer") {
+  @Test def readFullyBufOffLenNullBuffer(): Unit = {
 
     val inputArray =
       List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
@@ -13,12 +18,11 @@ object DataInputStreamSuite extends tests.Suite {
     val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
     val dis     = new DataInputStream(arrayIn)
 
-    assertThrows[NullPointerException] {
-      dis.readFully(null.asInstanceOf[Array[Byte]], 0, 1)
-    }
+    assertThrows(classOf[NullPointerException],
+                 dis.readFully(null.asInstanceOf[Array[Byte]], 0, 1))
   }
 
-  test("readFully(b, off, len) - invalid offset argument") {
+  @Test def readFullyBufOffLenInvalidOffsetArgument(): Unit = {
 
     val inputArray =
       List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
@@ -28,12 +32,11 @@ object DataInputStreamSuite extends tests.Suite {
     val dis         = new DataInputStream(arrayIn)
     val outputArray = new Array[Byte](iaLength)
 
-    assertThrows[IndexOutOfBoundsException] {
-      dis.readFully(outputArray, -1, 1)
-    }
+    assertThrows(classOf[IndexOutOfBoundsException],
+                 dis.readFully(outputArray, -1, 1))
   }
 
-  test("readFully(b, off, len) - invalid length argument") {
+  @Test def readFullyBufOffLenInvalidLengthArgument(): Unit = {
 
     val inputArray =
       List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
@@ -43,12 +46,11 @@ object DataInputStreamSuite extends tests.Suite {
     val dis         = new DataInputStream(arrayIn)
     val outputArray = new Array[Byte](iaLength)
 
-    assertThrows[IndexOutOfBoundsException] {
-      dis.readFully(outputArray, 0, -1)
-    }
+    assertThrows(classOf[IndexOutOfBoundsException],
+                 dis.readFully(outputArray, 0, -1))
   }
 
-  test("readFully(b, off, len) - invalid offset + length arguments") {
+  @Test def readFullyBufOffLenInvalidOffsetPlusLengthArguments(): Unit = {
 
     val inputArray =
       List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
@@ -58,12 +60,11 @@ object DataInputStreamSuite extends tests.Suite {
     val dis         = new DataInputStream(arrayIn)
     val outputArray = new Array[Byte](iaLength)
 
-    assertThrows[IndexOutOfBoundsException] {
-      dis.readFully(outputArray, 1, outputArray.length)
-    }
+    assertThrows(classOf[IndexOutOfBoundsException],
+                 dis.readFully(outputArray, 1, outputArray.length))
   }
 
-  test("readFully(b, off, len) - len == 0") {
+  @Test def readFullyBufOffLenMinusLen0(): Unit = {
 
     val inputArray = Array.tabulate[Byte](256)(i => i.toByte)
     val iaLength   = inputArray.length
@@ -82,12 +83,12 @@ object DataInputStreamSuite extends tests.Suite {
       val result   = outputArray(index) & 0xFF // want to print 0-255
       val expected = marker & 0xFF
 
-      assert(false,
-             s"byte at index ${index}: ${result} != expected: ${expected}")
+      assertTrue(s"byte at index ${index}: ${result} != expected: ${expected}",
+                 false)
     }
   }
 
-  test("readFully(b, off, len) - len == b.length") {
+  @Test def readFullyBufOffLenMinusLenEqualsLength(): Unit = {
 
     val inputArray = Array.tabulate[Byte](256)(i => i.toByte)
     val iaLength   = inputArray.length
@@ -107,12 +108,12 @@ object DataInputStreamSuite extends tests.Suite {
       val result   = outputArray(index) & 0xFF // want to print 0-255
       val expected = inputArray(index) & 0xFF
 
-      assert(false,
-             s"byte at index ${index}: ${result} != expected: ${expected}")
+      assertTrue(s"byte at index ${index}: ${result} != expected: ${expected}",
+                 false)
     }
   }
 
-  test("readFully(b, off, len) - patch middle of buffer") {
+  @Test def readFullyBufOffLenPatchMiddleOfBuffer(): Unit = {
 
     val inputArray = Array.tabulate[Byte](10)(i => (i + 20).toByte)
     val iaLength   = inputArray.length
@@ -137,12 +138,12 @@ object DataInputStreamSuite extends tests.Suite {
       val result   = outputArray(index) & 0xFF // want to print 0-255
       val expected = inputArray(index) & 0xFF
 
-      assert(false,
-             s"byte at index ${index}: ${result} != expected: ${expected}")
+      assertTrue(s"byte at index ${index}: ${result} != expected: ${expected}",
+                 false)
     }
   }
 
-  test("readFully(b, off, len) - unexpected end of file") {
+  @Test def readFullyBufOffLenUnexpectedEndOfFile(): Unit = {
 
     val inputArray = Array.tabulate[Byte](128)(i => i.toByte)
     val iaLength   = inputArray.length
@@ -152,12 +153,11 @@ object DataInputStreamSuite extends tests.Suite {
 
     val outputArray = Array.fill[Byte](iaLength + 1)(0.toByte)
 
-    assertThrows[EOFException] {
-      dis.readFully(outputArray, 0, outputArray.length)
-    }
+    assertThrows(classOf[EOFException],
+                 dis.readFully(outputArray, 0, outputArray.length))
   }
 
-  test("readFully(b) - null buffer") {
+  @Test def readFullyBufNullBuffer(): Unit = {
 
     val inputArray =
       List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
@@ -166,12 +166,11 @@ object DataInputStreamSuite extends tests.Suite {
     val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
     val dis     = new DataInputStream(arrayIn)
 
-    assertThrows[NullPointerException] {
-      dis.readFully(null.asInstanceOf[Array[Byte]])
-    }
+    assertThrows(classOf[NullPointerException],
+                 dis.readFully(null.asInstanceOf[Array[Byte]]))
   }
 
-  test("readFully(b)") {
+  @Test def readFullyBuf(): Unit = {
 
     val inputArray = Array.tabulate[Byte](256)(i => i.toByte).reverse
     val iaLength   = inputArray.length
@@ -190,8 +189,8 @@ object DataInputStreamSuite extends tests.Suite {
       val result   = outputArray(index) & 0xFF // want to print 0-255
       val expected = inputArray(index) & 0xFF
 
-      assert(false,
-             s"byte at index ${index}: ${result} != expected: ${expected}")
+      assertTrue(s"byte at index ${index}: ${result} != expected: ${expected}",
+                 false)
     }
   }
 

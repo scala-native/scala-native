@@ -131,7 +131,7 @@ class ZipInputStreamTest {
   }
 
   @Before
-  protected def setUp() {
+  def setUp() {
     zis = new ZipInputStream(new ByteArrayInputStream(zipFile))
     val bos   = new ByteArrayOutputStream()
     val zos   = new ZipOutputStream(bos)
