@@ -36,7 +36,8 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
     def runTests(tests: List[TestMetadata]): Try[Unit] = {
       val (nextIgnored, other) = tests.span(_.ignored)
 
-      nextIgnored.foreach(t => reporter.reportIgnored(Some(t.name)))
+      nextIgnored.foreach(t =>
+        reporter.reportIgnored(Some(t.name), t.ignoreReason))
       ignored += nextIgnored.size
 
       other match {
@@ -62,7 +63,8 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
 
     errors match {
       case e :: Nil if isAssumptionViolation(e) =>
-        reporter.reportIgnored(None)
+        reporter.reportIgnored(None,
+                               Some(s"assumption violated: ${e.getMessage}"))
         ignored += 1
 
       case es =>

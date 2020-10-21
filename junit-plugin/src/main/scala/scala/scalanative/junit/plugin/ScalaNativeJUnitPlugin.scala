@@ -218,7 +218,16 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
           val ignored     = testIgnored.orElse(testClassIgnored)
           val isIgnored   = Literal(Constant(ignored.isDefined))
 
-          New(TestMetadataClass, name, isIgnored, reifiedAnnot)
+          // We're not using `ignored` in order to get reason message of
+          // either `testIgnored` or, if it's missing, `testClassIgnored`
+          val ignoreReason: Tree = List(testIgnored, testClassIgnored)
+            .flatMap(_.flatMap(_.args.headOption))
+            .headOption match {
+            case Some(reason) => Apply(SomeModule, reason)
+            case None         => Ident(NoneModule)
+          }
+
+          New(TestMetadataClass, name, isIgnored, ignoreReason, reifiedAnnot)
         }
 
         val rhs = ArrayValue(TypeTree(TestMetadataClass.tpe), metadata.toList)
