@@ -26,5 +26,8 @@ bin/
 /.metals/
 /project/**/metals.sbt
 
+# Build Server Protocol, used by sbt
+/.bsp/
+
 # vscode
 /.vscode/
