@@ -21,7 +21,7 @@ trait Bootstrapper {
   def before(instance: AnyRef): Unit
   def after(instance: AnyRef): Unit
 
-  def testMetadata(): TestClassMetadata
+  def testClassMetadata(): TestClassMetadata
   def tests(): Array[TestMetadata]
   def invokeTest(instance: AnyRef, name: String): Future[Try[Unit]]
 

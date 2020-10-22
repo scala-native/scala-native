@@ -62,7 +62,7 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
     val result = runTestLifecycle {
       Success(())
     } { _ => catchAll(bootstrapper.beforeClass()) } { _ =>
-      runTests(bootstrapper.tests().toList, bootstrapper.testMetadata())
+      runTests(bootstrapper.tests().toList, bootstrapper.testClassMetadata())
     } { _ => catchAll(bootstrapper.afterClass()) }
 
     val (errors, timeInSeconds) = result

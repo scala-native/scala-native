@@ -53,14 +53,14 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
     }
 
     private object Names {
-      val beforeClass: TermName  = newTermName("beforeClass")
-      val afterClass: TermName   = newTermName("afterClass")
-      val before: TermName       = newTermName("before")
-      val after: TermName        = newTermName("after")
-      val testMetadata: TermName = newTermName("testMetadata")
-      val tests: TermName        = newTermName("tests")
-      val invokeTest: TermName   = newTermName("invokeTest")
-      val newInstance: TermName  = newTermName("newInstance")
+      val beforeClass: TermName       = newTermName("beforeClass")
+      val afterClass: TermName        = newTermName("afterClass")
+      val before: TermName            = newTermName("before")
+      val after: TermName             = newTermName("after")
+      val testClassMetadata: TermName = newTermName("testClassMetadata")
+      val tests: TermName             = newTermName("tests")
+      val invokeTest: TermName        = newTermName("invokeTest")
+      val newInstance: TermName       = newTermName("newInstance")
 
       val instance: TermName = newTermName("instance")
       val name: TermName     = newTermName("name")
@@ -204,7 +204,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
 
       private def genTestMetadata(owner: ClassSymbol,
                                   testClass: ClassSymbol): DefDef = {
-        val sym = owner.newMethodSymbol(Names.testMetadata)
+        val sym = owner.newMethodSymbol(Names.testClassMetadata)
 
         sym.setInfoAndEnter(
           MethodType(Nil, typeRef(NoType, TestClassMetadataClass, Nil))
