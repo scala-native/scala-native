@@ -179,7 +179,8 @@ class ArrayListTest {
     // Discovering code in re2s ExecTestSuite used .deep not sameElements.
     // Should have same result as sameElements, but via different path.
 
-    assertTrue("a1.toArray.deep != data.deep", arr1.deep == data.deep)
+    assertTrue("a1.toArray.deep != data.deep",
+               Arrays.deepEquals(arr1, data.asInstanceOf[Array[AnyRef]]))
   }
 
   @Test def toArrayArrayWhenArrayIsShorter(): Unit = {
