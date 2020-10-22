@@ -21,6 +21,7 @@ trait Bootstrapper {
   def before(instance: AnyRef): Unit
   def after(instance: AnyRef): Unit
 
+  def testMetadata(): TestClassMetadata
   def tests(): Array[TestMetadata]
   def invokeTest(instance: AnyRef, name: String): Future[Try[Unit]]
 
@@ -36,7 +37,17 @@ trait Bootstrapper {
  */
 final class TestMetadata(
     val name: String,
-    val testClassIgnored: Boolean,
-    val testIgnored: Boolean,
+    val ignored: Boolean,
     val annotation: org.junit.Test
+)
+
+/** Scala Native interal JUnit test class metadata
+ *
+ *  This class is public due to implementation details. Only the junit compiler
+ *  plugin may create instances of it.
+ *
+ *  Relying on this class directly is unspecified behavior.
+ *  */
+final class TestClassMetadata(
+    val ignored: Boolean
 )
