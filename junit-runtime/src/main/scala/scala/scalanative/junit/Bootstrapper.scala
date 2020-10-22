@@ -47,7 +47,7 @@ final class TestMetadata(
  *  plugin may create instances of it.
  *
  *  Relying on this class directly is unspecified behavior.
- *  */
+ */
 final class TestClassMetadata(
     val ignored: Boolean
 )
