@@ -582,7 +582,6 @@ lazy val tests =
     )
     .settings(noPublishSettings)
     .settings(
-      nativeConfig ~= (_.withMode(scalanative.build.Mode.releaseFast)),
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
       // nativeLinkerReporter := LinkerReporter.toFile(
@@ -617,8 +616,6 @@ lazy val sandbox =
     .settings(scalacOptions -= "-Xfatal-warnings")
     .settings(noPublishSettings)
     .settings(
-      nativeConfig ~= (_.withMode(scalanative.build.Mode.releaseFast))
-
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
     )
