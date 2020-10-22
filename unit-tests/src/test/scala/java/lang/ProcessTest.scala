@@ -58,13 +58,13 @@ class ProcessTest {
     val out =
       try {
         unistd.dup2(fd, unistd.STDOUT_FILENO)
-        fcntl.close(fd)
+        unistd.close(fd)
         val proc = new ProcessBuilder("ls", resourceDir).inheritIO().start()
         proc.waitFor(5, TimeUnit.SECONDS)
         readInputStream(new FileInputStream(f.toFile))
       } finally {
         unistd.dup2(savedFD, unistd.STDOUT_FILENO)
-        fcntl.close(savedFD)
+        unistd.close(savedFD)
       }
     assertTrue(out.split("\n").toSet == scripts)
   }
