@@ -1,0 +1,10 @@
+name: Sources Check
+on: [pull_request]
+jobs:
+  check-sources:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: ./scripts/check-cla
+      - run: ./scripts/check-lint
+

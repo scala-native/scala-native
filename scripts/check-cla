@@ -14,10 +14,3 @@ else
   echo "comment on the pull request to ask for a new check.";
   exit 1;
 fi;
-
-
-if [ -n "$CLANG_FORMAT_PATH" ]; then
-  scripts/clangfmt --test
-fi
-
-scripts/scalafmt --test
