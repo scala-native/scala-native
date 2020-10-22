@@ -12,7 +12,7 @@ class PathMatcherTest {
     assertTrue(matcher.matches(Paths.get("foo")))
   }
 
-  @Test def throwsUnsupportedOperationExceptionUnknownSyntaxIsUsed(): Unit = {
+  @Test def throwsUnsupportedOperationExceptionIfUnknownSyntaxIsUsed(): Unit = {
     assertThrows(classOf[UnsupportedOperationException],
                  getMatcher("foobar:blabla"))
   }
