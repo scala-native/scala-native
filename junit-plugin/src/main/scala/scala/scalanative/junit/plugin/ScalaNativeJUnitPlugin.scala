@@ -170,17 +170,19 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
         val sym = owner.newMethodSymbol(name)
         sym.setInfoAndEnter(MethodType(Nil, definitions.UnitTpe))
 
-        val calls = annotatedMethods(module, annot)
-          .map(gen.mkMethodCall(Ident(module), _, Nil, Nil))
-          .toList
+        val (publicCalls, nonPublicCalls) =
+          annotatedMethods(module, annot).partition(_.isPublic)
 
-        val nonPublicCalls = calls.filterNot(_.symbol.isPublic)
         if (nonPublicCalls.nonEmpty) {
           globalError(
             pos = module.pos,
             s"Methods marked with ${annot.nameString} annotation in $module must be public"
           )
         }
+
+        val calls = publicCalls
+          .map(gen.mkMethodCall(Ident(module), _, Nil, Nil))
+          .toList
 
         typer.typedDefDef(newDefDef(sym, Block(calls: _*))())
       }
@@ -198,17 +200,20 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
           MethodType(List(instanceParam), definitions.UnitTpe))
 
         val instance = castParam(instanceParam, testClass)
-        val calls = annotatedMethods(testClass, annot)
-          .map(gen.mkMethodCall(instance, _, Nil, Nil))
-          .toList
 
-        val nonPublicCalls = calls.filterNot(_.symbol.isPublic)
+        val (publicCalls, nonPublicCalls) =
+          annotatedMethods(testClass, annot).partition(_.isPublic)
+
         if (nonPublicCalls.nonEmpty) {
           globalError(
             pos = testClass.pos,
             s"Methods marked with ${annot.nameString} annotation in $testClass must be public"
           )
         }
+
+        val calls = publicCalls
+          .map(gen.mkMethodCall(instance, _, Nil, Nil))
+          .toList
 
         typer.typedDefDef(newDefDef(sym, Block(calls: _*))())
       }
