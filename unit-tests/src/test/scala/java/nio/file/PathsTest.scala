@@ -32,17 +32,16 @@ class PathsTest {
 
   @Test def pathsGetUriThrowsExceptionWhenSchemeIsMissing(): Unit = {
     assertThrows(classOf[IllegalArgumentException],
-      Paths.get(new URI(null, null, null, 0, "foo", null, null))
-    )
+                 Paths.get(new URI(null, null, null, 0, "foo", null, null)))
   }
 
-  @Test def Paths.get(URI) throws an exception when the scheme is different from `file`(): Unit = {
-    assertThrows(classOf[FileSystemNotFoundException],
-      Paths.get(new URI("http", null, "google.com", 0, "/", null, null))
-    )
+  @Test def pathsGetUriThrowsExceptionWhenSchemeIsNotFile(): Unit = {
+    assertThrows(
+      classOf[FileSystemNotFoundException],
+      Paths.get(new URI("http", null, "google.com", 0, "/", null, null)))
   }
 
-  @Test def Paths.get(URI) returns a path if the scheme is `file`(): Unit = {
+  @Test def pathsGetUriReturnsPathIfSchemeIsFile(): Unit = {
     val path =
       Paths.get(new URI("file", null, null, 0, "/foo/bar", null, null))
     assertTrue(path.toString == "/foo/bar")
