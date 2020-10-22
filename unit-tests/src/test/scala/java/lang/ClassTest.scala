@@ -1,6 +1,6 @@
 package java.lang
 
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.Assert._
 
 class ClassTest {
@@ -138,5 +138,60 @@ class ClassTest {
   @Test def isInterface(): Unit = {
     assertFalse(classOf[java.lang.Class[_]].isInterface)
     assertTrue(classOf[java.lang.Runnable].isInterface)
+  }
+
+  private def assertDiffClass(l: java.lang.Class[_],
+                              r: java.lang.Class[_]): Unit = {
+    assertTrue(s"$l eq $r", l ne r)
+  }
+
+  private def assertEqualClass(l: java.lang.Class[_],
+                               r: java.lang.Class[_]): Unit = {
+    assertTrue(s"$l ne $r", l eq r)
+  }
+
+  @Test def classInstancesAreCache(): Unit = {
+
+    val cls1 = "asd".getClass
+    val cls2 = "xyz".getClass
+
+    assertEqualClass(classOf[String], cls1)
+    assertEqualClass(cls1, cls2)
+    assertEqualClass(classOf[String], classOf[String])
+
+    assertTrue(123L.getClass != 42.getClass)
+  }
+
+  @Test def distinguishableClassInstancesForPrimitiveArrays(): Unit = {
+    val cls1 = Array.empty[Int].getClass
+    val cls2 = Array.empty[Array[Int]].getClass
+
+    assertEqualClass(cls1, cls1)
+    assertEqualClass(cls1, classOf[Array[Int]])
+    assertEqualClass(cls2, classOf[Array[Array[Int]]])
+    assertDiffClass(cls1, cls2)
+
+    assertDiffClass(cls1, classOf[Array[scala.Long]])
+    assertDiffClass(cls1, classOf[Array[scala.Boolean]])
+    assertDiffClass(cls1, classOf[Array[scala.Float]])
+    assertDiffClass(cls1, classOf[Array[scala.Double]])
+    assertDiffClass(cls1, classOf[Array[scala.Short]])
+    assertDiffClass(cls1, classOf[Array[scala.Byte]])
+    assertDiffClass(cls1, classOf[Array[Object]])
+  }
+
+  @Ignore("#1435, nested arrays are stored as ObjectArray")
+  @Test def distinguishableClassInstancesForNestedPrimitiveArrays(): Unit = {
+    val cls1 = classOf[Array[Array[Int]]]
+    val cls2 = classOf[Array[Array[Array[Int]]]]
+    assertDiffClass(cls1, cls2)
+  }
+
+  @Ignore("#1435, all object arrays are classOf[ObjectArray]")
+  @Test def distinguishableClassInstancesForNestedObjectArrays(): Unit = {
+    val cls1 = Array.empty[String].getClass
+    val cls2 = Array.empty[Array[String]].getClass
+
+    assertDiffClass(cls1, cls2)
   }
 }
