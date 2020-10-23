@@ -1,7 +1,7 @@
 /*
  * Ported from Scala.js
  *   commit SHA1: f7be410
- *   dated:  2020-10-12
+ *   dated: 2020-10-12
  */
 
 package java.util
