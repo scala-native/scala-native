@@ -738,13 +738,13 @@ abstract class ByteBufferTest extends BaseBufferTest {
                           0xab.toByte)
 
     buf.order(ByteOrder.BIG_ENDIAN)
-    assertEquals(3.141592f, buf.getFloat())
+    assertEquals(3.141592f, buf.getFloat(), 0.0f)
     assertEquals(4, buf.position())
-    assertEquals(151.189f, buf.getFloat())
+    assertEquals(151.189f, buf.getFloat(), 0.0f)
 
     buf.order(ByteOrder.LITTLE_ENDIAN)
     buf.position(6)
-    assertEquals(-7.2966893e-13f, buf.getFloat())
+    assertEquals(-7.2966893e-13f, buf.getFloat(), 0.0f)
 
     assertThrows(classOf[BufferUnderflowException], buf.getFloat())
   }
@@ -799,13 +799,13 @@ abstract class ByteBufferTest extends BaseBufferTest {
                           0xab.toByte)
 
     buf.order(ByteOrder.BIG_ENDIAN)
-    assertEquals(3.141592f, buf.getFloat(0))
+    assertEquals(3.141592f, buf.getFloat(0), 0.0f)
     assertEquals(0, buf.position())
-    assertEquals(151.189f, buf.getFloat(4))
+    assertEquals(151.189f, buf.getFloat(4), 0.0f)
 
     buf.order(ByteOrder.LITTLE_ENDIAN)
     buf.position(8)
-    assertEquals(-7.2966893e-13f, buf.getFloat(6))
+    assertEquals(-7.2966893e-13f, buf.getFloat(6), 0.0f)
 
     assertThrows(classOf[IndexOutOfBoundsException], buf.getFloat(7))
   }
@@ -872,9 +872,9 @@ abstract class ByteBufferTest extends BaseBufferTest {
     assertEquals(0, floatBuf1.position())
     assertEquals(2, floatBuf1.limit())
     assertEquals(ByteOrder.BIG_ENDIAN, floatBuf1.order)
-    assertEquals(8.120758e20f, floatBuf1.get(1))
+    assertEquals(8.120758e20f, floatBuf1.get(1), 0.0f)
     assertEquals(0, floatBuf1.position())
-    assertEquals(3.141592f, floatBuf1.get())
+    assertEquals(3.141592f, floatBuf1.get(), 0.0f)
     assertEquals(1, floatBuf1.position())
 
     buf.order(ByteOrder.LITTLE_ENDIAN)
@@ -884,9 +884,9 @@ abstract class ByteBufferTest extends BaseBufferTest {
     assertEquals(0, floatBuf2.position())
     assertEquals(2, floatBuf2.limit())
     assertEquals(ByteOrder.LITTLE_ENDIAN, floatBuf2.order)
-    assertEquals(151.189f, floatBuf2.get(1))
+    assertEquals(151.189f, floatBuf2.get(1), 0.0f)
     assertEquals(0, floatBuf2.position())
-    assertEquals(-6.3017908e14f, floatBuf2.get())
+    assertEquals(-6.3017908e14f, floatBuf2.get(), 0.0f)
     assertEquals(1, floatBuf2.position())
   }
 
@@ -962,13 +962,13 @@ abstract class ByteBufferTest extends BaseBufferTest {
     )
 
     buf.order(ByteOrder.BIG_ENDIAN)
-    assertEquals(Math.PI, buf.getDouble())
+    assertEquals(Math.PI, buf.getDouble(), 0.0)
     assertEquals(8, buf.position())
-    assertEquals(1511.1989, buf.getDouble())
+    assertEquals(1511.1989, buf.getDouble(), 0.0)
 
     buf.order(ByteOrder.LITTLE_ENDIAN)
     buf.position(12)
-    assertEquals(-3.492426300334232e-51, buf.getDouble())
+    assertEquals(-3.492426300334232e-51, buf.getDouble(), 0.0)
 
     assertThrows(classOf[BufferUnderflowException], buf.getDouble())
   }
@@ -1047,13 +1047,13 @@ abstract class ByteBufferTest extends BaseBufferTest {
     )
 
     buf.order(ByteOrder.BIG_ENDIAN)
-    assertEquals(Math.PI, buf.getDouble(0))
+    assertEquals(Math.PI, buf.getDouble(0), 0.0)
     assertEquals(0, buf.position())
-    assertEquals(1511.1989, buf.getDouble(8))
+    assertEquals(1511.1989, buf.getDouble(8), 0.0)
 
     buf.order(ByteOrder.LITTLE_ENDIAN)
     buf.position(8)
-    assertEquals(-3.492426300334232e-51, buf.getDouble(12))
+    assertEquals(-3.492426300334232e-51, buf.getDouble(12), 0.0)
 
     assertThrows(classOf[IndexOutOfBoundsException], buf.getDouble(15))
   }
@@ -1143,9 +1143,9 @@ abstract class ByteBufferTest extends BaseBufferTest {
     assertEquals(0, doubleBuf1.position())
     assertEquals(2, doubleBuf1.limit())
     assertEquals(ByteOrder.BIG_ENDIAN, doubleBuf1.order)
-    assertEquals(-8.642954761616149e-63, doubleBuf1.get(1))
+    assertEquals(-8.642954761616149e-63, doubleBuf1.get(1), 0.0)
     assertEquals(0, doubleBuf1.position())
-    assertEquals(Math.PI, doubleBuf1.get())
+    assertEquals(Math.PI, doubleBuf1.get(), 0.0)
     assertEquals(1, doubleBuf1.position())
 
     buf.order(ByteOrder.LITTLE_ENDIAN)
@@ -1155,9 +1155,9 @@ abstract class ByteBufferTest extends BaseBufferTest {
     assertEquals(0, doubleBuf2.position())
     assertEquals(2, doubleBuf2.limit())
     assertEquals(ByteOrder.LITTLE_ENDIAN, doubleBuf2.order)
-    assertEquals(1511.1989, doubleBuf2.get(1))
+    assertEquals(1511.1989, doubleBuf2.get(1), 0.0)
     assertEquals(0, doubleBuf2.position())
-    assertEquals(3.207375630676366e-192, doubleBuf2.get())
+    assertEquals(3.207375630676366e-192, doubleBuf2.get(), 0.0)
     assertEquals(1, doubleBuf2.position())
   }
 
