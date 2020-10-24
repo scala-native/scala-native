@@ -15,6 +15,7 @@ import org.junit.Assert._
 import scalanative.junit.utils.AssertThrows._
 
 class FilesTest {
+  import FilesTest._
 
   @Test def filesCopyCanCopyToNonExistingFile(): Unit = {
     val targetFile = File.createTempFile("test", ".tmp")
@@ -1520,7 +1521,9 @@ class FilesTest {
 
     strings.toSet
   }
+}
 
+object FilesTest {
   def makeTemporaryDir(): File = {
     val file = File.createTempFile("test", ".tmp")
     assertTrue(file.delete())

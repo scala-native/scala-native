@@ -1,11 +1,11 @@
 package java.nio.file
 
-import FilesSuite.withTemporaryDirectory
-
 import org.junit.Test
 import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows._
+
+import FilesTest.withTemporaryDirectory
 
 class DirectoryStreamTest {
 
