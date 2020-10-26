@@ -243,6 +243,8 @@ trait Eval { self: Interflow =>
             Seq.empty
           case ExactClassRef(cls, _) =>
             cls.resolve(sig).toSeq
+          case ClassRef(cls) if !sig.isVirtual =>
+            cls.resolve(sig).toSeq
           case ScopeRef(scope) =>
             scope.targets(sig)
           case _ =>
