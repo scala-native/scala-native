@@ -6,4 +6,3 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: ./scripts/check-cla.sh
-
