@@ -1,9 +1,10 @@
 package java.nio
 
+// Ported from Scala.js
+
 import java.nio.BufferFactory.CharBufferFactory
 import java.nio.ByteBufferFactories._
 
-// Ported from Scala.js
 abstract class CharBufferTest extends BaseBufferTest {
   type Factory = BufferFactory.CharBufferFactory
 
@@ -37,25 +38,25 @@ abstract class CharBufferTest extends BaseBufferTest {
   }
 }
 
-object AllocCharBufferTest extends CharBufferTest {
+class AllocCharBufferTest extends CharBufferTest {
   val factory: CharBufferFactory = new AllocCharBufferFactory
 }
 
-object WrappedCharBufferTest extends CharBufferTest {
+class WrappedCharBufferTest extends CharBufferTest {
   val factory: CharBufferFactory = new WrappedCharBufferFactory
 }
 
-object WrappedCharReadOnlyBufferTest extends CharBufferTest {
+class WrappedCharReadOnlyBufferTest extends CharBufferTest {
   val factory: CharBufferFactory =
     new WrappedCharBufferFactory with BufferFactory.ReadOnlyBufferFactory
 }
 
-object AllocCharSlicedBufferTest extends CharBufferTest {
+class AllocCharSlicedBufferTest extends CharBufferTest {
   val factory: CharBufferFactory =
     new AllocCharBufferFactory with BufferFactory.SlicedBufferFactory
 }
 
-object CharBufferWrappingACharSequenceTest extends CharBufferTest {
+class CharBufferWrappingACharSequenceTest extends CharBufferTest {
 
   val factory: CharBufferFactory = new CharBufferWrappingACharSequenceFactory
 
@@ -86,7 +87,7 @@ object CharBufferWrappingACharSequenceTest extends CharBufferTest {
   }
 }
 
-object SlicedCharBufferWrappingACharSequenceTest extends CharBufferTest {
+class SlicedCharBufferWrappingACharSequenceTest extends CharBufferTest {
 
   val factory: CharBufferFactory =
     new SlicedCharBufferWrappingACharSequenceFactory
@@ -132,27 +133,27 @@ abstract class CharViewOfByteBufferTest(
     new ByteBufferCharViewFactory(byteBufferFactory, order)
 }
 
-object CharViewOfAllocByteBufferBigEndianTest
+class CharViewOfAllocByteBufferBigEndianTest
     extends CharViewOfByteBufferTest(new AllocByteBufferFactory,
                                      ByteOrder.BIG_ENDIAN)
 
-object CharViewOfWrappedByteBufferBigEndianTest
+class CharViewOfWrappedByteBufferBigEndianTest
     extends CharViewOfByteBufferTest(new WrappedByteBufferFactory,
                                      ByteOrder.BIG_ENDIAN)
 
-object CharViewOfSlicedAllocByteBufferBigEndianTest
+class CharViewOfSlicedAllocByteBufferBigEndianTest
     extends CharViewOfByteBufferTest(new SlicedAllocByteBufferFactory,
                                      ByteOrder.BIG_ENDIAN)
 
-object CharViewOfAllocByteBufferLittleEndianTest
+class CharViewOfAllocByteBufferLittleEndianTest
     extends CharViewOfByteBufferTest(new AllocByteBufferFactory,
                                      ByteOrder.LITTLE_ENDIAN)
 
-object CharViewOfWrappedByteBufferLittleEndianTest
+class CharViewOfWrappedByteBufferLittleEndianTest
     extends CharViewOfByteBufferTest(new WrappedByteBufferFactory,
                                      ByteOrder.LITTLE_ENDIAN)
 
-object CharViewOfSlicedAllocByteBufferLittleEndianTest
+class CharViewOfSlicedAllocByteBufferLittleEndianTest
     extends CharViewOfByteBufferTest(new SlicedAllocByteBufferFactory,
                                      ByteOrder.LITTLE_ENDIAN)
 
@@ -168,26 +169,26 @@ abstract class ReadOnlyCharViewOfByteBufferTest(
 
 }
 
-object ReadOnlyCharViewOfAllocByteBufferBigEndianTest
+class ReadOnlyCharViewOfAllocByteBufferBigEndianTest
     extends ReadOnlyCharViewOfByteBufferTest(new AllocByteBufferFactory,
                                              ByteOrder.BIG_ENDIAN)
 
-object ReadOnlyCharViewOfWrappedByteBufferBigEndianTest
+class ReadOnlyCharViewOfWrappedByteBufferBigEndianTest
     extends ReadOnlyCharViewOfByteBufferTest(new WrappedByteBufferFactory,
                                              ByteOrder.BIG_ENDIAN)
 
-object ReadOnlyCharViewOfSlicedAllocByteBufferBigEndianTest
+class ReadOnlyCharViewOfSlicedAllocByteBufferBigEndianTest
     extends ReadOnlyCharViewOfByteBufferTest(new SlicedAllocByteBufferFactory,
                                              ByteOrder.BIG_ENDIAN)
 
-object ReadOnlyCharViewOfAllocByteBufferLittleEndianTest
+class ReadOnlyCharViewOfAllocByteBufferLittleEndianTest
     extends ReadOnlyCharViewOfByteBufferTest(new AllocByteBufferFactory,
                                              ByteOrder.LITTLE_ENDIAN)
 
-object ReadOnlyCharViewOfWrappedByteBufferLittleEndianTest
+class ReadOnlyCharViewOfWrappedByteBufferLittleEndianTest
     extends ReadOnlyCharViewOfByteBufferTest(new WrappedByteBufferFactory,
                                              ByteOrder.LITTLE_ENDIAN)
 
-object ReadOnlyCharViewOfSlicedAllocByteBufferLittleEndianTest
+class ReadOnlyCharViewOfSlicedAllocByteBufferLittleEndianTest
     extends ReadOnlyCharViewOfByteBufferTest(new SlicedAllocByteBufferFactory,
                                              ByteOrder.LITTLE_ENDIAN)
