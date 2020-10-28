@@ -1,0 +1,12 @@
+name: Check Lint
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+jobs:
+  check-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: ./scripts/check-lint.sh
