@@ -579,6 +579,7 @@ lazy val tests =
     .settings(
       scalacOptions -= "-deprecation",
       scalacOptions += "-deprecation:false"
+      //scalacOptions += "-Ywarn-unused-import",
     )
     .settings(noPublishSettings)
     .settings(
