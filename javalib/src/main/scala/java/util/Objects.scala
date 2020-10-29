@@ -1,10 +1,12 @@
 /*
  * Ported from Scala.js
- *   commit SHA1: e07d99d
- *   dated: 2019-07-31
+ *   commit SHA1: 558e8a0
+ *   dated: 2020-10-20
  */
 
 package java.util
+
+import java.util.function.Supplier
 
 import scala.reflect.ClassTag
 
@@ -76,9 +78,8 @@ object Objects {
   def nonNull(obj: Any): Boolean =
     obj != null
 
-  // Requires the implementation of java.util.function
-  // @inline
-  // def requireNonNull[T](obj: T, messageSupplier: Supplier[String]): T =
-  //   if (obj == null) throw new NullPointerException(messageSupplier.get())
-  //   else obj
+  @inline
+  def requireNonNull[T](obj: T, messageSupplier: Supplier[String]): T =
+    if (obj == null) throw new NullPointerException(messageSupplier.get())
+    else obj
 }

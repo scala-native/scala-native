@@ -1,7 +1,7 @@
 /*
  * Ported from Scala.js
- *   commit SHA1:  d94325e
- *   dated: Oct 8, 2020
+ *   commit SHA1: 558e8a0
+ *   dated: 2020-10-20
  */
 
 package org.scalanative.testsuite.javalib.util
@@ -10,7 +10,7 @@ import java.{util => ju}
 
 import org.junit.Test
 import org.junit.Assert._
-// import org.scalanative.testsuite.utils.AssertThrows._
+
 import scala.scalanative.junit.utils.AssertThrows._
 
 class ObjectsTest {
@@ -90,6 +90,27 @@ class ObjectsTest {
                  ju.Objects.requireNonNull(null, "message"))
     assertEquals("abc", ju.Objects.requireNonNull("abc"))
     assertEquals("abc", ju.Objects.requireNonNull("abc", ""))
+  }
+
+  @Test def requireNonNullWithMsgSupplier(): Unit = {
+    val message = "All is well!"
+
+    val successSupplier = new ju.function.Supplier[String] {
+      def get(): String = message
+    }
+
+    val failureSupplier = new ju.function.Supplier[String] {
+      def get(): String = {
+        throw new AssertionError(
+          "Objects.requireNonNull() should not have called Supplier")
+      }
+    }
+
+    val e = expectThrows(classOf[NullPointerException],
+                         ju.Objects.requireNonNull(null, successSupplier))
+    assertEquals(message, e.getMessage())
+
+    assertEquals("abc", ju.Objects.requireNonNull("abc", failureSupplier))
   }
 
   @Test def isNull(): Unit = {
