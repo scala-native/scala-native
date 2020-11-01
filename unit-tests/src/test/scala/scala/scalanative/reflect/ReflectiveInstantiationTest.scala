@@ -1,14 +1,18 @@
 package scala.scalanative
-
 package reflect
 
-// Ported from Scala.js.
+// Ported from Scala.js
+
+import org.junit.Test
+import org.junit.Assert._
+
+import scalanative.junit.utils.AssertThrows._
 
 import scala.scalanative.reflect._
 import scala.scalanative.reflect.annotation._
 import scala.scalanative.unsafe._
 
-object ReflectiveInstantiationSuite extends tests.Suite {
+class ReflectiveInstantiationTest {
   import ReflectTest.{Accessors, PtrAccessors, VC}
 
   private final val Prefix = "scala.scalanative.reflect.ReflectTest$"
@@ -60,7 +64,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     Prefix + "ClassWithPtrArg"
   }
 
-  test("testClassRuntimeClass") {
+  @Test def testClassRuntimeClass(): Unit = {
     for {
       name <- Seq(NameClassEnableDirect,
                   NameClassEnableDirectNoZeroArgCtor,
@@ -76,7 +80,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     }
   }
 
-  test("testObjectRuntimeClass") {
+  @Test def testObjectRuntimeClass(): Unit = {
     for {
       name <- Seq(NameObjectEnableDirect, NameObjectEnableIndirect)
     } {
@@ -89,7 +93,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     }
   }
 
-  test("testClassCannotBeFound") {
+  @Test def testClassCannotBeFound(): Unit = {
     for {
       name <- Seq(
         NameObjectEnableDirect,
@@ -110,7 +114,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     }
   }
 
-  test("testObjectCannotBeFound") {
+  @Test def testObjectCannotBeFound(): Unit = {
     for {
       name <- Seq(
         NameClassEnableDirect,
@@ -132,7 +136,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     }
   }
 
-  test("testClassNoArgCtor") {
+  @Test def testClassNoArgCtor(): Unit = {
     for (name <- Seq(NameClassEnableDirect, NameClassEnableIndirect)) {
       val optClassData = Reflect.lookupInstantiatableClass(name)
       assertTrue(optClassData.isDefined)
@@ -144,7 +148,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     }
   }
 
-  test("testClassNoArgCtorErrorCase") {
+  @Test def testClassNoArgCtorErrorCase(): Unit = {
     for (name <- Seq(NameClassEnableDirectNoZeroArgCtor,
                      NameClassEnableIndirectNoZeroArgCtor)) {
       val optClassData = Reflect.lookupInstantiatableClass(name)
@@ -157,7 +161,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     }
   }
 
-  test("testClassCtorWithArgs") {
+  @Test def testClassCtorWithArgs(): Unit = {
     for (name <- Seq(NameClassEnableDirect,
                      NameClassEnableDirectNoZeroArgCtor,
                      NameClassEnableIndirect,
@@ -199,7 +203,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     }
   }
 
-  test("testClassCtorWthPtrArg") {
+  @Test def testClassCtorWthPtrArg(): Unit = {
     import ReflectTest.ClassWithPtrArg
 
     val optClassData = Reflect.lookupInstantiatableClass(NameClassWithPtrArg)
@@ -236,7 +240,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     assertEquals(null, instance.p)
   }
 
-  test("testInnerClass") {
+  @Test def testInnerClass(): Unit = {
     import ReflectTest.ClassWithInnerClassWithEnableReflectiveInstantiation
 
     val outer = new ClassWithInnerClassWithEnableReflectiveInstantiation(15)
@@ -254,7 +258,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     assertEquals("babar", instanceOuterString.y)
   }
 
-  test("testLocalClass") {
+  @Test def testLocalClass(): Unit = {
     @EnableReflectiveInstantiation
     class LocalClassWithEnableReflectiveInstantiation
 
@@ -263,7 +267,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
                 Reflect.lookupInstantiatableClass(fqcn).isDefined)
   }
 
-  test("testObjectLoad") {
+  @Test def testObjectLoad(): Unit = {
     for (name <- Seq(NameObjectEnableDirect, NameObjectEnableIndirect)) {
       val optClassData = Reflect.lookupLoadableModuleClass(name)
       assertTrue(optClassData.isDefined)
@@ -275,12 +279,14 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     }
   }
 
-  test("testInnerObjectWithEnableReflectiveInstantiation_issue_3228") {
+  @Test def testInnerObjectWithEnableReflectiveInstantiationIssue3228()
+      : Unit = {
     assertFalse(Reflect.lookupLoadableModuleClass(NameInnerObject).isDefined)
     assertFalse(Reflect.lookupInstantiatableClass(NameInnerObject).isDefined)
   }
 
-  test("testLocalClassWithReflectiveInstantiationInLambda_issue_3227") {
+  @Test def testLocalClassWithReflectiveInstantiationInLambdaIssue3227()
+      : Unit = {
     // Test that the presence of the following code does not prevent linking
     { () =>
       @EnableReflectiveInstantiation
