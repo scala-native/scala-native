@@ -1,7 +1,12 @@
 package scala.scalanative
 package unsafe
 
-object ZoneSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
+
+import scalanative.junit.utils.AssertThrows._
+
+class ZoneTest {
   private def assertAccessible(bptr: Ptr[_], n: Int) {
     val ptr = bptr.asInstanceOf[Ptr[Int]]
     var i   = 0
@@ -17,10 +22,10 @@ object ZoneSuite extends tests.Suite {
       i += 1
     }
 
-    assert(sum == (0 until n).sum)
+    assertTrue(sum == (0 until n).sum)
   }
 
-  test("zone allocator alloc with apply") {
+  @Test def zoneAllocatorAllocWithApply(): Unit = {
     Zone { implicit z =>
       val ptr = z.alloc(64 * sizeof[Int])
 
@@ -32,10 +37,10 @@ object ZoneSuite extends tests.Suite {
     }
   }
 
-  test("zone allocator alloc with open") {
+  @Test def zoneAllocatorAllocWithOpen(): Unit = {
     implicit val zone: Zone = Zone.open()
-    assert(zone.isOpen)
-    assert(!zone.isClosed)
+    assertTrue(zone.isOpen)
+    assertFalse(zone.isClosed)
 
     val ptr = zone.alloc(64 * sizeof[Int])
 
@@ -46,17 +51,17 @@ object ZoneSuite extends tests.Suite {
     assertAccessible(ptr2, 128)
 
     zone.close()
-    assert(!zone.isOpen)
-    assert(zone.isClosed)
+    assertFalse(zone.isOpen)
+    assertTrue(zone.isClosed)
   }
 
-  test("alloc throws exception if zone allocator is closed") {
+  @Test def allocThrowsExceptionIfZoneAllocatorIsClosed(): Unit = {
     implicit val zone: Zone = Zone.open()
 
     zone.alloc(64 * sizeof[Int])
 
     zone.close()
 
-    assertThrows[IllegalStateException](zone.alloc(64 * sizeof[Int]))
+    assertThrows(classOf[IllegalStateException], zone.alloc(64 * sizeof[Int]))
   }
 }
