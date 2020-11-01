@@ -1,11 +1,14 @@
 package scala.scalanative
 package libc
 
+import java.{lang => jl}
+
+import org.junit.Test
+import org.junit.Assert._
+
 import scalanative.unsafe._
 import scalanative.libc.complex._
 import scalanative.libc.complexOps._
-
-import java.{lang => jl}
 
 /** Reference
  * http://en.cppreference.com/w/c/numeric/complex
@@ -25,7 +28,7 @@ import java.{lang => jl}
  *
  * Example printed in hex: 0x1.0p-23 (2*ulp) 0x1.0p-24 (ulp)
  */
-object CComplexSuite extends tests.Suite {
+class CComplexTest {
   // change for debug
   val debug = false
   // shared values for special calculations
@@ -52,7 +55,7 @@ object CComplexSuite extends tests.Suite {
 
   def assertEqualsComplexF(act: Ptr[CFloatComplex],
                            exp: Ptr[CFloatComplex]): Unit =
-    assert(isAlmostEqual(act.re, exp.re) && isAlmostEqual(act.im, exp.im))
+    assertTrue(isAlmostEqual(act.re, exp.re) && isAlmostEqual(act.im, exp.im))
 
   def tf(implicit z: Zone) = res(real.toFloat, imag.toFloat)
 
@@ -61,122 +64,143 @@ object CComplexSuite extends tests.Suite {
   def res(real: Float, imag: Float)(implicit z: Zone) =
     alloc[CFloatComplex].init(real.toFloat, imag.toFloat)
 
-  test("cacosf") {
+  @Test def testCacosf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(cacosf(tf, buff),
                            res(toFloat(0x3f67910a), toFloat(0xbf87d7dc)))
     }
   }
-  test("casinf") {
+
+  @Test def testCasinf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(casinf(tf, buff),
                            res(toFloat(0x3f2a8eab), toFloat(0x3f87d7dc)))
     }
   }
-  test("catanf") {
+
+  @Test def testCatanf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(catanf(tf, buff),
                            res(toFloat(0x3f823454), toFloat(0x3ece0210)))
     }
   }
-  test("ccosf") {
+
+  @Test def testCcosf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(ccosf(tf, buff),
                            res(toFloat(0x3f556f55), toFloat(0xbf7d2866)))
     }
   }
-  test("csinf") {
+
+  @Test def testCsinf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(csinf(tf, buff),
                            res(toFloat(0x3fa633dc), toFloat(0x3f228cff)))
     }
   }
-  test("ctanf") {
+
+  @Test def testCtanf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(ctanf(tf, buff),
                            res(toFloat(0x3e8b2327), toFloat(0x3f8abe00)))
     }
 
   }
-  test("cacoshf") {
+
+  @Test def testCacoshf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(cacoshf(tf, buff),
                            res(toFloat(0x3f87d7dc), toFloat(0x3f67910a)))
     }
   }
-  test("casinhf") {
+
+  @Test def testCasinhf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(casinhf(tf, buff),
                            res(toFloat(0x3f87d7dc), toFloat(0x3f2a8eab)))
     }
   }
-  test("catanhf") {
+
+  @Test def testCatanhf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(catanhf(tf, buff),
                            res(toFloat(0x3ece0210), toFloat(0x3f823454)))
     }
   }
-  test("ccoshf") {
+
+  @Test def testCcoshf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(ccoshf(tf, buff),
                            res(toFloat(0x3f556f55), toFloat(0x3f7d2866)))
     }
   }
-  test("csinhf") {
+
+  @Test def testCsinhf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(csinhf(tf, buff),
                            res(toFloat(0x3f228cff), toFloat(0x3fa633dc)))
     }
   }
-  test("ctanhf") {
+
+  @Test def testCtanhf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(ctanhf(tf, buff),
                            res(toFloat(0x3f8abe00), toFloat(0x3e8b2327)))
     }
   }
-  test("cexpf") {
+
+  @Test def testCexpf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(cexpf(tf, buff),
                            res(toFloat(0x3fbbfe2a), toFloat(0x40126407)))
     }
   }
-  test("clogf") {
+
+  @Test def testClogf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(clogf(tf, buff),
                            res(toFloat(0x3eb17218), toFloat(0x3f490fdb)))
     }
   }
-  test("cabsf") {
-    Zone { implicit z => assertEquals(cabsf(tf), sqrt2.toFloat) }
+
+  @Test def testCabsf(): Unit = {
+    Zone { implicit z => assertEquals(cabsf(tf), sqrt2.toFloat, 0.0f) }
   }
-  test("cpowf") {
+
+  @Test def testCpowf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(cpowf(tf, tf, buff),
                            res(toFloat(0x3e8c441e), toFloat(0x3f156d6a)))
     }
   }
-  test("csqrtf") {
+
+  @Test def testCsqrtf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(csqrtf(tf, buff),
                            res(toFloat(0x3f8ca1af), toFloat(0x3ee90189)))
     }
   }
-  test("cargf") {
-    Zone { implicit z => assertEquals(cargf(tf), qtrPI.toFloat) }
+
+  @Test def testCargf(): Unit = {
+    Zone { implicit z => assertEquals(cargf(tf), qtrPI.toFloat, 0.0f) }
   }
-  test("cimagf") {
-    Zone { implicit z => assertEquals(cimagf(tf), imag) }
+
+  @Test def testCimagf(): Unit = {
+    Zone { implicit z => assertEquals(cimagf(tf), imag, 0.0f) }
   }
-  test("conjf") {
+
+  @Test def testConjf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(conjf(tf, buff), res(real.toFloat, -imag.toFloat))
     }
   }
-  test("cprojf") {
+
+  @Test def testCprojf(): Unit = {
     Zone { implicit z => assertEqualsComplexF(cprojf(tf, buff), tf) }
   }
-  test("crealf") {
-    Zone { implicit z => assertEquals(crealf(tf), real) }
+
+  @Test def testCrealf(): Unit = {
+    Zone { implicit z => assertEquals(crealf(tf), real, 0.0f) }
   }
 
   // double complex helper fcns
@@ -201,7 +225,7 @@ object CComplexSuite extends tests.Suite {
 
   def assertEqualsComplexD(act: Ptr[CDoubleComplex],
                            exp: Ptr[CDoubleComplex]): Unit =
-    assert(isAlmostEqual(act.re, exp.re) && isAlmostEqual(act.im, exp.im))
+    assertTrue(isAlmostEqual(act.re, exp.re) && isAlmostEqual(act.im, exp.im))
 
   def td(implicit z: Zone) = res(real, imag)
 
@@ -210,142 +234,148 @@ object CComplexSuite extends tests.Suite {
   def res(real: Double, imag: Double)(implicit z: Zone) =
     alloc[CDoubleComplex].init(real, imag)
 
-  test("cacos") {
+  @Test def testCacos(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(cacos(td, buf),
-                           res(toDouble("3fecf2214ccccd44"),
-                               toDouble("bff0fafb8f2f147f")))
+      assertEqualsComplexD(
+        cacos(td, buf),
+        res(toDouble("3fecf2214ccccd44"), toDouble("bff0fafb8f2f147f")))
     }
   }
-  test("cacos") {
+
+  @Test def testCasin(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(cacos(td, buf),
-                           res(toDouble("3fecf2214ccccd44"),
-                               toDouble("bff0fafb8f2f147f")))
+      assertEqualsComplexD(
+        casin(td, buf),
+        res(toDouble("3fe551d55bbb8ced"), toDouble("3ff0fafb8f2f147f")))
     }
   }
-  test("casin") {
+
+  @Test def testCcos(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(casin(td, buf),
-                           res(toDouble("3fe551d55bbb8ced"),
-                               toDouble("3ff0fafb8f2f147f")))
+      assertEqualsComplexD(
+        ccos(td, buf),
+        res(toDouble("3feaadea96f4359b"), toDouble("bfefa50ccd2ae8f3")))
     }
   }
-  test("ctan") {
+
+  @Test def testCsin(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(ctan(td, buf),
-                           res(toDouble("3fd16464f4a33f88"),
-                               toDouble("3ff157bffca4a8bc")))
+      assertEqualsComplexD(
+        csin(td, buf),
+        res(toDouble("3ff4c67b74f6cc4f"), toDouble("3fe4519fd8047f92")))
     }
   }
-  test("ccos") {
+
+  @Test def testCtan(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(ccos(td, buf),
-                           res(toDouble("3feaadea96f4359b"),
-                               toDouble("bfefa50ccd2ae8f3")))
+      assertEqualsComplexD(
+        ctan(td, buf),
+        res(toDouble("3fd16464f4a33f88"), toDouble("3ff157bffca4a8bc")))
     }
   }
-  test("csin") {
+
+  @Test def testCacosh(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(csin(td, buf),
-                           res(toDouble("3ff4c67b74f6cc4f"),
-                               toDouble("3fe4519fd8047f92")))
+      assertEqualsComplexD(
+        cacosh(td, buf),
+        res(toDouble("3ff0fafb8f2f147f"), toDouble("3fecf2214ccccd44")))
     }
   }
-  test("ctan") {
+
+  @Test def testCasinh(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(ctan(td, buf),
-                           res(toDouble("3fd16464f4a33f88"),
-                               toDouble("3ff157bffca4a8bc")))
+      assertEqualsComplexD(
+        casinh(td, buf),
+        res(toDouble("3ff0fafb8f2f147f"), toDouble("3fe551d55bbb8ced")))
     }
   }
-  test("cacosh") {
+
+  @Test def testCatanh(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(cacosh(td, buf),
-                           res(toDouble("3ff0fafb8f2f147f"),
-                               toDouble("3fecf2214ccccd44")))
+      assertEqualsComplexD(
+        catanh(td, buf),
+        res(toDouble("3fd9c041f7ed8d33"), toDouble("3ff0468a8ace4df6")))
     }
   }
-  test("casinh") {
+
+  @Test def testCcosh(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(casinh(td, buf),
-                           res(toDouble("3ff0fafb8f2f147f"),
-                               toDouble("3fe551d55bbb8ced")))
+      assertEqualsComplexD(
+        ccosh(td, buf),
+        res(toDouble("3feaadea96f4359b"), toDouble("3fefa50ccd2ae8f3")))
     }
   }
-  test("catanh") {
+
+  @Test def testCsinh(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(catanh(td, buf),
-                           res(toDouble("3fd9c041f7ed8d33"),
-                               toDouble("3ff0468a8ace4df6")))
+      assertEqualsComplexD(
+        csinh(td, buf),
+        res(toDouble("3fe4519fd8047f92"), toDouble("3ff4c67b74f6cc4f")))
     }
   }
-  test("ccosh") {
+
+  @Test def testCtanh(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(ccosh(td, buf),
-                           res(toDouble("3feaadea96f4359b"),
-                               toDouble("3fefa50ccd2ae8f3")))
+      assertEqualsComplexD(
+        ctanh(td, buf),
+        res(toDouble("3ff157bffca4a8bc"), toDouble("3fd16464f4a33f88")))
     }
   }
-  test("csinh") {
+
+  @Test def testCexp(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(csinh(td, buf),
-                           res(toDouble("3fe4519fd8047f92"),
-                               toDouble("3ff4c67b74f6cc4f")))
+      assertEqualsComplexD(
+        cexp(td, buf),
+        res(toDouble("3ff77fc5377c5a96"), toDouble("40024c80edc62064")))
     }
   }
-  test("ctanh") {
+
+  @Test def testClog(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(ctanh(td, buf),
-                           res(toDouble("3ff157bffca4a8bc"),
-                               toDouble("3fd16464f4a33f88")))
+      assertEqualsComplexD(
+        clog(td, buf),
+        res(toDouble("3fd62e42fefa39ef"), toDouble("3fe921fb54442d18")))
     }
   }
-  test("cexp") {
+
+  @Test def testCabs(): Unit = {
+    Zone { implicit z => assertEquals(cabs(td), sqrt2, 0.0) }
+  }
+
+  @Test def testCpow(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(cexp(td, buf),
-                           res(toDouble("3ff77fc5377c5a96"),
-                               toDouble("40024c80edc62064")))
+      assertEqualsComplexD(
+        cpow(td, td, buf),
+        res(toDouble("3fd18884016cf327"), toDouble("3fe2adad36b098aa")))
     }
   }
-  test("clog") {
+
+  @Test def testCsqrt(): Unit = {
     Zone { implicit z =>
-      assertEqualsComplexD(clog(td, buf),
-                           res(toDouble("3fd62e42fefa39ef"),
-                               toDouble("3fe921fb54442d18")))
+      assertEqualsComplexD(
+        csqrt(td, buf),
+        res(toDouble("3ff19435caffa9f9"), toDouble("3fdd203138f6c828")))
     }
   }
-  test("cabs") {
-    Zone { implicit z => assertEquals(cabs(td), sqrt2) }
+
+  @Test def testCarg(): Unit = {
+    Zone { implicit z => assertEquals(carg(td), qtrPI, 0.0) }
   }
-  test("cpow") {
-    Zone { implicit z =>
-      assertEqualsComplexD(cpow(td, td, buf),
-                           res(toDouble("3fd18884016cf327"),
-                               toDouble("3fe2adad36b098aa")))
-    }
+
+  @Test def testCimag(): Unit = {
+    Zone { implicit z => assertEquals(cimag(td), imag, 0.0) }
   }
-  test("csqrt") {
-    Zone { implicit z =>
-      assertEqualsComplexD(csqrt(td, buf),
-                           res(toDouble("3ff19435caffa9f9"),
-                               toDouble("3fdd203138f6c828")))
-    }
-  }
-  test("carg") {
-    Zone { implicit z => assertEquals(carg(td), qtrPI) }
-  }
-  test("cimag") {
-    Zone { implicit z => assertEquals(cimag(td), imag) }
-  }
-  test("conj") {
+
+  @Test def testConj(): Unit = {
     Zone { implicit z => assertEqualsComplexD(conj(td, buf), res(real, -imag)) }
   }
-  test("cproj") {
+
+  @Test def testCproj(): Unit = {
     Zone { implicit z => assertEqualsComplexD(cproj(td, buf), td) }
   }
-  test("creal") {
-    Zone { implicit z => assertEquals(creal(td), real) }
+
+  @Test def testCreal(): Unit = {
+    Zone { implicit z => assertEquals(creal(td), real, 0.0) }
   }
 }
 
