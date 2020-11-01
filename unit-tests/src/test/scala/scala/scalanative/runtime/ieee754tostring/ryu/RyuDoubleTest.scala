@@ -51,14 +51,17 @@ package scala.scalanative
 package runtime
 package ieee754tostring.ryu
 
-object RyuDoubleSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
+
+class RyuDoubleTest {
 
   private def assertD2sEquals(expected: String, f: scala.Double): Unit = {
     val result = f.toString
-    assert(expected == result, s"result: $result != expected: $expected")
+    assertTrue(s"result: $result != expected: $expected", expected == result)
   }
 
-  test("Simple cases") {
+  @Test def simpleCases(): Unit = {
     assertD2sEquals("0.0", 0.0d)
     assertD2sEquals("-0.0",
                     java.lang.Double.longBitsToDouble(0x8000000000000000L))
@@ -69,12 +72,12 @@ object RyuDoubleSuite extends tests.Suite {
     assertD2sEquals("-Infinity", Double.NegativeInfinity)
   }
 
-  test("Switch to subnormal") {
+  @Test def switchToSubnormal(): Unit = {
     assertD2sEquals("2.2250738585072014E-308",
                     java.lang.Double.longBitsToDouble(0x0010000000000000L))
   }
 
-  test("Boundary conditions") {
+  @Test def boundaryConditions(): Unit = {
     // x = 1.0E7
     assertD2sEquals("1.0E7", 1.0E7d)
 
@@ -88,17 +91,17 @@ object RyuDoubleSuite extends tests.Suite {
     assertD2sEquals("9.999999999999998E-4", 0.0009999999999999998d)
   }
 
-  test("Min and Max") {
+  @Test def minAndMax(): Unit = {
     assertD2sEquals("1.7976931348623157E308",
                     java.lang.Double.longBitsToDouble(0x7fefffffffffffffL))
     assertD2sEquals("4.9E-324", java.lang.Double.longBitsToDouble(1))
   }
 
-  test("roundingMode CONSERVATIVE") {
+  @Test def roundingModeConservative(): Unit = {
     assertD2sEquals("-2.1098088986959632E16", -2.109808898695963E16)
   }
 
-  test("Regression test") {
+  @Test def regressionTest(): Unit = {
     assertD2sEquals("4.940656E-318", 4.940656E-318d)
     assertD2sEquals("1.18575755E-316", 1.18575755E-316d)
     assertD2sEquals("2.989102097996E-312", 2.989102097996E-312d)
