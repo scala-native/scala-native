@@ -1,9 +1,12 @@
 package scala.scalanative
 
+import org.junit.Test
+import org.junit.Assert._
+
 import scalanative.unsigned._
 import scalanative.unsafe._
 
-object IssuesSuite extends tests.Suite {
+class IssuesTest {
 
   def foo(arg: Int): Unit                    = ()
   def crash(arg: CFuncPtr1[Int, Unit]): Unit = ()
@@ -12,24 +15,24 @@ object IssuesSuite extends tests.Suite {
       def apply(value: Int): Unit = ()
     })
 
-  test("#208") {
+  @Test def testIssue208(): Unit = {
     // If we put the test directly, behind the scenes, this will
     // create a nested closure with a pointer to the outer one
     // and the latter is not supported in scala-native
     lifted208Test()
   }
 
-  test("#253") {
+  @Test def testIssue253(): Unit = {
     class Cell(val value: Int)
 
     val arr     = Array(new Cell(1), new Cell(2))
     val reverse = arr.reverse
 
-    assert(reverse(0).value == 2)
-    assert(reverse(1).value == 1)
+    assertTrue(reverse(0).value == 2)
+    assertTrue(reverse(1).value == 1)
   }
 
-  test("#260") {
+  @Test def testIssue260(): Unit = {
     def getStr(): String = {
       val bytes = Array('h'.toByte, 'o'.toByte, 'l'.toByte, 'a'.toByte)
       new String(bytes)
@@ -37,21 +40,21 @@ object IssuesSuite extends tests.Suite {
 
     val sz = getStr()
 
-    assert("hola" == sz)
-    assert("hola".equals(sz))
+    assertTrue("hola" == sz)
+    assertTrue("hola".equals(sz))
   }
 
-  test("#275") {
+  @Test def testIssue275(): Unit = {
     val arr = new Array[Int](10)
-    assert(arr.getClass.getName == "scala.scalanative.runtime.IntArray")
-    assert(arr.toList == List(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+    assertTrue(arr.getClass.getName == "scala.scalanative.runtime.IntArray")
+    assertTrue(arr.toList == List(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
     val arr2 = arr.map(_ + 1)
-    assert(arr2.getClass.getName == "scala.scalanative.runtime.IntArray")
-    assert(arr2.toList == List(1, 1, 1, 1, 1, 1, 1, 1, 1, 1))
+    assertTrue(arr2.getClass.getName == "scala.scalanative.runtime.IntArray")
+    assertTrue(arr2.toList == List(1, 1, 1, 1, 1, 1, 1, 1, 1, 1))
   }
 
-  test("#314") {
+  @Test def testIssue314(): Unit = {
     // Division by zero is defined behavior.
     assert {
       try {
@@ -64,7 +67,7 @@ object IssuesSuite extends tests.Suite {
     }
   }
 
-  test("#326") {
+  @Test def testIssue326(): Unit = {
     abstract class A
     case class S[T](a: T) extends A
 
@@ -76,43 +79,43 @@ object IssuesSuite extends tests.Suite {
 
     def main(args: Array[String]): Unit = {
       val (dbl, int, obj) = (S(2.3), S(2), S(S(2)))
-      assert(check(dbl) == "double")
-      assert(check(int) == "int")
-      assert(check(obj) == "neither")
+      assertTrue(check(dbl) == "double")
+      assertTrue(check(int) == "int")
+      assertTrue(check(obj) == "neither")
     }
   }
 
-  test("#327") {
+  @Test def testIssue327(): Unit = {
     val a = BigInt(1)
-    assert(a.toInt == 1)
+    assertTrue(a.toInt == 1)
   }
 
-  test("#337") {
+  @Test def testIssue337(): Unit = {
     case class TestObj(value: Int)
     val obj = TestObj(10)
-    assert(obj.value == 10)
+    assertTrue(obj.value == 10)
   }
 
-  test("#350") {
+  @Test def testIssue350(): Unit = {
     val div = java.lang.Long.divideUnsigned(42L, 2L)
-    assert(div == 21L)
+    assertTrue(div == 21L)
   }
 
-  test("#374") {
-    assert("42" == bar(42))
-    assert("bar" == bar_i32())
+  @Test def testIssue374(): Unit = {
+    assertTrue("42" == bar(42))
+    assertTrue("bar" == bar_i32())
   }
 
   def bar(i: Int): String = i.toString
   def bar_i32(): String   = "bar"
 
-  test("#376") {
+  @Test def testIssue376(): Unit = {
     val m     = scala.collection.mutable.Map.empty[String, String]
     val hello = "hello"
     val world = "world"
     m(hello) = world
     val h = m.getOrElse(hello, "Failed !")
-    assert(h equals world)
+    assertTrue(h equals world)
   }
 
   val fptrBoxed: CFuncPtr0[Integer] = new CFuncPtr0[Integer] {
@@ -126,36 +129,37 @@ object IssuesSuite extends tests.Suite {
     def apply() = 1.0
   }
   def intIdent(x: Int): Int = x
-  test("#382") {
+
+  @Test def testIssue382(): Unit = {
     /// that gave NPE
 
     import scala.scalanative.unsafe._
     intIdent(fptr())
-    assert(fptr() == 1)
+    assertTrue(fptr() == 1)
 
     // Reported issue
-    assert(fptr() == 1)
-    assert(fptrFloat() == 1.0)
-    assert(fptrBoxed() == new Integer(1))
+    assertTrue(fptr() == 1)
+    assertTrue(fptrFloat() == 1.0)
+    assertTrue(fptrBoxed() == new Integer(1))
 
     // Other variations which must work as well
     val x1 = fptr()
-    assert(x1 == 1)
+    assertTrue(x1 == 1)
     val x2 = fptrFloat()
-    assert(x2 == 1.0)
+    assertTrue(x2 == 1.0)
   }
 
-  test("#404") {
+  @Test def testIssue404(): Unit = {
     // this must not throw an exception
     this.getClass.##
   }
 
-  test("#424") {
+  @Test def testIssue424(): Unit = {
     // this used not to link
     val cls = classOf[Array[Unit]]
   }
 
-  test("#445") {
+  @Test def testIssue445(): Unit = {
     val char: Any   = 66.toChar
     val byte: Any   = 66.toByte
     val short: Any  = 66.toShort
@@ -163,69 +167,69 @@ object IssuesSuite extends tests.Suite {
     val long: Any   = 66.toLong
     val float: Any  = 66.toFloat
     val double: Any = 66.toDouble
-    assert(char == char)
-    assert(char == byte)
-    assert(char == short)
-    assert(char == int)
-    assert(char == long)
-    assert(char == float)
-    assert(char == double)
-    assert(byte == char)
-    assert(byte == byte)
-    assert(byte == short)
-    assert(byte == int)
-    assert(byte == long)
-    assert(byte == float)
-    assert(byte == double)
-    assert(short == char)
-    assert(short == byte)
-    assert(short == short)
-    assert(short == int)
-    assert(short == long)
-    assert(short == float)
-    assert(short == double)
-    assert(int == char)
-    assert(int == byte)
-    assert(int == short)
-    assert(int == int)
-    assert(int == long)
-    assert(int == float)
-    assert(int == double)
-    assert(long == char)
-    assert(long == byte)
-    assert(long == short)
-    assert(long == int)
-    assert(long == long)
-    assert(long == float)
-    assert(long == double)
-    assert(float == char)
-    assert(float == byte)
-    assert(float == short)
-    assert(float == int)
-    assert(float == long)
-    assert(float == float)
-    assert(float == double)
-    assert(double == char)
-    assert(double == byte)
-    assert(double == short)
-    assert(double == int)
-    assert(double == long)
-    assert(double == float)
-    assert(double == double)
+    assertTrue(char == char)
+    assertTrue(char == byte)
+    assertTrue(char == short)
+    assertTrue(char == int)
+    assertTrue(char == long)
+    assertTrue(char == float)
+    assertTrue(char == double)
+    assertTrue(byte == char)
+    assertTrue(byte == byte)
+    assertTrue(byte == short)
+    assertTrue(byte == int)
+    assertTrue(byte == long)
+    assertTrue(byte == float)
+    assertTrue(byte == double)
+    assertTrue(short == char)
+    assertTrue(short == byte)
+    assertTrue(short == short)
+    assertTrue(short == int)
+    assertTrue(short == long)
+    assertTrue(short == float)
+    assertTrue(short == double)
+    assertTrue(int == char)
+    assertTrue(int == byte)
+    assertTrue(int == short)
+    assertTrue(int == int)
+    assertTrue(int == long)
+    assertTrue(int == float)
+    assertTrue(int == double)
+    assertTrue(long == char)
+    assertTrue(long == byte)
+    assertTrue(long == short)
+    assertTrue(long == int)
+    assertTrue(long == long)
+    assertTrue(long == float)
+    assertTrue(long == double)
+    assertTrue(float == char)
+    assertTrue(float == byte)
+    assertTrue(float == short)
+    assertTrue(float == int)
+    assertTrue(float == long)
+    assertTrue(float == float)
+    assertTrue(float == double)
+    assertTrue(double == char)
+    assertTrue(double == byte)
+    assertTrue(double == short)
+    assertTrue(double == int)
+    assertTrue(double == long)
+    assertTrue(double == float)
+    assertTrue(double == double)
   }
 
-  test("#449") {
+  @Test def testIssue449(): Unit = {
     import scalanative.unsafe.Ptr
     import scala.scalanative.runtime.ByteArray
     val bytes = new Array[Byte](2)
     bytes(0) = 'b'.toByte
     bytes(1) = 'a'.toByte
     val p: Ptr[Byte] = bytes.asInstanceOf[ByteArray].at(0)
-    assert(!p == 'b'.toByte)
-    assert(!(p + 1) == 'a'.toByte)
+    assertFalse(p == 'b'.toByte)
+    assertFalse((p + 1) == 'a'.toByte)
   }
 
-  test("#349") {
+  @Test def testIssue349(): Unit = {
     var events = List.empty[String]
 
     def log(s: String): Unit = events ::= s
@@ -255,29 +259,29 @@ object IssuesSuite extends tests.Suite {
       }
     }
 
-    assert(events.isEmpty)
+    assertTrue(events.isEmpty)
     foo()
-    assert(events == List("c", "a"))
+    assertTrue(events == List("c", "a"))
   }
 
-  test("#482") {
-    assert('\uD800'.toInt == 55296)
+  @Test def testIssue482(): Unit = {
+    assertTrue('\uD800'.toInt == 55296)
   }
 
-  test("#667") {
+  @Test def testIssue667(): Unit = {
     val map = new java.util.HashMap[Int, Int]
     map.put(1, 2)
     val ks = map.keySet()
-    assert(ks.contains(1))
+    assertTrue(ks.contains(1))
   }
 
-  test("#679") {
+  @Test def testIssue679(): Unit = {
     val `"` = 42
-    assert(("double-quotes " + `"`) == "double-quotes 42")
-    assert(s"double-quotes ${`"`}" == "double-quotes 42")
+    assertTrue(("double-quotes " + `"`) == "double-quotes 42")
+    assertTrue(s"double-quotes ${`"`}" == "double-quotes 42")
   }
 
-  test("#695") {
+  @Test def testIssue695(): Unit = {
     val a   = List(1, 2, 3)
     var eff = List.empty[(Int, Int)]
 
@@ -286,126 +290,126 @@ object IssuesSuite extends tests.Suite {
       true
     }
 
-    assert(eff == List((3, 3), (2, 2), (1, 1)))
+    assertTrue(eff == List((3, 3), (2, 2), (1, 1)))
   }
 
-  test("#762") {
+  @Test def testIssue762(): Unit = {
     val byte         = 1.toByte
     val negbyte: Any = -byte
-    assert(negbyte.isInstanceOf[Int])
-    assert(negbyte.toString == "-1")
+    assertTrue(negbyte.isInstanceOf[Int])
+    assertTrue(negbyte.toString == "-1")
 
     val short         = 1.toByte
     val negshort: Any = -short
-    assert(negshort.isInstanceOf[Int])
-    assert(negshort.toString == "-1")
+    assertTrue(negshort.isInstanceOf[Int])
+    assertTrue(negshort.toString == "-1")
 
     val int         = 1
     val negint: Any = -int
-    assert(negint.isInstanceOf[Int])
-    assert(negint.toString == "-1")
+    assertTrue(negint.isInstanceOf[Int])
+    assertTrue(negint.toString == "-1")
 
     val long         = 1L
     val neglong: Any = -long
-    assert(neglong.isInstanceOf[Long])
-    assert(neglong.toString == "-1")
+    assertTrue(neglong.isInstanceOf[Long])
+    assertTrue(neglong.toString == "-1")
   }
 
-  test("#780") {
+  @Test def testIssue780(): Unit = {
     import java.util.{HashMap, Collections}
     val hashmap = new HashMap[String, String]()
     hashmap.put("a", "b")
     val frozen = Collections.unmodifiableMap[String, String](hashmap)
     val iter   = frozen.entrySet().iterator()
     val ab     = iter.next()
-    assert(ab.getKey() == "a")
-    assert(ab.getValue() == "b")
-    assert(!iter.hasNext())
+    assertTrue(ab.getKey() == "a")
+    assertTrue(ab.getValue() == "b")
+    assertFalse(iter.hasNext())
   }
 
-  test("#803") {
+  @Test def testIssue803(): Unit = {
     val x1: String = null
     var x2: String = "right"
-    assert(x1 + x2 == "nullright")
+    assertTrue(x1 + x2 == "nullright")
 
     val x3: String = "left"
     val x4: String = null
-    assert(x3 + x4 == "leftnull")
+    assertTrue(x3 + x4 == "leftnull")
 
     val x5: AnyRef = new { override def toString = "custom" }
     val x6: String = null
-    assert(x5 + x6 == "customnull")
+    assertTrue(x5 + x6 == "customnull")
 
     val x7: String = null
     val x8: AnyRef = new { override def toString = "custom" }
-    assert(x7 + x8 == "nullcustom")
+    assertTrue(x7 + x8 == "nullcustom")
 
     val x9: String  = null
     val x10: String = null
-    assert(x9 + x10 == "nullnull")
+    assertTrue(x9 + x10 == "nullnull")
 
     val x11: AnyRef = null
     val x12: String = null
-    assert(x11 + x12 == "nullnull")
+    assertTrue(x11 + x12 == "nullnull")
 
     val x13: String = null
     val x14: AnyRef = null
-    assert(x13 + x14 == "nullnull")
+    assertTrue(x13 + x14 == "nullnull")
   }
 
-  test("#809") {
-    assert(null.asInstanceOf[AnyRef].## == 0)
+  @Test def testIssue809(): Unit = {
+    assertTrue(null.asInstanceOf[AnyRef].## == 0)
   }
 
-  test("#900") {
+  @Test def testIssue900(): Unit = {
     val c = new issue900.C("any")
-    assert(c.init == "foobar")
+    assertTrue(c.init == "foobar")
   }
 
-  test("#1155") {
-    assert(issue1155.C.CLASS.toString.contains("C$CLASS$@"))
+  @Test def testIssue1155(): Unit = {
+    assertTrue(issue1155.C.CLASS.toString.contains("C$CLASS$@"))
   }
 
-  test("#1090") {
+  @Test def testIssue1090(): Unit = {
     val xs = new Array[issue1090.X](20)
     val ys = new Array[issue1090.Y](20)
-    assert(issue1090.A.foo(xs) == "X array")
-    assert(issue1090.A.foo(ys) == "Y array")
+    assertTrue(issue1090.A.foo(xs) == "X array")
+    assertTrue(issue1090.A.foo(ys) == "Y array")
   }
 
-  test("#1239") {
+  @Test def testIssue1239(): Unit = {
     val ulong = java.lang.Long.parseUnsignedLong("9223372036854775808").toULong
-    assert(ulong.toDouble == 9223372036854775808.0D)
+    assertTrue(ulong.toDouble == 9223372036854775808.0D)
   }
 
-  test("#1359") {
+  @Test def testIssue1359(): Unit = {
     issue1359.Main.main(Array())
   }
 
-  test("#1516") {
+  @Test def testIssue1516(): Unit = {
     locally {
       val data = new Array[UByte](6)
       data(0) = 64.toUByte
-      assert(data(0).getClass == classOf[UByte])
-      assert(data(0).toString == "64")
+      assertTrue(data(0).getClass == classOf[UByte])
+      assertTrue(data(0).toString == "64")
     }
     locally {
       val data = new Array[UShort](6)
       data(0) = 64.toUShort
-      assert(data(0).getClass == classOf[UShort])
-      assert(data(0).toString == "64")
+      assertTrue(data(0).getClass == classOf[UShort])
+      assertTrue(data(0).toString == "64")
     }
     locally {
       val data = new Array[UInt](6)
       data(0) = 64.toUInt
-      assert(data(0).getClass == classOf[UInt])
-      assert(data(0).toString == "64")
+      assertTrue(data(0).getClass == classOf[UInt])
+      assertTrue(data(0).toString == "64")
     }
     locally {
       val data = new Array[ULong](6)
       data(0) = 64.toULong
-      assert(data(0).getClass == classOf[ULong])
-      assert(data(0).toString == "64")
+      assertTrue(data(0).getClass == classOf[ULong])
+      assertTrue(data(0).toString == "64")
     }
   }
 
