@@ -98,7 +98,7 @@ class AsInstanceOfTest {
   }
 
   @Test def cAsInstanceOfUnitThrows(): Unit = {
-    assertTrue(isScala211)
+    assumeTrue(isScala211)
     assertThrows(classOf[ClassCastException], anyC.asInstanceOf[Unit])
   }
 
