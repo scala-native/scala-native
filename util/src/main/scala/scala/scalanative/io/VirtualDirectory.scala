@@ -1,7 +1,7 @@
 package scala.scalanative
 package io
 
-import scala.collection.mutable
+import java.io.Writer
 import scala.collection.JavaConverters._
 import java.net.URI
 import java.nio.ByteBuffer
@@ -24,8 +24,14 @@ sealed trait VirtualDirectory {
   /** Replaces contents of file with given value. */
   def write(path: Path, buffer: ByteBuffer): Unit
 
+  /** Replaces contents of file using given writer. */
+  def write(path: Path, fn: Writer => Unit): Path
+
   /** List all files in this directory. */
   def files: Seq[Path]
+
+  /** Merges content of source paths into single file in target */
+  def merge(sources: Seq[Path], target: Path): Unit
 }
 
 object VirtualDirectory {
@@ -86,10 +92,35 @@ object VirtualDirectory {
       } finally stream.close()
     }
 
+    override def write(path: Path, fn: Writer => Unit): Path = {
+      val fullPath = resolve(path)
+      val writer   = Files.newBufferedWriter(fullPath)
+      try fn(writer)
+      finally writer.close()
+      fullPath
+    }
+
     override def write(path: Path, buffer: ByteBuffer): Unit = {
       val channel = open(resolve(path))
       try channel.write(buffer)
       finally channel.close
+    }
+
+    override def merge(sources: Seq[Path], target: Path): Unit = {
+      if (sources.nonEmpty) {
+        val output = FileChannel.open(resolve(target),
+                                      StandardOpenOption.CREATE,
+                                      StandardOpenOption.WRITE,
+                                      StandardOpenOption.APPEND)
+        try sources.foreach { path =>
+          val input = FileChannel.open(resolve(path),
+                                       StandardOpenOption.READ,
+                                       StandardOpenOption.DELETE_ON_CLOSE)
+          try {
+            input.transferTo(0, input.size(), output)
+          } finally input.close()
+        } finally output.close()
+      }
     }
   }
 
@@ -141,7 +172,14 @@ object VirtualDirectory {
 
     override def read(path: Path, len: Int): ByteBuffer = read(path)
 
+    override def write(path: Path, fn: Writer => Unit): Path =
+      throw new UnsupportedOperationException("Can't write to empty directory.")
+
     override def write(path: Path, buffer: ByteBuffer): Unit =
       throw new UnsupportedOperationException("Can't write to empty directory.")
+
+    override def merge(sources: Seq[Path], target: Path): Unit =
+      throw new UnsupportedOperationException("Can't merge in empty directory.")
+
   }
 }
