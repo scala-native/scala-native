@@ -3,12 +3,12 @@ package util
 
 import scala.language.implicitConversions
 
-final class ShowBuilder {
-  private var sb          = new java.lang.StringBuilder
+sealed trait ShowBuilder {
+  def out: Appendable
   private var indentation = 0
 
   def str(value: Any): Unit =
-    sb.append(value.toString)
+    out.append(value.toString)
 
   def line(value: Any): Unit = {
     str(value)
@@ -31,14 +31,26 @@ final class ShowBuilder {
     indentation -= n
 
   def newline(): Unit = {
-    sb.append("\n")
-    sb.append("  " * indentation)
+    out.append("\n")
+    out.append("  " * indentation)
   }
 
   def clear(): Unit = {
     indentation = 0
-    sb = new java.lang.StringBuilder
+  }
+}
+
+object ShowBuilder {
+  final class InMemoryShowBuilder extends ShowBuilder {
+    private var underlying = new java.lang.StringBuilder
+
+    override def out: Appendable = underlying
+    override def clear(): Unit = {
+      super.clear()
+      underlying = new java.lang.StringBuilder
+    }
+    override def toString: String = out.toString
   }
 
-  override def toString = sb.toString
+  final class FileShowBuilder(val out: java.io.Writer) extends ShowBuilder
 }
