@@ -51,14 +51,17 @@ package scala.scalanative
 package runtime
 package ieee754tostring.ryu
 
-object RyuFloatSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
+
+class RyuFloatTest {
 
   private def assertF2sEquals(expected: String, f: scala.Float): Unit = {
     val result = f.toString
-    assert(expected == result, s"result: $result != expected: $expected")
+    assertTrue(s"result: $result != expected: $expected", expected == result)
   }
 
-  test("Simple cases") {
+  @Test def simpleCases(): Unit = {
     assertF2sEquals("0.0", 0.0f)
     assertF2sEquals("-0.0", java.lang.Float.intBitsToFloat(0x80000000))
     assertF2sEquals("1.0", 1.0f)
@@ -68,11 +71,11 @@ object RyuFloatSuite extends tests.Suite {
     assertF2sEquals("-Infinity", Float.NegativeInfinity)
   }
 
-  test("Switch to subnormal") {
+  @Test def switchToSubnormal(): Unit = {
     assertF2sEquals("1.1754944E-38", java.lang.Float.intBitsToFloat(0x00800000))
   }
 
-  test("Boundary conditions") {
+  @Test def boundaryConditions(): Unit = {
     // x = 1.0E7
     assertF2sEquals("1.0E7", 1.0E7f)
 
@@ -86,12 +89,12 @@ object RyuFloatSuite extends tests.Suite {
     assertF2sEquals("9.999999E-4", 0.0009999999f)
   }
 
-  test("Min and Max") {
+  @Test def minAndMax(): Unit = {
     assertF2sEquals("3.4028235E38", java.lang.Float.intBitsToFloat(0x7f7fffff))
     assertF2sEquals("1.4E-45", java.lang.Float.intBitsToFloat(0x00000001))
   }
 
-  test("roundingMode CONSERVATIVE") {
+  @Test def roundingModeConservative(): Unit = {
     assertF2sEquals("3.3554448E7", 3.3554448E7f)
     assertF2sEquals("8.999999E9", 8.999999E9f)
     assertF2sEquals("3.4366718E10", 3.4366717E10f)
@@ -100,11 +103,11 @@ object RyuFloatSuite extends tests.Suite {
     assertF2sEquals("3.4366718E10", 3.4366717E10f)
   }
 
-  test("roundingEvenIfTied") {
+  @Test def roundingEvenIfTied(): Unit = {
     assertF2sEquals("0.33007812", 0.33007812f)
   }
 
-  test("looksLikePow5") {
+  @Test def looksLikePow5(): Unit = {
     /// Comment from original RYU source.
     // These are all floating point numbers where the mantissa is a power of 5,
     // and the exponent is in the range such that q = 10.
@@ -113,7 +116,7 @@ object RyuFloatSuite extends tests.Suite {
     assertF2sEquals("2.6843546E18", java.lang.Float.intBitsToFloat(0x5E1502F9))
   }
 
-  test("Regression test") {
+  @Test def regressionTest(): Unit = {
     assertF2sEquals("4.7223665E21", 4.7223665E21f)
     assertF2sEquals("8388608.0", 8388608.0f)
     assertF2sEquals("1.6777216E7", 1.6777216E7f)
