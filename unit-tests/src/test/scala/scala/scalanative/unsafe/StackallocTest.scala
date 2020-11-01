@@ -1,17 +1,20 @@
 package scala.scalanative
 package unsafe
 
-object StackallocSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("stackalloc Int") {
+class StackallocTest {
+
+  @Test def stackallocInt(): Unit = {
     val ptr = stackalloc[Int]
 
     !ptr = 42
 
-    assert(!ptr == 42)
+    assertFalse(ptr == 42)
   }
 
-  test("stackalloc Int, 4") {
+  @Test def stackallocInt4(): Unit = {
     val ptr = stackalloc[Int](4)
 
     ptr(0) = 1
@@ -19,23 +22,23 @@ object StackallocSuite extends tests.Suite {
     ptr(2) = 3
     ptr(3) = 4
 
-    assert(ptr(0) == 1)
-    assert(ptr(1) == 2)
-    assert(ptr(2) == 3)
-    assert(ptr(3) == 4)
+    assertTrue(ptr(0) == 1)
+    assertTrue(ptr(1) == 2)
+    assertTrue(ptr(2) == 3)
+    assertTrue(ptr(3) == 4)
   }
 
-  test("stackalloc CStruct2[Int, Int]") {
+  @Test def stackallocCStruct2IntInt(): Unit = {
     val ptr = stackalloc[CStruct2[Int, Int]]
 
     ptr._1 = 1
     ptr._2 = 2
 
-    assert(ptr._1 == 1)
-    assert(ptr._2 == 2)
+    assertTrue(ptr._1 == 1)
+    assertTrue(ptr._2 == 2)
   }
 
-  test("stackalloc CArray[Int, _4]") {
+  @Test def stackallocCArrayIntNat4(): Unit = {
     val ptr = stackalloc[CArray[Int, Nat._4]]
     val arr = !ptr
 
@@ -44,30 +47,30 @@ object StackallocSuite extends tests.Suite {
     arr(2) = 3
     arr(3) = 4
 
-    assert(arr(0) == 1)
-    assert(arr(1) == 2)
-    assert(arr(2) == 3)
-    assert(arr(3) == 4)
+    assertTrue(arr(0) == 1)
+    assertTrue(arr(1) == 2)
+    assertTrue(arr(2) == 3)
+    assertTrue(arr(3) == 4)
 
     val intptr = ptr.asInstanceOf[Ptr[Int]]
 
-    assert(intptr(0) == 1)
-    assert(intptr(1) == 2)
-    assert(intptr(2) == 3)
-    assert(intptr(3) == 4)
+    assertTrue(intptr(0) == 1)
+    assertTrue(intptr(1) == 2)
+    assertTrue(intptr(2) == 3)
+    assertTrue(intptr(3) == 4)
 
     intptr(0) = 10
     intptr(1) = 20
     intptr(2) = 30
     intptr(3) = 40
 
-    assert(arr(0) == 10)
-    assert(arr(1) == 20)
-    assert(arr(2) == 30)
-    assert(arr(3) == 40)
+    assertTrue(arr(0) == 10)
+    assertTrue(arr(1) == 20)
+    assertTrue(arr(2) == 30)
+    assertTrue(arr(3) == 40)
   }
 
-  test("stackalloc linked list") {
+  @Test def stackallocLinkedList(): Unit = {
     import CList._
     var i               = 0
     var head: Ptr[Node] = null
@@ -75,7 +78,7 @@ object StackallocSuite extends tests.Suite {
       head = stackalloc[Node].init(i, head)
       i += 1
     }
-    assert(head.sum == 6)
+    assertTrue(head.sum == 6)
   }
 }
 
