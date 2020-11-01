@@ -1,14 +1,17 @@
 package scala.scalanative.posix
 
+import org.junit.Test
+import org.junit.Assert._
+
 import scala.scalanative.unsafe._
 
 import scalanative.libc.{errno => Cerrno}
 
 import scalanative.posix.sys.stat
 
-object FcntlSuite extends tests.Suite {
+class FcntlTest {
 
-  test(s"open(pathname, flags) - existing file") {
+  @Test def openPathnameFlagsExistingFile(): Unit = {
 
     Cerrno.errno = 0
     val fileName = c"/dev/null"
@@ -16,10 +19,10 @@ object FcntlSuite extends tests.Suite {
     val fd = fcntl.open(fileName, fcntl.O_RDWR)
 
     unistd.close(fd)
-    assert(fd != -1, s"fd == -1 errno: ${Cerrno.errno}")
+    assertTrue(s"fd == -1 errno: ${Cerrno.errno}", fd != -1)
   }
 
-  test(s"open(pathname, flags, mode) - existing file") {
+  @Test def openPathnameFlagsModeExistingFile(): Unit = {
 
     Cerrno.errno = 0
     val fileName = c"/dev/null"
@@ -27,7 +30,7 @@ object FcntlSuite extends tests.Suite {
     val fd = fcntl.open(fileName, fcntl.O_RDWR, stat.S_IRUSR)
 
     unistd.close(fd)
-    assert(fd != -1, s"fd == -1 errno: ${Cerrno.errno}")
+    assertTrue(s"fd == -1 errno: ${Cerrno.errno}", fd != -1)
   }
 
 }
