@@ -25,7 +25,7 @@ sealed trait VirtualDirectory {
   def write(path: Path, buffer: ByteBuffer): Unit
 
   /** Replaces contents of file using given writer. */
-  def write(path: Path, fn: Writer => Unit): Path
+  def write(path: Path)(fn: Writer => Unit): Path
 
   /** List all files in this directory. */
   def files: Seq[Path]
@@ -92,7 +92,7 @@ object VirtualDirectory {
       } finally stream.close()
     }
 
-    override def write(path: Path, fn: Writer => Unit): Path = {
+    override def write(path: Path)(fn: Writer => Unit): Path = {
       val fullPath = resolve(path)
       val writer   = Files.newBufferedWriter(fullPath)
       try fn(writer)
@@ -172,7 +172,7 @@ object VirtualDirectory {
 
     override def read(path: Path, len: Int): ByteBuffer = read(path)
 
-    override def write(path: Path, fn: Writer => Unit): Path =
+    override def write(path: Path)(fn: Writer => Unit): Path =
       throw new UnsupportedOperationException("Can't write to empty directory.")
 
     override def write(path: Path, buffer: ByteBuffer): Unit =

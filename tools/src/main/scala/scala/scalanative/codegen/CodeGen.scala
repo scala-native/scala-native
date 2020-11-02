@@ -89,20 +89,16 @@ object CodeGen {
     private val externSigMembers = mutable.Map.empty[Sig, Global.Member]
 
     def gen(id: String, dir: VirtualDirectory): Unit = {
-      val body = dir.write(
-        Paths.get(s"$id-body.ll"), { writer =>
-          genDefns(defns)(new FileShowBuilder(writer))
-        }
-      )
+      val body = dir.write(Paths.get(s"$id-body.ll")) { writer =>
+        genDefns(defns)(new FileShowBuilder(writer))
+      }
 
-      val headers = dir.write(
-        Paths.get(s"$id.ll"), { writer =>
-          implicit val sb: ShowBuilder = new FileShowBuilder(writer)
-          genPrelude()
-          genConsts()
-          genDeps()
-        }
-      )
+      val headers = dir.write(Paths.get(s"$id.ll")) { writer =>
+        implicit val sb: ShowBuilder = new FileShowBuilder(writer)
+        genPrelude()
+        genConsts()
+        genDeps()
+      }
 
       dir.merge(Seq(body), headers)
     }
