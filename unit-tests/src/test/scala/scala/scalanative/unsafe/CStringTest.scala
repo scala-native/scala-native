@@ -1,12 +1,15 @@
 package scala.scalanative
 package unsafe
 
+import org.junit.Test
+import org.junit.Assert._
+
 import java.nio.charset.Charset
 import scalanative.libc.string._
 
-object CStringSuite extends tests.Suite {
+class CStringTest {
 
-  test("""c"..." literals with various escapes""") {
+  @Test def cInterpolationLiteralsWithVariousEscapes(): Unit = {
     // note: `fromCString` is needed to trigger compilation errors against malformed literals
     fromCString(c"")
     fromCString(c"no escapes")
@@ -27,7 +30,7 @@ object CStringSuite extends tests.Suite {
     // fromCString(c"\012")
   }
 
-  test("""the value of c"..." literals""") {
+  @Test def valueOfCInterpolationLiterals(): Unit = {
 
     assertEquals("\b", fromCString(c"\b"))
     assertEquals("\\b", fromCString(c"\\b"))
@@ -62,38 +65,36 @@ object CStringSuite extends tests.Suite {
     assertEquals("\\'", fromCString(c"\\'"))
   }
 
-  // Issue 1796
-  test("fromCString(null) returns null") {
+  @Test def fromCStringNullReturnsNullIssue1796(): Unit = {
     assertNull(fromCString(null))
   }
 
-  test("fromCString") {
+  @Test def testFromCString(): Unit = {
     val cstrFrom = c"1234"
     val szTo     = fromCString(cstrFrom)
 
-    assert(szTo.size == 4)
-    assert(szTo.charAt(0) == '1')
-    assert(szTo.charAt(1) == '2')
-    assert(szTo.charAt(2) == '3')
-    assert(szTo.charAt(3) == '4')
+    assertTrue(szTo.size == 4)
+    assertTrue(szTo.charAt(0) == '1')
+    assertTrue(szTo.charAt(1) == '2')
+    assertTrue(szTo.charAt(2) == '3')
+    assertTrue(szTo.charAt(3) == '4')
   }
 
-  // Issue 1796
-  test("toCString(null) return null") {
+  @Test def toCStringNullReturnsNullIssue1796(): Unit = {
     Zone { implicit z => assertNull(toCString(null)) }
   }
 
-  test("toCString") {
+  @Test def testToCString(): Unit = {
     Zone { implicit z =>
       val szFrom = "abcde"
       val cstrTo = toCString(szFrom)
-      assert(strlen(cstrTo) == 5)
-      assert(cstrTo(0) == 'a'.toByte)
-      assert(cstrTo(1) == 'b'.toByte)
-      assert(cstrTo(2) == 'c'.toByte)
-      assert(cstrTo(3) == 'd'.toByte)
-      assert(cstrTo(4) == 'e'.toByte)
-      assert(cstrTo(5) == '\u0000'.toByte)
+      assertTrue(strlen(cstrTo) == 5)
+      assertTrue(cstrTo(0) == 'a'.toByte)
+      assertTrue(cstrTo(1) == 'b'.toByte)
+      assertTrue(cstrTo(2) == 'c'.toByte)
+      assertTrue(cstrTo(3) == 'd'.toByte)
+      assertTrue(cstrTo(4) == 'e'.toByte)
+      assertTrue(cstrTo(5) == '\u0000'.toByte)
 
       val piArr = Charset.forName("UTF-8").encode("\u03c0")
       val cstr2 = toCString("2\u03c0r")
@@ -107,7 +108,7 @@ object CStringSuite extends tests.Suite {
     }
   }
 
-  test("to/from CString") {
+  @Test def toFromCString(): Unit = {
     Zone { implicit z =>
       type _11 = Nat.Digit2[Nat._1, Nat._1]
       val arr = unsafe.stackalloc[CArray[Byte, _11]]
