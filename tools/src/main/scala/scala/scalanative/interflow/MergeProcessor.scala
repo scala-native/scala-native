@@ -383,7 +383,8 @@ final class MergeProcessor(insts: Array[Inst],
     }
   }
 
-  def toSeq()(implicit originDefnPos: nir.Position): Seq[MergeBlock] = {
+  def toSeq(retTy: Type)(
+      implicit originDefnPos: nir.Position): Seq[MergeBlock] = {
     val sortedBlocks = blocks.values.toSeq
       .filter(_.cf != null)
       .sortBy { block => offsets(block.label.name) }
@@ -413,17 +414,13 @@ final class MergeProcessor(insts: Array[Inst],
           case _               => v.ty
         }
       }
-      // !!! CAUTION: j.l.Object is provided here as the most generic upper bound type.
-      // !!! In case `tys` have more than one common super-type and a type which is more
-      // !!! specific than j.l.Object is expected as the return type, then Sub.lub may
-      // !!! calculate the wrong type.
-      val retTy = Sub.lub(tys, Type.Ref(Global.Top("java.lang.Object")))
 
       // Create synthetic label and block where all returning blocks
       // are going tojump to. Synthetics names must be fresh relative
       // to the source instructions, not relative to generated ones.
       val syntheticFresh = Fresh(insts)
-      val syntheticParam = Val.Local(syntheticFresh(), retTy)
+      val syntheticParam =
+        Val.Local(syntheticFresh(), Sub.lub(tys, Some(retTy)))
       val syntheticLabel =
         Inst.Label(syntheticFresh(), Seq(syntheticParam))
       val resultMergeBlock =
