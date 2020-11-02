@@ -11,30 +11,29 @@ import scala.scalanative.util.{ShowBuilder, splitRange, unreachable}
 
 object Show {
   def newBuilder: NirShowBuilder = new NirShowBuilder(new InMemoryShowBuilder)
+  private def withInMemoryBuilder(fn: NirShowBuilder => Unit): String = {
+    val b = newBuilder; fn(b); b.toString
+  }
   def debug[T](msg: String)(f: => T): T = {
     val value = f
     println("$msg: " + value)
     value
   }
 
-  def apply(v: Attr): String  = { val b = newBuilder; b.attr_(v); b.toString }
-  def apply(v: Attrs): String = { val b = newBuilder; b.attrs_(v); b.toString }
-  def apply(v: Bin): String   = { val b = newBuilder; b.bin_(v); b.toString }
-  def apply(v: Comp): String  = { val b = newBuilder; b.comp_(v); b.toString }
-  def apply(v: Conv): String  = { val b = newBuilder; b.conv_(v); b.toString }
-  def apply(v: Defn): String  = { val b = newBuilder; b.defn_(v); b.toString }
-  def apply(v: Global): String = {
-    val b = newBuilder; b.global_(v); b.toString
-  }
-  def apply(v: Sig): String = {
-    val b = newBuilder; b.sig_(v); b.toString
-  }
-  def apply(v: Inst): String  = { val b = newBuilder; b.inst_(v); b.toString }
-  def apply(v: Local): String = { val b = newBuilder; b.local_(v); b.toString }
-  def apply(v: Next): String  = { val b = newBuilder; b.next_(v); b.toString }
-  def apply(v: Op): String    = { val b = newBuilder; b.op_(v); b.toString }
-  def apply(v: Type): String  = { val b = newBuilder; b.type_(v); b.toString }
-  def apply(v: Val): String   = { val b = newBuilder; b.val_(v); b.toString }
+  def apply(v: Attr): String   = withInMemoryBuilder(_.attr_(v))
+  def apply(v: Attrs): String  = withInMemoryBuilder(_.attrs_(v))
+  def apply(v: Bin): String    = withInMemoryBuilder(_.bin_(v))
+  def apply(v: Comp): String   = withInMemoryBuilder(_.comp_(v))
+  def apply(v: Conv): String   = withInMemoryBuilder(_.conv_(v))
+  def apply(v: Defn): String   = withInMemoryBuilder(_.defn_(v))
+  def apply(v: Global): String = withInMemoryBuilder(_.global_(v))
+  def apply(v: Sig): String    = withInMemoryBuilder(_.sig_(v))
+  def apply(v: Inst): String   = withInMemoryBuilder(_.inst_(v))
+  def apply(v: Local): String  = withInMemoryBuilder(_.local_(v))
+  def apply(v: Next): String   = withInMemoryBuilder(_.next_(v))
+  def apply(v: Op): String     = withInMemoryBuilder(_.op_(v))
+  def apply(v: Type): String   = withInMemoryBuilder(_.type_(v))
+  def apply(v: Val): String    = withInMemoryBuilder(_.val_(v))
 
   def dump(defns: Seq[Defn], id: String, dir: VirtualDirectory): Unit = {
     import ExecutionContext.Implicits.global
