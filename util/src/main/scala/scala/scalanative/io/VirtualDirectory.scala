@@ -107,20 +107,20 @@ object VirtualDirectory {
     }
 
     override def merge(sources: Seq[Path], target: Path): Unit = {
-      if (sources.nonEmpty) {
-        val output = FileChannel.open(resolve(target),
-                                      StandardOpenOption.CREATE,
-                                      StandardOpenOption.WRITE,
-                                      StandardOpenOption.APPEND)
-        try sources.foreach { path =>
+      val output = FileChannel.open(resolve(target),
+                                    StandardOpenOption.CREATE,
+                                    StandardOpenOption.WRITE,
+                                    StandardOpenOption.APPEND)
+      try {
+        sources.foreach { path =>
           val input = FileChannel.open(resolve(path),
                                        StandardOpenOption.READ,
                                        StandardOpenOption.DELETE_ON_CLOSE)
           try {
             input.transferTo(0, input.size(), output)
           } finally input.close()
-        } finally output.close()
-      }
+        }
+      } finally output.close()
     }
   }
 

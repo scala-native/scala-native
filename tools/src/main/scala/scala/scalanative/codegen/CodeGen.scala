@@ -56,7 +56,7 @@ object CodeGen {
           case (id, defns) =>
             val sorted = defns.sortBy(_.name.show)
             new Impl(config.targetTriple, env, sorted)
-              .gen(Some(id), workdir)
+              .gen(id.toString, workdir)
         }
 
       // Generate a single LLVM IR file for the whole application.
@@ -65,7 +65,7 @@ object CodeGen {
       def single(): Unit = {
         val sorted = assembly.sortBy(_.name.show)
         new Impl(config.targetTriple, env, sorted)
-          .gen(id = None, workdir)
+          .gen(id = "out", workdir)
       }
 
       (config.mode, config.LTO) match {
@@ -88,17 +88,15 @@ object CodeGen {
     private val generated        = mutable.Set.empty[String]
     private val externSigMembers = mutable.Map.empty[Sig, Global.Member]
 
-    def gen(id: Option[Int], dir: VirtualDirectory): Unit = {
+    def gen(id: String, dir: VirtualDirectory): Unit = {
       val body = dir.write(
-        Paths.get(s"${id.getOrElse("out")}-body.ll"),
-        writer => {
+        Paths.get(s"$id-body.ll"), { writer =>
           genDefns(defns)(new FileShowBuilder(writer))
         }
       )
 
       val headers = dir.write(
-        Paths.get(s"${id.getOrElse("out")}.ll"),
-        writer => {
+        Paths.get(s"$id.ll"), { writer =>
           implicit val sb: ShowBuilder = new FileShowBuilder(writer)
           genPrelude()
           genConsts()
