@@ -75,7 +75,7 @@ final class MergeProcessor(insts: Array[Inst],
         val mergeEmitted = mutable.Map.empty[Op, Val]
         val newEscapes   = mutable.Set.empty[Addr]
 
-        def mergePhi(values: Seq[Val]): Val = {
+        def mergePhi(values: Seq[Val], bound: Option[Type] = None): Val = {
           if (values.distinct.size == 1) {
             values.head
           } else {
@@ -86,11 +86,7 @@ final class MergeProcessor(insts: Array[Inst],
               case (s, v) =>
                 s.materialize(v)
             }
-            val name = mergeFresh()
-            val bound = params.headOption match {
-              case Some(Val.Local(_, ty: Type.RefKind)) => ty
-              case _                                    => Type.Ref(Global.Top("java.lang.Object"))
-            }
+            val name    = mergeFresh()
             val paramty = Sub.lub(materialized.map(_.ty), bound)
             val param   = Val.Local(name, paramty)
             mergePhis += MergePhi(param, names.zip(materialized))
@@ -102,7 +98,7 @@ final class MergeProcessor(insts: Array[Inst],
 
           // 1. Merge locals
 
-          def mergeLocal(local: Local): Unit = {
+          def mergeLocal(local: Local, value: Val): Unit = {
             val values = mutable.UnrolledBuffer.empty[Val]
             states.foreach { s =>
               if (s.locals.contains(local)) {
@@ -110,10 +106,10 @@ final class MergeProcessor(insts: Array[Inst],
               }
             }
             if (states.size == values.size) {
-              mergeLocals(local) = mergePhi(values)
+              mergeLocals(local) = mergePhi(values, Some(value.ty))
             }
           }
-          headState.locals.keys.foreach(mergeLocal)
+          headState.locals.foreach((mergeLocal _).tupled)
 
           // 2. Merge heap
 
@@ -142,7 +138,15 @@ final class MergeProcessor(insts: Array[Inst],
                         if (state.hasEscaped(addr)) restart()
                         state.derefVirtual(addr).values(idx)
                       }
-                      mergePhi(values)
+                      val bound = headKind match {
+                        case ClassKind =>
+                          Some(headCls.fields(idx).ty)
+                        case _ =>
+                          // No need for bound type since each would be either primitive type or j.l.Object
+                          None
+                      }
+
+                      mergePhi(values, bound)
                   }
                   mergeHeap(addr) =
                     VirtualInstance(headKind, headCls, mergeValues)
@@ -163,7 +167,7 @@ final class MergeProcessor(insts: Array[Inst],
                 case (_, (values, _)) =>
                   values(idx)
               }
-              mergeLocals(param.name) = mergePhi(values)
+              mergeLocals(param.name) = mergePhi(values, Some(param.ty))
           }
 
           // 4. Merge delayed ops
