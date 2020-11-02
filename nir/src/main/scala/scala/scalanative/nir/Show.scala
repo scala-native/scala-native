@@ -2,11 +2,12 @@ package scala.scalanative
 package nir
 
 import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
 import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
+import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
-import scalanative.util.{ShowBuilder, unreachable}
-import java.util.stream.{Stream => JStream}
-import java.util.function.{Function => JFunction, Consumer => JConsumer}
+import scala.scalanative.util.{ShowBuilder, splitRange, unreachable}
 
 object Show {
   def newBuilder: NirShowBuilder = new NirShowBuilder(new InMemoryShowBuilder)
@@ -35,22 +36,34 @@ object Show {
   def apply(v: Type): String  = { val b = newBuilder; b.type_(v); b.toString }
   def apply(v: Val): String   = { val b = newBuilder; b.val_(v); b.toString }
 
-  type DefnString = (Global, String)
+  def dump(defns: Seq[Defn], id: String, dir: VirtualDirectory): Unit = {
+    import ExecutionContext.Implicits.global
+    import dir.{merge, write}
 
-  def dump(defns: Seq[Defn], fileName: String): Unit = {
-    val pw = new java.io.PrintWriter(fileName)
+    val sortedDefns = defns.toVector
+      .filter(_ != null)
+      .sortBy(_.name)
 
-    try {
-      defns
-        .filter(_ != null)
-        .sortBy(_.name)
-        .foreach { defn =>
-          pw.write(defn.show)
-          pw.write("\n")
+    def dumpChunk(range: Range, chunkId: Int) = Future {
+      write(Paths.get(s"$id-$chunkId.hnir")) { writer =>
+        range.foreach { idx =>
+          val body = sortedDefns(idx).show
+          writer.append {
+            // writer would throw exception if string contains surrogate pairs
+            if (!body.exists(_.isSurrogate)) body
+            else body.filterNot(_.isSurrogate)
+          }
+          writer.append(System.lineSeparator())
         }
-    } finally {
-      pw.close()
+      }.toAbsolutePath
     }
+
+    Future
+      .sequence {
+        splitRange(sortedDefns.indices, util.procs).zipWithIndex
+          .map((dumpChunk _).tupled)
+      }
+      .map(merge(_, Paths.get(s"$id.hnir")))
   }
 
   final class NirShowBuilder(val builder: ShowBuilder) extends AnyVal {

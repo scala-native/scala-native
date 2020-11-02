@@ -8,6 +8,7 @@ import scala.scalanative.codegen.CodeGen
 import scala.scalanative.linker.Link
 import scala.scalanative.nir._
 import scala.scalanative.util.Scope
+import scala.scalanative.io.VirtualDirectory
 
 /** Internal utilities to instrument Scala Native linker, optimizer and codegen. */
 private[scalanative] object ScalaNative {
@@ -152,8 +153,7 @@ private[scalanative] object ScalaNative {
   def dumpDefns(config: Config, phase: String, defns: Seq[Defn]): Unit = {
     if (config.dump) {
       config.logger.time(s"Dumping intermediate code ($phase)") {
-        val path = config.workdir.resolve(phase + ".hnir")
-        nir.Show.dump(defns, path.toFile.getAbsolutePath)
+        nir.Show.dump(defns, phase, VirtualDirectory.local(config.workdir))
       }
     }
   }

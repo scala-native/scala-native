@@ -52,4 +52,15 @@ package object util {
   def partitionBy[T](elems: Seq[T], batches: Int)(
       f: T => Any): Map[Int, Seq[T]] =
     elems.groupBy { elem => Math.abs(f(elem).##) % batches }
+
+  def splitRange(r: Range, chunks: Int): Seq[Range] = {
+    val nchunks   = chunks max 1
+    val chunkSize = (r.length / nchunks) max 1
+    val starts    = r.by(chunkSize).take(nchunks)
+    val ends      = starts.map(_ - 1).drop(1) :+ r.end
+    starts.zip(ends).map {
+      case (start, end) if r.isInclusive => start to end
+      case (start, end)                  => start until end
+    }
+  }
 }
