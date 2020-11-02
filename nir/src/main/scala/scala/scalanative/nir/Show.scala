@@ -3,10 +3,11 @@ package nir
 
 import java.nio.charset.StandardCharsets
 import scala.collection.mutable
+import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 import scalanative.util.{ShowBuilder, unreachable}
 
 object Show {
-  def newBuilder: NirShowBuilder = new NirShowBuilder(new ShowBuilder)
+  def newBuilder: NirShowBuilder = new NirShowBuilder(new InMemoryShowBuilder)
   def debug[T](msg: String)(f: => T): T = {
     val value = f
     println("$msg: " + value)

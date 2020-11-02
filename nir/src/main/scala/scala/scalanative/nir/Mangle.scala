@@ -1,6 +1,7 @@
 package scala.scalanative
 package nir
 import scala.scalanative.nir.Sig.Scope.{Private, Public}
+import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 
 object Mangle {
   def apply(ty: Type): String = {
@@ -22,7 +23,7 @@ object Mangle {
   }
 
   private class Impl {
-    val sb = new scalanative.util.ShowBuilder
+    val sb = new InMemoryShowBuilder
     import sb._
 
     def mangleGlobal(name: Global): Unit = name match {
