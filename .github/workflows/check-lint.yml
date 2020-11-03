@@ -1,12 +1,14 @@
-name: Check Lint
+name: Publish
 on:
   pull_request:
-  push:
-    branches:
-      - master
 jobs:
-  check-lint:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - run: ./scripts/check-lint.sh
+      - uses: actions/checkout@v2.3.3
+      - name: SBT Action
+        uses: lokkju/github-action-sbt@v0.2.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          commands: publish

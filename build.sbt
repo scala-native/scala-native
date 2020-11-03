@@ -117,13 +117,6 @@ lazy val bintrayPublishSettings: Seq[Setting[_]] = Seq(
 lazy val mavenPublishSettings: Seq[Setting[_]] = Seq(
   publishMavenStyle := true,
   pomIncludeRepository := { x => false },
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (version.value.trim.endsWith("SNAPSHOT"))
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
   publishSnapshot := Def.taskDyn {
     val travis = Try(sys.env("TRAVIS")).getOrElse("false") == "true"
     val pr = Try(sys.env("TRAVIS_PULL_REQUEST"))
