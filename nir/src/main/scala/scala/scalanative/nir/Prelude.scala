@@ -2,6 +2,7 @@ package scala.scalanative
 package nir
 
 import java.nio.ByteBuffer
+import java.io.DataOutputStream
 
 case class Prelude(magic: Int,
                    compat: Int,
@@ -24,21 +25,17 @@ object Prelude {
     // and thus should be made reachable, no matter
     // what the reachability algorithm does
     // example: reflectively instantiatable classes
-    // since: compat = 4, revision = 7
-    val hasEntryPoints =
-      if (revision < 7)
-        false
-      else
-        buffer.get() != 0
+    val hasEntryPoints = buffer.get() != 0
 
     Prelude(magic, compat, revision, hasEntryPoints)
   }
 
-  def writeTo(buffer: ByteBuffer, prelude: Prelude): ByteBuffer = {
+  def writeTo(out: DataOutputStream, prelude: Prelude): DataOutputStream = {
     val Prelude(magic, compat, revision, hasEntryPoints) = prelude
-    buffer.putInt(magic)
-    buffer.putInt(compat)
-    buffer.putInt(revision)
-    buffer.put((if (hasEntryPoints) 1 else 0).toByte)
+    out.writeInt(magic)
+    out.writeInt(compat)
+    out.writeInt(revision)
+    out.writeBoolean(hasEntryPoints)
+    out
   }
 }

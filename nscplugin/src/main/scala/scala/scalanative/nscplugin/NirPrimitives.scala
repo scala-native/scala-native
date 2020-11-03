@@ -128,7 +128,16 @@ abstract class NirPrimitives {
     addPrimitive(ULongToFloatMethod, ULONG_TO_FLOAT)
     addPrimitive(UIntToDoubleMethod, UINT_TO_DOUBLE)
     addPrimitive(ULongToDoubleMethod, ULONG_TO_DOUBLE)
-    HashMethods.foreach(addPrimitive(_, HASH))
+
+    {
+      import scala.tools.nsc.settings._
+      ScalaVersion.current match {
+        case SpecificScalaVersion(2, 11, _, _) =>
+          HashMethods.foreach(addPrimitive(_, HASH))
+        case _ =>
+      }
+    }
+
     addPrimitive(LoadBoolMethod, LOAD_BOOL)
     addPrimitive(LoadCharMethod, LOAD_CHAR)
     addPrimitive(LoadByteMethod, LOAD_BYTE)

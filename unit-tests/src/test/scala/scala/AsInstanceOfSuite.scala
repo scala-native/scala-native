@@ -1,4 +1,6 @@
-package scala.scalanative.unsafe
+package scala
+
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo.scalaVersion
 
 object AsInstanceOfSuite extends tests.Suite {
   class C
@@ -27,8 +29,12 @@ object AsInstanceOfSuite extends tests.Suite {
     assertThrows[NullPointerException](anyNull.asInstanceOf[Nothing])
   }
 
-  test("null.asInstanceOf[Unit]") {
+  test("null.asInstanceOf[Unit]", cond = scalaVersion.startsWith("2.11.")) {
     assert(anyNull.asInstanceOf[Unit] == anyNull)
+  }
+
+  test("null.asInstanceOf[Unit]", cond = !scalaVersion.startsWith("2.11.")) {
+    assert(anyNull.asInstanceOf[Unit] != anyNull)
   }
 
   test("42.asInstanceOf[Object]") {
@@ -51,8 +57,12 @@ object AsInstanceOfSuite extends tests.Suite {
     assertThrows[ClassCastException](any42.asInstanceOf[Nothing])
   }
 
-  test("42.asInstanceOf[Unit]") {
+  test("42.asInstanceOf[Unit]", cond = scalaVersion.startsWith("2.11.")) {
     assertThrows[ClassCastException](any42.asInstanceOf[Unit])
+  }
+
+  test("42.asInstanceOf[Unit]", cond = !scalaVersion.startsWith("2.11.")) {
+    assertNotNull(any42.asInstanceOf[Unit])
   }
 
   test("c.asInstanceOf[Object]") {
@@ -75,7 +85,11 @@ object AsInstanceOfSuite extends tests.Suite {
     assertThrows[ClassCastException](anyC.asInstanceOf[Nothing])
   }
 
-  test("c.asInstanceOf[Unit]") {
+  test("c.asInstanceOf[Unit]", cond = scalaVersion.startsWith("2.11.")) {
     assertThrows[ClassCastException](anyC.asInstanceOf[Unit])
+  }
+
+  test("c.asInstanceOf[Unit]", cond = !scalaVersion.startsWith("2.11.")) {
+    assertNotNull(c.asInstanceOf[Unit])
   }
 }

@@ -49,13 +49,13 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def canExecute(): Boolean =
-    Zone { implicit z => access(toCString(path), fcntl.X_OK) == 0 }
+    Zone { implicit z => access(toCString(path), unistd.X_OK) == 0 }
 
   def canRead(): Boolean =
-    Zone { implicit z => access(toCString(path), fcntl.R_OK) == 0 }
+    Zone { implicit z => access(toCString(path), unistd.R_OK) == 0 }
 
   def canWrite(): Boolean =
-    Zone { implicit z => access(toCString(path), fcntl.W_OK) == 0 }
+    Zone { implicit z => access(toCString(path), unistd.W_OK) == 0 }
 
   def setExecutable(executable: Boolean): Boolean =
     setExecutable(executable, ownerOnly = true)
@@ -94,7 +94,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   def exists(): Boolean =
-    Zone { implicit z => access(toCString(path), fcntl.F_OK) == 0 }
+    Zone { implicit z => access(toCString(path), unistd.F_OK) == 0 }
 
   def toPath(): Path =
     FileSystems.getDefault().getPath(this.getPath(), Array.empty)

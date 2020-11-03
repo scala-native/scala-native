@@ -1,4 +1,4 @@
-import java.net.{ServerSocket}
+import java.net.ServerSocket
 import java.io.{PrintWriter, BufferedReader, InputStreamReader, File}
 import java.nio.file.{Files, Paths}
 
@@ -7,7 +7,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.12"
+scalaVersion := {
+  val scalaVersion = System.getProperty("scala.version")
+  if (scalaVersion == null)
+    throw new RuntimeException(
+      """|The system property 'scala.version' is not defined.
+         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
+  else scalaVersion
+}
 
 lazy val launchServer = taskKey[Unit]("Setting up a server for tests")
 lazy val launchTcpEchoServer =

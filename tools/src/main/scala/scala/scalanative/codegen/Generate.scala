@@ -14,6 +14,7 @@ object Generate {
 
   implicit def linked(implicit meta: Metadata): linker.Result =
     meta.linked
+  private implicit val pos: Position = Position.NoPosition
 
   private class Impl(entry: Global.Top, defns: Seq[Defn])(
       implicit meta: Metadata) {
@@ -57,7 +58,8 @@ object Generate {
         val struct = meta.layout(cls).struct
         val rtti   = meta.rtti(cls)
 
-        buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)
+        buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)(
+          cls.position)
       }
     }
 
@@ -68,7 +70,7 @@ object Generate {
       val result           = Val.Local(fresh(), Type.Bool)
 
       buf += Defn.Define(
-        Attrs(inline = Attr.AlwaysInline),
+        Attrs(inlineHint = Attr.AlwaysInline),
         ClassHasTraitName,
         ClassHasTraitSig,
         Seq(
@@ -88,7 +90,8 @@ object Generate {
       meta.traits.foreach { trt =>
         val rtti = meta.rtti(trt)
 
-        buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)
+        buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)(
+          trt.position)
       }
     }
 
@@ -99,7 +102,7 @@ object Generate {
       val result          = Val.Local(fresh(), Type.Bool)
 
       buf += Defn.Define(
-        Attrs(inline = Attr.AlwaysInline),
+        Attrs(inlineHint = Attr.AlwaysInline),
         TraitHasTraitName,
         TraitHasTraitSig,
         Seq(
@@ -189,6 +192,7 @@ object Generate {
           val clsTy = cls.ty
 
           implicit val fresh = Fresh()
+          implicit val pos   = cls.position
 
           val entry      = fresh()
           val existing   = fresh()
@@ -223,7 +227,7 @@ object Generate {
             val loadName = name.member(Sig.Generated("load"))
             val loadSig  = Type.Function(Seq(), clsTy)
             val loadDefn = Defn.Define(
-              Attrs(inline = Attr.NoInline),
+              Attrs(inlineHint = Attr.NoInline),
               loadName,
               loadSig,
               Seq(

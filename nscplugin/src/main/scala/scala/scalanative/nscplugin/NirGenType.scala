@@ -14,7 +14,7 @@ trait NirGenType { self: NirGenPhase =>
       sym.isInterface
 
     def isScalaModule: Boolean =
-      sym.isModuleClass && !sym.isImplClass && !sym.isLifted
+      sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
 
     def isExternModule: Boolean =
       isScalaModule && sym.annotations.exists(_.symbol == ExternClass)
@@ -25,10 +25,17 @@ trait NirGenType { self: NirGenPhase =>
     def isField: Boolean =
       !sym.isMethod && sym.isTerm && !isScalaModule
 
-    def isCFuncPtrClass: Boolean =
-      CFuncPtrClass.contains(sym) || {
+    /** Tests if this type inherits from CFuncPtr with exclusion of CFuncRawPtr */
+    def isCFuncPtrClass: Boolean = sym != CFuncRawPtrClass && {
+      sym == CFuncPtrClass ||
+      sym.info.parents.exists(_.typeSymbol == CFuncPtrClass)
+    }
+
+    /** Tests if this type is some of some CFuncPtrN types */
+    def isCFuncPtrNClass: Boolean =
+      CFuncPtrNClass.contains(sym) || {
         sym.info.parents.exists { parent =>
-          CFuncPtrClass.contains(parent.typeSymbol)
+          CFuncPtrNClass.contains(parent.typeSymbol)
         }
       }
   }
@@ -156,7 +163,7 @@ trait NirGenType { self: NirGenPhase =>
     val owner    = sym.owner
     val paramtys = genMethodSigParamsImpl(sym, isExtern)
     val selfty =
-      if (isExtern || owner.isExternModule || owner.isImplClass) None
+      if (isExtern || owner.isExternModule || isImplClass(owner)) None
       else Some(genType(owner.tpe))
     val retty =
       if (sym.isClassConstructor) nir.Type.Unit

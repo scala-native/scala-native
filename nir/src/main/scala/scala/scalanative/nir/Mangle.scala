@@ -1,5 +1,7 @@
 package scala.scalanative
 package nir
+import scala.scalanative.nir.Sig.Scope.{Private, Public}
+import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 
 object Mangle {
   def apply(ty: Type): String = {
@@ -21,7 +23,7 @@ object Mangle {
   }
 
   private class Impl {
-    val sb = new scalanative.util.ShowBuilder
+    val sb = new InMemoryShowBuilder
     import sb._
 
     def mangleGlobal(name: Global): Unit = name match {
@@ -43,10 +45,16 @@ object Mangle {
     def mangleSig(sig: Sig): Unit =
       str(sig.mangle)
 
+    def mangleSigScope(scope: Sig.Scope): Unit = scope match {
+      case Public      => str("O")
+      case Private(in) => str("P"); mangleGlobal(in)
+    }
+
     def mangleUnmangledSig(sig: Sig.Unmangled): Unit = sig match {
-      case Sig.Field(id) =>
+      case Sig.Field(id, scope) =>
         str("F")
         mangleIdent(id)
+        mangleSigScope(scope)
       case Sig.Ctor(types) =>
         str("R")
         types.foreach(mangleType)
@@ -54,11 +62,12 @@ object Mangle {
       case Sig.Clinit() =>
         str("I")
         str("E")
-      case Sig.Method(id, types) =>
+      case Sig.Method(id, types, scope) =>
         str("D")
         mangleIdent(id)
         types.foreach(mangleType)
         str("E")
+        mangleSigScope(scope)
       case Sig.Proxy(id, types) =>
         str("P")
         mangleIdent(id)

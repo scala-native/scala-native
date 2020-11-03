@@ -735,8 +735,8 @@ object Files {
 
   private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
     attrs.map(a => (a.name, a.value)).toMap.foreach {
-      case (name, value: Object) =>
-        setAttribute(path, name, value, Array.empty)
+      case (name, value) =>
+        setAttribute(path, name, value.asInstanceOf[AnyRef], Array.empty)
     }
 
   private val attributesClassesToViews

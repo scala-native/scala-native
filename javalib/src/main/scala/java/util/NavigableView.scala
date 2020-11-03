@@ -49,7 +49,7 @@ private[util] class NavigableView[E](original: NavigableSet[E],
         last.get
       }
 
-      def remove(): Unit = {
+      override def remove(): Unit = {
         if (last.isEmpty) {
           throw new IllegalStateException()
         } else {

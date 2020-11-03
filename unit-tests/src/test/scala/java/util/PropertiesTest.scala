@@ -8,7 +8,6 @@ import java.{util => ju}
 import java.nio.charset.StandardCharsets
 
 import org.junit.Test
-import org.junit.Ignore
 import org.junit.Assert._
 import org.junit.Assume._
 
@@ -208,13 +207,24 @@ class PropertiesTest {
       """.stripMargin
     assertResult(prop1, result1)
 
+    // Undocumented feature
+    // https://bugs.java.com/bugdatabase/view_bug.do?bug_id=5089823
+    // https://bugs.java.com/bugdatabase/view_bug.do?bug_id=4622226
     val prop2 = new Properties()
-    prop2.put("p0000000000111111111122222222223333333333", "40")
+    prop2.put("k40", "v0000000001111111111222222222233333333334")
     val result2 =
       """-- listing properties --
-        |p000000000011111111112222222222333333...=40
+        |k40=v000000000111111111122222222223333333...
       """.stripMargin
     assertResult(prop2, result2)
+
+    val prop3 = new Properties()
+    prop3.put("k0000000001111111111222222222233333333334", "v40")
+    val result3 =
+      """-- listing properties --
+        |k0000000001111111111222222222233333333334=v40
+      """.stripMargin
+    assertResult(prop3, result3)
   }
 
   private val dummyProps =
@@ -283,10 +293,9 @@ class PropertiesTest {
   }
 
   @Test def loadInputStreamWithFileInput(): Unit = {
-    val file =
-      new File("unit-tests/src/test/resources/properties-load-test.properties")
-    val is: InputStream = new FileInputStream(file)
-    val prop            = new Properties()
+    // String input for Scala.js
+    val is   = new ByteArrayInputStream(filestr.getBytes())
+    val prop = new Properties()
     prop.load(is)
     is.close()
     checkLoadFromFile(prop)
@@ -315,10 +324,9 @@ class PropertiesTest {
   }
 
   @Test def loadReaderWithFileInput(): Unit = {
-    val file =
-      new File("unit-tests/src/test/resources/properties-load-test.properties")
-    val is: InputStream = new FileInputStream(file)
-    val prop            = new Properties()
+    // string input for Scala.js
+    val is   = new ByteArrayInputStream(filestr.getBytes())
+    val prop = new Properties()
     prop.load(new InputStreamReader(is))
     is.close()
     checkLoadFromFile(prop)
@@ -389,6 +397,14 @@ class PropertiesTest {
     assertAll(prop1, prop2)
   }
 
+  @Test def checkUnicodeParsing(): Unit = {
+    val is = new ByteArrayInputStream(
+      Array('h', '\\', 'u', '0', '0', '2', '0', 'h'))
+    val prop = new Properties()
+    prop.load(is)
+    assertEquals("", prop.get("h h"))
+  }
+
   // helper functions
 
   def storeStream(props: Properties,
@@ -433,5 +449,41 @@ class PropertiesTest {
       new InputStreamReader(
         new ByteArrayInputStream(in.getBytes(StandardCharsets.UTF_8))))
     prop
+  }
+
+  // scalastyle doesn't like embedded tabs or trailing spaces in the string
+  lazy val filestr = {
+    raw"""
+      |
+      |   \ \r \n \t \f
+      |
+      |! dshfjklahfjkldashgjl;as
+      |     #jdfagdfjagkdjfghksdajfd
+      |
+      |!!properties
+      |
+      |a=a
+      |b bb as,dn${"   "}
+      |c\r\ \t\nu =:: cu
+      |bu= b\
+      |${"\t\t"}u
+      |d=d\r\ne=e
+      |f   :f\
+      |f\
+      |${"\t\t\t"}f
+      |g${"\t\t"}g
+      |h\ h
+      |\   i=i
+      |j=\   j
+      |space=\   c
+      |
+      |dblbackslash=\\
+      |
+      |# jvm does not trim trailing space so no line continuation
+      |trailing = foo, \${"  "}
+      |bar
+      |notrailing = baz \\${"  "}
+      |
+    """.stripMargin
   }
 }

@@ -159,7 +159,7 @@ class ArrayDeque[E] private (private val inner: ArrayList[E])
 
   def offer(e: E): Boolean = offerLast(e)
 
-  def remove(): E = removeFirst()
+  override def remove(): E = removeFirst()
 
   def poll(): E = pollFirst()
 
@@ -196,7 +196,7 @@ class ArrayDeque[E] private (private val inner: ArrayList[E])
         inner.get(index)
       }
 
-      def remove(): Unit = {
+      override def remove(): Unit = {
         checkStatus()
         if (index < 0 || index >= inner.size) {
           throw new IllegalStateException()

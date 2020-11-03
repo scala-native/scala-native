@@ -44,9 +44,12 @@ trait NirDefinitions { self: NirGlobalAddons =>
       "scala.scalanative.unsafe.package$CCast")
     lazy val CCastMethod = getDecl(CCastClass, TermName("cast"))
 
-    lazy val CFuncPtrClass = (0 to 22).map { n =>
+    lazy val CFuncPtrNClass = (0 to 22).map { n =>
       getRequiredClass("scala.scalanative.unsafe.CFuncPtr" + n)
     }
+    lazy val CFuncPtrClass = getRequiredClass(
+      "scala.scalanative.unsafe.CFuncPtr")
+
     lazy val CFuncRawPtrClass =
       getRequiredClass("scala.scalanative.runtime.CFuncRawPtr")
 
@@ -94,7 +97,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val StructClass = getRequiredClass("scala.scalanative.runtime.struct")
 
-    lazy val RuntimePackage = getPackage(TermName("scala.scalanative.runtime"))
+    lazy val RuntimePackage = getPackageObject("scala.scalanative.runtime")
 
     lazy val RuntimeMonitorClass = getRequiredClass(
       "scala.scalanative.runtime.Monitor")
