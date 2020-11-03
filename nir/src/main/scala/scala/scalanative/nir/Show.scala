@@ -35,7 +35,9 @@ object Show {
   def apply(v: Type): String   = withInMemoryBuilder(_.type_(v))
   def apply(v: Val): String    = withInMemoryBuilder(_.val_(v))
 
-  def dump(defns: Seq[Defn], id: String, dir: VirtualDirectory): Unit = {
+  def dumpAsync(defns: Seq[Defn],
+                id: String,
+                dir: VirtualDirectory): Future[Unit] = {
     import ExecutionContext.Implicits.global
     import dir.{merge, write}
 

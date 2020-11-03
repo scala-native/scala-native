@@ -153,7 +153,7 @@ private[scalanative] object ScalaNative {
   def dumpDefns(config: Config, phase: String, defns: Seq[Defn]): Unit = {
     if (config.dump) {
       config.logger.time(s"Dumping intermediate code ($phase)") {
-        nir.Show.dump(defns, phase, VirtualDirectory.local(config.workdir))
+        nir.Show.dumpAsync(defns, phase, VirtualDirectory.local(config.workdir))
       }
     }
   }
