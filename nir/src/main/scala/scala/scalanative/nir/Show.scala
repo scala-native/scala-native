@@ -6,7 +6,7 @@ import java.nio.file.Paths
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalanative.io.VirtualDirectory
-import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
+import scala.scalanative.util.ShowBuilder.{FileShowBuilder, InMemoryShowBuilder}
 import scala.scalanative.util.{ShowBuilder, splitRange, unreachable}
 
 object Show {
@@ -47,13 +47,9 @@ object Show {
 
     def dumpChunk(range: Range, chunkId: Int) = Future {
       write(Paths.get(s"$id-$chunkId.hnir")) { writer =>
+        val nsb = new NirShowBuilder(new FileShowBuilder(writer))
         range.foreach { idx =>
-          val body = sortedDefns(idx).show
-          writer.append {
-            // writer would throw exception if string contains surrogate pairs
-            if (!body.exists(_.isSurrogate)) body
-            else body.filterNot(_.isSurrogate)
-          }
+          nsb.defn_(sortedDefns(idx))
           writer.append(System.lineSeparator())
         }
       }.toAbsolutePath
