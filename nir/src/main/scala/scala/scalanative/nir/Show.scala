@@ -54,7 +54,7 @@ object Show {
     def dumpChunk(range: Range, chunkId: Int) = Future {
       write(Paths.get(s"$id-$chunkId.hnir")) { writer =>
         new NirShowBuilder(new FileShowBuilder(writer))
-          .defns_(sortedDefnsView.slice(range.start, range.last))
+          .defns_(sortedDefnsView.slice(range.start, range.last + 1))
       }.toAbsolutePath
     }
 

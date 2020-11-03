@@ -58,9 +58,19 @@ package object util {
     val chunkSize = (r.length / nchunks) max 1
     val starts    = r.by(chunkSize).take(nchunks)
     val ends      = starts.map(_ - 1).drop(1) :+ r.end
-    starts.zip(ends).map {
-      case (start, end) if r.isInclusive => start to end
-      case (start, end)                  => start until end
+
+    def buildRange(rangePair: (Int, Int),
+                   checkExclusive: Boolean = true): Range = {
+      val (start, end) = rangePair
+      if (checkExclusive && !r.isInclusive) start until end
+      else start to end
+    }
+
+    starts.zip(ends) match {
+      case Seq(range) => buildRange(range) :: Nil
+      case init :+ last =>
+        init.map(buildRange(_, checkExclusive = false)) :+ buildRange(last)
+      case _ => unsupported("no range defined")
     }
   }
 }
