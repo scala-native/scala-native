@@ -236,7 +236,17 @@ trait Eval { self: Interflow =>
           case InstanceRef(ty) =>
             ty
           case _ =>
-            obj.ty
+            /* If method is not virtual (eg. constructor) we need to ensure that
+             * we would fetch for expected type targets (rawObj) instead of real (evaluated) type
+             * It might result in calling wrong method and lead to infinite loops, eg. issue #1909
+             */
+            val realType     = obj.ty
+            val expectedType = rawObj.ty
+            val shallUseExpectedType = !sig.isVirtual &&
+              Sub.is(realType, expectedType) && !Sub.is(expectedType, realType)
+
+            if (shallUseExpectedType) expectedType
+            else realType
         }
         val targets = objty match {
           case Type.Null =>

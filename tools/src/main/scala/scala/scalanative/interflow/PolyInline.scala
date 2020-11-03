@@ -63,9 +63,6 @@ trait PolyInline { self: Interflow =>
     val obj     = materialize(op.obj)
     val margs   = args.map(materialize(_))
     val targets = polyTargets(op)
-    if (op.toString.contains("Random") && !op.sig.isVirtual) {
-      println(s"polyinline: $op ($args) - $targets")
-    }
     val classes = targets.map(_._1)
     val impls   = targets.map(_._2).distinct
 
