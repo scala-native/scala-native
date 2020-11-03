@@ -39,7 +39,7 @@ trait Opt { self: Interflow =>
     val state = new State(Local(0))
 
     // Interflow usually infers better types on our erased type system
-    // than scalac, yet we live it a benefit of the doubt and make sure
+    // than scalac, yet we live it as a benefit of the doubt and make sure
     // that if original return type is more specific, we keep it as is.
     val Type.Function(_, origRetTy) = origdefn.ty
 
