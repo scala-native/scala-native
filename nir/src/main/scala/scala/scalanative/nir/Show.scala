@@ -41,23 +41,20 @@ object Show {
     import ExecutionContext.Implicits.global
     import dir.{merge, write}
 
-    val sortedDefns = defns.toVector
+    val sortedDefnsView = defns.view
       .filter(_ != null)
       .sortBy(_.name)
 
     def dumpChunk(range: Range, chunkId: Int) = Future {
       write(Paths.get(s"$id-$chunkId.hnir")) { writer =>
-        val nsb = new NirShowBuilder(new FileShowBuilder(writer))
-        range.foreach { idx =>
-          nsb.defn_(sortedDefns(idx))
-          writer.append(System.lineSeparator())
-        }
+        new NirShowBuilder(new FileShowBuilder(writer))
+          .defns_(sortedDefnsView.slice(range.start, range.last))
       }.toAbsolutePath
     }
 
     Future
       .sequence {
-        splitRange(sortedDefns.indices, util.procs).zipWithIndex
+        splitRange(sortedDefnsView.indices, util.procs).zipWithIndex
           .map((dumpChunk _).tupled)
       }
       .map(merge(_, Paths.get(s"$id.hnir")))
