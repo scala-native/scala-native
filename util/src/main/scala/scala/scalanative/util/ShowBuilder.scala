@@ -44,5 +44,17 @@ object ShowBuilder {
   }
 
   final class FileShowBuilder(protected val out: java.io.Writer)
-      extends ShowBuilder
+      extends ShowBuilder {
+    override def str(value: Any): Unit = {
+      val body = value.toString
+      out.append {
+        /* Writer may have problems with strings containing surrogate pairs and throw exception,
+         * but such cases may be observed only when dumping linked and optimized defns.
+         * In lowered code strings are already transformed into array[byte] and effectively into safe string
+         */
+        if (!body.exists(_.isSurrogate)) body
+        else body.filterNot(_.isSurrogate)
+      }
+    }
+  }
 }
