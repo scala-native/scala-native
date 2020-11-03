@@ -35,6 +35,12 @@ object Show {
   def apply(v: Type): String   = withInMemoryBuilder(_.type_(v))
   def apply(v: Val): String    = withInMemoryBuilder(_.val_(v))
 
+  def dump(defns: Seq[Defn], id: String, dir: VirtualDirectory): Unit = {
+    import scala.concurrent.Await
+    import scala.concurrent.duration._
+    Await.ready(dumpAsync(defns, id, dir), 5.minutes)
+  }
+
   def dumpAsync(defns: Seq[Defn],
                 id: String,
                 dir: VirtualDirectory): Future[Unit] = {
