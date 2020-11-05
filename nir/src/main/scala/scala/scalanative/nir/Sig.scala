@@ -36,6 +36,7 @@ final class Sig(val mangle: String) {
   final def isGenerated: Boolean = mangle(0) == 'G'
   final def isDuplicate: Boolean = mangle(0) == 'K'
 
+  final def isVirtual          = !(isCtor || isClinit || isImplCtor || isExtern)
   final def isPrivate: Boolean = privateIn.isDefined
   final lazy val privateIn: Option[Global.Top] = {
     unmangled.sigScope match {

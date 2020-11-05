@@ -438,6 +438,8 @@ object Lower {
 
       def genMethodLookup(): Unit = {
         val targets = obj.ty match {
+          case ClassRef(cls) if !sig.isVirtual =>
+            cls.resolve(sig).toSeq
           case ScopeRef(scope) =>
             scope.targets(sig).toSeq
           case _ =>
