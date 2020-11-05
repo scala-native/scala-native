@@ -98,7 +98,23 @@ class Reach(
           loaded(owner) = scope
         }
     }
-    loaded.get(owner).flatMap(_.get(global))
+    def fallback = global match {
+      case Global.Member(owner, sig) =>
+        infos(owner)
+          .asInstanceOf[ScopeInfo]
+          .linearized
+          .collectFirst {
+            case info if info.responds.contains(sig) =>
+              info.responds(sig)
+          }
+          .flatMap(lookup)
+      case _ => None
+    }
+
+    loaded
+      .get(owner)
+      .flatMap(_.get(global))
+      .orElse(fallback)
   }
 
   def process(): Unit =
@@ -324,8 +340,7 @@ class Reach(
         info.linearized.foreach {
           case traitInfo: Trait =>
             info.defaultResponds ++= traitInfo.responds
-          case _ =>
-            ()
+          case _ => ()
         }
       case _ =>
         ()
