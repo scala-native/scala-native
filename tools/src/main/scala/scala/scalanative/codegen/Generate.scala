@@ -128,8 +128,6 @@ object Generate {
       )
     }
 
-    private val entryMainSig =
-      Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit))
     def genMain(): Unit = {
       validateMainEntry()
 
@@ -193,7 +191,7 @@ object Generate {
             ),
             Inst.Let(module.name, Op.Module(entry.top), unwind),
           Inst.Let(entryMainMethod.name,
-                   Op.Method(module, entryMainSig),
+                   Op.Method(module, Rt.ScalaMainSig),
                    unwind),
           Inst.Let(Op.Call(entryMainTy, entryMainMethod, Seq(module, arr)),
                    unwind),
@@ -414,13 +412,13 @@ object Generate {
       val info = linked.infos.getOrElse(entry, fail("not linked"))
       info match {
         case cls: Class if cls.isModule =>
-          cls.resolve(entryMainSig).getOrElse {
-            fail(s"does not contain $entryMainSig")
+          cls.resolve(Rt.ScalaMainSig).getOrElse {
+            fail(s"does not contain ${Rt.ScalaMainSig}")
           }
           cls.linearized
             .collectFirst {
               case t: Trait if t.name == Global.Top("scala.App") =>
-                if (t.responds.contains(entryMainSig)) {
+                if (t.responds.contains(Rt.ScalaMainSig)) {
                   util.unsupported(
                     "\nScala Native does not support usage of default scala.App main method.\n" +
                       s"Remove scala.App trait from ${entry.id} signature or override its `main` method\n" +

@@ -44,9 +44,21 @@ class Reach(
     // in reachUnavailable
     defns ++= done.valuesIterator.filter(_ != null)
 
-    new Result(
-      infos,
-      entries,
+    val resultEntries = entries.head match {
+      case Global.Member(module, sig)
+          if module == Global.Top(config.mainClass) &&
+            sig == Rt.ScalaMainSig.mangled =>
+        //If main method is introduced via class inheritance we need resolve real entry
+        //Initial owner also needs to be passed or else it would be deleted in further steps
+        infos(module)
+          .asInstanceOf[Class]
+          .resolve(sig)
+          .toSeq ++ entries.tail :+ module
+      case _ => entries
+    }
+
+    new Result(infos,
+               resultEntries,
       unavailable.toSeq,
       from,
       links.toSeq,
