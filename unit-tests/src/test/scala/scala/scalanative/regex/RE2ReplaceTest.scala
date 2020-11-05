@@ -3,9 +3,10 @@ package regex
 
 import java.util.regex.PatternSyntaxException
 
-import ScalaTestCompat.fail
+import org.junit.Test
+import org.junit.Assert._
 
-object RE2ReplaceSuite extends tests.Suite {
+class RE2ReplaceTest {
 
   private val REPLACE_TESTS = Array(
     // Test empty input and/or replacement,
@@ -112,7 +113,7 @@ object RE2ReplaceSuite extends tests.Suite {
     Array("[a-c]*", "x", "abcbcdcdedef", "xdcdedef", "true")
   )
 
-  test("replaceTestHelper") {
+  @Test def replaceTest(): Unit = {
     for (Array(pattern, replacement, source, expected, _replaceFirst) <- REPLACE_TESTS) {
       val replaceFirst = java.lang.Boolean.parseBoolean(_replaceFirst)
       var re: RE2      = null
@@ -122,13 +123,14 @@ object RE2ReplaceSuite extends tests.Suite {
           fail(
             "Unexpected error compiling %s: %s".format(pattern, e.getMessage))
       }
+
       val actual =
         if (replaceFirst) re.replaceFirst(source, replacement)
         else re.replaceAll(source, replacement)
-      if (!(actual == expected))
-        fail(
-          "%s.replaceAll(%s,%s) = %s; want %s"
-            .format(pattern, source, replacement, actual, expected))
+
+      assertTrue("%s.replaceAll(%s,%s) = %s; want %s"
+                   .format(pattern, source, replacement, actual, expected),
+                 actual == expected)
     }
   }
 }
