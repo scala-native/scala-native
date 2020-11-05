@@ -132,14 +132,11 @@ object Generate {
       implicit val fresh = Fresh()
       val entryMainTy =
         Type.Function(Seq(Type.Ref(entry.top), ObjectArray), Type.Unit)
-      val entryMainName =
-        Global.Member(
-          entry,
-          Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit))
-        )
-      val entryMain = Val.Global(entryMainName, Type.Ptr)
+      val entryMainSig =
+        Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit))
 
-      val stackBottom = Val.Local(fresh(), Type.Ptr)
+      val entryMainMethod = Val.Local(fresh(), Type.Ptr)
+      val stackBottom     = Val.Local(fresh(), Type.Ptr)
 
       val argc = Val.Local(fresh(), Type.Int)
       val argv = Val.Local(fresh(), Type.Ptr)
@@ -193,7 +190,11 @@ object Generate {
               unwind
             ),
             Inst.Let(module.name, Op.Module(entry.top), unwind),
-            Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr)), unwind),
+          Inst.Let(entryMainMethod.name,
+                   Op.Method(module, entryMainSig),
+                   unwind),
+          Inst.Let(Op.Call(entryMainTy, entryMainMethod, Seq(module, arr)),
+                   unwind),
             Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(module)), unwind),
             Inst.Ret(Val.Int(0)),
             Inst.Label(handler, Seq(exc)),
