@@ -10,6 +10,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   val ParentBar = g("Parent", Sig.Field("bar"))
   val ParentBarSet = g("Parent", Sig.Method("bar_=", Seq(Type.Int, Type.Unit)))
   val ParentBarGet = g("Parent", Sig.Method("bar", Seq(Type.Int)))
+  val ParentMain   = g("Parent", Sig.Method("main", Seq(Type.Unit)))
   val Child = g("Child")
   val ChildInit = g("Child", Sig.Ctor(Seq.empty))
   val ChildFoo = g("Child", Sig.Method("foo", Seq(Type.Unit)))
@@ -322,6 +323,35 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       ParentInit,
       ParentBar,
       ParentBarGet,
+      Object,
+      ObjectInit
+    )
+    (source, entry, reachable)
+  }
+
+  /* The purpose of this test is to check that Test.main is NOT marked as `unreachable`.
+   * However linker would not either contain this method in its result since.
+   * Such scenario exists in issue #805, where inherited main method was not introduced in the scope
+   */
+  testReachable("inherited methods are reachable",
+                checkUnderApproximation = false) {
+    val source = """
+	  abstract class Parent {
+        def bar: Int
+		def main(): Unit = println(bar)
+      }
+
+      object Test extends Parent {
+	    val bar: Int = 0
+      }
+	  """.stripMargin
+    val entry  = TestMain
+    val reachable = Seq(
+      Test,
+      TestInit,
+      TestMain,
+      Parent,
+      ParentMain,
       Object,
       ObjectInit
     )
