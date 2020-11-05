@@ -830,7 +830,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForGeneralConversionType_bB(): Unit = {
-    val triple = Array(
+    val triple: Array[Array[Object]] = Array(
       Array(Boolean.box(false), "%3.2b", " fa"),
       Array(Boolean.box(false), "%-4.6b", "false"),
       Array(Boolean.box(false), "%.2b", "fa"),
@@ -891,7 +891,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForGeneralConversionType_sS(): Unit = {
-    val triple = Array(
+    val triple: Array[Array[Object]] = Array(
       Array(Boolean.box(false), "%2.3s", "fal"),
       Array(Boolean.box(false), "%-6.4s", "fals  "),
       Array(Boolean.box(false), "%.5s", "false"),
