@@ -336,15 +336,14 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   testReachable("inherited methods are reachable",
                 checkUnderApproximation = false) {
     val source = """
-	  abstract class Parent {
+      abstract class Parent {
         def bar: Int
-		def main(): Unit = println(bar)
+        def main(): Unit = println(bar)
       }
 
       object Test extends Parent {
-	    val bar: Int = 0
-      }
-	  """.stripMargin
+        val bar: Int = 0
+      }"""
     val entry  = TestMain
     val reachable = Seq(
       Test,
