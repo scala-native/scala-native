@@ -68,11 +68,11 @@ addCommandAlias(
 addCommandAlias(
   "test-tools",
   Seq(
-    "nirparser/test",
-    "tools/test",
-    "tools/mimaReportBinaryIssues",
     "testRunner/test",
-    "testInterface/test"
+    "testInterface/test",
+    "tools/test",
+    "nirparser/test",
+    "tools/mimaReportBinaryIssues"
   ).mkString(";")
 )
 
@@ -329,7 +329,6 @@ lazy val sbtScalaNative =
     .enablePlugins(SbtPlugin)
     .settings(sbtPluginSettings)
     .settings(
-      scalaVersion := sbt10ScalaVersion,
       crossScalaVersions := Seq(sbt10ScalaVersion),
       addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
@@ -357,16 +356,9 @@ lazy val sbtScalaNative =
             testRunner / publishLocal
           )
           .value
-      },
-      /* Unmanaged dependencies were used instead of dependsOn(testRunner) in order remove errors (invalid version suffix)
-       * and allow to cross-build junitTestOutputs. We also need to add testRunner dependencies  */
-      Compile / unmanagedSourceDirectories ++= Seq(
-        (testRunner / Compile / scalaSource).value,
-        baseDirectory.value.getParentFile / "test-interface-common/src/main/scala"
-      ),
-      libraryDependencies += collectionsCompatLib
+      }
     )
-    .dependsOn(tools)
+    .dependsOn(tools, testRunner)
 
 lazy val nativelib =
   project
@@ -687,18 +679,16 @@ lazy val testInterfaceSbtDefs =
 lazy val testRunner =
   project
     .in(file("test-runner"))
+    .settings(toolSettings)
     .settings(mavenPublishSettings)
     .settings(testInterfaceCommonSourcesSettings)
     .settings(
       libraryDependencies ++= Seq(
         "org.scala-sbt" % "test-interface"  % "1.0",
         "com.novocode"  % "junit-interface" % "0.11" % "test"
-      ),
-      // Fix for invalid version suffix in cross-build, see sbtScalaNative comment
-      Compile / unmanagedSourceDirectories += (util / Compile / scalaSource).value,
-      libraryDependencies += collectionsCompatLib
+      )
     )
-    .dependsOn(junitAsyncJVM % "test")
+    .dependsOn(tools, junitAsyncJVM % "test")
 
 // JUnit modules and settings ------------------------------------------------
 
@@ -762,6 +752,8 @@ lazy val junitTestOutputsJVM =
     .in(file("junit-test/output-jvm"))
     .settings(
       commonJUnitTestOutputsSettings,
+      crossScalaVersions := Seq(sbt10ScalaVersion),
+      scalaVersion := sbt10ScalaVersion,
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.11" % "test",
         collectionsCompatLib
@@ -783,6 +775,8 @@ lazy val junitAsyncJVM =
   project
     .in(file("junit-async/jvm"))
     .settings(
+      crossScalaVersions := Seq(sbt10ScalaVersion),
+      scalaVersion := sbt10ScalaVersion,
       nameSettings,
       publishArtifact := false
     )
