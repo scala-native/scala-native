@@ -53,7 +53,8 @@ object Build {
    */
   def build(config: Config, outpath: Path): Path = config.logger.time("Total") {
     val fclasspath = NativeLib.filterClasspath(config.classPath)
-    val fconfig = config.withClassPath(fclasspath)
+    val fconfig    = config.withClassPath(fclasspath)
+
     val workdir = fconfig.workdir
     val entries = ScalaNative.entries(fconfig)
     val linked  = ScalaNative.link(fconfig, entries)

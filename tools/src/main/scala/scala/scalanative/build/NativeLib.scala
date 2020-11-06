@@ -161,7 +161,7 @@ private[scalanative] object NativeLib {
    * to empty directories in the classpath or anything other
    * than a jar file.
    *
-   * Issues #911:
+   * Issue #911:
    * Linking fails in a pure testing project with source only
    * in src/test/scala.
    *
