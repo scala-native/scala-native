@@ -21,7 +21,7 @@ else
     sudo apt-get update
 
     # Remove pre-bundled libunwind
-    sudo find /usr -name "*libunwind*" -delete
+    sudo find /usr -name "*libunwind*" -type d -empty -delete
 
     # Use pre-bundled clang
     export PATH=/usr/local/clang-5.0.0/bin:$PATH
