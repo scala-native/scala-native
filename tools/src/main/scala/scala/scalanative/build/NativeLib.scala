@@ -2,7 +2,7 @@ package scala.scalanative
 package build
 
 import java.io.File
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 import java.util.regex._
 
 /** Original jar or dir path and generated dir path for native code */
@@ -155,6 +155,26 @@ private[scalanative] object NativeLib {
           s"Native Library 'nativelib' not found: $nativeLibs")
     }
   }
+
+  /**
+   * The linker uses the VirtualDirectory which is sensitive
+   * to empty directories in the classpath or anything other
+   * than a jar file.
+   *
+   * Issues #911:
+   * Linking fails in a pure testing project with source only
+   * in src/test/scala.
+   *
+   * Issue #1711:
+   * Files put in the lib directory in sbt such as somelib.so will end up
+   * on the classpath. Linking fails if the entries on the classpath are
+   * not either jars or directories.
+   *
+   * @param classpath - build tool classpath
+   * @return filtered classpath for Scala Native tools
+   */
+  def filterClasspath(classpath: Seq[Path]): Seq[Path] =
+    classpath.filter(p => Files.exists(p) && (isJar(p) || Files.isDirectory(p)))
 
   private val jarPattern = Pattern.compile(jarSrcRegex)
 

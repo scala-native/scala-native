@@ -117,11 +117,9 @@ object ScalaNativePluginInternal {
         val mainClass = selectMainClass.value.getOrElse {
           throw new MessageOnlyException("No main class detected.")
         }
-        val classpath = fullClasspath.value
-          .map(_.data.toPath)
-          .filter(f => Files.exists(f))
-        val maincls = mainClass + "$"
-        val cwd     = nativeWorkdir.value.toPath
+        val classpath = fullClasspath.value.map(_.data.toPath)
+        val maincls   = mainClass + "$"
+        val cwd       = nativeWorkdir.value.toPath
 
         val logger = streams.value.log.toLogger
         build.Config.empty

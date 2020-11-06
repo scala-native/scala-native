@@ -52,26 +52,28 @@ object Build {
    *  @return `outpath`, the path to the resulting native binary.
    */
   def build(config: Config, outpath: Path): Path = config.logger.time("Total") {
-    val workdir = config.workdir
-    val entries = ScalaNative.entries(config)
-    val linked  = ScalaNative.link(config, entries)
-    ScalaNative.logLinked(config, linked)
-    val optimized = ScalaNative.optimize(config, linked)
+    val fclasspath = NativeLib.filterClasspath(config.classPath)
+    val fconfig = config.withClassPath(fclasspath)
+    val workdir = fconfig.workdir
+    val entries = ScalaNative.entries(fconfig)
+    val linked  = ScalaNative.link(fconfig, entries)
+    ScalaNative.logLinked(fconfig, linked)
+    val optimized = ScalaNative.optimize(fconfig, linked)
 
     IO.getAll(workdir, "glob:**.ll").foreach(Files.delete)
-    ScalaNative.codegen(config, optimized)
+    ScalaNative.codegen(fconfig, optimized)
     val generated = IO.getAll(workdir, "glob:**.ll")
 
-    val nativelibs   = NativeLib.findNativeLibs(config.classPath, workdir)
+    val nativelibs   = NativeLib.findNativeLibs(fconfig.classPath, workdir)
     val nativelib    = NativeLib.findNativeLib(nativelibs)
     val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
 
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
-        config.withCompilerConfig(
-          _.withCompileOptions("-O2" +: config.compileOptions))
+        fconfig.withCompilerConfig(
+          _.withCompileOptions("-O2" +: fconfig.compileOptions))
       LLVM.compileNativelibs(nativelibConfig, linked, unpackedLibs, nativelib)
-      LLVM.compile(config, generated)
+      LLVM.compile(fconfig, generated)
     }
 
     LLVM.link(config, linked, objectFiles, unpackedLibs, outpath)
