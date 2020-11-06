@@ -415,17 +415,6 @@ object Generate {
           cls.resolve(Rt.ScalaMainSig).getOrElse {
             fail(s"does not contain ${Rt.ScalaMainSig}")
           }
-          cls.linearized
-            .collectFirst {
-              case t: Trait if t.name == Global.Top("scala.App") =>
-                if (t.responds.contains(Rt.ScalaMainSig)) {
-                  util.unsupported(
-                    "\nScala Native does not support usage of default scala.App main method.\n" +
-                      s"Remove scala.App trait from ${entry.id} signature or override its `main` method\n" +
-                      "You also can omit inheriting from scala.App by providing `def main(args: Array[String]): Unit` in your main class."
-                  )
-                }
-            }
         case _: ScopeInfo   => fail("was not a module")
         case _: Unavailable => fail("unavailable")
         case _              => util.unreachable
