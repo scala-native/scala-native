@@ -1,7 +1,10 @@
 package scala.scalanative
 package regex
 
-object ProgSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
+
+class ProgTest {
   private val COMPILE_TESTS = Array(
     Array("a",
           "0       fail\n" + "1*      rune1 \"a\" -> 2\n" + "2       match\n"),
@@ -46,12 +49,12 @@ object ProgSuite extends tests.Suite {
       "0       fail\n" + "1*      empty 4 -> 2\n" + "2       anynotnl -> 3\n" + "3       match\n")
   )
 
-  test("compile") {
+  @Test def compile(): Unit = {
     for (Array(input, expected) <- COMPILE_TESTS) {
       val re = Parser.parse(input, RE2.PERL)
       val p  = Compiler.compileRegexp(re)
       val s  = p.toString
-      assert(expected == s, "compiled: " + input)
+      assertTrue("compiled: " + input, expected == s)
     }
   }
 }
