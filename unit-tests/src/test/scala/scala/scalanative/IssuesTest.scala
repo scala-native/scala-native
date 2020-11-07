@@ -413,7 +413,7 @@ class IssuesTest {
     }
   }
 
-  test("#1909") {
+  @Test def testIssue1909(): Unit = {
     import issue1909._
     assertNotNull(new RandomWrapper().nextInt())
   }
