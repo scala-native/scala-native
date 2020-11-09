@@ -3,14 +3,15 @@ package regex
 
 import java.util
 
-import ScalaTestCompat.fail
+import org.junit.Test
+import org.junit.Assert._
 
-object FindSuite extends tests.Suite {
-  import FindSuiteHelper._
+class FindTest {
+  import FindTest._
 
   // First the simple cases.
 
-  test("FindUTF8") {
+  @Test def findUTF8(): Unit = {
     for (test <- FIND_TESTS) {
       val re: RE2 = RE2.compile(test.pat)
       if (!(re.toString == test.pat)) {
@@ -38,7 +39,7 @@ object FindSuite extends tests.Suite {
     }
   }
 
-  test("Find") {
+  @Test def find(): Unit = {
     for (test <- FIND_TESTS) {
       val result: String = RE2.compile(test.pat).find(test.text)
       if (test.matches.length == 0 && result.isEmpty) {} else if (test.matches.length == 0 && !(result.isEmpty)) {
@@ -60,7 +61,7 @@ object FindSuite extends tests.Suite {
   }
 
   private def testFindIndexCommon(testName: String,
-                                  test: Test,
+                                  test: RETest,
                                   _result: Array[Int],
                                   resultIndicesAreUTF8: Boolean): Unit = {
     var result = _result
@@ -83,7 +84,7 @@ object FindSuite extends tests.Suite {
     }
   }
 
-  test("FindUTF8Index") {
+  @Test def findUTF8Index(): Unit = {
     for (test <- FIND_TESTS) {
       testFindIndexCommon("testFindUTF8Index",
                           test,
@@ -92,7 +93,7 @@ object FindSuite extends tests.Suite {
     }
   }
 
-  test("FindIndex") {
+  @Test def findIndex(): Unit = {
     for (test <- FIND_TESTS) {
       val result: Array[Int] = RE2.compile(test.pat).findIndex(test.text)
       testFindIndexCommon("testFindIndex", test, result, false)
@@ -101,7 +102,7 @@ object FindSuite extends tests.Suite {
 
   // Now come the simple All cases.
 
-  test("FindAllUTF8") {
+  @Test def findAllUTF8(): Unit = {
     for (test <- FIND_TESTS) {
       val result = RE2.compile(test.pat).findAllUTF8(test.textUTF8, -1)
       if (test.matches.length == 0 && result == null) {} else if (test.matches.length == 0 && result != null) {
@@ -130,7 +131,7 @@ object FindSuite extends tests.Suite {
     }
   }
 
-  test("FindAll") {
+  @Test def findAll(): Unit = {
     for (test <- FIND_TESTS) {
       val result = RE2.compile(test.pat).findAll(test.text, -1)
       if (test.matches.length == 0 && result == null) {} else if (test.matches.length == 0 && result != null) {
@@ -154,7 +155,7 @@ object FindSuite extends tests.Suite {
   }
 
   private def testFindAllIndexCommon(testName: String,
-                                     test: Test,
+                                     test: RETest,
                                      result: util.List[Array[Int]],
                                      resultIndicesAreUTF8: Boolean): Unit = {
     if (test.matches.length == 0 && result == null) {} else if (test.matches.length == 0 && result != null) {
@@ -186,7 +187,7 @@ object FindSuite extends tests.Suite {
     }
   }
 
-  test("FindAllUTF8Index") {
+  @Test def findAllUTF8Index(): Unit = {
     for (test <- FIND_TESTS) {
       testFindAllIndexCommon(
         "testFindAllUTF8Index",
@@ -196,7 +197,7 @@ object FindSuite extends tests.Suite {
     }
   }
 
-  test("FindAllIndex") {
+  @Test def findAllIndex(): Unit = {
     for (test <- FIND_TESTS) {
       testFindAllIndexCommon(
         "testFindAllIndex",
@@ -209,7 +210,7 @@ object FindSuite extends tests.Suite {
   // Now come the Submatch cases.
 
   def testSubmatchBytes(testName: String,
-                        test: Test,
+                        test: RETest,
                         n: Int,
                         result: Array[Array[Byte]]): Unit = {
     val submatches: Array[Int] = test.matches(n)
@@ -248,7 +249,7 @@ object FindSuite extends tests.Suite {
     }
   }
 
-  test("FindUTF8Submatch") {
+  @Test def findUTF8Submatch(): Unit = {
     for (test <- FIND_TESTS) {
       val result: Array[Array[Byte]] =
         RE2.compile(test.pat).findUTF8Submatch(test.textUTF8)
@@ -264,7 +265,7 @@ object FindSuite extends tests.Suite {
 
   // (Go: testSubmatchString)
   private def testSubmatch(testName: String,
-                           test: Test,
+                           test: RETest,
                            n: Int,
                            result: Array[String]): Unit = {
     val submatches: Array[Int] = test.matches(n)
@@ -302,7 +303,7 @@ object FindSuite extends tests.Suite {
   }
 
   // (Go: TestFindStringSubmatch)
-  test("FindSubmatch") {
+  @Test def findSubmatch(): Unit = {
     for (test <- FIND_TESTS) {
       val result: Array[String] = RE2.compile(test.pat).findSubmatch(test.text)
       if (test.matches.length == 0 && result == null) {} else if (test.matches.length == 0 && result != null) {
@@ -316,7 +317,7 @@ object FindSuite extends tests.Suite {
   }
 
   private def testSubmatchIndices(testName: String,
-                                  test: Test,
+                                  test: RETest,
                                   n: Int,
                                   _result: Array[Int],
                                   resultIndicesAreUTF8: Boolean): Unit = {
@@ -352,7 +353,7 @@ object FindSuite extends tests.Suite {
 
   private def testFindSubmatchIndexCommon(
       testName: String,
-      test: Test,
+      test: RETest,
       result: Array[Int],
       resultIndicesAreUTF8: Boolean): Unit = {
     if (test.matches.length == 0 && result == null) {} else if (test.matches.length == 0 && result != null) {
@@ -364,7 +365,7 @@ object FindSuite extends tests.Suite {
     }
   }
 
-  test("FindUTF8SubmatchIndex") {
+  @Test def findUTF8SubmatchIndex(): Unit = {
     for (test <- FIND_TESTS) {
       testFindSubmatchIndexCommon(
         "testFindSubmatchIndex",
@@ -375,7 +376,7 @@ object FindSuite extends tests.Suite {
   }
 
   // (Go: TestFindStringSubmatchIndex)
-  test("FindSubmatchIndex") {
+  @Test def findSubmatchIndex(): Unit = {
     for (test <- FIND_TESTS) {
       testFindSubmatchIndexCommon(
         "testFindStringSubmatchIndex",
@@ -388,7 +389,7 @@ object FindSuite extends tests.Suite {
   // Now come the monster AllSubmatch cases.
 
   // (Go: TestFindAllSubmatch)
-  test("FindAllUTF8Submatch") {
+  @Test def findAllUTF8Submatch(): Unit = {
     for (test <- FIND_TESTS) {
       val result =
         RE2.compile(test.pat).findAllUTF8Submatch(test.textUTF8, -1)
@@ -412,7 +413,7 @@ object FindSuite extends tests.Suite {
     }
   }
   // (Go: TestFindAllStringSubmatch)
-  test("FindAllSubmatch") {
+  @Test def findAllSubmatch(): Unit = {
     for (test <- FIND_TESTS) {
       val result =
         RE2.compile(test.pat).findAllSubmatch(test.text, -(1))
@@ -439,7 +440,7 @@ object FindSuite extends tests.Suite {
   // (Go: testFindSubmatchIndex)
   private def testFindAllSubmatchIndexCommon(
       testName: String,
-      test: Test,
+      test: RETest,
       result: util.List[Array[Int]],
       resultIndicesAreUTF8: Boolean): Unit = {
     if (test.matches.length == 0 && result == null) {} else {
@@ -466,7 +467,7 @@ object FindSuite extends tests.Suite {
   }
 
   // (Go: TestFindAllSubmatchIndex)
-  test("FindAllUTF8SubmatchIndex") {
+  @Test def findAllUTF8SubmatchIndex(): Unit = {
     for (test <- FIND_TESTS) {
       testFindAllSubmatchIndexCommon(
         "testFindAllUTF8SubmatchIndex",
@@ -477,7 +478,7 @@ object FindSuite extends tests.Suite {
   }
 
   // (Go: TestFindAllStringSubmatchIndex)
-  test("FindAllSubmatchIndex") {
+  @Test def findAllSubmatchIndex(): Unit = {
     for (test <- FIND_TESTS) {
       testFindAllSubmatchIndexCommon(
         "testFindAllSubmatchIndex",
@@ -490,14 +491,14 @@ object FindSuite extends tests.Suite {
   // The find_test.go benchmarks are ported to Benchmarks.java.
 }
 
-object FindSuiteHelper {
+object FindTest {
   // For each pattern/text pair, what is the expected output of each
   // function?  We can derive the textual results from the indexed
   // results, the non-submatch results from the submatched results, the
   // single results from the 'all' results, and the String results from
   // the UTF-8 results. Therefore the table includes only the
   // findAllUTF8SubmatchIndex result.
-  case class Test(pat: String, text: String, n: Int, _x: Int*) {
+  case class RETest(pat: String, text: String, n: Int, _x: Int*) {
     val x: Array[Int] = _x.toArray
     // The n and x parameters construct a [][]int by extracting n
     // sequences from x.  This represents n matches with len(x)/n
@@ -514,7 +515,7 @@ object FindSuiteHelper {
         matches(i) = new Array[Int](runLength)
         System.arraycopy(x, j, matches(i), 0, runLength)
         j += runLength
-        if (j > x.length) assert(false, "invalid build entry")
+        if (j > x.length) assertTrue("invalid build entry", false)
         i += 1
       }
     }
@@ -528,96 +529,96 @@ object FindSuiteHelper {
     override def toString: String = "pat=%s text=%s".format(pat, text)
   }
   // Used by RE2Test also.
-  val FIND_TESTS: Array[Test] = Array(
-    Test("", "", 1, 0, 0),
-    Test("^abcdefg", "abcdefg", 1, 0, 7),
-    Test("a+", "baaab", 1, 1, 4),
-    Test("abcd..", "abcdef", 1, 0, 6),
-    Test("a", "a", 1, 0, 1),
-    Test("x", "y", 0),
-    Test("b", "abc", 1, 1, 2),
-    Test(".", "a", 1, 0, 1),
-    Test(".*", "abcdef", 1, 0, 6),
-    Test("^", "abcde", 1, 0, 0),
-    Test("$", "abcde", 1, 5, 5),
-    Test("^abcd$", "abcd", 1, 0, 4),
-    Test("^bcd'", "abcdef", 0),
-    Test("^abcd$", "abcde", 0),
-    Test("a+", "baaab", 1, 1, 4),
-    Test("a*", "baaab", 3, 0, 0, 1, 4, 5, 5),
-    Test("[a-z]+", "abcd", 1, 0, 4),
-    Test("[^a-z]+", "ab1234cd", 1, 2, 6),
-    Test("[a\\-\\]z]+", "az]-bcz", 2, 0, 4, 6, 7),
-    Test("[^\\n]+", "abcd\n", 1, 0, 4),
-    Test("[日本語]+", "日本語日本語", 1, 0, 18),
-    Test("日本語+", "日本語", 1, 0, 9),
-    Test("日本語+", "日本語語語語", 1, 0, 18),
-    Test("()", "", 1, 0, 0, 0, 0),
-    Test("(a)", "a", 1, 0, 1, 0, 1),
-    Test("(.)(.)", "日a", 1, 0, 4, 0, 3, 3, 4),
-    Test("(.*)", "", 1, 0, 0, 0, 0),
-    Test("(.*)", "abcd", 1, 0, 4, 0, 4),
-    Test("(..)(..)", "abcd", 1, 0, 4, 0, 2, 2, 4),
-    Test("(([^xyz]*)(d))", "abcd", 1, 0, 4, 0, 4, 0, 3, 3, 4),
-    Test("((a|b|c)*(d))", "abcd", 1, 0, 4, 0, 4, 2, 3, 3, 4),
-    Test("(((a|b|c)*)(d))", "abcd", 1, 0, 4, 0, 4, 0, 3, 2, 3, 3, 4),
-    Test("\\a\\f\\n\\r\\t\\v", "\u0007\f\n\r\t\u000b", 1, 0, 6),
-    Test("[\\a\\f\\n\\r\\t\\v]+", "\u0007\f\n\r\t\u000b", 1, 0, 6),
-    Test("a*(|(b))c*", "aacc", 1, 0, 4, 2, 2, -(1), -(1)),
-    Test("(.*).*", "ab", 1, 0, 2, 0, 2),
-    Test("[.]", ".", 1, 0, 1),
-    Test("/$", "/abc/", 1, 4, 5),
-    Test("/$", "/abc", 0), // multiple matches
-    Test(".", "abc", 3, 0, 1, 1, 2, 2, 3),
-    Test("(.)", "abc", 3, 0, 1, 0, 1, 1, 2, 1, 2, 2, 3, 2, 3),
-    Test(".(.)", "abcd", 2, 0, 2, 1, 2, 2, 4, 3, 4),
-    Test("ab*", "abbaab", 3, 0, 3, 3, 4, 4, 6),
+  val FIND_TESTS: Array[RETest] = Array(
+    RETest("", "", 1, 0, 0),
+    RETest("^abcdefg", "abcdefg", 1, 0, 7),
+    RETest("a+", "baaab", 1, 1, 4),
+    RETest("abcd..", "abcdef", 1, 0, 6),
+    RETest("a", "a", 1, 0, 1),
+    RETest("x", "y", 0),
+    RETest("b", "abc", 1, 1, 2),
+    RETest(".", "a", 1, 0, 1),
+    RETest(".*", "abcdef", 1, 0, 6),
+    RETest("^", "abcde", 1, 0, 0),
+    RETest("$", "abcde", 1, 5, 5),
+    RETest("^abcd$", "abcd", 1, 0, 4),
+    RETest("^bcd'", "abcdef", 0),
+    RETest("^abcd$", "abcde", 0),
+    RETest("a+", "baaab", 1, 1, 4),
+    RETest("a*", "baaab", 3, 0, 0, 1, 4, 5, 5),
+    RETest("[a-z]+", "abcd", 1, 0, 4),
+    RETest("[^a-z]+", "ab1234cd", 1, 2, 6),
+    RETest("[a\\-\\]z]+", "az]-bcz", 2, 0, 4, 6, 7),
+    RETest("[^\\n]+", "abcd\n", 1, 0, 4),
+    RETest("[日本語]+", "日本語日本語", 1, 0, 18),
+    RETest("日本語+", "日本語", 1, 0, 9),
+    RETest("日本語+", "日本語語語語", 1, 0, 18),
+    RETest("()", "", 1, 0, 0, 0, 0),
+    RETest("(a)", "a", 1, 0, 1, 0, 1),
+    RETest("(.)(.)", "日a", 1, 0, 4, 0, 3, 3, 4),
+    RETest("(.*)", "", 1, 0, 0, 0, 0),
+    RETest("(.*)", "abcd", 1, 0, 4, 0, 4),
+    RETest("(..)(..)", "abcd", 1, 0, 4, 0, 2, 2, 4),
+    RETest("(([^xyz]*)(d))", "abcd", 1, 0, 4, 0, 4, 0, 3, 3, 4),
+    RETest("((a|b|c)*(d))", "abcd", 1, 0, 4, 0, 4, 2, 3, 3, 4),
+    RETest("(((a|b|c)*)(d))", "abcd", 1, 0, 4, 0, 4, 0, 3, 2, 3, 3, 4),
+    RETest("\\a\\f\\n\\r\\t\\v", "\u0007\f\n\r\t\u000b", 1, 0, 6),
+    RETest("[\\a\\f\\n\\r\\t\\v]+", "\u0007\f\n\r\t\u000b", 1, 0, 6),
+    RETest("a*(|(b))c*", "aacc", 1, 0, 4, 2, 2, -(1), -(1)),
+    RETest("(.*).*", "ab", 1, 0, 2, 0, 2),
+    RETest("[.]", ".", 1, 0, 1),
+    RETest("/$", "/abc/", 1, 4, 5),
+    RETest("/$", "/abc", 0), // multiple matches
+    RETest(".", "abc", 3, 0, 1, 1, 2, 2, 3),
+    RETest("(.)", "abc", 3, 0, 1, 0, 1, 1, 2, 1, 2, 2, 3, 2, 3),
+    RETest(".(.)", "abcd", 2, 0, 2, 1, 2, 2, 4, 3, 4),
+    RETest("ab*", "abbaab", 3, 0, 3, 3, 4, 4, 6),
     // fixed bugs
-    Test("a(b*)", "abbaab", 3, 0, 3, 1, 3, 3, 4, 4, 4, 4, 6, 5, 6),
-    Test("ab$", "cab", 1, 1, 3),
-    Test("axxb$", "axxcb", 0),
-    Test("data", "daXY data", 1, 5, 9),
-    Test("da(.)a$", "daXY data", 1, 5, 9, 7, 8),
-    Test("zx+", "zzx", 1, 1, 3),
-    Test("ab$", "abcab", 1, 3, 5),
-    Test("(aa)*$", "a", 1, 1, 1, -(1), -(1)),
-    Test("(?:.|(?:.a))", "", 0),
-    Test("(?:A(?:A|a))", "Aa", 1, 0, 2),
-    Test("(?:A|(?:A|a))", "a", 1, 0, 1),
-    Test("(a){0}", "", 1, 0, 0, -(1), -(1)),
-    Test("(?-s)(?:(?:^).)", "\n", 0),
-    Test("(?s)(?:(?:^).)", "\n", 1, 0, 1),
-    Test("(?:(?:^).)", "\n", 0),
-    Test("\\b", "x", 2, 0, 0, 1, 1),
-    Test("\\b", "xx", 2, 0, 0, 2, 2),
-    Test("\\b", "x y", 4, 0, 0, 1, 1, 2, 2, 3, 3),
-    Test("\\b", "xx yy", 4, 0, 0, 2, 2, 3, 3, 5, 5),
-    Test("\\B", "x", 0),
-    Test("\\B", "xx", 1, 1, 1),
-    Test("\\B", "x y", 0),
-    Test("\\B", "xx yy", 2, 1, 1, 4, 4), // RE2 tests
-    Test("[^\\S\\s]", "abcd", 0),
-    Test("[^\\S[:space:]]", "abcd", 0),
-    Test("[^\\D\\d]", "abcd", 0),
-    Test("[^\\D[:digit:]]", "abcd", 0),
-    Test("(?i)\\W", "x", 0),
-    Test("(?i)\\W", "k", 0),
-    Test("(?i)\\W", "s", 0), // can backslash-escape any punctuation
-    Test(
+    RETest("a(b*)", "abbaab", 3, 0, 3, 1, 3, 3, 4, 4, 4, 4, 6, 5, 6),
+    RETest("ab$", "cab", 1, 1, 3),
+    RETest("axxb$", "axxcb", 0),
+    RETest("data", "daXY data", 1, 5, 9),
+    RETest("da(.)a$", "daXY data", 1, 5, 9, 7, 8),
+    RETest("zx+", "zzx", 1, 1, 3),
+    RETest("ab$", "abcab", 1, 3, 5),
+    RETest("(aa)*$", "a", 1, 1, 1, -(1), -(1)),
+    RETest("(?:.|(?:.a))", "", 0),
+    RETest("(?:A(?:A|a))", "Aa", 1, 0, 2),
+    RETest("(?:A|(?:A|a))", "a", 1, 0, 1),
+    RETest("(a){0}", "", 1, 0, 0, -(1), -(1)),
+    RETest("(?-s)(?:(?:^).)", "\n", 0),
+    RETest("(?s)(?:(?:^).)", "\n", 1, 0, 1),
+    RETest("(?:(?:^).)", "\n", 0),
+    RETest("\\b", "x", 2, 0, 0, 1, 1),
+    RETest("\\b", "xx", 2, 0, 0, 2, 2),
+    RETest("\\b", "x y", 4, 0, 0, 1, 1, 2, 2, 3, 3),
+    RETest("\\b", "xx yy", 4, 0, 0, 2, 2, 3, 3, 5, 5),
+    RETest("\\B", "x", 0),
+    RETest("\\B", "xx", 1, 1, 1),
+    RETest("\\B", "x y", 0),
+    RETest("\\B", "xx yy", 2, 1, 1, 4, 4), // RE2 tests
+    RETest("[^\\S\\s]", "abcd", 0),
+    RETest("[^\\S[:space:]]", "abcd", 0),
+    RETest("[^\\D\\d]", "abcd", 0),
+    RETest("[^\\D[:digit:]]", "abcd", 0),
+    RETest("(?i)\\W", "x", 0),
+    RETest("(?i)\\W", "k", 0),
+    RETest("(?i)\\W", "s", 0), // can backslash-escape any punctuation
+    RETest(
       "\\!\\\"\\#\\$\\%\\&\\'\\(\\)\\*\\+\\,\\-\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\\\\\]\\^\\_\\{\\|\\}\\~",
       "!\"#$%&'()*+,-./:;<=>?@[\\]^_{|}~",
       1,
       0,
       31),
-    Test(
+    RETest(
       "[\\!\\\"\\#\\$\\%\\&\\'\\(\\)\\*\\+\\,\\-\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\\\\\]\\^\\_\\{\\|\\}\\~]+",
       "!\"#$%&'()*+,-./:;<=>?@[\\]^_{|}~",
       1,
       0,
       31),
-    Test("\\`", "`", 1, 0, 1),
-    Test("[\\`]+", "`", 1, 0, 1), // long set of matches
-    Test(
+    RETest("\\`", "`", 1, 0, 1),
+    RETest("[\\`]+", "`", 1, 0, 1), // long set of matches
+    RETest(
       ".",
       "qwertyuiopasdfghjklzxcvbnm1234567890",
       36,

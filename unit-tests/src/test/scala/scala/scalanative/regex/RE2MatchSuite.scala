@@ -4,7 +4,7 @@ package regex
 import ScalaTestCompat.fail
 
 object RE2MatchSuite extends tests.Suite {
-  import FindSuiteHelper._
+  import FindTest._
 
   test("Match") {
     for (test <- FIND_TESTS) {
