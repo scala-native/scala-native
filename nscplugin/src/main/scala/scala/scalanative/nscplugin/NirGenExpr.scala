@@ -1565,20 +1565,24 @@ trait NirGenExpr { self: NirGenPhase =>
       }
     }
 
-    def genSynchronized(receiverp: Tree, argp: Tree)(implicit pos: nir.Position): Val = {
+    def genSynchronized(receiverp: Tree, bodyp: Tree)(implicit pos: nir.Position): Val = {
+      genSynchronized(receiverp)(_.genExpr(bodyp))
+    }
+
+    def genSynchronized(receiverp: Tree)(bodyGen: ExprBuffer => Val)(implicit pos: nir.Position): Val = {
       val monitor =
         genApplyModuleMethod(RuntimeModule, GetMonitorMethod, Seq(receiverp))
       val enter = genApplyMethod(RuntimeMonitorEnterMethod,
+                                 statically = true,
+                                 monitor,
+                                 Seq())
+      val ret = bodyGen(this)
+      val exit = genApplyMethod(RuntimeMonitorExitMethod,
                                 statically = true,
                                 monitor,
                                 Seq())
-      val arg = genExpr(argp)
-      val exit = genApplyMethod(RuntimeMonitorExitMethod,
-                               statically = true,
-                               monitor,
-                               Seq())
 
-      arg
+      ret
     }
 
     def genCoercion(app: Apply, receiver: Tree, code: Int): Val = {
