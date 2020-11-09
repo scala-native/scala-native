@@ -703,7 +703,7 @@ trait NirGenStat { self: NirGenPhase =>
       val fresh = curFresh.get
       val buf   = new ExprBuffer()(fresh)
 
-      implicit val pos: nir.Position = dd.pos
+      implicit val pos: nir.Position = bodyp.pos
 
       val paramSyms = genParamSyms(dd, isStatic)
       val params = paramSyms.map {
@@ -716,6 +716,8 @@ trait NirGenStat { self: NirGenPhase =>
           curMethodEnv.enter(sym, param)
           param
       }
+
+      val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
 
       def genEntry(): Unit = {
         buf.label(fresh(), params)
@@ -741,6 +743,17 @@ trait NirGenStat { self: NirGenPhase =>
         }
       }
 
+      def withOptSynchronized(bodyGen: ExprBuffer => Val): Val = {
+        if (!isSynchronized) bodyGen(buf)
+        else {
+          val syncedIn = curMethodThis.getOrElse {
+            unsupported(
+              s"cannot generate `synchronized` for method ${curMethodSym.name}, curMethodThis was empty")
+          }
+          buf.genSynchronized(ValTree(syncedIn))(bodyGen)
+        }
+      }
+
       def genBody(): Val = bodyp match {
         // Tailrec emits magical labeldefs that can hijack this reference is
         // current method. This requires special treatment on our side.
@@ -757,15 +770,16 @@ trait NirGenStat { self: NirGenPhase =>
             },
             curMethodIsExtern := isExtern
           ) {
-            buf.genReturn(buf.genTailRecLabel(dd, isStatic, label))(
-              bodyp.pos.focusEnd)
+            buf.genReturn {
+              withOptSynchronized(_.genTailRecLabel(dd, isStatic, label))
+            }
           }
 
         case _ if curMethodSym.get == NObjectInitMethod =>
           scoped(
             curMethodIsExtern := isExtern
           ) {
-            buf.genReturn(nir.Val.Unit)(bodyp.pos.focusEnd)
+            buf.genReturn(nir.Val.Unit)
           }
 
         case _ =>
@@ -776,7 +790,9 @@ trait NirGenStat { self: NirGenPhase =>
             },
             curMethodIsExtern := isExtern
           ) {
-            buf.genReturn(buf.genExpr(bodyp))(bodyp.pos.focusEnd)
+            buf.genReturn {
+              withOptSynchronized(_.genExpr(bodyp))
+            }
           }
       }
 
