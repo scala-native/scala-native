@@ -7,7 +7,8 @@ import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.file._
 import java.nio.channels._
-import scalanative.util.{acquire, defer, Scope}
+import java.util.HashMap
+import scalanative.util.{Scope, acquire, defer}
 
 sealed trait VirtualDirectory {
 
@@ -129,12 +130,11 @@ object VirtualDirectory {
       this.path.resolve(path)
 
     override def files: Seq[Path] =
-      Files
-        .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
-        .iterator()
-        .asScala
-        .map(fp => path.relativize(fp))
-        .toSeq
+      jIteratorToSeq {
+        Files
+          .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
+          .iterator()
+      }.map(fp => path.relativize(fp))
   }
 
   private final class JarDirectory(path: Path)(implicit in: Scope)
@@ -143,7 +143,9 @@ object VirtualDirectory {
       acquire {
         val uri = URI.create(s"jar:${path.toUri}")
         try {
-          FileSystems.newFileSystem(uri, Map("create" -> "false").asJava)
+          val params = new HashMap[String, String]()
+          params.put("create", "false")
+          FileSystems.newFileSystem(uri, params)
         } catch {
           case e: FileSystemAlreadyExistsException =>
             FileSystems.getFileSystem(uri)
@@ -151,14 +153,15 @@ object VirtualDirectory {
       }
 
     override def files: Seq[Path] = {
-      val roots = fileSystem.getRootDirectories.asScala.toSeq
+      val roots = jIteratorToSeq(fileSystem.getRootDirectories.iterator())
 
       roots
         .flatMap { path =>
-          Files
-            .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
-            .iterator()
-            .asScala
+          jIteratorToSeq {
+            Files
+              .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
+              .iterator()
+          }
         }
     }
   }
