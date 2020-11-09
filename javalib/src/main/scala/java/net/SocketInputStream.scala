@@ -6,7 +6,7 @@ import java.io.InputStream
 private[net] class SocketInputStream(socket: PlainSocketImpl)
     extends InputStream {
 
-  override def close(): Unit = socket.close
+  override def close(): Unit = socket.close()
 
   override def available(): Int = socket.available
 

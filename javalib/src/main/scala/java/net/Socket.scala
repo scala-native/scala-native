@@ -270,18 +270,18 @@ class Socket protected (private[net] val impl: SocketImpl,
   }
 
   def shutdownInput(): Unit = {
-    impl.shutdownInput
+    impl.shutdownInput()
     inputShutdown = true
   }
 
   def shutdownOutput(): Unit = {
-    impl.shutdownOutput
+    impl.shutdownOutput()
     outputShutdown = true
   }
 
   override def close(): Unit = {
     closed = true
-    impl.close
+    impl.close()
   }
 
   // def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit

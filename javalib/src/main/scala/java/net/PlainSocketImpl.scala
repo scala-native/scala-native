@@ -319,7 +319,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     }
   }
 
-  override def close: Unit = {
+  override def close(): Unit = {
     if (fd.fd != -1) {
       cClose(fd.fd)
       fd = new FileDescriptor
@@ -346,7 +346,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     new SocketInputStream(this)
   }
 
-  override def shutdownOutput: Unit = {
+  override def shutdownOutput(): Unit = {
     socket.shutdown(fd.fd, 1) match {
       case 0 => shutOutput = true
       case _ =>
@@ -354,7 +354,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     }
   }
 
-  override def shutdownInput: Unit = {
+  override def shutdownInput(): Unit = {
     socket.shutdown(fd.fd, 0) match {
       case 0 => shutInput = true
       case _ =>

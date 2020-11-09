@@ -135,7 +135,7 @@ class ServerSocket(private var port: Int,
   }
 
   override def close(): Unit = {
-    impl.close
+    impl.close()
     closed = true
   }
 
