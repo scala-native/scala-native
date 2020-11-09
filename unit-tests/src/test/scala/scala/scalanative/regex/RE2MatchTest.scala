@@ -1,12 +1,13 @@
 package scala.scalanative
 package regex
 
-import ScalaTestCompat.fail
+import org.junit.Test
+import org.junit.Assert._
 
-object RE2MatchSuite extends tests.Suite {
+class RE2MatchTest {
   import FindTest._
 
-  test("Match") {
+  @Test def testMatch(): Unit = {
     for (test <- FIND_TESTS) {
       val re = RE2.compile(test.pat)
       var m  = re.match_(test.text)
@@ -23,7 +24,7 @@ object RE2MatchSuite extends tests.Suite {
     }
   }
 
-  test("MatchFunction") {
+  @Test def matchFunction(): Unit = {
     for (test <- FIND_TESTS) {
       val m = RE2.match_(test.pat, test.text)
       if (m != (test.matches.length > 0))
