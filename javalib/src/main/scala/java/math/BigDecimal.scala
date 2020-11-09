@@ -1514,8 +1514,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
   override def floatValue(): Float = {
     /* A similar code like in doubleValue() could be repeated here,
      * but this simple implementation is quite efficient. */
-    val powerOfTwo          = this._bitLength - (_scale / Log2).toLong
-    val floatResult0: Float = signum().toFloat
+    val powerOfTwo   = this._bitLength - (_scale / Log2).toLong
+    val floatResult0 = signum().toFloat
     val floatResult: Float = {
       if (powerOfTwo < -149 || floatResult0 == 0.0f) // 'this' is very small
         floatResult0 * 0.0f

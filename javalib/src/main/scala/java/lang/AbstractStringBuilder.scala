@@ -202,7 +202,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     System.arraycopy(value, start, dest, destStart, end - start)
   }
 
-  final def insert0(index: scala.Int, chars: Array[Char]) = {
+  final def insert0(index: scala.Int, chars: Array[Char]): Unit = {
     if (0 > index || index > count) {
       throw new StringIndexOutOfBoundsException(index)
     }

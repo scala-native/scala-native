@@ -7,7 +7,7 @@ import scalanative.util.{StringUtils, unsupported}
 import scalanative.util.ScopedVar.scoped
 import scalanative.nscplugin.NirPrimitives._
 
-trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G]   =>
+trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G] =>
   import global._
   import definitions._
   import treeInfo.hasSynthCaseSymbol
@@ -227,8 +227,7 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G]   =>
             case _ =>
               Nil
           }
-          val pos: nir.Position = cd.pos
-          vals.map((fresh(), _, body, pos))
+          vals.map((fresh(), _, body, cd.pos: nir.Position))
       }
 
       // Extract default case.

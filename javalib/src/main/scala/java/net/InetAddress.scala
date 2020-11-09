@@ -584,7 +584,7 @@ class InetAddress private[net] (ipAddress: Array[Byte],
     if (obj == null || obj.getClass != this.getClass) {
       false
     } else {
-      val objIPAddress = obj.asInstanceOf[InetAddress].getAddress();
+      val objIPAddress = obj.asInstanceOf[InetAddress].getAddress()
       objIPAddress.indices.forall(i => objIPAddress(i) == ipAddress(i))
     }
   }

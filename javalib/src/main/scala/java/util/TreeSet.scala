@@ -145,10 +145,10 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
       var base = new mutable.TreeSet[Box[E]]
       base ++= inner.range(boxedFrom, boxedTo)
       if (!fromInclusive)
-        base = base diff Set(boxedFrom)
+        base = base.diff(Set(boxedFrom))
 
       if (toInclusive && inner.contains(boxedTo))
-        base = base diff Set(boxedTo)
+        base = base.diff(Set(boxedTo))
 
       base
     }

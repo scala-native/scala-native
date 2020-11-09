@@ -8,8 +8,8 @@ object AbstractMap {
   private def entryEquals[K, V](entry: Map.Entry[K, V], other: Any): Boolean = {
     other match {
       case other: Map.Entry[_, _] =>
-        entry.getKey() === other.getKey() && entry.getValue() === other
-          .getValue()
+        entry.getKey() === other.getKey() &&
+          entry.getValue() === other.getValue()
       case _ => false
     }
   }

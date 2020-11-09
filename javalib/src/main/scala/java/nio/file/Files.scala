@@ -58,9 +58,9 @@ object Files {
     val out =
       if (!targetFile.exists() || (targetFile.isFile() && replaceExisting)) {
         new FileOutputStream(targetFile, append = false)
-      } else if (targetFile.isDirectory() && targetFile
-                   .list()
-                   .isEmpty && replaceExisting) {
+      } else if (targetFile.isDirectory() &&
+                 targetFile.list().isEmpty &&
+                 replaceExisting) {
         if (!targetFile.delete()) throw new IOException()
         new FileOutputStream(targetFile, append = false)
       } else {
@@ -362,8 +362,8 @@ object Files {
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
     if (!exists(source.toAbsolutePath(), Array.empty)) {
       throw new NoSuchFileException(source.toString)
-    } else if (!exists(target.toAbsolutePath(), Array.empty) || options
-                 .contains(REPLACE_EXISTING)) {
+    } else if (!exists(target.toAbsolutePath(), Array.empty) ||
+               options.contains(REPLACE_EXISTING)) {
       Zone { implicit z =>
         if (stdio.rename(toCString(source.toAbsolutePath().toString),
                          toCString(target.toAbsolutePath().toString)) != 0) {
@@ -585,7 +585,7 @@ object Files {
           .list(start.toString, (n, t) => (n, t))
           .toScalaStream
           .flatMap {
-            case (name: String, tpe)
+            case (name, tpe)
                 if tpe == DT_LNK() && options.contains(
                   FileVisitOption.FOLLOW_LINKS) =>
               val path       = start.resolve(name)
@@ -594,15 +594,14 @@ object Files {
               if (newVisited.contains(target))
                 throw new FileSystemLoopException(path.toString)
               else walk(path, maxDepth, currentDepth + 1, options, newVisited)
-            case (name: String, tpe)
-                if tpe == DT_DIR() && currentDepth < maxDepth =>
+            case (name, tpe) if tpe == DT_DIR() && currentDepth < maxDepth =>
               val path = start.resolve(name)
               val newVisited =
                 if (options.contains(FileVisitOption.FOLLOW_LINKS))
                   visited + path
                 else visited
               walk(path, maxDepth, currentDepth + 1, options, newVisited)
-            case (name: String, _) =>
+            case (name, _) =>
               start.resolve(name) #:: SStream.empty
           }
       }

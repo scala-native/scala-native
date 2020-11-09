@@ -89,8 +89,9 @@ final class URI private () extends Comparable[URI] with Serializable {
       earlyStop = true
     }
     if (!earlyStop) {
-      if (scheme != null && path != null && path
-            .length() > 0 && path.charAt(0) != '/') {
+      if (scheme != null && path != null &&
+          path.length() > 0 &&
+          path.charAt(0) != '/') {
         throw new URISyntaxException(path, "Relative path")
       }
       val uri: StringBuilder = new StringBuilder()
@@ -140,8 +141,9 @@ final class URI private () extends Comparable[URI] with Serializable {
            query: String,
            fragment: String) = {
     this()
-    if (scheme != null && path != null && path
-          .length() > 0 && path.charAt(0) != '/') {
+    if (scheme != null && path != null &&
+        path.length() > 0 &&
+        path.charAt(0) != '/') {
       throw new URISyntaxException(path, "Relative path")
     }
     val uri: StringBuilder = new StringBuilder()
@@ -205,9 +207,9 @@ final class URI private () extends Comparable[URI] with Serializable {
         schemespecificpart = temp
       }
 
-      if (scheme == null || schemespecificpart
-            .length() > 0 && schemespecificpart
-            .charAt(0) == '/') {
+      if (scheme == null ||
+          schemespecificpart.length() > 0 &&
+          schemespecificpart.charAt(0) == '/') {
         opaque = false
 
         temp = schemespecificpart

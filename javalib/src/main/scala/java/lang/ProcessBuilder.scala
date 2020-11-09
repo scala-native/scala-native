@@ -18,10 +18,10 @@ final class ProcessBuilder(private var _command: List[String]) {
   def command(): List[String] = _command
 
   def command(command: Array[String]): ProcessBuilder =
-    set { _command = Arrays.asList(command); () }
+    set { _command = Arrays.asList(command) }
 
   def command(command: List[String]): ProcessBuilder = set {
-    _command = command; ()
+    _command = command
   }
 
   def environment(): Map[String, String] = _environment
@@ -33,7 +33,7 @@ final class ProcessBuilder(private var _command: List[String]) {
       _directory = dir match {
         case null => defaultDirectory
         case _    => dir
-      }; ()
+      }
     }
 
   def inheritIO(): ProcessBuilder = {
@@ -43,38 +43,38 @@ final class ProcessBuilder(private var _command: List[String]) {
   }
 
   def redirectError(destination: Redirect): ProcessBuilder = destination match {
-    case null => set { _redirectOutput = Redirect.PIPE; () }
+    case null => set { _redirectOutput = Redirect.PIPE }
     case d =>
       d.`type`() match {
         case Redirect.Type.READ =>
           throw new IllegalArgumentException(
             s"Redirect.READ cannot be used for error.")
         case _ =>
-          set { _redirectError = destination; () }
+          set { _redirectError = destination }
       }
   }
 
   def redirectInput(source: Redirect): ProcessBuilder = source match {
-    case null => set { _redirectInput = Redirect.PIPE; () }
+    case null => set { _redirectInput = Redirect.PIPE }
     case s =>
       s.`type`() match {
         case Redirect.Type.WRITE | Redirect.Type.APPEND =>
           throw new IllegalArgumentException(s"$s cannot be used for input.")
         case _ =>
-          set { _redirectInput = source; () }
+          set { _redirectInput = source }
       }
   }
 
   def redirectOutput(destination: Redirect): ProcessBuilder =
     destination match {
-      case null => set { _redirectOutput = Redirect.PIPE; () }
+      case null => set { _redirectOutput = Redirect.PIPE }
       case s =>
         s.`type`() match {
           case Redirect.Type.READ =>
             throw new IllegalArgumentException(
               s"Redirect.READ cannot be used for output.")
           case _ =>
-            set { _redirectOutput = destination; () }
+            set { _redirectOutput = destination }
         }
     }
 
@@ -99,7 +99,7 @@ final class ProcessBuilder(private var _command: List[String]) {
   def redirectErrorStream(): scala.Boolean = _redirectErrorStream
 
   def redirectErrorStream(redirectErrorStream: scala.Boolean): ProcessBuilder =
-    set { _redirectErrorStream = redirectErrorStream; () }
+    set { _redirectErrorStream = redirectErrorStream }
 
   def start(): Process = {
     if (_command.isEmpty()) throw new IndexOutOfBoundsException()

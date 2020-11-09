@@ -229,6 +229,7 @@ trait NirDefinitions {
 
     private def mapValue[K, V1, V2](fn: V1 => V2)(in: (K, V1)): (K, V2) =
       (in._1, fn(in._2))
+
     lazy val RuntimeArrayModule: Map[Char, Symbol] =
       RuntimeArrayClass.map(mapValue(_.companion))
 
