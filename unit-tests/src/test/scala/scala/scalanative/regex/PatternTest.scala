@@ -3,33 +3,37 @@ package regex
 
 import java.util.regex.PatternSyntaxException
 
-import ScalaTestCompat._
+import org.junit.Ignore
+import org.junit.Test
+import org.junit.Assert._
+
+import scala.scalanative.junit.utils.ThrowsHelper._
 import TestUtils._
 
-object PatternSuite extends tests.Suite {
+class PatternTest {
 
-  test("split/split(n)") {
+  @Test def splitSplitLimit(): Unit = {
     val input = "boo:and:foo"
 
     val p1 = Pattern.compile(":")
-    assert(p1.split(input).toList == List("boo", "and", "foo"))
-    assert(p1.split(input, 2).toList == List("boo", "and:foo"))
-    assert(p1.split(input, 5).toList == List("boo", "and", "foo"))
-    assert(p1.split(input, -2).toList == List("boo", "and", "foo"))
+    assertTrue(p1.split(input).toList == List("boo", "and", "foo"))
+    assertTrue(p1.split(input, 2).toList == List("boo", "and:foo"))
+    assertTrue(p1.split(input, 5).toList == List("boo", "and", "foo"))
+    assertTrue(p1.split(input, -2).toList == List("boo", "and", "foo"))
 
     val p2 = Pattern.compile("o")
-    assert(p2.split(input).toList == List("b", "", ":and:f"))
-    assert(p2.split(input, 5).toList == List("b", "", ":and:f", "", ""))
-    assert(p2.split(input, -2).toList == List("b", "", ":and:f", "", ""))
-    assert(p2.split(input, 0).toList == List("b", "", ":and:f"))
+    assertTrue(p2.split(input).toList == List("b", "", ":and:f"))
+    assertTrue(p2.split(input, 5).toList == List("b", "", ":and:f", "", ""))
+    assertTrue(p2.split(input, -2).toList == List("b", "", ":and:f", "", ""))
+    assertTrue(p2.split(input, 0).toList == List("b", "", ":and:f"))
   }
 
-  test("quote") {
+  @Test def quote(): Unit = {
     // TODO: taken from re2j, behaviour might differ jdk
-    assert(Pattern.quote("1.5-2.0?") == "1\\.5-2\\.0\\?")
+    assertTrue(Pattern.quote("1.5-2.0?") == "1\\.5-2\\.0\\?")
   }
 
-  test("characters") {
+  @Test def characters(): Unit = {
     pass("a", "a")
 
     // backslash
@@ -49,7 +53,8 @@ object PatternSuite extends tests.Suite {
     pass("\\a", "\u0007") // alert (bell)
   }
 
-  ignore("(not supported) character classes") {
+  @Ignore("not supported")
+  @Test def characterClasses2(): Unit = {
     pass("\\0100", "\u0040") // 100 octal = 40 hex
     pass("\\xFF", "\u00FF")
     pass("\\uBEEF", "\uBEEF")
@@ -57,13 +62,13 @@ object PatternSuite extends tests.Suite {
     // control char \cx
   }
 
-  test("character classes") {
+  @Test def characterClasses(): Unit = {
     pass("[abc]", "a")
     fail("[^abc]", "c")
     pass("[a-zA-Z]", "T")
   }
 
-  test("predefined character classes") {
+  @Test def predefinedCharacterClasses(): Unit = {
     pass(".", "a")
     pass("\\d", "0")
     pass("\\D", "a")
@@ -73,7 +78,7 @@ object PatternSuite extends tests.Suite {
     pass("\\W", "-")
   }
 
-  test("POSIX character classes") {
+  @Test def testPOSIXCharacterClasses(): Unit = {
     pass("\\p{Alnum}", "a")
     pass("\\p{Alpha}", "a")
     pass("\\p{ASCII}", "a")
@@ -89,7 +94,7 @@ object PatternSuite extends tests.Suite {
     pass("\\p{Cntrl}", new String(Array[Byte](0x7F)))
   }
 
-  test("Unicode classes") {
+  @Test def unicodeClasses(): Unit = {
     // Categories
     pass("\\p{Lu}", "A")
     pass("\\p{Sc}", "$")
@@ -102,9 +107,11 @@ object PatternSuite extends tests.Suite {
     fail("\\p{IsLatin}", "α")
   }
 
-  ignore("pending") {
+  @Ignore
+  @Test def pending(): Unit = {
     // The prefix In should only allow blokcs like Mongolian
-    assertThrowsAnd[PatternSyntaxException](Pattern.compile("\\p{InLatin}"))(
+    assertThrowsAnd(classOf[PatternSyntaxException],
+                    Pattern.compile("\\p{InLatin}"))(
       _.getMessage == "Unknown character block name {Latin} near index 10"
     )
 
@@ -113,7 +120,7 @@ object PatternSuite extends tests.Suite {
     fail("\\p{IsAlphabetic}", "-")
   }
 
-  test("boundary matchers") {
+  @Test def boundaryMatchers(): Unit = {
     pass("^a", "a")
     pass("$", "")
     pass("foo\\b", "foo")
@@ -122,12 +129,13 @@ object PatternSuite extends tests.Suite {
     pass("foo\\z", "foo")
   }
 
-  ignore("(Not supported) boundary matchers") {
+  @Ignore("not supported")
+  @Test def boundaryMatchers2(): Unit = {
     // \G = at the end of the previous match
     val m1 = Pattern.compile("\\Gfoo").matcher("foofoo foo")
-    assert(m1.find())
-    assert(m1.find())
-    assert(!m1.find())
+    assertTrue(m1.find())
+    assertTrue(m1.find())
+    assertFalse(m1.find())
 
     // \Z = end of input of the final terminator
     find("foo\\Z", "foo")
@@ -143,7 +151,7 @@ object PatternSuite extends tests.Suite {
     pending // 620
   }
 
-  test("greedy quantifiers") {
+  @Test def greedyQuantifiers(): Unit = {
     // once or zero
     pass("X?", "")
     pass("X?", "X")
@@ -175,7 +183,7 @@ object PatternSuite extends tests.Suite {
     fail("^X{3,5}$", "XXXXXX")
   }
 
-  test("lazy quantifiers") {
+  @Test def lazyQuantifiers(): Unit = {
     // zero or one, prefer zero
     pass("X??", "")
     pass("X??", "X")
@@ -204,7 +212,7 @@ object PatternSuite extends tests.Suite {
     fail("^X{3,5}?$", "XXXXXX")
   }
 
-  test("composite operators") {
+  @Test def compositeOperators(): Unit = {
     pass("abc", "abc")
 
     // x or y, prefer x
@@ -213,29 +221,30 @@ object PatternSuite extends tests.Suite {
     fail("a|b", "c")
   }
 
-  test("quotation") {
+  @Test def quotation(): Unit = {
     pass("\\Qa|b|c\\E", "a|b|c")
   }
 
-  test("named groups") {
+  @Test def namedGroups(): Unit = {
     pass("(?<foo>a)", "a")
   }
 
-  test("non-capturing groups") {
+  @Test def nonCapturingGroups(): Unit = {
     pass("(?:a)", "a")
   }
 
-  test("flags") {
+  @Test def flags(): Unit = {
     pass("(?i)iNsEnSiTiVe", "insensitive")
     pass("(?i:iNsEnSiTiVe)", "insensitive")
   }
 
-  test("toString") {
+  @Test def testToString(): Unit = {
     val in = "foo|bar"
-    assert(Pattern.compile(in).toString == in)
+    assertTrue(Pattern.compile(in).toString == in)
   }
 
-  ignore("(Not supported) character classes (union and intersection)") {
+  @Ignore("not supported")
+  @Test def characterClassesUnionAndIntersection(): Unit = {
     pass("[a-d[m-p]]", "acn")
     pass("[[a-z] && [b-y] && [c-x]]", "g")
     pass("[a-z&&[def]]", "e")
@@ -243,25 +252,26 @@ object PatternSuite extends tests.Suite {
     fail("[a-z&&[^aeiou]]", "o")
     pass("[a-z&&[^m-p]]", "c")
     fail("[a-z&&[^m-p]]", "n")
-    pending // 620
+    //pending() // 620 (pending not supported in JUnit)
   }
 
-  ignore(
-    "(Not Supported) predefined character classes (horizontal and vertical)") {
+  @Ignore("not supported")
+  @Test def predefinedCharacterClassesHorizontalAndVertical(): Unit = {
     pass("\\h", " ")
     pass("\\H", "a")
     pass("\\v", "\n")
     pass("\\V", "a")
-    pending // 620
+    //pending() // 620 (pending not in JUnit)
   }
 
-  ignore("(Not supported)java character function classes") {
+  @Ignore("not supported")
+  @Test def javaCharacterFunctionClasses(): Unit = {
     pass("\\p{javaLowerCase}", "a")
     pass("\\p{javaUpperCase}", "A")
     pass("\\p{javaWhitespace}", " ")
     pass("\\p{javaMirrored}", "{") // mirrored with }
     fail("\\p{javaMirrored}", "c")
-    pending // 620
+    //pending // 620 (pending not in JUnit)
   }
 
   /*
@@ -269,13 +279,15 @@ object PatternSuite extends tests.Suite {
     https://github.com/google/re2/wiki/WhyRE2
     https://github.com/google/re2/blob/2017-03-01/doc/syntax.txt
    */
-  ignore("(Not supported) back references") {
+  @Ignore("not supported")
+  @Test def backReferences(): Unit = {
     pass("(a)\\1", "aa")
     pass("(?<foo>a)\\k<foo>", "aa")
-    pending // 620
+    //pending // 620 (pending not in JUnit)
   }
 
-  ignore("(Not supported) lookaheads") {
+  @Ignore("not supported")
+  @Test def lookaheads(): Unit = {
     // positive lookahead
     passAndFail(".*\\.(?=log$).*$", "a.b.c.log", "a.b.c.log.")
 
@@ -297,10 +309,11 @@ object PatternSuite extends tests.Suite {
     // quantifiers over look ahead
     passAndFail(".*(?<=abc)*\\.log$", "cde.log", "cde.log")
 
-    pending // 620
+    //pending // 620 (pending not in JUnit)
   }
 
-  ignore("(Not supported) possessive quantifiers") {
+  @Ignore("not supported")
+  @Test def possessiveQuantifiers(): Unit = {
     // zero or one, prefer more
     pass("X?+", "")
     pass("X?+", "X")
@@ -330,67 +343,68 @@ object PatternSuite extends tests.Suite {
     pass("^X{3,5}+$", "XXXXX")
     fail("^X{3,5}+$", "XXXXXX")
 
-    pending // 620
+    //pending // 620 (pending not in JUnit)
   }
 
-  test("multibyte characters") {
+  @Test def multibyteCharacters(): Unit = {
     find("こんにちは", "こんにちはみなさま")
   }
 
-  test("character class consisting of multibyte characters") {
+  @Test def characterClassConsistingOfMultibyteCharacters(): Unit = {
     pass(
       "^[\u0000-\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\u2028\u2029]$",
       "\u200a"
     )
   }
 
-  test("group not containing multibyte characters") {
+  @Test def groupNotContainingMultibyteCharacters(): Unit = {
     val pat   = "abcdef(ghi)jkl"
     val input = "abcdefghijkl"
     val m     = Pattern.compile(pat).matcher(input)
-    assert(m.matches())
-    assert(m.group(0) == input)
-    assert(m.group(1) == "ghi")
-    assert(m.group() == input)
+    assertTrue(m.matches())
+    assertTrue(m.group(0) == input)
+    assertTrue(m.group(1) == "ghi")
+    assertTrue(m.group() == input)
   }
 
-  test("group containing multibyte characters") {
+  @Test def groupContainingMultibyteCharacters(): Unit = {
     val pat   = "abcあいう(えお)def"
     val input = "abcあいうえおdef"
     val m     = Pattern.compile(pat).matcher(input)
-    assert(m.matches())
-    assert(m.group(0) == input)
-    assert(m.group(1) == "えお")
-    assert(m.group() == input)
+    assertTrue(m.matches())
+    assertTrue(m.group(0) == input)
+    assertTrue(m.group(1) == "えお")
+    assertTrue(m.group() == input)
   }
 
-  test("compiling a lot of patterns") {
+  @Test def compilingLotsOfPatterns(): Unit = {
     val pats = (0 until 200).map(i => Pattern.compile(i.toString))
     // pick a newer pattern (likely in cache).
     locally {
       val pat = pats(198)
       val m   = pat.matcher("198")
-      assert(m.matches())
+      assertTrue(m.matches())
     }
     // pick an older pattern (likely out of cache).
     locally {
       val pat = pats(1)
       val m   = pat.matcher("1")
-      assert(m.matches())
+      assertTrue(m.matches())
     }
   }
 
-  test("syntax exceptions") {
+  @Test def syntaxExceptions(): Unit = {
 
-    assertThrowsAnd[PatternSyntaxException](Pattern.compile("foo\\L"))(e => {
-      e.getDescription == "Illegal/unsupported escape sequence" &&
-        e.getIndex == 4 &&
-        e.getPattern == "foo\\L" &&
-        e.getMessage ==
-          """|Illegal/unsupported escape sequence near index 4
+    assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile("foo\\L"))(
+      e => {
+        e.getDescription == "Illegal/unsupported escape sequence" &&
+          e.getIndex == 4 &&
+          e.getPattern == "foo\\L" &&
+          e.getMessage ==
+            """|Illegal/unsupported escape sequence near index 4
 	     |foo\L
 	     |    ^""".stripMargin
-    })
+      })
 
     /// Ordered alphabetical by description (second arg).
     /// Helps ensuring that each scalanative/regex Parser description
@@ -429,11 +443,12 @@ object PatternSuite extends tests.Suite {
   }
 
   private def syntax(pattern: String, description: String, index: Int): Unit = {
-    assertThrowsAnd[PatternSyntaxException](Pattern.compile(pattern))(e => {
-      (e.getDescription == description) &&
-        (e.getPattern == pattern) &&
-        (e.getIndex == index)
-    })
+    assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile(pattern))(
+      e => {
+        (e.getDescription == description) &&
+          (e.getPattern == pattern) &&
+          (e.getIndex == index)
+      })
   }
 
   private def pass(pattern: String, input: String): Unit =
@@ -458,7 +473,7 @@ object PatternSuite extends tests.Suite {
       if (pass) ret
       else !ret
 
-    assert(ret0, s""""$pattern" $mid "$input"""")
+    assertTrue(s""""$pattern" $mid "$input"""", ret0)
   }
 
   private def matches(pattern: String, input: String, pass: Boolean): Unit = {
