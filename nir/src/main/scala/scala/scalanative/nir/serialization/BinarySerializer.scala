@@ -14,7 +14,7 @@ final class BinarySerializer {
   private[this] val buffer           = new DataOutputStream(bufferUnderyling)
 
   private[this] var lastPosition: Position = Position.NoPosition
-  private[this] var fileIndexMap           = ListMap.empty[URI, Int]
+  private[this] val fileIndexMap           = mutable.Map.empty[URI, Int]
 
   // Methods were renamed in order to not pollute git blame history.
   // Original implementation used ByteBuffers
@@ -569,10 +569,9 @@ final class BinarySerializer {
     def initFile(pos: Position): Unit = {
       val file = pos.source
       if (pos.isDefined)
-        fileIndexMap.getOrElse(file, {
+        fileIndexMap.getOrElseUpdate(file, {
           val idx = filesList.size
           filesList += file.toString
-          fileIndexMap = fileIndexMap.updated(file, idx)
           idx
         })
     }
