@@ -1,9 +1,12 @@
 package scala.scalanative
 package regex
 
+import org.junit.Test
+import org.junit.Assert._
+
 import regex.Utils._
 
-object CharClassSuite extends tests.Suite {
+class CharClassTest {
   private def cc(arr: Array[Int]): CharClass = new CharClass(arr)
 
   private def s(str: String): Array[Int] = stringToRunes(str)
@@ -16,7 +19,7 @@ object CharClassSuite extends tests.Suite {
           .mkString(", ") + "\n" + "Actual:   " + actual.mkString(", "))
   }
 
-  test("CleanClass") {
+  @Test def cleanClass(): Unit = {
     assertClass(cc(Array.emptyIntArray).cleanClass, Array.emptyIntArray)
     assertClass(cc(Array(10, 20, 10, 20, 10, 20)).cleanClass, Array(10, 20))
     assertClass(cc(Array(10, 20)).cleanClass, Array(10, 20))
@@ -42,7 +45,7 @@ object CharClassSuite extends tests.Suite {
                 Array(50, Unicode.MAX_RUNE))
   }
 
-  test("AppendLiteral") {
+  @Test def appendLiteral(): Unit = {
     assertClass(cc(Array.emptyIntArray).appendLiteral('a', 0), Array('a', 'a'))
     assertClass(cc(Array('a', 'f')).appendLiteral('a', 0), Array('a', 'f'))
     assertClass(cc(Array('b', 'f')).appendLiteral('a', 0), Array('a', 'f'))
@@ -66,7 +69,7 @@ object CharClassSuite extends tests.Suite {
                 Array('a', 'f', ' ', ' '))
   }
 
-  test("AppendFoldedRange") {
+  @Test def appendFoldedRange(): Unit = {
     // These cases are derived directly from the program logic:
 
     // Range is full: folding can't add more.
@@ -84,7 +87,7 @@ object CharClassSuite extends tests.Suite {
                   0x10426, 0x1044f))                      // uppercase Deseret, abutting.
   }
 
-  test("AppendClass") {
+  @Test def appendClass(): Unit = {
     assertClass(cc(Array.emptyIntArray).appendClass(Array('a', 'z')),
                 Array('a', 'z'))
     assertClass(cc(Array('a', 'f')).appendClass(Array('c', 't')),
@@ -93,12 +96,12 @@ object CharClassSuite extends tests.Suite {
                 Array('a', 't'))
   }
 
-  test("AppendNegatedClass") {
+  @Test def appendNegatedClass(): Unit = {
     assertClass(cc(Array('d', 'e')).appendNegatedClass(Array('b', 'f')),
                 Array('d', 'e', 0, 'a', 'g', Unicode.MAX_RUNE))
   }
 
-  test("AppendFoldedClass") {
+  @Test def appendFoldedClass(): Unit = {
     // NB, local variable names use Unicode.
     // 0x17F is an old English long s (looks like an f) and folds to s.
     // 0x212A is the Kelvin symbol and folds to k.
@@ -113,7 +116,7 @@ object CharClassSuite extends tests.Suite {
                 Array('c', 't', 'a', 'f', 'A', 'F'))
   }
 
-  test("NegateClass") {
+  @Test def negateClass(): Unit = {
     assertClass(cc(Array.emptyIntArray).negateClass,
                 Array('\u0000', Unicode.MAX_RUNE))
     assertClass(cc(Array('A', 'Z')).negateClass,
@@ -122,7 +125,7 @@ object CharClassSuite extends tests.Suite {
                 Array('\u0000', '@', '[', '`', '{', Unicode.MAX_RUNE))
   }
 
-  test("AppendTable") {
+  @Test def appendTable(): Unit = {
     assertClass(cc(Array.emptyIntArray)
                   .appendTable(Array('a', 'z', 1, 'A', 'M', 4)),
                 Array('a', 'z', 'A', 'A', 'E', 'E', 'I', 'I', 'M', 'M'))
@@ -136,7 +139,7 @@ object CharClassSuite extends tests.Suite {
 
 // format: off
 
-  test("AppendNegatedTable") {
+  @Test def appendNegatedTable(): Unit = {
     // stride == 1
     assertClass(
       cc(Array.emptyIntArray).appendNegatedTable(Array('b', 'f', 1)),
@@ -176,7 +179,7 @@ object CharClassSuite extends tests.Suite {
 
 // format: on
 
-  test("AppendGroup") {
+  @Test def appendGroup(): Unit = {
     assertClass(cc(Array.emptyIntArray)
                   .appendGroup(CharGroup.PERL_GROUPS("\\d"), false),
                 Array('0', '9'))
@@ -185,8 +188,8 @@ object CharClassSuite extends tests.Suite {
                 Array(0, '/', ':', Unicode.MAX_RUNE))
   }
 
-  test("ToString") {
-    assert("[0xa 0xc-0x14]" == cc(Array(10, 10, 12, 20)).toString)
+  @Test def testToString(): Unit = {
+    assertTrue("[0xa 0xc-0x14]" == cc(Array(10, 10, 12, 20)).toString)
   }
 
 }
