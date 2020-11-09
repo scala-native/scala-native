@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 import scalanative.util.{ShowBuilder, unreachable}
-import scala.jdk.CollectionConverters._
 import java.util.stream.{Stream => JStream}
 import java.util.function.{Function => JFunction, Consumer => JConsumer}
 
@@ -39,36 +38,16 @@ object Show {
   type DefnString = (Global, String)
 
   def dump(defns: Seq[Defn], fileName: String): Unit = {
-
-    val collectDefs = new JFunction[(Int, Seq[Defn]), JStream[DefnString]] {
-      override def apply(t: (Int, Seq[Defn])): JStream[DefnString] = {
-        val (_, defns) = t
-        defns
-          .collect {
-            case defn if defn != null =>
-              (defn.name, defn.show)
-          }
-          .asJavaCollection
-          .stream()
-      }
-    }
-
     val pw = new java.io.PrintWriter(fileName)
-    val writeToFile = new JConsumer[DefnString] {
-      override def accept(t: (Global, String)): Unit = {
-        val (_, shown) = t
-        pw.write(shown)
-        pw.write("\n")
-      }
-    }
 
     try {
-      val groupedDefns = util.partitionBy(defns.filter(_ != null))(_.name)
-      util
-        .parallelStream(groupedDefns)
-        .flatMap(collectDefs)
-        .sorted(Ordering.by(_._1))
-        .forEach(writeToFile)
+      defns
+        .filterNot(_ != null)
+        .sortBy(_.name)
+        .foreach { defn =>
+          pw.write(defn.show)
+          pw.write("\n")
+        }
     } finally {
       pw.close()
     }
