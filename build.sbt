@@ -42,7 +42,7 @@ inThisBuild(
   Def.settings(
     organization := "org.scala-native", // Maven <groupId>
     version := nativeVersion,           // Maven <version>
-    scalaVersion := scala213,
+    scalaVersion := scala212,
     crossScalaVersions := libCrossScalaVersions,
     scalacOptions ++= Seq(
       "-deprecation",
@@ -203,7 +203,6 @@ lazy val noPublishSettings: Seq[Setting[_]] = Seq(
 lazy val toolSettings: Seq[Setting[_]] =
   Def.settings(
     sbtVersion := sbt10Version,
-    scalaVersion := sbt10ScalaVersion,
     crossSbtVersions := List(sbt10Version),
     crossScalaVersions := Seq(sbt10ScalaVersion),
     javacOptions ++= Seq("-encoding", "utf8")
@@ -753,7 +752,6 @@ lazy val junitTestOutputsJVM =
     .settings(
       commonJUnitTestOutputsSettings,
       crossScalaVersions := Seq(sbt10ScalaVersion),
-      scalaVersion := sbt10ScalaVersion,
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.11" % "test",
         collectionsCompatLib
@@ -776,7 +774,6 @@ lazy val junitAsyncJVM =
     .in(file("junit-async/jvm"))
     .settings(
       crossScalaVersions := Seq(sbt10ScalaVersion),
-      scalaVersion := sbt10ScalaVersion,
       nameSettings,
       publishArtifact := false
     )
