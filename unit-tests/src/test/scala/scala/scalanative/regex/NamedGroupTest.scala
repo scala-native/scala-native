@@ -1,12 +1,17 @@
 package scala.scalanative
 package regex
 
-import TestUtils._
 import scala.util.Random
 
-object NamedGroupSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
 
-  test("named group is stack safe") {
+import scala.scalanative.junit.utils.ThrowsHelper._
+import TestUtils._
+
+class NamedGroupTest {
+
+  @Test def namedGroupIsStackSafe(): Unit = {
     val buf                       = new StringBuffer()
     var i                         = 0
     def randomGroupName(): String = Random.alphanumeric.take(5).mkString("")
@@ -17,34 +22,34 @@ object NamedGroupSuite extends tests.Suite {
     Pattern.compile(buf.toString())
   }
 
-  test("named group") {
+  @Test def namedGroup(): Unit = {
     val m = matcher(
       "from (?<S>.*) to (?<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
     )
     import m._
 
-    assert(find())
-    assert(group("S") == "Montreal, Canada")
-    assert(group("D") == "Lausanne, Switzerland")
+    assertTrue(find())
+    assertTrue(group("S") == "Montreal, Canada")
+    assertTrue(group("D") == "Lausanne, Switzerland")
   }
 
-  test("start(name)/end(name)") {
+  @Test def startNameEndName(): Unit = {
     val m = matcher(
       "from (?<S>.*) to (?<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
     )
     import m._
 
-    assert(find())
-    assert(start("S") == 5)
-    assert(end("S") == 21)
+    assertTrue(find())
+    assertTrue(start("S") == 5)
+    assertTrue(end("S") == 21)
 
-    assert(start("D") == 25)
-    assert(end("D") == 46)
+    assertTrue(start("D") == 25)
+    assertTrue(end("D") == 46)
   }
 
-  test("appendReplacement/appendTail with group replacement by name") {
+  @Test def appendReplacementAppendTailWithGroupReplacementByName(): Unit = {
     val buf = new StringBuffer()
     val m = matcher(
       "from (?<S>.*) to (?<D>.*)",
@@ -59,10 +64,10 @@ object NamedGroupSuite extends tests.Suite {
     val obtained = buf.toString
     val expected = "such Montreal, Canada, wow Lausanne, Switzerland"
 
-    assert(obtained == expected)
+    assertTrue(obtained == expected)
   }
 
-  test("appendReplacement unclosed }") {
+  @Test def appendReplacementUnclosed(): Unit = {
     val buf = new StringBuffer()
     val m = matcher(
       "from (?<S>.*) to (?<D>.*)",
@@ -70,8 +75,8 @@ object NamedGroupSuite extends tests.Suite {
     )
     import m._
     find()
-    assertThrowsAnd[IllegalArgumentException](
-      appendReplacement(buf, "such open ${S such closed ${D}"))(
+    assertThrowsAnd(classOf[IllegalArgumentException],
+                    appendReplacement(buf, "such open ${S such closed ${D}"))(
       _.getMessage == "named capturing group is missing trailing '}'"
     )
 
