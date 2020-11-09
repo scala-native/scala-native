@@ -3,9 +3,10 @@ package regex
 
 import java.util.regex.PatternSyntaxException
 
-import ScalaTestCompat.fail
+import org.junit.Test
+import org.junit.Assert._
 
-object RE2CompileSuite extends tests.Suite {
+class RE2CompileTest {
 
   // A list of regexp and expected error when calling RE2.compile. null implies that compile should
   // succeed.
@@ -46,7 +47,7 @@ object RE2CompileSuite extends tests.Suite {
     Array("\\x", "Illegal/unsupported escape sequence near index 1\n\\x\n ^")
   )
 
-  test("Compile") {
+  @Test def compile(): Unit = {
     for (Array(input, expectedError) <- testData) {
       try {
         RE2.compile(input)
