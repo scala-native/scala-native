@@ -1,25 +1,27 @@
 package scala.scalanative
 package regex
 
+import org.junit.Ignore
+import org.junit.Test
+import org.junit.Assert._
+
 import ApiTestUtils._
 
-import ScalaTestCompat._
+class RE2MatcherTest {
 
-object RE2MatcherSuite extends tests.Suite {
-
-  test("LookingAt") {
+  @Test def lookingAt(): Unit = {
     ApiTestUtils.verifyLookingAt("abcdef", "abc", true)
     ApiTestUtils.verifyLookingAt("ab", "abc", false)
   }
 
-  test("Matches") {
+  @Test def matches(): Unit = {
     ApiTestUtils.testMatcherMatches("ab+c", "abbbc", "cbbba")
     ApiTestUtils.testMatcherMatches("ab.*c", "abxyzc", "ab\nxyzc")
     ApiTestUtils.testMatcherMatches("^ab.*c$", "abc", "xyz\nabc\ndef")
     ApiTestUtils.testMatcherMatches("ab+c", "abbbc", "abbcabc")
   }
 
-  test("ReplaceAll") {
+  @Test def replaceAll(): Unit = {
     ApiTestUtils.testReplaceAll(
       "What the Frog's Eye Tells the Frog's Brain",
       "Frog",
@@ -53,7 +55,7 @@ object RE2MatcherSuite extends tests.Suite {
     ApiTestUtils.testReplaceAll("aab", "a*?", "<$0>", "<>a<>a<>b<>")
   }
 
-  test("ReplaceFirst") {
+  @Test def replaceFirst(): Unit = {
     ApiTestUtils.testReplaceFirst(
       "What the Frog's Eye Tells the Frog's Brain",
       "Frog",
@@ -81,11 +83,11 @@ object RE2MatcherSuite extends tests.Suite {
     ApiTestUtils.testReplaceFirst("aab", "a*?", "<$0>", "<>aab")
   }
 
-  test("GroupCount") {
+  @Test def groupCount(): Unit = {
     ApiTestUtils.testGroupCount("(a)(b(c))d?(e)", 4)
   }
 
-  test("Group") {
+  @Test def group(): Unit = {
     ApiTestUtils.testGroup("xabdez",
                            "(a)(b(c)?)d?(e)",
                            Array[String]("abde", "a", "b", null, "e"))
@@ -107,7 +109,7 @@ object RE2MatcherSuite extends tests.Suite {
     )
   }
 
-  test("Find") {
+  @Test def find(): Unit = {
     ApiTestUtils.testFind("abcdefgh", ".*[aeiou]", 0, "abcde")
     ApiTestUtils.testFind("abcdefgh", ".*[aeiou]", 1, "bcde")
     ApiTestUtils.testFind("abcdefgh", ".*[aeiou]", 2, "cde")
@@ -118,7 +120,7 @@ object RE2MatcherSuite extends tests.Suite {
     ApiTestUtils.testFindNoMatch("abcdefgh", ".*[aeiou]", 7)
   }
 
-  test("InvalidFind") {
+  @Test def invalidFind(): Unit = {
     try {
       ApiTestUtils.testFind("abcdef", ".*", 10, "xxx")
       fail()
@@ -128,28 +130,28 @@ object RE2MatcherSuite extends tests.Suite {
     }
   }
 
-  test("InvalidReplacement") {
+  @Test def invalidReplacement(): Unit = {
     try {
       ApiTestUtils.testReplaceFirst("abc", "abc", "$4", "xxx")
       fail()
     } catch {
       case e: IndexOutOfBoundsException =>
-        assert(true)
+        assertTrue(true)
     }
   }
 
-  test("InvalidGroupNoMatch") {
+  @Test def invalidGroupNoMatch(): Unit = {
     try {
       ApiTestUtils.testInvalidGroup("abc", "xxx", 0)
       fail()
     } catch {
       case e: IllegalStateException =>
         // Linter complains on empty catch block.
-        assert(true)
+        assertTrue(true)
     }
   }
-
-  ignore("InvalidGroupOutOfRange") { // TODO: fails because of incorrect exception
+  @Ignore("fails because of incorrect exception")
+  @Test def invalidGroupOutOfRange(): Unit = {
     try {
       ApiTestUtils.testInvalidGroup("abc", "abc", 1)
       fail()
@@ -161,23 +163,23 @@ object RE2MatcherSuite extends tests.Suite {
   /**
    * Test the NullPointerException is thrown on null input.
    */
-  test("ThrowsOnNullInputReset") { // null in constructor.
+  @Test def throwsOnNullInputReset(): Unit = { // null in constructor.
     try {
       new Matcher(Pattern.compile("pattern"), null.asInstanceOf[String])
       fail()
     } catch {
       case n: NullPointerException =>
-        assert(true)
+        assertTrue(true)
     }
   }
 
-  test("ThrowsOnNullInputCtor") {
+  @Test def throwsOnNullInputCtor(): Unit = {
     try {
       new Matcher(null, "input")
       fail()
     } catch {
       case n: NullPointerException =>
-        assert(true)
+        assertTrue(true)
     }
   }
 
@@ -185,14 +187,14 @@ object RE2MatcherSuite extends tests.Suite {
    * Test that IllegalStateException is thrown if start/end are called
    * before calling find
    */
-  test("StartEndBeforeFind") {
+  @Test def startEndBeforeFind(): Unit = {
     try {
       val m = Pattern.compile("a").matcher("abaca")
       m.start
       fail()
     } catch {
       case ise: IllegalStateException =>
-        assert(true)
+        assertTrue(true)
     }
   }
 
@@ -200,18 +202,18 @@ object RE2MatcherSuite extends tests.Suite {
    * Test for b/6891357. Basically matches should behave like find when
    * it comes to updating the information of the match.
    */
-  test("MatchesUpdatesMatchInformation") {
+  @Test def matchesUpdatesMatchInformation(): Unit = {
     val m = Pattern.compile("a+").matcher("aaa")
-    if (m.matches) assert("aaa" == m.group(0))
+    if (m.matches) assertTrue("aaa" == m.group(0))
   }
 
   /**
    * Test for b/6891133. Test matches in case of alternation.
    */
-  test("AlternationMatches") {
+  @Test def alternationMatches(): Unit = {
     val s = "123:foo"
-    assert(Pattern.compile("(?:\\w+|\\d+:foo)").matcher(s).matches)
-    assert(Pattern.compile("(?:\\d+:foo|\\w+)").matcher(s).matches)
+    assertTrue(Pattern.compile("(?:\\w+|\\d+:foo)").matcher(s).matches)
+    assertTrue(Pattern.compile("(?:\\d+:foo|\\w+)").matcher(s).matches)
   }
 
   private def helperTestMatchEndUTF16(string: String,
@@ -225,7 +227,7 @@ object RE2MatcherSuite extends tests.Suite {
                           anchor: Int,
                           group: Array[Int],
                           ngroup: Int): Boolean = {
-        assert(end == e)
+        assertTrue(end == e)
         super.match_(input, start, e, anchor, group, ngroup)
       }
     }
@@ -233,16 +235,17 @@ object RE2MatcherSuite extends tests.Suite {
     val m     = pat.matcher(string)
     var found = 0
     while (m.find) found += 1
-    assert(
-      num == found,
-      "Matches Expected " + num + " but found " + found + ", for input " + string)
+    assertTrue(
+      "Matches Expected " + num + " but found " + found + ", for input " + string,
+      num == found)
   }
 
   /**
    * Test for variable length encoding, test whether RE2's match function gets
    * the required parameter based on UTF16 codes and not chars and Runes.
    */
-  test("MatchEndUTF16") { // Latin alphabetic chars such as these 5 lower-case, acute vowels have multi-byte UTF-8
+  @Test def matchEndUTF16(): Unit = {
+    // Latin alphabetic chars such as these 5 lower-case, acute vowels have multi-byte UTF-8
     // encodings but fit in a single UTF-16 code, so the final match is at UTF16 offset 5.
     val vowels = "\u0095\u009b\u009f\u00a3\u00a8"
     helperTestMatchEndUTF16(vowels, 5, 5)
@@ -253,130 +256,130 @@ object RE2MatcherSuite extends tests.Suite {
       .appendCodePoint(0x10001)
       .appendCodePoint(0x10002)
       .toString
-    assert(utf16 == "\uD800\uDC00\uD800\uDC01\uD800\uDC02")
+    assertTrue(utf16 == "\uD800\uDC00\uD800\uDC01\uD800\uDC02")
     helperTestMatchEndUTF16(utf16, 3, 6)
   }
 
-  test("AppendTail_StringBuffer") {
+  @Test def appendTailStringBuffer(): Unit = {
     val p  = Pattern.compile("cat")
     val m  = p.matcher("one cat two cats in the yard")
     val sb = new StringBuffer
     while (m.find) m.appendReplacement(sb, "dog")
     m.appendTail(sb)
     m.appendTail(sb)
-    assert("one dog two dogs in the yards in the yard" == sb.toString)
+    assertTrue("one dog two dogs in the yards in the yard" == sb.toString)
   }
 
-  test("AppendTail_StringBuilder") {
+  @Test def appendTailStringBuilder(): Unit = {
     val p  = Pattern.compile("cat")
     val m  = p.matcher("one cat two cats in the yard")
     val sb = new StringBuffer()
     while (m.find) m.appendReplacement(sb, "dog")
     m.appendTail(sb)
     m.appendTail(sb)
-    assert("one dog two dogs in the yards in the yard" == sb.toString)
+    assertTrue("one dog two dogs in the yards in the yard" == sb.toString)
   }
 
-  test("ResetOnFindInt_StringBuffer") {
+  @Test def resetOnFindIntStringBuffer(): Unit = {
     var buffer  = new StringBuffer
     val matcher = Pattern.compile("a").matcher("zza")
-    assert(matcher.find)
+    assertTrue(matcher.find)
     buffer = new StringBuffer
     matcher.appendReplacement(buffer, "foo")
-    assert("zzfoo" == buffer.toString, "1st time")
-    assert(matcher.find(0))
+    assertTrue("1st time", "zzfoo" == buffer.toString)
+    assertTrue(matcher.find(0))
     buffer = new StringBuffer
     matcher.appendReplacement(buffer, "foo")
-    assert("zzfoo" == buffer.toString, "2nd time")
+    assertTrue("2nd time", "zzfoo" == buffer.toString)
   }
 
-  test("ResetOnFindInt_StringBuilder") {
+  @Test def resetOnFindIntStringBuilder(): Unit = {
     var buffer  = new StringBuffer
     val matcher = Pattern.compile("a").matcher("zza")
-    assert(matcher.find)
+    assertTrue(matcher.find)
     buffer = new StringBuffer
     matcher.appendReplacement(buffer, "foo")
-    assert("zzfoo" == buffer.toString, "1st time")
-    assert(matcher.find(0))
+    assertTrue("1st time", "zzfoo" == buffer.toString)
+    assertTrue(matcher.find(0))
     buffer = new StringBuffer
     matcher.appendReplacement(buffer, "foo")
-    assert("zzfoo" == buffer.toString, "2nd time")
+    assertTrue("2nd time", "zzfoo" == buffer.toString)
   }
 
-  test("EmptyReplacementGroups_StringBuffer") {
+  @Test def emptyReplacementGroupsStringBuffer(): Unit = {
     var buffer  = new StringBuffer
     var matcher = Pattern.compile("(a)(b$)?(b)?").matcher("abc")
-    assert(matcher.find)
+    assertTrue(matcher.find)
     matcher.appendReplacement(buffer, "$1-$2-$3")
-    assert("a--b" == buffer.toString)
+    assertTrue("a--b" == buffer.toString)
     matcher.appendTail(buffer)
-    assert("a--bc" == buffer.toString)
+    assertTrue("a--bc" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("(a)(b$)?(b)?").matcher("ab")
-    assert(matcher.find)
+    assertTrue(matcher.find)
     matcher.appendReplacement(buffer, "$1-$2-$3")
     matcher.appendTail(buffer)
-    assert("a-b-" == buffer.toString)
+    assertTrue("a-b-" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("(^b)?(b)?c").matcher("abc")
-    assert(matcher.find)
+    assertTrue(matcher.find)
     matcher.appendReplacement(buffer, "$1-$2")
     matcher.appendTail(buffer)
-    assert("a-b" == buffer.toString)
+    assertTrue("a-b" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("^(.)[^-]+(-.)?(.*)").matcher("Name")
-    assert(matcher.find)
+    assertTrue(matcher.find)
     matcher.appendReplacement(buffer, "$1$2")
     matcher.appendTail(buffer)
-    assert("N" == buffer.toString)
+    assertTrue("N" == buffer.toString)
   }
 
-  test("EmptyReplacementGroups_StringBuilder") {
+  @Test def emptyReplacementGroupsStringBuilder(): Unit = {
     var buffer  = new StringBuffer
     var matcher = Pattern.compile("(a)(b$)?(b)?").matcher("abc")
-    assert(matcher.find)
+    assertTrue(matcher.find)
     matcher.appendReplacement(buffer, "$1-$2-$3")
-    assert("a--b" == buffer.toString)
+    assertTrue("a--b" == buffer.toString)
     matcher.appendTail(buffer)
-    assert("a--bc" == buffer.toString)
+    assertTrue("a--bc" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("(a)(b$)?(b)?").matcher("ab")
-    assert(matcher.find)
+    assertTrue(matcher.find)
     matcher.appendReplacement(buffer, "$1-$2-$3")
     matcher.appendTail(buffer)
-    assert("a-b-" == buffer.toString)
+    assertTrue("a-b-" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("(^b)?(b)?c").matcher("abc")
-    assert(matcher.find)
+    assertTrue(matcher.find)
     matcher.appendReplacement(buffer, "$1-$2")
     matcher.appendTail(buffer)
-    assert("a-b" == buffer.toString)
+    assertTrue("a-b" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("^(.)[^-]+(-.)?(.*)").matcher("Name")
-    assert(matcher.find)
+    assertTrue(matcher.find)
     matcher.appendReplacement(buffer, "$1$2")
     matcher.appendTail(buffer)
-    assert("N" == buffer.toString)
+    assertTrue("N" == buffer.toString)
   }
 
   // This example is documented in the com.google.re2j package.html.
-  test("DocumentedExample") {
+  @Test def documentedExample(): Unit = {
     val p = Pattern.compile("b(an)*(.)")
     val m = p.matcher("by, band, banana")
-    assert(m.lookingAt)
+    assertTrue(m.lookingAt)
     m.reset
-    assert(m.find)
-    assert("by" == m.group(0))
-    assert(null == m.group(1))
-    assert("y" == m.group(2))
-    assert(m.find)
-    assert("band" == m.group(0))
-    assert("an" == m.group(1))
-    assert("d" == m.group(2))
-    assert(m.find)
-    assert("banana" == m.group(0))
-    assert("an" == m.group(1))
-    assert("a" == m.group(2))
-    assert(!m.find)
+    assertTrue(m.find)
+    assertTrue("by" == m.group(0))
+    assertTrue(null == m.group(1))
+    assertTrue("y" == m.group(2))
+    assertTrue(m.find)
+    assertTrue("band" == m.group(0))
+    assertTrue("an" == m.group(1))
+    assertTrue("d" == m.group(2))
+    assertTrue(m.find)
+    assertTrue("banana" == m.group(0))
+    assertTrue("an" == m.group(1))
+    assertTrue("a" == m.group(2))
+    assertFalse(m.find)
   }
 }
