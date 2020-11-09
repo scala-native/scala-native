@@ -5,7 +5,8 @@ import java.util
 import java.util.regex.PatternSyntaxException
 import scala.scalanative.junit.utils.CollectionConverters._
 
-import ScalaTestCompat.fail
+import org.junit.Test
+import org.junit.Assert._
 
 import RE2.{
   FOLD_CASE,
@@ -21,7 +22,7 @@ import RE2.{
 
 import Regexp.Op._
 
-object ParserSuite extends tests.Suite {
+class ParserTest {
 
   private trait RunePredicate {
     def applies(rune: Int): Boolean
@@ -281,7 +282,7 @@ object ParserSuite extends tests.Suite {
   // - ending a regexp with "\\"
   // - Java UTF-16 things.
 
-  test("ParseSimple") {
+  @Test def parseSimple(): Unit = {
     testParseDump(PARSE_TESTS, TEST_FLAGS)
   }
 
@@ -294,14 +295,14 @@ object ParserSuite extends tests.Suite {
     Array("A[F-g]", "cat{litfold{A}cc{0x41-0x7a 0x17f 0x212a}}") // [Aa][A-z...]
   )
 
-  test("ParseFoldCase") {
+  @Test def parseFoldCase(): Unit = {
     testParseDump(FOLDCASE_TESTS, FOLD_CASE)
   }
 
   private val LITERAL_TESTS = Array(
     Array("(|)^$.[*+?]{5,10},\\", "str{(|)^$.[*+?]{5,10},\\}"))
 
-  test("ParseLiteral") {
+  @Test def parseLiteral(): Unit = {
     testParseDump(LITERAL_TESTS, LITERAL)
   }
 
@@ -310,7 +311,7 @@ object ParserSuite extends tests.Suite {
                                     Array("[^a]", "cc{0x0-0x60 0x62-0x10ffff}"),
                                     Array("[a\\n]", "cc{0xa 0x61}"))
 
-  test("ParseMatchNL") {
+  @Test def parseMatchNL(): Unit = {
     testParseDump(MATCHNL_TESTS, MATCH_NL)
   }
 
@@ -320,7 +321,7 @@ object ParserSuite extends tests.Suite {
     Array("[^a]", "cc{0x0-0x9 0xb-0x60 0x62-0x10ffff}"),
     Array("[a\\n]", "cc{0xa 0x61}"))
 
-  test("ParseNoMatchNL") {
+  @Test def parseNoMatchNL(): Unit = {
     testParseDump(NOMATCHNL_TESTS, 0)
   }
 
@@ -446,7 +447,8 @@ object ParserSuite extends tests.Suite {
     dump(re)
   }
 
-  test("AppendRangeCollapse") { // AppendRange should collapse each of the new ranges
+  @Test def appendRangeCollapse()
+      : Unit = { // AppendRange should collapse each of the new ranges
     // into the earlier ones (it looks back two ranges), so that
     // the slice never grows very large.
     // Note that we are not calling cleanClass.
@@ -456,7 +458,7 @@ object ParserSuite extends tests.Suite {
       cc.appendRange(i, i)
       cc.appendRange(i + 'a' - 'A', i + 'a' - 'A')
     }
-    assert("AZaz" == runesToString(cc.toArray))
+    assertTrue("AZaz" == runesToString(cc.toArray))
   }
 
   // Converts an array of Unicode runes to a Java UTF-16 string.
@@ -508,7 +510,7 @@ object ParserSuite extends tests.Suite {
   private val ONLY_POSIX =
     Array("a++", "a**", "a?*", "a+*", "a{1}*", ".{1}{2}.{3}")
 
-  test("ParseInvalidRegexps") {
+  @Test def parseInvalidRegexps(): Unit = {
     for (regexp <- INVALID_REGEXPS) {
       try {
         val re = Parser.parse(regexp, PERL)
@@ -552,13 +554,13 @@ object ParserSuite extends tests.Suite {
     }
   }
 
-  test("ToStringEquivalentParse") {
+  @Test def toStringEquivalentParse(): Unit = {
     for (tt <- PARSE_TESTS) {
       val re = Parser.parse(tt(0), TEST_FLAGS)
       val d  = dump(re)
 
       // (already ensured by testParseSimple)
-      assert(d == tt(1), "ParseSimple failure")
+      assertTrue("ParseSimple failure", d == tt(1))
 
       val s = re.toString
       if (!(s == tt(0))) { // If toString didn't return the original regexp,
@@ -568,9 +570,9 @@ object ParserSuite extends tests.Suite {
         // but "{" is a shorter equivalent in some contexts.
         val nre = Parser.parse(s, TEST_FLAGS)
         val nd  = dump(nre)
-        assert(d == nd, "parse(%s) -> %s".format(tt(0), s))
+        assertTrue("parse(%s) -> %s".format(tt(0), s), d == nd)
         val ns = nre.toString
-        assert(s == ns, "parse(%s) -> %s".format(tt(0), s))
+        assertTrue("parse(%s) -> %s".format(tt(0), s), s == ns)
       }
     }
   }
