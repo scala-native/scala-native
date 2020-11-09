@@ -1,7 +1,10 @@
 package scala.scalanative
 package regex
 
-object RE2NumSubexpsSuite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
+
+class RE2NumSubexpsTest {
   private val NUM_SUBEXP_CASES = Array(
     Array("", "0"),
     Array(".*", "0"),
@@ -15,11 +18,11 @@ object RE2NumSubexpsSuite extends tests.Suite {
     Array("(.*)(\\(a\\)b)(.*)a", "3")
   )
 
-  test("NumSubexp") {
+  @Test def numSubexp(): Unit = {
     for (Array(input, _expected) <- NUM_SUBEXP_CASES) {
       val expected = _expected.toInt
-      assert(expected == RE2.compile(input).numberOfCapturingGroups,
-             "numberOfCapturingGroups(" + input + ")")
+      assertTrue("numberOfCapturingGroups(" + input + ")",
+                 expected == RE2.compile(input).numberOfCapturingGroups)
     }
   }
 }
