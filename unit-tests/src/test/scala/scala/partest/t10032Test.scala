@@ -1,14 +1,17 @@
 package scala
 package partest
 
-object t10032Suite extends tests.Suite {
+import org.junit.Test
+import org.junit.Assert._
+
+class t10032Test {
   var effects                    = List.empty[String]
   def println(str: String): Unit = effects = effects :+ str
   def clean(): Unit              = effects = Nil
   def assertEffects(effects: String*)(f: => Unit) = {
     this.effects = Nil
     f
-    assert(this.effects == effects.toList)
+    assertTrue(this.effects == effects.toList)
   }
 
   def a1(): Unit = println("a1")
@@ -175,123 +178,123 @@ object t10032Suite extends tests.Suite {
     }
   }
 
-  test("t1") {
+  @Test def t1Test(): Unit = {
     assertEffects("t1", "i1", "a1") {
-      assert(t1 == 1)
+      assertTrue(t1 == 1)
     }
   }
 
-  test("t2") {
+  @Test def t2Test(): Unit = {
     assertEffects("t2", "i1", "a1", "a2", "a3") {
-      assert(t2 == 1)
+      assertTrue(t2 == 1)
     }
   }
 
-  test("t3.i1") {
+  @Test def t3i1(): Unit = {
     assertEffects("t3", "i1", "a1", "a3") {
-      assert(t3(i1) == 1)
+      assertTrue(t3(i1) == 1)
     }
   }
 
-  test("t3.e1") {
+  @Test def t3e1(): Unit = {
     assertEffects("t3", "e1", "a1", "i2", "a2", "a3") {
-      assert(t3(e1) == 2)
+      assertTrue(t3(e1) == 2)
     }
   }
 
-  test("t4.i1") {
+  @Test def t4i1(): Unit = {
     assertEffects("t4", "i1", "i2") {
-      assert(t4(i1) == 2)
+      assertTrue(t4(i1) == 2)
     }
   }
 
-  test("t4.e1") {
+  @Test def t4e1(): Unit = {
     assertEffects("t4", "e1", "i2") {
-      assert(t4(e1) == 2)
+      assertTrue(t4(e1) == 2)
     }
   }
 
-  test("t5.i1") {
+  @Test def t5i1(): Unit = {
     assertEffects("t5", "i1", "a1", "a3") {
-      assert(t5(i1) == 1)
+      assertTrue(t5(i1) == 1)
     }
   }
 
-  test("t5.e1") {
+  @Test def t5e1(): Unit = {
     assertEffects("t5", "e1", "a1", "i2", "a3") {
-      assert(t5(e1) == 2)
+      assertTrue(t5(e1) == 2)
     }
   }
 
-  test("t6.i1") {
+  @Test def t6i1(): Unit = {
     assertEffects("t6", "i1", "i2", "i3") {
-      assert(t6(i1) == 3)
+      assertTrue(t6(i1) == 3)
     }
   }
 
-  test("t6.e1") {
+  @Test def t6e1(): Unit = {
     assertEffects("t6", "e1", "i2", "i3") {
-      assert(t6(e1) == 3)
+      assertTrue(t6(e1) == 3)
     }
   }
 
-  test("t7.i1") {
+  @Test def t7i1(): Unit = {
     assertEffects("t7", "i1", "a1") {
-      assert(t7(i1) == 1)
+      assertTrue(t7(i1) == 1)
     }
   }
 
-  test("t7.e1") {
+  @Test def t7e1(): Unit = {
     assertEffects("t7", "e1", "i2", "a1") {
-      assert(t7(e1) == 2)
+      assertTrue(t7(e1) == 2)
     }
   }
 
-  test("t8.i1") {
+  @Test def t8i1(): Unit = {
     assertEffects("t8", "i1", "i2", "a1", "a2") {
-      assert(t8(i1) == 2)
+      assertTrue(t8(i1) == 2)
     }
   }
 
-  test("t8.e1") {
+  @Test def t8e1(): Unit = {
     assertEffects("t8", "e1", "i2", "a1", "a2") {
-      assert(t8(e1) == 2)
+      assertTrue(t8(e1) == 2)
     }
   }
 
-  test("t9.i1") {
+  @Test def t9i1(): Unit = {
     assertEffects("t9", "i1", "i2", "a1") {
-      assert(t9(i1) == 2)
+      assertTrue(t9(i1) == 2)
     }
   }
 
-  test("t9.e1") {
+  @Test def t9e1(): Unit = {
     assertEffects("t9", "e1", "i2", "a1") {
-      assert(t9(e1) == 2)
+      assertTrue(t9(e1) == 2)
     }
   }
 
-  test("t10.i1") {
+  @Test def t10i1(): Unit = {
     assertEffects("t10", "i1", "i2", "i3") {
-      assert(t10(i1) == 3)
+      assertTrue(t10(i1) == 3)
     }
   }
 
-  test("t10.e1") {
+  @Test def t10e1(): Unit = {
     assertEffects("t10", "e1", "i2", "i3") {
-      assert(t10(e1) == 3)
+      assertTrue(t10(e1) == 3)
     }
   }
 
-  test("t11.i1") {
+  @Test def t11i1(): Unit = {
     assertEffects("t11", "i1", "i2", "a1") {
-      assert(t11(i1) == 2)
+      assertTrue(t11(i1) == 2)
     }
   }
 
-  test("t11.e1") {
+  @Test def t11e1(): Unit = {
     assertEffects("t11", "e1", "i2", "a1") {
-      assert(t11(e1) == 2)
+      assertTrue(t11(e1) == 2)
     }
   }
 }

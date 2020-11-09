@@ -2,11 +2,22 @@ package scala
 
 // Ported from ScalaJS
 
+import org.junit.Test
+import org.junit.Assert._
+
+import scalanative.junit.utils.AssertThrows._
+
 import scala.language.reflectiveCalls
 
-object ReflectiveProxySuite extends tests.Suite {
+class AnyValWithAnyRefPrimitiveMethods(val x: Int) extends AnyVal {
+  def eq(that: AnyRef): Boolean  = (x + 1) == that
+  def ne(that: AnyRef): Boolean  = (x + 1) != that
+  def synchronized[T](f: T): Any = f + "there"
+}
 
-  test("should allow subtyping in return types") {
+class ReflectiveProxyTest {
+
+  @Test def shouldAllowSubtypingInReturnTypes(): Unit = {
     class A { def x: Int = 1 }
     class B extends A { override def x: Int = 2 }
 
@@ -16,10 +27,10 @@ object ReflectiveProxySuite extends tests.Suite {
 
     def f(x: { def generate(): A }): A = x.generate
 
-    assert(f(Generator).x == 2)
+    assertTrue(f(Generator).x == 2)
   }
 
-  test("should allow this.type in return types") {
+  @Test def shouldAllowThisDotTypeInReturnTypes(): Unit = {
     type ValueType = { def value: this.type }
     def f(x: ValueType): ValueType = x.value
 
@@ -28,10 +39,10 @@ object ReflectiveProxySuite extends tests.Suite {
       override def toString(): String = s"StringValue($x)"
     }
 
-    assert(f(new StringValue("foo")).toString == "StringValue(foo)")
+    assertTrue(f(new StringValue("foo")).toString == "StringValue(foo)")
   }
 
-  test("should allow generic return types") {
+  @Test def shouldAllowGenericReturnTypes(): Unit = {
     case class Tata(name: String)
 
     object Rec {
@@ -41,106 +52,104 @@ object ReflectiveProxySuite extends tests.Suite {
     def m[T](r: Object { def e(x: Tata): T }): T =
       r.e(new Tata("foo"))
 
-    assert(m[Tata](Rec).toString == "Tata(iei)")
+    assertTrue(m[Tata](Rec).toString == "Tata(iei)")
   }
 
-  test("should work with unary methods on primitive types") {
-    // scalastyle:off disallow.space.before.token
+  @Test def shouldWorkWithUnaryMethodsOnPrimitiveTypes(): Unit = {
     def fInt(x: Any { def unary_- : Int }): Int = -x
-    assert(fInt(1.toByte) == -1)
-    assert(fInt(1.toShort) == -1)
-    assert(fInt(1.toChar) == -1)
-    assert(fInt(1) == -1)
+    assertTrue(fInt(1.toByte) == -1)
+    assertTrue(fInt(1.toShort) == -1)
+    assertTrue(fInt(1.toChar) == -1)
+    assertTrue(fInt(1) == -1)
 
     def fLong(x: Any { def unary_- : Long }): Long = -x
-    assert(fLong(1L) == -1L)
+    assertTrue(fLong(1L) == -1L)
 
     def fFloat(x: Any { def unary_- : Float }): Float = -x
-    assert(fFloat(1.5f) == -1.5f)
+    assertTrue(fFloat(1.5f) == -1.5f)
 
     def fDouble(x: Any { def unary_- : Double }): Double = -x
-    assert(fDouble(1.5) == -1.5)
+    assertTrue(fDouble(1.5) == -1.5)
 
     def fBoolean(x: Any { def unary_! : Boolean }): Boolean = !x
-    assert(fBoolean(false))
-    assert(!fBoolean(true))
-    // scalastyle:on disallow.space.before.token
+    assertTrue(fBoolean(false))
+    assertFalse(fBoolean(true))
   }
 
-  test("should work with binary operators on primitive types") {
+  @Test def shouldWorkWithBinaryOperatorsOnPrimitiveTypes(): Unit = {
     def fLong(x: Any { def +(x: Long): Long }): Long = x + 5L
-    assert(fLong(5.toByte) == 10L)
-    assert(fLong(10.toShort) == 15L)
-    assert(fLong(10.toChar) == 15L)
-    assert(fLong(-1) == 4L)
-    assert(fLong(17L) == 22L)
+    assertTrue(fLong(5.toByte) == 10L)
+    assertTrue(fLong(10.toShort) == 15L)
+    assertTrue(fLong(10.toChar) == 15L)
+    assertTrue(fLong(-1) == 4L)
+    assertTrue(fLong(17L) == 22L)
 
     def fInt(x: Any { def /(x: Int): Int }): Int = x / 7
-    assert(fInt(65.toByte) == 9)
-    assert(fInt(15.toShort) == 2)
-    assert(fInt(25.toChar) == 3)
-    assert(fInt(-40) == -5)
+    assertTrue(fInt(65.toByte) == 9)
+    assertTrue(fInt(15.toShort) == 2)
+    assertTrue(fInt(25.toChar) == 3)
+    assertTrue(fInt(-40) == -5)
 
     def fShort(x: Any { def +(x: Short): Int }): Int = x + 6.toShort
-    assert(fShort(65.toByte) == 71)
-    assert(fShort(15.toShort) == 21)
-    assert(fShort(25.toChar) == 31)
-    assert(fShort(-40) == -34)
+    assertTrue(fShort(65.toByte) == 71)
+    assertTrue(fShort(15.toShort) == 21)
+    assertTrue(fShort(25.toChar) == 31)
+    assertTrue(fShort(-40) == -34)
 
     def fFloat(x: Any { def %(x: Float): Float }): Float = x % 3.4f
-    assert(fFloat(5.5f) == 2.1f)
+    assertTrue(fFloat(5.5f) == 2.1f)
 
     def fDouble(x: Any { def /(x: Double): Double }): Double = x / 1.4
-    assert(fDouble(-1.5) == -1.0714285714285714)
+    assertTrue(fDouble(-1.5) == -1.0714285714285714)
 
     def fBoolean(x: Any { def &&(x: Boolean): Boolean }): Boolean =
       x && true
-    assert(!fBoolean(false))
-    assert(fBoolean(true))
+    assertFalse(fBoolean(false))
+    assertTrue(fBoolean(true))
   }
 
-  test("should work with equality operators on primitive types") {
+  @Test def shouldWorkWithEqualityOperatorsOnPrimitiveTypes(): Unit = {
     def fNum(obj: Any { def ==(x: Int): Boolean }): Boolean = obj == 5
-    assert(fNum(5.toByte))
-    assert(!fNum(6.toByte))
-    assert(fNum(5.toShort))
-    assert(!fNum(7.toShort))
-    assert(fNum(5.toChar))
-    assert(!fNum('r'))
-    assert(fNum(5))
-    assert(!fNum(-4))
-    assert(fNum(5L))
-    assert(!fNum(400L))
-    assert(fNum(5.0f))
-    assert(!fNum(5.6f))
-    assert(fNum(5.0))
-    assert(!fNum(7.9))
+    assertTrue(fNum(5.toByte))
+    assertFalse(fNum(6.toByte))
+    assertTrue(fNum(5.toShort))
+    assertFalse(fNum(7.toShort))
+    assertTrue(fNum(5.toChar))
+    assertFalse(fNum('r'))
+    assertTrue(fNum(5))
+    assertFalse(fNum(-4))
+    assertTrue(fNum(5L))
+    assertFalse(fNum(400L))
+    assertTrue(fNum(5.0f))
+    assertFalse(fNum(5.6f))
+    assertTrue(fNum(5.0))
+    assertFalse(fNum(7.9))
     def fBool(obj: Any { def ==(x: Boolean): Boolean }): Boolean = obj == false
-    assert(!fBool(true))
-    assert(fBool(false))
+    assertFalse(fBool(true))
+    assertTrue(fBool(false))
 
     def fNumN(obj: Any { def !=(x: Int): Boolean }): Boolean = obj != 5
-    assert(!fNumN(5.toByte))
-    assert(fNumN(6.toByte))
-    assert(!fNumN(5.toShort))
-    assert(fNumN(7.toShort))
-    assert(!fNumN(5.toChar))
-    assert(fNumN('r'))
-    assert(!fNumN(5))
-    assert(fNumN(-4))
-    assert(!fNumN(5L))
-    assert(fNumN(400L))
-    assert(!fNumN(5.0f))
-    assert(fNumN(5.6f))
-    assert(!fNumN(5.0))
-    assert(fNumN(7.9))
+    assertFalse(fNumN(5.toByte))
+    assertTrue(fNumN(6.toByte))
+    assertFalse(fNumN(5.toShort))
+    assertTrue(fNumN(7.toShort))
+    assertFalse(fNumN(5.toChar))
+    assertTrue(fNumN('r'))
+    assertFalse(fNumN(5))
+    assertTrue(fNumN(-4))
+    assertFalse(fNumN(5L))
+    assertTrue(fNumN(400L))
+    assertFalse(fNumN(5.0f))
+    assertTrue(fNumN(5.6f))
+    assertFalse(fNumN(5.0))
+    assertTrue(fNumN(7.9))
     def fBoolN(obj: Any { def !=(x: Boolean): Boolean }): Boolean =
       obj != false
-    assert(fBoolN(true))
-    assert(!fBoolN(false))
+    assertTrue(fBoolN(true))
+    assertFalse(fBoolN(false))
   }
 
-  test("should work with Arrays") {
+  @Test def shouldWorkWithArrays(): Unit = {
     type UPD   = { def update(i: Int, x: String): Unit }
     type APL   = { def apply(i: Int): String }
     type LEN   = { def length: Int }
@@ -154,14 +163,14 @@ object ReflectiveProxySuite extends tests.Suite {
     val x = Array("asdf", "foo", "bar")
     val y = clone(x).asInstanceOf[Array[String]]
 
-    assert(len(x) == 3)
-    assert(apl(x, 0) == "asdf")
+    assertTrue(len(x) == 3)
+    assertTrue(apl(x, 0) == "asdf")
     upd(x, 1, "2foo")
-    assert(x(1) == "2foo")
-    assert(y(1) == "foo")
+    assertTrue(x(1) == "2foo")
+    assertTrue(y(1) == "foo")
   }
 
-  test("should work with Arrays of primitive values") {
+  @Test def shouldWorkWithArraysOfPrimitiveValues(): Unit = {
     type UPD   = { def update(i: Int, x: Int): Unit }
     type APL   = { def apply(i: Int): Int }
     type LEN   = { def length: Int }
@@ -175,27 +184,27 @@ object ReflectiveProxySuite extends tests.Suite {
     val x = Array(5, 2, 8)
     val y = clone(x).asInstanceOf[Array[Int]]
 
-    assert(len(x) == 3)
-    assert(apl(x, 0) == 5)
+    assertTrue(len(x) == 3)
+    assertTrue(apl(x, 0) == 5)
     upd(x, 1, 1000)
-    assert(x(1) == 1000)
-    assert(y(1) == 2)
+    assertTrue(x(1) == 1000)
+    assertTrue(y(1) == 2)
   }
 
-  test("should work with Strings") {
+  @Test def shouldWorkWithStrings(): Unit = {
     def get(obj: { def codePointAt(str: Int): Int }): Int =
       obj.codePointAt(1)
-    assert(get("Hi") == 'i'.toInt)
+    assertTrue(get("Hi") == 'i'.toInt)
 
     def sub(x: { def substring(x: Int): AnyRef }): AnyRef = x.substring(5)
-    assert(sub("asdfasdfasdf") == "sdfasdf")
+    assertTrue(sub("asdfasdfasdf") == "sdfasdf")
 
     type LEN_A = { def length: Any }
     def lenA(x: LEN_A): Any = x.length
-    assert(lenA("asdf") == 4)
+    assertTrue(lenA("asdf") == 4)
   }
 
-  test("should properly generate forwarders for inherited methods") {
+  @Test def shouldProperlyGenerateForwardersForInheritedMethods(): Unit = {
     trait A {
       def foo: Int
     }
@@ -208,10 +217,10 @@ object ReflectiveProxySuite extends tests.Suite {
 
     def call(x: { def foo: Int }): Int = x.foo
 
-    assert(call(new C) == 1)
+    assertTrue(call(new C) == 1)
   }
 
-  test("should be bug-compatible with Scala/JVM for inherited overloads") {
+  @Test def shouldBeBugCompatibleWithScalaJVMForInheritedOverloads(): Unit = {
     class Base {
       def foo(x: Option[Int]): String = "a"
     }
@@ -223,13 +232,13 @@ object ReflectiveProxySuite extends tests.Suite {
     val sub = new Sub
 
     val x: { def foo(x: Option[Int]): Any } = sub
-    assert(x.foo(Some(1)).asInstanceOf[Any] == 1) // here is the "bug"
+    assertTrue(x.foo(Some(1)).asInstanceOf[Any] == 1) // here is the "bug"
 
     val y: { def foo(x: Option[String]): Any } = sub
-    assert(y.foo(Some("hello")).asInstanceOf[Any] == 1)
+    assertTrue(y.foo(Some("hello")).asInstanceOf[Any] == 1)
   }
 
-  test("should work on java.lang.Object.{ notify, notifyAll }") {
+  @Test def shouldWorkOnJavaLangObjectNotifyNotifyAll(): Unit = {
     type ObjNotifyLike = Any {
       def notify(): Unit
       def notifyAll(): Unit
@@ -242,10 +251,10 @@ object ReflectiveProxySuite extends tests.Suite {
 
     class A
 
-    assert(objNotifyTest(new A()) == 1)
+    assertTrue(objNotifyTest(new A()) == 1)
   }
 
-  test("should work on java.lang.Object.clone") {
+  @Test def shouldWorkOnJavaLangObjectClone(): Unit = {
     type ObjCloneLike = Any { def clone(): AnyRef }
     def objCloneTest(obj: ObjCloneLike): AnyRef = obj.clone()
 
@@ -256,11 +265,11 @@ object ReflectiveProxySuite extends tests.Suite {
     val b      = new B(1)
     val bClone = objCloneTest(b).asInstanceOf[B]
 
-    assert(!(b eq bClone))
-    assert(bClone.x == 1)
+    assertFalse((b eq bClone))
+    assertTrue(bClone.x == 1)
   }
 
-  test("should not work on scala.AnyRef.{ eq, ne, synchronized }") {
+  @Test def shouldNotWorkOnScalaAnyRefEqNeSynchronized(): Unit = {
     type ObjWithAnyRefPrimitives = Any {
       def eq(that: AnyRef): Boolean
       def ne(that: AnyRef): Boolean
@@ -279,19 +288,13 @@ object ReflectiveProxySuite extends tests.Suite {
     val a1 = new A
     val a2 = new A
 
-    assertThrows[java.lang.NoSuchMethodException](objEqTest(a1, a1))
-    assertThrows[java.lang.NoSuchMethodException](objNeTest(a1, a2))
-    assertThrows[java.lang.NoSuchMethodException](
-      objSynchronizedTest(a1, "hello"))
+    assertThrows(classOf[java.lang.NoSuchMethodException], objEqTest(a1, a1))
+    assertThrows(classOf[java.lang.NoSuchMethodException], objNeTest(a1, a2))
+    assertThrows(classOf[java.lang.NoSuchMethodException],
+                 objSynchronizedTest(a1, "hello"))
   }
 
-  class AnyValWithAnyRefPrimitiveMethods(val x: Int) extends AnyVal {
-    def eq(that: AnyRef): Boolean  = (x + 1) == that
-    def ne(that: AnyRef): Boolean  = (x + 1) != that
-    def synchronized[T](f: T): Any = f + "there"
-  }
-
-  test("should work with { eq, ne, synchronized } on AnyVal") {
+  @Test def shouldWorkWithEqNeSynchronizedOnAnyVal(): Unit = {
     type ObjWithAnyRefPrimitives = Any {
       def eq(that: AnyRef): Boolean
       def ne(that: AnyRef): Boolean
@@ -307,31 +310,31 @@ object ReflectiveProxySuite extends tests.Suite {
 
     val a = new AnyValWithAnyRefPrimitiveMethods(5)
 
-    assert(objEqTest(a, 6: Integer))
-    assert(!objEqTest(a, 5: Integer))
+    assertTrue(objEqTest(a, 6: Integer))
+    assertFalse(objEqTest(a, 5: Integer))
 
-    assert(!objNeTest(a, 6: Integer))
-    assert(objNeTest(a, 5: Integer))
+    assertFalse(objNeTest(a, 6: Integer))
+    assertTrue(objNeTest(a, 5: Integer))
 
-    assert("hellothere" == objSynchronizedTest(a, "hello"))
+    assertTrue("hellothere" == objSynchronizedTest(a, "hello"))
   }
 
-  test("should work with default arguments") {
+  @Test def shouldWorkWithDefaultArguments(): Unit = {
     def pimpIt(a: Int) = new {
       def foo(b: Int, c: Int = 1): Int = a + b + c
     }
 
-    assert(pimpIt(1).foo(2) == 4)
-    assert(pimpIt(2).foo(2, 4) == 8)
+    assertTrue(pimpIt(1).foo(2) == 4)
+    assertTrue(pimpIt(2).foo(2, 4) == 8)
   }
 
-  test("should unbox all types of arguments") {
+  @Test def shouldUnboxAllTypesOfArguments(): Unit = {
     class Foo {
       def makeInt: Int          = 5
-      def testInt(x: Int): Unit = assert(x == 5)
+      def testInt(x: Int): Unit = assertTrue(x == 5)
 
       def makeRef: Option[String]          = Some("hi")
-      def testRef(x: Option[String]): Unit = assert(x == Some("hi"))
+      def testRef(x: Option[String]): Unit = assertTrue(x == Some("hi"))
     }
 
     /* Note: we should also test with value classes, except that Scala itself
@@ -352,29 +355,27 @@ object ReflectiveProxySuite extends tests.Suite {
     test(new Foo)
   }
 
-  test("NoSuchMethodException with no dyn method") {
+  @Test def throwsNoSuchMethodExceptionWithNoDynMethod(): Unit = {
     class A
     def callFoo(obj: { def foo(): Int }) = obj.foo()
-    assertThrows[java.lang.NoSuchMethodException] {
-      callFoo((new A).asInstanceOf[{ def foo(): Int }])
-    }
+    assertThrows(classOf[java.lang.NoSuchMethodException],
+                 callFoo((new A).asInstanceOf[{ def foo(): Int }]))
   }
 
-  test("NoSuchMethodException with one dyn method") {
+  @Test def throwsNoSuchMethodExceptionWithOneDynMethod(): Unit = {
     class A {
       def bar(): Int = 42
     }
     def callBar(obj: { def bar(): Int }) = obj.bar()
     def callFoo(obj: { def foo(): Int }) = obj.foo()
 
-    assert(callBar(new A()) == 42)
+    assertTrue(callBar(new A()) == 42)
 
-    assertThrows[java.lang.NoSuchMethodException] {
-      callFoo((new A).asInstanceOf[{ def foo(): Int }])
-    }
+    assertThrows(classOf[java.lang.NoSuchMethodException],
+                 callFoo((new A).asInstanceOf[{ def foo(): Int }]))
   }
 
-  test("NoSuchMethodException with method defined in other class") {
+  @Test def throwsNoSuchMethodExceptionWithMethodDefinedInOtherClass(): Unit = {
     class A {
       def bar(): Int = 42
     }
@@ -386,15 +387,14 @@ object ReflectiveProxySuite extends tests.Suite {
     def callBar(obj: { def bar(): Int }) = obj.bar()
     def callFoo(obj: { def foo(): Int }) = obj.foo()
 
-    assert(callBar(new A()) == 42)
+    assertTrue(callBar(new A()) == 42)
 
-    assertThrows[java.lang.NoSuchMethodException] {
-      callFoo((new A).asInstanceOf[{ def foo(): Int }])
-    }
+    assertThrows(classOf[java.lang.NoSuchMethodException],
+                 callFoo((new A).asInstanceOf[{ def foo(): Int }]))
   }
 
-  test("issue #643 - return Nothing") {
+  @Test def returnNothingIssue643(): Unit = {
     val foo: { def get: Int } = Some(42)
-    assert(foo.get == 42)
+    assertTrue(foo.get == 42)
   }
 }
