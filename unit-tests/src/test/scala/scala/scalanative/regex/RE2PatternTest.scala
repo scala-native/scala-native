@@ -3,45 +3,48 @@ package regex
 
 import java.util.regex.PatternSyntaxException
 
-object RE2PatternSuite extends tests.Suite {
-  test("compile") {
+import org.junit.Test
+import org.junit.Assert._
+
+class RE2PatternTest {
+  @Test def compile(): Unit = {
     val p = Pattern.compile("abc")
-    assert("abc" == p.pattern)
-    assert(0 == p.flags)
+    assertTrue("abc" == p.pattern)
+    assertTrue(0 == p.flags)
   }
 
-  test("toString") {
+  @Test def testToString(): Unit = {
     val p = Pattern.compile("abc")
-    assert("abc" == p.toString)
+    assertTrue("abc" == p.toString)
   }
 
-  test("CompileFlags") {
+  @Test def compileFlags(): Unit = {
     val p = Pattern.compile("abc", 5)
-    assert("abc" == p.pattern)
-    assert(5 == p.flags)
+    assertTrue("abc" == p.pattern)
+    assertTrue(5 == p.flags)
   }
 
-  test("SyntaxError") {
+  @Test def syntaxError(): Unit = {
     var caught = false
     try Pattern.compile("abc(")
     catch {
       case e: PatternSyntaxException =>
-        assert(4 == e.getIndex)
-        assert("" != e.getDescription)
-        assert("" != e.getMessage)
-        assert("abc(" == e.getPattern)
+        assertTrue(4 == e.getIndex)
+        assertTrue("" != e.getDescription)
+        assertTrue("" != e.getMessage)
+        assertTrue("abc(" == e.getPattern)
         caught = true
     }
-    assert(caught)
+    assertTrue(caught)
   }
 
-  test("MatchesNoFlags") {
+  @Test def matchesNoFlags(): Unit = {
     ApiTestUtils.testMatches("ab+c", "abbbc", "cbbba")
     ApiTestUtils.testMatches("ab.*c", "abxyzc", "ab\nxyzc")
     ApiTestUtils.testMatches("^ab.*c$", "abc", "xyz\nabc\ndef")
   }
 
-  test("MatchesWithFlags") {
+  @Test def matchesWithFlags(): Unit = {
     ApiTestUtils.testMatchesRE2("ab+c", 0, "abbbc", "cbba")
     ApiTestUtils.testMatchesRE2("ab+c",
                                 Pattern.CASE_INSENSITIVE,
@@ -74,11 +77,11 @@ object RE2PatternSuite extends tests.Suite {
                        flag: Int,
                        `match`: String,
                        nonMatch: String): Unit = {
-    assert(Pattern.compile(regexp, flag).matcher(`match`).find)
-    assert(!Pattern.compile(regexp, flag).matcher(nonMatch).find)
+    assertTrue(Pattern.compile(regexp, flag).matcher(`match`).find)
+    assertFalse(Pattern.compile(regexp, flag).matcher(nonMatch).find)
   }
 
-  test("Find") {
+  @Test def find(): Unit = {
     testFind("ab+c", 0, "xxabbbc", "cbbba")
     testFind("ab+c", Pattern.CASE_INSENSITIVE, "abBBc", "cbbba")
     testFind("ab.*c", 0, "xxabxyzc", "ab\nxyzc")
@@ -99,7 +102,7 @@ object RE2PatternSuite extends tests.Suite {
              "z")
   }
 
-  test("Split") {
+  @Test def split(): Unit = {
     ApiTestUtils.testSplit("/", "abcde", Array[String]("abcde"))
     ApiTestUtils.testSplit("/",
                            "a/b/cc//d/e//",
@@ -152,7 +155,8 @@ object RE2PatternSuite extends tests.Suite {
     ApiTestUtils.testSplit(regexp2, s, Array[String]("b", "", ":and:f"))
   }
 
-  test("GroupCount") { // It is a simple delegation, but still test it.
+  @Test def groupCount(): Unit = {
+    // It is a simple delegation, but still test it.
     ApiTestUtils.testGroupCount("(.*)ab(.*)a", 2)
     ApiTestUtils.testGroupCount("(.*)(ab)(.*)a", 3)
     ApiTestUtils.testGroupCount("(.*)((a)b)(.*)a", 4)
@@ -160,7 +164,7 @@ object RE2PatternSuite extends tests.Suite {
     ApiTestUtils.testGroupCount("(.*)(\\(a\\)b)(.*)a", 3)
   }
 
-  test("Quote") {
+  @Test def quote(): Unit = {
     ApiTestUtils.testMatchesRE2(Pattern.quote("ab+c"), 0, "ab+c", "abc")
   }
 
