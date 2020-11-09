@@ -219,10 +219,10 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G] =>
           assert(guard.isEmpty, "CaseDef guard was not empty")
           val vals: Seq[Val] = pat match {
             case lit: Literal =>
-              List(genExpr(lit))
+              List(genLiteralValue(lit))
             case Alternative(alts) =>
               alts.map {
-                case lit: Literal => genExpr(lit)
+                case lit: Literal => genLiteralValue(lit)
               }
             case _ =>
               Nil
