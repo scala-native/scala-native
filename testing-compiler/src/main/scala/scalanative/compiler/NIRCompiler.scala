@@ -58,9 +58,8 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
       extends CompatReporter {
     override def add(pos: Position, msg: String, severity: Severity): Unit =
       severity match {
-        case ERROR          => reportError(msg)
-        case INFO | WARNING => ()
-        case _              => ()
+        case ERROR => reportError(msg)
+        case _     => ()
       }
   }
 
