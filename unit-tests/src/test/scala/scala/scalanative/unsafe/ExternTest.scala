@@ -1,6 +1,7 @@
 package scala.scalanative
 package unsafe
 
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
 
