@@ -2,7 +2,6 @@ package scala.scalanative
 package io
 
 import java.io.Writer
-import scala.collection.JavaConverters._
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.file._
