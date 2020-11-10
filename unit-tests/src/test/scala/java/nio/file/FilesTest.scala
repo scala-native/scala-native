@@ -5,7 +5,6 @@ import java.io._
 import java.nio.file.attribute._
 
 import java.util.function.BiPredicate
-import scala.collection.JavaConverters._
 import PosixFilePermission._
 import StandardCopyOption._
 
@@ -13,6 +12,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows._
+import scala.scalanative.compat.CollectionConverters._
 
 class FilesTest {
   import FilesTest._
@@ -181,7 +181,7 @@ class FilesTest {
       val foo = dirFile.toPath.resolve("foo")
       Files.createFile(foo)
       Files.write(foo, "foo".getBytes)
-      val permissions = Set(OWNER_EXECUTE, OWNER_READ, OWNER_WRITE).asJava
+      val permissions = Set(OWNER_EXECUTE, OWNER_READ, OWNER_WRITE).toJavaSet
       Files.setPosixFilePermissions(foo, permissions)
       val fooCopy = dirFile.toPath.resolve("foocopy")
       Files.copy(foo, fooCopy, COPY_ATTRIBUTES)
@@ -191,7 +191,8 @@ class FilesTest {
       assertTrue(attrs.lastModifiedTime == copyAttrs.lastModifiedTime)
       assertTrue(attrs.lastAccessTime == copyAttrs.lastAccessTime)
       assertTrue(attrs.creationTime == copyAttrs.creationTime)
-      assertTrue(attrs.permissions.asScala == copyAttrs.permissions.asScala)
+      assertTrue(
+        attrs.permissions.toScalaSet == copyAttrs.permissions.toScalaSet)
     }
   }
 
@@ -915,7 +916,7 @@ class FilesTest {
       // Follow the broken link; expect a NoSuchFileException to be thrown.
 
       assertThrows(classOf[NoSuchFileException], {
-        val fvoSet = Set(FileVisitOption.FOLLOW_LINKS).asJava
+        val fvoSet = Set(FileVisitOption.FOLLOW_LINKS).toJavaSet
         Files.walkFileTree(dirPath, fvoSet, Int.MaxValue, visitor)
       })
     }
@@ -1261,7 +1262,7 @@ class FilesTest {
 
       val newF0 = target.resolve("f0")
       assertTrue(Files.exists(newF0))
-      assertTrue(Files.lines(newF0).iterator.asScala.mkString == "foo")
+      assertTrue(Files.lines(newF0).iterator().toScalaSeq.mkString == "foo")
     }
   }
   @Test def filesMoveDirectory(): Unit = {
