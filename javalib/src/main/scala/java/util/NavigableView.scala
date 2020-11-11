@@ -115,12 +115,10 @@ private[util] class NavigableView[E](original: NavigableSet[E],
   }
 
   def first(): E =
-    iterator().scalaOps.headOption
-      .getOrElse(null.asInstanceOf[E])
+    iterator().scalaOps.headOption.getOrElse(null.asInstanceOf[E])
 
   def last(): E =
-    iterator().scalaOps.lastOption
-      .getOrElse(null.asInstanceOf[E])
+    iterator().scalaOps.lastOption.getOrElse(null.asInstanceOf[E])
 
   def subSet(fromElement: E,
              fromInclusive: Boolean,

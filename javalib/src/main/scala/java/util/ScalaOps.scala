@@ -177,14 +177,10 @@ private[java] object ScalaOps {
       else throw new NoSuchElementException("empty.last")
 
     @inline def min(comp: Comparator[_ >: A]): A =
-      reduceLeft[A] {
-        case (l, r) => if (comp.compare(l, r) <= 0) l else r
-      }
+      reduceLeft[A]((l, r) => if (comp.compare(l, r) <= 0) l else r)
 
     @inline def max(comp: Comparator[_ >: A]): A =
-      reduceLeft[A] {
-        case (l, r) => if (comp.compare(l, r) >= 0) l else r
-      }
+      reduceLeft[A]((l, r) => if (comp.compare(l, r) >= 0) l else r)
 
     @inline def toSeq: Seq[A] = {
       val buf = Seq.newBuilder[A]

@@ -166,9 +166,9 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
     val headSetFun = { () =>
       // the creation of a new TreeSet is to avoid a mysterious bug with scala 2.10
       var base = new mutable.TreeSet[Box[E]]
-      if (inclusive) {
+      if (inclusive)
         base ++= inner.compatOps.rangeTo(boxed)
-      } else
+      else
         base ++= inner.compatOps.rangeUntil(boxed)
 
       base
