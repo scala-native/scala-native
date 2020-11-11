@@ -2,7 +2,7 @@ package java.util
 
 import org.junit.Test
 import org.junit.Assert._
-import scala.scalanative.compat.CollectionConverters._
+import scala.scalanative.junit.utils.CollectionConverters._
 import scala.scalanative.junit.utils.AssertThrows._
 
 class ArrayListTest {

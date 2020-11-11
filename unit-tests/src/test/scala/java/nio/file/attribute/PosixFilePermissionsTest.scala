@@ -1,7 +1,7 @@
 package java.nio.file.attribute
 
 import PosixFilePermission._
-import scala.scalanative.compat.CollectionConverters._
+import scala.scalanative.junit.utils.CollectionConverters._
 import org.junit.Test
 import org.junit.Assert._
 

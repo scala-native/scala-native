@@ -11,7 +11,7 @@ import scala.collection.{immutable => im}
 import scala.collection.{mutable => mu}
 
 import scala.reflect.ClassTag
-import scala.scalanative.compat.CollectionConverters
+import scala.scalanative.junit.utils.CollectionConverters._
 
 trait MapTest {
   import MapTest._

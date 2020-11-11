@@ -7,7 +7,7 @@ import org.junit.Test
 import org.junit.Assert._
 import scala.collection.{immutable => im}
 import scala.reflect.ClassTag
-import scala.scalanative.compat.CollectionConverters._
+import scala.scalanative.junit.utils.CollectionConverters._
 
 class LinkedHashMapInsertionOrderTest extends LinkedHashMapTest
 

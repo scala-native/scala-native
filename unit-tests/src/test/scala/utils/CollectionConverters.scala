@@ -1,4 +1,4 @@
-package scala.scalanative.compat
+package scala.scalanative.junit.utils
 
 import java.util.{LinkedHashMap, LinkedHashSet, LinkedList}
 import scala.collection.mutable

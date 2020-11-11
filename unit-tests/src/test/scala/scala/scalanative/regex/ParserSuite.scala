@@ -3,7 +3,7 @@ package regex
 
 import java.util
 import java.util.regex.PatternSyntaxException
-import scala.scalanative.compat.CollectionConverters._
+import scala.scalanative.junit.utils.CollectionConverters._
 
 import ScalaTestCompat.fail
 
