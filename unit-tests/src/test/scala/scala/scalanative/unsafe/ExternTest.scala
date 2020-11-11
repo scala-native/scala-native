@@ -6,7 +6,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scalanative.unsafe._
-import scalanative.libc.{stdio, stdlib, string}
 
 object ExternTest {
   /* These can be nested inside an object but not a class - see #897
@@ -22,6 +21,18 @@ object ExternTest {
   object Ext2 {
     @name("snprintf")
     def p(buf: CString, size: CSize, format: CString, i: Int): Int = extern
+  }
+
+  // workaround for CI
+  def runTest(): Unit = {
+    import scalanative.libc.string
+    val bufsize = 10L
+    val buf1    = stackalloc[Byte](bufsize)
+    val buf2    = stackalloc[Byte](bufsize)
+    Ext1.snprintf(buf1, bufsize, c"%s", c"hello")
+    assertTrue(string.strcmp(buf1, c"hello") == 0)
+    Ext2.p(buf2, bufsize, c"%d", 1)
+    assertTrue(string.strcmp(buf2, c"1") == 0)
   }
 }
 
@@ -54,14 +65,7 @@ class ExternTest {
   }
 
   @Test def sameExternNameInTwoDifferentObjects_Issue1652(): Unit = {
-    import ExternTest._
-    val bufsize = 10L
-    val buf1    = stackalloc[Byte](bufsize)
-    val buf2    = stackalloc[Byte](bufsize)
-    Ext1.snprintf(buf1, bufsize, c"%s", c"hello")
-    assertTrue(string.strcmp(buf1, c"hello") == 0)
-    Ext2.p(buf2, bufsize, c"%d", 1)
-    assertTrue(string.strcmp(buf2, c"1") == 0)
+    ExternTest.runTest()
   }
 
   val cb: CFuncPtr0[CInt] = new CFuncPtr0[Int] {
