@@ -3,6 +3,9 @@ package build
 
 import java.nio.file.{Path, Paths}
 
+import nir.{Attr, Global}
+import scala.scalanative.build.Config.InlineSourceHook
+
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait Config {
 
@@ -26,6 +29,9 @@ sealed trait Config {
   def logger: Logger
 
   def compilerConfig: NativeConfig
+
+  /** Hooks to be called with a Seq of all InlineSources found on classes/traits/objects that are linked into the executable */
+  def inlineSourceHooks: Seq[InlineSourceHook]
 
   /** Create a new config with given target triple. */
   def withTargetTriple(value: String): Config
@@ -79,9 +85,21 @@ sealed trait Config {
 
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean = compilerConfig.dump
+
+  /** Create a new config with given ExternalSource hooks */
+  def withInlineSourceHooks(value: Seq[InlineSourceHook]): Config
 }
 
 object Config {
+
+  trait InlineSourceHook {
+    def name: String
+
+    /** Called with all embedded sources from types included in the build.
+     * The optional return value should provide some stats w.r.t the actually handled snippets. */
+    def process(extSources: Seq[Attr.InlineSource],
+                logger: Logger): Option[String]
+  }
 
   /** Default empty config object where all of the fields are left blank. */
   def empty: Config =
@@ -92,7 +110,8 @@ object Config {
       workdir = Paths.get(""),
       targetTriple = "",
       logger = Logger.default,
-      compilerConfig = NativeConfig.empty
+      compilerConfig = NativeConfig.empty,
+      inlineSourceHooks = Seq()
     )
 
   private final case class Impl(nativelib: Path,
@@ -101,7 +120,8 @@ object Config {
                                 workdir: Path,
                                 targetTriple: String,
                                 logger: Logger,
-                                compilerConfig: NativeConfig)
+                                compilerConfig: NativeConfig,
+                                inlineSourceHooks: Seq[InlineSourceHook])
       extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
@@ -126,5 +146,8 @@ object Config {
 
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
+
+    def withInlineSourceHooks(value: Seq[InlineSourceHook]): Config =
+      copy(inlineSourceHooks = value)
   }
 }

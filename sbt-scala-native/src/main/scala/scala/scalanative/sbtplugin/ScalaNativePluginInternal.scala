@@ -51,7 +51,8 @@ object ScalaNativePluginInternal {
     nativeLTO := nativeConfig.value.lto.name,
     nativeLinkStubs := nativeConfig.value.linkStubs,
     nativeCheck := nativeConfig.value.check,
-    nativeDump := nativeConfig.value.dump
+    nativeDump := nativeConfig.value.dump,
+    nativeInlineSourceHooks := Seq()
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -129,6 +130,7 @@ object ScalaNativePluginInternal {
           .withWorkdir(cwd)
           .withTargetTriple(nativeTarget.value)
           .withCompilerConfig(nativeConfig.value)
+          .withInlineSourceHooks(nativeInlineSourceHooks.value)
       }
 
       interceptBuildException(Build.build(config, outpath.toPath))

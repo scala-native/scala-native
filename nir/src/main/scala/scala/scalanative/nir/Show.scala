@@ -108,6 +108,16 @@ object Show {
         str("link(\"")
         str(escapeQuotes(name))
         str("\")")
+      case Attr.InlineSource(lang, src, annottee, version) =>
+        str("inlinesource(\"")
+        str(escapeQuotes(lang))
+        str("\",\"")
+        str(escapeQuotes(src))
+        str("\",\"")
+        str(annottee)
+        str("\",")
+        str(version)
+        str(")")
       case Attr.Abstract =>
         str("abstract")
     }

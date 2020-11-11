@@ -30,6 +30,12 @@ object Attr {
   final case object Extern            extends Attr
   final case class Link(name: String) extends Attr
   final case object Abstract          extends Attr
+
+  final case class InlineSource(language: String,
+                                source: String,
+                                annottee: String,
+                                version: Long)
+      extends Attr
 }
 
 final case class Attrs(inlineHint: Inline = MayInline,
@@ -39,7 +45,8 @@ final case class Attrs(inlineHint: Inline = MayInline,
                        isDyn: Boolean = false,
                        isStub: Boolean = false,
                        isAbstract: Boolean = false,
-                       links: Seq[Attr.Link] = Seq()) {
+                       links: Seq[Attr.Link] = Seq(),
+                       extSources: Seq[Attr.InlineSource] = Seq()) {
   def toSeq: Seq[Attr] = {
     val out = mutable.UnrolledBuffer.empty[Attr]
 
@@ -51,6 +58,7 @@ final case class Attrs(inlineHint: Inline = MayInline,
     if (isStub) out += Stub
     if (isAbstract) out += Abstract
     out ++= links
+    out ++= extSources
 
     out
   }
@@ -68,16 +76,18 @@ object Attrs {
     var isAbstract = false
     val overrides  = mutable.UnrolledBuffer.empty[Global]
     val links      = mutable.UnrolledBuffer.empty[Attr.Link]
+    val extSources = mutable.UnrolledBuffer.empty[Attr.InlineSource]
 
     attrs.foreach {
-      case attr: Inline     => inline = attr
-      case attr: Specialize => specialize = attr
-      case attr: Opt        => opt = attr
-      case Extern           => isExtern = true
-      case Dyn              => isDyn = true
-      case Stub             => isStub = true
-      case link: Attr.Link  => links += link
-      case Abstract         => isAbstract = true
+      case attr: Inline            => inline = attr
+      case attr: Specialize        => specialize = attr
+      case attr: Opt               => opt = attr
+      case Extern                  => isExtern = true
+      case Dyn                     => isDyn = true
+      case Stub                    => isStub = true
+      case link: Attr.Link         => links += link
+      case Abstract                => isAbstract = true
+      case extSource: InlineSource => extSources += extSource
     }
 
     new Attrs(inline,
@@ -87,6 +97,7 @@ object Attrs {
               isDyn,
               isStub,
               isAbstract,
-              links)
+              links,
+              extSources)
   }
 }

@@ -61,6 +61,15 @@ object Build {
     ScalaNative.logLinked(fconfig, linked)
     val optimized = ScalaNative.optimize(fconfig, linked)
 
+    if (config.inlineSourceHooks.nonEmpty) {
+      config.logger.info("Executing hooks for embedded inline sources:")
+      config.inlineSourceHooks.foreach { hook =>
+        config.logger.time("- " + hook.name) {
+          hook.process(optimized.inlineSources, config.logger)
+        } foreach { stats => config.logger.info("    " + stats) }
+      }
+    }
+
     IO.getAll(workdir, "glob:**.ll").foreach(Files.delete)
     ScalaNative.codegen(fconfig, optimized)
     val generated = IO.getAll(workdir, "glob:**.ll")

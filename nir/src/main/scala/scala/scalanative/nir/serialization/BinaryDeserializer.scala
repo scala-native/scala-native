@@ -77,6 +77,9 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.ExternAttr   => Attr.Extern
     case T.LinkAttr     => Attr.Link(getUTF8String)
     case T.AbstractAttr => Attr.Abstract
+
+    case T.InlineSrcAttr =>
+      Attr.InlineSource(getUTF8String, getUTF8String, getUTF8String, getLong)
   }
 
   private def getBin(): Bin = getInt match {

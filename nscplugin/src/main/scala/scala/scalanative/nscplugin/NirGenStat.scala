@@ -211,6 +211,22 @@ trait NirGenStat { self: NirGenPhase =>
           Attr.Link(name)
         case ann if ann.symbol == StubClass =>
           Attr.Stub
+        case ann if ann.symbol == InlineSourceClass =>
+          val lang = ann.argAtIndex(0) match {
+            case Some(Literal(Constant(x: String))) => x
+            case _ =>
+              unsupported(
+                "parameter 'language' of @InlineSource must be a string literal")
+          }
+          val src = ann.argAtIndex(1) match {
+            case Some(Literal(Constant(x: String))) => x
+            case _ =>
+              unsupported(
+                "parameter 'source' of @InlineSource must be a string literal")
+          }
+          val annottee = cd.symbol.fullName
+          val version  = System.currentTimeMillis()
+          Attr.InlineSource(lang, src, annottee, version)
       }
       val abstractAttr =
         if (sym.isAbstract) Seq(Attr.Abstract) else Seq()
