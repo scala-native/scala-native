@@ -3,9 +3,8 @@ package lang
 
 import java.io.{File, IOException, InputStream, OutputStream}
 import java.util.concurrent.TimeUnit
+import java.util.ScalaOps._
 
-import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.libc.{errno => err, signal => sig, _}
@@ -19,7 +18,6 @@ import UnixProcess._
 import java.lang.ProcessBuilder.Redirect
 
 import pthread._
-import scala.collection.mutable
 import scala.scalanative.posix.sys.types.{pthread_cond_t, pthread_mutex_t}
 
 private[lang] class UnixProcess private (
@@ -138,13 +136,18 @@ object UnixProcess {
     throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
     if (!builder.redirectErrorStream)
       throwOnError(unistd.pipe(errfds), s"Couldn't create pipe.")
-    val cmd      = builder.command.asScala
-    val binaries = binaryPaths(builder.environment, cmd.head)
-    val dir      = builder.directory
+    val cmd      = builder.command().scalaOps.toSeq
+    val binaries = binaryPaths(builder.environment(), cmd.head)
+    val dir      = builder.directory()
     val argv     = nullTerminate(cmd)
-    val envp = nullTerminate(builder.environment.asScala.map {
-      case (k, v) => s"$k=$v"
-    }.toSeq)
+    val envp = nullTerminate {
+      builder
+        .environment()
+        .entrySet()
+        .scalaOps
+        .toSeq
+        .map(e => s"${e.getKey()}=${e.getValue()}")
+    }
 
     /*
      * Use vfork rather than fork to avoid copying the parent process memory to the child. It also
