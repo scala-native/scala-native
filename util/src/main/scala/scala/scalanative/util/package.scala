@@ -54,8 +54,4 @@ package object util {
   def partitionBy[T](elems: Seq[T], batches: Int)(
       f: T => Any): Map[Int, Seq[T]] =
     elems.groupBy { elem => Math.abs(f(elem).##) % batches }
-
-  def parallelStream[T](elems: Iterable[T]): JStream[T] = {
-    JStream.of(elems.toSeq: _*).parallel()
-  }
 }

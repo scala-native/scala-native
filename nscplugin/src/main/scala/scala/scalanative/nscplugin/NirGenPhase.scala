@@ -2,6 +2,7 @@ package scala.scalanative
 package nscplugin
 
 import java.nio.file.{Path => JPath}
+import java.util.stream.{Stream => JStream}
 import java.util.function.{Consumer => JConsumer}
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -107,8 +108,9 @@ abstract class NirGenPhase[G <: NscGlobal](val global: G)
           }
         }
 
-      util
-        .parallelStream(allFiles)
+      JStream
+        .of(allFiles.toSeq: _*)
+        .parallel()
         .forEach(generateIRFile)
     }
   }
