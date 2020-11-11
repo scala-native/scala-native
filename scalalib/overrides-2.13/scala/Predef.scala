@@ -160,9 +160,9 @@ object Predef extends LowPriorityImplicits {
   /**  @group aliases */
   type Set[A]     = immutable.Set[A]
   /**  @group aliases */
-  @inline def Map         = immutable.Map
+  @inline def Map = immutable.Map
   /**  @group aliases */
-  @inline def Set         = immutable.Set
+  @inline def Set = immutable.Set
 
   /**
    * Allows destructuring tuples with the same syntax as constructing them.
@@ -188,10 +188,10 @@ object Predef extends LowPriorityImplicits {
   type Manifest[T]      = scala.reflect.Manifest[T]
   // TODO undeprecated until Scala reflection becomes non-experimental
   // @deprecated("use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
-  @inline def Manifest          = scala.reflect.Manifest
+  @inline def Manifest  = scala.reflect.Manifest
   // TODO undeprecated until Scala reflection becomes non-experimental
   // @deprecated("this notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
-  @inline def NoManifest        = scala.reflect.NoManifest
+  @inline def NoManifest = scala.reflect.NoManifest
 
   // TODO undeprecated until Scala reflection becomes non-experimental
   // @deprecated("use scala.reflect.classTag[T] and scala.reflect.runtime.universe.typeTag[T] instead", "2.10.0")
