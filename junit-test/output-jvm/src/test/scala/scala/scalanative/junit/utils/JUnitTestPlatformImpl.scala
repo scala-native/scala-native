@@ -31,11 +31,11 @@ object JUnitTestPlatformImpl {
   }
 
   def readLines(file: String): List[String] = {
-    val buf = new UnrolledBuffer[String]()
-    val it  = Files.readAllLines(Paths.get(file), UTF_8).iterator()
+    val builder = List.newBuilder[String]
+    val it      = Files.readAllLines(Paths.get(file), UTF_8).iterator()
     while (it.hasNext) {
-      buf += it.next()
+      builder += it.next()
     }
-    buf.toList
+    builder.result()
   }
 }
