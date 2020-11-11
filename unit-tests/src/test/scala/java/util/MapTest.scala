@@ -264,14 +264,14 @@ trait MapTest {
     def entrySet(): java.util.Set[java.util.Map.Entry[K, V]] = {
       inner
         .map {
-          case (k, v) => new ju.AbstractMap.SimpleImmutableEntry(k, v)
+          case (k, v) =>
+            val entry = new ju.AbstractMap.SimpleImmutableEntry(k, v)
+            entry: java.util.Map.Entry[K, V]
         }
         .toSet
         .toJavaSet
-        .asInstanceOf[java.util.Set[java.util.Map.Entry[K, V]]]
     }
   }
-
   @Test def valuesShouldMirrorTheRelatedMapSize(): Unit = {
     val mp = factory.empty[String, String]
 
