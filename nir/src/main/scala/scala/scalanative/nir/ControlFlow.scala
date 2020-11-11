@@ -87,7 +87,7 @@ object ControlFlow {
               body += insts(i)
             } while (!insts(i).isInstanceOf[Inst.Cf])
 
-            val block = new Block(n, params, body, isEntry = k == 0)
+            val block = Block(n, params, body.toSeq, isEntry = k == 0)
             blocks(local) = block
             todo ::= block
             block

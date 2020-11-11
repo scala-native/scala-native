@@ -33,7 +33,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
         buffer.position(offset)
         allDefns += getDefn()
     }
-    allDefns
+    allDefns.toSeq
   }
 
   private def getSeq[T](getT: => T): Seq[T] =

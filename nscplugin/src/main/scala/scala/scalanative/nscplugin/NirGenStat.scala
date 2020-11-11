@@ -69,7 +69,7 @@ trait NirGenStat[G <: NscGlobal] { self: NirGenPhase[G] =>
 
   class StatBuffer {
     private val buf          = mutable.UnrolledBuffer.empty[nir.Defn]
-    def toSeq: Seq[nir.Defn] = buf
+    def toSeq: Seq[nir.Defn] = buf.toSeq
 
     def +=(defn: nir.Defn): Unit = {
       buf += defn

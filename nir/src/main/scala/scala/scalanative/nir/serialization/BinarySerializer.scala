@@ -581,6 +581,6 @@ final class BinarySerializer {
         insts.foreach(inst => initFile(inst.pos))
       case defn => initFile(defn.pos)
     }
-    filesList
+    filesList.toSeq
   }
 }

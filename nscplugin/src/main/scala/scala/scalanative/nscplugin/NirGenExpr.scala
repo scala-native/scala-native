@@ -1943,7 +1943,7 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G] =>
       if (!sym.owner.isExternModule) {
         genSimpleArgs(argsp)
       } else {
-        val res = mutable.UnrolledBuffer.empty[Val]
+        val res = Seq.newBuilder[Val]
 
         argsp.zip(sym.tpe.params).foreach {
           case (argp, paramSym) =>
@@ -1951,7 +1951,7 @@ trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G] =>
             res += toExtern(externType, genExpr(argp))(argp.pos)
         }
 
-        res
+        res.result()
       }
 
     def genSimpleArgs(argsp: Seq[Tree]): Seq[Val] = {
