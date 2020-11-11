@@ -146,7 +146,6 @@ object UnixProcess {
         .scalaOps
         .toSeq
         .map(e => s"${e.getKey()}=${e.getValue()}")
-        }
     }
 
     /*

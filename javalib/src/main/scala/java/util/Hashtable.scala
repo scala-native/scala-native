@@ -24,10 +24,10 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   }
 
   def size(): Int =
-    inner.size()
+    inner.size
 
   def isEmpty(): Boolean =
-    inner.isEmpty()
+    inner.isEmpty
 
   def keys(): ju.Enumeration[K] =
     Collections.enumeration(keySet())
@@ -71,7 +71,9 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   }
 
   def putAll(m: ju.Map[_ <: K, _ <: V]): Unit =
-    m.entrySet().scalaOps.foreach { e => inner.put(Box(e.getKey), e.getValue) }
+    m.entrySet().scalaOps.foreach { e =>
+      inner.put(Box(e.getKey()), e.getValue())
+    }
 
   def clear(): Unit =
     inner.clear()
