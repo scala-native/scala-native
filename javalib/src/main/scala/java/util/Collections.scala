@@ -7,7 +7,7 @@ import scala.language.implicitConversions
 
 import scala.annotation.tailrec
 
-import scala.collection.JavaConverters._
+import ScalaOps._
 
 object Collections {
 
@@ -54,7 +54,13 @@ object Collections {
     sort(list, naturalComparator[T])
 
   def sort[T](list: List[T], c: Comparator[_ >: T]): Unit = {
-    val sortedList = list.asScala.sorted(c).asJava
+    val arrayBuf = list.toArray()
+    Arrays.sort[AnyRef with T](arrayBuf.asInstanceOf[Array[AnyRef with T]], c)
+
+    // The spec of `Arrays.asList()` guarantees that its result implements RandomAccess
+    val sortedList =
+      Arrays.asList(arrayBuf).asInstanceOf[List[T] with RandomAccess]
+
     list match {
       case list: RandomAccess => copyImpl(sortedList.iterator, list)
       case _                  => copyImpl(sortedList.iterator, list.listIterator)
@@ -136,12 +142,31 @@ object Collections {
     shuffleImpl(list, rnd)
 
   @inline
-  def shuffleImpl[T](list: List[T], rnd: Random): Unit = {
-    val scalaRnd     = scala.util.Random.javaRandomToRandom(rnd)
-    val shuffledList = scalaRnd.shuffle(list.asScala.toSeq).asJava
+  private def shuffleImpl[T](list: List[T], rnd: Random): Unit = {
+    // ported from Scala.js
+    def shuffleInPlace(list: List[T] with RandomAccess): Unit = {
+      @inline
+      def swap(i1: Int, i2: Int): Unit = {
+        val tmp = list.get(i1)
+        list.set(i1, list.get(i2))
+        list.set(i2, tmp)
+      }
+
+      var n = list.size()
+      while (n > 1) {
+        val k = rnd.nextInt(n)
+        swap(n - 1, k)
+        n -= 1
+      }
+    }
+
     list match {
-      case list: RandomAccess => copyImpl(shuffledList.iterator, list)
-      case _                  => copyImpl(shuffledList.iterator, list.listIterator)
+      case list: RandomAccess =>
+        shuffleInPlace(list)
+      case _ =>
+        val buffer = new ArrayList[T](list)
+        shuffleInPlace(buffer)
+        copyImpl(buffer, list.listIterator())
     }
   }
 
@@ -237,14 +262,14 @@ object Collections {
     min(coll, naturalComparator[T])
 
   def min[T](coll: Collection[_ <: T], comp: Comparator[_ >: T]): T =
-    coll.asScala.min(comp)
+    coll.scalaOps.min(comp)
 
   // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]]
   def max[T <: AnyRef with jl.Comparable[T]](coll: Collection[_ <: T]): T =
     max(coll, naturalComparator[T])
 
   def max[T](coll: Collection[_ <: T], comp: Comparator[_ >: T]): T =
-    coll.asScala.max(comp)
+    coll.scalaOps.max(comp)
 
   def rotate(list: List[_], distance: Int): Unit =
     rotateImpl(list, distance)
@@ -537,22 +562,31 @@ object Collections {
 
   def list[T](e: Enumeration[T]): ArrayList[T] = {
     val arrayList = new ArrayList[T]
-    e.asScala.foreach(arrayList.add(_))
+    e.scalaOps.foreach(arrayList.add)
     arrayList
   }
 
   def frequency(c: Collection[_], o: AnyRef): Int =
-    c.asScala.count(_ === o)
+    c.scalaOps.count(_ === o)
 
   def disjoint(c1: Collection[_], c2: Collection[_]): Boolean = {
     if (c1.size < c2.size)
-      !c1.asScala.exists(elem => c2.contains(elem))
+      !c1.scalaOps.exists(elem => c2.contains(elem))
     else
-      !c2.asScala.exists(elem => c1.contains(elem))
+      !c2.scalaOps.exists(elem => c1.contains(elem))
   }
 
-  def addAll[T](c: Collection[_ >: T], elements: Array[AnyRef]): Boolean =
-    c.addAll((elements.asInstanceOf[Array[T]]: Seq[T]).asJava)
+  def addAll[T](c: Collection[_ >: T], elements: Array[AnyRef]): Boolean = {
+    var added = false
+    val len   = elements.length
+    var i     = 0
+    while (i != len) {
+      if (c.add(elements(i).asInstanceOf[T]))
+        added = true
+      i += 1
+    }
+    added
+  }
 
   def newSetFromMap[E](map: Map[E, java.lang.Boolean]): Set[E] = {
     if (!map.isEmpty)
@@ -565,7 +599,7 @@ object Collections {
         map.put(e, true) == null
 
       override def addAll(c: Collection[_ <: E]): Boolean =
-        c.asScala.foldLeft(false)((prev, elem) =>
+        c.scalaOps.foldLeft(false)((prev, elem) =>
           map.put(elem, true) == null || prev)
     }
   }
@@ -843,8 +877,8 @@ object Collections {
       if (eagerThrow) {
         throw new UnsupportedOperationException
       } else {
-        val cSet = c.asInstanceOf[Collection[AnyRef]].asScala.toSet
-        if (this.asScala.exists(e => cSet(e.asInstanceOf[AnyRef]))) {
+        val cSet = new HashSet[AnyRef](c.asInstanceOf[Collection[AnyRef]])
+        if (this.scalaOps.exists(cSet.contains)) {
           throw new UnsupportedOperationException
         } else {
           false
@@ -856,8 +890,8 @@ object Collections {
       if (eagerThrow) {
         throw new UnsupportedOperationException
       } else {
-        val cSet = c.asInstanceOf[Collection[AnyRef]].asScala.toSet
-        if (this.asScala.exists(e => !cSet(e.asInstanceOf[AnyRef]))) {
+        val cSet = new HashSet[AnyRef](c.asInstanceOf[Collection[AnyRef]])
+        if (this.scalaOps.exists(!cSet.contains(_))) {
           throw new UnsupportedOperationException
         } else {
           false
@@ -992,7 +1026,7 @@ object Collections {
     }
 
     override def addAll(c: Collection[_ <: E]): Boolean = {
-      c.asScala.foreach(checkElem)
+      c.scalaOps.foreach(checkElem)
       super.addAll(c)
     }
 
@@ -1023,7 +1057,7 @@ object Collections {
       with WrappedList[E] {
 
     override def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
-      c.asScala.foreach(checkElem)
+      c.scalaOps.foreach(checkElem)
       super.addAll(index, c)
     }
 
@@ -1059,8 +1093,8 @@ object Collections {
 
     override def putAll(m: Map[_ <: K, _ <: V]): Unit = {
       m.entrySet()
-        .asScala
-        .foreach(entry => checkKeyAndValue(entry.getKey, entry.getValue))
+        .scalaOps
+        .foreach(entry => checkKeyAndValue(entry.getKey(), entry.getValue()))
       super.putAll(m)
     }
 
