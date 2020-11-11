@@ -13,7 +13,6 @@ import java.nio.file.{
 }
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.EnumSet
-import java.util.zip.{ZipEntry, ZipInputStream}
 import java.security.{DigestInputStream, MessageDigest}
 
 /** Internal I/O utilities. */
@@ -100,7 +99,7 @@ private[scalanative] object IO {
   /** Look for a zip entry path string using a matcher function */
   def existsInJar(path: Path, matcher: String => Boolean): Boolean = {
     import java.util.zip.ZipFile
-    import scala.jdk.CollectionConverters._
+    import scala.collection.JavaConverters._
     val zf = new ZipFile(path.toFile)
     val it = zf.entries().asScala
     it.exists(e => matcher(e.getName))

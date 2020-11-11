@@ -1,7 +1,5 @@
 package scala.scalanative
 
-import java.util.stream.{Stream => JStream}
-
 package object util {
 
   /** Marker methods, called whenever a specific control-flow branch

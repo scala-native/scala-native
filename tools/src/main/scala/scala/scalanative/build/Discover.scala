@@ -2,7 +2,7 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Files, Path, Paths}
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath

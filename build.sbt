@@ -96,18 +96,6 @@ addCommandAlias(
 lazy val publishSnapshot =
   taskKey[Unit]("Publish snapshot to sonatype on every commit to master.")
 
-val collectionsCompatLib = {
-  "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0"
-}
-
-def parallelCollectionsLib(scalaVersion: String): Seq[ModuleID] = {
-  CrossVersion.partialVersion(scalaVersion) match {
-    case Some((2, n)) if n >= 13 =>
-      Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0")
-    case _ => Nil
-  }
-}
-
 // to publish plugin (we only need to do this once, it's already done!)
 // follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html
 // then add a new package
@@ -225,9 +213,6 @@ lazy val util =
     .in(file("util"))
     .settings(toolSettings)
     .settings(mavenPublishSettings)
-    .settings(
-      libraryDependencies += collectionsCompatLib
-    )
 
 lazy val nir =
   project
@@ -264,9 +249,8 @@ lazy val tools =
     .settings(
       libraryDependencies ++= Seq(
         scalacheckDep,
-        scalatestDep,
-        collectionsCompatLib
-      ) ++ parallelCollectionsLib(scalaVersion.value),
+        scalatestDep
+      ),
       Test / fork := true,
       Test / javaOptions ++= {
         val nscpluginjar = (nscplugin / Compile / Keys.`package`).value
