@@ -7,7 +7,6 @@ import java.nio.file._
 import java.util.LinkedList
 import sbt.testing._
 import scala.annotation.tailrec
-import scala.collection.mutable.UnrolledBuffer
 import scala.concurrent.Future
 
 object JUnitTestPlatformImpl {

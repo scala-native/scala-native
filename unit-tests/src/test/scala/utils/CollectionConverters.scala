@@ -4,7 +4,8 @@ import java.util.{LinkedHashMap, LinkedHashSet, LinkedList}
 import scala.collection.mutable
 
 /** Set of helper method replacing problematic Scala collection.JavaConverters as they cause problems
- * in cross compile between 2.13+ and older Scala versions */
+ *  in cross compile between 2.13+ and older Scala versions
+ */
 object CollectionConverters {
   implicit class ScalaToJavaCollections[T](private val self: Iterable[T]) {
     def toJavaList: LinkedList[T] = {
@@ -31,7 +32,6 @@ object CollectionConverters {
 
   implicit class JavaToScalaCollections[T](
       private val self: java.util.Collection[T]) {
-    private def iterator   = self.iterator()
     def toScalaSeq: Seq[T] = self.iterator().toScalaSeq
     def toScalaSet: Set[T] = self.iterator().toScalaSet
     def toScalaMap[K, V](

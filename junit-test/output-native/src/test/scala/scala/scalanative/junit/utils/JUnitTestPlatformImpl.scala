@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.util.LinkedList
 
 import sbt.testing._
-import scala.collection.mutable.UnrolledBuffer
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 

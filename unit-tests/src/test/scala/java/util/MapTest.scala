@@ -272,6 +272,7 @@ trait MapTest {
         .toJavaSet
     }
   }
+
   @Test def valuesShouldMirrorTheRelatedMapSize(): Unit = {
     val mp = factory.empty[String, String]
 
@@ -321,8 +322,7 @@ trait MapTest {
     if (factory.allowsNullValuesQueries)
       assertFalse(values.contains(null))
     else
-      expectThrows(classOf[Throwable],
-                   mp.entrySet().toScalaMap[String, String].contains(null))
+      expectThrows(classOf[Throwable], mp.values().contains(null))
 
     mp.put("THREE", "three")
 
@@ -469,8 +469,7 @@ trait MapTest {
     if (factory.allowsNullKeysQueries)
       assertFalse(keySet.contains(null))
     else
-      expectThrows(classOf[Throwable],
-                   mp.entrySet().toScalaMap[String, String].contains(null))
+      expectThrows(classOf[Throwable], mp.keySet().contains(null))
 
     mp.put("THREE", "three")
 
