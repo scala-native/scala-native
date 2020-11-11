@@ -4,12 +4,11 @@ package regex
 import java.util.stream.{Stream => jStream}
 
 import scala.collection.immutable.List
-import scala.collection.JavaConverters._
-
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.scalanative.junit.utils.CollectionConverters._
 import scalanative.junit.utils._, AssertThrows._, ThrowsHelper._
 
 class PatternTest {
@@ -679,7 +678,7 @@ class PatternTest {
                                  expected: Array[String],
                                  marker: String): Unit = {
 
-    val result = st.iterator.asScala.toArray
+    val result = st.iterator.toScalaSeq.toArray
 
     assertTrue(s"${marker} result.size: ${result.size} != ${expected.size}",
                result.size == expected.size)
