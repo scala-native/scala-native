@@ -1,7 +1,6 @@
 package java.util
 
-import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import ScalaOps._
 
 class LinkedList[E]()
     extends AbstractSequentialList[E]
@@ -100,7 +99,7 @@ class LinkedList[E]()
   }
 
   override def contains(o: Any): Boolean =
-    iterator().asScala.exists(_ === o)
+    iterator().scalaOps.exists(_ === o)
 
   override def size(): Int =
     if (_size < Integer.MAX_VALUE) _size.toInt else Integer.MAX_VALUE

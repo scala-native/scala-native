@@ -1,8 +1,8 @@
 package java.util
 
-import scala.math.Ordering
+import ScalaOps._
+import ScalaCompatOps._
 import scala.collection.mutable
-import scala.collection.JavaConverters._
 
 private[util] class NavigableView[E](original: NavigableSet[E],
                                      inner: () => mutable.SortedSet[Box[E]],
@@ -14,8 +14,7 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     with NavigableSet[E]
     with SortedSet[E] {
 
-  def size(): Int =
-    iterator.asScala.size
+  def size(): Int = iterator().scalaOps.count(_ => true)
 
   override def contains(o: Any): Boolean =
     inner().contains(Box(o.asInstanceOf[E]))
@@ -64,7 +63,7 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     _iterator(inner().iterator.map(_.inner))
 
   def descendingIterator(): Iterator[E] =
-    _iterator(iterator.asScala.toList.reverse.iterator)
+    _iterator(iterator().scalaOps.toSeq.reverseIterator)
 
   override def removeAll(c: Collection[_]): Boolean = {
     val iter    = c.iterator()
@@ -77,16 +76,16 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     original.addAll(c)
 
   def lower(e: E): E =
-    headSet(e, false).asScala.lastOption.getOrElse(null.asInstanceOf[E])
+    headSet(e, false).scalaOps.lastOption.getOrElse(null.asInstanceOf[E])
 
   def floor(e: E): E =
-    headSet(e, true).asScala.lastOption.getOrElse(null.asInstanceOf[E])
+    headSet(e, true).scalaOps.lastOption.getOrElse(null.asInstanceOf[E])
 
   def ceiling(e: E): E =
-    tailSet(e, true).asScala.headOption.getOrElse(null.asInstanceOf[E])
+    tailSet(e, true).scalaOps.headOption.getOrElse(null.asInstanceOf[E])
 
   def higher(e: E): E =
-    tailSet(e, false).asScala.headOption.getOrElse(null.asInstanceOf[E])
+    tailSet(e, false).scalaOps.headOption.getOrElse(null.asInstanceOf[E])
 
   def pollFirst(): E = {
     val polled = inner().headOption
@@ -115,17 +114,11 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     }
   }
 
-  def first(): E = {
-    val iter = iterator()
-    if (iter.hasNext) iter.next
-    else null.asInstanceOf[E]
-  }
+  def first(): E =
+    iterator().scalaOps.headOption.getOrElse(null.asInstanceOf[E])
 
-  def last(): E = {
-    val iter = iterator()
-    if (iter.hasNext) iter.asScala.toTraversable.last
-    else null.asInstanceOf[E]
-  }
+  def last(): E =
+    iterator().scalaOps.lastOption.getOrElse(null.asInstanceOf[E])
 
   def subSet(fromElement: E,
              fromInclusive: Boolean,
@@ -137,10 +130,10 @@ private[util] class NavigableView[E](original: NavigableSet[E],
 
     val subSetFun = { () =>
       val toTs =
-        if (toInclusive) innerNow.to(boxedTo)
-        else innerNow.until(boxedTo)
-      if (fromInclusive) toTs.from(boxedFrom)
-      else toTs.from(boxedFrom) - boxedFrom
+        if (toInclusive) innerNow.compatOps.rangeTo(boxedTo)
+        else innerNow.compatOps.rangeUntil(boxedTo)
+      if (fromInclusive) toTs.compatOps.rangeFrom(boxedFrom)
+      else toTs.compatOps.rangeFrom(boxedFrom).diff(Set(boxedFrom))
     }
 
     new NavigableView(this,
@@ -156,8 +149,8 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     val boxed    = Box(toElement)
 
     val headSetFun =
-      if (inclusive)() => innerNow.to(boxed)
-      else () => innerNow.until(boxed)
+      if (inclusive)() => innerNow.compatOps.rangeTo(boxed)
+      else () => innerNow.compatOps.rangeUntil(boxed)
 
     new NavigableView(this, headSetFun, None, true, Some(toElement), inclusive)
   }
@@ -167,8 +160,8 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     val boxed    = Box(fromElement)
 
     val tailSetFun =
-      if (inclusive)() => innerNow.from(boxed)
-      else () => innerNow.from(boxed) - boxed
+      if (inclusive)() => innerNow.compatOps.rangeFrom(boxed)
+      else () => innerNow.compatOps.rangeFrom(boxed).diff(Set(boxed))
 
     new NavigableView(this,
                       tailSetFun,
