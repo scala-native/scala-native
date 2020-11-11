@@ -8,16 +8,21 @@ import org.junit.Assert._
 import scalanative.unsafe._
 import scalanative.libc.{stdio, stdlib, string}
 
-// these can be nested inside an object but not a class - see #897
-@extern
-object Ext1 {
-  def snprintf(buf: CString, size: CSize, format: CString, l: CString): Int =
-    extern
-}
-@extern
-object Ext2 {
-  @name("snprintf")
-  def p(buf: CString, size: CSize, format: CString, i: Int): Int = extern
+object ExternTest {
+  /* These can be nested inside an object but not a class - see #897
+   * These also are having problems at the top level with our CI
+   * with the current Docker configuration, see #1991
+   */
+  @extern
+  object Ext1 {
+    def snprintf(buf: CString, size: CSize, format: CString, l: CString): Int =
+      extern
+  }
+  @extern
+  object Ext2 {
+    @name("snprintf")
+    def p(buf: CString, size: CSize, format: CString, i: Int): Int = extern
+  }
 }
 
 class ExternTest {
@@ -48,15 +53,15 @@ class ExternTest {
     }
   }
 
-  @Ignore("commented out, problem in CI, issue #1991 opened")
-  @Test def sameExternNameInTwoDifferentObjectsIssue1652(): Unit = {
+  @Test def sameExternNameInTwoDifferentObjects_Issue1652(): Unit = {
+    import ExternTest._
     val bufsize = 10L
     val buf1    = stackalloc[Byte](bufsize)
     val buf2    = stackalloc[Byte](bufsize)
-    // Ext1.snprintf(buf1, bufsize, c"%s", c"hello")
-    // assertTrue(string.strcmp(buf1, c"hello") == 0)
-    // Ext2.p(buf2, bufsize, c"%d", 1)
-    // assertTrue(string.strcmp(buf2, c"1") == 0)
+    Ext1.snprintf(buf1, bufsize, c"%s", c"hello")
+    assertTrue(string.strcmp(buf1, c"hello") == 0)
+    Ext2.p(buf2, bufsize, c"%d", 1)
+    assertTrue(string.strcmp(buf2, c"1") == 0)
   }
 
   val cb: CFuncPtr0[CInt] = new CFuncPtr0[Int] {

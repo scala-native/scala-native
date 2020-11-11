@@ -15,14 +15,14 @@ class IssuesTest {
       def apply(value: Int): Unit = ()
     })
 
-  @Test def testIssue208(): Unit = {
+  @Test def test_Issue208(): Unit = {
     // If we put the test directly, behind the scenes, this will
     // create a nested closure with a pointer to the outer one
     // and the latter is not supported in scala-native
     lifted208Test()
   }
 
-  @Test def testIssue253(): Unit = {
+  @Test def test_Issue253(): Unit = {
     class Cell(val value: Int)
 
     val arr     = Array(new Cell(1), new Cell(2))
@@ -32,7 +32,7 @@ class IssuesTest {
     assertTrue(reverse(1).value == 1)
   }
 
-  @Test def testIssue260(): Unit = {
+  @Test def test_Issue260(): Unit = {
     def getStr(): String = {
       val bytes = Array('h'.toByte, 'o'.toByte, 'l'.toByte, 'a'.toByte)
       new String(bytes)
@@ -44,7 +44,7 @@ class IssuesTest {
     assertTrue("hola".equals(sz))
   }
 
-  @Test def testIssue275(): Unit = {
+  @Test def test_Issue275(): Unit = {
     val arr = new Array[Int](10)
     assertTrue(arr.getClass.getName == "scala.scalanative.runtime.IntArray")
     assertTrue(arr.toList == List(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
@@ -54,7 +54,7 @@ class IssuesTest {
     assertTrue(arr2.toList == List(1, 1, 1, 1, 1, 1, 1, 1, 1, 1))
   }
 
-  @Test def testIssue314(): Unit = {
+  @Test def test_Issue314(): Unit = {
     // Division by zero is defined behavior.
     assert {
       try {
@@ -67,7 +67,7 @@ class IssuesTest {
     }
   }
 
-  @Test def testIssue326(): Unit = {
+  @Test def test_Issue326(): Unit = {
     abstract class A
     case class S[T](a: T) extends A
 
@@ -85,23 +85,23 @@ class IssuesTest {
     }
   }
 
-  @Test def testIssue327(): Unit = {
+  @Test def test_Issue327(): Unit = {
     val a = BigInt(1)
     assertTrue(a.toInt == 1)
   }
 
-  @Test def testIssue337(): Unit = {
+  @Test def test_Issue337(): Unit = {
     case class TestObj(value: Int)
     val obj = TestObj(10)
     assertTrue(obj.value == 10)
   }
 
-  @Test def testIssue350(): Unit = {
+  @Test def test_Issue350(): Unit = {
     val div = java.lang.Long.divideUnsigned(42L, 2L)
     assertTrue(div == 21L)
   }
 
-  @Test def testIssue374(): Unit = {
+  @Test def test_Issue374(): Unit = {
     assertTrue("42" == bar(42))
     assertTrue("bar" == bar_i32())
   }
@@ -109,7 +109,7 @@ class IssuesTest {
   def bar(i: Int): String = i.toString
   def bar_i32(): String   = "bar"
 
-  @Test def testIssue376(): Unit = {
+  @Test def test_Issue376(): Unit = {
     val m     = scala.collection.mutable.Map.empty[String, String]
     val hello = "hello"
     val world = "world"
@@ -130,7 +130,7 @@ class IssuesTest {
   }
   def intIdent(x: Int): Int = x
 
-  @Test def testIssue382(): Unit = {
+  @Test def test_Issue382(): Unit = {
     /// that gave NPE
 
     import scala.scalanative.unsafe._
@@ -149,17 +149,17 @@ class IssuesTest {
     assertTrue(x2 == 1.0)
   }
 
-  @Test def testIssue404(): Unit = {
+  @Test def test_Issue404(): Unit = {
     // this must not throw an exception
     this.getClass.##
   }
 
-  @Test def testIssue424(): Unit = {
+  @Test def test_Issue424(): Unit = {
     // this used not to link
     val cls = classOf[Array[Unit]]
   }
 
-  @Test def testIssue445(): Unit = {
+  @Test def test_Issue445(): Unit = {
     val char: Any   = 66.toChar
     val byte: Any   = 66.toByte
     val short: Any  = 66.toShort
@@ -218,7 +218,7 @@ class IssuesTest {
     assertTrue(double == double)
   }
 
-  @Test def testIssue449(): Unit = {
+  @Test def test_Issue449(): Unit = {
     import scalanative.unsafe.Ptr
     import scala.scalanative.runtime.ByteArray
     val bytes = new Array[Byte](2)
@@ -229,7 +229,7 @@ class IssuesTest {
     assertFalse((p + 1) == 'a'.toByte)
   }
 
-  @Test def testIssue349(): Unit = {
+  @Test def test_Issue349(): Unit = {
     var events = List.empty[String]
 
     def log(s: String): Unit = events ::= s
@@ -264,24 +264,24 @@ class IssuesTest {
     assertTrue(events == List("c", "a"))
   }
 
-  @Test def testIssue482(): Unit = {
+  @Test def test_Issue482(): Unit = {
     assertTrue('\uD800'.toInt == 55296)
   }
 
-  @Test def testIssue667(): Unit = {
+  @Test def test_Issue667(): Unit = {
     val map = new java.util.HashMap[Int, Int]
     map.put(1, 2)
     val ks = map.keySet()
     assertTrue(ks.contains(1))
   }
 
-  @Test def testIssue679(): Unit = {
+  @Test def test_Issue679(): Unit = {
     val `"` = 42
     assertTrue(("double-quotes " + `"`) == "double-quotes 42")
     assertTrue(s"double-quotes ${`"`}" == "double-quotes 42")
   }
 
-  @Test def testIssue695(): Unit = {
+  @Test def test_Issue695(): Unit = {
     val a   = List(1, 2, 3)
     var eff = List.empty[(Int, Int)]
 
@@ -293,7 +293,7 @@ class IssuesTest {
     assertTrue(eff == List((3, 3), (2, 2), (1, 1)))
   }
 
-  @Test def testIssue762(): Unit = {
+  @Test def test_Issue762(): Unit = {
     val byte         = 1.toByte
     val negbyte: Any = -byte
     assertTrue(negbyte.isInstanceOf[Int])
@@ -315,7 +315,7 @@ class IssuesTest {
     assertTrue(neglong.toString == "-1")
   }
 
-  @Test def testIssue780(): Unit = {
+  @Test def test_Issue780(): Unit = {
     import java.util.{HashMap, Collections}
     val hashmap = new HashMap[String, String]()
     hashmap.put("a", "b")
@@ -327,7 +327,7 @@ class IssuesTest {
     assertFalse(iter.hasNext())
   }
 
-  @Test def testIssue803(): Unit = {
+  @Test def test_Issue803(): Unit = {
     val x1: String = null
     var x2: String = "right"
     assertTrue(x1 + x2 == "nullright")
@@ -357,36 +357,36 @@ class IssuesTest {
     assertTrue(x13 + x14 == "nullnull")
   }
 
-  @Test def testIssue809(): Unit = {
+  @Test def test_Issue809(): Unit = {
     assertTrue(null.asInstanceOf[AnyRef].## == 0)
   }
 
-  @Test def testIssue900(): Unit = {
+  @Test def test_Issue900(): Unit = {
     val c = new issue900.C("any")
     assertTrue(c.init == "foobar")
   }
 
-  @Test def testIssue1155(): Unit = {
+  @Test def test_Issue1155(): Unit = {
     assertTrue(issue1155.C.CLASS.toString.contains("C$CLASS$@"))
   }
 
-  @Test def testIssue1090(): Unit = {
+  @Test def test_Issue1090(): Unit = {
     val xs = new Array[issue1090.X](20)
     val ys = new Array[issue1090.Y](20)
     assertTrue(issue1090.A.foo(xs) == "X array")
     assertTrue(issue1090.A.foo(ys) == "Y array")
   }
 
-  @Test def testIssue1239(): Unit = {
+  @Test def test_Issue1239(): Unit = {
     val ulong = java.lang.Long.parseUnsignedLong("9223372036854775808").toULong
     assertTrue(ulong.toDouble == 9223372036854775808.0D)
   }
 
-  @Test def testIssue1359(): Unit = {
+  @Test def test_Issue1359(): Unit = {
     issue1359.Main.main(Array())
   }
 
-  @Test def testIssue1516(): Unit = {
+  @Test def test_Issue1516(): Unit = {
     locally {
       val data = new Array[UByte](6)
       data(0) = 64.toUByte
@@ -413,7 +413,7 @@ class IssuesTest {
     }
   }
 
-  @Test def testIssue1909(): Unit = {
+  @Test def test_Issue1909(): Unit = {
     import issue1909._
     assertNotNull(new RandomWrapper().nextInt())
   }
