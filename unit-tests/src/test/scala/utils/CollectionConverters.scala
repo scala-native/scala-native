@@ -2,13 +2,11 @@ package scala.scalanative.junit.utils
 
 import java.util.{LinkedHashMap, LinkedHashSet, LinkedList}
 import scala.collection.mutable
-import scala.reflect.ClassTag
 
 /** Set of helper method replacing problematic Scala collection.JavaConverters as they cause problems
  * in cross compile between 2.13+ and older Scala versions */
 object CollectionConverters {
-  implicit class ScalaToJavaCollections[T: ClassTag](
-      private val self: Iterable[T]) {
+  implicit class ScalaToJavaCollections[T](private val self: Iterable[T]) {
     def toJavaList: LinkedList[T] = {
       val list = new LinkedList[T]()
       self.foreach(list.add)
@@ -23,39 +21,46 @@ object CollectionConverters {
 
     def toJavaMap[K, V](implicit ev: T =:= (K, V)): java.util.Map[K, V] = {
       val m = new LinkedHashMap[K, V]()
-      self.iterator.asInstanceOf[Iterator[(K, V)]].foreach {
-        case (k, v) => m.put(k, v)
+      self.iterator.foreach { elem =>
+        val (key, value): (K, V) = elem
+        m.put(key, value)
       }
       m
     }
   }
 
-  implicit class JavaToScalaCollections[T: ClassTag](
+  implicit class JavaToScalaCollections[T](
       private val self: java.util.Collection[T]) {
-    private def buf        = self.iterator().toScalaSeq
-    def toScalaSeq: Seq[T] = buf.toSeq
-    def toScalaMap[K: ClassTag, V: ClassTag](
-        implicit ev: T =:= java.util.Map.Entry[K, V]): mutable.Map[K, V] = {
-      val map = mutable.Map.empty[K, V]
-      self
-        .iterator()
-        .asInstanceOf[Iterator[java.util.Map.Entry[K, V]]]
-        .foreach { v => map.put(v.getKey(), v.getValue()) }
-      map
-    }
+    private def iterator   = self.iterator()
+    def toScalaSeq: Seq[T] = self.iterator().toScalaSeq
     def toScalaSet: Set[T] = self.iterator().toScalaSet
+    def toScalaMap[K, V](
+        implicit ev: T =:= java.util.Map.Entry[K, V]): Map[K, V] =
+      self.iterator().toScalaMap[K, V]
   }
 
-  implicit class JavaIteratorToScala[T: ClassTag](
+  implicit class JavaIteratorToScala[T](
       private val self: java.util.Iterator[T]) {
-    val toScalaSeq: mutable.UnrolledBuffer[T] = {
-      val b = new mutable.UnrolledBuffer[T]()
-      while (self.hasNext) {
-        b += self.next()
-      }
-      b
+    private def toBuilderResult[R](builder: mutable.Builder[T, R]): R = {
+      while (self.hasNext())
+        builder += self.next()
+      builder.result()
     }
-    def toScalaSet: Set[T] = toScalaSeq.toSet
+    private def toMapBuilderResult[R, K, V](
+        builder: mutable.Builder[(K, V), R])(
+        implicit ev: T =:= java.util.Map.Entry[K, V]): R = {
+      while (self.hasNext()) {
+        val next: java.util.Map.Entry[K, V] = self.next()
+        val pair: (K, V)                    = (next.getKey(), next.getValue())
+        builder += pair
+      }
+      builder.result()
+    }
+    def toScalaSeq: Seq[T] = toBuilderResult(Seq.newBuilder)
+    def toScalaSet: Set[T] = toBuilderResult(Set.newBuilder)
+    def toScalaMap[K, V](
+        implicit ev: T =:= java.util.Map.Entry[K, V]): Map[K, V] =
+      toMapBuilderResult(Map.newBuilder[K, V])
   }
 
 }
