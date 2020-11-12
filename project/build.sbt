@@ -11,8 +11,6 @@ Compile / unmanagedSourceDirectories ++= {
   ).map(dir => root / s"$dir/src/main/scala")
 }
 
-libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0"
-
 addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0")
 addSbtPlugin("org.foundweekends"  % "sbt-bintray"       % "0.5.4")
 addSbtPlugin("com.jsuereth"       % "sbt-pgp"           % "2.0.0")
