@@ -61,7 +61,7 @@ object Sub {
     }
   }
 
-  def lub(tys: Seq[Type], bound: Option[Type] = None)(
+  def lub(tys: Seq[Type], bound: Option[Type])(
       implicit linked: linker.Result): Type = {
     tys match {
       case Seq() =>

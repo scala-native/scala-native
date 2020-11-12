@@ -75,7 +75,7 @@ final class MergeProcessor(insts: Array[Inst],
         val mergeEmitted = mutable.Map.empty[Op, Val]
         val newEscapes   = mutable.Set.empty[Addr]
 
-        def mergePhi(values: Seq[Val], bound: Option[Type] = None): Val = {
+        def mergePhi(values: Seq[Val], bound: Option[Type]): Val = {
           if (values.distinct.size == 1) {
             values.head
           } else {
@@ -130,7 +130,7 @@ final class MergeProcessor(insts: Array[Inst],
                       case _                      => Val.Virtual(addr)
                     }
                   }
-                  mergeHeap(addr) = EscapedInstance(mergePhi(values))
+                  mergeHeap(addr) = EscapedInstance(mergePhi(values, None))
                 case VirtualInstance(headKind, headCls, headValues) =>
                   val mergeValues = headValues.zipWithIndex.map {
                     case (_, idx) =>
