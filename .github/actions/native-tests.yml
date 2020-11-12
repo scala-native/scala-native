@@ -1,0 +1,22 @@
+name: 'Scala Native tests'
+inputs:
+  command:
+    description: 'Test mode to be used: test-tools, test-runtime or test-scripted'
+    required: true
+  scala-version:
+    required: true
+  nativeMode:
+    required: true
+    default: 'release-fast'
+  gc:
+    required: true
+    default: 'immix'
+  optimize:
+    required: true
+    default: 'true'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  pre-entrypoint: 'load-cached-images.sh'
+  entrypoint: 'run-tests.sh'
