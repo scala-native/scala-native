@@ -14,7 +14,7 @@ class DirectoryStreamImpl[T](stream: Stream[T],
     val predicate = new Predicate[T] {
       override def test(t: T): Boolean = filter.accept(t)
     }
-    stream.filter(predicate).iterator
+    stream.filter(predicate).iterator()
   }
 
   override def iterator(): Iterator[T] =

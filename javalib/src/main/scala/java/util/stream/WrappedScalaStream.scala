@@ -9,7 +9,7 @@ class WrappedScalaStream[T](private val underlying: SStream[T],
     extends Stream[T] {
   override def close(): Unit         = closeHandler.foreach(_.run())
   override def isParallel(): Boolean = false
-  override def iterator: Iterator[T] =
+  override def iterator(): Iterator[T] =
     WrappedScalaStream.scala2javaIterator(underlying.iterator)
   override def parallel(): Stream[T]   = this
   override def sequential(): Stream[T] = this
@@ -60,7 +60,7 @@ private final class CompositeStream[T](substreams: Seq[Stream[T]],
       override def hasNext(): Boolean =
         if (currentIt.hasNext()) true
         else if (its.hasNext) {
-          currentIt = its.next().iterator
+          currentIt = its.next().iterator()
           hasNext()
         } else {
           false

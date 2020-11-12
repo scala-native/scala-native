@@ -133,7 +133,7 @@ object Files {
     if (exists(dir, Array.empty)) {
       if (!isDirectory(dir, Array.empty)) {
         throw new FileAlreadyExistsException(dir.toString)
-      } else if (list(dir).iterator.hasNext()) {
+      } else if (list(dir).iterator().hasNext()) {
         throw new DirectoryNotEmptyException(dir.toString)
       }
       dir
@@ -466,7 +466,7 @@ object Files {
   def readAllLines(path: Path, cs: Charset): List[String] = {
     val list   = new LinkedList[String]()
     val reader = newBufferedReader(path, cs)
-    val lines  = reader.lines().iterator
+    val lines  = reader.lines().iterator()
     while (lines.hasNext()) {
       list.add(lines.next())
     }
@@ -734,7 +734,7 @@ object Files {
     write(path, lines, StandardCharsets.UTF_8, options)
 
   private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
-    attrs.map(a => (a.name(), a.value)).toMap.foreach {
+    attrs.map(a => (a.name(), a.value())).toMap.foreach {
       case (name, value) =>
         setAttribute(path, name, value.asInstanceOf[AnyRef], Array.empty)
     }
