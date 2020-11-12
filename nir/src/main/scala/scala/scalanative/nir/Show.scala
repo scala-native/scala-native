@@ -41,7 +41,7 @@ object Show {
     val pw = new java.io.PrintWriter(fileName)
 
     try {
-      defns.view
+      defns
         .filter(_ != null)
         .sortBy(_.name)
         .foreach { defn =>
