@@ -47,4 +47,4 @@ USER scala-native
 
 WORKDIR /home/scala-native/scala-native
 
-CMD sbt "++ $TRAVIS_SCALA_VERSION -v" -no-colors -J-Xmx5G "set scriptedBufferLog in sbtScalaNative := false" "$TEST_COMMAND"
+CMD sbt "++ $SCALA_VERSION -v" -no-colors -J-Xmx5G "set scriptedBufferLog in sbtScalaNative := false" "$TEST_COMMAND"
