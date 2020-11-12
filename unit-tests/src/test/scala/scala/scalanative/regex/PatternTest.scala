@@ -109,7 +109,7 @@ class PatternTest {
 
   @Ignore
   @Test def pending(): Unit = {
-    // The prefix In should only allow blokcs like Mongolian
+    // The prefix In should only allow blocks like Mongolian
     assertThrowsAnd(classOf[PatternSyntaxException],
                     Pattern.compile("\\p{InLatin}"))(
       _.getMessage == "Unknown character block name {Latin} near index 10"
@@ -147,8 +147,6 @@ class PatternTest {
 
     // \R Unicode linebreak
     pass("\\R", "\u000D\u000A")
-
-    pending // 620
   }
 
   @Test def greedyQuantifiers(): Unit = {
@@ -252,7 +250,6 @@ class PatternTest {
     fail("[a-z&&[^aeiou]]", "o")
     pass("[a-z&&[^m-p]]", "c")
     fail("[a-z&&[^m-p]]", "n")
-    //pending() // 620 (pending not supported in JUnit)
   }
 
   @Ignore("not supported")
@@ -261,7 +258,6 @@ class PatternTest {
     pass("\\H", "a")
     pass("\\v", "\n")
     pass("\\V", "a")
-    //pending() // 620 (pending not in JUnit)
   }
 
   @Ignore("not supported")
@@ -271,7 +267,6 @@ class PatternTest {
     pass("\\p{javaWhitespace}", " ")
     pass("\\p{javaMirrored}", "{") // mirrored with }
     fail("\\p{javaMirrored}", "c")
-    //pending // 620 (pending not in JUnit)
   }
 
   /*
@@ -283,7 +278,6 @@ class PatternTest {
   @Test def backReferences(): Unit = {
     pass("(a)\\1", "aa")
     pass("(?<foo>a)\\k<foo>", "aa")
-    //pending // 620 (pending not in JUnit)
   }
 
   @Ignore("not supported")
@@ -308,8 +302,6 @@ class PatternTest {
 
     // quantifiers over look ahead
     passAndFail(".*(?<=abc)*\\.log$", "cde.log", "cde.log")
-
-    //pending // 620 (pending not in JUnit)
   }
 
   @Ignore("not supported")
@@ -342,8 +334,6 @@ class PatternTest {
     pass("^X{3,5}+$", "XXXX")
     pass("^X{3,5}+$", "XXXXX")
     fail("^X{3,5}+$", "XXXXXX")
-
-    //pending // 620 (pending not in JUnit)
   }
 
   @Test def multibyteCharacters(): Unit = {

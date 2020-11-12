@@ -175,7 +175,6 @@ class MatcherTest {
 
     m2.useTransparentBounds(true)
     assertTrue(m2.matches()) // transparent
-    // pending()                // 620 (no pending in JUnit)
   }
 
   @Test def lookingAt(): Unit = {
