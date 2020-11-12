@@ -5,10 +5,21 @@ on:
     branches:
       - master
 jobs:
-  build:
+  build-plugin:
+    name: Build plugin for ${{ matrix.binary-version}}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scala:
+          - { version: "2.13.3",  binary-version: "2.13" }
+#          - { version: "2.12.12", binary-version: "2.12" }
+#          - { version: "2.11.12", binary-version: "2.11" }
     steps:
       - uses: actions/checkout@v1
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
       - name: Cache Coursier
         uses: actions/cache@v1
         with:
@@ -16,6 +27,7 @@ jobs:
           key: ${{ runner.os }}-coursier-${{ matrix.scala.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
           restore-keys: |
             ${{ runner.os }}-coursier-scala-${{ matrix.scala.binary-version }}-
+
       - name: Cache Ivy
         uses: actions/cache@v1
         with:
@@ -23,36 +35,14 @@ jobs:
           key: ${{ runner.os }}-ivy-${{ matrix.scala.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
           restore-keys: |
             ${{ runner.os }}-ivy-scala-${{ matrix.scala.binary-version }}-
+      - name: Test bash
+        run: echo "hello world"
+      - name: Build plugin
+        run: sbt "; ++ ${{ matrix.scala.version }}; publishLocal"
 
-  test-tools:
-    name: Test tools on Scala ${{ matrix.scalaVersion }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        scalaVersion: [ 2.13.3, 2.12.2, 2.11.12 ]
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-      - name: Cache SBT
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.ivy2/local
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
-      - run: sbt
-          ++ ${{ matrix.scalaVersion }} -v
-          -no-colors
-          -J-Xmx3G
-          test-tools
-
-  build-test-image:
+  build-image:
     name: Build docker image to be used by runtime tests
     runs-on: ubuntu-latest
-    needs: test-tools
     strategy:
       matrix:
         targetPlatform: [ library ]
@@ -81,11 +71,24 @@ jobs:
           --cpuset-cpus=0 \
           ci-docker;
 
+  test-tools:
+    name: Test tools on Scala ${{ matrix.scalaVersion }}
+    runs-on: ubuntu-latest
+    needs: build-plugin
+    strategy:
+      matrix:
+        scalaVersion: [ 2.13.3, 2.12.2, 2.11.12 ]
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          sbt "-no-colors -J-Xmx3G"
+          ";++ ${{ matrix.scalaVersion }} -v"
+          "test-tools"
 
   test-runtime:
     name: Test runtime on Scala ${{ matrix.scalaVersion }} and ${{ matrix.os }}
     runs-on: {{ matrix.os }}
-    needs: build-test-image
+    needs: [build-image, test-tools]
     strategy:
         matrix:
           scalaVersion: [2.13.3, 2.12.2, 2.11.12]
@@ -93,20 +96,18 @@ jobs:
           targetPlatform: [library]
           buildMode: [debug, release-fast]
           gc: [boehm, immix, commix]
+          exclude:
+            - scalaVersion: 2.13.3
+              buildMode: debug
+              gc: boehm
+            - scalaVersion: 2.12.12
+              buildMode: debug
+              gc: commix
+            - scalaVersion: 2.11.12
+              buildMode: debug
+              gc: immix
     steps:
       - uses: actions/checkout@v1
-
-      - name: Test non optimized
-        run: "docker run \
-        -v $HOME/.ivy2:/home/scala-native/.ivy2 \
-        -v $HOME/.sbt:/home/scala-native/.sbt \
-        -v $PWD:/home/scala-native/scala-native \
-        -e SCALANATIVE_MODE=${{ matrix.buildMode }} \
-        -e SCALANATIVE_GC=${{ matrix.gc }} \
-        -e SCALA_VERSION=${{ matrix.scalaVersion }} \
-        -e SCALANATIVE_OPTIMIZE=false \
-        -e TEST_COMMAND=test-runtime \
-        -it scala-native-testing:linux-${{ matrix.targetPlatform }};"
 
       - name: Test main grid
         run: "docker run \
@@ -114,24 +115,49 @@ jobs:
         -v $HOME/.sbt:/home/scala-native/.sbt \
         -v $PWD:/home/scala-native/scala-native \
         -e SCALANATIVE_MODE=${{ matrix.buildMode }} \
-        -e SCALANATIVE_GC=immix \
+        -e SCALANATIVE_GC=${{ matrix.gc }} \
         -e SCALA_VERSION=${{ matrix.scalaVersion }} \
         -e SCALANATIVE_OPTIMIZE=true \
         -e TEST_COMMAND=test-runtime \
         -it scala-native-testing:linux-${{ matrix.targetPlatform }};"
 
+  test-runtime-no-opt:
+    name: Test not optimized runtime on Scala ${{ matrix.scalaVersion }} and ${{ matrix.os }}
+    runs-on: { { matrix.os } }
+    needs: [ build-image, test-tools ]
+    strategy:
+      matrix:
+        scalaVersion: [ 2.13.3, 2.12.2, 2.11.12 ]
+        os: [ ubuntu-latest ]
+        targetPlatform: [ library ]
+        buildMode: [ debug, release-fast ]
+        gc: [ immix ]
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Test non optimized
+        run: "docker run \
+          -v $HOME/.ivy2:/home/scala-native/.ivy2 \
+          -v $HOME/.sbt:/home/scala-native/.sbt \
+          -v $PWD:/home/scala-native/scala-native \
+          -e SCALANATIVE_MODE=${{ matrix.buildMode }} \
+          -e SCALANATIVE_GC=${{ matrix.gc }} \
+          -e SCALA_VERSION=${{ matrix.scalaVersion }} \
+          -e SCALANATIVE_OPTIMIZE=false \
+          -e TEST_COMMAND=test-runtime \
+          -it scala-native-testing:linux-${{ matrix.targetPlatform }};"
 
   test-scripted:
     name: Test scripted on Scala ${{ matrix.scalaVersion }} and ${{ matrix.os }}
     runs-on: { { matrix.os } }
-    needs: build-test-image
+    needs: [build-image, test-tools]
     strategy:
       matrix:
         scalaVersion: [ 2.13.3, 2.12.2, 2.11.12 ]
         os: [ ubuntu-latest ]
     steps:
       - uses: actions/checkout@v1
-        run: "docker run \
+      - run: "docker run \
         -v $HOME/.ivy2:/home/scala-native/.ivy2 \
         -v $HOME/.sbt:/home/scala-native/.sbt \
         -v $PWD:/home/scala-native/scala-native \
@@ -139,5 +165,5 @@ jobs:
         -e SCALANATIVE_GC=immix \
         -e SCALA_VERSION=${{ matrix.scalaVersion }} \
         -e SCALANATIVE_OPTIMIZE=true \
-        -e TEST_COMMAND=test-runtime \
+        -e TEST_COMMAND=test-scripted \
         -it scala-native-testing:linux-${{ matrix.targetPlatform }};"
