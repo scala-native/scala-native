@@ -1,8 +1,8 @@
 package scala.scalanative.runtime
 
-/** Registry for created instances of java.lang.Class
+/* Registry for created instances of java.lang.Class
  * Its only purpose is to prevent the GC from collecting instances of java.lang.Class
- **/
+ */
 private[runtime] object ClassInstancesRegistry {
   type Bucket = scala.Array[_Class[_]]
 
