@@ -9,9 +9,9 @@ import scala.language.implicitConversions
 import scala.scalanative.nir._
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
-import scala.tools.nsc.{util => _, _}
+import scala.tools.nsc.{Global, util => _, _}
 
-abstract class NirGenPhase[G <: NscGlobal](val global: G)
+abstract class NirGenPhase[G <: Global with Singleton](val global: G)
     extends PluginComponent
     with NirGenStat[G]
     with NirGenExpr[G]

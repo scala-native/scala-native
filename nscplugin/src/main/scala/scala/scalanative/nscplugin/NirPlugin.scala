@@ -12,7 +12,8 @@ class NirPlugin(val global: Global) extends Plugin {
   /** A trick to avoid early initializers while still enforcing that `global`
    *  is initialized early.
    */
-  abstract class NirGlobalAddonsEarlyInit[G <: NscGlobal](val global: G)
+  abstract class NirGlobalAddonsEarlyInit[G <: Global with Singleton](
+      val global: G)
       extends NirGlobalAddons
 
   object nirAddons extends NirGlobalAddonsEarlyInit[global.type](global)

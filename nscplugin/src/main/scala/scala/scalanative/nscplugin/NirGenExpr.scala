@@ -2,12 +2,13 @@ package scala.scalanative
 package nscplugin
 
 import scala.collection.mutable
+import scala.tools.nsc
 import scalanative.nir._
 import scalanative.util.{StringUtils, unsupported}
 import scalanative.util.ScopedVar.scoped
 import scalanative.nscplugin.NirPrimitives._
 
-trait NirGenExpr[G <: NscGlobal] { self: NirGenPhase[G] =>
+trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   import global._
   import definitions._
   import treeInfo.hasSynthCaseSymbol

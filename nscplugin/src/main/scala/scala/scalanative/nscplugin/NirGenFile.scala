@@ -4,9 +4,10 @@ package nscplugin
 import java.io.FileOutputStream
 import java.nio.file.{Path, Paths}
 import scala.scalanative.nir.serialization.serializeBinary
+import scala.tools.nsc.Global
 import scala.tools.nsc.io.AbstractFile
 
-trait NirGenFile[G <: NscGlobal] { self: NirGenPhase[G] =>
+trait NirGenFile[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import global._
 
   def genPathFor(cunit: CompilationUnit, ownerName: nir.Global): Path = {

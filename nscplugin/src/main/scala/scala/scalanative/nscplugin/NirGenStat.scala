@@ -6,9 +6,10 @@ import scala.reflect.internal.Flags._
 import scala.scalanative.nir._
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
+import scala.tools.nsc
 import scalanative.nir.ControlFlow.removeDeadBlocks
 
-trait NirGenStat[G <: NscGlobal] { self: NirGenPhase[G] =>
+trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
   import global._
   import definitions._
