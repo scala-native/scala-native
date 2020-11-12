@@ -93,8 +93,8 @@ class JarEntry(private val ze: ZipEntry) extends ZipEntry(ze) {
       if (asigners.isEmpty()) {
         null
       } else {
-        val tmp = new Array[CodeSigner](asigners.size)
-        System.arraycopy(asigners, 0, tmp, 0, asigners.size)
+        val tmp = new Array[CodeSigner](asigners.size())
+        System.arraycopy(asigners, 0, tmp, 0, asigners.size())
         tmp
       }
     }

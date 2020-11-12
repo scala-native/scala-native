@@ -12,7 +12,7 @@ object FileVisitResult {
   private val _values                  = Array(CONTINUE, TERMINATE, SKIP_SUBTREE, SKIP_SIBLINGS)
   def values(): Array[FileVisitResult] = _values.clone()
   def valueOf(name: String): FileVisitResult = {
-    _values.find(_.name == name).getOrElse {
+    _values.find(_.name() == name).getOrElse {
       throw new IllegalArgumentException(
         "No enum const FileVisitResult." + name)
     }

@@ -41,7 +41,7 @@ object System {
                          "Java Platform API Specification")
     sysProps.setProperty("line.separator", lineSeparator())
 
-    if (Platform.isWindows) {
+    if (Platform.isWindows()) {
       sysProps.setProperty("file.separator", "\\")
       sysProps.setProperty("path.separator", ";")
       val userLang    = fromCString(Platform.windowsGetUserLang())
@@ -98,7 +98,7 @@ object System {
   })
 
   def lineSeparator(): String = {
-    if (Platform.isWindows) "\r\n"
+    if (Platform.isWindows()) "\r\n"
     else "\n"
   }
 

@@ -26,7 +26,7 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   def size(): Int =
     inner.size
 
-  def isEmpty: Boolean =
+  def isEmpty(): Boolean =
     inner.isEmpty
 
   def keys(): ju.Enumeration[K] = Collections.enumeration(keySet())
@@ -70,7 +70,9 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   }
 
   def putAll(m: ju.Map[_ <: K, _ <: V]): Unit =
-    m.entrySet().scalaOps.foreach { e => inner.put(Box(e.getKey), e.getValue) }
+    m.entrySet().scalaOps.foreach { e =>
+      inner.put(Box(e.getKey()), e.getValue())
+    }
 
   def clear(): Unit =
     inner.clear()
@@ -80,7 +82,7 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
 
   override def toString(): String =
     inner.iterator
-      .map(kv => kv._1.inner + "=" + kv._2)
+      .map(kv => "" + kv._1.inner + "=" + kv._2)
       .mkString("{", ", ", "}")
 
   def keySet(): ju.Set[K] = {
@@ -93,8 +95,8 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
     class UnboxedEntry(
         private[UnboxedEntry] val boxedEntry: ju.Map.Entry[Box[Any], V])
         extends ju.Map.Entry[K, V] {
-      def getKey(): K           = boxedEntry.getKey.inner.asInstanceOf[K]
-      def getValue(): V         = boxedEntry.getValue
+      def getKey(): K           = boxedEntry.getKey().inner.asInstanceOf[K]
+      def getValue(): V         = boxedEntry.getValue()
       def setValue(value: V): V = boxedEntry.setValue(value)
       override def equals(o: Any): Boolean = o match {
         case o: UnboxedEntry => boxedEntry.equals(o.boxedEntry)

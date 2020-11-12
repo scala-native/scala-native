@@ -135,8 +135,8 @@ object Manifest {
       }
     }
     out.write(LINE_SEPARATOR)
-    val i = manifest.getEntries.keySet.iterator
-    while (i.hasNext) {
+    val i = manifest.getEntries().keySet().iterator()
+    while (i.hasNext()) {
       val key = i.next()
       writeEntry(out, NAME_ATTRIBUTE, key, encoder, buffer)
       val attrib  = manifest.entries.get(key)

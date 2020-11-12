@@ -20,13 +20,13 @@ class _Object {
     new _Class(getRawType(this))
 
   @inline def __notify(): Unit =
-    getMonitor(this)._notify
+    getMonitor(this)._notify()
 
   @inline def __notifyAll(): Unit =
-    getMonitor(this)._notifyAll
+    getMonitor(this)._notifyAll()
 
   @inline def __wait(): Unit =
-    getMonitor(this)._wait
+    getMonitor(this)._wait()
 
   @inline def __wait(timeout: scala.Long): Unit =
     getMonitor(this)._wait(timeout)

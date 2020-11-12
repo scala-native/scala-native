@@ -142,7 +142,7 @@ object Type {
   def toArrayClass(ty: Type): Global = ty match {
     case _ if typeToArray.contains(ty) =>
       typeToArray(ty)
-    case Type.Ref(name, _, _) if name == Rt.BoxedUnit =>
+    case Type.Ref(name, _, _) if name == Rt.BoxedUnit.name =>
       typeToArray(Rt.BoxedUnit)
     case _ =>
       typeToArray(Rt.Object)

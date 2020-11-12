@@ -30,7 +30,7 @@ object FileSystems {
     val map                    = new HashMap[String, Object]()
     var i                      = 0
     var fs: Option[FileSystem] = None
-    while (i < providers.size && fs.isEmpty) {
+    while (i < providers.size() && fs.isEmpty) {
       try {
         fs = Some(providers.get(i).newFileSystem(path, map))
       } catch {
@@ -55,8 +55,8 @@ object FileSystems {
     val providers                            = FileSystemProvider.installedProviders
     var provider: Option[FileSystemProvider] = None
     var i                                    = 0
-    while (i < providers.size && provider.isEmpty) {
-      if (providers.get(i).getScheme.equalsIgnoreCase(uri.getScheme)) {
+    while (i < providers.size() && provider.isEmpty) {
+      if (providers.get(i).getScheme().equalsIgnoreCase(uri.getScheme())) {
         provider = Some(providers.get(i))
       }
       i += 1

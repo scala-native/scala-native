@@ -285,7 +285,7 @@ object ReflectiveInstantiationSuite extends tests.Suite {
     { () =>
       @EnableReflectiveInstantiation
       class Foo
-    }
+    }.apply()
   }
 
 }

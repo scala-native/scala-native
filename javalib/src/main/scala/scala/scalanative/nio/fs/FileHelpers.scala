@@ -45,7 +45,7 @@ object FileHelpers {
   }
 
   def createNewFile(path: String, throwOnError: Boolean = false): Boolean =
-    if (path.isEmpty) {
+    if (path.isEmpty()) {
       throw new IOException("No such file or directory")
     } else if (exists(path)) {
       false
@@ -68,7 +68,7 @@ object FileHelpers {
     else if (minLength && prefix.length < 3)
       throw new IllegalArgumentException("Prefix string too short")
     else {
-      val tmpDir       = Option(dir).fold(tempDir)(_.toString)
+      val tmpDir       = Option(dir).fold(tempDir())(_.toString)
       val newSuffix    = Option(suffix).getOrElse(".tmp")
       var result: File = null
       do {

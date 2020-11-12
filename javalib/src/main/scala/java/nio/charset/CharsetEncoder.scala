@@ -36,7 +36,7 @@ abstract class CharsetEncoder protected (
 
   final def replaceWith(newReplacement: Array[Byte]): CharsetEncoder = {
     if (newReplacement == null || newReplacement.length == 0 ||
-        newReplacement.length > maxBytesPerChar ||
+        newReplacement.length > maxBytesPerChar() ||
         !isLegalReplacement(newReplacement))
       throw new IllegalArgumentException
 
@@ -48,7 +48,7 @@ abstract class CharsetEncoder protected (
   protected def implReplaceWith(newReplacement: Array[Byte]): Unit = ()
 
   def isLegalReplacement(repl: Array[Byte]): Boolean = {
-    val decoder = charset.newDecoder
+    val decoder = charset().newDecoder()
     val replBuf = ByteBuffer.wrap(repl)
 
     @inline
@@ -56,10 +56,10 @@ abstract class CharsetEncoder protected (
     def loop(outBufSize: Int): Boolean = {
       val result =
         decoder.decode(replBuf, CharBuffer.allocate(outBufSize), true)
-      if (result.isOverflow) {
+      if (result.isOverflow()) {
         loop(outBufSize * 2)
       } else {
-        !replBuf.hasRemaining
+        !replBuf.hasRemaining()
       }
     }
 
@@ -118,8 +118,8 @@ abstract class CharsetEncoder protected (
             throw new CoderMalfunctionError(ex)
         }
 
-      val result2 = if (result1.isUnderflow) {
-        val remaining = in.remaining
+      val result2 = if (result1.isUnderflow()) {
+        val remaining = in.remaining()
         if (endOfInput && remaining > 0)
           CoderResult.malformedForLength(remaining)
         else
@@ -128,26 +128,26 @@ abstract class CharsetEncoder protected (
         result1
       }
 
-      if (result2.isUnderflow || result2.isOverflow) {
+      if (result2.isUnderflow() || result2.isOverflow()) {
         result2
       } else {
         val action =
-          if (result2.isUnmappable) unmappableCharacterAction
-          else malformedInputAction
+          if (result2.isUnmappable()) unmappableCharacterAction()
+          else malformedInputAction()
 
         action match {
           case CodingErrorAction.REPLACE =>
-            if (out.remaining < replacement.length) {
+            if (out.remaining() < replacement().length) {
               CoderResult.OVERFLOW
             } else {
-              out.put(replacement)
-              in.position(in.position() + result2.length)
+              out.put(replacement())
+              in.position(in.position() + result2.length())
               loop()
             }
           case CodingErrorAction.REPORT =>
             result2
           case CodingErrorAction.IGNORE =>
-            in.position(in.position() + result2.length)
+            in.position(in.position() + result2.length())
             loop()
         }
       }
@@ -160,7 +160,7 @@ abstract class CharsetEncoder protected (
     (status: @switch) match {
       case END =>
         val result = implFlush(out)
-        if (result.isUnderflow)
+        if (result.isUnderflow())
           status = FLUSHED
         result
       case FLUSHED =>
@@ -185,27 +185,27 @@ abstract class CharsetEncoder protected (
 
   final def encode(in: CharBuffer): ByteBuffer = {
     def grow(out: ByteBuffer): ByteBuffer = {
-      if (out.capacity == 0) {
+      if (out.capacity() == 0) {
         ByteBuffer.allocate(1)
       } else {
-        val result = ByteBuffer.allocate(out.capacity * 2)
+        val result = ByteBuffer.allocate(out.capacity() * 2)
         out.flip()
         result.put(out)
         result
       }
     }
 
-    if (in.remaining == 0) {
+    if (in.remaining() == 0) {
       ByteBuffer.allocate(0)
     } else {
       @inline
       @tailrec
       def loopEncode(out: ByteBuffer): ByteBuffer = {
         val result = encode(in, out, endOfInput = true)
-        if (result.isUnderflow) {
-          assert(!in.hasRemaining)
+        if (result.isUnderflow()) {
+          assert(!in.hasRemaining())
           out
-        } else if (result.isOverflow) {
+        } else if (result.isOverflow()) {
           loopEncode(grow(out))
         } else {
           result.throwException()
@@ -217,9 +217,9 @@ abstract class CharsetEncoder protected (
       @tailrec
       def loopFlush(out: ByteBuffer): ByteBuffer = {
         val result = flush(out)
-        if (result.isUnderflow) {
+        if (result.isUnderflow()) {
           out
-        } else if (result.isOverflow) {
+        } else if (result.isOverflow()) {
           loopFlush(grow(out))
         } else {
           result.throwException()
@@ -228,7 +228,7 @@ abstract class CharsetEncoder protected (
       }
 
       reset()
-      val initLength = (in.remaining * averageBytesPerChar).toInt
+      val initLength = (in.remaining() * averageBytesPerChar()).toInt
       val out        = loopFlush(loopEncode(ByteBuffer.allocate(initLength)))
       out.flip()
       out

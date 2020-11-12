@@ -100,10 +100,13 @@ private[scalanative] object IO {
   /** Look for a zip entry path string using a matcher function */
   def existsInJar(path: Path, matcher: String => Boolean): Boolean = {
     import java.util.zip.ZipFile
-    import scala.collection.JavaConverters._
     val zf = new ZipFile(path.toFile)
-    val it = zf.entries().asScala
-    it.exists(e => matcher(e.getName))
+    val it = zf.entries()
+    while (it.hasMoreElements()) {
+      if (matcher(it.nextElement().getName()))
+        return true
+    }
+    false
   }
 
   /** Deletes recursively `directory` and all its content. */

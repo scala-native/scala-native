@@ -120,7 +120,7 @@ class PathTest {
       import scala.collection.mutable.UnrolledBuffer
       val buf = new UnrolledBuffer[T]()
       while (it.hasNext) buf += it.next()
-      buf
+      buf.toSeq
     }
 
     assertTrue(Paths.get("").iterator.map(_.toString) == Seq(""))

@@ -8,7 +8,7 @@ import ScalaTestCompat.fail
 object ApiTestUtils extends tests.Suite {
 
   def assertArrayEquals[A](arr1: Array[A], arr2: Array[A]) =
-    assert(arr1.deep == arr2.deep)
+    assert(arr1.sameElements(arr2))
 
   /**
    * Asserts that IllegalArgumentException is thrown from compile with flags.

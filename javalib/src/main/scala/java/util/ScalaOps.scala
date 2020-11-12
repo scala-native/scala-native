@@ -88,8 +88,8 @@ private[java] object ScalaOps {
     }
 
     @inline def map[U](f: A => U): Iterator[U] = new Iterator[U] {
-      override def hasNext: Boolean = __self.hasNext
-      override def next(): U        = f(__self.next())
+      override def hasNext(): Boolean = __self.hasNext()
+      override def next(): U          = f(__self.next())
     }
 
     @inline def count(f: A => Boolean): Int =

@@ -7,8 +7,9 @@ import timeOps.tmOps
 
 object TimeSuite extends tests.Suite {
   tzset()
-  val now_time_t: time_t = time.time(null)
-  val epoch: time_t      = 0
+  //In 2.11/2.12 time was resolved to posix.time.type, in 2.13 to posix.time.time method
+  val now_time_t: time_t = scala.scalanative.posix.time.time(null)
+  val epoch: time_t      = 0L
 
   test("asctime() with a given known state should match its representation") {
     Zone { implicit z =>

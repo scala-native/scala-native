@@ -50,14 +50,14 @@ final class Duration private (seconds: Long, nanos: Int)
   }
 
   def compareTo(that: Duration): Int = {
-    val secCmp = seconds.compareTo(that.getSeconds)
-    if (secCmp == 0) nanos.compareTo(that.getNano)
+    val secCmp = seconds.compareTo(that.getSeconds())
+    if (secCmp == 0) nanos.compareTo(that.getNano())
     else secCmp
   }
 
   override def equals(that: Any): Boolean = that match {
     case that: Duration =>
-      seconds == that.getSeconds && nanos == that.getNano
+      seconds == that.getSeconds() && nanos == that.getNano()
     case _ => false
   }
 

@@ -42,7 +42,7 @@ final class _Class[A](val rawty: RawPtr) {
     ty.name
 
   def getSimpleName(): String =
-    getName.split('.').last.split('$').last
+    getName().split('.').last.split('$').last
 
   def isArray(): scala.Boolean =
     (rawty == toRawType(classOf[BooleanArray]) ||
@@ -108,7 +108,7 @@ final class _Class[A](val rawty: RawPtr) {
     Intrinsics.castRawPtrToLong(rawty).##
 
   override def toString = {
-    val name   = getName
+    val name   = getName()
     val prefix = if (ty.isClass) "class " else "interface "
     prefix + name
   }

@@ -59,16 +59,9 @@ inThisBuild(
 addCommandAlias(
   "test-all",
   Seq(
-    "sandbox/run",
-    "testRunner/test",
-    "testInterface/test",
-    "tools/test",
-    "tests/test",
-    "nirparser/test",
-    "sbtScalaNative/scripted",
-    "tools/mimaReportBinaryIssues",
-    "junitTestOutputsJVM/test",
-    "junitTestOutputsNative/test"
+    "test-tools",
+    "test-runtime",
+    "test-scripted"
   ).mkString(";")
 )
 
@@ -422,15 +415,13 @@ lazy val scalalib =
     .in(file("scalalib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(
-      // This build uses Scala 2.11 version 2.11.12 to compile
-      // what appears to be 2.11.0 sources. This yields 114
-      // deprecations. Editing those sources is not an option (long story),
-      // so do not spend compile time looking for the deprecations.
-      // Keep the log file clean so that real issues stand out.
       scalacOptions -= "-deprecation",
       scalacOptions += "-deprecation:false",
       // The option below is needed since Scala 2.12.12.
-      scalacOptions += "-language:postfixOps"
+      scalacOptions += "-language:postfixOps",
+      // The option below is needed since Scala 2.13.0.
+      scalacOptions += "-language:implicitConversions",
+      scalacOptions += "-language:higherKinds"
     )
     .settings(mavenPublishSettings)
     .settings(
@@ -582,10 +573,6 @@ lazy val tests =
     )
     .settings(noPublishSettings)
     .settings(
-      // nativeOptimizerReporter := OptimizerReporter.toDirectory(
-      //   crossTarget.value),
-      // nativeLinkerReporter := LinkerReporter.toFile(
-      //   target.value / "out.dot"),
       testFrameworks ++= Seq(
         new TestFramework("tests.NativeFramework"),
         new TestFramework("com.novocode.junit.JUnitFramework")
@@ -615,10 +602,6 @@ lazy val sandbox =
     .enablePlugins(MyScalaNativePlugin)
     .settings(scalacOptions -= "-Xfatal-warnings")
     .settings(noPublishSettings)
-    .settings(
-      // nativeOptimizerReporter := OptimizerReporter.toDirectory(
-      //   crossTarget.value),
-    )
     .dependsOn(nscplugin % "plugin", allCoreLibs, testInterface % Test)
 
 lazy val testingCompilerInterface =

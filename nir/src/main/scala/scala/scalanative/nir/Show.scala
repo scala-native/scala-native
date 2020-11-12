@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 import scalanative.util.{ShowBuilder, unreachable}
+import java.util.stream.{Stream => JStream}
+import java.util.function.{Function => JFunction, Consumer => JConsumer}
 
 object Show {
   def newBuilder: NirShowBuilder = new NirShowBuilder(new InMemoryShowBuilder)
@@ -33,27 +35,18 @@ object Show {
   def apply(v: Type): String  = { val b = newBuilder; b.type_(v); b.toString }
   def apply(v: Val): String   = { val b = newBuilder; b.val_(v); b.toString }
 
+  type DefnString = (Global, String)
+
   def dump(defns: Seq[Defn], fileName: String): Unit = {
     val pw = new java.io.PrintWriter(fileName)
+
     try {
-      util
-        .partitionBy(defns.filter(_ != null))(_.name)
-        .par
-        .map {
-          case (_, defns) =>
-            defns.collect {
-              case defn if defn != null =>
-                (defn.name, defn.show)
-            }
-        }
-        .seq
-        .flatten
-        .toSeq
-        .sortBy(_._1)
-        .foreach {
-          case (_, shown) =>
-            pw.write(shown)
-            pw.write("\n")
+      defns
+        .filter(_ != null)
+        .sortBy(_.name)
+        .foreach { defn =>
+          pw.write(defn.show)
+          pw.write("\n")
         }
     } finally {
       pw.close()

@@ -137,12 +137,12 @@ object Unmangle {
     }
 
     def readTypes(): Seq[Type] = {
-      val buf = collection.mutable.UnrolledBuffer.empty[Type]
+      val buf = Seq.newBuilder[Type]
       while (peek() != 'E') {
         buf += readType()
       }
       next()
-      buf
+      buf.result()
     }
 
     def readIdent(): String = {

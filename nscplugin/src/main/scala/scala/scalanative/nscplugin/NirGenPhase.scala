@@ -1,23 +1,27 @@
 package scala.scalanative
 package nscplugin
 
-import java.nio.file.Path
+import java.nio.file.{Path => JPath}
+import java.util.stream.{Stream => JStream}
+import java.util.function.{Consumer => JConsumer}
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.scalanative.nir._
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
-import scala.tools.nsc.{util => _, _}
+import scala.tools.nsc.{Global, util => _, _}
 
-abstract class NirGenPhase
+abstract class NirGenPhase[G <: Global with Singleton](val global: G)
     extends PluginComponent
-    with NirGenStat
-    with NirGenExpr
-    with NirGenUtil
-    with NirGenFile
-    with NirGenType
-    with NirGenName
-    with NirCompat {
+    with NirGenStat[G]
+    with NirGenExpr[G]
+    with NirGenUtil[G]
+    with NirGenFile[G]
+    with NirGenType[G]
+    with NirGenName[G]
+    with NirCompat[G] {
+
+  /** Not for use in the constructor body: only initialized afterwards. */
   val nirAddons: NirGlobalAddons {
     val global: NirGenPhase.this.global.type
   }
@@ -94,10 +98,20 @@ abstract class NirGenPhase
           (path, reflectiveInstBuf.toSeq)
       }.toMap
 
-      (files ++ reflectiveInstFiles).par.foreach {
-        case (path, stats) =>
-          genIRFile(path, stats)
-      }
+      val allFiles = files ++ reflectiveInstFiles
+
+      val generateIRFile: JConsumer[(JPath, Seq[Defn])] =
+        new JConsumer[(JPath, Seq[Defn])] {
+          override def accept(t: (JPath, Seq[Defn])): Unit = {
+            val (path, stats) = t
+            genIRFile(path, stats)
+          }
+        }
+
+      JStream
+        .of(allFiles.toSeq: _*)
+        .parallel()
+        .forEach(generateIRFile)
     }
   }
 

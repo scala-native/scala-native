@@ -25,7 +25,7 @@ final class Inet4Address private[net] (ipAddress: Array[Byte], host: String)
   }
 
   override def isMCGlobal(): Boolean = {
-    if (!isMulticastAddress) return false
+    if (!isMulticastAddress()) return false
 
     val address = InetAddress.bytesToInt(ipAddress, 0)
 

@@ -115,7 +115,7 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
 
   private def loadBootstrapper(reporter: Reporter): Option[Bootstrapper] = {
     val bootstrapperName =
-      taskDef.fullyQualifiedName + "$scalanative$junit$bootstrapper$"
+      taskDef.fullyQualifiedName() + "$scalanative$junit$bootstrapper$"
 
     try {
       val b = Reflect

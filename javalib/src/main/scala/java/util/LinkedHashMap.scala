@@ -56,7 +56,7 @@ class LinkedHashMap[K, V] private (inner: mutable.LinkedHashMap[AnyRef, V],
       }
     }
     val iter = entrySet().iterator()
-    if (iter.hasNext && removeEldestEntry(iter.next()))
+    if (iter.hasNext() && removeEldestEntry(iter.next()))
       iter.remove()
     oldValue
   }

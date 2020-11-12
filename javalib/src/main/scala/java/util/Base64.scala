@@ -440,7 +440,7 @@ object Base64 {
         currentLine += 4
         if (lineSeparator.length > 0 && lineLength > 0 &&
             currentLine == lineLength && dst.hasRemaining) {
-          lineSeparator.foreach(dst.put(_))
+          lineSeparator.foreach(dst.put)
           currentLine = 0
         }
       }

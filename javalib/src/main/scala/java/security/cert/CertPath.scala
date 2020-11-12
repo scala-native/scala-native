@@ -9,8 +9,8 @@ abstract class CertPath protected (`type`: String) {
   override def equals(other: Any): Boolean =
     other match {
       case otherRef: AnyRef if this eq otherRef => true
-      case otherCp: CertPath if otherCp.getType.equals(`type`) =>
-        getCertificates().equals(otherCp.getCertificates)
+      case otherCp: CertPath if otherCp.getType().equals(`type`) =>
+        getCertificates().equals(otherCp.getCertificates())
       case _ => false
     }
 }

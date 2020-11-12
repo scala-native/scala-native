@@ -56,7 +56,7 @@ class RE2 private {
   private val machine = new ArrayList[Machine]()
 
   // This is visible for testing.
-  def this(expr: String) {
+  def this(expr: String) = {
     this()
     val re2 = RE2.compile(expr)
     // Copy everything.
@@ -76,7 +76,7 @@ class RE2 private {
            prog: Prog,
            numSubexp: Int,
            longest: Boolean,
-           namedCaps: Map[String, Int]) {
+           namedCaps: Map[String, Int]) = {
     this()
     this.expr = expr
     this.prog = prog
@@ -759,16 +759,16 @@ object RE2 {
   def compileImpl(expr: String, mode: Int, longest: Boolean): RE2 = {
     var re        = Parser.parse(expr, mode)
     val maxCap    = re.maxCap() // (may shrink during simplify)
-    val namedCaps = re.namedCaps
+    val namedCaps = re.namedCaps()
     re = Simplify.simplify(re)
     val prog          = Compiler.compileRegexp(re)
     val re2           = new RE2(expr, prog, maxCap, longest, namedCaps)
     val prefixBuilder = new java.lang.StringBuilder()
     re2.prefixComplete = prog.prefix(prefixBuilder)
-    re2.prefix = prefixBuilder.toString()
+    re2.prefix = prefixBuilder.toString
     re2.prefixUTF8 = re2.prefix.getBytes("UTF-8")
 
-    if (!re2.prefix.isEmpty()) {
+    if (!re2.prefix.isEmpty) {
       re2.prefixRune = re2.prefix.codePointAt(0)
     }
     re2
