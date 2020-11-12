@@ -62,9 +62,8 @@ final class _Class[A](val rawty: RawPtr) {
   def isInstance(obj: Object): scala.Boolean =
     is(obj.getClass.asInstanceOf[_Class[_]].ty, ty)
 
-  @alwaysinline private def is(cls: Class[_]): Boolean = {
-    rawty == toRawType(cls)
-  }
+  @alwaysinline private def is(cls: Class[_]): Boolean =
+    this eq cls.asInstanceOf[_Class[A]]
 
   private def is(left: Ptr[Type], right: Ptr[Type]): Boolean =
     // This replicates the logic of the compiler-generated instance check
