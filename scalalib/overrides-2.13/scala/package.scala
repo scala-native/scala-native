@@ -97,9 +97,8 @@ package object scala {
 	  if (s.nonEmpty) Some((s.head, s.tail)) else None
   }
 
-  // It cannot be lazy, because of Vector <-> System.properties cyclic dependency in SN implementation
   type Vector[+A] = scala.collection.immutable.Vector[A]
-  val Vector = scala.collection.immutable.Vector
+  lazy val Vector = scala.collection.immutable.Vector
 
   type StringBuilder = scala.collection.mutable.StringBuilder
   lazy val StringBuilder = scala.collection.mutable.StringBuilder
