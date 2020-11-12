@@ -2,19 +2,15 @@ package scala
 
 import org.junit.Test
 import org.junit.Assert._
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo.scalaVersion
 
 class HashCodeTest {
   case class MyData(string: String, num: Int)
 
-  def scala212orOlder: Boolean =
-    ScalaNativeBuildInfo.scalaVersion
-      .split('.')
-      .take(3)
-      .map(_.toInt) match {
-      case Array(2, n, _) if n <= 12 => true
-      case _                         => false
-    }
+  def scala212orOlder: Boolean = {
+    scalaVersion.startsWith("2.11.") ||
+    scalaVersion.startsWith("2.12.")
+  }
 
   @Test def hashCodeOfStringMatchesScalaJVM(): Unit = {
     assertTrue("hello".hashCode == 99162322)
