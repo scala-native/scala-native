@@ -91,7 +91,11 @@ object System {
   var err: PrintStream =
     new PrintStream(new FileOutputStream(FileDescriptor.err))
 
-  private val systemProperties = loadProperties()
+  /* Laziness for this val was enforced due to changes in Scala 2.13 Vector implementation
+   * Vector uses system property to define some of its default parameters and to allow user to tune it.
+   * This problem exists because current implementation of java.lang.System depends on Scala collections,
+   * this problem should be addressed in the future */
+  private lazy val systemProperties = loadProperties()
   Platform.setOSProps(new CFuncPtr2[CString, CString, Unit] {
     def apply(key: CString, value: CString): Unit =
       systemProperties.setProperty(fromCString(key), fromCString(value))
