@@ -29,8 +29,7 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   def isEmpty(): Boolean =
     inner.isEmpty
 
-  def keys(): ju.Enumeration[K] =
-    Collections.enumeration(keySet())
+  def keys(): ju.Enumeration[K] = Collections.enumeration(keySet())
 
   def elements(): ju.Enumeration[V] =
     Collections.enumeration(values())
@@ -83,7 +82,7 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
 
   override def toString(): String =
     inner.iterator
-      .map(kv => kv._1.inner.toString + "=" + kv._2)
+      .map(kv => "" + kv._1.inner + "=" + kv._2)
       .mkString("{", ", ", "}")
 
   def keySet(): ju.Set[K] = {

@@ -49,7 +49,7 @@ object AbstractMap {
       entryHashCode(this)
 
     override def toString(): String =
-      getKey().toString + "=" + getValue()
+      "" + getKey() + "=" + getValue()
   }
 
   class SimpleImmutableEntry[K, V](key: K, value: V)
@@ -73,7 +73,7 @@ object AbstractMap {
       entryHashCode(this)
 
     override def toString(): String =
-      getKey().toString + "=" + getValue()
+      "" + getKey() + "=" + getValue()
   }
 }
 

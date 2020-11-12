@@ -52,7 +52,7 @@ private final class CompositeStream[T](substreams: Seq[Stream[T]],
     closeHandler.foreach(_.run())
   }
   override def isParallel(): Boolean = false
-  override def iterator: Iterator[T] =
+  override def iterator(): Iterator[T] =
     new Iterator[T] {
       private val its                         = substreams.iterator
       private var currentIt: Iterator[_ <: T] = EmptyIterator

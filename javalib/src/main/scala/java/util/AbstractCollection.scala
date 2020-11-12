@@ -25,7 +25,7 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
           .asInstanceOf[Array[T]]
 
     val iter = iterator()
-    for (i <- Range(0, size())) toFill(i) = iter.next().asInstanceOf[T]
+    for (i <- 0 until size()) toFill(i) = iter.next().asInstanceOf[T]
     if (toFill.length > size())
       toFill(size()) = null.asInstanceOf[T]
     toFill

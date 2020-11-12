@@ -102,8 +102,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     this.localport = fetchLocalPort(family).getOrElse {
       throw new BindException(
-        "Couldn't bind to address: " + addr
-          .getHostAddress() + " on port: " + port)
+        "Couldn't bind to address: " + addr.getHostAddress() +
+          " on port: " + port)
     }
   }
 
