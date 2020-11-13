@@ -47,16 +47,21 @@ jobs:
     strategy:
       matrix:
         targetPlatform: [ library ]
+
     steps:
       - uses: actions/checkout@v1
-      - name: Load cached images
-        run: |
-          if [[ -d $HOME/docker ]];
-          then
-            ls $HOME/docker/*.tar.gz | \
-            xargs -I {file} sh -c "zcat {file} | docker load"; \
-            rm -rf $HOME/docker; \
-          fi
+      - name: Load cached image
+#        uses: actions/cache@v1
+#        with:
+#          path: ~/docker
+#          key: docker-image-${{matrix.targetPlatform}}-${{ hashFiles('ci-docker/Dockerfile') }}-
+#      - name: Load cached images
+#        if: steps.load-cached-image.outputs.cache-hit == 'true'
+#        run: |
+#            ls $HOME/docker/*.tar.gz | \
+#            xargs -I {file} sh -c "zcat {file} | docker load"; \
+#            rm -rf $HOME/docker; \
+#          fi
       - name: Run multiarch register
         run: "docker run
           --rm
@@ -64,6 +69,7 @@ jobs:
           multiarch/qemu-user-static:register;"
 
       - name: Build image
+        if: steps.load-cached-image.outputs.cache-hit != 'true'
         run: "docker build
           --cache-from scala-native-testing:linux-${{ matrix.targetPlatform }}
           -t scala-native-testing:linux-${{ matrix.targetPlatform }}
@@ -81,7 +87,7 @@ jobs:
         scalaVersion: [ 2.13.3 ] #, 2.12.2, 2.11.12 ]
     steps:
       - uses: actions/checkout@v2
-      - run: sbt "++ $TRAVIS_SCALA_VERSION -v" "-no-colors" "-J-Xmx3G" test-tools;
+      - run: sbt "++ ${{ matrix.scalaVersion }} -v" "-no-colors" "-J-Xmx3G" test-tools;
 
   test-runtime:
     name: Test runtime
