@@ -48,6 +48,7 @@ jobs:
       matrix:
         targetPlatform: [ library ]
     steps:
+      - uses: actions/checkout@v1
       - name: Load cached images
         run: |
           if [[ -d $HOME/docker ]];
