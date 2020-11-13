@@ -87,7 +87,7 @@ jobs:
 
   test-runtime:
     name: Test runtime on Scala ${{ matrix.scalaVersion }} and ${{ matrix.os }}
-    runs-on: {{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     needs: [build-image, test-tools]
     strategy:
         matrix:
