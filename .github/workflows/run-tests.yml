@@ -123,7 +123,7 @@ jobs:
 
   test-runtime-no-opt:
     name: Test not optimized runtime on Scala ${{ matrix.scalaVersion }} and ${{ matrix.os }}
-    runs-on: { { matrix.os } }
+    runs-on: ${{ matrix.os }}
     needs: [ build-image, test-tools ]
     strategy:
       matrix:
@@ -149,7 +149,7 @@ jobs:
 
   test-scripted:
     name: Test scripted on Scala ${{ matrix.scalaVersion }} and ${{ matrix.os }}
-    runs-on: { { matrix.os } }
+    runs-on: ${{ matrix.os }}
     needs: [build-image, test-tools]
     strategy:
       matrix:
