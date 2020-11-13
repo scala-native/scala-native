@@ -57,19 +57,19 @@ jobs:
             rm -rf $HOME/docker; \
           fi
       - name: Run multiarch register
-        run: docker run \
-          --rm \
-          --privileged \
-          multiarch/qemu-user-static:register;
+        run: "docker run
+          --rm
+          --privileged
+          multiarch/qemu-user-static:register;"
 
       - name: Build image
-        run: docker build \
-          --cache-from scala-native-testing:linux-${{ matrix.targetPlatform }} \
-          -t scala-native-testing:linux-${{ matrix.targetPlatform }} \
-          --build-arg TARGET_DOCKER_PLATFORM=${{ matrix.targetPlatform }} \
-          --build-arg HOST_ARCHITECTURE=amd64 \
-          --cpuset-cpus=0 \
-          ci-docker;
+        run: "docker build
+          --cache-from scala-native-testing:linux-${{ matrix.targetPlatform }}
+          -t scala-native-testing:linux-${{ matrix.targetPlatform }}
+          --build-arg TARGET_DOCKER_PLATFORM=${{ matrix.targetPlatform }}
+          --build-arg HOST_ARCHITECTURE=amd64
+          --cpuset-cpus=0
+          ci-docker"
 
   test-tools:
     name: Test tools
