@@ -4,6 +4,7 @@ package nscplugin
 import scala.collection.mutable
 import scala.reflect.internal.Flags._
 import scala.scalanative.nir._
+import scala.tools.nsc.Properties
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc
@@ -19,6 +20,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
   val reflectiveInstantiationInfo =
     mutable.UnrolledBuffer.empty[ReflectiveInstantiationBuffer]
+
+  protected val isScala211 = Properties.versionNumberString.startsWith("2.11")
 
   def isStaticModule(sym: Symbol): Boolean =
     sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
@@ -588,6 +591,52 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           ()
       }
 
+    def genJavaDefaultMethodBody(dd: DefDef): Seq[nir.Inst] = {
+      val fresh = Fresh()
+      val buf   = new ExprBuffer()(fresh)
+
+      implicit val pos: nir.Position = dd.pos
+
+      val sym                    = dd.symbol
+      val forwardeeClassFullName = sym.owner.fullName + "$class"
+
+      val forwardeeClassSym = findMemberFromRoot(
+        TermName(forwardeeClassFullName))
+
+      val forwardeeMethodSym = forwardeeClassSym.info
+        .member(sym.name)
+        .suchThat { s =>
+          s.isMethod &&
+          s.tpe.params.size == sym.tpe.params.size + 1 &&
+          s.tpe.params.head.tpe =:= sym.owner.toTypeConstructor &&
+          s.tpe.params.tail.zip(sym.tpe.params).forall {
+            case (sParam, symParam) =>
+              sParam.tpe =:= symParam.tpe
+          }
+        }
+
+      val forwardeeName =
+        Val.Global(genMethodName(forwardeeMethodSym), Type.Ptr)
+      val forwardeeSig = genMethodSig(forwardeeMethodSym)
+
+      val Type.Function(paramtys, retty) = forwardeeSig
+
+      val params = paramtys.map(ty => Val.Local(fresh(), ty))
+      buf.label(fresh(), params)
+
+// Reviewer(s): The genFuncPtrExternForwarder() code boxes the parameters.
+//           Does that need to be done here, since this is calling
+//           Scala code? Since it works, I think not, but
+//           appreciate confirmation. "Think not" is not good enough for
+//           release code.
+
+      val res        = buf.call(forwardeeSig, forwardeeName, params, Next.None)
+      val unboxedRes = buf.toExtern(retty, res)
+      buf.ret(unboxedRes)
+
+      buf.toSeq
+    }
+
     def genMethod(dd: DefDef): Unit = {
       val fresh = Fresh()
       val env   = new MethodEnv(fresh)
@@ -609,6 +658,16 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val isStatic = owner.isExternModule || isImplClass(owner)
 
         dd.rhs match {
+          case EmptyTree
+              if (isScala211 &&
+                sym.hasAnnotation(JavaDefaultMethodAnnotation)) =>
+            scoped(
+              curMethodSig := sig
+            ) {
+              val body = genJavaDefaultMethodBody(dd)
+              buf += Defn.Define(attrs, name, sig, body)
+            }
+
           case EmptyTree =>
             buf += Defn.Declare(attrs, name, sig)
 
