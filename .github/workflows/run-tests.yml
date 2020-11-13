@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+
 jobs:
   build-plugin:
     name: Build plugin artifacts
@@ -106,7 +107,7 @@ jobs:
       - uses: actions/checkout@v1
 
       - name: Test main grid
-        run: docker run \
+        run: "docker run \
           -v $HOME/.ivy2:/home/scala-native/.ivy2 \
           -v $HOME/.sbt:/home/scala-native/.sbt \
           -v $PWD:/home/scala-native/scala-native \
@@ -116,7 +117,7 @@ jobs:
           -e SCALANATIVE_OPTIMIZE=true \
           -e TEST_COMMAND=test-runtime \
           -it \
-          scala-native-testing:linux-${{ matrix.targetPlatform }} \
+          scala-native-testing:linux-${{ matrix.targetPlatform }}"
 
   test-runtime-no-opt:
     name: Test not optimized runtime on Scala ${{ matrix.scalaVersion }} and ${{ matrix.os }}
@@ -133,8 +134,7 @@ jobs:
       - uses: actions/checkout@v1
 
       - name: Test non optimized
-        run: |
-          docker run \
+        run: "docker run \
           -v $HOME/.ivy2:/home/scala-native/.ivy2 \
           -v $HOME/.sbt:/home/scala-native/.sbt \
           -v $PWD:/home/scala-native/scala-native \
@@ -144,7 +144,7 @@ jobs:
           -e SCALANATIVE_OPTIMIZE=false \
           -e TEST_COMMAND=test-runtime \
           -it \
-          scala-native-testing:linux-${{ matrix.targetPlatform }}
+          scala-native-testing:linux-${{ matrix.targetPlatform }}"
 
   test-scripted:
     name: Test scripted on Scala ${{ matrix.scalaVersion }} and ${{ matrix.os }}
@@ -156,7 +156,7 @@ jobs:
         os: [ ubuntu-latest ]
     steps:
       - uses: actions/checkout@v1
-      - run: docker run \
+      - run: "docker run \
         -v $HOME/.ivy2:/home/scala-native/.ivy2 \
         -v $HOME/.sbt:/home/scala-native/.sbt \
         -v $PWD:/home/scala-native/scala-native \
@@ -166,4 +166,4 @@ jobs:
         -e SCALANATIVE_OPTIMIZE=true \
         -e TEST_COMMAND=test-scripted \
         -it \
-        scala-native-testing:linux-${{ matrix.targetPlatform }}
+        scala-native-testing:linux-${{ matrix.targetPlatform }}"
