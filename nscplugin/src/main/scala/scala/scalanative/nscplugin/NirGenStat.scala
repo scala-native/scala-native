@@ -591,19 +591,18 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           ()
       }
 
-    def genJavaDefaultMethodBody(dd: DefDef): Seq[nir.Inst] = {
+    private def genJavaDefaultMethodBody(dd: DefDef): Seq[nir.Inst] = {
       val fresh = Fresh()
       val buf   = new ExprBuffer()(fresh)
 
       implicit val pos: nir.Position = dd.pos
 
-      val sym                    = dd.symbol
-      val forwardeeClassFullName = sym.owner.fullName + "$class"
+      val sym               = dd.symbol
+      val implClassFullName = sym.owner.fullName + "$class"
 
-      val forwardeeClassSym = findMemberFromRoot(
-        TermName(forwardeeClassFullName))
+      val implClassSym = findMemberFromRoot(TermName(implClassFullName))
 
-      val forwardeeMethodSym = forwardeeClassSym.info
+      val implMethodSym = implClassSym.info
         .member(sym.name)
         .suchThat { s =>
           s.isMethod &&
@@ -615,24 +614,16 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           }
         }
 
-      val forwardeeName =
-        Val.Global(genMethodName(forwardeeMethodSym), Type.Ptr)
-      val forwardeeSig = genMethodSig(forwardeeMethodSym)
+      val implName = Val.Global(genMethodName(implMethodSym), Type.Ptr)
+      val implSig  = genMethodSig(implMethodSym)
 
-      val Type.Function(paramtys, retty) = forwardeeSig
+      val Type.Function(paramtys, retty) = implSig
 
       val params = paramtys.map(ty => Val.Local(fresh(), ty))
       buf.label(fresh(), params)
 
-// Reviewer(s): The genFuncPtrExternForwarder() code boxes the parameters.
-//           Does that need to be done here, since this is calling
-//           Scala code? Since it works, I think not, but
-//           appreciate confirmation. "Think not" is not good enough for
-//           release code.
-
-      val res        = buf.call(forwardeeSig, forwardeeName, params, Next.None)
-      val unboxedRes = buf.toExtern(retty, res)
-      buf.ret(unboxedRes)
+      val res = buf.call(implSig, implName, params, Next.None)
+      buf.ret(res)
 
       buf.toSeq
     }
@@ -681,6 +672,12 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case rhs if owner.isExternModule =>
             checkExplicitReturnTypeAnnotation(dd)
             genExternMethod(attrs, name, sig, rhs)
+
+          case rhs
+              if (isScala211 &&
+                sym.hasAnnotation(JavaDefaultMethodAnnotation) &&
+                (!sym.owner.isImplClass)) =>
+          // do not emit, not even as abstract
 
           case rhs =>
             scoped(

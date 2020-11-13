@@ -31,5 +31,3 @@ class DefaultMethodsTest {
     assertTrue(reversed.compare(5, 7) > 0)
   }
 }
-
-// -30- //
