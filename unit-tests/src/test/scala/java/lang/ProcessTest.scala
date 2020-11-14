@@ -159,38 +159,50 @@ class ProcessTest {
   }
 
   @Test def waitForWithTimeoutCompletes(): Unit = {
-    val proc = new ProcessBuilder("sleep", "0.001").start()
+    val proc = new ProcessBuilder("sleep", "0.1").start()
 
     assertTrue("process should have exited but timed out",
                proc.waitFor(1, TimeUnit.SECONDS))
     assertEquals(0, proc.exitValue)
   }
 
-  // Design Note:
-  //  The timing on the next few tests is pretty tight and subject
-  //  to race conditions. The process is intended to take only 5 milliseconds
-  //  overall. The waitFor(1. TimeUnit.MILLISECONDS) assumes that the
-  //  process has not lived its lifetime by the time the assertTrue()
-  //  executes, a race condition.  Just because two instructions are
-  //  right next to each other, does not mean they execute without
-  //  intervening interruption or significant elapsed time.
+  // Design Notes:
+  //   1) The timing on the next few tests is pretty tight and subject
+  //      to race conditions.
   //
-  //  The normal solution would be to increase the expected lifetime
-  //  of process. The short 5 millisecond delay has already caught
-  //  at least one Clang bug, so let it be until the race trips up
-  //  someone else.
+  //      The waitFor(100, TimeUnit.MILLISECONDS) assumes that the
+  //      process has not lived its lifetime by the time it
+  //      executes, a race condition.  Just because two instructions are
+  //      right next to each other, does not mean they execute without
+  //      intervening interruption or significant elapsed time.
+  //
+  //      This section has been hand tweaked for the __slow__ conditions
+  //      of Travis CI. It may still show intermittent failures, requiring
+  //      re-tweaking.
+  //
+  //   2) The code below has zombie process mitigation code.  That is,
+  //      It assumes a competent destroyForcibly() and attempts to force
+  //      processes which _should_have_ exited on their own to do so.
+  //
+  //      A number of tests in this file currently have the potential to
+  //      strand zombie processes.  They were not fixed on this pass in
+  //      order to keep changes minimal and the focus on timing.
 
   @Test def waitForWithTimeoutTimesOut(): Unit = {
-    val proc = new ProcessBuilder("sleep", "0.005").start()
+    val proc = new ProcessBuilder("sleep", "2.0").start()
 
     assertTrue("process should have timed out but exited",
-               !proc.waitFor(1, TimeUnit.MILLISECONDS))
+               !proc.waitFor(100, TimeUnit.MILLISECONDS))
     assertTrue("process should be alive", proc.isAlive)
-    proc.waitFor(1, TimeUnit.SECONDS) // release resources
+
+    // await exit code to release resources. Attempt to force
+    // hanging processes to exit.
+    if (!proc.waitFor(3, TimeUnit.SECONDS))
+      proc.destroyForcibly()
   }
 
   @Test def destroy(): Unit = {
-    val proc = new ProcessBuilder("sleep", "2.005").start()
+    val proc = new ProcessBuilder("sleep", "2.0").start()
 
     assertTrue("process should be alive", proc.isAlive)
     proc.destroy()
@@ -200,7 +212,7 @@ class ProcessTest {
   }
 
   @Test def destroyForcibly(): Unit = {
-    val proc = new ProcessBuilder("sleep", "0.005").start()
+    val proc = new ProcessBuilder("sleep", "2.0").start()
 
     assertTrue("process should be alive", proc.isAlive)
     val p = proc.destroyForcibly()
