@@ -21,7 +21,7 @@ jobs:
       - name: Calculate binary version
         run: |
           version=${{matrix.scala}}
-          echo "binary_version=${version%.*}" >> $GITHUB_ENV
+          echo "binary-version=${version%.*}" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v2
@@ -30,7 +30,7 @@ jobs:
             ~/.cache/coursier
             ~/.ivy2/cache
             ~/.sbt/boot
-          key: ${{ runner.os }}-deps-${{ env.binary_version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" test-tools
@@ -39,26 +39,26 @@ jobs:
     name: Build image
     runs-on: ubuntu-latest
     outputs:
-      image-version: ${{ steps.read_dockerfile.outputs.image_version }}
+      image-version: ${{ steps.read-dockerfile.outputs.image-version }}
     strategy:
       matrix:
-        targetPlatform: [ library ]
+        target-platrform: [ library ]
 
     steps:
       - uses: actions/checkout@v2
       - uses: satackey/action-docker-layer-caching@v0.0.8
         continue-on-error: true
       - name: Check shall build new image
-        id: read_dockerfile
+        id: read-dockerfile
         run: |
           version=$(cat ./ci-docker/Dockerfile | grep "#version:" | head -1 | awk '{print $2}')
-          imageID=$(docker images scala-native-testing/linux-${{ matrix.targetPlatform }}:${version} -q 2> /dev/null)
+          imageID=$(docker images scala-native-testing/linux-${{ matrix.target-platrform }}:${version} -q 2> /dev/null)
 
-          echo "::set-output name=image_version::${version}"
-          echo "::set-output name=image_id::${imageID}"
+          echo "::set-output name=image-version::${version}"
+          echo "::set-output name=image-id::${imageID}"
 
       - name: Build the Docker image
-        if: ${{ steps.read_dockerfile.outputs.image_id }} == ""
+        if: ${{ steps.read-dockerfile.outputs.image-id }} == ""
         run: "
         docker run \
          --rm \
@@ -66,8 +66,8 @@ jobs:
          multiarch/qemu-user-static:register;
 
         docker build
-          -t scala-native-testing/linux-${{ matrix.targetPlatform }}:${{ steps.read_dockerfile.outputs.image_version }} \
-          --build-arg TARGET_DOCKER_PLATFORM=${{ matrix.targetPlatform }} \
+          -t scala-native-testing/linux-${{ matrix.target-platrform }}:${{ steps.read-dockerfile.outputs.image-version }} \
+          --build-arg TARGET_DOCKER_PLATFORM=${{ matrix.target-platrform }} \
           --build-arg HOST_ARCHITECTURE=amd64 \
           --cpuset-cpus=0 \
           ci-docker"
@@ -81,26 +81,26 @@ jobs:
       fail-fast: false
       matrix:
         scala: [2.13.3, 2.12.12, 2.11.12]
-        buildMode: [ debug , release-fast ]
+        build-mode: [ debug , release-fast ]
         gc: [ boehm, immix, commix ]
         os: [ ubuntu-latest ]
-        targetPlatform: [ library ]
+        target-platrform: [ library ]
         exclude:
           - scala: 2.13.3
-            buildMode: debug
+            build-mode: debug
             gc: boehm
             os: ubuntu-latest
-            targetPlatform: library
+            target-platrform: library
           - scala: 2.12.12
-            buildMode: debug
+            build-mode: debug
             gc: immix
             os: ubuntu-latest
-            targetPlatform: library
+            target-platrform: library
           - scala: 2.11.12
-            buildMode: debug
+            build-mode: debug
             gc: commix
             os: ubuntu-latest
-            targetPlatform: library
+            target-platrform: library
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
@@ -109,7 +109,7 @@ jobs:
       - name: Calculate binary version
         run: |
           version=${{ matrix.scala }}
-          echo "binary_version=${version%.*}" >> $GITHUB_ENV
+          echo "binary-version=${version%.*}" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v2
@@ -118,7 +118,7 @@ jobs:
             ~/.cache/coursier
             ~/.ivy2/cache
             ~/.sbt/boot
-          key: ${{ runner.os }}-deps-${{ env.binary_version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
       - uses: satackey/action-docker-layer-caching@v0.0.8
         with:
@@ -127,13 +127,13 @@ jobs:
 
       - name: Run tests
         env:
-          SCALANATIVE_MODE: ${{ matrix.buildMode }}
+          SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALA_VERSION: ${{ matrix.scala}}
           SCALANATIVE_OPTIMIZE: true
           TEST_COMMAND: test-runtime
-          TARGET_DOCKER_PLATFORM: ${{ matrix.targetPlatform }}
-        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image_version }}
+          TARGET_DOCKER_PLATFORM: ${{ matrix.target-platrform }}
+        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image-version }}
 
   test-runtime-no-opt:
     name: Test runtime no-opt
@@ -143,10 +143,10 @@ jobs:
       fail-fast: false
       matrix:
         scala: [ 2.13.3, 2.12.12, 2.11.12 ]
-        buildMode: [ debug, release-fast ]
+        build-mode: [ debug, release-fast ]
         gc: [ immix ]
         os: [ ubuntu-latest ]
-        targetPlatform: [ library ]
+        target-platrform: [ library ]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
@@ -155,7 +155,7 @@ jobs:
       - name: Calculate binary version
         run: |
           version=${{ matrix.scala }}
-          echo "binary_version=${version%.*}" >> $GITHUB_ENV
+          echo "binary-version=${version%.*}" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v2
@@ -164,7 +164,7 @@ jobs:
             ~/.cache/coursier
             ~/.ivy2/cache
             ~/.sbt/boot
-          key: ${{ runner.os }}-deps-${{ env.binary_version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
       - uses: satackey/action-docker-layer-caching@v0.0.8
         with:
@@ -173,13 +173,13 @@ jobs:
 
       - name: Run tests
         env:
-          SCALANATIVE_MODE: ${{ matrix.buildMode }}
+          SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALA_VERSION: ${{ matrix.scala}}
           SCALANATIVE_OPTIMIZE: false
           TEST_COMMAND: test-runtime
-          TARGET_DOCKER_PLATFORM: ${{ matrix.targetPlatform }}
-        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image_version }}
+          TARGET_DOCKER_PLATFORM: ${{ matrix.target-platrform }}
+        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image-version }}
 
   test-scripted:
     name: Test scripted
@@ -189,10 +189,10 @@ jobs:
       fail-fast: false
       matrix:
         scala: [2.13.3, 2.12.12, 2.11.12]
-        buildMode: [ release-fast ]
+        build-mode: [ release-fast ]
         gc: [ immix ]
         os: [ ubuntu-latest ]
-        targetPlatform: [ library ]
+        target-platrform: [ library ]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
@@ -201,7 +201,7 @@ jobs:
       - name: Calculate binary version
         run: |
           version=${{ matrix.scala }}
-          echo "binary_version=${version%.*}" >> $GITHUB_ENV
+          echo "binary-version=${version%.*}" >> $GITHUB_ENV
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
@@ -209,7 +209,7 @@ jobs:
             ~/.cache/coursier
             ~/.ivy2/cache
             ~/.sbt/boot
-          key: ${{ runner.os }}-deps-${{ env.binary_version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
       - uses: satackey/action-docker-layer-caching@v0.0.8
         with:
@@ -218,10 +218,10 @@ jobs:
 
       - name: Run tests
         env:
-          SCALANATIVE_MODE: ${{ matrix.buildMode }}
+          SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALA_VERSION: ${{ matrix.scala}}
           SCALANATIVE_OPTIMIZE: true
           TEST_COMMAND: test-scripted
-          TARGET_DOCKER_PLATFORM: ${{ matrix.targetPlatform }}
-        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image_version }}
+          TARGET_DOCKER_PLATFORM: ${{ matrix.target-platrform }}
+        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image-version }}
