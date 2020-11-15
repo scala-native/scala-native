@@ -35,10 +35,48 @@ jobs:
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" test-tools
 
+  build-image:
+    name: Build image
+    runs-on: ubuntu-latest
+    outputs:
+      image-version: ${{ steps.read_dockerfile.outputs.image_version }}
+    strategy:
+      matrix:
+        targetPlatform: [ library ]
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: satackey/action-docker-layer-caching@v0.0.8
+        continue-on-error: true
+      - name: Check shall build new image
+        id: read_dockerfile
+        run: |
+          version=$(cat ./ci-docker/Dockerfile | grep "#version:" | head -1 | awk '{print $2}')
+          imageID=$(docker images scala-native-testing/linux-${{ matrix.targetPlatform }}:${version} -q 2> /dev/null)
+
+          echo "::set-output name=image_version::${version}"
+          echo "::set-output name=image_id::${imageID}"
+
+      - name: Build the Docker image
+        if: ${{ steps.read_dockerfile.outputs.image_id }} == ""
+        run: "
+        docker run \
+         --rm \
+         --privileged \
+         multiarch/qemu-user-static:register;
+
+        docker build
+          -t scala-native-testing/linux-${{ matrix.targetPlatform }}:${{ steps.read_dockerfile.outputs.image_version }} \
+          --build-arg TARGET_DOCKER_PLATFORM=${{ matrix.targetPlatform }} \
+          --build-arg HOST_ARCHITECTURE=amd64 \
+          --cpuset-cpus=0 \
+          ci-docker"
+
+
   test-runtime:
     name: Test runtime
     runs-on: ${{ matrix.os }}
-    needs: [tests-tools]
+    needs: [tests-tools, build-image]
     strategy:
       fail-fast: false
       matrix:
@@ -83,6 +121,8 @@ jobs:
           key: ${{ runner.os }}-deps-${{ env.binary_version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
       - uses: satackey/action-docker-layer-caching@v0.0.8
+        with:
+          skip-save: true
         continue-on-error: true
 
       - name: Run tests
@@ -93,7 +133,7 @@ jobs:
           SCALANATIVE_OPTIMIZE: true
           TEST_COMMAND: test-runtime
           TARGET_DOCKER_PLATFORM: ${{ matrix.targetPlatform }}
-        run: ./ci-docker/run-test-gha.sh
+        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image_version }}
 
   test-runtime-no-opt:
     name: Test runtime no-opt
@@ -127,6 +167,8 @@ jobs:
           key: ${{ runner.os }}-deps-${{ env.binary_version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
       - uses: satackey/action-docker-layer-caching@v0.0.8
+        with:
+          skip-save: true
         continue-on-error: true
 
       - name: Run tests
@@ -137,7 +179,7 @@ jobs:
           SCALANATIVE_OPTIMIZE: false
           TEST_COMMAND: test-runtime
           TARGET_DOCKER_PLATFORM: ${{ matrix.targetPlatform }}
-        run: ./ci-docker/run-test-gha.sh
+        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image_version }}
 
   test-scripted:
     name: Test scripted
@@ -170,6 +212,8 @@ jobs:
           key: ${{ runner.os }}-deps-${{ env.binary_version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
       - uses: satackey/action-docker-layer-caching@v0.0.8
+        with:
+          skip-save: true
         continue-on-error: true
 
       - name: Run tests
@@ -180,4 +224,4 @@ jobs:
           SCALANATIVE_OPTIMIZE: true
           TEST_COMMAND: test-scripted
           TARGET_DOCKER_PLATFORM: ${{ matrix.targetPlatform }}
-        run: ./ci-docker/run-test-gha.sh
+        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image_version }}
