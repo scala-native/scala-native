@@ -60,5 +60,3 @@ class IteratorTest {
     assertEquals(elemsList.drop(2), builder2.result())
   }
 }
-
-// -30- //
