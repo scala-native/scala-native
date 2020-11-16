@@ -147,7 +147,6 @@ trait Map[K, V] {
 }
 
 object Map {
-
   trait Entry[K, V] {
     def getKey(): K
     def getValue(): V
@@ -155,5 +154,4 @@ object Map {
     def equals(o: Any): Boolean
     def hashCode(): Int
   }
-
 }
