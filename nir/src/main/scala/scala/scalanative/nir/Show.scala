@@ -3,6 +3,7 @@ package nir
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalanative.io.VirtualDirectory
@@ -53,7 +54,7 @@ object Show {
 
     def dumpChunk(range: Range, chunkId: Int) = Future {
       write(Paths.get(s"$id-$chunkId.hnir")) { writer =>
-        new NirShowBuilder(new FileShowBuilder(writer))
+        new NirShowBuilder(new FileShowBuilder(new SafeTextWriter(writer)))
           .defns_(sortedDefnsView.slice(range.start, range.last + 1))
       }.toAbsolutePath
     }
@@ -64,6 +65,28 @@ object Show {
           .map((dumpChunk _).tupled)
       }
       .map(merge(_, Paths.get(s"$id.hnir")))
+  }
+
+  private class SafeTextWriter(private val underlying: java.io.Writer)
+      extends java.io.Writer {
+    private def unsafeChar(c: Char) = c.isSurrogate
+    override def write(cbuf: Array[Char], off: Int, len: Int): Unit = {
+      val view = cbuf.view.take(len)
+      @tailrec
+      def loop(from: Int): Unit = {
+        val unsafeIdx = view.indexWhere(unsafeChar, from)
+        if (unsafeIdx < 0) {
+          underlying.write(cbuf, from, (len - from).max(0))
+        } else {
+          underlying.write(cbuf, from, unsafeIdx - from)
+          underlying.write(s"\\u${cbuf(unsafeIdx).toInt}")
+          loop(unsafeIdx + 1)
+        }
+      }
+      loop(off)
+    }
+    override def flush(): Unit = underlying.flush()
+    override def close(): Unit = underlying.close()
   }
 
   final class NirShowBuilder(val builder: ShowBuilder) extends AnyVal {
