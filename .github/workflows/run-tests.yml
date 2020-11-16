@@ -36,8 +36,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            - **/target/scala-${{ env.binary-version }} /
-            - ~/.ivy2/local/org.scala-native
+            **/target/scala-${{ env.binary-version }}
           key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
 
       - name: Compile
@@ -139,8 +138,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            - **/target/scala-${{ env.binary-version }} /
-            - ~/.ivy2/local/org.scala-native
+            **/target/scala-${{ env.binary-version }}
           key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
 
       - name: Cache docker
@@ -194,8 +192,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            - **/target/scala-${{ env.binary-version }} /
-            - ~/.ivy2/local/org.scala-native
+            **/target/scala-${{ env.binary-version }}
           key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
 
       - name: Cache docker
@@ -248,8 +245,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            - **/target/scala-${{ env.binary-version }} /
-            - ~/.ivy2/local/org.scala-native
+            **/target/scala-${{ env.binary-version }}
           key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
 
       - name: Cache docker
