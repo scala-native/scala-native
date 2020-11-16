@@ -3,7 +3,7 @@ package java.lang
 import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.unsafe._
-import scala.scalanative.runtime.{time, Platform, GC, Intrinsics, RawPtr}
+import scala.scalanative.runtime.{GC, Intrinsics, Platform, RawPtr, time}
 
 final class System private ()
 
