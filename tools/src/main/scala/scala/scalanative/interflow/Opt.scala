@@ -38,6 +38,11 @@ trait Opt { self: Interflow =>
     val fresh = Fresh(0)
     val state = new State(Local(0))
 
+    // Interflow usually infers better types on our erased type system
+    // than scalac, yet we live it as a benefit of the doubt and make sure
+    // that if original return type is more specific, we keep it as is.
+    val Type.Function(_, origRetTy) = origdefn.ty
+
     // Compute opaque fresh locals for the arguments. Argument types
     // are always a subtype of the original declared type, but in
     // some cases they might not be obviously related, despite
@@ -65,7 +70,11 @@ trait Opt { self: Interflow =>
     val blocks =
       try {
         pushBlockFresh(fresh)
-        process(origdefn.insts.toArray, args, state, doInline = false)
+        process(origdefn.insts.toArray,
+                args,
+                state,
+                doInline = false,
+                origRetTy)
       } finally {
         popBlockFresh()
       }
@@ -87,18 +96,10 @@ trait Opt { self: Interflow =>
       case Inst.Ret(v) => v.ty
     }
 
-    // Interflow usually infers better types on our erased type system
-    // than scalac, yet we live it a benefit of the doubt and make sure
-    // that if original return type is more specific, we keep it as is.
-    val origRetty = {
-      val Type.Function(_, ty) = origdefn.ty
-      ty
-    }
-
     val retty = rets match {
       case Seq()   => Type.Nothing
       case Seq(ty) => ty
-      case tys     => Sub.lub(tys, origRetty)
+      case tys     => Sub.lub(tys, Some(origRetTy))
     }
 
     result(retty, insts)
@@ -107,7 +108,8 @@ trait Opt { self: Interflow =>
   def process(insts: Array[Inst],
               args: Seq[Val],
               state: State,
-              doInline: Boolean)(
+              doInline: Boolean,
+              retTy: Type)(
       implicit originDefnPos: nir.Position
   ): Seq[MergeBlock] = {
     val processor =
@@ -123,6 +125,6 @@ trait Opt { self: Interflow =>
       popMergeProcessor()
     }
 
-    processor.toSeq()
+    processor.toSeq(retTy)
   }
 }

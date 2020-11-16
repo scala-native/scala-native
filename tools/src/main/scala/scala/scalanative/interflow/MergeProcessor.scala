@@ -75,7 +75,7 @@ final class MergeProcessor(insts: Array[Inst],
         val mergeEmitted = mutable.Map.empty[Op, Val]
         val newEscapes   = mutable.Set.empty[Addr]
 
-        def mergePhi(values: Seq[Val]): Val = {
+        def mergePhi(values: Seq[Val], bound: Option[Type]): Val = {
           if (values.distinct.size == 1) {
             values.head
           } else {
@@ -86,11 +86,7 @@ final class MergeProcessor(insts: Array[Inst],
               case (s, v) =>
                 s.materialize(v)
             }
-            val name = mergeFresh()
-            val bound = params.headOption match {
-              case Some(Val.Local(_, ty: Type.RefKind)) => ty
-              case _                                    => Type.Ref(Global.Top("java.lang.Object"))
-            }
+            val name    = mergeFresh()
             val paramty = Sub.lub(materialized.map(_.ty), bound)
             val param   = Val.Local(name, paramty)
             mergePhis += MergePhi(param, names.zip(materialized))
@@ -102,7 +98,7 @@ final class MergeProcessor(insts: Array[Inst],
 
           // 1. Merge locals
 
-          def mergeLocal(local: Local): Unit = {
+          def mergeLocal(local: Local, value: Val): Unit = {
             val values = mutable.UnrolledBuffer.empty[Val]
             states.foreach { s =>
               if (s.locals.contains(local)) {
@@ -110,10 +106,10 @@ final class MergeProcessor(insts: Array[Inst],
               }
             }
             if (states.size == values.size) {
-              mergeLocals(local) = mergePhi(values)
+              mergeLocals(local) = mergePhi(values, Some(value.ty))
             }
           }
-          headState.locals.keys.foreach(mergeLocal)
+          headState.locals.foreach((mergeLocal _).tupled)
 
           // 2. Merge heap
 
@@ -134,7 +130,7 @@ final class MergeProcessor(insts: Array[Inst],
                       case _                      => Val.Virtual(addr)
                     }
                   }
-                  mergeHeap(addr) = EscapedInstance(mergePhi(values))
+                  mergeHeap(addr) = EscapedInstance(mergePhi(values, None))
                 case VirtualInstance(headKind, headCls, headValues) =>
                   val mergeValues = headValues.zipWithIndex.map {
                     case (_, idx) =>
@@ -142,7 +138,15 @@ final class MergeProcessor(insts: Array[Inst],
                         if (state.hasEscaped(addr)) restart()
                         state.derefVirtual(addr).values(idx)
                       }
-                      mergePhi(values)
+                      val bound = headKind match {
+                        case ClassKind =>
+                          Some(headCls.fields(idx).ty)
+                        case _ =>
+                          // No need for bound type since each would be either primitive type or j.l.Object
+                          None
+                      }
+
+                      mergePhi(values, bound)
                   }
                   mergeHeap(addr) =
                     VirtualInstance(headKind, headCls, mergeValues)
@@ -163,7 +167,7 @@ final class MergeProcessor(insts: Array[Inst],
                 case (_, (values, _)) =>
                   values(idx)
               }
-              mergeLocals(param.name) = mergePhi(values)
+              mergeLocals(param.name) = mergePhi(values, Some(param.ty))
           }
 
           // 4. Merge delayed ops
@@ -383,7 +387,8 @@ final class MergeProcessor(insts: Array[Inst],
     }
   }
 
-  def toSeq()(implicit originDefnPos: nir.Position): Seq[MergeBlock] = {
+  def toSeq(retTy: Type)(
+      implicit originDefnPos: nir.Position): Seq[MergeBlock] = {
     val sortedBlocks = blocks.values.toSeq
       .filter(_.cf != null)
       .sortBy { block => offsets(block.label.name) }
@@ -413,17 +418,13 @@ final class MergeProcessor(insts: Array[Inst],
           case _               => v.ty
         }
       }
-      // !!! CAUTION: j.l.Object is provided here as the most generic upper bound type.
-      // !!! In case `tys` have more than one common super-type and a type which is more
-      // !!! specific than j.l.Object is expected as the return type, then Sub.lub may
-      // !!! calculate the wrong type.
-      val retTy = Sub.lub(tys, Type.Ref(Global.Top("java.lang.Object")))
 
       // Create synthetic label and block where all returning blocks
       // are going tojump to. Synthetics names must be fresh relative
       // to the source instructions, not relative to generated ones.
       val syntheticFresh = Fresh(insts)
-      val syntheticParam = Val.Local(syntheticFresh(), retTy)
+      val syntheticParam =
+        Val.Local(syntheticFresh(), Sub.lub(tys, Some(retTy)))
       val syntheticLabel =
         Inst.Label(syntheticFresh(), Seq(syntheticParam))
       val resultMergeBlock =

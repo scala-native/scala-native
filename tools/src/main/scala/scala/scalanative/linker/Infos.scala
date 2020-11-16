@@ -88,7 +88,7 @@ final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])(
         case info: Trait =>
           info.subtraits.contains(this)
         case _ =>
-          false
+          info.name == Rt.Object.name
       }
     }
   }
