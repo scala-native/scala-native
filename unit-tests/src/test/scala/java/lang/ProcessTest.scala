@@ -26,11 +26,11 @@ class ProcessTest {
     // In the normal case, the process will exit within milliseconds or less.
     // The timeout will not increase the expected execution time of the test.
     //
-    // Five seconds is an order of magnitude guess for a "reasonable"
+    // Ten seconds is an order of magnitude guess for a "reasonable"
     // completion time.  If a process expected to exit in milliseconds
     // takes that three orders of magnitude longer, it must be reported.
 
-    val tmo    = 5
+    val tmo    = 10
     val tmUnit = TimeUnit.SECONDS
 
     assertTrue(s"Process took more than $tmo ${tmUnit.name} to exit.",
@@ -184,20 +184,19 @@ class ProcessTest {
   //      It assumes a competent destroyForcibly() and attempts to force
   //      processes which _should_have_ exited on their own to do so.
   //
-  //      A number of tests in this file currently have the potential to
-  //      strand zombie processes.  They were not fixed on this pass in
-  //      order to keep changes minimal and the focus on timing.
+  //      A number of other tests in this file have the potential to
+  //      strand zombie processes and are candidates for a similar fix.
 
   @Test def waitForWithTimeoutTimesOut(): Unit = {
     val proc = new ProcessBuilder("sleep", "2.0").start()
 
     assertTrue("process should have timed out but exited",
-               !proc.waitFor(100, TimeUnit.MILLISECONDS))
+               !proc.waitFor(500, TimeUnit.MILLISECONDS))
     assertTrue("process should be alive", proc.isAlive)
 
     // await exit code to release resources. Attempt to force
     // hanging processes to exit.
-    if (!proc.waitFor(3, TimeUnit.SECONDS))
+    if (!proc.waitFor(10, TimeUnit.SECONDS))
       proc.destroyForcibly()
   }
 
@@ -207,7 +206,7 @@ class ProcessTest {
     assertTrue("process should be alive", proc.isAlive)
     proc.destroy()
     assertTrue("process should have exited but timed out",
-               proc.waitFor(100, TimeUnit.MILLISECONDS))
+               proc.waitFor(500, TimeUnit.MILLISECONDS))
     assertEquals(0x80 + 9, proc.exitValue) // SIGKILL, excess 128
   }
 
@@ -217,7 +216,7 @@ class ProcessTest {
     assertTrue("process should be alive", proc.isAlive)
     val p = proc.destroyForcibly()
     assertTrue("process should have exited but timed out",
-               p.waitFor(100, TimeUnit.MILLISECONDS))
+               p.waitFor(500, TimeUnit.MILLISECONDS))
     assertEquals(0x80 + 9, p.exitValue) // SIGKILL, excess 128
   }
 
