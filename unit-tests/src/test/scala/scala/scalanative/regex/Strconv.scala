@@ -1,7 +1,8 @@
 package scala.scalanative
 package regex
 
-object Strconv { // unquoteChar decodes the first character or byte in the escaped
+object Strconv {
+  // unquoteChar decodes the first character or byte in the escaped
   // string or character literal represented by the Go literal encoded
   // in UTF-16 in s.
   //
