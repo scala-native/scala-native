@@ -32,6 +32,17 @@ jobs:
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
+      - name: Cache SN
+        uses: actions/cache@v2
+        with:
+          path: |
+            - **/target/scala-${{ env.binary-version }} /
+            - ~/.ivy2/local/org.scala-native
+          key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
+
+      - name: Compile
+        run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" compile
+
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" test-tools
 
@@ -120,6 +131,14 @@ jobs:
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
+      - name: Cache SN
+        uses: actions/cache@v2
+        with:
+          path: |
+            - **/target/scala-${{ env.binary-version }} /
+            - ~/.ivy2/local/org.scala-native
+          key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
+
       - uses: satackey/action-docker-layer-caching@v0.0.8
         with:
           skip-save: true
@@ -166,6 +185,14 @@ jobs:
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
+      - name: Cache SN
+        uses: actions/cache@v2
+        with:
+          path: |
+            - **/target/scala-${{ env.binary-version }} /
+            - ~/.ivy2/local/org.scala-native
+          key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
+
       - uses: satackey/action-docker-layer-caching@v0.0.8
         with:
           skip-save: true
@@ -210,6 +237,14 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+
+      - name: Cache SN
+        uses: actions/cache@v2
+        with:
+          path: |
+            - **/target/scala-${{ env.binary-version }} /
+            - ~/.ivy2/local/org.scala-native
+          key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
 
       - uses: satackey/action-docker-layer-caching@v0.0.8
         with:
