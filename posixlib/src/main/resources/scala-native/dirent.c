@@ -32,6 +32,7 @@ void scalanative_dirent_init(struct dirent *dirent,
 }
 
 int scalanative_readdir(DIR *dirp, struct scalanative_dirent *buf) {
+    errno = 0;
     struct dirent *orig_buf = readdir(dirp);
     if (orig_buf != NULL) {
         scalanative_dirent_init(orig_buf, buf);
