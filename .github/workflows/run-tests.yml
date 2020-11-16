@@ -32,13 +32,6 @@ jobs:
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
-      - name: Cache SN
-        uses: actions/cache@v2
-        with:
-          path: |
-            **/target/scala-${{ env.binary-version }}
-          key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
-
       - name: Compile
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" compile
 
@@ -134,13 +127,6 @@ jobs:
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
-      - name: Cache SN
-        uses: actions/cache@v2
-        with:
-          path: |
-            **/target/scala-${{ env.binary-version }}
-          key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
-
       - name: Cache docker
         uses: actions/cache@v1
         with:
@@ -188,13 +174,6 @@ jobs:
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
-      - name: Cache SN
-        uses: actions/cache@v2
-        with:
-          path: |
-            **/target/scala-${{ env.binary-version }}
-          key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
-
       - name: Cache docker
         uses: actions/cache@v1
         with:
@@ -240,13 +219,6 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
-
-      - name: Cache SN
-        uses: actions/cache@v2
-        with:
-          path: |
-            **/target/scala-${{ env.binary-version }}
-          key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
 
       - name: Cache docker
         uses: actions/cache@v1

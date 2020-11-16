@@ -9,7 +9,7 @@ fi
 
 IMAGE_NAME=$1
 FULL_IMAGE_NAME="localhost:5000/${IMAGE_NAME}"
-sudo chmod 777 -R "$HOME"
+sudo chmod a+rwx -R "$HOME"
 
 docker run -d -p 5000:5000 \
   --restart=always \
