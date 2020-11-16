@@ -58,7 +58,7 @@ jobs:
           echo "::set-output name=image-id::${imageID}"
 
       - name: Build the Docker image
-        if: ${{ steps.read-dockerfile.outputs.image-id }} == ""
+        if: ${{ steps.read-dockerfile.outputs.image-id == '' }}
         run: "
         docker run \
          --rm \
