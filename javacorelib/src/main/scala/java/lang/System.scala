@@ -4,6 +4,8 @@ import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.unsafe._
 import scala.scalanative.runtime.{GC, Intrinsics, Platform, RawPtr, time}
+import scala.scalanative.libc.stdio
+import scala.scalanative.runtime
 
 final class System private ()
 
@@ -39,14 +41,12 @@ object System {
     if (Platform.isWindows()) {
       sysProps.setProperty("file.separator", "\\")
       sysProps.setProperty("path.separator", ";")
-      val userLang    = fromCString(Platform.windowsGetUserLang())
-      val userCountry = fromCString(Platform.windowsGetUserCountry())
-      sysProps.setProperty("user.language", userLang)
-      sysProps.setProperty("user.country", userCountry)
-
+      sysProps.setProperty("user.home", getenv("USERPROFILE"))
     } else {
       sysProps.setProperty("file.separator", "/")
       sysProps.setProperty("path.separator", ":")
+      sysProps.setProperty("java.io.tmpdir", "/tmp")
+
       val userLocale = getenv("LANG")
       if (userLocale != null) {
         val userLang = userLocale.takeWhile(_ != '_')
@@ -57,22 +57,6 @@ object System {
           .drop(1)
         sysProps.setProperty("user.language", userLang)
         sysProps.setProperty("user.country", userCountry)
-      }
-      locally {
-        val buf = stackalloc[pwd.passwd]
-        val uid = unistd.getuid()
-        val res = pwd.getpwuid(uid, buf)
-        if (res == 0 && buf.pw_dir != null) {
-          sysProps.setProperty("user.home", fromCString(buf.pw_dir))
-        }
-      }
-      locally {
-        val bufSize = 1024
-        val buf     = stackalloc[scala.Byte](bufSize)
-        val cwd     = unistd.getcwd(buf, bufSize)
-        if (cwd != null) {
-          sysProps.setProperty("user.dir", fromCString(cwd))
-        }
       }
     }
 
@@ -148,34 +132,32 @@ private object SystemImpl {
     Collections.unmodifiableMap(envmap)
   }
 
-  import scala.scalanative.libc.stdio
-  import scala.scalanative.runtime
-
   def std_in(): InputStream = new InputStream {
-    def read(): Int = {
+
+    override def read(): Int = {
       stdio.fgetc(stdio.stdin)
     }
-    def read(b: Array[Byte], off: Int, len: Int): Int = {
+    override def read(b: Array[scala.Byte], off: Int, len: Int): Int = {
       val buf = b.asInstanceOf[runtime.ByteArray].at(off)
       stdio.fread(buf, len, 1, stdio.stdin).toInt
     }
   }
 
   def std_out(): OutputStream = new OutputStream {
-    def write(b: Int): Unit = {
+    override def write(b: Int): Unit = {
       stdio.fputc(b, stdio.stdout)
     }
-    def write(b: Array[Byte], off: Int, len: Int): Unit = {
+    override def write(b: Array[scala.Byte], off: Int, len: Int): Unit = {
       val buf = b.asInstanceOf[runtime.ByteArray].at(off)
       stdio.fwrite(buf, len, 1, stdio.stdout).toInt
     }
   }
 
   def std_err(): OutputStream = new OutputStream {
-    def write(b: Int): Unit = {
+    override def write(b: Int): Unit = {
       stdio.fputc(b, stdio.stderr)
     }
-    def write(b: Array[Byte], off: Int, len: Int): Unit = {
+    override def write(b: Array[scala.Byte], off: Int, len: Int): Unit = {
       val buf = b.asInstanceOf[runtime.ByteArray].at(off)
       stdio.fwrite(buf, len, 1, stdio.stderr)
     }

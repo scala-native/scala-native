@@ -4,6 +4,8 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 #include <string.h>
+#include <pwd.h>
+#include <stdlib.h>
 #endif
 
 int scalanative_platform_is_mac() {
@@ -20,12 +22,6 @@ int scalanative_platform_is_windows() {
 #else
     return 0;
 #endif
-}
-
-// See http://stackoverflow.com/a/4181991
-int scalanative_little_endian() {
-    int n = 1;
-    return (*(char *)&n);
 }
 
 int scalanative_platform_get_all_env(void* obj, void (*add_env)(void*, const char *, const char *)) {
@@ -71,6 +67,12 @@ int scalanative_platform_get_all_env(void* obj, void (*add_env)(void*, const cha
     return result;
 }
 
+// See http://stackoverflow.com/a/4181991
+int scalanative_little_endian() {
+    int n = 1;
+    return (*(char *)&n);
+}
+
 void scalanative_set_os_props(void (*add_prop)(const char *, const char *)) {
 #ifdef _WIN32
     add_prop("os.name", "Windows (Unknown version)");
@@ -102,8 +104,15 @@ void scalanative_set_os_props(void (*add_prop)(const char *, const char *)) {
         add_prop("os.version", name.release);
     }
 #endif
-    add_prop("java.io.tmpdir", "/tmp");
     char buf[1024];
-    add_prop("user.dir", getcwd(buf, 1024));
+    if (getcwd(buf, 1024) != NULL) {
+    	add_prop("user.dir", buf);
+    }
+
+    struct passwd *pBuf = getpwuid(getuid());
+    if(pBuf != NULL && pBuf -> pw_dir != NULL) {
+    	add_prop("user.home", pBuf -> pw_dir);
+    }
+
 #endif
 }
