@@ -7,7 +7,7 @@ on:
 
 jobs:
   tests-tools:
-    name: Test tools
+    name: Compile & test tools
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -50,39 +50,43 @@ jobs:
     name: Build image
     runs-on: ubuntu-latest
     outputs:
-      image-version: ${{ steps.read-dockerfile.outputs.image-version }}
+      image-name: ${{ steps.build-image.outputs.image-name }}
     strategy:
       matrix:
-        target-platrform: [ library ]
+        target-platform: [ library ]
 
     steps:
       - uses: actions/checkout@v2
-      - uses: satackey/action-docker-layer-caching@v0.0.8
-        continue-on-error: true
-      - name: Check shall build new image
-        id: read-dockerfile
+      - name: Cache docker
+        id: cache
+        uses: actions/cache@v1
+        with:
+          path: /tmp/docker-registry
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
+      - name: Run local image registry
+        run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
+      - name: Build image
+        id: build-image
         run: |
-          version=$(cat ./ci-docker/Dockerfile | grep "#version:" | head -1 | awk '{print $2}')
-          imageID=$(docker images scala-native-testing/linux-${{ matrix.target-platrform }}:${version} -q 2> /dev/null)
+          imageName="scala-native-testing:linux-${{ matrix.target-platform }}"
+          echo "::set-output name=image-name::${imageName}"
 
-          echo "::set-output name=image-version::${version}"
-          echo "::set-output name=image-id::${imageID}"
-
-      - name: Build the Docker image
-        if: ${{ steps.read-dockerfile.outputs.image-id == '' }}
-        run: "
-        docker run \
-         --rm \
-         --privileged \
-         multiarch/qemu-user-static:register;
-
-        docker build
-          -t scala-native-testing/linux-${{ matrix.target-platrform }}:${{ steps.read-dockerfile.outputs.image-version }} \
-          --build-arg TARGET_DOCKER_PLATFORM=${{ matrix.target-platrform }} \
-          --build-arg HOST_ARCHITECTURE=amd64 \
+          docker run --rm --privileged multiarch/qemu-user-static:register
+          docker pull localhost:5000/${imageName} || true
+          docker build \
+          -t ${imageName} \
+          --cache-from=localhost:5000/${imageName} \
+          --build-arg TARGET_DOCKER_PLATFORM=${{ matrix.target-platform }} \
+          --build-arg HOST_ARCHITECTURE=amd64  \
           --cpuset-cpus=0 \
-          ci-docker"
+          ci-docker
 
+      - name: Store image in cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          imageName=${{ steps.build-image.outputs.image-name }}
+          docker tag $imageName localhost:5000/${imageName} && \
+          docker push localhost:5000/${imageName}
 
   test-runtime:
     name: Test runtime
@@ -95,23 +99,23 @@ jobs:
         build-mode: [ debug , release-fast ]
         gc: [ boehm, immix, commix ]
         os: [ ubuntu-latest ]
-        target-platrform: [ library ]
+        target-platform: [ library ]
         exclude:
           - scala: 2.13.3
             build-mode: debug
             gc: boehm
             os: ubuntu-latest
-            target-platrform: library
+            target-platform: library
           - scala: 2.12.12
             build-mode: debug
             gc: immix
             os: ubuntu-latest
-            target-platrform: library
+            target-platform: library
           - scala: 2.11.12
             build-mode: debug
             gc: commix
             os: ubuntu-latest
-            target-platrform: library
+            target-platform: library
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
@@ -139,10 +143,11 @@ jobs:
             - ~/.ivy2/local/org.scala-native
           key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
 
-      - uses: satackey/action-docker-layer-caching@v0.0.8
+      - name: Cache docker
+        uses: actions/cache@v1
         with:
-          skip-save: true
-        continue-on-error: true
+          path: /tmp/docker-registry
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
 
       - name: Run tests
         env:
@@ -151,8 +156,8 @@ jobs:
           SCALA_VERSION: ${{ matrix.scala}}
           SCALANATIVE_OPTIMIZE: true
           TEST_COMMAND: test-runtime
-          TARGET_DOCKER_PLATFORM: ${{ matrix.target-platrform }}
-        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image-version }}
+          TARGET_DOCKER_PLATFORM: ${{ matrix.target-platform }}
+        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image-name }}
 
   test-runtime-no-opt:
     name: Test runtime no-opt
@@ -165,7 +170,7 @@ jobs:
         build-mode: [ debug, release-fast ]
         gc: [ immix ]
         os: [ ubuntu-latest ]
-        target-platrform: [ library ]
+        target-platform: [ library ]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
@@ -193,10 +198,11 @@ jobs:
             - ~/.ivy2/local/org.scala-native
           key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
 
-      - uses: satackey/action-docker-layer-caching@v0.0.8
+      - name: Cache docker
+        uses: actions/cache@v1
         with:
-          skip-save: true
-        continue-on-error: true
+          path: /tmp/docker-registry
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
 
       - name: Run tests
         env:
@@ -205,8 +211,8 @@ jobs:
           SCALA_VERSION: ${{ matrix.scala}}
           SCALANATIVE_OPTIMIZE: false
           TEST_COMMAND: test-runtime
-          TARGET_DOCKER_PLATFORM: ${{ matrix.target-platrform }}
-        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image-version }}
+          TARGET_DOCKER_PLATFORM: ${{ matrix.target-platform }}
+        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image-name }}
 
   test-scripted:
     name: Test scripted
@@ -219,7 +225,7 @@ jobs:
         build-mode: [ release-fast ]
         gc: [ immix ]
         os: [ ubuntu-latest ]
-        target-platrform: [ library ]
+        target-platform: [ library ]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
@@ -246,10 +252,11 @@ jobs:
             - ~/.ivy2/local/org.scala-native
           key: ${{ runner.os }}-SN-${{ env.binary-version }}-${{ github.sha }}
 
-      - uses: satackey/action-docker-layer-caching@v0.0.8
+      - name: Cache docker
+        uses: actions/cache@v1
         with:
-          skip-save: true
-        continue-on-error: true
+          path: /tmp/docker-registry
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
 
       - name: Run tests
         env:
@@ -258,5 +265,5 @@ jobs:
           SCALA_VERSION: ${{ matrix.scala}}
           SCALANATIVE_OPTIMIZE: true
           TEST_COMMAND: test-scripted
-          TARGET_DOCKER_PLATFORM: ${{ matrix.target-platrform }}
-        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image-version }}
+          TARGET_DOCKER_PLATFORM: ${{ matrix.target-platform }}
+        run: ./ci-docker/run-test-gha.sh ${{ needs.build-image.outputs.image-name }}
