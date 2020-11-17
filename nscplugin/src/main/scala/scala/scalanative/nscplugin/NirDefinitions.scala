@@ -346,4 +346,7 @@ trait NirDefinitions {
       getRequiredClass(
         "scala.scalanative.reflect.annotation.EnableReflectiveInstantiation")
   }
+
+  lazy val JavaDefaultMethodAnnotation =
+    getRequiredClass("scala.scalanative.annotation.JavaDefaultMethod")
 }

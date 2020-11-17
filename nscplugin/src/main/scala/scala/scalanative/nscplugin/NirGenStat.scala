@@ -4,6 +4,7 @@ package nscplugin
 import scala.collection.mutable
 import scala.reflect.internal.Flags._
 import scala.scalanative.nir._
+import scala.tools.nsc.Properties
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc
@@ -19,6 +20,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
   val reflectiveInstantiationInfo =
     mutable.UnrolledBuffer.empty[ReflectiveInstantiationBuffer]
+
+  protected val isScala211 = Properties.versionNumberString.startsWith("2.11")
 
   def isStaticModule(sym: Symbol): Boolean =
     sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
@@ -588,6 +591,43 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           ()
       }
 
+    private def genJavaDefaultMethodBody(dd: DefDef): Seq[nir.Inst] = {
+      val fresh = Fresh()
+      val buf   = new ExprBuffer()(fresh)
+
+      implicit val pos: nir.Position = dd.pos
+
+      val sym               = dd.symbol
+      val implClassFullName = sym.owner.fullName + "$class"
+
+      val implClassSym = findMemberFromRoot(TermName(implClassFullName))
+
+      val implMethodSym = implClassSym.info
+        .member(sym.name)
+        .suchThat { s =>
+          s.isMethod &&
+          s.tpe.params.size == sym.tpe.params.size + 1 &&
+          s.tpe.params.head.tpe =:= sym.owner.toTypeConstructor &&
+          s.tpe.params.tail.zip(sym.tpe.params).forall {
+            case (sParam, symParam) =>
+              sParam.tpe =:= symParam.tpe
+          }
+        }
+
+      val implName = Val.Global(genMethodName(implMethodSym), Type.Ptr)
+      val implSig  = genMethodSig(implMethodSym)
+
+      val Type.Function(paramtys, retty) = implSig
+
+      val params = paramtys.map(ty => Val.Local(fresh(), ty))
+      buf.label(fresh(), params)
+
+      val res = buf.call(implSig, implName, params, Next.None)
+      buf.ret(res)
+
+      buf.toSeq
+    }
+
     def genMethod(dd: DefDef): Unit = {
       val fresh = Fresh()
       val env   = new MethodEnv(fresh)
@@ -609,6 +649,16 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val isStatic = owner.isExternModule || isImplClass(owner)
 
         dd.rhs match {
+          case EmptyTree
+              if (isScala211 &&
+                sym.hasAnnotation(JavaDefaultMethodAnnotation)) =>
+            scoped(
+              curMethodSig := sig
+            ) {
+              val body = genJavaDefaultMethodBody(dd)
+              buf += Defn.Define(attrs, name, sig, body)
+            }
+
           case EmptyTree =>
             buf += Defn.Declare(attrs, name, sig)
 
@@ -622,6 +672,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case rhs if owner.isExternModule =>
             checkExplicitReturnTypeAnnotation(dd)
             genExternMethod(attrs, name, sig, rhs)
+
+          case rhs
+              if (isScala211 &&
+                sym.hasAnnotation(JavaDefaultMethodAnnotation) &&
+                !isImplClass(sym.owner)) =>
+          // Have a concrete method with JavaDefaultMethodAnnotation; a blivet.
+          // Do not emit, not even as abstract.
 
           case rhs =>
             scoped(
