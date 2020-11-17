@@ -1,4 +1,5 @@
 package java.io
+import scala.scalanative.posix.{fcntl, unistd}
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
@@ -26,7 +27,6 @@ final class FileDescriptor private[java] (private[java] val fd: Int,
     throw new SyncFailedException("sync failed")
 
 }
-
 object FileDescriptor {
   val in: FileDescriptor  = new FileDescriptor(unistd.STDIN_FILENO)
   val out: FileDescriptor = new FileDescriptor(unistd.STDOUT_FILENO)

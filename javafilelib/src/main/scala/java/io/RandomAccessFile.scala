@@ -1,9 +1,9 @@
 package java.io
 
-import scalanative.unsafe.{toCString, Zone}
-import scalanative.libc.stdio
-import scalanative.posix.{fcntl, unistd}
-import scalanative.posix.sys.stat
+import scala.scalanative.libc.stdio
+import scala.scalanative.posix.sys.stat
+import scala.scalanative.posix.{fcntl, unistd}
+import scala.scalanative.unsafe.{Zone, toCString}
 
 class RandomAccessFile private (file: File,
                                 fd: FileDescriptor,
