@@ -1,0 +1,8 @@
+#This file is used to declare compiled `.class` files that should be shipped with resulting jar
+#It should only contain definitions used in other modules and not existing in JDK
+#Globing syntax may be used here
+
+scala/scalanative/*.class
+
+java/io/FileDescriptorImpl*.class
+
