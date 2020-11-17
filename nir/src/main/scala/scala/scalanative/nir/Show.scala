@@ -48,9 +48,10 @@ object Show {
     import ExecutionContext.Implicits.global
     import dir.{merge, write}
 
-    val sortedDefnsView = defns.view
+    val sortedDefnsView = defns
       .filter(_ != null)
       .sortBy(_.name)
+      .view
 
     def dumpChunk(range: Range, chunkId: Int) = Future {
       write(Paths.get(s"$id-$chunkId.hnir")) { writer =>
