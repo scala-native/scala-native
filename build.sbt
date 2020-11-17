@@ -385,12 +385,22 @@ lazy val commonJavalibSettings: Seq[Setting[_]] = Seq(
     val separator = sys.props("path.separator")
     "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
   },
-  // Don't include classfiles for javalib in the packaged jar.
+  // Don't include classfiles for javalib in the packaged jar if they're not specific to SN
   Compile / packageBin / mappings := {
     val previous = (Compile / packageBin / mappings).value
+    val pathFilters = {
+      val file = new File(baseDirectory.value, "class-whitelist")
+      if (!file.exists()) Set.empty[NameFilter]
+      else {
+        IO.readLines(file)
+          .filterNot(_.startsWith("#"))
+          .filterNot(_.isEmpty)
+          .map(FileFilter.globFilter)
+      }
+    }
     previous.filter {
       case (_, path) =>
-        !path.endsWith(".class")
+        !path.endsWith(".class") || pathFilters.exists(_.accept(path))
     }
   },
   exportJars := true
