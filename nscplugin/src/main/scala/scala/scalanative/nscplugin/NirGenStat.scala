@@ -676,12 +676,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case rhs
               if (isScala211 &&
                 sym.hasAnnotation(JavaDefaultMethodAnnotation) &&
-                !sym.owner.name.decoded.endsWith("$class")) =>
-          // The obvious scala 2.11 sym.isImplClass becomes deprecated
-          // in Scala 2.12.
-          //
+                !isImplClass(sym.owner)) =>
           // Have a concrete method with JavaDefaultMethodAnnotation; a blivet.
-          // Do not emit, not even as abstract
+          // Do not emit, not even as abstract.
 
           case rhs =>
             scoped(
