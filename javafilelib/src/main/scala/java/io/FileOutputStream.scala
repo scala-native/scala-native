@@ -1,11 +1,11 @@
 package java.io
 
-import scala.scalanative.libc._
-import scala.scalanative.nio.fs.UnixException
-import scala.scalanative.posix.sys.stat
-import scala.scalanative.posix.{fcntl, unistd}
-import scala.scalanative.runtime
-import scala.scalanative.unsafe._
+import scalanative.nio.fs.UnixException
+import scalanative.unsafe._
+import scalanative.libc._
+import scalanative.posix.{fcntl, unistd}
+import scalanative.posix.sys.stat
+import scalanative.runtime
 
 class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
     extends OutputStream {

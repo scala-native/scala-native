@@ -3,6 +3,8 @@ package java.lang
 import scalanative.unsafe._
 import scalanative.libc.errno
 
+import scalanative.libc.errno.ERANGE
+
 private[java] object IEEE754Helpers {
   // Java parseDouble() and parseFloat() allow characters at and after
   // the address where C strtod() or strtof() stopped.
@@ -53,7 +55,7 @@ private[java] object IEEE754Helpers {
       var res = f(cStr, end)
 
       if (errno.errno != 0) {
-        if (errno.errno == errno.ERANGE) {
+        if (errno.errno == ERANGE) {
           // Do nothing. res holds the proper value as returned by strtod()
           // or strtof(): 0.0 for string translations too close to zero
           // or +/- infinity for values too +/- large for an IEEE754.

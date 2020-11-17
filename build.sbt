@@ -326,7 +326,6 @@ lazy val sbtScalaNative =
             clib / publishLocal,
             posixlib / publishLocal,
             javacorelib / publishLocal,
-            javanetlib / publishLocal,
             javafilelib / publishLocal,
             javanetlib / publishLocal,
             javaziplib / publishLocal,

@@ -1,13 +1,11 @@
 package java.io
 
-import scala.scalanative.annotation.stub
-import scala.scalanative.libc._
-import scala.scalanative.libc.stdio._
-import scala.scalanative.nio.fs.UnixException
-import scala.scalanative.posix.unistd._
-import scala.scalanative.posix.{fcntl, unistd}
-import scala.scalanative.runtime
-import scala.scalanative.unsigned._
+import scalanative.annotation.stub
+import scalanative.unsigned._
+import scalanative.libc._, stdio._
+import scalanative.nio.fs.UnixException
+import scalanative.posix.{fcntl, unistd}, unistd._
+import scalanative.runtime
 
 class FileInputStream(fd: FileDescriptor, file: Option[File])
     extends InputStream {
