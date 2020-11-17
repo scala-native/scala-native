@@ -4,7 +4,7 @@ package org.scalanative.testsuite.javalib.util
 
 import java.{util => ju, lang => jl}
 
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.javalib.lang.IterableFactory
@@ -202,24 +202,21 @@ trait CollectionTest extends IterableTest {
       coll.iterator())
   }
 
-  // Issue: https://github.com/scala-native/scala-native/issues/1972
-  @Ignore(
-    "removeIf is a JavaDefaultMethod which is not supported yet on Scala 2.11")
   @Test def removeIf(): Unit = {
-    // val coll = factory.fromElements[Int](42, 50, 12, 0, -45, 102, 32, 75)
-    // assertEquals(8, coll.size())
+    val coll = factory.fromElements[Int](42, 50, 12, 0, -45, 102, 32, 75)
+    assertEquals(8, coll.size())
 
-    // assertTrue(coll.removeIf(new java.util.function.Predicate[Int] {
-    //   def test(x: Int): Boolean = x >= 50
-    // }))
-    // assertEquals(5, coll.size())
-    // assertIteratorSameElementsAsSet(-45, 0, 12, 32, 42)(coll.iterator())
+    assertTrue(coll.removeIf(new java.util.function.Predicate[Int] {
+      def test(x: Int): Boolean = x >= 50
+    }))
+    assertEquals(5, coll.size())
+    assertIteratorSameElementsAsSet(-45, 0, 12, 32, 42)(coll.iterator())
 
-    // assertFalse(coll.removeIf(new java.util.function.Predicate[Int] {
-    //   def test(x: Int): Boolean = x >= 45
-    // }))
-    // assertEquals(5, coll.size())
-    // assertIteratorSameElementsAsSet(-45, 0, 12, 32, 42)(coll.iterator())
+    assertFalse(coll.removeIf(new java.util.function.Predicate[Int] {
+      def test(x: Int): Boolean = x >= 45
+    }))
+    assertEquals(5, coll.size())
+    assertIteratorSameElementsAsSet(-45, 0, 12, 32, 42)(coll.iterator())
   }
 
   @Test def toStringShouldConvertEmptyCollection(): Unit = {
