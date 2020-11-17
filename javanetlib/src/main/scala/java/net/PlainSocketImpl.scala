@@ -130,7 +130,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
   override def accept(s: SocketImpl): Unit = {
 
-    throwIfClosed(getFD(fd), "accept") // Do not send negative getFD(fd) to poll()
+    throwIfClosed(getFD(fd),
+                  "accept") // Do not send negative getFD(fd) to poll()
 
     if (timeout > 0) {
       val nAlloc = 1
@@ -281,7 +282,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
   override def connect(address: SocketAddress, timeout: Int): Unit = {
 
-    throwIfClosed(getFD(fd), "connect") // Do not send negative getFD(fd) to poll()
+    throwIfClosed(getFD(fd),
+                  "connect") // Do not send negative getFD(fd) to poll()
 
     val inetAddr = address.asInstanceOf[InetSocketAddress]
     val hints    = stackalloc[addrinfo]
