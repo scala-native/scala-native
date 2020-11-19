@@ -65,11 +65,11 @@ class ExecTest {
   @Test def examplesInDocumentation(): Unit = {
     val re = RE2.compile("(?i:co(.)a)")
     assertTrue(
-      "assertion #1",
-      Array("Copa", "coba").deep == re.findAll("Copacobana", 10).toArray.deep)
+      "Assertion #1",
+      Array("Copa", "coba").sameElements(re.findAll("Copacobana", 10).toArray))
     val x = re.findAllSubmatch("Copacobana", 100)
-    assertTrue("Assertion #2", Array("Copa", "p").deep == x.get(0).deep)
-    assertTrue("Assertion #3", Array("coba", "b").deep == x.get(1).deep)
+    assertTrue("Assertion #2", Array("Copa", "p").sameElements(x.get(0)))
+    assertTrue("Assertion #3", Array("coba", "b").sameElements(x.get(1)))
   }
 
   @Test def testRE2Search(): Unit = { // 1832pass/20failed
