@@ -1,6 +1,6 @@
 package scala.scalanative
 package regex
-/*
+
 import java.io.InputStreamReader
 import java.io.File
 import java.io.FileInputStream
@@ -11,7 +11,7 @@ import java.util.{Arrays, Collections}
 
 import scala.util.control.NonFatal
 import scala.util.control.Breaks._
- */
+
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
@@ -60,21 +60,8 @@ import org.junit.Assert._
 // At time of writing, re2.txt is 32 MB but compresses to 760 kB,
 // so we store re2.txt.gz in the repository and decompress it on the fly.
 
-@Ignore("takes too long to run")
 class ExecTest {
 
-  /* The following dummy test was added during the JUnit
-   * port and the rest of the file is commented out because
-   * the Optimizer emits warnings that are distracting
-   * and the tests take too long to run.
-   *
-   * Having one test means the @Ignore on the test works and
-   * the test will run and show output.
-   */
-  @Test def dummyTestBecauseTestsGenerateWarnings(): Unit = {
-    assertTrue(true)
-  }
-  /*
   @Test def examplesInDocumentation(): Unit = {
     val re = RE2.compile("(?i:co(.)a)")
     assertTrue(
@@ -89,6 +76,7 @@ class ExecTest {
     testRE2("re2-search.txt")
   }
 
+  @Ignore("takes too long to run")
   @Test def testRE2Exhaustive(): Unit = { // >100failed
     testRE2("re2-exhaustive.txt.gz") // takes about 30s
   }
@@ -463,7 +451,7 @@ class ExecTest {
 
         case 'C' | 'N' | 'T' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' |
             '8' | '9' =>
-          System.err.println("skip: %s\n".format(line))
+          //System.err.println("skip: %s\n".format(line))
           break
         case _ =>
       }
@@ -650,5 +638,5 @@ class ExecTest {
       throw new RuntimeException("parse error: odd number of fields")
     result
   }
- */
+
 }
