@@ -48,47 +48,49 @@ abstract class PreNirSanityCheck[G <: NscGlobal with Singleton](
       cunit.body foreach verify
     }
 
+    private val Skip: Unit = ()
+
     def verify(tree: Tree): Unit = tree match {
       case cd: ClassDef =>
-        if (cd.symbol.isExternNonModule) {
-          val nonExternParents =
-            (cd.symbol.tpe.parents
-              .zip(cd.impl.parents))
-              .filterNot(p =>
-                (p._1 == AnyRefTpe) || p._2.symbol.isExternNonModule)
-          nonExternParents foreach { parent =>
-            reporter.error(
-              parent._2.pos,
-              s"extern ${symToName(cd.symbol)} may only have extern parents")
-          }
+        if (cd.symbol.isExtern) {
+          verifyExternClassOrModule(cd)
         }
-        verifyClass(cd)
-      case md @ ModuleDef(_, _, impl) =>
-        if (md.symbol.isExternModule) {
-          val nonExternParents =
-            (md.symbol.tpe.parents
-              .zip(impl.parents))
-              .filterNot(p =>
-                (p._1 == AnyRefTpe) || p._2.symbol.isExternNonModule)
-          nonExternParents foreach { parent =>
-            reporter.error(parent._2.pos,
-                           "extern objects may only have extern parents")
-          }
+        verifyClassOrModule(cd)
+      case md: ModuleDef =>
+        if (md.symbol.isExtern) {
+          verifyExternClassOrModule(md)
         }
-        verifyClass(md)
-      case _ =>
+        verifyClassOrModule(md)
+      case _ => Skip
     }
 
-    def verifyClass(cd: ImplDef): Unit =
+    private def verifyExternClassOrModule(impl: ImplDef): Unit = {
+      impl.symbol.tpe.parents
+        .zip(impl.impl.parents)
+        .foreach {
+          case (parentTpe, implParent) =>
+            val parentIsAnyRef = parentTpe == AnyRefTpe
+            val parentIsExtern = implParent.symbol.isExtern
+
+            if (parentIsAnyRef || parentIsExtern) Skip
+            else {
+              val thisKind   = symToKindPlural(impl.symbol)
+              val parentKind = symToKind(implParent.symbol)
+              reporter.error(
+                impl.pos,
+                s"extern $thisKind may only have extern parents, $parentKind ${implParent.symbol.nameString} is not extern")
+            }
+        }
+    }
+
+    def verifyClassOrModule(cd: ImplDef): Unit =
       scoped(
         curClassSym := cd.symbol
       ) {
         cd.impl.body.foreach {
-          case dd: DefDef =>
-            verifyMethod(dd)
-          case vd: ValDef =>
-            verifyVal(vd)
-          case _ =>
+          case dd: DefDef => verifyMethod(dd)
+          case vd: ValDef => verifyVal(vd)
+          case _          => Skip
         }
       }
 
@@ -97,13 +99,10 @@ abstract class PreNirSanityCheck[G <: NscGlobal with Singleton](
         curMethSym := dd.symbol
       ) {
         dd.rhs match {
-          case rhs: Block if dd.symbol.isConstructor =>
-          // We don't care about the constructor
-          // at this phase
-          case rhs if curClassSym.get.isExtern =>
-            verifyExternMethod(dd)
-          case rhs =>
-            verifyExpr(rhs)
+          // We don't care about the constructor at this phase
+          case _: Block if dd.symbol.isConstructor => Skip
+          case _ if curClassSym.get.isExtern       => verifyExternMethod(dd)
+          case rhs                                 => verifyExpr(rhs)
         }
       }
 
@@ -112,55 +111,56 @@ abstract class PreNirSanityCheck[G <: NscGlobal with Singleton](
         curValSym := dd.symbol
       ) {
         if (curClassSym.get.isExtern) {
-          dd.rhs match {
-            case sel: Select if sel.symbol == ExternMethod =>
-              externMemberHasTpeAnnotation(dd)
-            case _ if curValSym.isLazy =>
-              reporter.error(
-                dd.pos,
-                s"(limitation) fields in extern ${symToName(curClassSym)} must not be lazy")
-            case _ if curValSym.hasFlag(PARAMACCESSOR) =>
-              // params are not allowed
-              reporter.error(
-                dd.pos,
-                s"parameters in extern ${symToName(curClassSym)} are not allowed - only extern fields and methods are allowed")
-            case rhs =>
-              reporter.error(
-                rhs.pos,
-                s"fields in extern ${symToName(curClassSym)} must have extern body")
-          }
+          verifyExternVal(dd)
         }
       }
+
+    def verifyExternVal(dd: ValDef): Unit = {
+      if (curValSym.isLazy) {
+        reporter.error(
+          dd.pos,
+          s"fields in extern ${symToKindPlural(curClassSym)} must not be lazy")
+      }
+
+      if (curValSym.hasFlag(PARAMACCESSOR)) {
+        reporter.error(
+          dd.pos,
+          s"parameters in extern ${symToKindPlural(curClassSym)} are not allowed - only extern fields and methods are allowed")
+      }
+
+      dd.rhs match {
+        case sel: Select if sel.symbol == ExternMethod =>
+          externMemberHasTpeAnnotation(dd)
+
+        case _ =>
+          reporter.error(
+            dd.pos,
+            s"fields in extern ${symToKindPlural(curClassSym)} must have extern body")
+      }
+    }
 
     def verifyExternMethod(ddef: DefDef): Unit = {
       ddef.rhs match {
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
-          // TOOD: Remove
-          ()
-        case _ if curMethSym.hasFlag(ACCESSOR) =>
-          ()
+          externMemberHasTpeAnnotation(ddef)
         case sel: Select if sel.symbol == ExternMethod =>
           externMemberHasTpeAnnotation(ddef)
-          ()
-        case rhs =>
+        case _ if curMethSym.hasFlag(ACCESSOR) =>
+          Skip
+        case _ =>
           reporter.error(
-            rhs.pos.focus,
-            s"methods in extern ${symToName(curClassSym)} must have extern body")
+            ddef.rhs.pos.focus,
+            s"methods in extern ${symToKindPlural(curClassSym)} must have extern body")
       }
     }
 
-    // Verify expressions
-
     def verifyExpr(expr: Tree): Unit = expr match {
-      case tree: Block =>
-        verifyBlock(tree)
-      case tree: Select =>
-        verifySelect(tree)
-      case tree: Apply =>
-        verifyApply(tree)
-      case tree: This =>
+      case tree: Block  => verifyBlock(tree)
+      case tree: Select => verifySelect(tree)
+      case tree: Apply  => verifyApply(tree)
+
       case _ =>
-        println("Uknown tree " + expr.getClass)
+        println("Unknown tree " + expr.getClass)
     }
 
     def verifyBlock(block: Block): Unit = {
@@ -247,15 +247,10 @@ abstract class PreNirSanityCheck[G <: NscGlobal with Singleton](
       import scalaPrimitives._
 
       val (fun @ Select(receiver, _), args) = app match {
-        case Apply(TypeApply(f, _), args) =>
-          (f, args)
-        case Apply(
-            Apply(f, args),
-            _
-            ) => // Note that this fails to compile examples with implicit
-          (f, args)
-        case Apply(f, args) =>
-          (f, args)
+        case Apply(TypeApply(f, _), args) => (f, args)
+        // Note that this fails to compile examples with implicit
+        case Apply(Apply(f, args), _) => (f, args)
+        case Apply(f, args)           => (f, args)
       }
       //val Apply(fun @ Select(receiver, _), args) = app
 
@@ -303,9 +298,9 @@ abstract class PreNirSanityCheck[G <: NscGlobal with Singleton](
       args match {
         case Nil =>
           reporter.error(app.pos,
-                         s"a non-empty primitive function requuires arguments")
+                         s"a non-empty primitive function requires arguments")
         case _ :: _ :: _ :: _ =>
-          reporter.error(app.pos, s"too many arguments for primitve function")
+          reporter.error(app.pos, s"too many arguments for primitive function")
         case _ =>
           ???
       }
@@ -362,13 +357,17 @@ abstract class PreNirSanityCheck[G <: NscGlobal with Singleton](
     def externMemberHasTpeAnnotation(df: ValOrDefDef): Unit = {
       df.tpt match {
         case t @ TypeTree() if t.original == null =>
+          val kind =
+            if (df.symbol.isField) "fields"
+            else "methods"
+
           reporter.error(
             df.pos,
-            s"extern members must have an explicit type annotation")
-        case t @ TypeTree() =>
-          ()
+            s"extern $kind in ${symToKindPlural(curClassSym)} must have an explicit type annotation")
+        case _: TypeTree => Skip
       }
     }
+
     // Capture free variables
     // Inspired by LambdaLift phase in scalac
     private class FreeVarTraverser extends Traverser {
@@ -456,10 +455,14 @@ abstract class PreNirSanityCheck[G <: NscGlobal with Singleton](
       trav.allFreeVars
     }
 
-    private def symToName(sym: Symbol): String =
+    private def symToKindPlural(sym: Symbol): String =
       if (sym.isClass)
         if (sym.asClass.isTrait) "traits" else "classes"
       else "objects"
 
+    private def symToKind(sym: Symbol): String =
+      if (sym.isClass)
+        if (sym.asClass.isTrait) "trait" else "class"
+      else "object"
   }
 }
