@@ -2,7 +2,7 @@ package scala.scalanative
 package nscplugin
 import scala.tools.nsc.Global
 
-trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
+trait NirGenType[G <: Global with Singleton] { self: NirPhase[G] =>
   import SimpleType.{fromSymbol, fromType}
   import global._
   import definitions._

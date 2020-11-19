@@ -1,56 +1,45 @@
 package scala.scalanative
 package nscplugin
 
-import scala.tools.nsc.plugins._
-import scala.tools.nsc.{Phase, transform}
+import scala.tools.nsc.{Global => NscGlobal, Phase}
 import scala.reflect.internal.Flags._
 import util.ScopedVar.scoped
-import util.ScopedVar
-
 import NirPrimitives._
 
-abstract class PreNirSanityCheck
-  extends NirPhase with NirPluginComponent
-with NirGenUtil {
+abstract class PreNirSanityCheck[G <: NscGlobal with Singleton](
+    override val global: G)
+    extends NirPhase[G](global) {
 
   import global._
   import definitions._
-
-  val nirAddons: NirGlobalAddons {
-    val global: PreNirSanityCheck.this.global.type
-  }
-
   import nirAddons._
   import nirDefinitions._
 
   import SimpleType.{fromType, fromSymbol}
 
-  val phaseName: String = "sanitycheck"
+  val phaseName: String            = "sanitycheck"
   override def description: String = "sanity check ASTs for NIR"
 
   override def newPhase(prev: Phase): StdPhase =
     new SanityCheckPhase(prev)
 
-
-
   class SanityCheckPhase(prev: Phase) extends StdPhase(prev) {
-    private val curClassSym   = new util.ScopedVar[Symbol]
-    private val curMethSym = new util.ScopedVar[Symbol]
-    private val curValSym = new util.ScopedVar[Symbol]
+    private val curClassSym = new util.ScopedVar[Symbol]
+    private val curMethSym  = new util.ScopedVar[Symbol]
+    private val curValSym   = new util.ScopedVar[Symbol]
 
     override def run(): Unit = {
-      //scalaPrimitives.init()
-      nirPrimitives.init()
+      nirPrimitives.initPrepNativePrimitives()
       super.run()
     }
 
     override def apply(cunit: CompilationUnit): Unit = {
       def verifyDefs(tree: Tree): List[Tree] = {
         tree match {
-          case EmptyTree => Nil
+          case EmptyTree            => Nil
           case PackageDef(_, stats) => stats flatMap verifyDefs
-          case cd: ClassDef => cd :: Nil
-          case md: ModuleDef => md :: Nil
+          case cd: ClassDef         => cd :: Nil
+          case md: ModuleDef        => md :: Nil
         }
       }
 
@@ -63,8 +52,10 @@ with NirGenUtil {
       case cd: ClassDef =>
         if (cd.symbol.isExternNonModule) {
           val nonExternParents =
-            (cd.symbol.tpe.parents.zip(cd.impl.parents)).
-              filterNot(p => (p._1 == AnyRefTpe) || p._2.symbol.isExternNonModule)
+            (cd.symbol.tpe.parents
+              .zip(cd.impl.parents))
+              .filterNot(p =>
+                (p._1 == AnyRefTpe) || p._2.symbol.isExternNonModule)
           nonExternParents foreach { parent =>
             reporter.error(
               parent._2.pos,
@@ -72,64 +63,74 @@ with NirGenUtil {
           }
         }
         verifyClass(cd)
-      case md@ModuleDef(_, _, impl) =>
+      case md @ ModuleDef(_, _, impl) =>
         if (md.symbol.isExternModule) {
           val nonExternParents =
-            (md.symbol.tpe.parents.zip(impl.parents)).
-              filterNot(p => (p._1 == AnyRefTpe) || p._2.symbol.isExternNonModule)
+            (md.symbol.tpe.parents
+              .zip(impl.parents))
+              .filterNot(p =>
+                (p._1 == AnyRefTpe) || p._2.symbol.isExternNonModule)
           nonExternParents foreach { parent =>
-            reporter.error(
-              parent._2.pos,
-              "extern objects may only have extern parents")
+            reporter.error(parent._2.pos,
+                           "extern objects may only have extern parents")
           }
         }
         verifyClass(md)
       case _ =>
     }
 
-    def verifyClass(cd: ImplDef): Unit = scoped(
-      curClassSym := cd.symbol
-    ) {
-      cd.impl.body.foreach {
-        case dd: DefDef =>
-          verifyMethod(dd)
-        case vd: ValDef =>
-          verifyVal(vd)
-        case _ =>
-      }
-    }
-
-    def verifyMethod(dd: DefDef): Unit = scoped(
-      curMethSym := dd.symbol
-    ) {
-      dd.rhs match {
-        case rhs: Block if dd.symbol.isConstructor =>
-        // We don't care about the constructor
-        // at this phase
-        case rhs if curClassSym.get.isExtern =>
-          verifyExternMethod(dd)
-        case rhs =>
-          verifyExpr(rhs)
-      }
-    }
-
-    def verifyVal(dd: ValDef): Unit = scoped(
-      curValSym := dd.symbol
-    ) {
-      if (curClassSym.get.isExtern) {
-        dd.rhs match {
-          case sel: Select if sel.symbol == ExternMethod =>
-            externMemberHasTpeAnnotation(dd)
-          case _ if curValSym.isLazy =>
-            reporter.error(dd.pos, s"(limitation) fields in extern ${symToName(curClassSym)} must not be lazy")
-          case _ if curValSym.hasFlag(PARAMACCESSOR) =>
-            // params are not allowed
-            reporter.error(dd.pos, s"parameters in extern ${symToName(curClassSym)} are not allowed - only extern fields and methods are allowed")
-          case rhs =>
-            reporter.error(rhs.pos, s"fields in extern ${symToName(curClassSym)} must have extern body")
+    def verifyClass(cd: ImplDef): Unit =
+      scoped(
+        curClassSym := cd.symbol
+      ) {
+        cd.impl.body.foreach {
+          case dd: DefDef =>
+            verifyMethod(dd)
+          case vd: ValDef =>
+            verifyVal(vd)
+          case _ =>
         }
       }
-    }
+
+    def verifyMethod(dd: DefDef): Unit =
+      scoped(
+        curMethSym := dd.symbol
+      ) {
+        dd.rhs match {
+          case rhs: Block if dd.symbol.isConstructor =>
+          // We don't care about the constructor
+          // at this phase
+          case rhs if curClassSym.get.isExtern =>
+            verifyExternMethod(dd)
+          case rhs =>
+            verifyExpr(rhs)
+        }
+      }
+
+    def verifyVal(dd: ValDef): Unit =
+      scoped(
+        curValSym := dd.symbol
+      ) {
+        if (curClassSym.get.isExtern) {
+          dd.rhs match {
+            case sel: Select if sel.symbol == ExternMethod =>
+              externMemberHasTpeAnnotation(dd)
+            case _ if curValSym.isLazy =>
+              reporter.error(
+                dd.pos,
+                s"(limitation) fields in extern ${symToName(curClassSym)} must not be lazy")
+            case _ if curValSym.hasFlag(PARAMACCESSOR) =>
+              // params are not allowed
+              reporter.error(
+                dd.pos,
+                s"parameters in extern ${symToName(curClassSym)} are not allowed - only extern fields and methods are allowed")
+            case rhs =>
+              reporter.error(
+                rhs.pos,
+                s"fields in extern ${symToName(curClassSym)} must have extern body")
+          }
+        }
+      }
 
     def verifyExternMethod(ddef: DefDef): Unit = {
       ddef.rhs match {
@@ -142,7 +143,9 @@ with NirGenUtil {
           externMemberHasTpeAnnotation(ddef)
           ()
         case rhs =>
-          reporter.error(rhs.pos.focus, s"methods in extern ${symToName(curClassSym)} must have extern body")
+          reporter.error(
+            rhs.pos.focus,
+            s"methods in extern ${symToName(curClassSym)} must have extern body")
       }
     }
 
@@ -181,14 +184,14 @@ with NirGenUtil {
             val Select(receiverp, _) = fun
             verifyApplyMethod(fun.symbol, statically = false, receiverp, args)
           }
-           //verifyApplyTypeApply(app)
+        //verifyApplyTypeApply(app)
         case Select(Super(_, _), _) =>
-          //genApplyMethod(fun.symbol,
-          //  statically = true,
-          //  curMethodThis.get.get,
-          //  args)
+        //genApplyMethod(fun.symbol,
+        //  statically = true,
+        //  curMethodThis.get.get,
+        //  args)
         case Select(New(_), nme.CONSTRUCTOR) =>
-          //genApplyNew(app)
+        //genApplyNew(app)
         case _ =>
           val sym = fun.symbol
 
@@ -201,11 +204,15 @@ with NirGenUtil {
             genApplyBox(arg.tpe, arg)
           } else if (currentRun.runDefinitions.isUnbox(sym)) {
             genApplyUnbox(app.tpe, args.head)
-          }*/ else {
+          }*/
+          else {
             // TODO: what exactly is checked here?
             fun match {
               case Select(receiverp, _) =>
-                verifyApplyMethod(fun.symbol, statically = false, receiverp, args)
+                verifyApplyMethod(fun.symbol,
+                                  statically = false,
+                                  receiverp,
+                                  args)
               case _ =>
                 ()
             }
@@ -222,9 +229,9 @@ with NirGenUtil {
     }
 
     def verifyApplyMethod(sym: Symbol,
-                       statically: Boolean,
-                       selfp: Tree,
-                       argsp: Seq[Tree]): Unit = {
+                          statically: Boolean,
+                          selfp: Tree,
+                          argsp: Seq[Tree]): Unit = {
       if (sym.owner.isExternModule && sym.hasFlag(ACCESSOR)) {
         // TODO
         //verifyApplyExternAccessor(sym, argsp)
@@ -239,10 +246,13 @@ with NirGenUtil {
     def verifyApplyPrimitive(app: Apply): Unit = {
       import scalaPrimitives._
 
-      val (fun@Select(receiver, _), args) = app match {
+      val (fun @ Select(receiver, _), args) = app match {
         case Apply(TypeApply(f, _), args) =>
           (f, args)
-        case Apply(Apply(f, args), _) =>  // Note that this fails to compile examples with implicit
+        case Apply(
+            Apply(f, args),
+            _
+            ) => // Note that this fails to compile examples with implicit
           (f, args)
         case Apply(f, args) =>
           (f, args)
@@ -260,18 +270,18 @@ with NirGenUtil {
         verifyHashCode(args.head)
       } else if (isArrayOp(code) || code == ARRAY_CLONE) {
         verifyArrayOp(app, code)
-      } else if (nirPrimitives.isPtrOp(code)) {
-        verifyPtrOp(app, code)
-      } else if (nirPrimitives.isFunPtrOp(code)) {
-        verifyFunPtrOp(app, code)
+      } else if (nirPrimitives.isRawPtrOp(code)) {
+        verifyRawPtrOp(app, code)
+//      } else if (nirPrimitives.isFunPtrOp(code)) {
+//        verifyFunPtrOp(app, code)
       } else if (isCoercion(code)) {
         verifyCoercion(app, receiver, code)
       } else if (code == SYNCHRONIZED) {
         verifySynchronized(app)
-      } else if (code == CCAST) {
-        verifyCastOp(app)
-      } else if (code == SIZEOF || code == TYPEOF) {
-        verifyOfOp(app, code)
+      } else if (nirPrimitives.isRawCastOp(code)) {
+        verifyRawCastOp(app)
+//      } else if (code == SIZEOF || code == TYPEOF) {
+//        verifyOfOp(app, code)
       } else if (code == STACKALLOC) {
         verifyStackalloc(app)
       } else if (code == CQUOTE) {
@@ -280,10 +290,11 @@ with NirGenUtil {
         ()
       } else if (code >= DIV_UINT && code <= INT_TO_ULONG) {
         verifyUnsignedOp(app, code)
-      } else if (code == SELECT) {
-        verifySelectOp(app)
+//      } else if (code == SELECT) {
+//        verifySelectOp(app)
       } else {
-        reporter.error(app.pos,
+        reporter.error(
+          app.pos,
           s"Unknown primitive operation: ${sym.fullName} (${fun.symbol.simpleName}")
       }
     }
@@ -291,7 +302,8 @@ with NirGenUtil {
     def verifySimpleOp(app: Apply, args: List[Tree]): Unit = {
       args match {
         case Nil =>
-          reporter.error(app.pos, s"a non-empty primitive function requuires arguments")
+          reporter.error(app.pos,
+                         s"a non-empty primitive function requuires arguments")
         case _ :: _ :: _ :: _ =>
           reporter.error(app.pos, s"too many arguments for primitve function")
         case _ =>
@@ -300,53 +312,60 @@ with NirGenUtil {
     }
 
     def verifyStringConcat(leftp: Tree, rightp: Tree): Unit = ()
-    def verifyHashCode(argp: Tree): Unit = ()
-    def verifyArrayOp(app: Apply, code: Int): Unit = ()
-    def verifyPtrOp(app: Apply, code: Int): Unit = ()
-    def verifyFunPtrOp(app: Apply, code: Int): Unit = {
-      def verifyBody(params: List[Symbol], body: Tree): Unit = {
-        val free = freeLocalVars(body) diff params
-        if (free.nonEmpty)
-          reporter.error(
-            app.pos, s"can't infer a function pointer to a closure with captures: ${free.mkString(",")}"
-          )
-      }
-
-      code match {
-        case FUN_PTR_CALL =>
-          ()
-        case FUN_PTR_FROM =>
-          app match {
-            // TODO: We could accept Block statements here,
-            //       especially with the custom free vars check,
-            //       except that those need to be translated manually into
-            //       closures, if possible.
-            case Apply(_, Function(vparams, body) :: Nil) =>
-              verifyBody(vparams.map(_.symbol), body)
-            case Apply(_, Block(Nil, Function(vparams, body: Apply)) :: Nil) => // eta-expansion
-              val Apply(_, Block(Nil, fun@Function(vparams1, body1)) :: Nil) = app
-              verifyBody(fun.symbol :: vparams1.map(_.symbol), body1)
-            case _ =>
-              reporter.error(app.pos, s"(scala-native limitation): cannot infer a function pointer, lift the argument into a function")
-          }
-      }
-    }
+    def verifyHashCode(argp: Tree): Unit                    = ()
+    def verifyArrayOp(app: Apply, code: Int): Unit          = ()
+    def verifyRawPtrOp(app: Apply, code: Int): Unit         = ()
+//    def verifyFunPtrOp(app: Apply, code: Int): Unit = {
+//      def verifyBody(params: List[Symbol], body: Tree): Unit = {
+//        val free = freeLocalVars(body) diff params
+//        if (free.nonEmpty)
+//          reporter.error(
+//            app.pos,
+//            s"can't infer a function pointer to a closure with captures: ${free.mkString(",")}"
+//          )
+//      }
+//
+//      code match {
+//        case FUN_PTR_CALL =>
+//          ()
+//        case FUN_PTR_FROM =>
+//          app match {
+//            // TODO: We could accept Block statements here,
+//            //       especially with the custom free vars check,
+//            //       except that those need to be translated manually into
+//            //       closures, if possible.
+//            case Apply(_, Function(vparams, body) :: Nil) =>
+//              verifyBody(vparams.map(_.symbol), body)
+//            case Apply(
+//                _,
+//                Block(Nil, Function(vparams, body: Apply)) :: Nil
+//                ) => // eta-expansion
+//              val Apply(_, Block(Nil, fun @ Function(vparams1, body1)) :: Nil) =
+//                app
+//              verifyBody(fun.symbol :: vparams1.map(_.symbol), body1)
+//            case _ =>
+//              reporter.error(
+//                app.pos,
+//                s"(scala-native limitation): cannot infer a function pointer, lift the argument into a function")
+//          }
+//      }
+//    }
     def verifyCoercion(app: Apply, receiver: Tree, code: Int): Unit = ()
-    def verifySynchronized(app: Apply): Unit = ()
-    def verifyCastOp(app: Apply): Unit = ()
-    def verifyOfOp(app: Apply, code: Int): Unit = ()
-    def verifyStackalloc(app: Apply): Unit = ()
-    def verifyCQuoteOp(app: Apply): Unit = ()
-    def verifyUnsignedOp(app: Tree, code: Int): Unit = ()
-    def verifySelectOp(app: Apply): Unit = ()
-
-
+    def verifySynchronized(app: Apply): Unit                        = ()
+    def verifyRawCastOp(app: Apply): Unit                           = ()
+    def verifyOfOp(app: Apply, code: Int): Unit                     = ()
+    def verifyStackalloc(app: Apply): Unit                          = ()
+    def verifyCQuoteOp(app: Apply): Unit                            = ()
+    def verifyUnsignedOp(app: Tree, code: Int): Unit                = ()
+    def verifySelectOp(app: Apply): Unit                            = ()
 
     def externMemberHasTpeAnnotation(df: ValOrDefDef): Unit = {
       df.tpt match {
-        case t@TypeTree() if t.original == null =>
-          reporter.error(df.pos, s"extern members must have an explicit type annotation")
-        case t@TypeTree() =>
+        case t @ TypeTree() if t.original == null =>
+          reporter.error(
+            df.pos,
+            s"extern members must have an explicit type annotation")
+        case t @ TypeTree() =>
           ()
       }
     }
@@ -355,7 +374,7 @@ with NirGenUtil {
     private class FreeVarTraverser extends Traverser {
 
       private var localVars: List[Symbol] = Nil
-      private var freeVars: List[Symbol] = Nil
+      private var freeVars: List[Symbol]  = Nil
 
       def allFreeVars: List[Symbol] = freeVars
       override def traverse(tree: Tree) {
@@ -372,7 +391,7 @@ with NirGenUtil {
             // special case for defs
             (stats ++ (last :: Nil)).foldLeft(Nil: List[Symbol])({
               case (syms, stat: ValDef) =>
-                withLocalSyms(syms) { traverse(stat)  }
+                withLocalSyms(syms) { traverse(stat) }
                 stat.symbol :: syms
               case (syms, stat: DefDef) =>
                 withLocalSyms(syms) { traverse(stat) }
@@ -398,10 +417,12 @@ with NirGenUtil {
             super.traverse(tree)
           case Function(vparams, body) =>
             withLocalSyms(vparams.map(_.symbol)) { super.traverse(tree) }
-          case Select(receiver@This(_), _) if (!localVars.contains(receiver.symbol)) =>
+          case Select(receiver @ This(_), _)
+              if (!localVars.contains(receiver.symbol)) =>
             freeVars = sym :: freeVars
           case Select(receiver, _) =>
-            if (sym.isConstructor && sym.owner.isLocalToBlock && !localVars.contains(sym.owner))
+            if (sym.isConstructor && sym.owner.isLocalToBlock && !localVars
+                  .contains(sym.owner))
               freeVars = sym.owner :: freeVars
             super.traverse(tree)
           case _ =>

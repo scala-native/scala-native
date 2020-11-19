@@ -11,20 +11,11 @@ import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
 import scala.tools.nsc.{Global, util => _, _}
 
-abstract class NirGenPhase[G <: Global with Singleton](val global: G)
-    extends PluginComponent
+abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
+    extends NirPhase[G](global)
     with NirGenStat[G]
     with NirGenExpr[G]
-    with NirGenUtil[G]
-    with NirGenFile[G]
-    with NirGenType[G]
-    with NirGenName[G]
-    with NirCompat[G] {
-
-  /** Not for use in the constructor body: only initialized afterwards. */
-  val nirAddons: NirGlobalAddons {
-    val global: NirGenPhase.this.global.type
-  }
+    with NirGenFile[G] {
 
   import global._
   import definitions._
@@ -56,6 +47,7 @@ abstract class NirGenPhase[G <: Global with Singleton](val global: G)
   class NirCodePhase(prev: Phase) extends StdPhase(prev) {
     override def run(): Unit = {
       scalaPrimitives.init()
+      nirPrimitives.init()
       super.run()
     }
 

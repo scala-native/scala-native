@@ -527,7 +527,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               buf.arraystore(elemty, alloc, Val.Int(i), v, unwind)(elem.pos)
             }
         }
-      }
         alloc
       }
     }
@@ -580,7 +579,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           genLoadExtern(ty, externTy, tree.symbol)
         } else {
           buf.fieldload(ty, qual, name, unwind)
-          }
         }
       }
     }
@@ -610,7 +608,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           } else {
             val ty = genType(sel.symbol.tpe)
             buf.fieldstore(ty, qual, name, rhs, unwind)
-            }
           }
 
         case id: Ident =>
@@ -1496,7 +1493,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         buf.arraystore(elemty, array, idx, value, unwind)
       } else {
         buf.arraylength(array, unwind)
-        }
       }
     }
 
@@ -1594,7 +1590,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val Apply(_, Seq(ptrp, offsetp)) = app
 
       val ptr    = genExpr(ptrp)
-          val offset = genExpr(offsetp)
       val offset = genExpr(offsetp)
 
       buf.elem(Type.Byte, ptr, Seq(offset), unwind)(app.pos)
@@ -1752,7 +1747,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val right = genExpr(rightp)
 
           buf.bin(bin, ty, left, right, unwind)
-    }
       }
     }
 
@@ -2105,7 +2099,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
 
         res.result()
-          }
       }
 
     def genSimpleArgs(argsp: Seq[Tree]): Seq[Val] = {

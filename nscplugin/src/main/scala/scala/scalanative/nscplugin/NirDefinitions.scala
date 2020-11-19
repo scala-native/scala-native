@@ -37,8 +37,10 @@ trait NirDefinitions {
       "scala.scalanative.unsafe.package")
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
 
-    lazy val CQuoteClass = getRequiredClass(
-      "scala.scalanative.unsafe.package$CQuote")
+    //In PreNirSanityCheck some reason usage of `getRequiredModule`
+    //ends up in MissingRequiredModule exception although it exists
+    lazy val CQuoteClass = getMemberClass(NativeModule, TermName("CQuote"))
+
     lazy val CQuoteMethod = getDecl(CQuoteClass, TermName("c"))
 
     lazy val CFuncPtrNClass = (0 to 22).map { n =>

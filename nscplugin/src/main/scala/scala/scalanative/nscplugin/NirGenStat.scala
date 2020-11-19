@@ -586,7 +586,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case EmptyTree =>
             buf += Defn.Declare(attrs, name, sig)
 
-          case _ if dd.name == nme.CONSTRUCTOR && (owner.isExternModule || owner.isStruct) =>
+          case _ if dd.name == nme.CONSTRUCTOR && owner.isExternModule =>
+            validateExternCtor(dd.rhs)
+            ()
+
+          case _ if dd.name == nme.CONSTRUCTOR && owner.isStruct =>
             ()
 
           case rhs if owner.isExternModule =>
@@ -628,8 +632,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           ()
 
         case rhs =>
-          // TODO: crash
-          //unsupported("methods in extern objects must have extern body")
+        // TODO: crash
+        //unsupported("methods in extern objects must have extern body")
       }
     }
 
@@ -776,14 +780,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             }
           }
       }
-      }
 
       genEntry()
       genVars()
       genBody()
       removeDeadBlocks(buf.toSeq)
-        }
-        }
     }
   }
 

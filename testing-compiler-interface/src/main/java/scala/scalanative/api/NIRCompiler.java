@@ -15,19 +15,25 @@ public interface NIRCompiler {
 	 *
 	 * @param source The source code to compile.
 	 * @return All the files produced during compilation (classfiles, nir, hnir,
-	 *         etc.)
+	 * etc.)
 	 */
-    public Path[] compile(String source);
+	public Path[] compile(String source);
 
-    /**
-     * Compiles all the source files in `base` and returns all the files
-     * produced during compilation.
-     *
-     * @param base The base directory containing the source files.
-     * @return All the files produced during compilation (classfiles, nir, hnir,
-     *         etc.)
-     */
-    public Path[] compile(Path base);
+	/**
+	 * Compiles all the source files in `base` and returns all the files
+	 * produced during compilation.
+	 *
+	 * @param base The base directory containing the source files.
+	 * @return All the files produced during compilation (classfiles, nir, hnir,
+	 * etc.)
+	 */
+	public Path[] compile(Path base);
 
-    public CompilerError[] compileAndReport(String source);
+	/**
+	 * Compiles single source file and returns errors produced during compilation.
+	 *
+	 * @param source String containing source to be compiled.
+	 * @return All the errors produced during compilation
+	 */
+	public CompilerError[] compileAndReport(String source);
 }

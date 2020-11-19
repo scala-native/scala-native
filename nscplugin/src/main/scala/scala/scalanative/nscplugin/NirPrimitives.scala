@@ -77,7 +77,6 @@ abstract class NirPrimitives {
 
   import global._
   import definitions._
-  import rootMirror._
   import scalaPrimitives._
   import nirAddons._
   import nirDefinitions._
@@ -86,7 +85,7 @@ abstract class NirPrimitives {
   def init(): Unit =
     initWithPrimitives(addPrimitive)
 
-  def initPrepJSPrimitives(): Unit = {
+  def initPrepNativePrimitives(): Unit = {
     nirPrimitives.clear()
     initWithPrimitives(nirPrimitives.put)
   }
