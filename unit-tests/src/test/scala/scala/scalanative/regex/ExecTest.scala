@@ -451,7 +451,6 @@ class ExecTest {
 
         case 'C' | 'N' | 'T' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' |
             '8' | '9' =>
-          //System.err.println("skip: %s\n".format(line))
           break
         case _ =>
       }
