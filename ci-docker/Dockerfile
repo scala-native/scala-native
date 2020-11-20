@@ -1,4 +1,3 @@
-#version: 1
 ARG TARGET_DOCKER_PLATFORM
 
 FROM ubuntu:18.04
