@@ -74,12 +74,12 @@ jobs:
       - name: Run local image registry
         run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
 
-      # Builds images and outputs image base name allowing to be re-used in other steps.
+      # Builds images and saves image base name in output - it allows to re-use it in other steps.
       - name: Build image
         id: build-image
         run: |
           imageBase="scala-native-testing:linux"
-          echo "::set-output name=image-base-name::${imageBase}
+          echo "::set-output name=image-base-name::${imageBase}"
           echo "::set-output name=image-full-name::${imageNameBase}-${{ matrix.arch }}"
 
           docker run --rm --privileged multiarch/qemu-user-static:register
