@@ -96,7 +96,7 @@ jobs:
       - name: Store image in cache
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          imageName=${{ steps.build-image.outputs.image-name }}
+          imageName=${{ steps.build-image.outputs.image-full-name }}
           docker tag $imageName localhost:5000/${imageName} && \
           docker push localhost:5000/${imageName}
 
