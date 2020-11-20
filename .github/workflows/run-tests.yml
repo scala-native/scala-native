@@ -79,8 +79,9 @@ jobs:
         id: build-image
         run: |
           imageBase="scala-native-testing:linux"
+          imageName="${imageBase}-${{ matrix.arch }}"
           echo "::set-output name=image-base-name::${imageBase}"
-          echo "::set-output name=image-full-name::${imageNameBase}-${{ matrix.arch }}"
+          echo "::set-output name=image-full-name::${imageName}"
 
           docker run --rm --privileged multiarch/qemu-user-static:register
           docker pull localhost:5000/${imageName} || true
