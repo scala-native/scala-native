@@ -160,17 +160,20 @@ private[scalanative] object LLVM {
         case Mode.ReleaseFast => "-O2"
         case Mode.ReleaseFull => "-O3"
       }
-    val opts = optimizationOpt +: config.compileOptions
+
+    // SN produces universal IR code that can be compiled by any target
+    // without `-Wno-override-module` clang is complaining for it with message like
+    // warning: overriding the module target triple with x86_64-apple-macosx11.0.0 [-Woverride-module]
+    val flags = config.compileOptions ++ flto(config) ++
+      Seq(optimizationOpt, "-Wno-override-module")
 
     llPaths.par
       .map { ll =>
         val apppath = ll.abs
-        val outpath = apppath + ".o"
+        val outpath = apppath + oExt
         val compile =
-          Seq(config.clang.abs) ++ flto(config) ++ Seq("-c",
-                                                       apppath,
-                                                       "-o",
-                                                       outpath) ++ opts
+          Seq(config.clang.abs) ++ flags ++ Seq("-c", apppath, "-o", outpath)
+
         config.logger.running(compile)
         Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
           config.logger)
@@ -207,8 +210,7 @@ private[scalanative] object LLVM {
       "pthread" +: "dl" +: srclinks ++: gclinks
     }
     val linkopts    = config.linkingOptions ++ links.map("-l" + _)
-    val targetopt   = Seq("-target", config.targetTriple)
-    val flags       = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
+    val flags       = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs)
     val objPatterns = NativeLib.destObjPatterns(workdir, nativelibs)
     val opaths      = IO.getAll(workdir, objPatterns).map(_.abs)
     val paths       = llPaths.map(_.abs) ++ opaths

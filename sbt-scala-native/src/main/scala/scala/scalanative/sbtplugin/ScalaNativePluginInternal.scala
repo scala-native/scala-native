@@ -1,9 +1,7 @@
 package scala.scalanative
 package sbtplugin
 
-import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicReference
-import java.nio.file.Files
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
 import sbt._
@@ -20,9 +18,6 @@ object ScalaNativePluginInternal {
 
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
-
-  val nativeTarget =
-    taskKey[String]("Target triple.")
 
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
@@ -83,11 +78,6 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
-    nativeTarget := interceptBuildException {
-      val cwd   = nativeWorkdir.value.toPath
-      val clang = nativeClang.value.toPath
-      Discover.targetTriple(clang, cwd)
-    },
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
     },
@@ -127,7 +117,6 @@ object ScalaNativePluginInternal {
           .withMainClass(maincls)
           .withClassPath(classpath)
           .withWorkdir(cwd)
-          .withTargetTriple(nativeTarget.value)
           .withCompilerConfig(nativeConfig.value)
       }
 

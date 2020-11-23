@@ -55,7 +55,7 @@ object CodeGen {
         partitionBy(assembly, procs)(_.name.top.mangle).par.foreach {
           case (id, defns) =>
             val sorted = defns.sortBy(_.name.show)
-            new Impl(config.targetTriple, env, sorted)
+            new Impl(env, sorted)
               .gen(id.toString, workdir)
         }
 
@@ -64,7 +64,7 @@ object CodeGen {
       // Clang's LTO is not available.
       def single(): Unit = {
         val sorted = assembly.sortBy(_.name.show)
-        new Impl(config.targetTriple, env, sorted)
+        new Impl(env, sorted)
           .gen(id = "out", workdir)
       }
 
@@ -75,9 +75,8 @@ object CodeGen {
       }
     }
 
-  private final class Impl(targetTriple: String,
-                           env: Map[Global, Defn],
-                           defns: Seq[Defn])(implicit meta: Metadata) {
+  private final class Impl(env: Map[Global, Defn], defns: Seq[Defn])(
+      implicit meta: Metadata) {
     import Impl._
 
     private var currentBlockName: Local = _
@@ -165,12 +164,6 @@ object CodeGen {
 
     def genPrelude()(implicit sb: ShowBuilder): Unit = {
       import sb._
-      if (targetTriple.nonEmpty) {
-        str("target triple = \"")
-        str(targetTriple)
-        str("\"")
-        newline()
-      }
       line("declare i32 @llvm.eh.typeid.for(i8*)")
       line("declare i32 @__gxx_personality_v0(...)")
       line("declare i8* @__cxa_begin_catch(i8*)")
