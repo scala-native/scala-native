@@ -55,7 +55,9 @@ final class _Class[A](val rawty: RawPtr) {
       rawty == toRawType(classOf[LongArray]) ||
       rawty == toRawType(classOf[FloatArray]) ||
       rawty == toRawType(classOf[DoubleArray]) ||
-      rawty == toRawType(classOf[ObjectArray]))
+      rawty == toRawType(classOf[ObjectArray]) ||
+      rawty == toRawType(classOf[BoxedUnitArray])
+
   def isAssignableFrom(that: Class[_]): scala.Boolean =
     is(that.asInstanceOf[_Class[_]].ty, ty)
 
