@@ -154,7 +154,7 @@ object Array {
 }
 
 %{
-   types = {'BoxedUnit': sizePtr, 'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
+   types = {'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
             'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': sizePtr}
 }%
 % # BEWARE: Order of iteration of the dictionary depends on version of Python
@@ -169,13 +169,16 @@ object Array {
 % for T, sizeT in types.items():
 
 %{
-   alloc = 'GC.alloc_atomic' if T != 'Object' and T != 'BoxedUnit' else 'GC.alloc'
+   alloc = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
 }%
 
+% if T == 'Object':
+sealed class ObjectArray private[runtime] () extends Array[${T}] {
+% else:
 final class ${T}Array private () extends Array[${T}] {
+% end
 
-  @inline def stride: CSize =
-    ${sizeT}
+  @inline def stride: CSize = ${sizeT}
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
@@ -191,11 +194,7 @@ final class ${T}Array private () extends Array[${T}] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
-      % if T != 'BoxedUnit':
       load${T}(ith)
-      % else:
-      loadObject(ith).asInstanceOf[BoxedUnit]
-      % end
     }
 
   @inline def update(i: Int, value: ${T}): Unit =
@@ -204,11 +203,7 @@ final class ${T}Array private () extends Array[${T}] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
-      % if T != 'BoxedUnit':
       store${T}(ith, value)
-      % else:
-      storeObject(ith, value.asInstanceOf[Object])
-      % end
     }
 
   @inline override def clone(): ${T}Array = {
@@ -242,3 +237,45 @@ object ${T}Array {
   }
 }
 % end
+
+final class BoxedUnitArray private () extends ObjectArray {
+
+  override def apply(i: CInt): BoxedUnit =
+    super.apply(i).asInstanceOf[BoxedUnit]
+
+  def update(i: CInt, value: BoxedUnit): Unit =
+    super.update(i, value)
+
+  override def update(i: CInt, value: Object): Unit =
+    super.update(i, value)
+
+  @inline override def clone(): BoxedUnitArray = {
+    val arrty   = toRawType(classOf[BoxedUnitArray])
+    val arrsize = ${sizeHeader} + ${sizePtr} * length
+    val arr     = ${alloc}(arrty, arrsize)
+    val src     = castObjectToRawPtr(this)
+    libc.memcpy(arr, src, arrsize)
+    castRawPtrToObject(arr).asInstanceOf[BoxedUnitArray]
+  }
+}
+
+object BoxedUnitArray {
+  @inline def alloc(length: Int): BoxedUnitArray = {
+    val arrty   = toRawType(classOf[BoxedUnitArray])
+    val arrsize = ${sizeHeader} + ${sizePtr} * length
+    val arr     = ${alloc}(arrty, arrsize)
+    storeInt(elemRawPtr(arr, 8), length)
+    storeInt(elemRawPtr(arr, 12), ${sizePtr})
+    castRawPtrToObject(arr).asInstanceOf[BoxedUnitArray]
+  }
+
+  @inline def snapshot(length: Int, data: RawPtr): BoxedUnitArray = {
+    val arr  = alloc(length)
+    val dst  = arr.atRaw(0)
+    val src  = data
+    val size = ${sizePtr} * length
+    libc.memcpy(dst, src, size)
+    arr
+  }
+
+}
