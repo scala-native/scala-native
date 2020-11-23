@@ -35,6 +35,8 @@ final class _Class[A](val rawty: RawPtr) {
     else if (rawty == toRawType(classOf[LongArray])) classOf[scala.Long]
     else if (rawty == toRawType(classOf[FloatArray])) classOf[scala.Float]
     else if (rawty == toRawType(classOf[DoubleArray])) classOf[scala.Double]
+    else if (rawty == toRawType(classOf[BoxedUnitArray]))
+      classOf[scala.runtime.BoxedUnit]
     else classOf[java.lang.Object]
   }
 
@@ -45,7 +47,7 @@ final class _Class[A](val rawty: RawPtr) {
     getName().split('.').last.split('$').last
 
   def isArray(): scala.Boolean =
-    (rawty == toRawType(classOf[BooleanArray]) ||
+    rawty == toRawType(classOf[BooleanArray]) ||
       rawty == toRawType(classOf[CharArray]) ||
       rawty == toRawType(classOf[ByteArray]) ||
       rawty == toRawType(classOf[ShortArray]) ||

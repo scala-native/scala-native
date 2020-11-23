@@ -28,6 +28,8 @@ class ClassTest {
     assertTrue(Array(0F).getClass.getComponentType == classOf[scala.Float])
     assertTrue(Array(0D).getClass.getComponentType == classOf[scala.Double])
     assertTrue(
+      Array(()).getClass.getComponentType == classOf[scala.runtime.BoxedUnit])
+    assertTrue(
       Array(new java.lang.Object).getClass.getComponentType == classOf[
         java.lang.Object])
   }
