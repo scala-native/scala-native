@@ -130,6 +130,9 @@ private[scalanative] object LLVM {
       }
     }
 
+    val fltoOpt   = flto(config)
+    val targetOpt = target(config)
+
     // generate .o files for all included source files in parallel
     paths.par.foreach { path =>
       val opath = path + oExt
@@ -139,7 +142,7 @@ private[scalanative] object LLVM {
         val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
         val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
         val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
+          Seq(compiler) ++ fltoOpt ++ flags ++ targetOpt ++
             Seq("-c", path, "-o", opath)
 
         config.logger.running(compilec)
@@ -161,17 +164,15 @@ private[scalanative] object LLVM {
         case Mode.ReleaseFast => "-O2"
         case Mode.ReleaseFull => "-O3"
       }
-    val opts = Seq(optimizationOpt) ++ target(config) ++ config.compileOptions
+    val opts    = Seq(optimizationOpt) ++ target(config) ++ config.compileOptions
+    val fltoOpt = flto(config)
 
     llPaths.par
       .map { ll =>
         val apppath = ll.abs
         val outpath = apppath + oExt
         val compile =
-          Seq(config.clang.abs) ++ flto(config) ++ Seq("-c",
-                                                       apppath,
-                                                       "-o",
-                                                       outpath) ++ opts
+          Seq(config.clang.abs) ++ fltoOpt ++ Seq("-c", apppath, "-o", outpath) ++ opts
         config.logger.running(compile)
         Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
           config.logger)
