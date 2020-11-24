@@ -58,7 +58,6 @@ class ClassTest {
     assertTrue(classOf[Array[scala.Float]].isArray)
     assertTrue(classOf[Array[scala.Double]].isArray)
     assertTrue(classOf[Array[scala.Unit]].isArray)
-    assertTrue(classOf[scala.scalanative.runtime.BoxedUnitArray].isArray)
     assertTrue(classOf[Array[java.lang.Object]].isArray)
     assertTrue(classOf[Array[java.lang.String]].isArray)
     assertFalse(classOf[java.lang.Object].isArray)
