@@ -139,7 +139,8 @@ private[scalanative] object LLVM {
         val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
         val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
         val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++ Seq("-c", path, "-o", opath)
+          Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
+            Seq("-c", path, "-o", opath)
 
         config.logger.running(compilec)
         val result = Process(compilec, config.workdir.toFile) ! Logger
@@ -160,12 +161,12 @@ private[scalanative] object LLVM {
         case Mode.ReleaseFast => "-O2"
         case Mode.ReleaseFull => "-O3"
       }
-    val opts = optimizationOpt +: config.compileOptions
+    val opts = Seq(optimizationOpt) ++ target(config) ++ config.compileOptions
 
     llPaths.par
       .map { ll =>
         val apppath = ll.abs
-        val outpath = apppath + ".o"
+        val outpath = apppath + oExt
         val compile =
           Seq(config.clang.abs) ++ flto(config) ++ Seq("-c",
                                                        apppath,
@@ -206,9 +207,9 @@ private[scalanative] object LLVM {
       // * libpthread for process APIs and parallel garbage collection.
       "pthread" +: "dl" +: srclinks ++: gclinks
     }
-    val linkopts    = config.linkingOptions ++ links.map("-l" + _)
-    val targetopt   = Seq("-target", config.targetTriple)
-    val flags       = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
+    val linkopts = config.linkingOptions ++ links.map("-l" + _)
+    val flags =
+      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ target(config)
     val objPatterns = NativeLib.destObjPatterns(workdir, nativelibs)
     val opaths      = IO.getAll(workdir, objPatterns).map(_.abs)
     val paths       = llPaths.map(_.abs) ++ opaths
@@ -235,4 +236,10 @@ private[scalanative] object LLVM {
     lto(config).fold[Seq[String]] {
       Seq()
     } { name => Seq(s"-flto=$name") }
+
+  private def target(config: Config): Seq[String] = {
+    val tt = config.targetTriple
+    if (tt.isEmpty()) Seq("-Wno-override-module")
+    else Seq("-target", tt)
+  }
 }
