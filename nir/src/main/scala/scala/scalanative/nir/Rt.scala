@@ -20,6 +20,7 @@ object Rt {
   val JavaHashCodeSig  = Sig.Method("hashCode", Seq(Int)).mangled
   val ScalaEqualsSig   = Sig.Method("scala_==", Seq(Object, Bool)).mangled
   val ScalaHashCodeSig = Sig.Method("scala_##", Seq(Int)).mangled
+  val ObjectCloneSig   = Sig.Method("clone", Seq(Rt.Object)).mangled
   val IsArraySig       = Sig.Method("isArray", Seq(Bool)).mangled
   val IsAssignableFromSig =
     Sig.Method("isAssignableFrom", Seq(Class, Bool)).mangled

@@ -24,7 +24,14 @@ class VirtualTable(meta: Metadata, cls: linker.Class) {
       impls(sig) = impl
     }
     slots.foreach { sig => addImpl(sig) }
-    cls.calls.foreach { sig =>
+
+    /* Bug workaround!
+     * When generating method calls in Lower.genMethodOp vtable may not contain given Sig
+     * E.g when using reflective call to ObjectArray.clone: Object it would fail in tests (but works in sandbox)
+     * We're forcing here adding this method to all objects
+     */
+    val base = Seq(Rt.ObjectCloneSig)
+    (cls.calls ++ base).foreach { sig =>
       if (cls.targets(sig).size > 1) {
         if (!impls.contains(sig)) {
           addSlot(sig)
