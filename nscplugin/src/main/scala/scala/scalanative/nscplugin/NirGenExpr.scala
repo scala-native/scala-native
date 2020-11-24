@@ -1366,11 +1366,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genArrayOp(app: Apply, code: Int): Val = {
-      import scalaPrimitives._
-
       val Apply(Select(arrayp, _), argsp) = app
 
       val Type.Array(elemty, _) = genType(arrayp.tpe)
+      val statically            = !elemty.isInstanceOf[Type.RefKind]
 
       def elemcode = genArrayCode(arrayp.tpe)
       val array    = genExpr(arrayp)
@@ -1379,7 +1378,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       if (code == ARRAY_CLONE) {
         val method = RuntimeArrayCloneMethod(elemcode)
-        genApplyMethod(method, statically = true, array, argsp)
+        genApplyMethod(method, statically = statically, array, argsp)
       } else if (scalaPrimitives.isArrayGet(code)) {
         val idx    = genExpr(argsp(0))
         buf.arrayload(elemty, array, idx, unwind)
