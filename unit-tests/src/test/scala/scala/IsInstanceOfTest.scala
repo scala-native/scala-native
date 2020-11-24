@@ -2,6 +2,7 @@ package scala
 
 import org.junit.Test
 import org.junit.Assert._
+import scala.scalanative.runtime.BoxedUnitArray
 
 class IsInstanceOfTest {
 
@@ -39,6 +40,14 @@ class IsInstanceOfTest {
   def assertIsInstanceOfString(a: AnyRef, b: AnyRef): Unit = {
     assertTrue(a.isInstanceOf[String])
     assertTrue(b.isInstanceOf[String])
+  }
+
+  @Test def boxedUnitArrayIsArrayOfObjects(): Unit = {
+    val arr: Array[_] = Array.empty[Unit]
+    assertTrue("elems are boxed", arr.getClass == classOf[BoxedUnitArray])
+    assertTrue("is Array[Unit]", arr.isInstanceOf[Array[Unit]])
+    assertTrue("is Array[Object]", arr.isInstanceOf[Array[Object]])
+    assertTrue("is Array[AnyRef]", arr.isInstanceOf[Array[AnyRef]])
   }
 
 }
