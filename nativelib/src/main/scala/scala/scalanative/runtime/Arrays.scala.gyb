@@ -90,7 +90,7 @@ object Array {
            len: Int): Unit = {
     if (from == null || to == null) {
       throw new NullPointerException()
-    } else if (getRawType(from) != getRawType(to)) {
+    } else if (!to.getClass.isAssignableFrom(from.getClass)) {
       throw new ArrayStoreException("Invalid array copy.")
     } else if (len < 0) {
       throw new IndexOutOfBoundsException("length is negative")
