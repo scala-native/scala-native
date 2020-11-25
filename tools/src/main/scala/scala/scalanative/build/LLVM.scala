@@ -120,23 +120,21 @@ private[scalanative] object LLVM {
       }
     }
 
+    val (incPaths, excPaths) = paths.partition(include(_))
+
     // delete .o files for all excluded source files
-    paths.foreach { path =>
-      if (!include(path)) {
-        val opath = Paths.get(path + oExt)
-        if (Files.exists(opath)) {
-          Files.delete(opath)
-        }
-      }
+    excPaths.foreach { path =>
+      val opath = Paths.get(path + oExt)
+      if (Files.exists(opath)) Files.delete(opath)
     }
 
     val fltoOpt   = flto(config)
     val targetOpt = target(config)
 
     // generate .o files for all included source files in parallel
-    paths.par.foreach { path =>
+    incPaths.par.foreach { path =>
       val opath = path + oExt
-      if (include(path) && !Files.exists(Paths.get(opath))) {
+      if (!Files.exists(Paths.get(opath))) {
         val isCpp    = path.endsWith(cppExt)
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
@@ -156,7 +154,13 @@ private[scalanative] object LLVM {
     libPath
   }
 
-  /** Compile the given LL files to object files */
+  /**
+   * Compile the given ll files to object files
+   *
+   * @param config  The configuration of the toolchain.
+   * @param llPaths The paths to the ll files.
+   * @return The Seq of paths of the o files.
+   */
   def compile(config: Config, llPaths: Seq[Path]): Seq[Path] = {
     val optimizationOpt =
       config.mode match {
@@ -164,22 +168,20 @@ private[scalanative] object LLVM {
         case Mode.ReleaseFast => "-O2"
         case Mode.ReleaseFull => "-O3"
       }
+
     val opts    = Seq(optimizationOpt) ++ target(config) ++ config.compileOptions
     val fltoOpt = flto(config)
 
-    llPaths.par
-      .map { ll =>
-        val apppath = ll.abs
-        val outpath = apppath + oExt
-        val compile =
-          Seq(config.clang.abs) ++ fltoOpt ++ Seq("-c", apppath, "-o", outpath) ++ opts
-        config.logger.running(compile)
-        Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
-          config.logger)
-        Paths.get(outpath)
-      }
-      .seq
-      .toSeq
+    llPaths.par.map { ll =>
+      val apppath = ll.abs
+      val outpath = apppath + oExt
+      val compile =
+        Seq(config.clang.abs) ++ fltoOpt ++ Seq("-c", apppath, "-o", outpath) ++ opts
+      config.logger.running(compile)
+      Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
+        config.logger)
+      Paths.get(outpath)
+    }.seq
   }
 
   /**
