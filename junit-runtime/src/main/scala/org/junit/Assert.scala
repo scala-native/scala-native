@@ -55,7 +55,7 @@ object Assert {
 
   @inline
   private def isEquals(expected: Any, actual: Any): Boolean =
-    expected.equals(actual)
+    expected == actual
 
   @noinline
   def assertEquals(expected: Any, actual: Any): Unit =
