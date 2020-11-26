@@ -1,6 +1,5 @@
 import java.io.File.pathSeparator
 import scala.collection.mutable
-import scala.util.Try
 
 import build.ScalaVersions._
 
@@ -41,7 +40,6 @@ Global / excludeLintKeys += crossSbtVersions
 inThisBuild(
   Def.settings(
     organization := "org.scala-native", // Maven <groupId>
-    version := nativeVersion,           // Maven <version>
     scalaVersion := scala212,
     crossScalaVersions := libCrossScalaVersions,
     scalacOptions ++= Seq(
@@ -93,9 +91,6 @@ addCommandAlias(
   ).mkString(";")
 )
 
-lazy val publishSnapshot =
-  taskKey[Unit]("Publish snapshot to sonatype on every commit to master.")
-
 // to publish plugin (we only need to do this once, it's already done!)
 // follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html
 // then add a new package
@@ -108,54 +103,14 @@ lazy val bintrayPublishSettings: Seq[Setting[_]] = Seq(
 ) ++ publishSettings
 
 lazy val mavenPublishSettings: Seq[Setting[_]] = Seq(
-  publishMavenStyle := true,
-  pomIncludeRepository := { x => false },
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (version.value.trim.endsWith("SNAPSHOT"))
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
-  publishSnapshot := Def.taskDyn {
-    val travis = Try(sys.env("TRAVIS")).getOrElse("false") == "true"
-    val pr = Try(sys.env("TRAVIS_PULL_REQUEST"))
-      .getOrElse("false") != "false"
-    val branch   = Try(sys.env("TRAVIS_BRANCH")).getOrElse("")
-    val snapshot = version.value.trim.endsWith("SNAPSHOT")
-
-    (travis, pr, branch, snapshot) match {
-      case (true, false, "master", true) =>
-        println("on master, going to publish a snapshot")
-        publish
-
-      case _ =>
-        println(
-          "not going to publish a snapshot due to: " +
-            s"travis = $travis, pr = $pr, " +
-            s"branch = $branch, snapshot = $snapshot")
-        Def.task((): Unit)
-    }
-  }.value,
-  credentials ++= {
-    for {
-      realm    <- sys.env.get("MAVEN_REALM")
-      domain   <- sys.env.get("MAVEN_DOMAIN")
-      user     <- sys.env.get("MAVEN_USER")
-      password <- sys.env.get("MAVEN_PASSWORD")
-    } yield {
-      Credentials(realm, domain, user, password)
-    }
-  }.toSeq
+  pomIncludeRepository := { _ => false }
 ) ++ publishSettings
 
 lazy val publishSettings: Seq[Setting[_]] = Seq(
   Compile / publishArtifact := true,
   Test / publishArtifact := false,
-  Compile / packageDoc / publishArtifact :=
-    !version.value.contains("SNAPSHOT"),
-  Compile / packageSrc / publishArtifact :=
-    !version.value.contains("SNAPSHOT"),
+  Compile / packageDoc / publishArtifact := !isSnapshot.value,
+  Compile / packageSrc / publishArtifact := !isSnapshot.value,
   homepage := Some(url("http://www.scala-native.org")),
   startYear := Some(2015),
   licenses := Seq(
@@ -166,11 +121,6 @@ lazy val publishSettings: Seq[Setting[_]] = Seq(
     name = "Denys Shabalin",
     url = url("http://den.sh")
   ),
-  scmInfo := Some(
-    ScmInfo(
-      browseUrl = url("https://github.com/scala-native/scala-native"),
-      connection = "scm:git:git@github.com:scala-native/scala-native.git"
-    )),
   pomExtra := (
     <issueManagement>
       <system>GitHub Issues</system>
@@ -184,7 +134,6 @@ lazy val noPublishSettings: Seq[Setting[_]] = Seq(
   packagedArtifacts := Map.empty,
   publish := {},
   publishLocal := {},
-  publishSnapshot := { println("no publish") },
   publish / skip := true
 ) ++ nameSettings
 
