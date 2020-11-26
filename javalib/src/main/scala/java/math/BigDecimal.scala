@@ -398,7 +398,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
     }
 
     val (unscaled, bufLength) = {
-      val u = in.subSequence(begin, index).toString
+      val u = ArrayCharSequence(in).subSequence(begin, index).toString
       val b = index - begin
       // A decimal point was found
       if ((index <= last) && (in(index) == '.')) {
@@ -413,7 +413,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
           index += 1
         }
         _scale = index - begin
-        (u + in.subSequence(begin, begin + _scale).toString, b + _scale)
+        val subSeq = ArrayCharSequence(in).subSequence(begin, begin + _scale)
+        (u + subSeq.toString, b + _scale)
       } else {
         _scale = 0
         (u, b)
