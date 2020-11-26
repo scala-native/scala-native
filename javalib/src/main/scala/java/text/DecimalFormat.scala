@@ -417,10 +417,11 @@ class DecimalFormat extends NumberFormat {
       case Pattern(PositivePattern(prefix, number, suffix), negative) =>
         prefix.map(_.value.mkString).foreach(setPositivePrefix)
         suffix.map(_.value.mkString).foreach(setPositiveSuffix)
-        negative.map {
+        negative.foreach {
           case NegativePattern(prefix, _, suffix) =>
             prefix.map(_.value.mkString).foreach(setNegativePrefix)
             suffix.map(_.value.mkString).foreach(setNegativeSuffix)
+          case _ => throw new MatchError(negative)
         }
         number match {
           case Number(Integer(max, min, grp), frac, exp) =>
@@ -437,9 +438,11 @@ class DecimalFormat extends NumberFormat {
               case Fraction(max, min) =>
                 setMaximumFractionDigits(max)
                 setMinimumFractionDigits(min)
+              case _ => throw new MatchError(frac)
             }
             decimalSepShown = frac.isDefined
             sciExpoDigits = exp.map(_.exp).getOrElse(0)
+          case _ => throw new MatchError(number)
         }
       case _ => throw new IllegalArgumentException
     }
