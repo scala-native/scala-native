@@ -399,7 +399,7 @@ class StringTest {
     // case of one high surrogate
     val hChar = '\ud801'
     val hStr  = hChar.toString
-    assertTrue(Character.isHighSurrogate(hChar) equals true)
+    assertTrue(Character.isHighSurrogate(hChar))
     assertTrue(hStr.length equals 1)
     assertTrue(hStr.toUpperCase equals hStr)
     // toUpperCase should consider String's offset

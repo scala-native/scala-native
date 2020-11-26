@@ -3,6 +3,7 @@
  */
 package org.junit
 
+import java.util.Objects
 import org.hamcrest.{Matcher, MatcherAssert}
 import org.junit.internal.{ExactComparisonCriteria, InexactComparisonCriteria}
 
@@ -55,7 +56,7 @@ object Assert {
 
   @inline
   private def isEquals(expected: Any, actual: Any): Boolean =
-    expected.equals(actual)
+    Objects.equals(expected, actual)
 
   @noinline
   def assertEquals(expected: Any, actual: Any): Unit =

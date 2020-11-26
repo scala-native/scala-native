@@ -281,7 +281,7 @@ object Character {
     val indexMinus1 = index - 1
     val indexMinus2 = index - 2
 
-    val low = seq.charAt(indexMinus1)
+    val low = seq(indexMinus1)
 
     if (indexMinus2 < 0) {
       low

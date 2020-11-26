@@ -15,7 +15,7 @@ object Objects {
   @inline
   def equals(a: Any, b: Any): Boolean =
     if (a == null) b == null
-    else a.equals(b)
+    else a.asInstanceOf[AnyRef].equals(b)
 
   @inline
   def deepEquals(a: Any, b: Any): Boolean = {

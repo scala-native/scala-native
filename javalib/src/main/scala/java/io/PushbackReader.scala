@@ -27,7 +27,7 @@ class PushbackReader(in: Reader, size: Int) extends FilterReader(in) {
       throw new IOException("Stream closed")
     }
 
-    if (pos < buf.length()) {
+    if (pos < buf.length) {
       val r = buf(pos)
       pos += 1
       r
@@ -42,7 +42,7 @@ class PushbackReader(in: Reader, size: Int) extends FilterReader(in) {
         throw new IOException("Stream closed")
       }
 
-      if (offset < 0 || count < 0 || offset > buffer.length() - count) {
+      if (offset < 0 || count < 0 || offset > buffer.length - count) {
         throw new IndexOutOfBoundsException()
       }
 
@@ -50,7 +50,7 @@ class PushbackReader(in: Reader, size: Int) extends FilterReader(in) {
       var newOffset   = offset
       var copyLength  = 0
 
-      if (pos < buf.length()) {
+      if (pos < buf.length) {
         copyLength = if (buf.length - pos >= count) count else buf.length - pos
         System.arraycopy(buf, pos, buffer, newOffset, copyLength)
         newOffset += copyLength
@@ -84,7 +84,7 @@ class PushbackReader(in: Reader, size: Int) extends FilterReader(in) {
     throw new IOException("mark/reset not supported")
 
   def unread(buffer: Array[Char]): Unit =
-    unread(buffer, 0, buffer.length())
+    unread(buffer, 0, buffer.length)
 
   def unread(buffer: Array[Char], offset: Int, length: Int): Unit =
     lock.synchronized {
@@ -94,7 +94,7 @@ class PushbackReader(in: Reader, size: Int) extends FilterReader(in) {
       if (length > pos) {
         throw new IOException("Pushback buffer full")
       }
-      if (offset > buffer.length() - length || offset < 0) {
+      if (offset > buffer.length - length || offset < 0) {
         throw new ArrayIndexOutOfBoundsException()
       }
       if (length < 0) {
@@ -126,7 +126,7 @@ class PushbackReader(in: Reader, size: Int) extends FilterReader(in) {
     if (count == 0) {
       0
     } else {
-      val availableFromBuffer = buf.length() - pos
+      val availableFromBuffer = buf.length - pos
       if (availableFromBuffer > 0) {
         val requiredFromIn = count - availableFromBuffer
         if (requiredFromIn <= 0) {
