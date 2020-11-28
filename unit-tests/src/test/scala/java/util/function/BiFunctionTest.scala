@@ -1,26 +1,34 @@
-package java.util.function
+// Ported from Scala.js commit: d3a9711 dated: 2020-09-06
 
-import org.junit.Ignore
-import org.junit.Test
+package org.scalanative.testsuite.javalib.util.function
+
+import java.util.function.{Function, BiFunction}
+
 import org.junit.Assert._
+import org.junit.Test
 
 class BiFunctionTest {
-  val f = new BiFunction[Integer, Integer, Integer] {
-    override def apply(x: Integer, y: Integer): Integer = {
-      x + y
+  import BiFunctionTest._
+
+  @Test def createAndApply(): Unit = {
+    assertEquals(3, addBiFunc(1, 2))
+  }
+
+  @Test def andThen(): Unit = {
+    assertEquals(4, addBiFunc.andThen(incFunc)(1, 2))
+  }
+}
+
+object BiFunctionTest {
+  private val addBiFunc: BiFunction[Int, Int, Int] = {
+    new BiFunction[Int, Int, Int] {
+      def apply(t: Int, u: Int): Int = t + u
     }
   }
 
-  @Test def biFunctionApplyIntegerInteger(): Unit = {
-    assertEquals(f(1, 2), 3)
-  }
-
-  val ff = new Function[Integer, Integer] {
-    override def apply(x: Integer): Integer = x + 1
-  }
-
-  @Ignore("#1229 - 2.11 does not have default method support")
-  @Test def biFunctionAndThen(): Unit = {
-    // assertEquals(f.andThen(ff)(1, 2), 4)
+  private val incFunc: Function[Int, Int] = {
+    new Function[Int, Int] {
+      def apply(t: Int): Int = t + 1
+    }
   }
 }
