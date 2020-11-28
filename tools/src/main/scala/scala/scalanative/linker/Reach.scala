@@ -303,7 +303,13 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       }
       info.parent.foreach(loopParent)
       info.traits.foreach(loopTraits)
-      calls.foreach { sig => info.responds.get(sig).foreach(reachGlobal) }
+      calls.foreach { sig =>
+        def respondImpl = info.responds.get(sig)
+        def defaultImpl = info.defaultResponds.get(sig)
+        respondImpl
+          .orElse(defaultImpl)
+          .foreach(reachGlobal)
+      }
 
       // 1. Handle all dynamic methods on this class.
       //    Any method that implements a known dynamic
