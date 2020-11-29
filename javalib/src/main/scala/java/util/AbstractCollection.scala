@@ -1,8 +1,12 @@
+// Ported from Scala.js commit: 1337656 dated: 2020-06-04
+
 package java.util
 
 import scala.annotation.tailrec
+
+import ScalaOps._
+
 import java.lang.{reflect => jlr}
-import java.util.ScalaOps._
 
 abstract class AbstractCollection[E] protected () extends Collection[E] {
   def iterator(): Iterator[E]
@@ -11,7 +15,7 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
   def isEmpty(): Boolean = size() == 0
 
   def contains(o: Any): Boolean =
-    iterator().scalaOps.exists(o === _)
+    this.scalaOps.exists(Objects.equals(o, _))
 
   def toArray(): Array[AnyRef] =
     toArray(new Array[AnyRef](size()))
@@ -25,7 +29,8 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
           .asInstanceOf[Array[T]]
 
     val iter = iterator()
-    for (i <- 0 until size()) toFill(i) = iter.next().asInstanceOf[T]
+    for (i <- 0 until size())
+      toFill(i) = iter.next().asInstanceOf[T]
     if (toFill.length > size())
       toFill(size()) = null.asInstanceOf[T]
     toFill
@@ -38,19 +43,21 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
     @tailrec
     def findAndRemove(iter: Iterator[E]): Boolean = {
       if (iter.hasNext()) {
-        if (iter.next() === o) {
+        if (Objects.equals(iter.next(), o)) {
           iter.remove()
           true
-        } else
+        } else {
           findAndRemove(iter)
-      } else
+        }
+      } else {
         false
+      }
     }
     findAndRemove(iterator())
   }
 
   def containsAll(c: Collection[_]): Boolean =
-    c.iterator().scalaOps.forall(this.contains)
+    c.scalaOps.forall(this.contains(_))
 
   def addAll(c: Collection[_ <: E]): Boolean =
     c.scalaOps.foldLeft(false)((prev, elem) => add(elem) || prev)
@@ -77,5 +84,5 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
   }
 
   override def toString(): String =
-    iterator().scalaOps.mkString("[", ", ", "]")
+    this.scalaOps.mkString("[", ", ", "]")
 }
