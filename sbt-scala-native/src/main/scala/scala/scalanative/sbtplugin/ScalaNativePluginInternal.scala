@@ -21,9 +21,6 @@ object ScalaNativePluginInternal {
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
 
-  val nativeTarget =
-    taskKey[String]("Target triple.")
-
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
 

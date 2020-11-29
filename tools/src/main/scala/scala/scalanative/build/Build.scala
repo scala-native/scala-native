@@ -72,7 +72,8 @@ object Build {
       val nativelib    = NativeLib.findNativeLib(nativelibs)
       val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
 
-    val objectPaths = config.logger.time("Compiling to native code") {
+    val msg = s"Compiling to native code (${targetTripleMsg(config)})"
+    val objectPaths = config.logger.time(msg) {
       val nativelibConfig =
         fconfig.withCompilerConfig(
           _.withCompileOptions("-O2" +: fconfig.compileOptions))
@@ -83,5 +84,10 @@ object Build {
     }
 
     LLVM.link(config, linked, objectPaths, outpath)
+  }
+
+  private def targetTripleMsg(config: Config): String = {
+    val tt = config.targetTriple
+    if (tt.nonEmpty) tt else "default target triple"
   }
 }
