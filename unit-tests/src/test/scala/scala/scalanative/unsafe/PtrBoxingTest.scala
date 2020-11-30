@@ -187,10 +187,6 @@ class PtrBoxingTest {
     }
   }
   @Test def loadAndStoreCFuncPtr(): Unit = {
-    type Functions = CStruct2[GetInt, StringLength]
-
-    type GetInt = CFuncPtr0[Int]
-    def getInt(): Int = 42
 
     Zone { implicit z =>
       val x: Ptr[Functions] = stackalloc[Functions]
@@ -214,7 +210,12 @@ class PtrBoxingTest {
 }
 
 object PtrBoxingTest {
-  type StringLength = CFuncPtr1[CString, CSize]
+  type Functions = CStruct2[GetInt, StringLength]
   //In 2.11 this method needs to be statically known
+
+  type GetInt = CFuncPtr0[Int]
+  def getInt(): Int = 42
+
+  type StringLength = CFuncPtr1[CString, CSize]
   def stringLength(str: CString): CSize = libc.string.strlen(str)
 }
