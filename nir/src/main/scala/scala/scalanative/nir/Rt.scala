@@ -7,7 +7,7 @@ object Rt {
   val Object  = Ref(Global.Top("java.lang.Object"))
   val Class   = Ref(Global.Top("java.lang.Class"))
   val String  = Ref(Global.Top("java.lang.String"))
-  val Type    = StructValue(Seq(Int, Int, Ptr))
+  val Type    = StructValue(Seq(Int, Int, Ptr, Ptr))
   val Runtime = Ref(Global.Top("scala.scalanative.runtime.package$"))
 
   val BoxedPtr        = Ref(Global.Top("scala.scalanative.unsafe.Ptr"))

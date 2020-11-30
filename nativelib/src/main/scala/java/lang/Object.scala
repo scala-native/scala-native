@@ -16,8 +16,7 @@ class _Object {
   @inline def __toString(): String =
     getClass.getName + "@" + Integer.toHexString(hashCode)
 
-  @inline def __getClass(): _Class[_] =
-    new _Class(getRawType(this))
+  @inline def __getClass(): _Class[_] = toClass(getRawType(this))
 
   @inline def __notify(): Unit =
     getMonitor(this)._notify()

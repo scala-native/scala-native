@@ -396,9 +396,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       withFreshExprBuffer { exprBuf =>
         exprBuf.label(curFresh(), Seq())
 
-        val fqcnArg = Val.String(fqSymId)
-        val runtimeClassArg =
-          exprBuf.genBoxClass(Val.Global(Global.Top(fqSymId), Type.Ptr))
+        val fqcnArg          = Val.String(fqSymId)
+        val runtimeClassArg  = Val.ClassOf(fqSymName)
         val loadModuleFunArg = genModuleLoaderAnonFun(exprBuf)
 
         exprBuf.genApplyModuleMethod(
@@ -522,18 +521,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                                              Val.Int(ctorSig.args.tail.length),
                                              unwind(curFresh))
           for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
-            // Allocate and instantiate a java.lang.Class object for the arg.
-            val co = allocAndConstruct(
-              exprBuf,
-              jlClass,
-              Seq(Type.Ptr),
-              Seq(Val.Global(Type.typeToName(arg), Type.Ptr))
-            )
             // Store the runtime class in the array.
             exprBuf.arraystore(jlClassRef,
                                rtClasses,
                                Val.Int(argIdx),
-                               co,
+                               Val.ClassOf(Type.typeToName(arg)),
                                unwind(curFresh))
           }
 
@@ -566,9 +558,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         withFreshExprBuffer { exprBuf =>
           exprBuf.label(curFresh(), Seq())
 
-          val fqcnArg = Val.String(fqSymId)
-          val runtimeClassArg =
-            exprBuf.genBoxClass(Val.Global(fqSymName, Type.Ptr))
+          val fqcnArg         = Val.String(fqSymId)
+          val runtimeClassArg = Val.ClassOf(fqSymName)
+
           val instantiateClassFunArg =
             genClassConstructorsInfo(exprBuf, ctors)
 

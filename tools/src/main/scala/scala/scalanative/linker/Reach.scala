@@ -523,6 +523,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachGlobal(n); reachType(ty)
     case Val.Const(v) =>
       reachVal(v)
+    case Val.ClassOf(cls) =>
+      reachGlobal(cls)
     case _ =>
       ()
   }

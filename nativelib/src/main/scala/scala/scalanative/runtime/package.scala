@@ -1,15 +1,13 @@
 package scala.scalanative
 
-import scala.reflect.ClassTag
 import scalanative.annotation.alwaysinline
 import scalanative.unsafe._
 import scalanative.runtime.Intrinsics._
-import scalanative.runtime.LLVMIntrinsics._
 
 package object runtime {
 
   /** Runtime Type Information. */
-  type Type = CStruct2[Int, String]
+  type Type = CStruct3[Int, String, Class[Any]]
 
   implicit class TypeOps(val self: Ptr[Type]) extends AnyVal {
     @alwaysinline def id: Int          = self._1
@@ -29,6 +27,18 @@ package object runtime {
 
   /** Used as a stub right hand of intrinsified methods. */
   def intrinsic: Nothing = throwUndefined()
+
+  def toClass(rtti: RawPtr): _Class[_] = {
+    val clsPtr = elemRawPtr(rtti, 16)
+
+    if (loadRawPtr(clsPtr) == null) {
+      val newClass = new _Class[Any](rtti)
+      storeObject(clsPtr, newClass)
+      ClassInstancesRegistry.add(newClass)
+    } else {
+      loadObject(clsPtr).asInstanceOf[_Class[_]]
+    }
+  }
 
   @alwaysinline def toRawType(cls: Class[_]): RawPtr =
     cls.asInstanceOf[java.lang._Class[_]].rawty

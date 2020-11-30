@@ -292,6 +292,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
         new String(chars)
       }
     case T.VirtualVal => Val.Virtual(getLong)
+    case T.ClassOfVal => Val.ClassOf(getGlobal())
   }
 
   // Ported from Scala.js

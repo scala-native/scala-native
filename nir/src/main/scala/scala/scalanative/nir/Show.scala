@@ -479,6 +479,10 @@ object Show {
       case Val.Virtual(key) =>
         str("virtual ")
         str(key)
+      case Val.ClassOf(cls) =>
+        str("classOf[")
+        global_(cls)
+        str("]")
     }
 
     def defns_(defns: Seq[Defn]): Unit =
