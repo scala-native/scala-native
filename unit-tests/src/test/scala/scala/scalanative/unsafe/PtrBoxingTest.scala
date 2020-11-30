@@ -11,6 +11,7 @@ import scalanative.libc.stdlib.malloc
 import java.lang.Long.toHexString
 
 class PtrBoxingTest {
+  import PtrBoxingTest._
   var any: Any = null
 
   @noinline lazy val nullPtr: Ptr[Byte] = null
@@ -185,33 +186,35 @@ class PtrBoxingTest {
       assertTrue(out.toList == List(10, 20, 30))
     }
   }
-
-  type GetInt = CFuncPtr0[Int]
-  def getInt(): Int = 42
-
-  type StringLength = CFuncPtr1[CString, CSize]
-  def stringLength(str: CString): CSize = libc.string.strlen(str)
-
   @Test def loadAndStoreCFuncPtr(): Unit = {
     type Functions = CStruct2[GetInt, StringLength]
 
+    type GetInt = CFuncPtr0[Int]
+    def getInt(): Int = 42
+
     Zone { implicit z =>
-      val x = stackalloc[Functions]
+      val x: Ptr[Functions] = stackalloc[Functions]
       x._1 = CFuncPtr0.fromScalaFunction0(getInt)
       x._2 = CFuncPtr1.fromScalaFunction1(stringLength)
 
       val loadedGetInt: GetInt             = x._1
       val loadedStringLength: StringLength = x._2
 
-      val testStr      = toCString("hello_native")
-      val expectedInt  = 42
-      val exptedLength = 12
+      val testStr        = toCString("hello_native")
+      val expectedInt    = 42
+      val expectedLength = 12
 
       assertEquals(expectedInt, x._1.apply())
       assertEquals(expectedInt, loadedGetInt())
 
-      assertEquals(exptedLength, x._2.apply(testStr))
-      assertEquals(exptedLength, loadedStringLength(testStr))
+      assertEquals(expectedLength, x._2.apply(testStr))
+      assertEquals(expectedLength, loadedStringLength(testStr))
     }
   }
+}
+
+object PtrBoxingTest {
+  type StringLength = CFuncPtr1[CString, CSize]
+  //In 2.11 this method needs to be statically known
+  def stringLength(str: CString): CSize = libc.string.strlen(str)
 }
