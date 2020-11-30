@@ -6,6 +6,7 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 import sbt.complete.DefaultParsers._
+import sbt.testing.Framework
 import scala.annotation.tailrec
 import scala.scalanative.util.Scope
 import scala.scalanative.build.{Build, BuildException, Discover}
@@ -163,38 +164,49 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeTestSettings: Seq[Setting[_]] =
     scalaNativeConfigSettings ++
       Seq(
-        mainClass := Some("scala.scalanative.testinterface.TestMain"),
-        loadedTestFrameworks := {
-          val configName = configuration.value.name
+        mainClass := {
+          if (sources.value.isEmpty) None
+          else Some("scala.scalanative.testinterface.TestMain")
+        },
+        loadedTestFrameworks := Def.taskDyn {
+          def loadFrameworks = Def.task {
+            val configName = configuration.value.name
 
-          if (fork.value) {
-            throw new MessageOnlyException(
-              s"`$configName / test` tasks in a Scala Native project require $configName / fork := false`.")
+            if (fork.value) {
+              throw new MessageOnlyException(
+                s"`$configName / test` tasks in a Scala Native project require $configName / fork := false`.")
+            }
+
+            val frameworks = testFrameworks.value
+            val frameworkNames =
+              frameworks.map(_.implClassNames.toList).toList
+
+            val logger     = streams.value.log.toLogger
+            val testBinary = nativeLink.value
+            val envVars    = (test / Keys.envVars).value
+
+            val config = TestAdapter
+              .Config()
+              .withBinaryFile(testBinary)
+              .withEnvVars(envVars)
+              .withLogger(logger)
+
+            val adapter           = newTestAdapter(config)
+            val frameworkAdapters = adapter.loadFrameworks(frameworkNames)
+
+            frameworks
+              .zip(frameworkAdapters)
+              .collect {
+                case (tf, Some(adapter)) => (tf, adapter)
+              }
+              .toMap
           }
 
-          val frameworks     = testFrameworks.value
-          val frameworkNames = frameworks.map(_.implClassNames.toList).toList
+          def empty = Def.task(Map.empty[TestFramework, Framework])
 
-          val logger     = streams.value.log.toLogger
-          val testBinary = nativeLink.value
-          val envVars    = (test / Keys.envVars).value
-
-          val config = TestAdapter
-            .Config()
-            .withBinaryFile(testBinary)
-            .withEnvVars(envVars)
-            .withLogger(logger)
-
-          val adapter           = newTestAdapter(config)
-          val frameworkAdapters = adapter.loadFrameworks(frameworkNames)
-
-          frameworks
-            .zip(frameworkAdapters)
-            .collect {
-              case (tf, Some(adapter)) => (tf, adapter)
-            }
-            .toMap
-        }
+          if (mainClass.value.isEmpty) empty
+          else loadFrameworks
+        }.value
       )
 
   lazy val scalaNativeProjectSettings: Seq[Setting[_]] =
