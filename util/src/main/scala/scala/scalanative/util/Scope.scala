@@ -42,32 +42,30 @@ object Scope {
   }
 
   /** Unsafe manually managed scope.*/
-  def unsafe: Scope = new Impl {}
+  def unsafe(): Scope = new Impl {}
 
   private sealed class Impl extends Scope {
     type Resources = List[Resource]
 
     private[this] val resources = new AtomicReference[Resources](Nil)
 
-    private def set(fn: Resources => Resources): Resources =
+    def acquire(res: Resource): Unit = {
       resources.getAndUpdate {
         new UnaryOperator[Resources] {
-          override def apply(t: Resources): Resources = fn(t)
+          override def apply(t: Resources): Resources = res :: t
         }
       }
-
-    def acquire(res: Resource): Unit = {
-      set(res :: _)
     }
 
-    def close(): Unit = resources.get() match {
-      case Nil =>
-        ()
-
-      case _ =>
-        val first :: _ = set(_.tail)
-        try first.close()
-        finally close()
+    def close(): Unit = {
+      def loop(resources: Resources): Unit = resources match {
+        case Nil =>
+          ()
+        case first :: rest =>
+          try first.close()
+          finally loop(rest)
+      }
+      loop(resources.getAndSet(Nil))
     }
   }
 
