@@ -46,8 +46,8 @@ object Array {
   implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] = new ArrayFactory(dummy)
   @SerialVersionUID(3L)
   private class ArrayFactory[A : ClassTag](dummy: Array.type) extends Factory[A, Array[A]] with Serializable {
-	def fromSpecific(it: IterableOnce[A]): Array[A] = Array.from[A](it)
-	def newBuilder: mutable.Builder[A, Array[A]] = Array.newBuilder[A]
+    def fromSpecific(it: IterableOnce[A]): Array[A] = Array.from[A](it)
+    def newBuilder: mutable.Builder[A, Array[A]] = Array.newBuilder[A]
   }
 
   /**
@@ -69,23 +69,23 @@ object Array {
    *  @return    an array consisting of elements of the iterable collection
    */
   def from[A : ClassTag](it: IterableOnce[A]): Array[A] = it match {
-	case it: Iterable[A] => it.toArray[A]
-	case _ => it.iterator.toArray[A]
+    case it: Iterable[A] => it.toArray[A]
+    case _ => it.iterator.toArray[A]
   }
 
   private def slowcopy(src : AnyRef,
-	srcPos : Int,
-	dest : AnyRef,
-	destPos : Int,
-	length : Int): Unit = {
-	var i = srcPos
-	var j = destPos
-	val srcUntil = srcPos + length
-	while (i < srcUntil) {
-	  array_update(dest, j, array_apply(src, i))
-	  i += 1
-	  j += 1
-	}
+    srcPos : Int,
+    dest : AnyRef,
+    destPos : Int,
+    length : Int): Unit = {
+    var i = srcPos
+    var j = destPos
+    val srcUntil = srcPos + length
+    while (i < srcUntil) {
+      array_update(dest, j, array_apply(src, i))
+      i += 1
+      j += 1
+    }
   }
 
   /** Copy one array to another.
@@ -104,11 +104,11 @@ object Array {
    *  @see `java.lang.System#arraycopy`
    */
   def copy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = {
-	val srcClass = src.getClass
-	if (srcClass.isArray && dest.getClass.isAssignableFrom(srcClass))
-	  java.lang.System.arraycopy(src, srcPos, dest, destPos, length)
-	else
-	  slowcopy(src, srcPos, dest, destPos, length)
+    val srcClass = src.getClass
+    if (srcClass.isArray && dest.getClass.isAssignableFrom(srcClass))
+      java.lang.System.arraycopy(src, srcPos, dest, destPos, length)
+    else
+      slowcopy(src, srcPos, dest, destPos, length)
   }
 
   /** Copy one array to another, truncating or padding with default values (if
@@ -123,15 +123,15 @@ object Array {
   def copyOf[A](original: Array[A], newLength: Int): Array[A] = ((original: @unchecked) match {
 //  We cannot distinguish Array[BoxedUnit] from Array[Object] in Scala Native
 //	case x: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
-	case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength)
-	case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)
-	case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
-	case x: Array[Long]       => java.util.Arrays.copyOf(x, newLength)
-	case x: Array[Float]      => java.util.Arrays.copyOf(x, newLength)
-	case x: Array[Char]       => java.util.Arrays.copyOf(x, newLength)
-	case x: Array[Byte]       => java.util.Arrays.copyOf(x, newLength)
-	case x: Array[Short]      => java.util.Arrays.copyOf(x, newLength)
-	case x: Array[Boolean]    => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Long]       => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Float]      => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Char]       => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Byte]       => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Short]      => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Boolean]    => java.util.Arrays.copyOf(x, newLength)
   }).asInstanceOf[Array[A]]
 
   /** Copy one array to another, truncating or padding with default values (if
@@ -148,28 +148,28 @@ object Array {
    * @see `java.util.Arrays#copyOf`
    */
   def copyAs[A](original: Array[_], newLength: Int)(implicit ct: ClassTag[A]): Array[A] = {
-	val runtimeClass = ct.runtimeClass
-	if (runtimeClass == Void.TYPE) newUnitArray(newLength).asInstanceOf[Array[A]]
-	else {
-	  val destClass = runtimeClass.asInstanceOf[Class[A]]
-	  if (destClass.isAssignableFrom(original.getClass.getComponentType)) {
-		if (destClass.isPrimitive) copyOf[A](original.asInstanceOf[Array[A]], newLength)
-		else {
-		  val destArrayClass = java.lang.reflect.Array.newInstance(destClass, 0).getClass.asInstanceOf[Class[Array[AnyRef]]]
-		  java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, destArrayClass).asInstanceOf[Array[A]]
-		}
-	  } else {
-		val dest = new Array[A](newLength)
-		Array.copy(original, 0, dest, 0, original.length)
-		dest
-	  }
-	}
+    val runtimeClass = ct.runtimeClass
+    if (runtimeClass == Void.TYPE) newUnitArray(newLength).asInstanceOf[Array[A]]
+    else {
+      val destClass = runtimeClass.asInstanceOf[Class[A]]
+      if (destClass.isAssignableFrom(original.getClass.getComponentType)) {
+        if (destClass.isPrimitive) copyOf[A](original.asInstanceOf[Array[A]], newLength)
+        else {
+          val destArrayClass = java.lang.reflect.Array.newInstance(destClass, 0).getClass.asInstanceOf[Class[Array[AnyRef]]]
+          java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, destArrayClass).asInstanceOf[Array[A]]
+        }
+      } else {
+        val dest = new Array[A](newLength)
+        Array.copy(original, 0, dest, 0, original.length)
+        dest
+      }
+    }
   }
 
   private def newUnitArray(len: Int): Array[Unit] = {
-	val result = new Array[Unit](len)
-	java.util.Arrays.fill(result.asInstanceOf[Array[AnyRef]], ())
-	result
+    val result = new Array[Unit](len)
+    java.util.Arrays.fill(result.asInstanceOf[Array[AnyRef]], ())
+    result
   }
 
   /** Returns an array of length 0 */
@@ -183,150 +183,150 @@ object Array {
   // Subject to a compiler optimization in Cleanup.
   // Array(e0, ..., en) is translated to { val a = new Array(3); a(i) = ei; a }
   def apply[T: ClassTag](xs: T*): Array[T] = {
-	val array = new Array[T](xs.length)
-	val iterator = xs.iterator
-	var i = 0
-	while (iterator.hasNext) {
-	  array(i) = iterator.next(); i += 1
-	}
-	array
+    val array = new Array[T](xs.length)
+    val iterator = xs.iterator
+    var i = 0
+    while (iterator.hasNext) {
+      array(i) = iterator.next(); i += 1
+    }
+    array
   }
 
   /** Creates an array of `Boolean` objects */
   // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Boolean, xs: Boolean*): Array[Boolean] = {
-	val array = new Array[Boolean](xs.length + 1)
-	array(0) = x
-	val iterator = xs.iterator
-	var i = 1
-	while (iterator.hasNext) {
-	  array(i) = iterator.next(); i += 1
-	}
-	array
+    val array = new Array[Boolean](xs.length + 1)
+    array(0) = x
+    val iterator = xs.iterator
+    var i = 1
+    while (iterator.hasNext) {
+      array(i) = iterator.next(); i += 1
+    }
+    array
   }
 
   /** Creates an array of `Byte` objects */
   // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Byte, xs: Byte*): Array[Byte] = {
-	val array = new Array[Byte](xs.length + 1)
-	array(0) = x
-	val iterator = xs.iterator
-	var i = 1
-	while (iterator.hasNext) {
-	  array(i) = iterator.next(); i += 1
-	}
-	array
+    val array = new Array[Byte](xs.length + 1)
+    array(0) = x
+    val iterator = xs.iterator
+    var i = 1
+    while (iterator.hasNext) {
+      array(i) = iterator.next(); i += 1
+    }
+    array
   }
 
   /** Creates an array of `Short` objects */
   // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Short, xs: Short*): Array[Short] = {
-	val array = new Array[Short](xs.length + 1)
-	array(0) = x
-	val iterator = xs.iterator
-	var i = 1
-	while (iterator.hasNext) {
-	  array(i) = iterator.next(); i += 1
-	}
-	array
+    val array = new Array[Short](xs.length + 1)
+    array(0) = x
+    val iterator = xs.iterator
+    var i = 1
+    while (iterator.hasNext) {
+      array(i) = iterator.next(); i += 1
+    }
+    array
   }
 
   /** Creates an array of `Char` objects */
   // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Char, xs: Char*): Array[Char] = {
-	val array = new Array[Char](xs.length + 1)
-	array(0) = x
-	val iterator = xs.iterator
-	var i = 1
-	while (iterator.hasNext) {
-	  array(i) = iterator.next(); i += 1
-	}
-	array
+    val array = new Array[Char](xs.length + 1)
+    array(0) = x
+    val iterator = xs.iterator
+    var i = 1
+    while (iterator.hasNext) {
+      array(i) = iterator.next(); i += 1
+    }
+    array
   }
 
   /** Creates an array of `Int` objects */
   // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Int, xs: Int*): Array[Int] = {
-	val array = new Array[Int](xs.length + 1)
-	array(0) = x
-	val iterator = xs.iterator
-	var i = 1
-	while (iterator.hasNext) {
-	  array(i) = iterator.next(); i += 1
-	}
-	array
+    val array = new Array[Int](xs.length + 1)
+    array(0) = x
+    val iterator = xs.iterator
+    var i = 1
+    while (iterator.hasNext) {
+      array(i) = iterator.next(); i += 1
+    }
+    array
   }
 
   /** Creates an array of `Long` objects */
   // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Long, xs: Long*): Array[Long] = {
-	val array = new Array[Long](xs.length + 1)
-	array(0) = x
-	val iterator = xs.iterator
-	var i = 1
-	while (iterator.hasNext) {
-	  array(i) = iterator.next(); i += 1
-	}
-	array
+    val array = new Array[Long](xs.length + 1)
+    array(0) = x
+    val iterator = xs.iterator
+    var i = 1
+    while (iterator.hasNext) {
+      array(i) = iterator.next(); i += 1
+    }
+    array
   }
 
   /** Creates an array of `Float` objects */
   // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Float, xs: Float*): Array[Float] = {
-	val array = new Array[Float](xs.length + 1)
-	array(0) = x
-	val iterator = xs.iterator
-	var i = 1
-	while (iterator.hasNext) {
-	  array(i) = iterator.next(); i += 1
-	}
-	array
+    val array = new Array[Float](xs.length + 1)
+    array(0) = x
+    val iterator = xs.iterator
+    var i = 1
+    while (iterator.hasNext) {
+      array(i) = iterator.next(); i += 1
+    }
+    array
   }
 
   /** Creates an array of `Double` objects */
   // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Double, xs: Double*): Array[Double] = {
-	val array = new Array[Double](xs.length + 1)
-	array(0) = x
-	val iterator = xs.iterator
-	var i = 1
-	while (iterator.hasNext) {
-	  array(i) = iterator.next(); i += 1
-	}
-	array
+    val array = new Array[Double](xs.length + 1)
+    array(0) = x
+    val iterator = xs.iterator
+    var i = 1
+    while (iterator.hasNext) {
+      array(i) = iterator.next(); i += 1
+    }
+    array
   }
 
   /** Creates an array of `Unit` objects */
   def apply(x: Unit, xs: Unit*): Array[Unit] = {
-	val array = new Array[Unit](xs.length + 1)
-	array(0) = x
-	val iterator = xs.iterator
-	var i = 1
-	while (iterator.hasNext) {
-	  array(i) = iterator.next(); i += 1
-	}
-	array
+    val array = new Array[Unit](xs.length + 1)
+    array(0) = x
+    val iterator = xs.iterator
+    var i = 1
+    while (iterator.hasNext) {
+      array(i) = iterator.next(); i += 1
+    }
+    array
   }
 
   /** Creates array with given dimensions */
   def ofDim[T: ClassTag](n1: Int): Array[T] =
-	new Array[T](n1)
+    new Array[T](n1)
   /** Creates a 2-dimensional array */
   def ofDim[T: ClassTag](n1: Int, n2: Int): Array[Array[T]] = {
-	val arr: Array[Array[T]] = (new Array[Array[T]](n1): Array[Array[T]])
-	for (i <- 0 until n1) arr(i) = new Array[T](n2)
-	arr
-	// tabulate(n1)(_ => ofDim[T](n2))
+    val arr: Array[Array[T]] = (new Array[Array[T]](n1): Array[Array[T]])
+    for (i <- 0 until n1) arr(i) = new Array[T](n2)
+    arr
+    // tabulate(n1)(_ => ofDim[T](n2))
   }
   /** Creates a 3-dimensional array */
   def ofDim[T: ClassTag](n1: Int, n2: Int, n3: Int): Array[Array[Array[T]]] =
-	tabulate(n1)(_ => ofDim[T](n2, n3))
+    tabulate(n1)(_ => ofDim[T](n2, n3))
   /** Creates a 4-dimensional array */
   def ofDim[T: ClassTag](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[T]]]] =
-	tabulate(n1)(_ => ofDim[T](n2, n3, n4))
+    tabulate(n1)(_ => ofDim[T](n2, n3, n4))
   /** Creates a 5-dimensional array */
   def ofDim[T: ClassTag](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[T]]]]] =
-	tabulate(n1)(_ => ofDim[T](n2, n3, n4, n5))
+    tabulate(n1)(_ => ofDim[T](n2, n3, n4, n5))
 
   /** Concatenates all arrays into a single array.
    *
@@ -334,10 +334,10 @@ object Array {
    *  @return   the array created from concatenating `xss`
    */
   def concat[T: ClassTag](xss: Array[T]*): Array[T] = {
-	val b = newBuilder[T]
-	b.sizeHint(xss.map(_.length).sum)
-	for (xs <- xss) b ++= xs
-	b.result()
+    val b = newBuilder[T]
+    b.sizeHint(xss.map(_.length).sum)
+    for (xs <- xss) b ++= xs
+    b.result()
   }
 
   /** Returns an array that contains the results of some element computation a number
@@ -355,17 +355,17 @@ object Array {
    *  `elem`.
    */
   def fill[T: ClassTag](n: Int)(elem: => T): Array[T] = {
-	if (n <= 0) {
-	  empty[T]
-	} else {
-	  val array = new Array[T](n)
-	  var i = 0
-	  while (i < n) {
-		array(i) = elem
-		i += 1
-	  }
-	  array
-	}
+    if (n <= 0) {
+      empty[T]
+    } else {
+      val array = new Array[T](n)
+      var i = 0
+      while (i < n) {
+        array(i) = elem
+        i += 1
+      }
+      array
+    }
   }
 
   /** Returns a two-dimensional array that contains the results of some element
@@ -376,7 +376,7 @@ object Array {
    *  @param   elem the element computation
    */
   def fill[T: ClassTag](n1: Int, n2: Int)(elem: => T): Array[Array[T]] =
-	tabulate(n1)(_ => fill(n2)(elem))
+    tabulate(n1)(_ => fill(n2)(elem))
 
   /** Returns a three-dimensional array that contains the results of some element
    *  computation a number of times.
@@ -387,7 +387,7 @@ object Array {
    *  @param   elem the element computation
    */
   def fill[T: ClassTag](n1: Int, n2: Int, n3: Int)(elem: => T): Array[Array[Array[T]]] =
-	tabulate(n1)(_ => fill(n2, n3)(elem))
+    tabulate(n1)(_ => fill(n2, n3)(elem))
 
   /** Returns a four-dimensional array that contains the results of some element
    *  computation a number of times.
@@ -399,7 +399,7 @@ object Array {
    *  @param   elem the element computation
    */
   def fill[T: ClassTag](n1: Int, n2: Int, n3: Int, n4: Int)(elem: => T): Array[Array[Array[Array[T]]]] =
-	tabulate(n1)(_ => fill(n2, n3, n4)(elem))
+    tabulate(n1)(_ => fill(n2, n3, n4)(elem))
 
   /** Returns a five-dimensional array that contains the results of some element
    *  computation a number of times.
@@ -412,7 +412,7 @@ object Array {
    *  @param   elem the element computation
    */
   def fill[T: ClassTag](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(elem: => T): Array[Array[Array[Array[Array[T]]]]] =
-	tabulate(n1)(_ => fill(n2, n3, n4, n5)(elem))
+    tabulate(n1)(_ => fill(n2, n3, n4, n5)(elem))
 
   /** Returns an array containing values of a given function over a range of integer
    *  values starting from 0.
@@ -422,17 +422,17 @@ object Array {
    *  @return A traversable consisting of elements `f(0),f(1), ..., f(n - 1)`
    */
   def tabulate[T: ClassTag](n: Int)(f: Int => T): Array[T] = {
-	if (n <= 0) {
-	  empty[T]
-	} else {
-	  val array = new Array[T](n)
-	  var i = 0
-	  while (i < n) {
-		array(i) = f(i)
-		i += 1
-	  }
-	  array
-	}
+    if (n <= 0) {
+      empty[T]
+    } else {
+      val array = new Array[T](n)
+      var i = 0
+      while (i < n) {
+        array(i) = f(i)
+        i += 1
+      }
+      array
+    }
   }
 
   /** Returns a two-dimensional array containing values of a given function
@@ -443,7 +443,7 @@ object Array {
    *  @param   f   The function computing element values
    */
   def tabulate[T: ClassTag](n1: Int, n2: Int)(f: (Int, Int) => T): Array[Array[T]] =
-	tabulate(n1)(i1 => tabulate(n2)(f(i1, _)))
+    tabulate(n1)(i1 => tabulate(n2)(f(i1, _)))
 
   /** Returns a three-dimensional array containing values of a given function
    *  over ranges of integer values starting from `0`.
@@ -454,7 +454,7 @@ object Array {
    *  @param   f   The function computing element values
    */
   def tabulate[T: ClassTag](n1: Int, n2: Int, n3: Int)(f: (Int, Int, Int) => T): Array[Array[Array[T]]] =
-	tabulate(n1)(i1 => tabulate(n2, n3)(f(i1, _, _)))
+    tabulate(n1)(i1 => tabulate(n2, n3)(f(i1, _, _)))
 
   /** Returns a four-dimensional array containing values of a given function
    *  over ranges of integer values starting from `0`.
@@ -466,7 +466,7 @@ object Array {
    *  @param   f   The function computing element values
    */
   def tabulate[T: ClassTag](n1: Int, n2: Int, n3: Int, n4: Int)(f: (Int, Int, Int, Int) => T): Array[Array[Array[Array[T]]]] =
-	tabulate(n1)(i1 => tabulate(n2, n3, n4)(f(i1, _, _, _)))
+    tabulate(n1)(i1 => tabulate(n2, n3, n4)(f(i1, _, _, _)))
 
   /** Returns a five-dimensional array containing values of a given function
    *  over ranges of integer values starting from `0`.
@@ -479,7 +479,7 @@ object Array {
    *  @param   f   The function computing element values
    */
   def tabulate[T: ClassTag](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => T): Array[Array[Array[Array[Array[T]]]]] =
-	tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
+    tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
 
   /** Returns an array containing a sequence of increasing integers in a range.
    *
@@ -498,17 +498,17 @@ object Array {
    *  @return      the array with values in `start, start + step, ...` up to, but excluding `end`
    */
   def range(start: Int, end: Int, step: Int): Array[Int] = {
-	if (step == 0) throw new IllegalArgumentException("zero step")
-	val array = new Array[Int](immutable.Range.count(start, end, step, isInclusive = false))
+    if (step == 0) throw new IllegalArgumentException("zero step")
+    val array = new Array[Int](immutable.Range.count(start, end, step, isInclusive = false))
 
-	var n = 0
-	var i = start
-	while (if (step < 0) end < i else i < end) {
-	  array(n) = i
-	  i += step
-	  n += 1
-	}
-	array
+    var n = 0
+    var i = start
+    while (if (step < 0) end < i else i < end) {
+      array(n) = i
+      i += step
+      n += 1
+    }
+    array
   }
 
   /** Returns an array containing repeated applications of a function to a start value.
@@ -519,37 +519,37 @@ object Array {
    *  @return      the array returning `len` values in the sequence `start, f(start), f(f(start)), ...`
    */
   def iterate[T: ClassTag](start: T, len: Int)(f: T => T): Array[T] = {
-	if (len > 0) {
-	  val array = new Array[T](len)
-	  var acc = start
-	  var i = 1
-	  array(0) = acc
+    if (len > 0) {
+      val array = new Array[T](len)
+      var acc = start
+      var i = 1
+      array(0) = acc
 
-	  while (i < len) {
-		acc = f(acc)
-		array(i) = acc
-		i += 1
-	  }
-	  array
-	} else {
-	  empty[T]
-	}
+      while (i < len) {
+        acc = f(acc)
+        array(i) = acc
+        i += 1
+      }
+      array
+    } else {
+      empty[T]
+    }
   }
 
   def equals(xs: Array[AnyRef], ys: Array[AnyRef]): Boolean = {
-	if (xs eq ys)
-	  return true
-	if (xs.length != ys.length)
-	  return false
+    if (xs eq ys)
+      return true
+    if (xs.length != ys.length)
+      return false
 
-	val len = xs.length
-	var i = 0
-	while (i < len) {
-	  if (xs(i) != ys(i))
-		return false
-	  i += 1
-	}
-	true
+    val len = xs.length
+    var i = 0
+    while (i < len) {
+      if (xs(i) != ys(i))
+        return false
+      i += 1
+    }
+    true
   }
 
   /** Called in a pattern match like `{ case Array(x,y,z) => println('3 elements')}`.
@@ -560,12 +560,12 @@ object Array {
   def unapplySeq[T](x: Array[T]): UnapplySeqWrapper[T] = new UnapplySeqWrapper(x)
 
   final class UnapplySeqWrapper[T](private val a: Array[T]) extends AnyVal {
-	def isEmpty: Boolean = false
-	def get: UnapplySeqWrapper[T] = this
-	def lengthCompare(len: Int): Int = a.lengthCompare(len)
-	def apply(i: Int): T = a(i)
-	def drop(n: Int): scala.Seq[T] = ArraySeq.unsafeWrapArray(a.drop(n)) // clones the array, also if n == 0
-	def toSeq: scala.Seq[T] = a.toSeq // clones the array
+    def isEmpty: Boolean = false
+    def get: UnapplySeqWrapper[T] = this
+    def lengthCompare(len: Int): Int = a.lengthCompare(len)
+    def apply(i: Int): T = a(i)
+    def drop(n: Int): scala.Seq[T] = ArraySeq.unsafeWrapArray(a.drop(n)) // clones the array, also if n == 0
+    def toSeq: scala.Seq[T] = a.toSeq // clones the array
   }
 }
 
