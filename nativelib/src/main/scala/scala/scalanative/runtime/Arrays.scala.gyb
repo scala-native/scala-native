@@ -25,7 +25,6 @@
 package scala.scalanative
 package runtime
 
-import scala.runtime.BoxedUnit
 import scalanative.unsafe._
 import scalanative.runtime.Intrinsics._
 
@@ -154,7 +153,7 @@ object Array {
 }
 
 %{
-   types = {'BoxedUnit': sizePtr, 'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
+   types = {'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
             'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': sizePtr}
 }%
 % # BEWARE: Order of iteration of the dictionary depends on version of Python
@@ -169,7 +168,7 @@ object Array {
 % for T, sizeT in types.items():
 
 %{
-   alloc = 'GC.alloc_atomic' if T != 'Object' and T != 'BoxedUnit' else 'GC.alloc'
+   alloc = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
 }%
 
 final class ${T}Array private () extends Array[${T}] {
@@ -191,11 +190,7 @@ final class ${T}Array private () extends Array[${T}] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
-      % if T != 'BoxedUnit':
       load${T}(ith)
-      % else:
-      loadObject(ith).asInstanceOf[BoxedUnit]
-      % end
     }
 
   @inline def update(i: Int, value: ${T}): Unit =
@@ -204,11 +199,7 @@ final class ${T}Array private () extends Array[${T}] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
-      % if T != 'BoxedUnit':
       store${T}(ith, value)
-      % else:
-      storeObject(ith, value.asInstanceOf[Object])
-      % end
     }
 
   @inline override def clone(): ${T}Array = {
