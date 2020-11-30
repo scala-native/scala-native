@@ -1,6 +1,7 @@
 package scala.scalanative
 package util
 import java.util.concurrent.atomic.AtomicReference
+import java.util.function.UnaryOperator
 
 /** Scoped implicit lifetime.
  *
@@ -44,18 +45,27 @@ object Scope {
   def unsafe: Scope = new Impl {}
 
   private sealed class Impl extends Scope {
-    private[this] var resources: List[Resource] = Nil
+    type Resources = List[Resource]
+
+    private[this] val resources = new AtomicReference[Resources](Nil)
+
+    private def set(fn: Resources => Resources): Resources =
+      resources.getAndUpdate {
+        new UnaryOperator[Resources] {
+          override def apply(t: Resources): Resources = fn(t)
+        }
+      }
 
     def acquire(res: Resource): Unit = {
-      resources ::= res
+      set(res :: _)
     }
 
-    def close(): Unit = resources match {
+    def close(): Unit = resources.get() match {
       case Nil =>
         ()
 
-      case first :: rest =>
-        resources = rest
+      case _ =>
+        val first :: _ = set(_.tail)
         try first.close()
         finally close()
     }
