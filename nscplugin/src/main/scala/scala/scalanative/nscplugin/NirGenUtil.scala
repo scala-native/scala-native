@@ -2,6 +2,7 @@ package scala.scalanative
 package nscplugin
 
 import scala.tools.nsc.Global
+import scalanative.util._
 
 trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import global._
