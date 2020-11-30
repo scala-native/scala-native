@@ -1,15 +1,13 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.Path
 import scala.collection.mutable
-import scala.sys.process.Process
-import scalanative.build.IO.RichPath
-import scalanative.nir.{Type, Rt, Sig, Global, Defn}
-import scalanative.linker.Link
-import scalanative.codegen.CodeGen
-import scalanative.interflow.Interflow
-import scalanative.checker.Check
+import scala.scalanative.checker.Check
+import scala.scalanative.codegen.CodeGen
+import scala.scalanative.linker.Link
+import scala.scalanative.nir._
+import scala.scalanative.util.Scope
 
 /** Internal utilities to instrument Scala Native linker, optimizer and codegen. */
 private[scalanative] object ScalaNative {
@@ -28,7 +26,8 @@ private[scalanative] object ScalaNative {
   /** Given the classpath and main entry point, link under closed-world
    *  assumption.
    */
-  def link(config: Config, entries: Seq[Global]): linker.Result =
+  def link(config: Config, entries: Seq[Global])(
+      implicit scope: Scope): linker.Result =
     dump(config, "linked") {
       check(config) {
         config.logger.time("Linking")(Link(config, entries))

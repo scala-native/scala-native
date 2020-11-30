@@ -1,5 +1,6 @@
 package scala.scalanative
 package util
+import java.util.concurrent.atomic.AtomicReference
 
 /** Scoped implicit lifetime.
  *
@@ -39,6 +40,9 @@ object Scope {
       throw new UnsupportedOperationException("Can't close forever Scope.")
   }
 
+  /** Unsafe manually managed scope.*/
+  def unsafe: Scope = new Impl {}
+
   private sealed class Impl extends Scope {
     private[this] var resources: List[Resource] = Nil
 
@@ -56,4 +60,5 @@ object Scope {
         finally close()
     }
   }
+
 }
