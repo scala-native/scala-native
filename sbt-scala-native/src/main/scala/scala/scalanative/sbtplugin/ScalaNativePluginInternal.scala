@@ -1,14 +1,13 @@
 package scala.scalanative
 package sbtplugin
 
-import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicReference
-import java.nio.file.Files
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 import sbt.complete.DefaultParsers._
 import scala.annotation.tailrec
+import scala.scalanative.util.Scope
 import scala.scalanative.build.{Build, BuildException, Discover}
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.scalanative.sbtplugin.Utilities._
@@ -77,6 +76,8 @@ object ScalaNativePluginInternal {
       val prev: () => Unit = onComplete.value
       () => {
         prev()
+        sharedScope.close()
+        sharedScope = Scope.unsafe()
         testAdapters.getAndSet(Nil).foreach(_.close())
       }
     }
@@ -131,7 +132,9 @@ object ScalaNativePluginInternal {
           .withCompilerConfig(nativeConfig.value)
       }
 
-      interceptBuildException(Build.build(config, outpath.toPath))
+      interceptBuildException {
+        Build.build(config, outpath.toPath)(sharedScope)
+      }
 
       outpath
     },
@@ -200,6 +203,7 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(scalaNativeCompileSettings) ++
       inConfig(Test)(scalaNativeTestSettings)
 
+  private var sharedScope  = Scope.unsafe()
   private val testAdapters = new AtomicReference[List[TestAdapter]](Nil)
 
   private def newTestAdapter(config: TestAdapter.Config): TestAdapter = {
