@@ -13,7 +13,6 @@ import scala.scalanative.build.{Build, BuildException, Discover}
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
-import scala.scalanative.util.SharedScopeProvider
 import scala.sys.process.Process
 import scala.util.Try
 
@@ -78,6 +77,7 @@ object ScalaNativePluginInternal {
       val prev: () => Unit = onComplete.value
       () => {
         prev()
+        sharedScope.close()
         testAdapters.getAndSet(Nil).foreach(_.close())
       }
     }
@@ -132,8 +132,8 @@ object ScalaNativePluginInternal {
           .withCompilerConfig(nativeConfig.value)
       }
 
-      sharedScope.identifiedBy(config) { implicit scope =>
-        interceptBuildException(Build.build(config, outpath.toPath))
+      interceptBuildException {
+        Build.build(config, outpath.toPath)(sharedScope)
       }
 
       outpath
@@ -203,7 +203,7 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(scalaNativeCompileSettings) ++
       inConfig(Test)(scalaNativeTestSettings)
 
-  private val sharedScope  = new SharedScopeProvider[build.Config]
+  private val sharedScope  = scalanative.util.Scope.unsafe
   private val testAdapters = new AtomicReference[List[TestAdapter]](Nil)
 
   private def newTestAdapter(config: TestAdapter.Config): TestAdapter = {
