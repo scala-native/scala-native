@@ -185,4 +185,33 @@ class PtrBoxingTest {
       assertTrue(out.toList == List(10, 20, 30))
     }
   }
+
+  type GetInt = CFuncPtr0[Int]
+  def getInt(): Int = 42
+
+  type StringLength = CFuncPtr1[CString, CSize]
+  def stringLength(str: CString): CSize = libc.string.strlen(str)
+
+  @Test def loadAndStoreCFuncPtr(): Unit = {
+    type Functions = CStruct2[GetInt, StringLength]
+
+    Zone { implicit z =>
+      val x = stackalloc[Functions]
+      x._1 = CFuncPtr0.fromScalaFunction0(getInt)
+      x._2 = CFuncPtr1.fromScalaFunction1(stringLength)
+
+      val loadedGetInt: GetInt             = x._1
+      val loadedStringLength: StringLength = x._2
+
+      val testStr      = toCString("hello_native")
+      val expectedInt  = 42
+      val exptedLength = 12
+
+      assertEquals(expectedInt, x._1.apply())
+      assertEquals(expectedInt, loadedGetInt())
+
+      assertEquals(exptedLength, x._2.apply(testStr))
+      assertEquals(exptedLength, loadedStringLength(testStr))
+    }
+  }
 }
