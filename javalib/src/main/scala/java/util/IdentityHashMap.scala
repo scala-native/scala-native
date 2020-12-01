@@ -164,7 +164,7 @@ class IdentityHashMap[K, V] private (
             modified
           }
         }
-        removeAll(this.iterator, false)
+        removeAll(this.iterator(), false)
       }
     }
 
