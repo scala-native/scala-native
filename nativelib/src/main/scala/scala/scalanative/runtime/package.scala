@@ -104,7 +104,7 @@ package object runtime {
 
   /** Called by the generated code in case of out of bounds on array access. */
   @noinline def throwOutOfBounds(i: Int): Nothing =
-    throw new IndexOutOfBoundsException(i.toString)
+    throw new ArrayIndexOutOfBoundsException(i.toString)
 
   /** Called by the generated code in case of missing method on reflective call. */
   @noinline def throwNoSuchMethod(sig: String): Nothing =

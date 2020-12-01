@@ -2,11 +2,12 @@ package scala
 
 import org.junit.Test
 import org.junit.Assert.{assertEquals, _}
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 /** Tests for generic array methods overridden in ScalaRunTime */
 class ArrayGenericMethodsTest {
 
-  val defaultLength = 2
+  val arrayLength = 2
 
   val byteArray   = Array(1.toByte, 2.toByte)
   val charArray   = Array('a', 'b')
@@ -25,18 +26,18 @@ class ArrayGenericMethodsTest {
     def genericLength[T](a: Array[T]): Int =
       scala.runtime.ScalaRunTime.array_length(a)
 
-    assertEquals(defaultLength, genericLength(byteArray))
-    assertEquals(defaultLength, genericLength(charArray))
-    assertEquals(defaultLength, genericLength(shortArray))
-    assertEquals(defaultLength, genericLength(intArray))
-    assertEquals(defaultLength, genericLength(longArray))
+    assertEquals(arrayLength, genericLength(byteArray))
+    assertEquals(arrayLength, genericLength(charArray))
+    assertEquals(arrayLength, genericLength(shortArray))
+    assertEquals(arrayLength, genericLength(intArray))
+    assertEquals(arrayLength, genericLength(longArray))
 
-    assertEquals(defaultLength, genericLength(floatArray))
-    assertEquals(defaultLength, genericLength(doubleArray))
-    assertEquals(defaultLength, genericLength(booleanArray))
+    assertEquals(arrayLength, genericLength(floatArray))
+    assertEquals(arrayLength, genericLength(doubleArray))
+    assertEquals(arrayLength, genericLength(booleanArray))
 
-    assertEquals(defaultLength, genericLength(unitArray))
-    assertEquals(defaultLength, genericLength(objectArray))
+    assertEquals(arrayLength, genericLength(unitArray))
+    assertEquals(arrayLength, genericLength(objectArray))
   }
 
   @Test
@@ -92,5 +93,44 @@ class ArrayGenericMethodsTest {
     testUpdate(doubleArray, 10.0)
     testUpdate(booleanArray, false)
     testUpdate(objectArray, "native")
+  }
+
+  @Test
+  def shouldThrowExceptionOnAccessOutOfBounds(): Unit = {
+    def testBounds[T](arr: Array[T]): Unit = {
+      val elem = arr(0)
+
+      List(-1, arrayLength + 1).foreach { idx =>
+        assertThrows(classOf[ArrayIndexOutOfBoundsException], arr(idx))
+        assertThrows(classOf[ArrayIndexOutOfBoundsException],
+                     arr.update(idx, elem))
+      }
+
+      val targetArray = arr.clone()
+      List(
+        (-1, 0, arrayLength),
+        (0, -1, arrayLength),
+        (0, 0, -1),
+        (arrayLength + 1, 0, arrayLength),
+        (0, arrayLength + 1, arrayLength),
+        (0, 0, arrayLength + 1)
+      ).foreach {
+        case (fromPos, toPos, length) =>
+          assertThrows(
+            classOf[ArrayIndexOutOfBoundsException],
+            System.arraycopy(arr, fromPos, targetArray, toPos, length))
+      }
+    }
+
+    testBounds(byteArray)
+    testBounds(charArray)
+    testBounds(shortArray)
+    testBounds(intArray)
+    testBounds(longArray)
+    testBounds(floatArray)
+    testBounds(doubleArray)
+    testBounds(booleanArray)
+    testBounds(unitArray)
+    testBounds(objectArray)
   }
 }
