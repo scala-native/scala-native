@@ -102,29 +102,29 @@ class ArrayIntCopyTest {
   }
 
   @Test def throwsIndexOutOfBoundsExceptionIfLengthIsNegative(): Unit = {
-    assertThrows(classOf[java.lang.IndexOutOfBoundsException],
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
                  java.lang.System.arraycopy(arr, 0, arr2, 5, -1))
   }
 
   @Test def throwsIndexOutOfBoundsExceptionIfToPosPlusLenGreaterThanToLength()
       : Unit = {
-    assertThrows(classOf[java.lang.IndexOutOfBoundsException],
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
                  java.lang.System.arraycopy(arr, 0, arr2, 5, 10))
   }
 
   @Test def throwsIndexOutOfBoundsExceptionIfFromPosPlusLenGreaterThanFromLength()
       : Unit = {
-    assertThrows(classOf[java.lang.IndexOutOfBoundsException],
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
                  java.lang.System.arraycopy(arr, 5, arr2, 0, 10))
   }
 
   @Test def throwsIndexOutOfBoundsExceptionIfToPosIsNegative(): Unit = {
-    assertThrows(classOf[java.lang.IndexOutOfBoundsException],
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
                  java.lang.System.arraycopy(arr, 0, arr2, -1, 10))
   }
 
   @Test def throwsIndexOutOfBoundsExceptionIfFromPosIsNegative(): Unit = {
-    assertThrows(classOf[java.lang.IndexOutOfBoundsException],
+    assertThrows(classOf[ArrayIndexOutOfBoundsException],
                  java.lang.System.arraycopy(arr, -1, arr2, 0, 10))
   }
 
