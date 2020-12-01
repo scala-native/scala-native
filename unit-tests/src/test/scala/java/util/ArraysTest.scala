@@ -18,15 +18,11 @@ import scala.reflect.ClassTag
 
 object ArraysTest extends ArraysTest
 
-/** This is also used in the typedarray package to test scala.Arrays backed
- *  by TypedArrays
- */
 class ArraysTest {
   // To invoke org.junit.Assert.assertArrayEquals on Array[T]
   implicit def array2erasedArray[T](arr: Array[T]): Array[AnyRef] =
     arr.map(_.asInstanceOf[AnyRef])
 
-  /** Overridden by typedarray tests */
   def Array[T: ClassTag](v: T*): scala.Array[T] = scala.Array(v: _*)
 
   val stringComparator = new Comparator[String]() {

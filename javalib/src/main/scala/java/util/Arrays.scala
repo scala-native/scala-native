@@ -27,64 +27,82 @@ object Arrays {
     def compare(x: Double, y: Double): Int = java.lang.Double.compare(x, y)
   }
 
-  @noinline def sort(a: Array[Int]): Unit =
+  @noinline
+  def sort(a: Array[Int]): Unit =
     sortImpl(a)
 
-  @noinline def sort(a: Array[Int], fromIndex: Int, toIndex: Int): Unit =
+  @noinline
+  def sort(a: Array[Int], fromIndex: Int, toIndex: Int): Unit =
     sortRangeImpl[Int](a, fromIndex, toIndex)
 
-  @noinline def sort(a: Array[Long]): Unit =
+  @noinline
+  def sort(a: Array[Long]): Unit =
     sortImpl(a)
 
-  @noinline def sort(a: Array[Long], fromIndex: Int, toIndex: Int): Unit =
+  @noinline
+  def sort(a: Array[Long], fromIndex: Int, toIndex: Int): Unit =
     sortRangeImpl[Long](a, fromIndex, toIndex)
 
-  @noinline def sort(a: Array[Short]): Unit =
+  @noinline
+  def sort(a: Array[Short]): Unit =
     sortImpl(a)
 
-  @noinline def sort(a: Array[Short], fromIndex: Int, toIndex: Int): Unit =
+  @noinline
+  def sort(a: Array[Short], fromIndex: Int, toIndex: Int): Unit =
     sortRangeImpl[Short](a, fromIndex, toIndex)
 
-  @noinline def sort(a: Array[Char]): Unit =
+  @noinline
+  def sort(a: Array[Char]): Unit =
     sortImpl(a)
 
-  @noinline def sort(a: Array[Char], fromIndex: Int, toIndex: Int): Unit =
+  @noinline
+  def sort(a: Array[Char], fromIndex: Int, toIndex: Int): Unit =
     sortRangeImpl[Char](a, fromIndex, toIndex)
 
-  @noinline def sort(a: Array[Byte]): Unit =
+  @noinline
+  def sort(a: Array[Byte]): Unit =
     sortImpl(a)
 
-  @noinline def sort(a: Array[Byte], fromIndex: Int, toIndex: Int): Unit =
+  @noinline
+  def sort(a: Array[Byte], fromIndex: Int, toIndex: Int): Unit =
     sortRangeImpl[Byte](a, fromIndex, toIndex)
 
-  @noinline def sort(a: Array[Float]): Unit =
+  @noinline
+  def sort(a: Array[Float]): Unit =
     sortImpl(a)
 
-  @noinline def sort(a: Array[Float], fromIndex: Int, toIndex: Int): Unit =
+  @noinline
+  def sort(a: Array[Float], fromIndex: Int, toIndex: Int): Unit =
     sortRangeImpl[Float](a, fromIndex, toIndex)
 
-  @noinline def sort(a: Array[Double]): Unit =
+  @noinline
+  def sort(a: Array[Double]): Unit =
     sortImpl(a)
 
-  @noinline def sort(a: Array[Double], fromIndex: Int, toIndex: Int): Unit =
+  @noinline
+  def sort(a: Array[Double], fromIndex: Int, toIndex: Int): Unit =
     sortRangeImpl[Double](a, fromIndex, toIndex)
 
-  @noinline def sort(a: Array[AnyRef]): Unit =
+  @noinline
+  def sort(a: Array[AnyRef]): Unit =
     sortAnyRefImpl(a)
 
-  @noinline def sort(a: Array[AnyRef], fromIndex: Int, toIndex: Int): Unit =
+  @noinline
+  def sort(a: Array[AnyRef], fromIndex: Int, toIndex: Int): Unit =
     sortRangeAnyRefImpl(a, fromIndex, toIndex)
 
-  @noinline def sort[T <: AnyRef](array: Array[T],
-                                  comparator: Comparator[_ >: T]): Unit = {
+  @noinline
+  def sort[T <: AnyRef](array: Array[T],
+                        comparator: Comparator[_ >: T]): Unit = {
     implicit val ord = toOrdering(comparator).asInstanceOf[Ordering[AnyRef]]
     sortAnyRefImpl(array.asInstanceOf[Array[AnyRef]])
   }
 
-  @noinline def sort[T <: AnyRef](array: Array[T],
-                                  fromIndex: Int,
-                                  toIndex: Int,
-                                  comparator: Comparator[_ >: T]): Unit = {
+  @noinline
+  def sort[T <: AnyRef](array: Array[T],
+                        fromIndex: Int,
+                        toIndex: Int,
+                        comparator: Comparator[_ >: T]): Unit = {
     implicit val ord = toOrdering(comparator).asInstanceOf[Ordering[AnyRef]]
     sortRangeAnyRefImpl(array.asInstanceOf[Array[AnyRef]], fromIndex, toIndex)
   }
