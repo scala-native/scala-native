@@ -1,4 +1,4 @@
-package java.util
+package org.scalanative.testsuite.javalib.util
 
 // Ported from Scala.js
 
@@ -123,8 +123,8 @@ class IdentityHashMapFactory extends MapFactory {
   override def implementationName: String =
     "java.util.IdentityHashMap"
 
-  override def empty[K: ClassTag, V: ClassTag]: IdentityHashMap[K, V] =
-    new IdentityHashMap[K, V]
+  override def empty[K: ClassTag, V: ClassTag]: ju.IdentityHashMap[K, V] =
+    new ju.IdentityHashMap[K, V]
 
   def allowsNullKeys: Boolean           = true
   def allowsNullValues: Boolean         = true

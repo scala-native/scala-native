@@ -1,6 +1,6 @@
-package java.util
+// Ported from Scala.js commit: 3786783 dated: 2019-10-11
 
-// Ported from Scala.js
+package org.scalanative.testsuite.javalib.util
 
 import java.{util => ju}
 
