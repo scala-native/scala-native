@@ -20,7 +20,7 @@ class ConcurrentLinkedQueue[E]()
   private var head: Node[E] = null
   private var last: Node[E] = null
 
-  private var _size: Double = 0
+  private var _size: Long = 0L
 
   override def add(e: E): Boolean = {
     if (e == null) {
@@ -66,7 +66,7 @@ class ConcurrentLinkedQueue[E]()
     _size == 0
 
   override def size(): Int =
-    _size.toInt
+    if (_size > Int.MaxValue) Int.MaxValue else _size.toInt
 
   private def getNodeAt(index: Int): Node[E] = {
     var current: Node[E] = head
