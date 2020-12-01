@@ -14,10 +14,9 @@ import org.junit.Assume._
 import scala.scalanative.junit.utils.AssertThrows._
 import scala.scalanative.junit.utils.Utils._
 
-class PropertiesTest {
-  // remove when Platform is implemented
-  val hasCompliantAsInstanceOfs = true
+import org.scalanative.testsuite.utils.Platform.hasCompliantAsInstanceOfs
 
+class PropertiesTest {
   // ported from Scala.js
   @Test def setProperty(): Unit = {
     val prop = new Properties()

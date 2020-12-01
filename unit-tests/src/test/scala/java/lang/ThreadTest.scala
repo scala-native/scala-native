@@ -11,10 +11,12 @@ package java.lang
 import org.junit.Test
 import org.junit.Assert._
 
-class ThreadTest {
+import org.scalanative.testsuite.utils.Platform.{
+  executingInJVM,
+  executingInScalaNative
+}
 
-  val executingInJVM         = false
-  val executingInScalaNative = true
+class ThreadTest {
 
   @Test def getNameAndSetName(): Unit = {
     if (!executingInJVM) {
