@@ -51,10 +51,10 @@ sealed abstract class Array[T]
   /** Raw pointer to the element. */
   def atRaw(i: Int): RawPtr
 
-  /** Loads element at i, throws IndexOutOfBoundsException. */
+  /** Loads element at i, throws ArrayIndexOutOfBoundsException. */
   def apply(i: Int): T
 
-  /** Stores value to element i, throws IndexOutOfBoundsException. */
+  /** Stores value to element i, throws ArrayIndexOutOfBoundsException. */
   def update(i: Int, value: T): Unit
 
   /** Create a shallow copy of given array. */
@@ -92,11 +92,11 @@ object Array {
     } else if (getRawType(from) != getRawType(to)) {
       throw new ArrayStoreException("Invalid array copy.")
     } else if (len < 0) {
-      throw new IndexOutOfBoundsException("length is negative")
+      throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (fromPos < 0 || fromPos + len > from.length) {
-      throw new IndexOutOfBoundsException(fromPos.toString)
+      throwOutOfBounds(fromPos)
     } else if (toPos < 0 || toPos + len > to.length) {
-      throw new IndexOutOfBoundsException(toPos.toString)
+      throwOutOfBounds(toPos)
     } else if (len == 0) {
       ()
     } else {
@@ -137,11 +137,11 @@ object Array {
     } else if (getRawType(left) != getRawType(right)) {
       throw new ArrayStoreException("Invalid array copy.")
     } else if (len < 0) {
-      throw new IndexOutOfBoundsException("length is negative")
+      throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (leftPos < 0 || leftPos + len > left.length) {
-      throw new IndexOutOfBoundsException(leftPos.toString)
+      throwOutOfBounds(leftPos)
     } else if (rightPos < 0 || rightPos + len > right.length) {
-      throw new IndexOutOfBoundsException(rightPos.toString)
+      throwOutOfBounds(rightPos)
     } else if (len == 0) {
       0
     } else {
