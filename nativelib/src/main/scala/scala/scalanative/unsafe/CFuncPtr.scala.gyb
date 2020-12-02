@@ -24,7 +24,7 @@ object CFuncPtr {
       implicit tag: Tag.CFuncPtrTag[F]): F =
     tag.load(boxToPtr[F](ptr.rawptr), loadPtr = false)
 
-  @alwaysinline def toPtr[T](ptr: CFuncPtr): Ptr[Byte] = {
+  @alwaysinline def toPtr(ptr: CFuncPtr): Ptr[Byte] = {
     boxToPtr[Byte](ptr.rawptr)
   }
 }
