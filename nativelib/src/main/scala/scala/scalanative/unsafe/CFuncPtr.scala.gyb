@@ -22,7 +22,7 @@ sealed trait CFuncPtr {
 object CFuncPtr {
   @alwaysinline def fromPtr[F <: CFuncPtr](ptr: Ptr[Byte])(
       implicit tag: Tag.CFuncPtrTag[F]): F =
-    tag.load(boxToPtr[F](ptr.rawptr), loadPtr = false)
+    tag.fromRawPtr(ptr.rawptr)
 
   @alwaysinline def toPtr(ptr: CFuncPtr): Ptr[Byte] = {
     boxToPtr[Byte](ptr.rawptr)

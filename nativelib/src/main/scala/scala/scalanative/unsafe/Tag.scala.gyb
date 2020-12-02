@@ -199,11 +199,15 @@ object Tag {
 
   abstract class CFuncPtrTag[F <: unsafe.CFuncPtr] private[unsafe] ()
    extends Tag[F] {
-    def load(ptr: unsafe.Ptr[F], loadPtr: Boolean): F
+    /** Internal method used to cast Ptr[_] to CFuncPtr using its underlying RawPtr
+     *  Takes RawPtr instead Ptr[_] to skip extra boxing
+     **/
+    private[unsafe] def fromRawPtr(rawptr: RawPtr): F
 
     @alwaysinline def size: Int = 8
     @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(ptr: unsafe.Ptr[F]): F = load(ptr, loadPtr = true)
+    @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
+      fromRawPtr(loadRawPtr(ptr.rawptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit =
       storeRawPtr(toRawPtr(ptr), value.rawptr)
     }
@@ -255,10 +259,8 @@ object Tag {
 
   @alwaysinline implicit def materialize${CFuncPtrNDecl}: CFuncPtrTag[unsafe.${CFuncPtrN}] = {
     new CFuncPtrTag[unsafe.${CFuncPtrN}] {
-      override def load(ptr: unsafe.Ptr[unsafe.${CFuncPtrN}],
-                        loadPtr: Boolean): unsafe.${CFuncPtrN} = {
-        val rawPtr = if (loadPtr) loadRawPtr(ptr.rawptr) else ptr.rawptr
-        unsafe.CFuncPtr${N}.fromRawPtr[${tps}](rawPtr)
+      @alwaysinline override private[unsafe] def fromRawPtr(rawptr: RawPtr): unsafe.${CFuncPtrN} = {
+        unsafe.CFuncPtr${N}.fromRawPtr[${tps}](rawptr)
       }
     }
   }
