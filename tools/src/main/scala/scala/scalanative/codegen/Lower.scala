@@ -476,7 +476,10 @@ object Lower {
       val Op.Method(v, sig) = op
       val obj               = genVal(buf, v)
       def genClassVirtualLookup(cls: Class): Unit = {
-        val vindex  = vtable(cls).index(sig)
+        val vindex = vtable(cls).index(sig)
+        assert(vindex != -1,
+               s"Virtual table of ${cls.name} have not contained $sig ")
+
         val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
         val methptrptr = let(
           Op.Elem(rtti(cls).struct,
@@ -522,8 +525,19 @@ object Lower {
             let(n, Op.Copy(Val.Global(impl, Type.Ptr)), unwind)
           case _ =>
             obj.ty match {
-              case ClassRef(cls) =>
+              // It may happen that method exists in multiple targets, but is not a virtual call
+              // In such cases we handle it as statically resolvable method with single target
+              case ClassRef(cls) if cls.calls.contains(sig) =>
                 genClassVirtualLookup(cls)
+              case ClassRef(cls) =>
+                val methodName = Global.Member(cls.name, sig)
+                val methodRef  = Val.Global(methodName, Type.Ptr)
+                assert(
+                  linked.infos.contains(methodName),
+                  s"Method $methodName is neither virtual or statically resolvable"
+                )
+
+                let(n, Op.Copy(methodRef), unwind)
               case TraitRef(_) if Object.calls.contains(sig) =>
                 genClassVirtualLookup(Object)
               case TraitRef(trt) =>
