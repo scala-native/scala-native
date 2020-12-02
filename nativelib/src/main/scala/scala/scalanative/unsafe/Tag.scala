@@ -8669,7 +8669,7 @@ object Tag {
 
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 199)
 
-  private[scalanative] sealed trait CFuncPtrTag[F <: unsafe.CFuncPtr]
+  abstract class CFuncPtrTag[F <: unsafe.CFuncPtr] private[unsafe] ()
       extends Tag[F] {
     def load(ptr: unsafe.Ptr[F], loadPtr: Boolean): F
 

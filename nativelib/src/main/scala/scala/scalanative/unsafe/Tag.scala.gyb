@@ -197,7 +197,7 @@ object Tag {
 
   % end
 
-  private[scalanative] sealed trait CFuncPtrTag[F <: unsafe.CFuncPtr]
+  abstract class CFuncPtrTag[F <: unsafe.CFuncPtr] private[unsafe] ()
    extends Tag[F] {
     def load(ptr: unsafe.Ptr[F], loadPtr: Boolean): F
 
