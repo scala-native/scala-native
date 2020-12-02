@@ -52,9 +52,6 @@ trait NirDefinitions {
     lazy val CFuncPtrClass =
       getRequiredClass("scala.scalanative.unsafe.CFuncPtr")
 
-    lazy val CFuncRawPtrClass =
-      getRequiredClass("scala.scalanative.unsafe.CFuncRawPtr")
-
     lazy val NatBaseClass = (0 to 9).map { n =>
       getRequiredClass("scala.scalanative.unsafe.Nat$_" + n)
     }

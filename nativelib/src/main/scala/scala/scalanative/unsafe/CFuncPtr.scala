@@ -30,11 +30,6 @@ object CFuncPtr {
   }
 }
 
-final class CFuncRawPtr(val rawptr: RawPtr) extends CFuncPtr {
-  def as[F <: CFuncPtr](implicit tag: Tag.CFuncPtrTag[F]): F =
-    tag.load(boxToPtr[F](rawptr), loadPtr = false)
-}
-
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 43)
 
 final class CFuncPtr0[R](val rawptr: RawPtr) extends CFuncPtr {

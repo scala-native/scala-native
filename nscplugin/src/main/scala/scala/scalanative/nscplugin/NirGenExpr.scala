@@ -2033,8 +2033,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             if Type.boxClasses.contains(refty.name)
             && Type.unbox(Type.Ref(refty.name)) == expectedTy =>
           buf.unbox(Type.Ref(refty.name), value, unwind)
-        case (Type.Ptr, refty: Type.Ref) =>
-          buf.unbox(Type.Ref(genTypeName(CFuncRawPtrClass)), value, unwind)
         case _ =>
           value
       }
@@ -2045,8 +2043,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             if Type.boxClasses.contains(refty.name)
               && Type.unbox(Type.Ref(refty.name)) == ty =>
           buf.box(Type.Ref(refty.name), value, unwind)
-        case (Type.Ptr, refty: Type.Ref) =>
-          buf.box(Type.Ref(genTypeName(CFuncRawPtrClass)), value, unwind)
         case _ =>
           value
       }

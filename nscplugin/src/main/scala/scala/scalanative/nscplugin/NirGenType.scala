@@ -26,13 +26,12 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     def isField: Boolean =
       !sym.isMethod && sym.isTerm && !isScalaModule
 
-    /** Tests if this type inherits from CFuncPtr with exclusion of CFuncRawPtr */
-    def isCFuncPtrClass: Boolean = sym != CFuncRawPtrClass && {
+    /** Tests if this type inherits from CFuncPtr */
+    def isCFuncPtrClass: Boolean =
       sym == CFuncPtrClass ||
-      sym.info.parents.exists(_.typeSymbol == CFuncPtrClass)
-    }
+        sym.info.parents.exists(_.typeSymbol == CFuncPtrClass)
 
-    /** Tests if this type is some of some CFuncPtrN types */
+    /** Tests if this type is implementations of CFuncPtr */
     def isCFuncPtrNClass: Boolean =
       CFuncPtrNClass.contains(sym) || {
         sym.info.parents.exists { parent =>

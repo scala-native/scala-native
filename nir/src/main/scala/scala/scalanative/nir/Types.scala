@@ -95,7 +95,6 @@ object Type {
     Type.Ref(Global.Top("scala.scalanative.unsigned.ULong"))     -> Type.Long,
     Type.Ref(Global.Top("scala.scalanative.unsafe.CArray"))      -> Type.Ptr,
     Type.Ref(Global.Top("scala.scalanative.unsafe.CVarArgList")) -> Type.Ptr,
-    Type.Ref(Global.Top("scala.scalanative.unsafe.CFuncRawPtr")) -> Type.Ptr,
     Type.Ref(Global.Top("scala.scalanative.unsafe.Ptr"))         -> Type.Ptr,
     Type.Ref(Global.Top("java.lang.Boolean"))                    -> Type.Bool,
     Type.Ref(Global.Top("java.lang.Character"))                  -> Type.Char,
@@ -105,7 +104,9 @@ object Type {
     Type.Ref(Global.Top("java.lang.Long"))                       -> Type.Long,
     Type.Ref(Global.Top("java.lang.Float"))                      -> Type.Float,
     Type.Ref(Global.Top("java.lang.Double"))                     -> Type.Double
-  )
+  ) ++ 0.until(22).map { n =>
+    Type.Ref(Global.Top(s"scala.scalanative.unsafe.CFuncPtr$n")) -> Type.Ptr
+  }
 
   val unbox = boxesTo.toMap
 
@@ -120,7 +121,7 @@ object Type {
 
   def isPtrBox(ty: Type): Boolean = ty match {
     case refty: Type.RefKind =>
-      box.get(Type.Ref(refty.className)) == Some(Type.Ptr)
+      box.get(Type.Ref(refty.className)).contains(Type.Ptr)
     case _ =>
       false
   }
