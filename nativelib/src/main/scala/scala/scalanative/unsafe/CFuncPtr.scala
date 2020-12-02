@@ -37,7 +37,7 @@ final class CFuncPtr0[R](val rawptr: RawPtr) extends CFuncPtr {
 }
 
 object CFuncPtr0 {
-  implicit def fromScalaFunction0[R](fn: Function0[R]): CFuncPtr0[R] = intrinsic
+  implicit def fromScalaFunction[R](fn: Function0[R]): CFuncPtr0[R] = intrinsic
 
   def fromRawPtr[R](ptr: RawPtr): CFuncPtr0[R] = {
     new CFuncPtr0[R](ptr)
@@ -50,7 +50,7 @@ final class CFuncPtr1[T1, R](val rawptr: RawPtr) extends CFuncPtr {
 }
 
 object CFuncPtr1 {
-  implicit def fromScalaFunction1[T1, R](
+  implicit def fromScalaFunction[T1, R](
       fn: Function1[T1, R]): CFuncPtr1[T1, R] = intrinsic
 
   def fromRawPtr[T1, R](ptr: RawPtr): CFuncPtr1[T1, R] = {
@@ -66,7 +66,7 @@ final class CFuncPtr2[T1, T2, R](val rawptr: RawPtr) extends CFuncPtr {
 }
 
 object CFuncPtr2 {
-  implicit def fromScalaFunction2[T1, T2, R](
+  implicit def fromScalaFunction[T1, T2, R](
       fn: Function2[T1, T2, R]): CFuncPtr2[T1, T2, R] = intrinsic
 
   def fromRawPtr[T1, T2, R](ptr: RawPtr): CFuncPtr2[T1, T2, R] = {
@@ -83,7 +83,7 @@ final class CFuncPtr3[T1, T2, T3, R](val rawptr: RawPtr) extends CFuncPtr {
 }
 
 object CFuncPtr3 {
-  implicit def fromScalaFunction3[T1, T2, T3, R](
+  implicit def fromScalaFunction[T1, T2, T3, R](
       fn: Function3[T1, T2, T3, R]): CFuncPtr3[T1, T2, T3, R] = intrinsic
 
   def fromRawPtr[T1, T2, T3, R](ptr: RawPtr): CFuncPtr3[T1, T2, T3, R] = {
@@ -102,7 +102,7 @@ final class CFuncPtr4[T1, T2, T3, T4, R](val rawptr: RawPtr) extends CFuncPtr {
 }
 
 object CFuncPtr4 {
-  implicit def fromScalaFunction4[T1, T2, T3, T4, R](
+  implicit def fromScalaFunction[T1, T2, T3, T4, R](
       fn: Function4[T1, T2, T3, T4, R]): CFuncPtr4[T1, T2, T3, T4, R] =
     intrinsic
 
@@ -125,7 +125,7 @@ final class CFuncPtr5[T1, T2, T3, T4, T5, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr5 {
-  implicit def fromScalaFunction5[T1, T2, T3, T4, T5, R](
+  implicit def fromScalaFunction[T1, T2, T3, T4, T5, R](
       fn: Function5[T1, T2, T3, T4, T5, R]): CFuncPtr5[T1, T2, T3, T4, T5, R] =
     intrinsic
 
@@ -149,7 +149,7 @@ final class CFuncPtr6[T1, T2, T3, T4, T5, T6, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr6 {
-  implicit def fromScalaFunction6[T1, T2, T3, T4, T5, T6, R](
+  implicit def fromScalaFunction[T1, T2, T3, T4, T5, T6, R](
       fn: Function6[T1, T2, T3, T4, T5, T6, R])
       : CFuncPtr6[T1, T2, T3, T4, T5, T6, R] = intrinsic
 
@@ -179,7 +179,7 @@ final class CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr7 {
-  implicit def fromScalaFunction7[T1, T2, T3, T4, T5, T6, T7, R](
+  implicit def fromScalaFunction[T1, T2, T3, T4, T5, T6, T7, R](
       fn: Function7[T1, T2, T3, T4, T5, T6, T7, R])
       : CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R] = intrinsic
 
@@ -211,7 +211,7 @@ final class CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr8 {
-  implicit def fromScalaFunction8[T1, T2, T3, T4, T5, T6, T7, T8, R](
+  implicit def fromScalaFunction[T1, T2, T3, T4, T5, T6, T7, T8, R](
       fn: Function8[T1, T2, T3, T4, T5, T6, T7, T8, R])
       : CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] = intrinsic
 
@@ -245,7 +245,7 @@ final class CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr9 {
-  implicit def fromScalaFunction9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](
+  implicit def fromScalaFunction[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](
       fn: Function9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R])
       : CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] = intrinsic
 
@@ -282,7 +282,7 @@ final class CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R](
 }
 
 object CFuncPtr10 {
-  implicit def fromScalaFunction10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R](
+  implicit def fromScalaFunction[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R](
       fn: Function10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R])
       : CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] = intrinsic
 
@@ -321,18 +321,18 @@ final class CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R](
 }
 
 object CFuncPtr11 {
-  implicit def fromScalaFunction11[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 R](
       fn: Function11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R])
       : CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R] = intrinsic
 
@@ -373,19 +373,19 @@ final class CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R](
 }
 
 object CFuncPtr12 {
-  implicit def fromScalaFunction12[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   T12,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 T12,
+                                 R](
       fn: Function12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R])
       : CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R] =
     intrinsic
@@ -430,20 +430,20 @@ R](val rawptr: RawPtr)
 }
 
 object CFuncPtr13 {
-  implicit def fromScalaFunction13[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   T12,
-                                   T13,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 T12,
+                                 T13,
+                                 R](
       fn: Function13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R])
       : CFuncPtr13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R] =
     intrinsic
@@ -503,21 +503,21 @@ T14, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr14 {
-  implicit def fromScalaFunction14[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   T12,
-                                   T13,
-                                   T14,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 T12,
+                                 T13,
+                                 T14,
+                                 R](
       fn: Function14[T1,
                      T2,
                      T3,
@@ -632,22 +632,22 @@ T14, T15, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr15 {
-  implicit def fromScalaFunction15[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   T12,
-                                   T13,
-                                   T14,
-                                   T15,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 T12,
+                                 T13,
+                                 T14,
+                                 T15,
+                                 R](
       fn: Function15[T1,
                      T2,
                      T3,
@@ -769,23 +769,23 @@ T14, T15, T16, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr16 {
-  implicit def fromScalaFunction16[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   T12,
-                                   T13,
-                                   T14,
-                                   T15,
-                                   T16,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 T12,
+                                 T13,
+                                 T14,
+                                 T15,
+                                 T16,
+                                 R](
       fn: Function16[T1,
                      T2,
                      T3,
@@ -914,24 +914,24 @@ T14, T15, T16, T17, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr17 {
-  implicit def fromScalaFunction17[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   T12,
-                                   T13,
-                                   T14,
-                                   T15,
-                                   T16,
-                                   T17,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 T12,
+                                 T13,
+                                 T14,
+                                 T15,
+                                 T16,
+                                 T17,
+                                 R](
       fn: Function17[T1,
                      T2,
                      T3,
@@ -1067,25 +1067,25 @@ T14, T15, T16, T17, T18, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr18 {
-  implicit def fromScalaFunction18[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   T12,
-                                   T13,
-                                   T14,
-                                   T15,
-                                   T16,
-                                   T17,
-                                   T18,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 T12,
+                                 T13,
+                                 T14,
+                                 T15,
+                                 T16,
+                                 T17,
+                                 T18,
+                                 R](
       fn: Function18[T1,
                      T2,
                      T3,
@@ -1228,26 +1228,26 @@ T14, T15, T16, T17, T18, T19, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr19 {
-  implicit def fromScalaFunction19[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   T12,
-                                   T13,
-                                   T14,
-                                   T15,
-                                   T16,
-                                   T17,
-                                   T18,
-                                   T19,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 T12,
+                                 T13,
+                                 T14,
+                                 T15,
+                                 T16,
+                                 T17,
+                                 T18,
+                                 T19,
+                                 R](
       fn: Function19[T1,
                      T2,
                      T3,
@@ -1397,27 +1397,27 @@ T14, T15, T16, T17, T18, T19, T20, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr20 {
-  implicit def fromScalaFunction20[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   T12,
-                                   T13,
-                                   T14,
-                                   T15,
-                                   T16,
-                                   T17,
-                                   T18,
-                                   T19,
-                                   T20,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 T12,
+                                 T13,
+                                 T14,
+                                 T15,
+                                 T16,
+                                 T17,
+                                 T18,
+                                 T19,
+                                 T20,
+                                 R](
       fn: Function20[T1,
                      T2,
                      T3,
@@ -1574,28 +1574,28 @@ T14, T15, T16, T17, T18, T19, T20, T21, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr21 {
-  implicit def fromScalaFunction21[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   T12,
-                                   T13,
-                                   T14,
-                                   T15,
-                                   T16,
-                                   T17,
-                                   T18,
-                                   T19,
-                                   T20,
-                                   T21,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 T12,
+                                 T13,
+                                 T14,
+                                 T15,
+                                 T16,
+                                 T17,
+                                 T18,
+                                 T19,
+                                 T20,
+                                 T21,
+                                 R](
       fn: Function21[T1,
                      T2,
                      T3,
@@ -1759,29 +1759,29 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22, R](val rawptr: RawPtr)
 }
 
 object CFuncPtr22 {
-  implicit def fromScalaFunction22[T1,
-                                   T2,
-                                   T3,
-                                   T4,
-                                   T5,
-                                   T6,
-                                   T7,
-                                   T8,
-                                   T9,
-                                   T10,
-                                   T11,
-                                   T12,
-                                   T13,
-                                   T14,
-                                   T15,
-                                   T16,
-                                   T17,
-                                   T18,
-                                   T19,
-                                   T20,
-                                   T21,
-                                   T22,
-                                   R](
+  implicit def fromScalaFunction[T1,
+                                 T2,
+                                 T3,
+                                 T4,
+                                 T5,
+                                 T6,
+                                 T7,
+                                 T8,
+                                 T9,
+                                 T10,
+                                 T11,
+                                 T12,
+                                 T13,
+                                 T14,
+                                 T15,
+                                 T16,
+                                 T17,
+                                 T18,
+                                 T19,
+                                 T20,
+                                 T21,
+                                 T22,
+                                 R](
       fn: Function22[T1,
                      T2,
                      T3,

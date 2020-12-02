@@ -41,7 +41,7 @@ final class ${CFuncPtrN}(val rawptr: RawPtr) extends CFuncPtr {
 }
 
 object CFuncPtr${N}{
-  implicit def fromScalaFunction${N}[${allTps}](fn: ${FunctionN}): ${CFuncPtrN} = intrinsic
+  implicit def fromScalaFunction[${allTps}](fn: ${FunctionN}): ${CFuncPtrN} = intrinsic
 
   def fromRawPtr[${allTps}](ptr: RawPtr): ${CFuncPtrN} = {
     new ${CFuncPtrN}(ptr)

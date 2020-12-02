@@ -220,7 +220,7 @@ trait NirDefinitions {
     lazy val CFuncPtrFromFunctionMethods =
       CFuncPtrNModule.zipWithIndex.map {
         case (module, n) =>
-          getMember(module, TermName(s"fromScalaFunction$n"))
+          getMember(module, TermName(s"fromScalaFunction"))
       }
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
