@@ -74,23 +74,26 @@ trait MapTest {
     }
   }
   @Test def testSizeGetPutWithInts(): Unit = {
-    val mp = factory.empty[Int, Int]
+    if (!isIdentityHashMapOnScalaNative()) {
 
-    mp.put(100, 12345)
-    assertEquals(1, mp.size())
-    assertEquals(12345, mp.get(100))
-    mp.put(150, 54321)
-    assertEquals(2, mp.size())
-    assertEquals(54321, mp.get(150))
-    mp.put(100, 3)
-    assertEquals(2, mp.size())
-    assertEquals(3, mp.get(100))
+      val mp = factory.empty[Int, Int]
 
-    assertEquals(null, mp.get(42))
-    assertEquals(null, mp.get("THREE"))
-    assertEquals(null, mp.get(testObj(42)))
-    if (factory.allowsNullKeysQueries)
-      assertEquals(null, mp.get(null))
+      mp.put(100, 12345)
+      assertEquals(1, mp.size())
+      assertEquals(12345, mp.get(100))
+      mp.put(150, 54321)
+      assertEquals(2, mp.size())
+      assertEquals(54321, mp.get(150))
+      mp.put(100, 3)
+      assertEquals(2, mp.size())
+      assertEquals(3, mp.get(100))
+
+      assertEquals(null, mp.get(42))
+      assertEquals(null, mp.get("THREE"))
+      assertEquals(null, mp.get(testObj(42)))
+      if (factory.allowsNullKeysQueries)
+        assertEquals(null, mp.get(null))
+    }
   }
 
   @Test def testSizeGetPutWithIntsLargeMap(): Unit = {
@@ -150,27 +153,29 @@ trait MapTest {
   }
 
   @Test def testSizeGetPutWithDoublesCornerCasesOfEquals(): Unit = {
-    val mp = factory.empty[Double, Double]
+    if (!isIdentityHashMapOnScalaNative()) {
+      val mp = factory.empty[Double, Double]
 
-    mp.put(1.2345, 11111.0)
-    assertEquals(1, mp.size())
-    val one = mp.get(1.2345)
-    assertEquals(11111.0, one, 0.0)
+      mp.put(1.2345, 11111.0)
+      assertEquals(1, mp.size())
+      val one = mp.get(1.2345)
+      assertEquals(11111.0, one, 0.0)
 
-    mp.put(Double.NaN, 22222.0)
-    assertEquals(2, mp.size())
-    val two = mp.get(Double.NaN)
-    assertEquals(22222.0, two, 0.0)
+      mp.put(Double.NaN, 22222.0)
+      assertEquals(2, mp.size())
+      val two = mp.get(Double.NaN)
+      assertEquals(22222.0, two, 0.0)
 
-    mp.put(+0.0, 33333.0)
-    assertEquals(3, mp.size())
-    val three = mp.get(+0.0)
-    assertEquals(33333.0, three, 0.0)
+      mp.put(+0.0, 33333.0)
+      assertEquals(3, mp.size())
+      val three = mp.get(+0.0)
+      assertEquals(33333.0, three, 0.0)
 
-    mp.put(-0.0, 44444.0)
-    assertEquals(4, mp.size())
-    val four = mp.get(-0.0)
-    assertEquals(44444.0, four, 0.0)
+      mp.put(-0.0, 44444.0)
+      assertEquals(4, mp.size())
+      val four = mp.get(-0.0)
+      assertEquals(44444.0, four, 0.0)
+    }
   }
 
   @Test def testRemoveWithStrings(): Unit = {
@@ -192,21 +197,24 @@ trait MapTest {
   }
 
   @Test def testRemoveWithInts(): Unit = {
-    val mp = factory.empty[Int, String]
+    if (!isIdentityHashMapOnScalaNative()) {
 
-    mp.put(543, "one")
-    for (i <- 0 until 30)
-      mp.put(i, s"value $i")
-    assertEquals(31, mp.size())
-    assertEquals("one", mp.remove(543))
-    assertNull(mp.get(543))
-    assertNull(mp.remove(543))
+      val mp = factory.empty[Int, String]
 
-    assertNull(mp.remove("foobar"))
-    assertNull(mp.remove(42))
-    assertNull(mp.remove(testObj(42)))
-    if (factory.allowsNullKeys)
-      assertNull(mp.remove(null))
+      mp.put(543, "one")
+      for (i <- 0 until 30)
+        mp.put(i, s"value $i")
+      assertEquals(31, mp.size())
+      assertEquals("one", mp.remove(543))
+      assertNull(mp.get(543))
+      assertNull(mp.remove(543))
+
+      assertNull(mp.remove("foobar"))
+      assertNull(mp.remove(42))
+      assertNull(mp.remove(testObj(42)))
+      if (factory.allowsNullKeys)
+        assertNull(mp.remove(null))
+    }
   }
 
   @Test def testRemoveWithCustomObjects(): Unit = {
@@ -228,36 +236,39 @@ trait MapTest {
   }
 
   @Test def testRemoveWithDoublesCornerCasesOfEquals(): Unit = {
-    val mp = factory.empty[Double, String]
+    if (!isIdentityHashMapOnScalaNative()) {
 
-    mp.put(1.2345, "11111.0")
-    mp.put(Double.NaN, "22222.0")
-    mp.put(+0.0, "33333.0")
-    mp.put(-0.0, "44444.0")
+      val mp = factory.empty[Double, String]
 
-    assertEquals("11111.0", mp.get(1.2345))
-    assertEquals("22222.0", mp.get(Double.NaN))
-    assertEquals("33333.0", mp.get(+0.0))
-    assertEquals("44444.0", mp.get(-0.0))
+      mp.put(1.2345, "11111.0")
+      mp.put(Double.NaN, "22222.0")
+      mp.put(+0.0, "33333.0")
+      mp.put(-0.0, "44444.0")
 
-    assertEquals("44444.0", mp.remove(-0.0))
-    assertNull(mp.get(-0.0))
+      assertEquals("11111.0", mp.get(1.2345))
+      assertEquals("22222.0", mp.get(Double.NaN))
+      assertEquals("33333.0", mp.get(+0.0))
+      assertEquals("44444.0", mp.get(-0.0))
 
-    mp.put(-0.0, "55555.0")
+      assertEquals("44444.0", mp.remove(-0.0))
+      assertNull(mp.get(-0.0))
 
-    assertEquals("33333.0", mp.remove(+0.0))
-    assertNull(mp.get(+0.0))
+      mp.put(-0.0, "55555.0")
 
-    mp.put(+0.0, "66666.0")
+      assertEquals("33333.0", mp.remove(+0.0))
+      assertNull(mp.get(+0.0))
 
-    assertEquals("22222.0", mp.remove(Double.NaN))
-    assertNull(mp.get(Double.NaN))
+      mp.put(+0.0, "66666.0")
 
-    mp.put(Double.NaN, "77777.0")
+      assertEquals("22222.0", mp.remove(Double.NaN))
+      assertNull(mp.get(Double.NaN))
 
-    mp.clear()
+      mp.put(Double.NaN, "77777.0")
 
-    assertTrue(mp.isEmpty)
+      mp.clear()
+
+      assertTrue(mp.isEmpty)
+    }
   }
 
   @Test def testGetPutRemoveNullKeys(): Unit = {
@@ -489,23 +500,25 @@ trait MapTest {
   }
 
   @Test def testValuesIsViewForQueriesWithDoublesCornerCaseOfEquals(): Unit = {
-    val nummp     = factory.empty[Double, Double]
-    val numValues = nummp.values()
+    if (!isIdentityHashMapOnScalaNative()) {
+      val nummp     = factory.empty[Double, Double]
+      val numValues = nummp.values()
 
-    nummp.put(1, +0.0)
-    assertTrue(numValues.contains(+0.0))
-    assertFalse(numValues.contains(-0.0))
-    assertFalse(numValues.contains(Double.NaN))
+      nummp.put(1, +0.0)
+      assertTrue(numValues.contains(+0.0))
+      assertFalse(numValues.contains(-0.0))
+      assertFalse(numValues.contains(Double.NaN))
 
-    nummp.put(2, -0.0)
-    assertTrue(numValues.contains(+0.0))
-    assertTrue(numValues.contains(-0.0))
-    assertFalse(numValues.contains(Double.NaN))
+      nummp.put(2, -0.0)
+      assertTrue(numValues.contains(+0.0))
+      assertTrue(numValues.contains(-0.0))
+      assertFalse(numValues.contains(Double.NaN))
 
-    nummp.put(3, Double.NaN)
-    assertTrue(numValues.contains(+0.0))
-    assertTrue(numValues.contains(-0.0))
-    assertTrue(numValues.contains(Double.NaN))
+      nummp.put(3, Double.NaN)
+      assertTrue(numValues.contains(+0.0))
+      assertTrue(numValues.contains(-0.0))
+      assertTrue(numValues.contains(Double.NaN))
+    }
   }
 
   @Test def testValuesIsViewForRemoveWithStrings(): Unit = {
@@ -684,23 +697,25 @@ trait MapTest {
   }
 
   @Test def testKeySetIsViewForQueriesWithDoublesCornerCaseOfEquals(): Unit = {
-    val nummp     = factory.empty[Double, Double]
-    val numkeySet = nummp.keySet()
+    if (!isIdentityHashMapOnScalaNative()) {
+      val nummp     = factory.empty[Double, Double]
+      val numkeySet = nummp.keySet()
 
-    nummp.put(+0.0, 1)
-    assertTrue(numkeySet.contains(+0.0))
-    assertFalse(numkeySet.contains(-0.0))
-    assertFalse(numkeySet.contains(Double.NaN))
+      nummp.put(+0.0, 1)
+      assertTrue(numkeySet.contains(+0.0))
+      assertFalse(numkeySet.contains(-0.0))
+      assertFalse(numkeySet.contains(Double.NaN))
 
-    nummp.put(-0.0, 2)
-    assertTrue(numkeySet.contains(+0.0))
-    assertTrue(numkeySet.contains(-0.0))
-    assertFalse(numkeySet.contains(Double.NaN))
+      nummp.put(-0.0, 2)
+      assertTrue(numkeySet.contains(+0.0))
+      assertTrue(numkeySet.contains(-0.0))
+      assertFalse(numkeySet.contains(Double.NaN))
 
-    nummp.put(Double.NaN, 3)
-    assertTrue(numkeySet.contains(+0.0))
-    assertTrue(numkeySet.contains(-0.0))
-    assertTrue(numkeySet.contains(Double.NaN))
+      nummp.put(Double.NaN, 3)
+      assertTrue(numkeySet.contains(+0.0))
+      assertTrue(numkeySet.contains(-0.0))
+      assertTrue(numkeySet.contains(Double.NaN))
+    }
   }
 
   @Test def testKeySetIsViewForRemoveWithStrings(): Unit = {
