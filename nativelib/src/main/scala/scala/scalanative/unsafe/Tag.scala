@@ -8678,7 +8678,7 @@ object Tag {
     @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
       load(ptr, loadPtr = true)
     @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit =
-      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
+      storeRawPtr(toRawPtr(ptr), value.rawptr)
   }
 
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 215)
