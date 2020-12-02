@@ -199,10 +199,10 @@ object Tag {
 
   private[scalanative] sealed trait CFuncPtrTag[F <: unsafe.CFuncPtr]
    extends Tag[F] {
-		def load(ptr: unsafe.Ptr[F], loadPtr: Boolean): F
+    def load(ptr: unsafe.Ptr[F], loadPtr: Boolean): F
 
-  	@alwaysinline def size: Int = 8
-		@alwaysinline def alignment: Int = 8
+    @alwaysinline def size: Int = 8
+    @alwaysinline def alignment: Int = 8
     @alwaysinline override def load(ptr: unsafe.Ptr[F]): F = load(ptr, loadPtr = true)
     @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit =
       storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
@@ -213,7 +213,7 @@ object Tag {
   %   tag   = "CFuncPtr{}[{}]".format(N, targs)
   %   nativeCFuncPtr = "unsafe.CFuncPtr{}[{}]".format(N, targs)
   abstract class ${tag}
-  	extends CFuncPtrTag[${nativeCFuncPtr}]
+    extends CFuncPtrTag[${nativeCFuncPtr}]
   % end
 
   @alwaysinline implicit def materializePtrTag[T](implicit tag: Tag[T]): Tag[unsafe.Ptr[T]] =
@@ -247,21 +247,21 @@ object Tag {
   @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]: Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
   % for N in range(0, 23):
-	%   tps 		  = ", ".join(["T" + str(i) 										for i in range(1, N+1)] + ["R"])
-	%   tpsDecl   = ", ".join(["T" + str(i) + ": Tag" 					for i in range(1, N+1)] + ["R: Tag"])
-	%   args		  = ", ".join(["$fnPtr"] + ["arg" + str(i) 			for i in range(1, N+1)])
-	%   argsDecl  = ", ".join("arg" + str(i) + ": $T" + str(i) 	for i in range(1, N+1))
-	%   CFuncPtrN 	  = "CFuncPtr{}[{}]".format(N, tps)
-	%   CFuncPtrNDecl = "CFuncPtr{}[{}]".format(N, tpsDecl)
+  %   tps 		  = ", ".join(["T" + str(i) 										for i in range(1, N+1)] + ["R"])
+  %   tpsDecl   = ", ".join(["T" + str(i) + ": Tag" 					for i in range(1, N+1)] + ["R: Tag"])
+  %   args		  = ", ".join(["$fnPtr"] + ["arg" + str(i) 			for i in range(1, N+1)])
+  %   argsDecl  = ", ".join("arg" + str(i) + ": $T" + str(i) 	for i in range(1, N+1))
+  %   CFuncPtrN 	  = "CFuncPtr{}[{}]".format(N, tps)
+  %   CFuncPtrNDecl = "CFuncPtr{}[{}]".format(N, tpsDecl)
 
   @alwaysinline implicit def materialize${CFuncPtrNDecl}: CFuncPtrTag[unsafe.${CFuncPtrN}] = {
-		new CFuncPtrTag[unsafe.${CFuncPtrN}] {
-			override def load(ptr: unsafe.Ptr[unsafe.${CFuncPtrN}],
-												loadPtr: Boolean): unsafe.${CFuncPtrN} = {
-				val rawPtr = if (loadPtr) loadRawPtr(ptr.rawptr) else ptr.rawptr
-				unsafe.CFuncPtr${N}.fromRawPtr[${tps}](rawPtr)
-			}
-		}
+    new CFuncPtrTag[unsafe.${CFuncPtrN}] {
+      override def load(ptr: unsafe.Ptr[unsafe.${CFuncPtrN}],
+                        loadPtr: Boolean): unsafe.${CFuncPtrN} = {
+        val rawPtr = if (loadPtr) loadRawPtr(ptr.rawptr) else ptr.rawptr
+        unsafe.CFuncPtr${N}.fromRawPtr[${tps}](rawPtr)
+      }
+    }
   }
   % end
 }

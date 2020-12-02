@@ -186,8 +186,8 @@ class PtrBoxingTest {
       assertTrue(out.toList == List(10, 20, 30))
     }
   }
-  @Test def loadAndStoreCFuncPtr(): Unit = {
 
+  @Test def loadAndStoreCFuncPtr(): Unit = {
     Zone { implicit z =>
       val x: Ptr[Functions] = stackalloc[Functions]
       x._1 = CFuncPtr0.fromScalaFunction0(getInt)
