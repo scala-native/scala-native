@@ -12,6 +12,7 @@ package scala.scalanative
 package unsafe
 
 import scala.language.implicitConversions
+import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Boxes._
 import scala.scalanative.runtime.{RawPtr, intrinsic}
 
@@ -19,12 +20,22 @@ sealed trait CFuncPtr {
   def rawptr: RawPtr
 }
 
+object CFuncPtr {
+  @alwaysinline def fromPtr[F <: CFuncPtr](ptr: Ptr[Byte])(
+      implicit tag: Tag.CFuncPtrTag[F]): F =
+    tag.load(boxToPtr[F](ptr.rawptr), loadPtr = false)
+
+  @alwaysinline def toPtr[T](ptr: CFuncPtr): Ptr[Byte] = {
+    boxToPtr[Byte](ptr.rawptr)
+  }
+}
+
 final class CFuncRawPtr(val rawptr: RawPtr) extends CFuncPtr {
   def as[F <: CFuncPtr](implicit tag: Tag.CFuncPtrTag[F]): F =
     tag.load(boxToPtr[F](rawptr), loadPtr = false)
 }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr0[R](val rawptr: RawPtr) extends CFuncPtr {
   def apply()(implicit evRet: Tag[R]): R = intrinsic
@@ -37,7 +48,7 @@ object CFuncPtr0 {
     new CFuncPtr0[R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr1[T1, R](val rawptr: RawPtr) extends CFuncPtr {
   def apply(arg1: T1)(implicit ev1: Tag[T1], evRet: Tag[R]): R = intrinsic
@@ -51,7 +62,7 @@ object CFuncPtr1 {
     new CFuncPtr1[T1, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr2[T1, T2, R](val rawptr: RawPtr) extends CFuncPtr {
   def apply(arg1: T1,
@@ -67,7 +78,7 @@ object CFuncPtr2 {
     new CFuncPtr2[T1, T2, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr3[T1, T2, T3, R](val rawptr: RawPtr) extends CFuncPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3)(implicit ev1: Tag[T1],
@@ -84,7 +95,7 @@ object CFuncPtr3 {
     new CFuncPtr3[T1, T2, T3, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr4[T1, T2, T3, T4, R](val rawptr: RawPtr) extends CFuncPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3, arg4: T4)(implicit ev1: Tag[T1],
@@ -105,7 +116,7 @@ object CFuncPtr4 {
     new CFuncPtr4[T1, T2, T3, T4, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr5[T1, T2, T3, T4, T5, R](val rawptr: RawPtr)
     extends CFuncPtr {
@@ -128,7 +139,7 @@ object CFuncPtr5 {
     new CFuncPtr5[T1, T2, T3, T4, T5, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr6[T1, T2, T3, T4, T5, T6, R](val rawptr: RawPtr)
     extends CFuncPtr {
@@ -152,7 +163,7 @@ object CFuncPtr6 {
     new CFuncPtr6[T1, T2, T3, T4, T5, T6, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R](val rawptr: RawPtr)
     extends CFuncPtr {
@@ -182,7 +193,7 @@ object CFuncPtr7 {
     new CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R](val rawptr: RawPtr)
     extends CFuncPtr {
@@ -214,7 +225,7 @@ object CFuncPtr8 {
     new CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](val rawptr: RawPtr)
     extends CFuncPtr {
@@ -248,7 +259,7 @@ object CFuncPtr9 {
     new CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R](
     val rawptr: RawPtr)
@@ -285,7 +296,7 @@ object CFuncPtr10 {
     new CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R](
     val rawptr: RawPtr)
@@ -335,7 +346,7 @@ object CFuncPtr11 {
     new CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R](
     val rawptr: RawPtr)
@@ -390,7 +401,7 @@ object CFuncPtr12 {
     new CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 R](val rawptr: RawPtr)
@@ -461,7 +472,7 @@ object CFuncPtr13 {
       ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, R](val rawptr: RawPtr)
@@ -588,7 +599,7 @@ object CFuncPtr14 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, R](val rawptr: RawPtr)
@@ -723,7 +734,7 @@ object CFuncPtr15 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, R](val rawptr: RawPtr)
@@ -866,7 +877,7 @@ object CFuncPtr16 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, R](val rawptr: RawPtr)
@@ -1017,7 +1028,7 @@ object CFuncPtr17 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, R](val rawptr: RawPtr)
@@ -1176,7 +1187,7 @@ object CFuncPtr18 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19, R](val rawptr: RawPtr)
@@ -1343,7 +1354,7 @@ object CFuncPtr19 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19, T20, R](val rawptr: RawPtr)
@@ -1518,7 +1529,7 @@ object CFuncPtr20 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19, T20, T21, R](val rawptr: RawPtr)
@@ -1701,7 +1712,7 @@ object CFuncPtr21 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 47)
 
 final class CFuncPtr22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19, T20, T21, T22, R](val rawptr: RawPtr)

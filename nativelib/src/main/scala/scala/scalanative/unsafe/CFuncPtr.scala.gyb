@@ -11,11 +11,22 @@ package scala.scalanative
 package unsafe
 
 import scala.language.implicitConversions
+import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Boxes._
 import scala.scalanative.runtime.{RawPtr, intrinsic}
 
 sealed trait CFuncPtr {
   def rawptr: RawPtr
+}
+
+object CFuncPtr {
+  @alwaysinline def fromPtr[F <: CFuncPtr](ptr: Ptr[Byte])(
+      implicit tag: Tag.CFuncPtrTag[F]): F =
+    tag.load(boxToPtr[F](ptr.rawptr), loadPtr = false)
+
+  @alwaysinline def toPtr[T](ptr: CFuncPtr): Ptr[Byte] = {
+    boxToPtr[Byte](ptr.rawptr)
+  }
 }
 
 final class CFuncRawPtr(val rawptr: RawPtr) extends CFuncPtr {

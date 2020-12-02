@@ -32,8 +32,8 @@ class PtrOpsTest {
   val fn0: CFuncPtr0[CInt] = () => 1
 
   @Test def castsPtrByteToCFuncPtr(): Unit = {
-    val fnPtr: Ptr[Byte] = Ptr.cFuncPtrToPtr(fn0)
-    val fnFromPtr        = Ptr.ptrToCFuncPtr[CFuncPtr0[CInt]](fnPtr)
+    val fnPtr: Ptr[Byte] = CFuncPtr.toPtr(fn0)
+    val fnFromPtr        = CFuncPtr.fromPtr[CFuncPtr0[CInt]](fnPtr)
     val expectedResult   = 1
 
     assertEquals(expectedResult, fn0())
@@ -44,9 +44,9 @@ class PtrOpsTest {
 
   @Test def castedCFuncPtrHandlesArguments(): Unit = {
     type Add1Fn = CFuncPtr1[Int, Int]
-    val ptr: Ptr[Byte] = Ptr.cFuncPtrToPtr(fn1)
-    val fnFromPtr      = Ptr.ptrToCFuncPtr[CFuncPtr1[Int, Int]](ptr)
-    val aliasedFn      = Ptr.ptrToCFuncPtr[Add1Fn](ptr)
+    val ptr: Ptr[Byte] = CFuncPtr.toPtr(fn1)
+    val fnFromPtr      = CFuncPtr.fromPtr[CFuncPtr1[Int, Int]](ptr)
+    val aliasedFn      = CFuncPtr.fromPtr[Add1Fn](ptr)
 
     val in          = 1
     val expectedOut = 2
@@ -70,9 +70,9 @@ class PtrOpsTest {
 
   @Test def castedCFuncPtrHandlesPointersAndStructs(): Unit = {
     type AssignCString = CFuncPtr2[CString, StructA, StructA]
-    val ptr       = Ptr.cFuncPtrToPtr(fn2)
-    val fnFromPtr = Ptr.ptrToCFuncPtr[CFuncPtr2[CString, StructA, StructA]](ptr)
-    val aliasedFn = Ptr.ptrToCFuncPtr[AssignCString](ptr)
+    val ptr       = CFuncPtr.toPtr(fn2)
+    val fnFromPtr = CFuncPtr.fromPtr[CFuncPtr2[CString, StructA, StructA]](ptr)
+    val aliasedFn = CFuncPtr.fromPtr[AssignCString](ptr)
 
     def test(fn: CFuncPtr2[CString, StructA, StructA]): Unit = Zone {
       implicit z =>
@@ -117,10 +117,10 @@ class PtrOpsTest {
 
     type FnAlias = CFuncPtr3[CInt, CUnsignedLongLong, LLArr, LLArr]
     val fn  = fn3
-    val ptr = Ptr.cFuncPtrToPtr(fn)
+    val ptr = CFuncPtr.toPtr(fn)
     val fnFromPtr =
-      Ptr.ptrToCFuncPtr[CFuncPtr3[CInt, CUnsignedLongLong, LLArr, LLArr]](ptr)
-    val aliasedFn = Ptr.ptrToCFuncPtr[FnAlias](ptr)
+      CFuncPtr.fromPtr[CFuncPtr3[CInt, CUnsignedLongLong, LLArr, LLArr]](ptr)
+    val aliasedFn = CFuncPtr.fromPtr[FnAlias](ptr)
     test(fn)
     test(fnFromPtr)
     test(aliasedFn)

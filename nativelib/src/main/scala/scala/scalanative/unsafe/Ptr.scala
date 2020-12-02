@@ -60,12 +60,4 @@ object Ptr {
 
   @alwaysinline implicit def ptrToCStruct[T <: CStruct](ptr: Ptr[T])(
       implicit tag: Tag[T]): T = !ptr
-
-  @alwaysinline implicit def ptrToCFuncPtr[F <: CFuncPtr](ptr: Ptr[Byte])(
-      implicit tag: Tag.CFuncPtrTag[F]): F =
-    Boxes.boxToCFuncRawPtr(ptr.rawptr).as[F]
-
-  @alwaysinline implicit def cFuncPtrToPtr[T](ptr: CFuncPtr): Ptr[Byte] = {
-    Boxes.boxToPtr[Byte](Boxes.unboxToCFuncRawPtr(ptr))
-  }
 }
