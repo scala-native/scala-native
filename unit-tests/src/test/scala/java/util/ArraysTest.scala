@@ -23,8 +23,6 @@ class ArraysTest {
   implicit def array2erasedArray[T](arr: Array[T]): Array[AnyRef] =
     arr.map(_.asInstanceOf[AnyRef])
 
-  def Array[T: ClassTag](v: T*): scala.Array[T] = scala.Array(v: _*)
-
   val stringComparator = new Comparator[String]() {
     def compare(s1: String, s2: String): Int = s1.compareTo(s2)
   }
