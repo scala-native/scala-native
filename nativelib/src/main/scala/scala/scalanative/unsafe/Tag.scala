@@ -9981,7 +9981,7 @@ object Tag {
   @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]
       : Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr0[R: Tag]
       : CFuncPtrTag[unsafe.CFuncPtr0[R]] = {
@@ -9993,7 +9993,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr1[T1: Tag, R: Tag]
       : CFuncPtrTag[unsafe.CFuncPtr1[T1, R]] = {
@@ -10005,7 +10005,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr2[T1: Tag, T2: Tag, R: Tag]
       : CFuncPtrTag[unsafe.CFuncPtr2[T1, T2, R]] = {
@@ -10017,7 +10017,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr3[T1: Tag,
                                                   T2: Tag,
@@ -10032,7 +10032,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr4[T1: Tag,
                                                   T2: Tag,
@@ -10049,7 +10049,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr5[T1: Tag,
                                                   T2: Tag,
@@ -10067,7 +10067,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr6[T1: Tag,
                                                   T2: Tag,
@@ -10086,7 +10086,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr7[T1: Tag,
                                                   T2: Tag,
@@ -10106,7 +10106,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr8[T1: Tag,
                                                   T2: Tag,
@@ -10128,7 +10128,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr9[T1: Tag,
                                                   T2: Tag,
@@ -10153,7 +10153,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr10[T1: Tag,
                                                    T2: Tag,
@@ -10180,7 +10180,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr11[T1: Tag,
                                                    T2: Tag,
@@ -10218,7 +10218,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr12[T1: Tag,
                                                    T2: Tag,
@@ -10270,7 +10270,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr13[T1: Tag,
                                                    T2: Tag,
@@ -10362,7 +10362,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr14[T1: Tag,
                                                    T2: Tag,
@@ -10460,7 +10460,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr15[T1: Tag,
                                                    T2: Tag,
@@ -10564,7 +10564,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr16[T1: Tag,
                                                    T2: Tag,
@@ -10674,7 +10674,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr17[T1: Tag,
                                                    T2: Tag,
@@ -10790,7 +10790,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr18[T1: Tag,
                                                    T2: Tag,
@@ -10912,7 +10912,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr19[T1: Tag,
                                                    T2: Tag,
@@ -11040,7 +11040,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr20[T1: Tag,
                                                    T2: Tag,
@@ -11174,7 +11174,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr21[T1: Tag,
                                                    T2: Tag,
@@ -11314,7 +11314,7 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 255)
 
   @alwaysinline implicit def materializeCFuncPtr22[T1: Tag,
                                                    T2: Tag,
@@ -11460,5 +11460,5 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 267)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 266)
 }

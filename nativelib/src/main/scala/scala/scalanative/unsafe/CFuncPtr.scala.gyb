@@ -35,12 +35,8 @@ final class CFuncRawPtr(val rawptr: RawPtr) extends CFuncPtr {
 }
 
 % for N in range(0, 23):
-%   justArgs  	 = ", ".join("arg" + str(i) for i in range(1, N+1))
 %   args 				 = ", ".join("arg" + str(i) + ": T" + str(i) for i in range(1, N+1))
-%   allArgs      = ", ".join(["rawptr"] + ["arg" + str(i) for i in range(1, N+1)])
-%   argTps 			 = ", ".join("T" + str(i) for i in range(1, N+1))
 %   allTps    	 = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
-%   tpsDecl 		 = ", ".join(["T" + str(i) + ": Tag" for i in range(1, N+1)] + ["R: Tag"])
 %   evidences    = ", ".join(["ev{}: Tag[T{}]".format(i, i) for i in range(1, N+1)] + ["evRet: Tag[R]"])
 %   CFuncPtrN    = "CFuncPtr{}[{}]".format(N, allTps)
 %   FunctionN    = "Function{}[{}]".format(N, allTps)

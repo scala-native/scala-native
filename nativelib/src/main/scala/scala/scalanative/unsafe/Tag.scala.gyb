@@ -250,7 +250,6 @@ object Tag {
   %   tps 		  = ", ".join(["T" + str(i) 										for i in range(1, N+1)] + ["R"])
   %   tpsDecl   = ", ".join(["T" + str(i) + ": Tag" 					for i in range(1, N+1)] + ["R: Tag"])
   %   args		  = ", ".join(["$fnPtr"] + ["arg" + str(i) 			for i in range(1, N+1)])
-  %   argsDecl  = ", ".join("arg" + str(i) + ": $T" + str(i) 	for i in range(1, N+1))
   %   CFuncPtrN 	  = "CFuncPtr{}[{}]".format(N, tps)
   %   CFuncPtrNDecl = "CFuncPtr{}[{}]".format(N, tpsDecl)
 
