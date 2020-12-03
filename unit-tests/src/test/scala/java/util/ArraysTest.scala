@@ -6,7 +6,6 @@ import language.implicitConversions
 
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.Ignore
 import org.junit.Test
 
 import scala.scalanative.junit.utils.AssertThrows._
