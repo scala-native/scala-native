@@ -782,7 +782,8 @@ object Arrays {
   }
 
   @noinline def deepHashCode(a: Array[AnyRef]): Int = {
-    @inline def getHash(elem: AnyRef): Int = {
+    @inline
+    def getHash(elem: AnyRef): Int = {
       elem match {
         case elem: Array[AnyRef]  => deepHashCode(elem)
         case elem: Array[Long]    => hashCode(elem)
@@ -845,7 +846,8 @@ object Arrays {
   @noinline def toString(a: Array[AnyRef]): String =
     toStringImpl[AnyRef](a)
 
-  @inline private def toStringImpl[T](a: Array[T]): String = {
+  @inline
+  private def toStringImpl[T](a: Array[T]): String = {
     if (a == null) {
       "null"
     } else {
