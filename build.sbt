@@ -3,6 +3,7 @@ import scala.collection.mutable
 import scala.util.Try
 
 import build.ScalaVersions._
+import sbt.Def
 
 // Convert "SomeName" to "some-name".
 def convertCamelKebab(name: String): String = {
@@ -207,6 +208,52 @@ lazy val buildInfoSettings: Seq[Setting[_]] =
       "nativeScalaVersion" -> (nativelib / scalaVersion).value
     )
   )
+
+lazy val disabledTestsSettings: Seq[Setting[_]] = {
+  def testsTaskUnsupported[T] = Def.task[T] {
+    throw new MessageOnlyException(
+      s"""Usage of this task in ${projectName(thisProject.value)} project is not supported in this build.
+         |To run tests use explicit syntax containing name of project: `<project_name>/<task>.
+         |You can also use one of predefined aliases: test-all, test-tools, test-runtime, test-scripted.
+         |""".stripMargin
+    )
+  }
+
+  Def.settings(
+    inConfig(Test) {
+      Seq(
+        test / aggregate := false,
+        test := testsTaskUnsupported.value,
+        testOnly / aggregate := false,
+        testOnly := testsTaskUnsupported.value,
+        testQuick / aggregate := false,
+        testQuick := testsTaskUnsupported.value,
+        executeTests / aggregate := false,
+        executeTests := testsTaskUnsupported[Tests.Output].value
+      )
+    }
+  )
+}
+
+lazy val root = project
+  .in(file("."))
+  .settings(noPublishSettings)
+  .settings(disabledTestsSettings)
+  .aggregate(util, nir, nirparser, tools)
+  .aggregate(sbtScalaNative, nscplugin, junitPlugin)
+  .aggregate(nativelib, clib, posixlib, auxlib)
+  .aggregate(scalalib, javalib)
+  .aggregate(testingCompilerInterface,
+             testingCompiler,
+             testInterfaceSbtDefs,
+             testInterface,
+             testRunner)
+  .aggregate(junitRuntime,
+             junitTestOutputsNative,
+             junitTestOutputsJVM,
+             junitAsyncNative,
+             junitAsyncJVM)
+  .aggregate(sandbox, tests)
 
 lazy val util =
   project
