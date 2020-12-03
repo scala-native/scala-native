@@ -213,7 +213,7 @@ lazy val disabledTestsSettings: Seq[Setting[_]] = {
   def testsTaskUnsupported[T] = Def.task[T] {
     throw new MessageOnlyException(
       s"""Usage of this task in ${projectName(thisProject.value)} project is not supported in this build.
-         |To run tests use explicit syntax containing name of project: `<project_name>/<task>.
+         |To run tests use explicit syntax containing name of project: <project_name>/<task>.
          |You can also use one of predefined aliases: test-all, test-tools, test-runtime, test-scripted.
          |""".stripMargin
     )
