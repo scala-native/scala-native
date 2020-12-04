@@ -68,4 +68,21 @@ class BigDecimalToStringTest {
       new BigDecimal(bigInt123, -2147483648).toString()
     ) //  Scala.js Issue #4088
   }
+
+  @Test def testToStringWithRoundingMode(): Unit = {
+    import RoundingMode._
+    import scala.scalanative.junit.utils.AssertThrows._
+
+    val group1: Seq[RoundingMode] = Seq(UP, CEILING, HALF_UP)
+    val group2: Seq[RoundingMode] = Seq(DOWN, FLOOR, HALF_DOWN, HALF_EVEN)
+
+    val decimal = BigDecimal.valueOf(1.2345)
+    group1.foreach { mode =>
+      assertEquals("1.235", decimal.setScale(3, mode).toString)
+    }
+    group2.foreach { mode =>
+      assertEquals("1.234", decimal.setScale(3, mode).toString)
+    }
+    assertThrows(classOf[ArithmeticException], decimal.setScale(3, UNNECESSARY))
+  }
 }
