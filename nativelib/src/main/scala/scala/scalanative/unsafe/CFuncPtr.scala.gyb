@@ -39,7 +39,7 @@ final class ${CFuncPtrN} private (rawptr: RawPtr) extends CFuncPtr(rawptr) {
 }
 
 object CFuncPtr${N}{
-  implicit def fromScalaFunction[${allTps}](fn: ${FunctionN}): ${CFuncPtrN} = intrinsic
+  implicit def fromScalaFunction[${allTps}](fn: ${FunctionN})(implicit ${evidences}): ${CFuncPtrN} = intrinsic
 
   private[scalanative] def fromRawPtr[${allTps}](ptr: RawPtr): ${CFuncPtrN} = {
     new ${CFuncPtrN}(ptr)
