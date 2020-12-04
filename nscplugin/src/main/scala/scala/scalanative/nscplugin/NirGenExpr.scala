@@ -1661,7 +1661,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val argTypes = args.map(_.ty)
       val funcSig  = Type.Function(argTypes, unboxedRetType)
 
-      val selfName = genTypeName(receiverp.tpe.sym)
+      val selfName = genTypeName(CFuncPtrClass)
       val getRawPtrName = selfName
         .member(Sig.Field("rawptr", Sig.Scope.Private(selfName)))
 

@@ -16,9 +16,8 @@ import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Boxes._
 import scala.scalanative.runtime.{RawPtr, intrinsic}
 
-sealed trait CFuncPtr {
-  def rawptr: RawPtr
-}
+sealed abstract class CFuncPtr private[unsafe] (
+    private[scalanative] val rawptr: RawPtr)
 
 object CFuncPtr {
   @alwaysinline def fromPtr[F <: CFuncPtr](ptr: Ptr[Byte])(
@@ -30,22 +29,21 @@ object CFuncPtr {
   }
 }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr0[R](val rawptr: RawPtr) extends CFuncPtr {
+final class CFuncPtr0[R] private (rawptr: RawPtr) extends CFuncPtr(rawptr) {
   def apply()(implicit evRet: Tag[R]): R = intrinsic
 }
 
 object CFuncPtr0 {
   implicit def fromScalaFunction[R](fn: Function0[R]): CFuncPtr0[R] = intrinsic
-
-  def fromRawPtr[R](ptr: RawPtr): CFuncPtr0[R] = {
+  private[scalanative] def fromRawPtr[R](ptr: RawPtr): CFuncPtr0[R] = {
     new CFuncPtr0[R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr1[T1, R](val rawptr: RawPtr) extends CFuncPtr {
+final class CFuncPtr1[T1, R] private (rawptr: RawPtr) extends CFuncPtr(rawptr) {
   def apply(arg1: T1)(implicit ev1: Tag[T1], evRet: Tag[R]): R = intrinsic
 }
 
@@ -53,13 +51,14 @@ object CFuncPtr1 {
   implicit def fromScalaFunction[T1, R](
       fn: Function1[T1, R]): CFuncPtr1[T1, R] = intrinsic
 
-  def fromRawPtr[T1, R](ptr: RawPtr): CFuncPtr1[T1, R] = {
+  private[scalanative] def fromRawPtr[T1, R](ptr: RawPtr): CFuncPtr1[T1, R] = {
     new CFuncPtr1[T1, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr2[T1, T2, R](val rawptr: RawPtr) extends CFuncPtr {
+final class CFuncPtr2[T1, T2, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2)(implicit ev1: Tag[T1], ev2: Tag[T2], evRet: Tag[R]): R =
     intrinsic
@@ -69,13 +68,15 @@ object CFuncPtr2 {
   implicit def fromScalaFunction[T1, T2, R](
       fn: Function2[T1, T2, R]): CFuncPtr2[T1, T2, R] = intrinsic
 
-  def fromRawPtr[T1, T2, R](ptr: RawPtr): CFuncPtr2[T1, T2, R] = {
+  private[scalanative] def fromRawPtr[T1, T2, R](
+      ptr: RawPtr): CFuncPtr2[T1, T2, R] = {
     new CFuncPtr2[T1, T2, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr3[T1, T2, T3, R](val rawptr: RawPtr) extends CFuncPtr {
+final class CFuncPtr3[T1, T2, T3, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1, arg2: T2, arg3: T3)(implicit ev1: Tag[T1],
                                           ev2: Tag[T2],
                                           ev3: Tag[T3],
@@ -86,13 +87,15 @@ object CFuncPtr3 {
   implicit def fromScalaFunction[T1, T2, T3, R](
       fn: Function3[T1, T2, T3, R]): CFuncPtr3[T1, T2, T3, R] = intrinsic
 
-  def fromRawPtr[T1, T2, T3, R](ptr: RawPtr): CFuncPtr3[T1, T2, T3, R] = {
+  private[scalanative] def fromRawPtr[T1, T2, T3, R](
+      ptr: RawPtr): CFuncPtr3[T1, T2, T3, R] = {
     new CFuncPtr3[T1, T2, T3, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr4[T1, T2, T3, T4, R](val rawptr: RawPtr) extends CFuncPtr {
+final class CFuncPtr4[T1, T2, T3, T4, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1, arg2: T2, arg3: T3, arg4: T4)(implicit ev1: Tag[T1],
                                                     ev2: Tag[T2],
                                                     ev3: Tag[T3],
@@ -106,15 +109,15 @@ object CFuncPtr4 {
       fn: Function4[T1, T2, T3, T4, R]): CFuncPtr4[T1, T2, T3, T4, R] =
     intrinsic
 
-  def fromRawPtr[T1, T2, T3, T4, R](
+  private[scalanative] def fromRawPtr[T1, T2, T3, T4, R](
       ptr: RawPtr): CFuncPtr4[T1, T2, T3, T4, R] = {
     new CFuncPtr4[T1, T2, T3, T4, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr5[T1, T2, T3, T4, T5, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+final class CFuncPtr5[T1, T2, T3, T4, T5, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5)(
       implicit ev1: Tag[T1],
       ev2: Tag[T2],
@@ -129,15 +132,15 @@ object CFuncPtr5 {
       fn: Function5[T1, T2, T3, T4, T5, R]): CFuncPtr5[T1, T2, T3, T4, T5, R] =
     intrinsic
 
-  def fromRawPtr[T1, T2, T3, T4, T5, R](
+  private[scalanative] def fromRawPtr[T1, T2, T3, T4, T5, R](
       ptr: RawPtr): CFuncPtr5[T1, T2, T3, T4, T5, R] = {
     new CFuncPtr5[T1, T2, T3, T4, T5, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr6[T1, T2, T3, T4, T5, T6, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+final class CFuncPtr6[T1, T2, T3, T4, T5, T6, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5, arg6: T6)(
       implicit ev1: Tag[T1],
       ev2: Tag[T2],
@@ -153,15 +156,15 @@ object CFuncPtr6 {
       fn: Function6[T1, T2, T3, T4, T5, T6, R])
       : CFuncPtr6[T1, T2, T3, T4, T5, T6, R] = intrinsic
 
-  def fromRawPtr[T1, T2, T3, T4, T5, T6, R](
+  private[scalanative] def fromRawPtr[T1, T2, T3, T4, T5, T6, R](
       ptr: RawPtr): CFuncPtr6[T1, T2, T3, T4, T5, T6, R] = {
     new CFuncPtr6[T1, T2, T3, T4, T5, T6, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+final class CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -183,15 +186,16 @@ object CFuncPtr7 {
       fn: Function7[T1, T2, T3, T4, T5, T6, T7, R])
       : CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R] = intrinsic
 
-  def fromRawPtr[T1, T2, T3, T4, T5, T6, T7, R](
+  private[scalanative] def fromRawPtr[T1, T2, T3, T4, T5, T6, T7, R](
       ptr: RawPtr): CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R] = {
     new CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+final class CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] private (
+    rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -215,15 +219,16 @@ object CFuncPtr8 {
       fn: Function8[T1, T2, T3, T4, T5, T6, T7, T8, R])
       : CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] = intrinsic
 
-  def fromRawPtr[T1, T2, T3, T4, T5, T6, T7, T8, R](
+  private[scalanative] def fromRawPtr[T1, T2, T3, T4, T5, T6, T7, T8, R](
       ptr: RawPtr): CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] = {
     new CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+final class CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] private (
+    rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -249,16 +254,16 @@ object CFuncPtr9 {
       fn: Function9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R])
       : CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] = intrinsic
 
-  def fromRawPtr[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](
+  private[scalanative] def fromRawPtr[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](
       ptr: RawPtr): CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] = {
     new CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R](
-    val rawptr: RawPtr)
-    extends CFuncPtr {
+final class CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] private (
+    rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -286,16 +291,26 @@ object CFuncPtr10 {
       fn: Function10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R])
       : CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] = intrinsic
 
-  def fromRawPtr[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R](
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      R](
       ptr: RawPtr): CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] = {
     new CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R](
-    val rawptr: RawPtr)
-    extends CFuncPtr {
+final class CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R] private (
+    rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -336,16 +351,27 @@ object CFuncPtr11 {
       fn: Function11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R])
       : CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R] = intrinsic
 
-  def fromRawPtr[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R](ptr: RawPtr)
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      R](ptr: RawPtr)
       : CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R] = {
     new CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
-final class CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R](
-    val rawptr: RawPtr)
-    extends CFuncPtr {
+final class CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R] private (
+    rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -390,17 +416,28 @@ object CFuncPtr12 {
       : CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R] =
     intrinsic
 
-  def fromRawPtr[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R](
-      ptr: RawPtr)
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      T12,
+                                      R](ptr: RawPtr)
       : CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R] = {
     new CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
-R](val rawptr: RawPtr)
-    extends CFuncPtr {
+R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -448,30 +485,42 @@ object CFuncPtr13 {
       : CFuncPtr13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R] =
     intrinsic
 
-  def fromRawPtr[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R](
-      ptr: RawPtr): CFuncPtr13[T1,
-                               T2,
-                               T3,
-                               T4,
-                               T5,
-                               T6,
-                               T7,
-                               T8,
-                               T9,
-                               T10,
-                               T11,
-                               T12,
-                               T13,
-                               R] = {
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      T12,
+                                      T13,
+                                      R](ptr: RawPtr): CFuncPtr13[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12,
+                                                                  T13,
+                                                                  R] = {
     new CFuncPtr13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R](
       ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
-T14, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+T14, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -548,35 +597,35 @@ object CFuncPtr14 {
                                      T14,
                                      R] = intrinsic
 
-  def fromRawPtr[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 R](ptr: RawPtr): CFuncPtr14[T1,
-                                             T2,
-                                             T3,
-                                             T4,
-                                             T5,
-                                             T6,
-                                             T7,
-                                             T8,
-                                             T9,
-                                             T10,
-                                             T11,
-                                             T12,
-                                             T13,
-                                             T14,
-                                             R] = {
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      T12,
+                                      T13,
+                                      T14,
+                                      R](ptr: RawPtr): CFuncPtr14[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12,
+                                                                  T13,
+                                                                  T14,
+                                                                  R] = {
     new CFuncPtr14[T1,
                    T2,
                    T3,
@@ -594,11 +643,11 @@ object CFuncPtr14 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
-T14, T15, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+T14, T15, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -680,37 +729,37 @@ object CFuncPtr15 {
                                      T15,
                                      R] = intrinsic
 
-  def fromRawPtr[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 R](ptr: RawPtr): CFuncPtr15[T1,
-                                             T2,
-                                             T3,
-                                             T4,
-                                             T5,
-                                             T6,
-                                             T7,
-                                             T8,
-                                             T9,
-                                             T10,
-                                             T11,
-                                             T12,
-                                             T13,
-                                             T14,
-                                             T15,
-                                             R] = {
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      T12,
+                                      T13,
+                                      T14,
+                                      T15,
+                                      R](ptr: RawPtr): CFuncPtr15[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12,
+                                                                  T13,
+                                                                  T14,
+                                                                  T15,
+                                                                  R] = {
     new CFuncPtr15[T1,
                    T2,
                    T3,
@@ -729,11 +778,11 @@ object CFuncPtr15 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
-T14, T15, T16, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+T14, T15, T16, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -820,39 +869,39 @@ object CFuncPtr16 {
                                      T16,
                                      R] = intrinsic
 
-  def fromRawPtr[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 R](ptr: RawPtr): CFuncPtr16[T1,
-                                             T2,
-                                             T3,
-                                             T4,
-                                             T5,
-                                             T6,
-                                             T7,
-                                             T8,
-                                             T9,
-                                             T10,
-                                             T11,
-                                             T12,
-                                             T13,
-                                             T14,
-                                             T15,
-                                             T16,
-                                             R] = {
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      T12,
+                                      T13,
+                                      T14,
+                                      T15,
+                                      T16,
+                                      R](ptr: RawPtr): CFuncPtr16[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12,
+                                                                  T13,
+                                                                  T14,
+                                                                  T15,
+                                                                  T16,
+                                                                  R] = {
     new CFuncPtr16[T1,
                    T2,
                    T3,
@@ -872,11 +921,11 @@ object CFuncPtr16 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
-T14, T15, T16, T17, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+T14, T15, T16, T17, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -968,41 +1017,41 @@ object CFuncPtr17 {
                                      T17,
                                      R] = intrinsic
 
-  def fromRawPtr[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 R](ptr: RawPtr): CFuncPtr17[T1,
-                                             T2,
-                                             T3,
-                                             T4,
-                                             T5,
-                                             T6,
-                                             T7,
-                                             T8,
-                                             T9,
-                                             T10,
-                                             T11,
-                                             T12,
-                                             T13,
-                                             T14,
-                                             T15,
-                                             T16,
-                                             T17,
-                                             R] = {
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      T12,
+                                      T13,
+                                      T14,
+                                      T15,
+                                      T16,
+                                      T17,
+                                      R](ptr: RawPtr): CFuncPtr17[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12,
+                                                                  T13,
+                                                                  T14,
+                                                                  T15,
+                                                                  T16,
+                                                                  T17,
+                                                                  R] = {
     new CFuncPtr17[T1,
                    T2,
                    T3,
@@ -1023,11 +1072,11 @@ object CFuncPtr17 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
-T14, T15, T16, T17, T18, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+T14, T15, T16, T17, T18, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -1124,43 +1173,43 @@ object CFuncPtr18 {
                                      T18,
                                      R] = intrinsic
 
-  def fromRawPtr[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 T18,
-                 R](ptr: RawPtr): CFuncPtr18[T1,
-                                             T2,
-                                             T3,
-                                             T4,
-                                             T5,
-                                             T6,
-                                             T7,
-                                             T8,
-                                             T9,
-                                             T10,
-                                             T11,
-                                             T12,
-                                             T13,
-                                             T14,
-                                             T15,
-                                             T16,
-                                             T17,
-                                             T18,
-                                             R] = {
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      T12,
+                                      T13,
+                                      T14,
+                                      T15,
+                                      T16,
+                                      T17,
+                                      T18,
+                                      R](ptr: RawPtr): CFuncPtr18[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12,
+                                                                  T13,
+                                                                  T14,
+                                                                  T15,
+                                                                  T16,
+                                                                  T17,
+                                                                  T18,
+                                                                  R] = {
     new CFuncPtr18[T1,
                    T2,
                    T3,
@@ -1182,11 +1231,11 @@ object CFuncPtr18 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
-T14, T15, T16, T17, T18, T19, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+T14, T15, T16, T17, T18, T19, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -1288,45 +1337,45 @@ object CFuncPtr19 {
                                      T19,
                                      R] = intrinsic
 
-  def fromRawPtr[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 T18,
-                 T19,
-                 R](ptr: RawPtr): CFuncPtr19[T1,
-                                             T2,
-                                             T3,
-                                             T4,
-                                             T5,
-                                             T6,
-                                             T7,
-                                             T8,
-                                             T9,
-                                             T10,
-                                             T11,
-                                             T12,
-                                             T13,
-                                             T14,
-                                             T15,
-                                             T16,
-                                             T17,
-                                             T18,
-                                             T19,
-                                             R] = {
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      T12,
+                                      T13,
+                                      T14,
+                                      T15,
+                                      T16,
+                                      T17,
+                                      T18,
+                                      T19,
+                                      R](ptr: RawPtr): CFuncPtr19[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12,
+                                                                  T13,
+                                                                  T14,
+                                                                  T15,
+                                                                  T16,
+                                                                  T17,
+                                                                  T18,
+                                                                  T19,
+                                                                  R] = {
     new CFuncPtr19[T1,
                    T2,
                    T3,
@@ -1349,11 +1398,11 @@ object CFuncPtr19 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
-T14, T15, T16, T17, T18, T19, T20, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+T14, T15, T16, T17, T18, T19, T20, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -1460,47 +1509,47 @@ object CFuncPtr20 {
                                      T20,
                                      R] = intrinsic
 
-  def fromRawPtr[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 T18,
-                 T19,
-                 T20,
-                 R](ptr: RawPtr): CFuncPtr20[T1,
-                                             T2,
-                                             T3,
-                                             T4,
-                                             T5,
-                                             T6,
-                                             T7,
-                                             T8,
-                                             T9,
-                                             T10,
-                                             T11,
-                                             T12,
-                                             T13,
-                                             T14,
-                                             T15,
-                                             T16,
-                                             T17,
-                                             T18,
-                                             T19,
-                                             T20,
-                                             R] = {
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      T12,
+                                      T13,
+                                      T14,
+                                      T15,
+                                      T16,
+                                      T17,
+                                      T18,
+                                      T19,
+                                      T20,
+                                      R](ptr: RawPtr): CFuncPtr20[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12,
+                                                                  T13,
+                                                                  T14,
+                                                                  T15,
+                                                                  T16,
+                                                                  T17,
+                                                                  T18,
+                                                                  T19,
+                                                                  T20,
+                                                                  R] = {
     new CFuncPtr20[T1,
                    T2,
                    T3,
@@ -1524,11 +1573,11 @@ object CFuncPtr20 {
                    R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
-T14, T15, T16, T17, T18, T19, T20, T21, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+T14, T15, T16, T17, T18, T19, T20, T21, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -1640,49 +1689,49 @@ object CFuncPtr21 {
                                      T21,
                                      R] = intrinsic
 
-  def fromRawPtr[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 T18,
-                 T19,
-                 T20,
-                 T21,
-                 R](ptr: RawPtr): CFuncPtr21[T1,
-                                             T2,
-                                             T3,
-                                             T4,
-                                             T5,
-                                             T6,
-                                             T7,
-                                             T8,
-                                             T9,
-                                             T10,
-                                             T11,
-                                             T12,
-                                             T13,
-                                             T14,
-                                             T15,
-                                             T16,
-                                             T17,
-                                             T18,
-                                             T19,
-                                             T20,
-                                             T21,
-                                             R] = {
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      T12,
+                                      T13,
+                                      T14,
+                                      T15,
+                                      T16,
+                                      T17,
+                                      T18,
+                                      T19,
+                                      T20,
+                                      T21,
+                                      R](ptr: RawPtr): CFuncPtr21[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12,
+                                                                  T13,
+                                                                  T14,
+                                                                  T15,
+                                                                  T16,
+                                                                  T17,
+                                                                  T18,
+                                                                  T19,
+                                                                  T20,
+                                                                  T21,
+                                                                  R] = {
     new CFuncPtr21[T1,
                    T2,
                    T3,
@@ -1710,8 +1759,8 @@ object CFuncPtr21 {
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 38)
 
 final class CFuncPtr22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
-T14, T15, T16, T17, T18, T19, T20, T21, T22, R](val rawptr: RawPtr)
-    extends CFuncPtr {
+T14, T15, T16, T17, T18, T19, T20, T21, T22, R] private (rawptr: RawPtr)
+    extends CFuncPtr(rawptr) {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -1828,51 +1877,51 @@ object CFuncPtr22 {
                                      T22,
                                      R] = intrinsic
 
-  def fromRawPtr[T1,
-                 T2,
-                 T3,
-                 T4,
-                 T5,
-                 T6,
-                 T7,
-                 T8,
-                 T9,
-                 T10,
-                 T11,
-                 T12,
-                 T13,
-                 T14,
-                 T15,
-                 T16,
-                 T17,
-                 T18,
-                 T19,
-                 T20,
-                 T21,
-                 T22,
-                 R](ptr: RawPtr): CFuncPtr22[T1,
-                                             T2,
-                                             T3,
-                                             T4,
-                                             T5,
-                                             T6,
-                                             T7,
-                                             T8,
-                                             T9,
-                                             T10,
-                                             T11,
-                                             T12,
-                                             T13,
-                                             T14,
-                                             T15,
-                                             T16,
-                                             T17,
-                                             T18,
-                                             T19,
-                                             T20,
-                                             T21,
-                                             T22,
-                                             R] = {
+  private[scalanative] def fromRawPtr[T1,
+                                      T2,
+                                      T3,
+                                      T4,
+                                      T5,
+                                      T6,
+                                      T7,
+                                      T8,
+                                      T9,
+                                      T10,
+                                      T11,
+                                      T12,
+                                      T13,
+                                      T14,
+                                      T15,
+                                      T16,
+                                      T17,
+                                      T18,
+                                      T19,
+                                      T20,
+                                      T21,
+                                      T22,
+                                      R](ptr: RawPtr): CFuncPtr22[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12,
+                                                                  T13,
+                                                                  T14,
+                                                                  T15,
+                                                                  T16,
+                                                                  T17,
+                                                                  T18,
+                                                                  T19,
+                                                                  T20,
+                                                                  T21,
+                                                                  T22,
+                                                                  R] = {
     new CFuncPtr22[T1,
                    T2,
                    T3,

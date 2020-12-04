@@ -206,11 +206,11 @@ and unboxing result. You can create them from C pointer using `Ptr` helper metho
     def fnDef(str: CString): CInt = ???
 
     val anyPtr: Ptr[Byte] = Ptr.cFuncPtrToPtr {
-      CFuncPtr1.fromScalaFunction1(fnDef)
+      CFuncPtr1.fromScalaFunction(fnDef)
     }
 
-		type StringLengthFn = CFuncPtr1[CString, CInt]
-    val func: StringLengthFn = Ptr.ptrToCFuncPtr[StringLengthFn](anyPtr)
+    type StringLengthFn = CFuncPtr1[CString, CInt]
+    val func: StringLengthFn = CFuncPtr.fromPtr[StringLengthFn](anyPtr)
     func(c"hello")
 
 It's also possible to create `CFuncPtrN` from Scala `FunctionN`.
@@ -218,10 +218,11 @@ You can do this by using implicit method conversion method
 from the corresponding companion object.
 
 .. code-block:: scala
-	 def myFunc(): Unit = println("hi there!")
+   import scalanative.unsafe.CFuncPtr0
+   def myFunc(): Unit = println("hi there!")
 
-   val myFuncPtr: CFuncPtr0[Unit] = CFuncPtr0.fromScalaFunction0(myFunc)
-	 val myImplFn: CFuncPtr[Unit] = myFunc
+   val myFuncPtr: CFuncPtr0[Unit] = CFuncPtr0.fromScalaFunction(myFunc)
+   val myImplFn: CFuncPtr[Unit] = myFunc _
    val myLambdaFuncPtr: CFuncPtr0[Unit] = () => println("hello!")
 
 On Scala 2.12 or newer, the Scala language automatically converts

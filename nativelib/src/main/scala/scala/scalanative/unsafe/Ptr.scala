@@ -1,7 +1,6 @@
 package scala.scalanative
 package unsafe
 
-import scala.language.experimental.macros
 import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics._

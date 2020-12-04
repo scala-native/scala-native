@@ -93,9 +93,7 @@ object System {
 
   private val systemProperties = loadProperties()
   Platform.setOSProps { (key: CString, value: CString) =>
-    {
-      val _ = systemProperties.setProperty(fromCString(key), fromCString(value))
-    }
+    val _ = systemProperties.setProperty(fromCString(key), fromCString(value))
   }
 
   def lineSeparator(): String = {
