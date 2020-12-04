@@ -67,10 +67,6 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
 
   def size(): Int = _size
 
-  // tests/compile:nativeLinkNIR fails without this override (issue: #375)
-  // cannot link: @java.util.ArrayList::isEmpty_bool
-//  override def isEmpty(): Boolean = _size == 0
-
   override def indexOf(o: Any): Int =
     inner.indexWhere(Objects.equals(_, o))
 
@@ -161,8 +157,8 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
         _size -= (toIndex - fromIndex)
 
         if (inner(0).isInstanceOf[Object]) {
-          // Leave no dangling references.  Fill the excess contents of inner
-          // with null so that those elements can be garbage collected.
+          // Leave no dangling references to moved Objects so latter
+          // can be garbage collected when expected.
           for (i <- _size until oldSize)
             inner(i) = null
         }
