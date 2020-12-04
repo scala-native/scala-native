@@ -205,7 +205,7 @@ and unboxing result. You can create them from C pointer using `Ptr` helper metho
 
     def fnDef(str: CString): CInt = ???
 
-    val anyPtr: Ptr[Byte] = Ptr.cFuncPtrToPtr {
+    val anyPtr: Ptr[Byte] = CFuncPtr.toPtr {
       CFuncPtr1.fromScalaFunction(fnDef)
     }
 
@@ -218,11 +218,12 @@ You can do this by using implicit method conversion method
 from the corresponding companion object.
 
 .. code-block:: scala
+
    import scalanative.unsafe.CFuncPtr0
    def myFunc(): Unit = println("hi there!")
 
    val myFuncPtr: CFuncPtr0[Unit] = CFuncPtr0.fromScalaFunction(myFunc)
-   val myImplFn: CFuncPtr[Unit] = myFunc _
+   val myImplFn: CFuncPtr0[Unit] = myFunc _
    val myLambdaFuncPtr: CFuncPtr0[Unit] = () => println("hello!")
 
 On Scala 2.12 or newer, the Scala language automatically converts
