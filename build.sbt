@@ -235,25 +235,8 @@ lazy val disabledTestsSettings: Seq[Setting[_]] = {
   )
 }
 
-lazy val root = project
-  .in(file("."))
-  .settings(noPublishSettings)
-  .settings(disabledTestsSettings)
-  .aggregate(util, nir, nirparser, tools)
-  .aggregate(sbtScalaNative, nscplugin, junitPlugin)
-  .aggregate(nativelib, clib, posixlib, auxlib)
-  .aggregate(scalalib, javalib)
-  .aggregate(testingCompilerInterface,
-             testingCompiler,
-             testInterfaceSbtDefs,
-             testInterface,
-             testRunner)
-  .aggregate(junitRuntime,
-             junitTestOutputsNative,
-             junitTestOutputsJVM,
-             junitAsyncNative,
-             junitAsyncJVM)
-  .aggregate(sandbox, tests)
+noPublishSettings
+disabledTestsSettings
 
 lazy val util =
   project
