@@ -199,7 +199,7 @@ One can declare it as follows in Scala Native:
 
 `CFuncPtrN` types are final classes containing pointer to underlying
 C function pointer. They automatically handle boxing call arguments
-and unboxing result. You can create them from C pointer using `Ptr` helper methods:
+and unboxing result. You can create them from C pointer using `CFuncPtr` helper methods:
 
 .. code-block:: scala
 
