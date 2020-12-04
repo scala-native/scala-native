@@ -570,8 +570,10 @@ Here is the list of currently available classes:
 * ``java.util.WeakHashMap$EntrySet``
 * ``java.util.WeakHashMap$KeySet``
 * ``java.util.WeakHashMap$ValuesView``
+* ``java.util.concurrent.CopyOnWriteArrayList``
 * ``java.util.concurrent.Callable``
 * ``java.util.concurrent.CancellationException``
+* ``java.util.concurrent.ConcurrentLinkedQueue``
 * ``java.util.concurrent.ExecutionException``
 * ``java.util.concurrent.Executor``
 * ``java.util.concurrent.RejectedExecutionException``

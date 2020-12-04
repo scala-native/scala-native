@@ -1,19 +1,20 @@
+// Ported from Scala.js commit: 6819668 dated: 2020-10-07
+
 package java.util
 
 import scala.annotation.tailrec
 
+import ScalaOps._
+
 abstract class AbstractList[E] protected ()
     extends AbstractCollection[E]
-    with List[E] { self =>
+    with List[E] {
+  self =>
 
   override def add(element: E): Boolean = {
     add(size(), element)
     true
   }
-
-  // tests/compile:nativeLinkNIR fails without this re-declaration (issue: #375)
-  // cannot link: @java.util.AbstractList::get_i32_java.lang.Object
-  def get(index: Int): E
 
   def set(index: Int, element: E): E =
     throw new UnsupportedOperationException
@@ -21,25 +22,17 @@ abstract class AbstractList[E] protected ()
   def add(index: Int, element: E): Unit =
     throw new UnsupportedOperationException
 
-  override def remove(index: Int): E =
+  def remove(index: Int): E =
     throw new UnsupportedOperationException
 
-  def indexOf(o: Any): Int = {
-    var idx  = -1
-    var i    = 0
-    val iter = listIterator()
-    while (idx == -1 && iter.hasNext()) {
-      if (iter.next() === o) idx = i
-      i += 1
-    }
-    idx
-  }
+  def indexOf(o: Any): Int =
+    this.scalaOps.indexWhere(Objects.equals(_, o))
 
   def lastIndexOf(o: Any): Int = {
     @tailrec
     def findIndex(iter: ListIterator[E]): Int = {
       if (!iter.hasPrevious()) -1
-      else if (iter.previous() === o) iter.nextIndex()
+      else if (Objects.equals(iter.previous(), o)) iter.nextIndex()
       else findIndex(iter)
     }
     findIndex(listIterator(size()))
@@ -119,36 +112,26 @@ abstract class AbstractList[E] protected ()
     } else {
       o match {
         case o: List[_] =>
-          val oIter  = o.listIterator()
-          val iter   = listIterator()
-          var result = true
-
-          while (result && iter.hasNext() && oIter.hasNext()) {
-            result = iter.next() === oIter.next()
-          }
-
-          result && !iter.hasNext() && !oIter.hasNext()
+          val oIter = o.listIterator()
+          this.scalaOps.forall(
+            oIter.hasNext() && Objects.equals(_, oIter.next())) && !oIter
+            .hasNext()
         case _ => false
       }
     }
   }
 
   override def hashCode(): Int = {
-    var hash = 0
-    val iter = listIterator()
-    while (iter.hasNext()) {
-      val elem = iter.next()
-      hash = 31 * hash + (if (elem == null) 0 else elem.hashCode)
+    this.scalaOps.foldLeft(1) { (prev, elem) =>
+      31 * prev + Objects.hashCode(elem)
     }
-    hash
   }
 
   protected def removeRange(fromIndex: Int, toIndex: Int): Unit = {
-    var i    = 0
     val iter = listIterator(fromIndex)
-    while (iter.hasNext() && i <= toIndex) {
+    for (_ <- fromIndex until toIndex) {
+      iter.next()
       iter.remove()
-      i += 1
     }
   }
 

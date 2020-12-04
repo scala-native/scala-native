@@ -69,11 +69,13 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
 
   // tests/compile:nativeLinkNIR fails without this override (issue: #375)
   // cannot link: @java.util.ArrayList::isEmpty_bool
-  override def isEmpty(): Boolean = _size == 0
+//  override def isEmpty(): Boolean = _size == 0
 
-  override def indexOf(o: Any): Int = inner.indexOf(o)
+  override def indexOf(o: Any): Int =
+    inner.indexWhere(Objects.equals(_, o))
 
-  override def lastIndexOf(o: Any): Int = inner.lastIndexOf(o)
+  override def lastIndexOf(o: Any): Int =
+    inner.lastIndexWhere(Objects.equals(_, o))
 
   // shallow-copy
   override def clone(): AnyRef = new ArrayList(inner, _size)
@@ -128,19 +130,12 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
 
   override def remove(index: Int): E = {
     val removed = get(index)
-
-    // shift each element, overwriting inner(index)
-    for (i <- index until (_size - 1)) {
-      inner(i) = inner(i + 1)
-    }
-    inner(_size - 1) = null
-    _size -= 1
-
+    removeRange(index, index + 1)
     removed
   }
 
   override def remove(o: Any): Boolean =
-    inner.indexOf(o) match {
+    indexOf(o) match {
       case -1 => false
       case idx =>
         remove(idx)
@@ -156,29 +151,25 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
         // N.B.: JVM docs specify IndexOutOfBounds but use de facto.
         throw new ArrayIndexOutOfBoundsException()
       } else {
+        val oldSize = _size
+
         val srcIndex = toIndex
         val dstIndex = fromIndex
-        val tailSize = _size - toIndex
+        val count    = _size - toIndex
 
-        System.arraycopy(inner, srcIndex, inner, dstIndex, tailSize)
-
+        System.arraycopy(inner, srcIndex, inner, dstIndex, count)
         _size -= (toIndex - fromIndex)
+
+        if (inner(0).isInstanceOf[Object]) {
+          // Leave no dangling references.  Fill the excess contents of inner
+          // with null so that those elements can be garbage collected.
+          for (i <- _size until oldSize)
+            inner(i) = null
+        }
       }
     }
   }
 
-  override def clear(): Unit = {
-    // fill the content of inner by null so that the elements can be garbage collected
-    for (i <- (0 until _size)) {
-      inner(i) = null
-    }
-    _size = 0
-  }
-
-  // TODO: JDK 1.8
-  // def forEach(action: Consumer[_ >: E]): Unit =
-  // def spliterator(): Spliterator[E] =
-  // def removeIf(filter: Predicate[_ >: E]): Boolean =
-  // def replaceAll(operator: UnaryOperator[E]): Unit =
-  // def sort(c: Comparator[_ >: E]): Unit =
+  override def clear(): Unit =
+    removeRange(0, _size)
 }
