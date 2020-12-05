@@ -160,7 +160,7 @@ trait CollectionsOnListTest extends CollectionsOnCollectionsTest {
     test[jl.Double](_.toDouble)
   }
 
-  @Test def binarySearch_with_comparator(): Unit = {
+  @Test def binarySearchWithComparator(): Unit = {
     // Test: binarySearch[T](List[T], key: T, Comparator[T]))
     def test[T: ClassTag](toElem: Int => T, cmpFun: (T, T) => Int): Unit = {
       val cmp = new ju.Comparator[T] {
