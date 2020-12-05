@@ -1,4 +1,4 @@
-// Ported from Scala.js.
+// Ported from Scala.js. equivalent to commit: 6819668 dated: 2020-10-07
 // Also contains original work for Scala Native.
 
 package java.util
