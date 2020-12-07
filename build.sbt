@@ -3,7 +3,6 @@ import scala.collection.mutable
 import scala.util.Try
 
 import build.ScalaVersions._
-import sbt.Def
 
 // Convert "SomeName" to "some-name".
 def convertCamelKebab(name: String): String = {
