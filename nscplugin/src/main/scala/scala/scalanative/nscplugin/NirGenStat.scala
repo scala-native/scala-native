@@ -105,67 +105,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genStructAttrs(sym: Symbol): Attrs = Attrs.None
 
-    def genFuncRawPtrExternForwarder(cd: ClassDef): Defn = {
-      val attrs                      = Attrs(isExtern = true)
-      val name                       = genFuncPtrExternForwarderName(cd.symbol)
-      val sig                        = Type.Function(Seq.empty, Type.Unit)
-      implicit val pos: nir.Position = cd.pos
-      val body =
-        Seq(Inst.Label(Local(0), Seq.empty), Inst.Unreachable(Next.None))
-
-      Defn.Define(attrs, name, sig, body)(cd.pos)
-    }
-
-    def genFuncPtrExternForwarder(cd: ClassDef): Defn = {
-      val applys = cd.impl.body.collect {
-        case dd: DefDef
-            if dd.name == nme.apply
-              && !dd.symbol.hasFlag(BRIDGE) =>
-          dd
-      }
-      val applySym = applys match {
-        case Seq() =>
-          unsupported("func ptr impl not found")
-        case Seq(apply) =>
-          apply.symbol
-        case _ =>
-          unsupported("multiple func ptr impls found")
-      }
-      val applyName = Val.Global(genMethodName(applySym), Type.Ptr)
-      val applySig  = genMethodSig(applySym)
-
-      val attrs = Attrs(isExtern = true)
-      val name  = genFuncPtrExternForwarderName(cd.symbol)
-      val sig   = genExternMethodSig(applySym)
-
-      implicit val pos: nir.Position = applySym.pos
-
-      val body = scoped(
-        curUnwindHandler := None
-      ) {
-        val fresh = Fresh()
-        val buf   = new ExprBuffer()(fresh)
-
-        val Type.Function(origtys, origretty) = applySig
-        val Type.Function(paramtys, retty)    = sig
-
-        val params = paramtys.map(ty => Val.Local(fresh(), ty))
-        buf.label(fresh(), params)
-        val boxedParams = params.zip(origtys.tail).map {
-          case (param, ty) =>
-            buf.fromExtern(ty, param)
-        }
-        val res =
-          buf.call(applySig, applyName, Val.Null +: boxedParams, Next.None)
-        val unboxedRes = buf.toExtern(retty, res)
-        buf.ret(unboxedRes)
-
-        buf.toSeq
-      }
-
-      Defn.Define(attrs, name, sig, body)(cd.pos)
-    }
-
     def genNormalClass(cd: ClassDef): Unit = {
       val sym    = cd.symbol
       def attrs  = genClassAttrs(cd)
@@ -177,13 +116,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       genReflectiveInstantiation(cd)
       genClassFields(sym)
       genMethods(cd)
-      if (sym.isCFuncPtrNClass) {
-        if (sym == CFuncRawPtrClass) {
-          buf += genFuncRawPtrExternForwarder(cd)
-        } else {
-          buf += genFuncPtrExternForwarder(cd)
-        }
-      }
 
       buf += {
         if (sym.isScalaModule) {

@@ -1,8 +1,6 @@
 package scala.scalanative
 package runtime
 
-import scalanative.unsafe.CFuncPtr
-
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
@@ -139,7 +137,4 @@ object Intrinsics {
 
   /** Intrinsified cast that reinterprets long as a raw pointer. */
   def castLongToRawPtr(int: Long): RawPtr = intrinsic
-
-  /** Resolve c-friendly forwarder generated for given CFuncPtr. */
-  def resolveCFuncPtr(cfuncptr: CFuncPtr): RawPtr = intrinsic
 }

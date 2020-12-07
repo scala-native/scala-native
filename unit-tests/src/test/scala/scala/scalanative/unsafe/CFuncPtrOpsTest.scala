@@ -9,9 +9,7 @@ import scalanative.libc._
 
 class CFuncPtrOpsTest {
 
-  def randFunc = new CFuncPtr0[CInt] {
-    def apply(): CInt = stdlib.rand()
-  }
+  def randFunc: CFuncPtr0[Int] = () => stdlib.rand()
 
   @Test def cFuncPtrCastAndCallWithGivenSignature(): Unit = {
     assertThrows(classOf[ClassCastException],

@@ -2,12 +2,9 @@ package scala.scalanative
 package unsafe
 
 import scala.language.implicitConversions
-import scala.runtime.BoxesRunTime._
-import scala.reflect.ClassTag
-import scalanative.annotation.alwaysinline
-import scalanative.runtime._
-import scalanative.runtime.Intrinsics._
-import scalanative.runtime.Boxes._
+import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime._
 
 final class Ptr[T] private[scalanative] (
     private[scalanative] val rawptr: RawPtr) {

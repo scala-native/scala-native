@@ -1,6 +1,7 @@
 package scala.scalanative
 package nscplugin
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.tools.nsc
 import scalanative.nir._
@@ -714,9 +715,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val funSig  = genName(funSym).asInstanceOf[nir.Global.Member].sig
         val funName = anonName.member(funSig)
 
-        val selfType = Type.Ref(anonName)
+        val selfType                              = Type.Ref(anonName)
         val Sig.Method(_, sigTypes :+ retType, _) = funSig.unmangled
-        val paramTypes = selfType +: sigTypes
+        val paramTypes                            = selfType +: sigTypes
 
         val bodyFresh = Fresh()
         val bodyEnv   = new MethodEnv(fresh)
@@ -1030,8 +1031,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genRawPtrOp(app, code)
       } else if (nirPrimitives.isRawCastOp(code)) {
         genRawCastOp(app, code)
-      } else if (code == RESOLVE_CFUNCPTR) {
-        genResolveCFuncPtr(app, code)
+      } else if (code == CFUNCPTR_APPLY) {
+        genCFuncPtrApply(app, code)
+      } else if (code == CFUNCPTR_FROM_FUNCTION) {
+        genCFuncFromScalaFunction(app)
       } else if (isCoercion(code)) {
         genCoercion(app, receiver, code)
       } else if (code == SYNCHRONIZED) {
@@ -1050,6 +1053,105 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           "Unknown primitive operation: " + sym.fullName + "(" +
             fun.symbol.simpleName + ") " + " at: " + (app.pos))
       }
+    }
+
+    private final val ExternForwarderSig = Sig.Generated("$extern$forwarder")
+
+    def genFuncExternForwarder(funcName: Global, treeSym: Symbol)(implicit pos: nir.Position): Defn = {
+      val attrs = Attrs(isExtern = true)
+
+      val sig       = genMethodSig(treeSym)
+      val externSig = genExternMethodSig(treeSym)
+
+      val Type.Function(origtys, _)      = sig
+      val Type.Function(paramtys, retty) = externSig
+
+      val methodName = genMethodName(treeSym)
+      val method     = Val.Global(methodName, Type.Ptr)
+      val methodRef  = Val.Global(methodName, origtys.head)
+
+      val forwarderName = funcName.member(ExternForwarderSig)
+      val forwarderBody = scoped(
+        curUnwindHandler := None
+      ) {
+        val fresh = Fresh()
+        val buf   = new ExprBuffer()(fresh)
+
+        val params = paramtys.map(ty => Val.Local(fresh(), ty))
+        buf.label(fresh(), params)
+        val boxedParams = params.zip(origtys.tail).map {
+          case (param, ty) => buf.fromExtern(ty, param)
+        }
+
+        val res        = buf.call(sig, method, methodRef +: boxedParams, Next.None)
+        val unboxedRes = buf.toExtern(retty, res)
+        buf.ret(unboxedRes)
+
+        buf.toSeq
+      }
+      Defn.Define(attrs, forwarderName, externSig, forwarderBody)
+    }
+
+    def genCFuncFromScalaFunction(app: Apply): Val = {
+      implicit val pos: nir.Position = app.pos
+      val fn                         = app.args.head
+
+      def withGeneratedForwarder(fnRef: Val)(sym: Symbol): Val = {
+        val Type.Ref(className, _, _) = fnRef.ty
+        curStatBuffer += genFuncExternForwarder(className, sym)
+        fnRef
+      }
+
+      @tailrec
+      def resolveFunction(tree: Tree): Val = tree match {
+        case Typed(expr, _) => resolveFunction(expr)
+        case Block(_, expr) => resolveFunction(expr)
+        case fn @ Function(_, Apply(targetTree, _)) => // Scala 2.12+
+          withGeneratedForwarder {
+            genFunction(fn)
+          }(targetTree.symbol)
+
+        case fn: Apply => // Scala 2.11 only
+          val alternatives = fn.tpe
+            .member(nme.apply)
+            .alternatives
+
+          val fnSym = alternatives
+            .find { sym =>
+              sym.tpe != ObjectTpe ||
+              sym.tpe.params.exists(_.tpe != ObjectTpe)
+            }
+            .orElse(alternatives.headOption)
+            .getOrElse(unsupported(s"not found any apply method in ${fn.tpe}"))
+            .asMethod
+
+          withGeneratedForwarder {
+            genExpr(tree)
+          }(fnSym)
+
+        case _ =>
+          unsupported(
+            "Failed to resolve function ref for extern forwarder "
+              + s"in ${showRaw(fn)} [$pos]"
+          )
+      }
+
+      val fnRef     = resolveFunction(fn)
+      val className = genTypeName(app.tpe.sym)
+
+      val ctorTy = nir.Type.Function(
+        Seq(Type.Ref(className), Type.Ptr),
+        Type.Unit
+      )
+      val ctorName = className.member(Sig.Ctor(Seq(Type.Ptr)))
+      val rawptr   = buf.method(fnRef, ExternForwarderSig, unwind)
+
+      val alloc = buf.classalloc(className, unwind)
+      buf.call(ctorTy,
+               Val.Global(ctorName, Type.Ptr),
+               Seq(alloc, rawptr),
+               unwind)
+      alloc
     }
 
     def numOfType(num: Int, ty: nir.Type): Val = ty match {
@@ -1519,12 +1621,57 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           unsupported(s"cast from $fromty to $toty")
       }
 
-    def genResolveCFuncPtr(app: Apply, code: Int): Val = {
-      val Apply(_, Seq(argp)) = app
+    /** Generates direct call to function ptr with optional unboxing arguments and boxing result
+     * Apply.args can contain different number of arguments depending on usage, however
+     * they are passed in constant order:
+     *  - 0..N args
+     *  - 0..N+1 type evidences of args (scalanative.Tag)
+     *  - return type evidence
+     */
+    def genCFuncPtrApply(app: Apply, code: Int): Val = {
+      val Apply(appRec @ Select(receiverp, _), aargs) = app
 
-      val value = genExpr(argp)
+      implicit val pos: nir.Position = app.pos
+      val argsp     = if (aargs.size > 2) aargs.take(aargs.length / 2) else Nil
+      val evidences = aargs.drop(aargs.length / 2)
 
-      buf.method(value, Sig.Generated("$extern$forwarder"), unwind)(app.pos)
+      val self = genExpr(receiverp)
+
+      val retTypeEv        = evidences.last
+      val unwrappedRetType = unwrapTag(retTypeEv)
+      val retType          = genType(unwrappedRetType)
+      val unboxedRetType   = Type.unbox.getOrElse(retType, retType)
+
+      val args = argsp
+        .zip(evidences)
+        .map {
+          case (arg, evidence) =>
+            val tag = unwrapTag(evidence)
+            val tpe = genType(tag)
+            val obj = genExpr(arg)
+
+            /* buf.unboxValue does not handle Ref( Ptr | CArray | ... ) unboxing
+             * That's why we're doing it directly */
+            if (Type.unbox.isDefinedAt(tpe)) {
+              buf.unbox(tpe, obj, unwind)(arg.pos)
+            } else {
+              buf.unboxValue(tag, partial = false, obj)(arg.pos)
+            }
+        }
+      val argTypes = args.map(_.ty)
+      val funcSig  = Type.Function(argTypes, unboxedRetType)
+
+      val selfName = genTypeName(CFuncPtrClass)
+      val getRawPtrName = selfName
+        .member(Sig.Field("rawptr", Sig.Scope.Private(selfName)))
+
+      val target = buf.fieldload(Type.Ptr, self, getRawPtrName, unwind)
+      val result = buf.call(funcSig, target, args, unwind)
+      if(retType != unboxedRetType)
+        buf.box(retType, result, unwind)
+      else {
+        boxValue(unwrappedRetType, result)
+      }
     }
 
     def genCastOp(fromty: nir.Type, toty: nir.Type, value: Val)(implicit pos: nir.Position): Val =
@@ -1886,8 +2033,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             if Type.boxClasses.contains(refty.name)
             && Type.unbox(Type.Ref(refty.name)) == expectedTy =>
           buf.unbox(Type.Ref(refty.name), value, unwind)
-        case (Type.Ptr, refty: Type.Ref) =>
-          buf.unbox(Type.Ref(genTypeName(CFuncRawPtrClass)), value, unwind)
         case _ =>
           value
       }
@@ -1898,8 +2043,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             if Type.boxClasses.contains(refty.name)
               && Type.unbox(Type.Ref(refty.name)) == ty =>
           buf.box(Type.Ref(refty.name), value, unwind)
-        case (Type.Ptr, refty: Type.Ref) =>
-          buf.box(Type.Ref(genTypeName(CFuncRawPtrClass)), value, unwind)
         case _ =>
           value
       }

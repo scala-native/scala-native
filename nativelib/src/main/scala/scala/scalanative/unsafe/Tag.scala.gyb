@@ -197,19 +197,27 @@ object Tag {
 
   % end
 
-  % for N in range(0, 23):
-  %   targs = ", ".join(["Any" for i in range(1, N+1)] + ["Any"])
-  %   nativeCFuncPtr = "unsafe.CFuncPtr{}[{}]".format(N, targs)
+  abstract class CFuncPtrTag[F <: unsafe.CFuncPtr] private[unsafe] ()
+      extends Tag[F] {
+    /** Internal method used to cast Ptr[_] to CFuncPtr using its underlying RawPtr
+     *  Takes RawPtr instead Ptr[_] to skip extra boxing
+     */
+    private[unsafe] def fromRawPtr(rawptr: RawPtr): F
 
-  object CFuncPtr${N} extends Tag[${nativeCFuncPtr}] {
     @alwaysinline def size: Int = 8
     @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(ptr: unsafe.Ptr[${nativeCFuncPtr}]): ${nativeCFuncPtr} =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
-    @alwaysinline override def store(ptr: unsafe.Ptr[${nativeCFuncPtr}], value: ${nativeCFuncPtr}): Unit =
-      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
-  }
+    @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
+      fromRawPtr(loadRawPtr(ptr.rawptr))
+    @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit =
+      storeRawPtr(toRawPtr(ptr), value.rawptr)
+    }
 
+  % for N in range(0, 23):
+  %   targs = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
+  %   tag   = "CFuncPtr{}[{}]".format(N, targs)
+  %   nativeCFuncPtr = "unsafe.CFuncPtr{}[{}]".format(N, targs)
+  abstract class ${tag}
+      extends CFuncPtrTag[${nativeCFuncPtr}]
   % end
 
   @alwaysinline implicit def materializePtrTag[T](implicit tag: Tag[T]): Tag[unsafe.Ptr[T]] =
@@ -243,8 +251,19 @@ object Tag {
   @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]: Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
   % for N in range(0, 23):
-  %   targs = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
-  @alwaysinline implicit def materializeCFuncPtr${N}[${targs}]: Tag[unsafe.CFuncPtr${N}[${targs}]] =
-    Tag.CFuncPtr${N}.asInstanceOf[Tag[unsafe.CFuncPtr${N}[${targs}]]]
-  % end 
+  %   tps     = ", ".join(["T" + str(i)                for i in range(1, N+1)] + ["R"])
+  %   tpsDecl = ", ".join(["T" + str(i) + ": Tag"      for i in range(1, N+1)] + ["R: Tag"])
+  %   args    = ", ".join(["$fnPtr"] + ["arg" + str(i) for i in range(1, N+1)])
+  %
+  %   CFuncPtrN     = "CFuncPtr{}[{}]".format(N, tps)
+  %   CFuncPtrNDecl = "CFuncPtr{}[{}]".format(N, tpsDecl)
+
+  @alwaysinline implicit def materialize${CFuncPtrNDecl}: CFuncPtrTag[unsafe.${CFuncPtrN}] = {
+    new CFuncPtrTag[unsafe.${CFuncPtrN}] {
+      @alwaysinline override private[unsafe] def fromRawPtr(rawptr: RawPtr): unsafe.${CFuncPtrN} = {
+        unsafe.CFuncPtr${N}.fromRawPtr[${tps}](rawptr)
+      }
+    }
+  }
+  % end
 }

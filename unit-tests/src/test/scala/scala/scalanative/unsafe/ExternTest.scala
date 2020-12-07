@@ -68,10 +68,7 @@ class ExternTest {
     ExternTest.runTest()
   }
 
-  val cb: CFuncPtr0[CInt] = new CFuncPtr0[Int] {
-    override def apply(): Int = 42
-  }
-
+  val cb: CFuncPtr0[CInt] = () => 42
   @Test def allowsToUseGenericFunctionAsArgument(): Unit = {
     val res0 = testlib.exec0(cb) //expected CFuncPtr0[Int]
     val res1 = testlib.exec(cb)  //expected CFuncPtr
