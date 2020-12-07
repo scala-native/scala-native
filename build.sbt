@@ -208,6 +208,35 @@ lazy val buildInfoSettings: Seq[Setting[_]] =
     )
   )
 
+lazy val disabledTestsSettings: Seq[Setting[_]] = {
+  def testsTaskUnsupported[T] = Def.task[T] {
+    throw new MessageOnlyException(
+      s"""Usage of this task in ${projectName(thisProject.value)} project is not supported in this build.
+         |To run tests use explicit syntax containing name of project: <project_name>/<task>.
+         |You can also use one of predefined aliases: test-all, test-tools, test-runtime, test-scripted.
+         |""".stripMargin
+    )
+  }
+
+  Def.settings(
+    inConfig(Test) {
+      Seq(
+        test / aggregate := false,
+        test := testsTaskUnsupported.value,
+        testOnly / aggregate := false,
+        testOnly := testsTaskUnsupported.value,
+        testQuick / aggregate := false,
+        testQuick := testsTaskUnsupported.value,
+        executeTests / aggregate := false,
+        executeTests := testsTaskUnsupported[Tests.Output].value
+      )
+    }
+  )
+}
+
+noPublishSettings
+disabledTestsSettings
+
 lazy val util =
   project
     .in(file("util"))
