@@ -198,13 +198,14 @@ class PtrBoxingTest {
 
       val testStr        = toCString("hello_native")
       val expectedInt    = 42
-      val expectedLength = 12
+      val expectedLength = 12.toULong
 
       assertEquals(expectedInt, x._1.apply())
       assertEquals(expectedInt, loadedGetInt())
 
-      assertEquals(expectedLength, x._2.apply(testStr))
-      assertEquals(expectedLength, loadedStringLength(testStr))
+      //assertEquals uses Object.equals which would return false in following cases
+      assert(expectedLength == x._2.apply(testStr))
+      assert(expectedLength == loadedStringLength(testStr))
     }
   }
 }

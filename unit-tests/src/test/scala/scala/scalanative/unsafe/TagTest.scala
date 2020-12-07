@@ -121,22 +121,23 @@ class TagTest {
   }
 
   @Test def tagOffset(): Unit = {
-    assertTrue(tagof[CArray[Byte, Nat._0]].offset(0) == 0.toULong)
-    assertTrue(tagof[CArray[Byte, Nat._0]].offset(1) == 1.toULong)
-    assertTrue(tagof[CArray[Byte, Nat._0]].offset(42) == 42.toULong)
-    assertTrue(tagof[CArray[Int, Nat._0]].offset(0) == 0.toULong)
-    assertTrue(tagof[CArray[Int, Nat._0]].offset(1) == 4.toULong)
-    assertTrue(tagof[CArray[Int, Nat._0]].offset(42) == (4 * 42).toULong)
-    assertTrue(tagof[CStruct1[Int]].offset(0) == 0.toULong)
-    assertTrue(tagof[CStruct2[Byte, Int]].offset(0) == 0.toULong)
-    assertTrue(tagof[CStruct2[Byte, Int]].offset(1) == 4.toULong)
-    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(0) == 0.toULong)
-    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(1) == 1.toULong)
-    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(2) == 4.toULong)
+    assertTrue(tagof[CArray[Byte, Nat._0]].offset(0.toULong) == 0.toULong)
+    assertTrue(tagof[CArray[Byte, Nat._0]].offset(1.toULong) == 1.toULong)
+    assertTrue(tagof[CArray[Byte, Nat._0]].offset(42.toULong) == 42.toULong)
+    assertTrue(tagof[CArray[Int, Nat._0]].offset(0.toULong) == 0.toULong)
+    assertTrue(tagof[CArray[Int, Nat._0]].offset(1.toULong) == 4.toULong)
     assertTrue(
-      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(0) == 0.toULong)
+      tagof[CArray[Int, Nat._0]].offset(42.toULong) == (4 * 42).toULong)
+    assertTrue(tagof[CStruct1[Int]].offset(0.toULong) == 0.toULong)
+    assertTrue(tagof[CStruct2[Byte, Int]].offset(0.toULong) == 0.toULong)
+    assertTrue(tagof[CStruct2[Byte, Int]].offset(1.toULong) == 4.toULong)
+    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(0.toULong) == 0.toULong)
+    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(1.toULong) == 1.toULong)
+    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(2.toULong) == 4.toULong)
     assertTrue(
-      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(1) == 4.toULong)
+      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(0.toULong) == 0.toULong)
+    assertTrue(
+      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(1.toULong) == 4.toULong)
   }
 
   type uint8_t  = UByte
