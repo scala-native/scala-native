@@ -19,6 +19,54 @@ lazy val nameSettings: Seq[Setting[_]] = Seq(
   name := projectName(thisProject.value) // Maven <name>
 )
 
+lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
+  sources in (Compile, doc) := Nil
+)
+
+lazy val docsSettings: Seq[Setting[_]] = {
+  val javaDocBaseURL: String = "http://docs.oracle.com/javase/8/docs/api/"
+  // partially ported from Scala.js
+  Def.settings(
+    autoAPIMappings := true,
+    exportJars := true,                                    // required so ScalaDoc linking works
+    scalacOptions in (Compile, doc) -= "-Xfatal-warnings", // needed only for 2.11 docs to mitigate not found java.lang members
+    // Add Java Scaladoc mapping
+    apiMappings ++= {
+      val optRTJar = {
+        val bootClasspath = System.getProperty("sun.boot.class.path")
+        if (bootClasspath != null) {
+          // JDK <= 8, there is an rt.jar (or classes.jar) on the boot classpath
+          val jars = bootClasspath.split(java.io.File.pathSeparator)
+
+          def matches(path: String, name: String): Boolean =
+            path.endsWith(s"${java.io.File.separator}$name.jar")
+
+          val jar = jars
+            .find(matches(_, "rt"))                   // most JREs
+            .orElse(jars.find(matches(_, "classes"))) // Java 6 on Mac OS X
+            .get
+          Some(file(jar))
+        } else {
+          // JDK >= 9, maybe sbt gives us a fake rt.jar in `scala.ext.dirs`
+          val scalaExtDirs = Option(System.getProperty("scala.ext.dirs"))
+          scalaExtDirs.map(extDirs => file(extDirs) / "rt.jar")
+        }
+      }
+
+      optRTJar.fold[Map[File, URL]] {
+        Map.empty
+      } { rtJar =>
+        assert(rtJar.exists, s"$rtJar does not exist")
+        Map(rtJar -> url(javaDocBaseURL))
+      }
+    },
+    /* Add a second Java Scaladoc mapping for cases where Scala actually
+     * understands the jrt:/ filesystem of Java 9.
+     */
+    apiMappings += file("/modules/java.base") -> url(javaDocBaseURL)
+  )
+}
+
 // The previous releases of Scala Native with which this version is binary compatible.
 val binCompatVersions = Set()
 
@@ -186,7 +234,7 @@ lazy val noPublishSettings: Seq[Setting[_]] = Seq(
   publishLocal := {},
   publishSnapshot := { println("no publish") },
   publish / skip := true
-) ++ nameSettings
+) ++ nameSettings ++ disabledDocsSettings
 
 lazy val toolSettings: Seq[Setting[_]] =
   Def.settings(
@@ -376,6 +424,7 @@ lazy val nativelib =
     .in(file("nativelib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
+    .settings(docsSettings)
     .settings(
       libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       exportJars := true
@@ -401,8 +450,8 @@ lazy val javalib =
     .in(file("javalib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
+    .settings(disabledDocsSettings)
     .settings(
-      Compile / doc / sources := Nil, // doc generation currently broken
       // This is required to have incremental compilation to work in javalib.
       // We put our classes on scalac's `javabootclasspath` so that it uses them
       // when compiling rather than the definitions from the JDK.
@@ -453,6 +502,7 @@ lazy val scalalib =
       scalacOptions += "-language:higherKinds"
     )
     .settings(mavenPublishSettings)
+    .settings(disabledDocsSettings)
     .settings(
       // Code to fetch scala sources adapted, with gratitude, from
       // Scala.js Build.scala at the suggestion of @sjrd.
@@ -675,6 +725,7 @@ lazy val testInterfaceSbtDefs =
     .in(file("test-interface-sbt-defs"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
+    .settings(docsSettings)
     .dependsOn(nscplugin % "plugin", allCoreLibs)
 
 lazy val testRunner =
@@ -717,6 +768,7 @@ lazy val junitPlugin =
 
 val commonJUnitTestOutputsSettings = Def.settings(
   nameSettings,
+  disabledDocsSettings,
   Compile / publishArtifact := false,
   Test / parallelExecution := false,
   Test / unmanagedSourceDirectories +=
