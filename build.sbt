@@ -768,7 +768,7 @@ lazy val junitPlugin =
 
 val commonJUnitTestOutputsSettings = Def.settings(
   nameSettings,
-  disabledDocsSettings,
+  noPublishSettings,
   Compile / publishArtifact := false,
   Test / parallelExecution := false,
   Test / unmanagedSourceDirectories +=
