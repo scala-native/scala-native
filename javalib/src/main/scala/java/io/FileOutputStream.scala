@@ -17,7 +17,7 @@ class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
   def this(name: String) = this(new File(name))
 
   override def close(): Unit =
-    fcntl.close(fd.fd)
+    unistd.close(fd.fd)
 
   override protected def finalize(): Unit =
     close()
