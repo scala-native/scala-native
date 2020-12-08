@@ -14,6 +14,4 @@ private[scalanative] abstract class BaseReporter(
     }
 
   def handleError(pos: Position, msg: String): Unit
-
-  override def displayPrompt(): Unit = ()
 }
