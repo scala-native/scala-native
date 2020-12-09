@@ -1,7 +1,7 @@
 package scala.scalanative.reporter
 
 class ExternSyntaxReporterTest extends NirErrorReporterSpec {
-  verifyThat("fields in extern objects must have extern body") {
+  verifyThat("Fields in extern objects must have extern body") {
     reportsErrors {
       s"""
          |@scala.scalanative.unsafe.extern
@@ -11,7 +11,7 @@ class ExternSyntaxReporterTest extends NirErrorReporterSpec {
     }
   }
 
-  verifyThat("methods in extern objects must have extern body") {
+  verifyThat("Methods in extern objects must have extern body") {
     reportsErrors {
       s"""
          |@scala.scalanative.unsafe.extern
@@ -22,7 +22,7 @@ class ExternSyntaxReporterTest extends NirErrorReporterSpec {
   }
 
   verifyThat(
-    "extern objects may only have extern parents, trait foo is not extern") {
+    "Extern objects may only have extern parents, trait foo is not extern") {
     reportsErrors {
       s"""
          |@scala.scalanative.unsafe.extern
@@ -35,7 +35,7 @@ class ExternSyntaxReporterTest extends NirErrorReporterSpec {
   }
 
   verifyThat(
-    "extern classes may only have extern parents, trait foo is not extern") {
+    "Extern classes may only have extern parents, trait foo is not extern") {
     reportsErrors {
       s"""
          |@scala.scalanative.unsafe.extern
@@ -60,7 +60,7 @@ class ExternSyntaxReporterTest extends NirErrorReporterSpec {
     }
   }
 
-  verifyThat("fields in extern traits must have extern body") {
+  verifyThat("Fields in extern traits must have extern body") {
     reportsErrors {
       s"""
          |@scala.scalanative.unsafe.extern
@@ -88,7 +88,7 @@ class ExternSyntaxReporterTest extends NirErrorReporterSpec {
     }
   }
 
-  verifyThat("fields in extern objects must not be lazy") {
+  verifyThat("Fields in extern objects must not be lazy") {
     reportsErrors {
       s"""
          |@scala.scalanative.unsafe.extern
@@ -99,7 +99,7 @@ class ExternSyntaxReporterTest extends NirErrorReporterSpec {
   }
 
   verifyThat(
-    "extern objects may only have extern parents, class Foo is not extern") {
+    "Extern objects may only have extern parents, class Foo is not extern") {
     reportsErrors {
       s"""
          |class Foo(val x: Int)
@@ -115,10 +115,10 @@ class ExternSyntaxReporterTest extends NirErrorReporterSpec {
          |class Foo(val x: Int)
          |@scala.scalanative.unsafe.extern
          |object Bar extends Foo(10)""".stripMargin
-    }("parameters in extern classes are not allowed - only extern fields and methods are allowed")
+    }("Parameters in extern classes are not allowed - only extern fields and methods are allowed")
   }
 
-  verifyThat("extern fields in objects must have an explicit result type") {
+  verifyThat("Extern fields in objects must have an explicit result type") {
     reportsErrors {
       s"""
          |@scala.scalanative.unsafe.extern
@@ -128,7 +128,7 @@ class ExternSyntaxReporterTest extends NirErrorReporterSpec {
     }
   }
 
-  verifyThat("extern methods in objects must have an explicit result type") {
+  verifyThat("Extern methods in objects must have an explicit result type") {
     reportsErrors {
       s"""
          |@scala.scalanative.unsafe.extern

@@ -105,13 +105,13 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
     if (curValSym.isLazy) {
       reporter.error(
         vd.pos,
-        s"fields in extern ${symToKindPlural(curClassSym)} must not be lazy")
+        s"Fields in extern ${symToKindPlural(curClassSym)} must not be lazy")
     }
 
     if (curValSym.hasFlag(PARAMACCESSOR)) {
       reporter.error(
         vd.pos,
-        s"parameters in extern ${symToKindPlural(curClassSym)} are not allowed - only extern fields and methods are allowed")
+        s"Parameters in extern ${symToKindPlural(curClassSym)} are not allowed - only extern fields and methods are allowed")
     }
 
     vd.rhs match {
@@ -121,7 +121,7 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
       case _ =>
         reporter.error(
           vd.pos,
-          s"fields in extern ${symToKindPlural(curClassSym)} must have extern body")
+          s"Fields in extern ${symToKindPlural(curClassSym)} must have extern body")
     }
   }
 
@@ -304,7 +304,9 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
           checkResolvableClousure(tree)
 
         case Ident(_) => //
-          reporter.error(tree.pos, "Cannot lift value into CFuncPtr")
+          reporter.error(
+            tree.pos,
+            "Cannot lift value into function using fromScalaFunction")
 
         case fn: Apply => // Scala 2.11 only
           val alternatives = fn.tpe
@@ -319,13 +321,14 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
             .orElse(alternatives.headOption)
             .getOrElse {
               reporter.error(tree.pos,
-                             s"not found any apply method in ${fn.tpe}")
+                             s"Not found any apply method in ${fn.tpe}")
             }
           checkExpr(tree)
 
         case _ =>
-          reporter.error(tree.pos,
-                         "Failed to resolve function ref for extern forwarder ")
+          reporter.error(
+            tree.pos,
+            "Cannot resolve function reference for extern forwarder ")
       }
     }
 
@@ -442,7 +445,7 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
 
         reporter.error(
           df.pos,
-          s"extern $kind in ${symToKindPlural(curClassSym)} must have an explicit result type")
+          s"Extern $kind in ${symToKindPlural(curClassSym)} must have an explicit result type")
       case _: TypeTree => Ok
     }
   }

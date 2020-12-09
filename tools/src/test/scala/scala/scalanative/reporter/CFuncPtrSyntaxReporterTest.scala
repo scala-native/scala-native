@@ -2,8 +2,7 @@ package scala.scalanative.reporter
 
 class CFuncPtrSyntaxReporterTest extends NirErrorReporterSpec {
 
-  def cantInferFuncPtrWithCaptures(msg: String) =
-    s"can't infer a function pointer to a closure with captures: $msg"
+  def cannotUseFreeVar(msg: String) = s"CFuncPtr cannot use free variable: $msg"
 
   it should "reject function pointers with captures of value" in {
     reportsErrors {
@@ -16,7 +15,7 @@ class CFuncPtrSyntaxReporterTest extends NirErrorReporterSpec {
          |    fn(0)
          |  }
          |}""".stripMargin
-    }(cantInferFuncPtrWithCaptures("value x"))
+    }(cannotUseFreeVar("value x"))
   }
 
   it should "reject function pointers with captures of method" in {
@@ -30,7 +29,7 @@ class CFuncPtrSyntaxReporterTest extends NirErrorReporterSpec {
          |    fn(0)
          |  }
          |}""".stripMargin
-    }(cantInferFuncPtrWithCaptures("method x"))
+    }(cannotUseFreeVar("method x"))
   }
 
   it should "allow function pointers without captures" in {
@@ -73,7 +72,7 @@ class CFuncPtrSyntaxReporterTest extends NirErrorReporterSpec {
          |    fn(0)
          |  }
          |}""".stripMargin
-    }(cantInferFuncPtrWithCaptures("value z"))
+    }(cannotUseFreeVar("value z"))
   }
 
   it should "allows functions pointers with local values" in {
@@ -109,7 +108,7 @@ class CFuncPtrSyntaxReporterTest extends NirErrorReporterSpec {
          |    fn(0)
          |  }
          |}""".stripMargin
-    }(cantInferFuncPtrWithCaptures("class foo"))
+    }(cannotUseFreeVar("class foo"))
   }
 
   it should "lift the argument method into function" in {
@@ -139,7 +138,7 @@ class CFuncPtrSyntaxReporterTest extends NirErrorReporterSpec {
          |    fn(0)
          |  }
          |}""".stripMargin
-    }("Cannot lift value into CFuncPtr")
+    }("Cannot lift value into function using fromScalaFunction")
   }
 
   it should "should not allow to declare local closures in function pointer body" in {
@@ -158,7 +157,7 @@ class CFuncPtrSyntaxReporterTest extends NirErrorReporterSpec {
          |    fn(0)
          |  }
          |}""".stripMargin
-    }(cantInferFuncPtrWithCaptures("value z"))
+    }(cannotUseFreeVar("value z"))
   }
 
 }

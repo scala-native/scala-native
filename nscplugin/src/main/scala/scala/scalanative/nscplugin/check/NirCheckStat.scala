@@ -44,7 +44,7 @@ trait NirCheckStat[G <: nsc.Global with Singleton] {
             val parentKind = symToKind(implParent.symbol)
             reporter.error(
               impl.pos,
-              s"extern $thisKind may only have extern parents, $parentKind ${implParent.symbol.nameString} is not extern")
+              s"Extern $thisKind may only have extern parents, $parentKind ${implParent.symbol.nameString} is not extern")
           }
       }
   }
@@ -61,7 +61,7 @@ trait NirCheckStat[G <: nsc.Global with Singleton] {
 
       if (isSynchronized && isStatic) {
         reporter.error(dd.pos,
-                       s"cannot generate `synchronized` for static method")
+                       s"Cannot generate `synchronized` for static method")
       }
 
       if (owner.isExtern) {
@@ -81,7 +81,7 @@ trait NirCheckStat[G <: nsc.Global with Singleton] {
       case _ =>
         reporter.error(
           ddef.rhs.pos.focus,
-          s"methods in extern ${symToKindPlural(curClassSym)} must have extern body")
+          s"Methods in extern ${symToKindPlural(curClassSym)} must have extern body")
     }
   }
 }
