@@ -64,12 +64,18 @@ class ExternSyntaxReporterTest extends NirErrorReporterSpec {
     reportsErrors {
       s"""
          |@scala.scalanative.unsafe.extern
-         |object bar extends foo{
-         |  var z: Int = scala.scalanative.unsafe.extern
-         |}
-         |@scala.scalanative.unsafe.extern
          |trait foo {
          |  val y: Int = 1
+         |}  """.stripMargin
+    }
+  }
+
+  verifyThat("Methods in extern traits must have extern body") {
+    reportsErrors {
+      s"""
+         |@scala.scalanative.unsafe.extern
+         |trait foo {
+         |  def y(): Int = 1
          |}  """.stripMargin
     }
   }

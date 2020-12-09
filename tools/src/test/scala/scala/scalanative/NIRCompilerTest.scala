@@ -80,7 +80,7 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
 
     // then
     caught.getMessage should include(
-      "extern methods in objects must have an explicit result type")
+      "Extern methods in objects must have an explicit result type")
   }
 
 }
