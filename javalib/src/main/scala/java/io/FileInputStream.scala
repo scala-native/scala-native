@@ -5,7 +5,7 @@ import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._, stdlib._, stdio._, string._
 import scalanative.nio.fs.UnixException
-import scalanative.posix.unistd
+import scalanative.posix.unistd, unistd.lseek
 import scalanative.runtime
 
 class FileInputStream(fd: FileDescriptor, file: Option[File])
