@@ -37,7 +37,7 @@ trait NirDefinitions {
       "scala.scalanative.unsafe.package")
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
 
-    //In PreNirSanityCheck some reason usage of `getRequiredModule`
+    //In PrepSanityCheck some reason usage of `getRequiredModule`
     //ends up in MissingRequiredModule exception although it exists
     lazy val CQuoteClass = getMemberClass(NativeModule, TermName("CQuote"))
 

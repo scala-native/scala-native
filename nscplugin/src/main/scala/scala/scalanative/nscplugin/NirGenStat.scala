@@ -632,28 +632,25 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           ()
 
         case rhs =>
-        // TODO: crash
-        //unsupported("methods in extern objects must have extern body")
+          unsupported("methods in extern objects must have extern body")
       }
     }
 
     def validateExternCtor(rhs: Tree): Unit = {
       val Block(_ +: init, _) = rhs
-      val externs = init.flatMap {
+      val externs = init.map {
         case Assign(ref: RefTree, Apply(extern, Seq()))
             if extern.symbol == ExternMethod =>
-          Some(ref.symbol)
+          ref.symbol
         case _ =>
-          //unsupported(
-          //  "extern objects may only contain extern fields and methods")
-          None
+          unsupported(
+            "extern objects may only contain extern fields and methods")
       }.toSet
       for {
         f <- curClassSym.info.decls if f.isField
         if !externs.contains(f)
       } {
-        ()
-        //unsupported("extern objects may only contain extern fields")
+        unsupported("extern objects may only contain extern fields")
       }
     }
 

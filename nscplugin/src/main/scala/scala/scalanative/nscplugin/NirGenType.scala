@@ -23,9 +23,6 @@ trait NirGenType[G <: Global with Singleton] { self: NirPhase[G] =>
     def isExternModule: Boolean =
       isScalaModule && isExtern
 
-    def isExternNonModule: Boolean =
-      !isScalaModule && isExtern
-
     def isStruct: Boolean =
       sym.annotations.exists(_.symbol == StructClass)
 
