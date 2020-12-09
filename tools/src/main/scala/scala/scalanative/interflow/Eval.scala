@@ -162,8 +162,7 @@ trait Eval { self: Interflow =>
       case Op.Store(ty, ptr, value) =>
         emit(Op.Store(ty, materialize(eval(ptr)), materialize(eval(value))))
       case Op.Elem(ty, ptr, indexes) =>
-        bailOut // TODO(shadaj): investigate
-      // delay(Op.Elem(ty, eval(ptr), indexes.map(eval)))
+        delay(Op.Elem(ty, eval(ptr), indexes.map(eval)))
       case Op.Extract(aggr, indexes) =>
         delay(Op.Extract(eval(aggr), indexes))
       case Op.Insert(aggr, value, indexes) =>
