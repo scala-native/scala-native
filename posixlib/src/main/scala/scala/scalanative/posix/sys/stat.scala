@@ -6,7 +6,6 @@ import scalanative.unsafe._
 import scalanative.posix.time._
 import scalanative.posix.unistd.off_t
 
-@extern
 object stat {
   type dev_t     = CUnsignedLong
   type ino_t     = CUnsignedLongLong

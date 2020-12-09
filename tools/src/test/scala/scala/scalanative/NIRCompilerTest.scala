@@ -68,7 +68,6 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     val code =
       """import scala.scalanative.unsafe.extern
         |
-        |@extern
         |object Dummy {
         |  def foo() = extern
         |}""".stripMargin

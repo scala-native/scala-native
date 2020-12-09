@@ -8,7 +8,6 @@ import scalanative.unsafe._
  *
  * @see [[http://hboehm.info/gc/gcinterface.html C Interface]]
  */
-@extern
 object GC {
   @name("scalanative_alloc")
   def alloc(rawty: RawPtr, size: CSize): RawPtr = extern

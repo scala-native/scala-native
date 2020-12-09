@@ -4,7 +4,6 @@ package posix
 import scalanative.unsafe.{CInt, CString, CStruct5, extern, name, Ptr}
 import scalanative.posix.sys.stat.{uid_t, gid_t}
 
-@extern
 object pwd {
 
   type passwd = CStruct5[CString, // pw_name

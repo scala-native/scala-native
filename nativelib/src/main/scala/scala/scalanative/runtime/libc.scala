@@ -6,7 +6,6 @@ import scalanative.unsafe._
 // Minimal bindings for the subset of libc used by the nativelib.
 // This is done purely to avoid circular dependency between clib
 // and nativelib. The actual bindings should go to clib namespace.
-@extern
 object libc {
   def malloc(size: CSize): RawPtr                              = extern
   def free(ptr: RawPtr): Unit                                  = extern

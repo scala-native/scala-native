@@ -5,7 +5,6 @@ package sys
 import scalanative.unsafe.{CInt, CLong, CLongInt, CStruct2, Ptr, extern}
 import scalanative.posix.sys.types.{suseconds_t, time_t}
 
-@extern
 object time {
 
   type timeval = CStruct2[time_t, suseconds_t]

@@ -10,7 +10,6 @@ import scalanative.runtime.{Array => _, _}
 // These two methods are generated at link-time by the toolchain
 // using current closed-world knowledge of classes and traits in
 // the current application.
-@extern
 object rtti {
   def __check_class_has_trait(classId: Int, traitId: Int): scala.Boolean =
     extern

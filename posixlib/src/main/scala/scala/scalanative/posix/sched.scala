@@ -4,7 +4,6 @@ import scala.scalanative.unsafe.{CInt, CSize, CStruct1, CStruct5, Ptr, extern}
 import scala.scalanative.posix.time.timespec
 import scala.scalanative.posix.sys.types.pid_t
 
-@extern
 object sched {
 
   def sched_setparam(pid: pid_t, param: Ptr[sched_param]): CInt = extern

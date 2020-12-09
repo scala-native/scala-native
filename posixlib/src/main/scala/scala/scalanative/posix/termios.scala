@@ -15,7 +15,6 @@ import scalanative.unsafe.{
 import scalanative.unsafe.Nat._
 import posix.sys.types.pid_t
 
-@extern
 object termios {
 
   // types

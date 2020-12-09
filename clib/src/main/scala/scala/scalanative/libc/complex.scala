@@ -26,7 +26,6 @@ import scalanative.unsafe._
  * http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/complex.h.html
  *
  */
-@extern
 object complex {
   import Nat._2
   type CFloatComplex  = CStruct2[CFloat, CFloat]

@@ -7,7 +7,6 @@ import scalanative.posix.inttypes._
 import scalanative.posix.sys.socket.socklen_t
 import scalanative.posix.netinet.in.{in_addr, in_addr_t}
 
-@extern
 object inet {
 
   @name("scalanative_htonl")

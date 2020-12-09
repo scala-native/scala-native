@@ -1,6 +1,5 @@
 import scalanative.unsafe._
 
-@extern
 object myapi {
   def add3(in: CLongLong): CLongLong = extern
 }

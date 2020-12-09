@@ -17,7 +17,6 @@ import scala.scalanative.posix.sys.types._
 // SUSv2 version is used for compatibility
 // see http://pubs.opengroup.org/onlinepubs/007908799/xsh/threads.html
 
-@extern
 object pthread {
 
   def pthread_atfork(prepare: routine, parent: routine, child: routine): CInt =

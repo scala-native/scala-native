@@ -4,7 +4,6 @@ package posix
 import scala.scalanative.unsafe._
 import scala.scalanative.posix.sys.types, types._
 
-@extern
 object time {
 
   type time_t   = types.time_t
