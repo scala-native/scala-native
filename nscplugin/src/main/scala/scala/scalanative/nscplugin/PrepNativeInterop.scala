@@ -196,6 +196,10 @@ abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
           )
           super.transform(tree)
 
+        case ValOrDefDef(_, _, _, rhs) if rhs.symbol == ExternMethod =>
+          tree.symbol.withAnnotation(AnnotationInfo.marker(ExternClass.tpe))
+          super.transform(tree)
+
         case _ =>
           super.transform(tree)
       }
