@@ -8,7 +8,7 @@ class NirPlugin(val global: Global) extends Plugin {
   val name        = "nir"
   val description = "Compile to Scala Native IR (NIR)"
   val components =
-    List[PluginComponent](preNirSanityCheck, prepNativeInterop, nirGen)
+    List[PluginComponent](prepSanityCheck, prepNativeInterop, nirGen)
 
   /** A trick to avoid early initializers while still enforcing that `global`
    *  is initialized early.
@@ -25,8 +25,7 @@ class NirPlugin(val global: Global) extends Plugin {
     override val runsBefore                      = List("pickler")
   }
 
-  object preNirSanityCheck
-      extends check.PreNirSanityCheck[global.type](global) {
+  object prepSanityCheck extends check.PrepSanityCheck[global.type](global) {
     val nirAddons: NirPlugin.this.nirAddons.type = NirPlugin.this.nirAddons
     override val runsAfter                       = List("typer")
     override val runsBefore                      = List("pickler")

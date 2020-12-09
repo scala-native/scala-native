@@ -2,9 +2,10 @@ package scala.scalanative.nscplugin.check
 
 import scala.scalanative.nscplugin.NirPhase
 import scala.scalanative.util
+import scala.scalanative.util.ScopedVar
 import scala.tools.nsc.{Phase, Global => NscGlobal}
 
-abstract class PreNirSanityCheck[G <: NscGlobal with Singleton](
+abstract class PrepSanityCheck[G <: NscGlobal with Singleton](
     override val global: G)
     extends NirPhase[G](global)
     with NirCheckStat[G]
@@ -57,107 +58,89 @@ abstract class PreNirSanityCheck[G <: NscGlobal with Singleton](
     else "object"
 
   protected def freeLocalVars(tree: Tree): List[Symbol] = {
-    val trav = new FreeVarTraverser
-    trav.traverse(tree)
-    trav.allFreeVars
+    new FreeVarTraverser().apply(tree)
   }
 
   // Capture free variables and methods
   // Inspired by LambdaLift phase in scalac
   private class FreeVarTraverser extends Traverser {
 
-    private var localVars: List[Symbol] = Nil
-    private var freeVars: List[Symbol]  = Nil
+    private val localVars = new ScopedVar[List[Symbol]]
+    private val freeVars  = List.newBuilder[Symbol]
 
-    def allFreeVars: List[Symbol] = freeVars
+    def apply(tree: Tree): List[Symbol] = {
+      freeVars.clear()
+      ScopedVar.scoped(localVars := Nil) {
+        traverse(tree)
+      }
+      freeVars.result()
+    }
 
     override def traverse(tree: Tree): Unit = {
       val sym = tree.symbol
       tree match {
         case ClassDef(_, _, _, _) =>
           super.traverse(tree)
+
         case DefDef(_, _, _, vparams, _, _) =>
           withLocalSyms(vparams.flatten.map(_.symbol)) {
             super.traverse(tree)
           }
+
         case Block(stats, last) =>
-          // special case for defs
-          (stats ++ (last :: Nil)).foldLeft(Nil: List[Symbol])({
-            case (syms, stat: ValDef) =>
-              withLocalSyms(syms) {
-                traverse(stat)
-              }
-              stat.symbol :: syms
-            case (syms, stat: DefDef) =>
-              withLocalSyms(syms) {
-                traverse(stat)
-              }
-              stat.symbol :: syms
-            case (syms, stat: ModuleDef) =>
-              withLocalSyms(syms) {
-                traverse(stat)
-              }
-              stat.symbol :: syms
-            case (syms, stat: ClassDef) =>
-              withLocalSyms(syms) {
-                traverse(stat)
-              }
-              stat.symbol :: syms
+          (stats ++ (last :: Nil)).foldLeft(List.empty[Symbol]) {
             case (syms, stat) =>
               withLocalSyms(syms) {
                 traverse(stat)
               }
-              syms
-          })
+              stat match {
+                case _: ValDef | _: DefDef | _: ClassDef | _: ModuleDef =>
+                  stat.symbol :: syms
+                case _ => syms
+              }
+          }
+
         case Ident(name) =>
           if (sym == NoSymbol) {
             assert(name == nme.WILDCARD, s"expected wildcard, but got $name")
-          } else if (sym.isLocalToBlock && !localVars.contains(sym)) {
-            if (sym.isTerm && !sym.isMethod) {
-              freeVars = sym :: freeVars
-            } else if (sym.isMethod) {
-              freeVars = sym :: freeVars
+          } else if (sym.isLocalToBlock && !isLocal(sym)) {
+            if (sym.isMethod) {
+              freeVars += sym
+            } else if (sym.isTerm) {
+              freeVars += sym
             }
           }
           super.traverse(tree)
-        case Function(vparams, body) =>
+
+        case Function(vparams, _) =>
           withLocalSyms(vparams.map(_.symbol)) {
             super.traverse(tree)
           }
+
         case Select(This(_), _) if sym.isModule =>
           super.traverse(tree)
-        case Select(receiver @ This(_), _)
-            if !localVars.contains(receiver.symbol) =>
-          freeVars = sym :: freeVars
+
+        case Select(receiver @ This(_), _) if !isLocal(receiver.symbol) =>
+          freeVars += sym
+
         case Select(_, _) =>
           if (sym.isConstructor &&
               sym.owner.isLocalToBlock &&
-              !localVars.contains(sym.owner)) {
-            freeVars = sym.owner :: freeVars
+              !isLocal(sym.owner)) {
+            freeVars += sym.owner
           }
           super.traverse(tree)
-        case _ =>
-          super.traverse(tree)
+
+        case _ => super.traverse(tree)
       }
     }
 
-    private def logicallyEnclosingMember(sym: Symbol): Symbol = {
-      if (sym.isLocalDummy) {
-        val enclClass = sym.enclClass
-        //if (enclClass.isSubClass(DelayedInitClass))
-        //  delayedInitDummies.getOrElseUpdate(enclClass, enclClass.newMethod(nme.delayedInit))
-        //else
-        enclClass.primaryConstructor
-      } else if (sym.isMethod || sym.isClass || sym == NoSymbol) sym
-      else logicallyEnclosingMember(sym.owner)
-    }
+    private def isLocal(sym: Symbol) = localVars.get.contains(sym)
 
     private def withLocalSyms[T](syms: List[Symbol])(op: => T): T = {
-      val localVars0 = localVars
-      localVars = localVars ++ syms
-      val res = op
-      localVars = localVars0
-      res
+      ScopedVar.scoped(
+        localVars := localVars ++ syms
+      )(op)
     }
   }
 

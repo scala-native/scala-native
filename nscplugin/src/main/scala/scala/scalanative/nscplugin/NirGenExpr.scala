@@ -1944,7 +1944,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           genApplyNew(cls, fun.symbol, args)
 
         case SimpleType(sym, targs) =>
-          // we are after erasure, this cannot happen?
           unsupported(s"unexpected new: $sym with targs $targs")
       }
     }

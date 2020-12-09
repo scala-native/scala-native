@@ -4,12 +4,12 @@ import scala.annotation.tailrec
 import scala.reflect.internal.Flags.PARAMACCESSOR
 import scala.scalanative.nir
 import scala.scalanative.nir._
-import scala.scalanative.nscplugin.NirPrimitives._
 import scala.scalanative.util.ScopedVar.scoped
+import scala.scalanative.nscplugin.NirPrimitives._
 import scala.tools.nsc
 
 trait NirCheckExpr[G <: nsc.Global with Singleton] {
-  self: PreNirSanityCheck[G] =>
+  self: PrepSanityCheck[G] =>
 
   import SimpleType.{fromSymbol, fromType}
   import global._
@@ -262,9 +262,9 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
   }
 
   def checkApplyNirPrimitive(app: Apply): Unit = {
-    val Apply(fun, args) = app
-    val sym              = app.symbol
-    val code             = getNirPrimitive(sym)
+    val Apply(fun, _) = app
+    val sym           = app.symbol
+    val code          = getNirPrimitive(sym)
 
     if (code == ARRAY_CLONE) checkArrayOp(app, code)
     else if (nirPrimitives.isRawPtrOp(code)) checkRawPtrOp(app, code)
@@ -286,7 +286,6 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
   def checkCFuncFromScalaFunction(app: Apply): Unit = {
     def checkResolvableClousure(tree: Tree): Unit = {
       freeLocalVars(tree).foreach { freeSym =>
-        println(freeSym)
         reporter.error(
           freeSym.pos,
           s"can't infer a function pointer to a closure with captures: $freeSym")
@@ -297,12 +296,10 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
     def resolveFunction(tree: Tree): Unit = {
       tree match {
         case Block(stats, expr) =>
-          stats.foreach { s =>
-            println(s.getClass.getName)
-            println(s)
-            checkResolvableClousure(s)
-          }
+          stats.foreach { s => checkResolvableClousure(s) }
           resolveFunction(expr)
+
+        case Function(_, Apply(_, _)) => Ok // Method lifted into function
 
         case Function(_, _) => // Scala 2.12+
           checkResolvableClousure(tree)
@@ -311,7 +308,6 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
           reporter.error(tree.pos, "Cannot lift value into CFuncPtr")
 
         case fn: Apply => // Scala 2.11 only
-          println(fn)
           val alternatives = fn.tpe
             .member(nme.apply)
             .alternatives
@@ -322,34 +318,21 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
               sym.tpe.params.exists(_.tpe != ObjectTpe)
             }
             .orElse(alternatives.headOption)
-            .getOrElse(reporter
-              .error(tree.pos, s"not found any apply method in ${fn.tpe}"))
+            .getOrElse {
+              reporter.error(tree.pos,
+                             s"not found any apply method in ${fn.tpe}")
+            }
           checkExpr(tree)
 
-        case last =>
+        case _ =>
           reporter.error(tree.pos,
                          "Failed to resolve function ref for extern forwarder ")
       }
     }
 
-    //    Apply(
-    //      Apply(
-    //        TypeApply(
-    //          Select(Select(Select(Select(Ident(scala), scala.scalanative), scala.scalanative.unsafe), scala.scalanative.unsafe.CFuncPtr1), TermName("fromScalaFunction")),
-    //          List(TypeTree().setOriginal(Select(Select(Select(Select(Ident(scala), scala.scalanative), scala.scalanative.unsafe), scala.scalanative.unsafe.package), TypeName("CInt"))), TypeTree().setOriginal(Select(Ident(scala), scala.Unit)))
-    //        ),
-    //        List(Function(List(ValDef(Modifiers(PARAM), TermName("x$1"), TypeTree(), EmptyTree)), Literal(Constant(()))))
-    //      ), List(Select(Select(This(TypeName("unsafe")), scala.scalanative.unsafe.Tag), TermName("materializeIntTag")), Select(Select(This(TypeName("unsafe")), scala.scalanative.unsafe.Tag), TermName("materializeUnitTag")))
-    //    )
-
     app match {
       case Apply(Apply(_: TypeApply, Seq(fn)), evidences) =>
-        fn match {
-          // lifted method to function. We cannot assert method is valid
-          case Function(_, Apply(_, _))               => Ok //2.13
-          case Block(Seq(), Function(_, Apply(_, _))) => Ok //2.12
-          case _                                      => resolveFunction(fn)
-        }
+        resolveFunction(fn)
       case _ =>
         reporter.error(
           app.pos,
@@ -360,65 +343,10 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
   def checkSimpleOp(app: Apply, args: List[Tree], code: Int): Unit = {
     assert(args.nonEmpty, "empty arguments list")
 
-    args.foreach(checkExpr)
     if (args.size > 2) {
       reporter.error(app.pos, s"Too many arguments for primitive function")
     }
   }
-
-  def checkBinaryOp(op: (nir.Type, Val, Val) => Op,
-                    leftp: Tree,
-                    rightp: Tree,
-                    opty: nir.Type): Unit = {
-    checkExpr(leftp)
-    checkExpr(rightp)
-  }
-
-  def checkClassEquality(leftp: Tree,
-                         rightp: Tree,
-                         ref: Boolean,
-                         negated: Boolean): Unit = {
-    checkExpr(leftp)
-    checkExpr(rightp)
-  }
-
-  val referenceOpCodes  = Set(EQ, ID, NE, NI)
-  val baseNumberOpCodes = Set(ADD, SUB, MUL, DIV, MOD, EQ, NE, LT, LE, GT, GE)
-  val integerOpCodes =
-    baseNumberOpCodes ++ Set(OR, XOR, AND, LSL, LSR, ASR, ZOR, ZAND)
-  def checkBinaryOp(code: Int,
-                    left: Tree,
-                    right: Tree,
-                    retty: nir.Type): Unit = {
-    import scalaPrimitives._
-    val pos = left.pos.focusEnd
-
-    val lty = genType(left.tpe)
-    val rty = genType(right.tpe)
-    if (isShiftOp(code)) Ok
-    else checkBinaryOperationType(lty, rty)(pos)
-  }
-
-  def checkBinaryOperationType(lty: nir.Type, rty: nir.Type)(pos: Position) =
-    (lty, rty) match {
-      // Bug compatibility with scala/bug/issues/11253
-      case (Type.Long, Type.Float)             => Ok
-      case (nir.Type.Ptr, _: nir.Type.RefKind) => Ok
-      case (_: nir.Type.RefKind, nir.Type.Ptr) => Ok
-      case (nir.Type.Bool, nir.Type.Bool)      => Ok
-      case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _))
-          if lwidth < 32 && rwidth < 32 =>
-        Ok
-      case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) => Ok
-      case (nir.Type.I(_, _), nir.Type.F(_))              => Ok
-      case (nir.Type.F(_), nir.Type.I(_, _))              => Ok
-      case (nir.Type.F(lwidth), nir.Type.F(rwidth))       => Ok
-      case (_: nir.Type.RefKind, _: nir.Type.RefKind)     => Ok
-      case (ty1, ty2) if ty1 == ty2                       => Ok
-      case _ =>
-        reporter.error(pos,
-                       s"Cannot perform binary operation between $lty and $rty")
-    }
 
   def checkStringConcat(leftp: Tree, rightp: Tree): Unit = {
     checkExpr(leftp)
@@ -455,14 +383,6 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
     val Apply(Apply(receiverp, argsp), evidences) = app
 
     checkExpr(receiverp)
-//    println(evidences)
-//    evidences.foreach { ev =>
-//      println(showRaw(ev))
-//      unwrapTagOption(ev).getOrElse {
-//        reporter.error(ev.pos, s"Cannot recover runtime tag")
-//      }
-//    }
-
     argsp.foreach(checkExpr)
   }
 

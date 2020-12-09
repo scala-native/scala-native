@@ -2,18 +2,15 @@ package scala.scalanative.nscplugin.check
 import scala.reflect.internal.Flags._
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc
-import scala.tools.nsc.Properties
 
 trait NirCheckStat[G <: nsc.Global with Singleton] {
-  self: PreNirSanityCheck[G] =>
+  self: PrepSanityCheck[G] =>
 
   import SimpleType._
   import global._
   import definitions._
   import nirAddons._
   import nirDefinitions._
-
-  protected val isScala211 = Properties.versionNumberString.startsWith("2.11")
 
   def isStaticModule(sym: Symbol): Boolean =
     sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
@@ -52,47 +49,15 @@ trait NirCheckStat[G <: nsc.Global with Singleton] {
       }
   }
 
-  def checkJavaDefaultMethodBody(dd: DefDef): Unit = {
-    val sym               = dd.symbol
-    val implClassFullName = sym.owner.fullName + "$class"
-
-    val implClassSym = findMemberFromRoot(TermName(implClassFullName))
-
-    val implMethodSym = implClassSym.info
-      .member(sym.name)
-      .suchThat { s =>
-        s.isMethod &&
-        s.tpe.params.size == sym.tpe.params.size + 1 &&
-        s.tpe.params.head.tpe =:= sym.owner.toTypeConstructor &&
-        s.tpe.params.tail.zip(sym.tpe.params).forall {
-          case (sParam, symParam) =>
-            sParam.tpe =:= symParam.tpe
-        }
-      }
-    // TODO check if no symbol?
-  }
-
-  //  scoped(
-  //    curMethSym := dd.symbol
-  //  ) {
-  //    dd.rhs match {
-  //      // We don't care about the constructor at this phase
-  //      case _: Block if dd.symbol.isConstructor => Skip
-  //      case _ if curClassSym.get.isExtern       => verifyExternMethod(dd)
-  //      case rhs                                 => verifyExpr(rhs)
-  //    }
-  //  }
-
   def checkMethod(dd: DefDef): Unit = {
     scoped(
       curMethodSym := dd.symbol
     ) {
-      val sym            = dd.symbol
       val owner          = curClassSym.get
       val isStatic       = owner.isExternModule || isImplClass(owner)
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
-      val isJavaDefaultMethod =
-        isScala211 && sym.hasAnnotation(JavaDefaultMethodAnnotation)
+      val isConstructor =
+        dd.name == nme.CONSTRUCTOR || dd.name == nme.MIXIN_CONSTRUCTOR
 
       if (isSynchronized && isStatic) {
         reporter.error(dd.pos,
@@ -100,11 +65,8 @@ trait NirCheckStat[G <: nsc.Global with Singleton] {
       }
 
       if (owner.isExtern) {
-        // Constructors are not handled in this phase
-        if (dd.name == nme.CONSTRUCTOR || dd.name == nme.MIXIN_CONSTRUCTOR) Ok
+        if (isConstructor) Ok // Constructors are not handled in this phase
         else checkExternMethod(dd)
-      } else if (isJavaDefaultMethod) {
-        checkJavaDefaultMethodBody(dd)
       } else checkExpr(dd.rhs)
     }
   }
@@ -122,28 +84,4 @@ trait NirCheckStat[G <: nsc.Global with Singleton] {
           s"methods in extern ${symToKindPlural(curClassSym)} must have extern body")
     }
   }
-
-//  def checkExternCtor(rhs: Tree): Unit = {
-//    val Block(_ +: init, _) = rhs
-//    val externs = init.flatMap {
-//      case Assign(ref: RefTree, Apply(extern, Seq()))
-//          if extern.symbol == ExternMethod =>
-//        Some(ref.symbol)
-//      case _ =>
-//        reporter.error(
-//          rhs.pos,
-//          s"extern ${symToKindPlural(curClassSym)} may only contain extern fields and methods")
-//        None
-//    }.toSet
-//
-//    for {
-//      f <- curClassSym.info.decls if f.isField
-//      if !externs.contains(f)
-//    } {
-//      reporter.error(
-//        rhs.pos,
-//        s"extern ${symToKindPlural(curClassSym)} may only contain extern fields")
-//    }
-//  }
-
 }
