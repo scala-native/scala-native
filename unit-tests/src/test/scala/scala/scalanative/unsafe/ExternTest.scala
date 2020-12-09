@@ -81,6 +81,7 @@ class ExternTest {
     }
 
     case class Ext() extends ExtClass() with ExtTrait
+
   }
 
   @Test def allowsToUseExternNotDefineInObject(): Unit = {
@@ -97,6 +98,5 @@ class ExternTest {
     assertEquals(
       expectedLength,
       ext.extClass(stackalloc[Byte](bufsize), bufsize, testFormat, testString))
-    )
   }
 }
