@@ -11,7 +11,7 @@ package niocharset
 import java.nio.charset._
 
 private[niocharset] object ISO_8859_1
-    extends ISO_8859_1_And_US_ASCII_Common( // scalastyle:ignore
+    extends ISO_8859_1_And_US_ASCII_Common( // format: off
       "ISO-8859-1",
       Array(
         "csISOLatin1",

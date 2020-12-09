@@ -23,7 +23,7 @@ private[nio] object GenHeapBuffer {
                                                       initialLength: Int,
                                                       isReadOnly: Boolean)(
       implicit newHeapBuffer: NewHeapBuffer[BufferType, ElementType])
-    : BufferType = {
+      : BufferType = {
     if (capacity < 0) {
       throw new IllegalArgumentException()
     }
@@ -50,20 +50,25 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
 
   @inline
   def generic_slice()(implicit newHeapBuffer: NewThisHeapBuffer): BufferType = {
-    val newCapacity = remaining
+    val newCapacity = remaining()
     newHeapBuffer(newCapacity,
                   _array,
-                  _arrayOffset + position,
+                  _arrayOffset + position(),
                   0,
                   newCapacity,
-                  isReadOnly)
+                  isReadOnly())
   }
 
   @inline
   def generic_duplicate()(
       implicit newHeapBuffer: NewThisHeapBuffer): BufferType = {
     val result =
-      newHeapBuffer(capacity, _array, _arrayOffset, position, limit, isReadOnly)
+      newHeapBuffer(capacity(),
+                    _array,
+                    _arrayOffset,
+                    position(),
+                    limit(),
+                    isReadOnly())
     result._mark = _mark
     result
   }
@@ -72,7 +77,7 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
   def generic_asReadOnlyBuffer()(
       implicit newHeapBuffer: NewThisHeapBuffer): BufferType = {
     val result =
-      newHeapBuffer(capacity, _array, _arrayOffset, position, limit, true)
+      newHeapBuffer(capacity(), _array, _arrayOffset, position(), limit(), true)
     result._mark = _mark
     result
   }
@@ -81,11 +86,11 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
   def generic_compact(): BufferType = {
     ensureNotReadOnly()
 
-    val len = remaining
+    val len = remaining()
     System
-      .arraycopy(_array, _arrayOffset + position, _array, _arrayOffset, len)
+      .arraycopy(_array, _arrayOffset + position(), _array, _arrayOffset, len)
     _mark = -1
-    limit(capacity)
+    limit(capacity())
     position(len)
     self
   }

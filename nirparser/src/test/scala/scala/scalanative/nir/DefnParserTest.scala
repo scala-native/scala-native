@@ -3,11 +3,12 @@ package nir
 
 import fastparse.all.Parsed
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class DefnParserTest extends FunSuite {
-  val ty     = Type.Int
-  val global = Global.Top("global")
-
+class DefnParserTest extends AnyFunSuite {
+  val ty           = Type.Int
+  val global       = Global.Top("global")
+  implicit val pos = Position.NoPosition
   Seq[Defn](
     Defn.Var(Attrs.None, global, ty, Val.Zero(ty)),
     Defn.Const(Attrs.None, global, ty, Val.Zero(ty)),

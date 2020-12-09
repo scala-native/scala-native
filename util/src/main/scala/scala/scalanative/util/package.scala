@@ -1,7 +1,5 @@
 package scala.scalanative
 
-import java.nio.ByteBuffer
-
 package object util {
 
   /** Marker methods, called whenever a specific control-flow branch
@@ -53,7 +51,5 @@ package object util {
 
   def partitionBy[T](elems: Seq[T], batches: Int)(
       f: T => Any): Map[Int, Seq[T]] =
-    elems.groupBy { elem =>
-      Math.abs(f(elem).##) % batches
-    }
+    elems.groupBy { elem => Math.abs(f(elem).##) % batches }
 }

@@ -1,15 +1,15 @@
 package java.util.function
 
-trait Consumer[T] {
-  self =>
+import scala.scalanative.annotation.JavaDefaultMethod
 
+trait Consumer[T] { self =>
   def accept(t: T): Unit
 
+  @JavaDefaultMethod
   def andThen(after: Consumer[T]): Consumer[T] = new Consumer[T]() {
-    override def accept(t: T): Unit = {
+    def accept(t: T): Unit = {
       self.accept(t)
       after.accept(t)
     }
   }
-
 }

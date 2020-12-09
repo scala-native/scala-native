@@ -31,9 +31,9 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
 
   def this(file: File, csn: String) =
     this(
-      new OutputStreamWriter(
-        new BufferedOutputStream(new FileOutputStream(file)),
-        csn))
+      new OutputStreamWriter(new BufferedOutputStream(
+                               new FileOutputStream(file)),
+                             csn))
 
   def this(fileName: String) = this(new File(fileName))
 

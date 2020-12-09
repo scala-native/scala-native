@@ -141,16 +141,20 @@ package object unsafe {
   /** Convert a CString to a String using given charset. */
   def fromCString(cstr: CString,
                   charset: Charset = Charset.defaultCharset()): String = {
-    val len   = libc.strlen(cstr).toInt
-    val bytes = new Array[Byte](len)
+    if (cstr == null) {
+      null
+    } else {
+      val len   = libc.strlen(cstr).toInt
+      val bytes = new Array[Byte](len)
 
-    var c = 0
-    while (c < len) {
-      bytes(c) = !(cstr + c)
-      c += 1
+      var c = 0
+      while (c < len) {
+        bytes(c) = !(cstr + c)
+        c += 1
+      }
+
+      new String(bytes, charset)
     }
-
-    new String(bytes, charset)
   }
 
   /** Convert a java.lang.String to a CString using default charset and
@@ -162,18 +166,22 @@ package object unsafe {
   /** Convert a java.lang.String to a CString using given charset and allocator.
    */
   def toCString(str: String, charset: Charset)(implicit z: Zone): CString = {
-    val bytes = str.getBytes(charset)
-    val cstr  = z.alloc(bytes.length + 1)
+    if (str == null) {
+      null
+    } else {
+      val bytes = str.getBytes(charset)
+      val cstr  = z.alloc(bytes.length + 1)
 
-    var c = 0
-    while (c < bytes.length) {
-      !(cstr + c) = bytes(c)
-      c += 1
+      var c = 0
+      while (c < bytes.length) {
+        !(cstr + c) = bytes(c)
+        c += 1
+      }
+
+      !(cstr + c) = 0.toByte
+
+      cstr
     }
-
-    !(cstr + c) = 0.toByte
-
-    cstr
   }
 
   /** Create an empty CVarArgList. */

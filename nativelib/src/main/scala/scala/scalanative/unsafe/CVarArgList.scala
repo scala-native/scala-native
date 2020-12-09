@@ -28,10 +28,11 @@ object CVarArgList {
     def regSaveArea_=(value: Ptr[Long]): Unit     = ptr._4 = value
   }
 
-  private final val countGPRegisters  = 6
-  private final val countFPRegisters  = 8
-  private final val fpRegisterWords   = 2
-  private final val registerSaveWords = countGPRegisters + countFPRegisters * fpRegisterWords
+  private final val countGPRegisters = 6
+  private final val countFPRegisters = 8
+  private final val fpRegisterWords  = 2
+  private final val registerSaveWords =
+    countGPRegisters + countFPRegisters * fpRegisterWords
 
   /** Construct C-style vararg list from Scala sequence. */
   private[scalanative] def fromSeq(varargs: Seq[CVarArg])(

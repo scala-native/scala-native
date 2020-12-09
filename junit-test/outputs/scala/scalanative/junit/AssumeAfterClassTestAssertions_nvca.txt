@@ -1,0 +1,8 @@
+liTest run started
+liTest scala.scalanative.junit.AssumeAfterClassTest.test started
+ldTest scala.scalanative.junit.AssumeAfterClassTest.test finished, took <TIME>
+e0scala.scalanative.junit.AssumeAfterClassTest.test
+liTest scala.scalanative.junit.AssumeAfterClassTest ignored
+e3scala.scalanative.junit.AssumeAfterClassTest
+liTest run finished: 0 failed, 1 ignored, 1 total, <TIME>
+d

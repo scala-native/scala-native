@@ -1,3 +1,13 @@
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 1)
+
+// BEWARE: This file is generated - direct edits will be lost.
+// Do not edit this it directly other than to remove
+// personally identifiable information in sourceLocation lines.
+// All direct edits to this file will be lost the next time it
+// is generated.
+//
+// See nativelib runtime/Arrays.scala.gyb for details.
+
 package scala.scalanative
 package unsafe
 
@@ -6,6 +16,8 @@ import scalanative.runtime.{fromRawPtr, RawPtr}
 import scalanative.runtime.Intrinsics._
 
 sealed abstract class CStruct
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct0 private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -27,7 +39,10 @@ final class CStruct0 private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct0] =
     fromRawPtr[CStruct0](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct1[T1] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -49,6 +64,8 @@ final class CStruct1[T1] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct1[T1]] =
     fromRawPtr[CStruct1[T1]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(implicit tag: Tag.CStruct1[T1]): Ptr[T1] =
     new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
@@ -65,7 +82,10 @@ final class CStruct1[T1] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._1)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct2[T1, T2] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -87,6 +107,8 @@ final class CStruct2[T1, T2] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct2[T1, T2]] =
     fromRawPtr[CStruct2[T1, T2]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(implicit tag: Tag.CStruct2[T1, T2]): Ptr[T1] =
     new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
@@ -103,6 +125,8 @@ final class CStruct2[T1, T2] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(implicit tag: Tag.CStruct2[T1, T2]): Ptr[T2] =
@@ -121,7 +145,10 @@ final class CStruct2[T1, T2] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct3[T1, T2, T3] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -143,6 +170,8 @@ final class CStruct3[T1, T2, T3] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct3[T1, T2, T3]] =
     fromRawPtr[CStruct3[T1, T2, T3]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(implicit tag: Tag.CStruct3[T1, T2, T3]): Ptr[T1] =
     new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
@@ -159,6 +188,8 @@ final class CStruct3[T1, T2, T3] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(implicit tag: Tag.CStruct3[T1, T2, T3]): Ptr[T2] =
@@ -177,6 +208,8 @@ final class CStruct3[T1, T2, T3] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(implicit tag: Tag.CStruct3[T1, T2, T3]): Ptr[T3] =
     new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
@@ -194,7 +227,10 @@ final class CStruct3[T1, T2, T3] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._3)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct4[T1, T2, T3, T4] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -216,6 +252,8 @@ final class CStruct4[T1, T2, T3, T4] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct4[T1, T2, T3, T4]] =
     fromRawPtr[CStruct4[T1, T2, T3, T4]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): Ptr[T1] =
     new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
@@ -232,6 +270,8 @@ final class CStruct4[T1, T2, T3, T4] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): Ptr[T2] =
@@ -250,6 +290,8 @@ final class CStruct4[T1, T2, T3, T4] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): Ptr[T3] =
     new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
@@ -266,6 +308,8 @@ final class CStruct4[T1, T2, T3, T4] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(implicit tag: Tag.CStruct4[T1, T2, T3, T4]): Ptr[T4] =
@@ -284,7 +328,10 @@ final class CStruct4[T1, T2, T3, T4] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -306,6 +353,8 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct5[T1, T2, T3, T4, T5]] =
     fromRawPtr[CStruct5[T1, T2, T3, T4, T5]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): Ptr[T1] =
@@ -323,6 +372,8 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
@@ -342,6 +393,8 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): Ptr[T3] =
@@ -359,6 +412,8 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
@@ -378,6 +433,8 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct5[T1, T2, T3, T4, T5]): Ptr[T5] =
@@ -396,7 +453,10 @@ final class CStruct5[T1, T2, T3, T4, T5] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._5)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -418,6 +478,8 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct6[T1, T2, T3, T4, T5, T6]] =
     fromRawPtr[CStruct6[T1, T2, T3, T4, T5, T6]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct6[T1, T2, T3, T4, T5, T6]): Ptr[T1] =
@@ -436,6 +498,8 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
@@ -456,6 +520,8 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct6[T1, T2, T3, T4, T5, T6]): Ptr[T3] =
@@ -474,6 +540,8 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
@@ -494,6 +562,8 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct6[T1, T2, T3, T4, T5, T6]): Ptr[T5] =
@@ -512,6 +582,8 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
@@ -532,7 +604,10 @@ final class CStruct6[T1, T2, T3, T4, T5, T6] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -554,6 +629,8 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct7[T1, T2, T3, T4, T5, T6, T7]] =
     fromRawPtr[CStruct7[T1, T2, T3, T4, T5, T6, T7]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Ptr[T1] =
@@ -572,6 +649,8 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
@@ -592,6 +671,8 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Ptr[T3] =
@@ -610,6 +691,8 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
@@ -630,6 +713,8 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Ptr[T5] =
@@ -648,6 +733,8 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
@@ -668,6 +755,8 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Ptr[T7] =
@@ -687,7 +776,10 @@ final class CStruct7[T1, T2, T3, T4, T5, T6, T7] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._7)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -709,6 +801,8 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]] =
     fromRawPtr[CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T1] =
@@ -727,6 +821,8 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
@@ -747,6 +843,8 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T3] =
@@ -765,6 +863,8 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
@@ -785,6 +885,8 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T5] =
@@ -803,6 +905,8 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
@@ -823,6 +927,8 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Ptr[T7] =
@@ -841,6 +947,8 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.`unary_!_=`(value)(tag._7)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
@@ -861,7 +969,10 @@ final class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -883,6 +994,8 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
   @alwaysinline def toPtr: Ptr[CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]] =
     fromRawPtr[CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T1] =
@@ -901,6 +1014,8 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
@@ -921,6 +1036,8 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T3] =
@@ -939,6 +1056,8 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
@@ -959,6 +1078,8 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T5] =
@@ -977,6 +1098,8 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
@@ -997,6 +1120,8 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T7] =
@@ -1015,6 +1140,8 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.`unary_!_=`(value)(tag._7)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
@@ -1035,6 +1162,8 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Ptr[T9] =
@@ -1054,7 +1183,10 @@ final class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._9)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -1074,19 +1206,21 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
     "CStruct10@" + java.lang.Long.toHexString(castRawPtrToLong(rawptr))
 
   @alwaysinline def toPtr
-    : Ptr[CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]] =
+      : Ptr[CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]] =
     fromRawPtr[CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]](rawptr)
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T1] =
+      : Ptr[T1] =
     new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T1 = {
+      : T1 = {
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.unary_!(tag._1)
   }
@@ -1094,21 +1228,23 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 1. */
   @alwaysinline def _1_=(value: T1)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T2] =
+      : Ptr[T2] =
     new Ptr[T2](elemRawPtr(rawptr, castIntToRawWord(tag.offset(1))))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T2 = {
+      : T2 = {
     val ptr = new Ptr[T2](elemRawPtr(rawptr, castIntToRawWord(tag.offset(1))))
     ptr.unary_!(tag._2)
   }
@@ -1116,21 +1252,23 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 2. */
   @alwaysinline def _2_=(value: T2)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T2](elemRawPtr(rawptr, castIntToRawWord(tag.offset(1))))
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T3] =
+      : Ptr[T3] =
     new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T3 = {
+      : T3 = {
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.unary_!(tag._3)
   }
@@ -1138,21 +1276,23 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 3. */
   @alwaysinline def _3_=(value: T3)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T4] =
+      : Ptr[T4] =
     new Ptr[T4](elemRawPtr(rawptr, castIntToRawWord(tag.offset(3))))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T4 = {
+      : T4 = {
     val ptr = new Ptr[T4](elemRawPtr(rawptr, castIntToRawWord(tag.offset(3))))
     ptr.unary_!(tag._4)
   }
@@ -1160,21 +1300,23 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 4. */
   @alwaysinline def _4_=(value: T4)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T4](elemRawPtr(rawptr, castIntToRawWord(tag.offset(3))))
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T5] =
+      : Ptr[T5] =
     new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T5 = {
+      : T5 = {
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.unary_!(tag._5)
   }
@@ -1182,21 +1324,23 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 5. */
   @alwaysinline def _5_=(value: T5)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T6] =
+      : Ptr[T6] =
     new Ptr[T6](elemRawPtr(rawptr, castIntToRawWord(tag.offset(5))))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T6 = {
+      : T6 = {
     val ptr = new Ptr[T6](elemRawPtr(rawptr, castIntToRawWord(tag.offset(5))))
     ptr.unary_!(tag._6)
   }
@@ -1204,21 +1348,23 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 6. */
   @alwaysinline def _6_=(value: T6)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T6](elemRawPtr(rawptr, castIntToRawWord(tag.offset(5))))
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T7] =
+      : Ptr[T7] =
     new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T7 = {
+      : T7 = {
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.unary_!(tag._7)
   }
@@ -1226,21 +1372,23 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 7. */
   @alwaysinline def _7_=(value: T7)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.`unary_!_=`(value)(tag._7)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T8] =
+      : Ptr[T8] =
     new Ptr[T8](elemRawPtr(rawptr, castIntToRawWord(tag.offset(7))))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T8 = {
+      : T8 = {
     val ptr = new Ptr[T8](elemRawPtr(rawptr, castIntToRawWord(tag.offset(7))))
     ptr.unary_!(tag._8)
   }
@@ -1248,21 +1396,23 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 8. */
   @alwaysinline def _8_=(value: T8)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T8](elemRawPtr(rawptr, castIntToRawWord(tag.offset(7))))
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T9] =
+      : Ptr[T9] =
     new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T9 = {
+      : T9 = {
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.unary_!(tag._9)
   }
@@ -1270,21 +1420,23 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 9. */
   @alwaysinline def _9_=(value: T9)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Ptr[T10] =
+      : Ptr[T10] =
     new Ptr[T10](elemRawPtr(rawptr, castIntToRawWord(tag.offset(9))))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : T10 = {
+      : T10 = {
     val ptr = new Ptr[T10](elemRawPtr(rawptr, castIntToRawWord(tag.offset(9))))
     ptr.unary_!(tag._10)
   }
@@ -1292,12 +1444,15 @@ final class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] private[scalanati
   /** Store a value to a field number 10. */
   @alwaysinline def _10_=(value: T10)(
       implicit tag: Tag.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T10](elemRawPtr(rawptr, castIntToRawWord(tag.offset(9))))
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -1317,19 +1472,21 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
     "CStruct11@" + java.lang.Long.toHexString(castRawPtrToLong(rawptr))
 
   @alwaysinline def toPtr
-    : Ptr[CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]] =
+      : Ptr[CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]] =
     fromRawPtr[CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]](rawptr)
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T1] =
+      : Ptr[T1] =
     new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
 
   /** Load a value of a field number 1. */
   @alwaysinline def _1(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T1 = {
+      : T1 = {
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.unary_!(tag._1)
   }
@@ -1337,21 +1494,23 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 1. */
   @alwaysinline def _1_=(value: T1)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T2] =
+      : Ptr[T2] =
     new Ptr[T2](elemRawPtr(rawptr, castIntToRawWord(tag.offset(1))))
 
   /** Load a value of a field number 2. */
   @alwaysinline def _2(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T2 = {
+      : T2 = {
     val ptr = new Ptr[T2](elemRawPtr(rawptr, castIntToRawWord(tag.offset(1))))
     ptr.unary_!(tag._2)
   }
@@ -1359,21 +1518,23 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 2. */
   @alwaysinline def _2_=(value: T2)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T2](elemRawPtr(rawptr, castIntToRawWord(tag.offset(1))))
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T3] =
+      : Ptr[T3] =
     new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
 
   /** Load a value of a field number 3. */
   @alwaysinline def _3(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T3 = {
+      : T3 = {
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.unary_!(tag._3)
   }
@@ -1381,21 +1542,23 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 3. */
   @alwaysinline def _3_=(value: T3)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T4] =
+      : Ptr[T4] =
     new Ptr[T4](elemRawPtr(rawptr, castIntToRawWord(tag.offset(3))))
 
   /** Load a value of a field number 4. */
   @alwaysinline def _4(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T4 = {
+      : T4 = {
     val ptr = new Ptr[T4](elemRawPtr(rawptr, castIntToRawWord(tag.offset(3))))
     ptr.unary_!(tag._4)
   }
@@ -1403,21 +1566,23 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 4. */
   @alwaysinline def _4_=(value: T4)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T4](elemRawPtr(rawptr, castIntToRawWord(tag.offset(3))))
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T5] =
+      : Ptr[T5] =
     new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
 
   /** Load a value of a field number 5. */
   @alwaysinline def _5(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T5 = {
+      : T5 = {
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.unary_!(tag._5)
   }
@@ -1425,21 +1590,23 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 5. */
   @alwaysinline def _5_=(value: T5)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T6] =
+      : Ptr[T6] =
     new Ptr[T6](elemRawPtr(rawptr, castIntToRawWord(tag.offset(5))))
 
   /** Load a value of a field number 6. */
   @alwaysinline def _6(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T6 = {
+      : T6 = {
     val ptr = new Ptr[T6](elemRawPtr(rawptr, castIntToRawWord(tag.offset(5))))
     ptr.unary_!(tag._6)
   }
@@ -1447,21 +1614,23 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 6. */
   @alwaysinline def _6_=(value: T6)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T6](elemRawPtr(rawptr, castIntToRawWord(tag.offset(5))))
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T7] =
+      : Ptr[T7] =
     new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
 
   /** Load a value of a field number 7. */
   @alwaysinline def _7(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T7 = {
+      : T7 = {
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.unary_!(tag._7)
   }
@@ -1469,21 +1638,23 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 7. */
   @alwaysinline def _7_=(value: T7)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.`unary_!_=`(value)(tag._7)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T8] =
+      : Ptr[T8] =
     new Ptr[T8](elemRawPtr(rawptr, castIntToRawWord(tag.offset(7))))
 
   /** Load a value of a field number 8. */
   @alwaysinline def _8(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T8 = {
+      : T8 = {
     val ptr = new Ptr[T8](elemRawPtr(rawptr, castIntToRawWord(tag.offset(7))))
     ptr.unary_!(tag._8)
   }
@@ -1491,21 +1662,23 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 8. */
   @alwaysinline def _8_=(value: T8)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T8](elemRawPtr(rawptr, castIntToRawWord(tag.offset(7))))
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T9] =
+      : Ptr[T9] =
     new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
 
   /** Load a value of a field number 9. */
   @alwaysinline def _9(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T9 = {
+      : T9 = {
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.unary_!(tag._9)
   }
@@ -1513,21 +1686,23 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 9. */
   @alwaysinline def _9_=(value: T9)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T10] =
+      : Ptr[T10] =
     new Ptr[T10](elemRawPtr(rawptr, castIntToRawWord(tag.offset(9))))
 
   /** Load a value of a field number 10. */
   @alwaysinline def _10(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T10 = {
+      : T10 = {
     val ptr = new Ptr[T10](elemRawPtr(rawptr, castIntToRawWord(tag.offset(9))))
     ptr.unary_!(tag._10)
   }
@@ -1535,21 +1710,23 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 10. */
   @alwaysinline def _10_=(value: T10)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T10](elemRawPtr(rawptr, castIntToRawWord(tag.offset(9))))
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Ptr[T11] =
+      : Ptr[T11] =
     new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
 
   /** Load a value of a field number 11. */
   @alwaysinline def _11(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : T11 = {
+      : T11 = {
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.unary_!(tag._11)
   }
@@ -1557,12 +1734,15 @@ final class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] private[scal
   /** Store a value to a field number 11. */
   @alwaysinline def _11_=(value: T11)(
       implicit tag: Tag.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
-    : Unit = {
+      : Unit = {
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -1582,9 +1762,11 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     "CStruct12@" + java.lang.Long.toHexString(castRawPtrToLong(rawptr))
 
   @alwaysinline def toPtr
-    : Ptr[CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]] =
+      : Ptr[CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]] =
     fromRawPtr[CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]](
       rawptr)
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
@@ -1637,6 +1819,8 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._1)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
       implicit tag: Tag.CStruct12[T1,
@@ -1687,6 +1871,8 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     val ptr = new Ptr[T2](elemRawPtr(rawptr, castIntToRawWord(tag.offset(1))))
     ptr.`unary_!_=`(value)(tag._2)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
@@ -1739,6 +1925,8 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._3)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
       implicit tag: Tag.CStruct12[T1,
@@ -1789,6 +1977,8 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     val ptr = new Ptr[T4](elemRawPtr(rawptr, castIntToRawWord(tag.offset(3))))
     ptr.`unary_!_=`(value)(tag._4)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
@@ -1841,6 +2031,8 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._5)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
       implicit tag: Tag.CStruct12[T1,
@@ -1891,6 +2083,8 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     val ptr = new Ptr[T6](elemRawPtr(rawptr, castIntToRawWord(tag.offset(5))))
     ptr.`unary_!_=`(value)(tag._6)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
@@ -1943,6 +2137,8 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._7)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
       implicit tag: Tag.CStruct12[T1,
@@ -1994,6 +2190,8 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct12[T1,
@@ -2044,6 +2242,8 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
@@ -2097,6 +2297,8 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct12[T1,
@@ -2148,6 +2350,8 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 12. */
   @alwaysinline def at12(
@@ -2201,7 +2405,10 @@ final class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] private
     ptr.`unary_!_=`(value)(tag._12)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] private[scalanative] (
     private[scalanative] val rawptr: RawPtr)
@@ -2221,9 +2428,11 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     "CStruct13@" + java.lang.Long.toHexString(castRawPtrToLong(rawptr))
 
   @alwaysinline def toPtr
-    : Ptr[CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]] =
+      : Ptr[CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]] =
     fromRawPtr[
       CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]](rawptr)
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
@@ -2279,6 +2488,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._1)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
       implicit tag: Tag.CStruct13[T1,
@@ -2332,6 +2543,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     val ptr = new Ptr[T2](elemRawPtr(rawptr, castIntToRawWord(tag.offset(1))))
     ptr.`unary_!_=`(value)(tag._2)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
@@ -2387,6 +2600,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._3)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
       implicit tag: Tag.CStruct13[T1,
@@ -2440,6 +2655,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     val ptr = new Ptr[T4](elemRawPtr(rawptr, castIntToRawWord(tag.offset(3))))
     ptr.`unary_!_=`(value)(tag._4)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
@@ -2495,6 +2712,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._5)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
       implicit tag: Tag.CStruct13[T1,
@@ -2548,6 +2767,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     val ptr = new Ptr[T6](elemRawPtr(rawptr, castIntToRawWord(tag.offset(5))))
     ptr.`unary_!_=`(value)(tag._6)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
@@ -2603,6 +2824,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._7)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
       implicit tag: Tag.CStruct13[T1,
@@ -2657,6 +2880,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct13[T1,
@@ -2710,6 +2935,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
@@ -2766,6 +2993,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct13[T1,
@@ -2820,6 +3049,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 12. */
   @alwaysinline def at12(
@@ -2876,6 +3107,8 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._12)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 13. */
   @alwaysinline def at13(
       implicit tag: Tag.CStruct13[T1,
@@ -2931,7 +3164,10 @@ final class CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] pr
     ptr.`unary_!_=`(value)(tag._13)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
@@ -2955,6 +3191,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     fromRawPtr[
       CStruct14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]](
       rawptr)
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
@@ -3013,6 +3251,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._1)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
       implicit tag: Tag.CStruct14[T1,
@@ -3069,6 +3309,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T2](elemRawPtr(rawptr, castIntToRawWord(tag.offset(1))))
     ptr.`unary_!_=`(value)(tag._2)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
@@ -3127,6 +3369,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._3)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
       implicit tag: Tag.CStruct14[T1,
@@ -3183,6 +3427,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T4](elemRawPtr(rawptr, castIntToRawWord(tag.offset(3))))
     ptr.`unary_!_=`(value)(tag._4)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
@@ -3241,6 +3487,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._5)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
       implicit tag: Tag.CStruct14[T1,
@@ -3297,6 +3545,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T6](elemRawPtr(rawptr, castIntToRawWord(tag.offset(5))))
     ptr.`unary_!_=`(value)(tag._6)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
@@ -3355,6 +3605,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._7)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
       implicit tag: Tag.CStruct14[T1,
@@ -3412,6 +3664,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct14[T1,
@@ -3468,6 +3722,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
@@ -3527,6 +3783,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct14[T1,
@@ -3584,6 +3842,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 12. */
   @alwaysinline def at12(
@@ -3643,6 +3903,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._12)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 13. */
   @alwaysinline def at13(
       implicit tag: Tag.CStruct14[T1,
@@ -3700,6 +3962,8 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T13](elemRawPtr(rawptr, castIntToRawWord(tag.offset(12))))
     ptr.`unary_!_=`(value)(tag._13)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 14. */
   @alwaysinline def at14(
@@ -3759,7 +4023,10 @@ T14] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._14)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
@@ -3810,6 +4077,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
                 T13,
                 T14,
                 T15]](rawptr)
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
@@ -3871,6 +4140,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._1)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
       implicit tag: Tag.CStruct15[T1,
@@ -3930,6 +4201,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T2](elemRawPtr(rawptr, castIntToRawWord(tag.offset(1))))
     ptr.`unary_!_=`(value)(tag._2)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
@@ -3991,6 +4264,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._3)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
       implicit tag: Tag.CStruct15[T1,
@@ -4050,6 +4325,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T4](elemRawPtr(rawptr, castIntToRawWord(tag.offset(3))))
     ptr.`unary_!_=`(value)(tag._4)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
@@ -4111,6 +4388,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._5)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
       implicit tag: Tag.CStruct15[T1,
@@ -4170,6 +4449,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T6](elemRawPtr(rawptr, castIntToRawWord(tag.offset(5))))
     ptr.`unary_!_=`(value)(tag._6)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
@@ -4231,6 +4512,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._7)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
       implicit tag: Tag.CStruct15[T1,
@@ -4291,6 +4574,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct15[T1,
@@ -4350,6 +4635,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
@@ -4412,6 +4699,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct15[T1,
@@ -4472,6 +4761,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 12. */
   @alwaysinline def at12(
@@ -4534,6 +4825,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._12)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 13. */
   @alwaysinline def at13(
       implicit tag: Tag.CStruct15[T1,
@@ -4594,6 +4887,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T13](elemRawPtr(rawptr, castIntToRawWord(tag.offset(12))))
     ptr.`unary_!_=`(value)(tag._13)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 14. */
   @alwaysinline def at14(
@@ -4656,6 +4951,8 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._14)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 15. */
   @alwaysinline def at15(
       implicit tag: Tag.CStruct15[T1,
@@ -4717,7 +5014,10 @@ T14, T15] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._15)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
@@ -4770,6 +5070,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
                 T14,
                 T15,
                 T16]](rawptr)
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
@@ -4834,6 +5136,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._1)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
       implicit tag: Tag.CStruct16[T1,
@@ -4896,6 +5200,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T2](elemRawPtr(rawptr, castIntToRawWord(tag.offset(1))))
     ptr.`unary_!_=`(value)(tag._2)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
@@ -4960,6 +5266,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._3)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
       implicit tag: Tag.CStruct16[T1,
@@ -5022,6 +5330,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T4](elemRawPtr(rawptr, castIntToRawWord(tag.offset(3))))
     ptr.`unary_!_=`(value)(tag._4)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
@@ -5086,6 +5396,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._5)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
       implicit tag: Tag.CStruct16[T1,
@@ -5148,6 +5460,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T6](elemRawPtr(rawptr, castIntToRawWord(tag.offset(5))))
     ptr.`unary_!_=`(value)(tag._6)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
@@ -5212,6 +5526,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._7)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
       implicit tag: Tag.CStruct16[T1,
@@ -5275,6 +5591,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct16[T1,
@@ -5337,6 +5655,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
@@ -5402,6 +5722,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct16[T1,
@@ -5465,6 +5787,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 12. */
   @alwaysinline def at12(
@@ -5530,6 +5854,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._12)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 13. */
   @alwaysinline def at13(
       implicit tag: Tag.CStruct16[T1,
@@ -5593,6 +5919,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T13](elemRawPtr(rawptr, castIntToRawWord(tag.offset(12))))
     ptr.`unary_!_=`(value)(tag._13)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 14. */
   @alwaysinline def at14(
@@ -5658,6 +5986,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._14)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 15. */
   @alwaysinline def at15(
       implicit tag: Tag.CStruct16[T1,
@@ -5721,6 +6051,8 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     val ptr = new Ptr[T15](elemRawPtr(rawptr, castIntToRawWord(tag.offset(14))))
     ptr.`unary_!_=`(value)(tag._15)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 16. */
   @alwaysinline def at16(
@@ -5786,7 +6118,10 @@ T14, T15, T16] private[scalanative] (private[scalanative] val rawptr: RawPtr)
     ptr.`unary_!_=`(value)(tag._16)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17] private[scalanative] (
@@ -5859,6 +6194,8 @@ T14, T15, T16, T17] private[scalanative] (
                 T16,
                 T17]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct17[T1,
@@ -5924,6 +6261,8 @@ T14, T15, T16, T17] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
@@ -5991,6 +6330,8 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct17[T1,
@@ -6056,6 +6397,8 @@ T14, T15, T16, T17] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
@@ -6123,6 +6466,8 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct17[T1,
@@ -6188,6 +6533,8 @@ T14, T15, T16, T17] private[scalanative] (
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
@@ -6255,6 +6602,8 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct17[T1,
@@ -6320,6 +6669,8 @@ T14, T15, T16, T17] private[scalanative] (
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.`unary_!_=`(value)(tag._7)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
@@ -6387,6 +6738,8 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct17[T1,
@@ -6452,6 +6805,8 @@ T14, T15, T16, T17] private[scalanative] (
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
@@ -6520,6 +6875,8 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct17[T1,
@@ -6586,6 +6943,8 @@ T14, T15, T16, T17] private[scalanative] (
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 12. */
   @alwaysinline def at12(
@@ -6654,6 +7013,8 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 13. */
   @alwaysinline def at13(
       implicit tag: Tag.CStruct17[T1,
@@ -6720,6 +7081,8 @@ T14, T15, T16, T17] private[scalanative] (
     val ptr = new Ptr[T13](elemRawPtr(rawptr, castIntToRawWord(tag.offset(12))))
     ptr.`unary_!_=`(value)(tag._13)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 14. */
   @alwaysinline def at14(
@@ -6788,6 +7151,8 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 15. */
   @alwaysinline def at15(
       implicit tag: Tag.CStruct17[T1,
@@ -6854,6 +7219,8 @@ T14, T15, T16, T17] private[scalanative] (
     val ptr = new Ptr[T15](elemRawPtr(rawptr, castIntToRawWord(tag.offset(14))))
     ptr.`unary_!_=`(value)(tag._15)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 16. */
   @alwaysinline def at16(
@@ -6922,6 +7289,8 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 17. */
   @alwaysinline def at17(
       implicit tag: Tag.CStruct17[T1,
@@ -6989,7 +7358,10 @@ T14, T15, T16, T17] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._17)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18] private[scalanative] (
@@ -7065,6 +7437,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
                 T17,
                 T18]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct18[T1,
@@ -7133,6 +7507,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
@@ -7203,6 +7579,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct18[T1,
@@ -7271,6 +7649,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
@@ -7341,6 +7721,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct18[T1,
@@ -7409,6 +7791,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
@@ -7479,6 +7863,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct18[T1,
@@ -7547,6 +7933,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.`unary_!_=`(value)(tag._7)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
@@ -7617,6 +8005,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct18[T1,
@@ -7685,6 +8075,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
@@ -7756,6 +8148,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct18[T1,
@@ -7825,6 +8219,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 12. */
   @alwaysinline def at12(
@@ -7896,6 +8292,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 13. */
   @alwaysinline def at13(
       implicit tag: Tag.CStruct18[T1,
@@ -7965,6 +8363,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     val ptr = new Ptr[T13](elemRawPtr(rawptr, castIntToRawWord(tag.offset(12))))
     ptr.`unary_!_=`(value)(tag._13)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 14. */
   @alwaysinline def at14(
@@ -8036,6 +8436,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 15. */
   @alwaysinline def at15(
       implicit tag: Tag.CStruct18[T1,
@@ -8105,6 +8507,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     val ptr = new Ptr[T15](elemRawPtr(rawptr, castIntToRawWord(tag.offset(14))))
     ptr.`unary_!_=`(value)(tag._15)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 16. */
   @alwaysinline def at16(
@@ -8176,6 +8580,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 17. */
   @alwaysinline def at17(
       implicit tag: Tag.CStruct18[T1,
@@ -8245,6 +8651,8 @@ T14, T15, T16, T17, T18] private[scalanative] (
     val ptr = new Ptr[T17](elemRawPtr(rawptr, castIntToRawWord(tag.offset(16))))
     ptr.`unary_!_=`(value)(tag._17)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 18. */
   @alwaysinline def at18(
@@ -8316,7 +8724,10 @@ T14, T15, T16, T17, T18] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._18)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19] private[scalanative] (
@@ -8395,6 +8806,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
                 T18,
                 T19]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct19[T1,
@@ -8466,6 +8879,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
@@ -8539,6 +8954,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct19[T1,
@@ -8610,6 +9027,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
@@ -8683,6 +9102,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct19[T1,
@@ -8754,6 +9175,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
@@ -8827,6 +9250,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct19[T1,
@@ -8898,6 +9323,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.`unary_!_=`(value)(tag._7)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
@@ -8971,6 +9398,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct19[T1,
@@ -9042,6 +9471,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
@@ -9116,6 +9547,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct19[T1,
@@ -9188,6 +9621,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 12. */
   @alwaysinline def at12(
@@ -9262,6 +9697,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 13. */
   @alwaysinline def at13(
       implicit tag: Tag.CStruct19[T1,
@@ -9334,6 +9771,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     val ptr = new Ptr[T13](elemRawPtr(rawptr, castIntToRawWord(tag.offset(12))))
     ptr.`unary_!_=`(value)(tag._13)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 14. */
   @alwaysinline def at14(
@@ -9408,6 +9847,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 15. */
   @alwaysinline def at15(
       implicit tag: Tag.CStruct19[T1,
@@ -9480,6 +9921,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     val ptr = new Ptr[T15](elemRawPtr(rawptr, castIntToRawWord(tag.offset(14))))
     ptr.`unary_!_=`(value)(tag._15)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 16. */
   @alwaysinline def at16(
@@ -9554,6 +9997,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 17. */
   @alwaysinline def at17(
       implicit tag: Tag.CStruct19[T1,
@@ -9626,6 +10071,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     val ptr = new Ptr[T17](elemRawPtr(rawptr, castIntToRawWord(tag.offset(16))))
     ptr.`unary_!_=`(value)(tag._17)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 18. */
   @alwaysinline def at18(
@@ -9700,6 +10147,8 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._18)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 19. */
   @alwaysinline def at19(
       implicit tag: Tag.CStruct19[T1,
@@ -9773,7 +10222,10 @@ T14, T15, T16, T17, T18, T19] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._19)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
@@ -9855,6 +10307,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
                 T19,
                 T20]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct20[T1,
@@ -9929,6 +10383,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
@@ -10005,6 +10461,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct20[T1,
@@ -10079,6 +10537,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
@@ -10155,6 +10615,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct20[T1,
@@ -10229,6 +10691,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
@@ -10305,6 +10769,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct20[T1,
@@ -10379,6 +10845,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.`unary_!_=`(value)(tag._7)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
@@ -10455,6 +10923,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct20[T1,
@@ -10529,6 +10999,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
@@ -10606,6 +11078,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct20[T1,
@@ -10681,6 +11155,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 12. */
   @alwaysinline def at12(
@@ -10758,6 +11234,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 13. */
   @alwaysinline def at13(
       implicit tag: Tag.CStruct20[T1,
@@ -10833,6 +11311,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     val ptr = new Ptr[T13](elemRawPtr(rawptr, castIntToRawWord(tag.offset(12))))
     ptr.`unary_!_=`(value)(tag._13)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 14. */
   @alwaysinline def at14(
@@ -10910,6 +11390,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 15. */
   @alwaysinline def at15(
       implicit tag: Tag.CStruct20[T1,
@@ -10985,6 +11467,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     val ptr = new Ptr[T15](elemRawPtr(rawptr, castIntToRawWord(tag.offset(14))))
     ptr.`unary_!_=`(value)(tag._15)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 16. */
   @alwaysinline def at16(
@@ -11062,6 +11546,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 17. */
   @alwaysinline def at17(
       implicit tag: Tag.CStruct20[T1,
@@ -11137,6 +11623,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     val ptr = new Ptr[T17](elemRawPtr(rawptr, castIntToRawWord(tag.offset(16))))
     ptr.`unary_!_=`(value)(tag._17)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 18. */
   @alwaysinline def at18(
@@ -11214,6 +11702,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._18)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 19. */
   @alwaysinline def at19(
       implicit tag: Tag.CStruct20[T1,
@@ -11289,6 +11779,8 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     val ptr = new Ptr[T19](elemRawPtr(rawptr, castIntToRawWord(tag.offset(18))))
     ptr.`unary_!_=`(value)(tag._19)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 20. */
   @alwaysinline def at20(
@@ -11366,7 +11858,10 @@ T14, T15, T16, T17, T18, T19, T20] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._20)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
@@ -11451,6 +11946,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
                 T20,
                 T21]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct21[T1,
@@ -11528,6 +12025,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
@@ -11607,6 +12106,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct21[T1,
@@ -11684,6 +12185,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
@@ -11763,6 +12266,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct21[T1,
@@ -11840,6 +12345,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
@@ -11919,6 +12426,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct21[T1,
@@ -11996,6 +12505,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.`unary_!_=`(value)(tag._7)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
@@ -12075,6 +12586,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct21[T1,
@@ -12152,6 +12665,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
@@ -12232,6 +12747,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct21[T1,
@@ -12310,6 +12827,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 12. */
   @alwaysinline def at12(
@@ -12390,6 +12909,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 13. */
   @alwaysinline def at13(
       implicit tag: Tag.CStruct21[T1,
@@ -12468,6 +12989,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     val ptr = new Ptr[T13](elemRawPtr(rawptr, castIntToRawWord(tag.offset(12))))
     ptr.`unary_!_=`(value)(tag._13)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 14. */
   @alwaysinline def at14(
@@ -12548,6 +13071,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 15. */
   @alwaysinline def at15(
       implicit tag: Tag.CStruct21[T1,
@@ -12626,6 +13151,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     val ptr = new Ptr[T15](elemRawPtr(rawptr, castIntToRawWord(tag.offset(14))))
     ptr.`unary_!_=`(value)(tag._15)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 16. */
   @alwaysinline def at16(
@@ -12706,6 +13233,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 17. */
   @alwaysinline def at17(
       implicit tag: Tag.CStruct21[T1,
@@ -12784,6 +13313,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     val ptr = new Ptr[T17](elemRawPtr(rawptr, castIntToRawWord(tag.offset(16))))
     ptr.`unary_!_=`(value)(tag._17)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 18. */
   @alwaysinline def at18(
@@ -12864,6 +13395,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._18)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 19. */
   @alwaysinline def at19(
       implicit tag: Tag.CStruct21[T1,
@@ -12942,6 +13475,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     val ptr = new Ptr[T19](elemRawPtr(rawptr, castIntToRawWord(tag.offset(18))))
     ptr.`unary_!_=`(value)(tag._19)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 20. */
   @alwaysinline def at20(
@@ -13022,6 +13557,8 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._20)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 21. */
   @alwaysinline def at21(
       implicit tag: Tag.CStruct21[T1,
@@ -13101,7 +13638,10 @@ T14, T15, T16, T17, T18, T19, T20, T21] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._21)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 22)
 
 final class CStruct22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
 T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
@@ -13189,6 +13729,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
                 T21,
                 T22]](rawptr)
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 1. */
   @alwaysinline def at1(
       implicit tag: Tag.CStruct22[T1,
@@ -13269,6 +13811,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     val ptr = new Ptr[T1](elemRawPtr(rawptr, castIntToRawWord(tag.offset(0))))
     ptr.`unary_!_=`(value)(tag._1)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 2. */
   @alwaysinline def at2(
@@ -13351,6 +13895,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._2)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 3. */
   @alwaysinline def at3(
       implicit tag: Tag.CStruct22[T1,
@@ -13431,6 +13977,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     val ptr = new Ptr[T3](elemRawPtr(rawptr, castIntToRawWord(tag.offset(2))))
     ptr.`unary_!_=`(value)(tag._3)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 4. */
   @alwaysinline def at4(
@@ -13513,6 +14061,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._4)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 5. */
   @alwaysinline def at5(
       implicit tag: Tag.CStruct22[T1,
@@ -13593,6 +14143,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     val ptr = new Ptr[T5](elemRawPtr(rawptr, castIntToRawWord(tag.offset(4))))
     ptr.`unary_!_=`(value)(tag._5)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 6. */
   @alwaysinline def at6(
@@ -13675,6 +14227,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._6)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 7. */
   @alwaysinline def at7(
       implicit tag: Tag.CStruct22[T1,
@@ -13755,6 +14309,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     val ptr = new Ptr[T7](elemRawPtr(rawptr, castIntToRawWord(tag.offset(6))))
     ptr.`unary_!_=`(value)(tag._7)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 8. */
   @alwaysinline def at8(
@@ -13837,6 +14393,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._8)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 9. */
   @alwaysinline def at9(
       implicit tag: Tag.CStruct22[T1,
@@ -13917,6 +14475,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     val ptr = new Ptr[T9](elemRawPtr(rawptr, castIntToRawWord(tag.offset(8))))
     ptr.`unary_!_=`(value)(tag._9)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 10. */
   @alwaysinline def at10(
@@ -14000,6 +14560,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._10)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 11. */
   @alwaysinline def at11(
       implicit tag: Tag.CStruct22[T1,
@@ -14081,6 +14643,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     val ptr = new Ptr[T11](elemRawPtr(rawptr, castIntToRawWord(tag.offset(10))))
     ptr.`unary_!_=`(value)(tag._11)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 12. */
   @alwaysinline def at12(
@@ -14164,6 +14728,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._12)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 13. */
   @alwaysinline def at13(
       implicit tag: Tag.CStruct22[T1,
@@ -14245,6 +14811,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     val ptr = new Ptr[T13](elemRawPtr(rawptr, castIntToRawWord(tag.offset(12))))
     ptr.`unary_!_=`(value)(tag._13)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 14. */
   @alwaysinline def at14(
@@ -14328,6 +14896,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._14)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 15. */
   @alwaysinline def at15(
       implicit tag: Tag.CStruct22[T1,
@@ -14409,6 +14979,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     val ptr = new Ptr[T15](elemRawPtr(rawptr, castIntToRawWord(tag.offset(14))))
     ptr.`unary_!_=`(value)(tag._15)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 16. */
   @alwaysinline def at16(
@@ -14492,6 +15064,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._16)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 17. */
   @alwaysinline def at17(
       implicit tag: Tag.CStruct22[T1,
@@ -14573,6 +15147,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     val ptr = new Ptr[T17](elemRawPtr(rawptr, castIntToRawWord(tag.offset(16))))
     ptr.`unary_!_=`(value)(tag._17)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 18. */
   @alwaysinline def at18(
@@ -14656,6 +15232,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._18)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 19. */
   @alwaysinline def at19(
       implicit tag: Tag.CStruct22[T1,
@@ -14737,6 +15315,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     val ptr = new Ptr[T19](elemRawPtr(rawptr, castIntToRawWord(tag.offset(18))))
     ptr.`unary_!_=`(value)(tag._19)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 20. */
   @alwaysinline def at20(
@@ -14820,6 +15400,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._20)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
+
   /** Load a value of a field number 21. */
   @alwaysinline def at21(
       implicit tag: Tag.CStruct22[T1,
@@ -14901,6 +15483,8 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     val ptr = new Ptr[T21](elemRawPtr(rawptr, castIntToRawWord(tag.offset(20))))
     ptr.`unary_!_=`(value)(tag._21)
   }
+
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 44)
 
   /** Load a value of a field number 22. */
   @alwaysinline def at22(
@@ -14984,4 +15568,5 @@ T14, T15, T16, T17, T18, T19, T20, T21, T22] private[scalanative] (
     ptr.`unary_!_=`(value)(tag._22)
   }
 
+// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CStruct.scala.gyb", line: 62)
 }

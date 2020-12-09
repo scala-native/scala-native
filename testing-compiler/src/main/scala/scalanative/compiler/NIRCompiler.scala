@@ -2,14 +2,12 @@ package scala.scalanative
 
 import scala.reflect.internal.util.{BatchSourceFile, NoFile, SourceFile}
 import scala.reflect.internal.util.Position
-
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.reporters.AbstractReporter
-
 import java.nio.file.{Files, Path}
 import java.io.File
+import scala.scalanative.compiler.CompatReporter
 
 /**
  * Helper class to compile snippets of code.
@@ -57,14 +55,12 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
    * on ERRORs.
    */
   private class TestReporter(override val settings: Settings)
-      extends AbstractReporter {
-    override def display(pos: Position, msg: String, severity: Severity): Unit =
+      extends CompatReporter {
+    override def add(pos: Position, msg: String, severity: Severity): Unit =
       severity match {
-        case INFO | WARNING => ()
-        case ERROR          => reportError(msg)
+        case ERROR => reportError(msg)
+        case _     => ()
       }
-
-    override def displayPrompt(): Unit = ()
   }
 
   /**
@@ -90,9 +86,8 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
    */
   private case object ScalaNative
       extends CompilerPlugin(jarPath = sys props "scalanative.nscplugin.jar",
-                             classpath =
-                               List(sys props "scalanative.testingcompiler.cp",
-                                    sys props "scalanative.nscplugin.jar"))
+                             classpath = List(
+                               sys props "scalanative.nativeruntime.cp"))
 
   /**
    * Returns an instance of `Global` configured according to the given options.

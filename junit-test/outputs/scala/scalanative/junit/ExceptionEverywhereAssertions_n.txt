@@ -1,0 +1,6 @@
+ldTest run started
+leTest scala.scalanative.junit.ExceptionEverywhere failed: before class, took <TIME>
+e2scala.scalanative.junit.ExceptionEverywhere
+leTest scala.scalanative.junit.ExceptionEverywhere failed: after class, took <TIME>
+ldTest run finished: 2 failed, 0 ignored, 0 total, <TIME>
+d

@@ -1,0 +1,5 @@
+liTest run started
+liTest scala.scalanative.junit.BeforeAssumeFailTest ignored
+e3scala.scalanative.junit.BeforeAssumeFailTest
+liTest run finished: 0 failed, 1 ignored, 0 total, <TIME>
+d

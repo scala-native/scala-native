@@ -10,9 +10,7 @@ class FieldLayout(meta: Metadata, cls: Class) {
   val entries: Seq[Field] = {
     val base = cls.parent.fold {
       Seq.empty[Field]
-    } { parent =>
-      meta.layout(parent).entries
-    }
+    } { parent => meta.layout(parent).entries }
     base ++ cls.members.collect { case f: Field => f }
   }
   val struct: Type.StructValue = {

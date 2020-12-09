@@ -1,9 +1,7 @@
 package java.lang
 
 import scala.scalanative.unsafe._
-import scala.scalanative.runtime, runtime.ClassTypeOps
-import scala.scalanative.runtime
-import scala.scalanative.runtime.libc
+import scala.scalanative.runtime._
 import scala.scalanative.runtime.Intrinsics._
 
 class _Object {
@@ -18,23 +16,22 @@ class _Object {
   @inline def __toString(): String =
     getClass.getName + "@" + Integer.toHexString(hashCode)
 
-  @inline def __getClass(): _Class[_] =
-    new _Class(runtime.getRawType(this))
+  @inline def __getClass(): _Class[_] = toClass(getRawType(this))
 
   @inline def __notify(): Unit =
-    runtime.getMonitor(this)._notify
+    getMonitor(this)._notify()
 
   @inline def __notifyAll(): Unit =
-    runtime.getMonitor(this)._notifyAll
+    getMonitor(this)._notifyAll()
 
   @inline def __wait(): Unit =
-    runtime.getMonitor(this)._wait
+    getMonitor(this)._wait()
 
   @inline def __wait(timeout: scala.Long): Unit =
-    runtime.getMonitor(this)._wait(timeout)
+    getMonitor(this)._wait(timeout)
 
   @inline def __wait(timeout: scala.Long, nanos: Int): Unit =
-    runtime.getMonitor(this)._wait(timeout, nanos)
+    getMonitor(this)._wait(timeout, nanos)
 
   @inline def __scala_==(that: _Object): scala.Boolean = {
     // This implementation is only called for classes that don't override
@@ -52,10 +49,9 @@ class _Object {
   }
 
   protected def __clone(): _Object = {
-    val rawty = runtime.getRawType(this)
-    val size = loadInt(
-      elemRawPtr(rawty, castIntToRawWord(sizeof[runtime.Type])))
-    val clone = runtime.GC.alloc(rawty, size)
+    val rawty = getRawType(this)
+    val size  = loadInt(elemRawPtr(rawty, castIntToRawWord(sizeof[Type])))
+    val clone = GC.alloc(rawty, size)
     val src   = castObjectToRawPtr(this)
     libc.memcpy(clone, src, size)
     castRawPtrToObject(clone).asInstanceOf[_Object]

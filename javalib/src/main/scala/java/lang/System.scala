@@ -6,6 +6,8 @@ import scala.scalanative.unsafe._
 import scala.scalanative.posix.unistd
 import scala.scalanative.posix.sys.utsname._
 import scala.scalanative.posix.sys.uname._
+import scala.scalanative.posix.pwd
+import scala.scalanative.posix.pwdOps._
 import scala.scalanative.runtime.{time, Platform, GC, Intrinsics}
 
 final class System private ()
@@ -39,7 +41,7 @@ object System {
                          "Java Platform API Specification")
     sysProps.setProperty("line.separator", lineSeparator())
 
-    if (Platform.isWindows) {
+    if (Platform.isWindows()) {
       sysProps.setProperty("file.separator", "\\")
       sysProps.setProperty("path.separator", ";")
       val userLang    = fromCString(Platform.windowsGetUserLang())
@@ -61,11 +63,21 @@ object System {
         sysProps.setProperty("user.language", userLang)
         sysProps.setProperty("user.country", userCountry)
       }
-      sysProps.setProperty("user.home", getenv("HOME"))
-      val buf = stackalloc[scala.Byte](1024)
-      unistd.getcwd(buf, 1024) match {
-        case null =>
-        case b    => sysProps.setProperty("user.dir", fromCString(b))
+      locally {
+        val buf = stackalloc[pwd.passwd]
+        val uid = unistd.getuid()
+        val res = pwd.getpwuid(uid, buf)
+        if (res == 0 && buf.pw_dir != null) {
+          sysProps.setProperty("user.home", fromCString(buf.pw_dir))
+        }
+      }
+      locally {
+        val bufSize = 1024
+        val buf     = stackalloc[scala.Byte](bufSize)
+        val cwd     = unistd.getcwd(buf, bufSize)
+        if (cwd != null) {
+          sysProps.setProperty("user.dir", fromCString(cwd))
+        }
       }
     }
 
@@ -80,13 +92,12 @@ object System {
     new PrintStream(new FileOutputStream(FileDescriptor.err))
 
   private val systemProperties = loadProperties()
-  Platform.setOSProps(new CFuncPtr2[CString, CString, Unit] {
-    def apply(key: CString, value: CString): Unit =
-      systemProperties.setProperty(fromCString(key), fromCString(value))
-  })
+  Platform.setOSProps { (key: CString, value: CString) =>
+    val _ = systemProperties.setProperty(fromCString(key), fromCString(value))
+  }
 
   def lineSeparator(): String = {
-    if (Platform.isWindows) "\r\n"
+    if (Platform.isWindows()) "\r\n"
     else "\n"
   }
 

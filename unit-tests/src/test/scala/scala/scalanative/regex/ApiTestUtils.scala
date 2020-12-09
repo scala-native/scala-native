@@ -3,12 +3,12 @@ package regex
 
 import java.util
 
-import ScalaTestCompat.fail
+import org.junit.Assert._
 
-object ApiTestUtils extends tests.Suite {
+object ApiTestUtils {
 
   def assertArrayEquals[A](arr1: Array[A], arr2: Array[A]) =
-    assert(arr1.deep == arr2.deep)
+    assertTrue(arr1.sameElements(arr2))
 
   /**
    * Asserts that IllegalArgumentException is thrown from compile with flags.
@@ -26,24 +26,6 @@ object ApiTestUtils extends tests.Suite {
   }
 
   /**
-   * Asserts all strings in array equal.
-   */
-  def assertArrayEquals(expected: Array[AnyRef],
-                        actual: Array[AnyRef]): Unit = {
-    assert(
-      expected.length == actual.length,
-      "Arrays have unequal length, therefore can't be equal to " + "each other. Expected: " + util.Arrays
-        .toString(expected) + " Actual: " + util.Arrays.toString(actual)
-    )
-    var idx = 0
-    while (idx < expected.length) {
-      assert(expected(idx) == actual(idx),
-             "Index: " + idx + " is unequal in the arrays")
-      idx += 1
-    }
-  }
-
-  /**
    * Tests that both RE2's and JDK's pattern class act as we expect them.
    * The regular expression {@code regexp} matches the string {@code match} and
    * doesn't match {@code nonMatch}
@@ -54,14 +36,14 @@ object ApiTestUtils extends tests.Suite {
    */
   def testMatches(regexp: String, `match`: String, nonMatch: String): Unit = {
     val errorString = "Pattern with regexp: " + regexp
-    assert(java.util.regex.Pattern.matches(regexp, `match`),
-           "JDK " + errorString + " doesn't match: " + `match`)
-    assert(!java.util.regex.Pattern.matches(regexp, nonMatch),
-           "JDK " + errorString + " matches: " + nonMatch)
-    assert(Pattern.matches(regexp, `match`),
-           errorString + " doesn't match: " + `match`)
-    assert(!Pattern.matches(regexp, nonMatch),
-           errorString + " matches: " + nonMatch)
+    assertTrue("JDK " + errorString + " doesn't match: " + `match`,
+               java.util.regex.Pattern.matches(regexp, `match`))
+    assertFalse("JDK " + errorString + " matches: " + nonMatch,
+                java.util.regex.Pattern.matches(regexp, nonMatch))
+    assertTrue(errorString + " doesn't match: " + `match`,
+               Pattern.matches(regexp, `match`))
+    assertFalse(errorString + " matches: " + nonMatch,
+                Pattern.matches(regexp, nonMatch))
   }
 
   // Test matches via a matcher.
@@ -74,20 +56,21 @@ object ApiTestUtils extends tests.Suite {
 
   def testMatcherMatches(regexp: String, `match`: String): Unit = {
     val p = java.util.regex.Pattern.compile(regexp)
-    assert(p.matcher(`match`).matches,
-           "JDK Pattern with regexp: " + regexp + " doesn't match: " + `match`)
+    assertTrue(
+      "JDK Pattern with regexp: " + regexp + " doesn't match: " + `match`,
+      p.matcher(`match`).matches)
     val pr = Pattern.compile(regexp)
-    assert(pr.matcher(`match`).matches,
-           "Pattern with regexp: " + regexp + " doesn't match: " + `match`)
+    assertTrue("Pattern with regexp: " + regexp + " doesn't match: " + `match`,
+               pr.matcher(`match`).matches)
   }
 
   def testMatcherNotMatches(regexp: String, nonMatch: String): Unit = {
     val p = java.util.regex.Pattern.compile(regexp)
-    assert(!p.matcher(nonMatch).matches,
-           "JDK Pattern with regexp: " + regexp + " matches: " + nonMatch)
+    assertFalse("JDK Pattern with regexp: " + regexp + " matches: " + nonMatch,
+                p.matcher(nonMatch).matches)
     val pr = Pattern.compile(regexp)
-    assert(!pr.matcher(nonMatch).matches,
-           "Pattern with regexp: " + regexp + " matches: " + nonMatch)
+    assertFalse("Pattern with regexp: " + regexp + " matches: " + nonMatch,
+                pr.matcher(nonMatch).matches)
   }
 
   /**
@@ -104,8 +87,8 @@ object ApiTestUtils extends tests.Suite {
                      nonMatch: String): Unit = {
     val p           = Pattern.compile(regexp, flags)
     val errorString = "Pattern with regexp: " + regexp + " and flags: " + flags
-    assert(p.matches(`match`), errorString + " doesn't match: " + `match`)
-    assert(!p.matches(nonMatch), errorString + " matches: " + nonMatch)
+    assertTrue(errorString + " doesn't match: " + `match`, p.matches(`match`))
+    assertFalse(errorString + " matches: " + nonMatch, p.matches(nonMatch))
   }
 
   def testMatchesRE2(regexp: String,
@@ -114,10 +97,10 @@ object ApiTestUtils extends tests.Suite {
                      nonMatches: Array[String]): Unit = {
     val p = Pattern.compile(regexp, flags)
     for (s <- matches) {
-      assert(p.matches(s))
+      assertTrue(p.matches(s))
     }
     for (s <- nonMatches) {
-      assert(!p.matches(s))
+      assertFalse(p.matches(s))
     }
   }
 
@@ -147,12 +130,12 @@ object ApiTestUtils extends tests.Suite {
     val p        = Pattern.compile(regex)
     val m        = p.matcher(orig)
     var replaced = m.replaceAll(repl)
-    assert(actual == replaced)
+    assertTrue(actual == replaced)
 //    // JDK's
 //    val pj = java.util.regex.Pattern.compile(regex)
 //    val mj = pj.matcher(orig)
 //    replaced = mj.replaceAll(repl)
-//    assert(actual == replaced)
+//    assertTrue(actual == replaced)
   }
 
   def testReplaceFirst(orig: String,
@@ -162,62 +145,62 @@ object ApiTestUtils extends tests.Suite {
     val p        = Pattern.compile(regex)
     val m        = p.matcher(orig)
     var replaced = m.replaceFirst(repl)
-    assert(actual == replaced)
+    assertTrue(actual == replaced)
 //    val pj = java.util.regex.Pattern.compile(regex)
 //    val mj = pj.matcher(orig)
 //    replaced = mj.replaceFirst(repl)
-//    assert(actual == replaced)
+//    assertTrue(actual == replaced)
   }
 
   // Tests that both RE2 and JDK's Patterns/Matchers give the same groupCount.
   def testGroupCount(pattern: String, count: Int): Unit = { // RE2
     val p = Pattern.compile(pattern)
     val m = p.matcher("x")
-    assert(count == p.groupCount,
-           s"pattern: ${pattern} p.groupCount: ${} != expected: ${count}")
-    assert(count == m.groupCount,
-           s"pattern: ${pattern} m.groupCount: ${} != expected: ${count}")
+    assertTrue(s"pattern: ${pattern} p.groupCount: ${} != expected: ${count}",
+               count == p.groupCount)
+    assertTrue(s"pattern: ${pattern} m.groupCount: ${} != expected: ${count}",
+               count == m.groupCount)
 
     // JDK -- SN j.u.regex calls into scalanative.regex, so somethin
     // rotten on false.
     val pj = java.util.regex.Pattern.compile(pattern)
     val mj = pj.matcher("x")
-    assert(count == mj.groupCount,
-           s"pattern: ${pattern} mj.groupCount: ${} != expected: ${count}")
+    assertTrue(s"pattern: ${pattern} mj.groupCount: ${} != expected: ${count}",
+               count == mj.groupCount)
   }
 
   def testGroup(text: String, regexp: String, output: Array[String]): Unit = {
 
     val p           = Pattern.compile(regexp)
     val matchString = p.matcher(text)
-    assert(matchString.find, s"scalanative.regex find failed")
+    assertTrue(s"scalanative.regex find failed", matchString.find)
 
     // This tests ms.group code path, for loop tests the ms.group(0) path.
-    assert(output(0) == matchString.group,
-           s"output(0): ${output(0)} != expected: ${matchString.group}")
+    assertTrue(s"output(0): ${output(0)} != expected: ${matchString.group}",
+               output(0) == matchString.group)
 
     for (i <- 0 until output.length) {
-      assert(output(i) == matchString.group(i),
-             s"output(${i}): ${output(i)} != expected:" +
-               s" ${matchString.group(i)}")
+      assertTrue(s"output(${i}): ${output(i)} != expected:" +
+                   s" ${matchString.group(i)}",
+                 output(i) == matchString.group(i))
     }
 
-    assert(output.length - 1 == matchString.groupCount,
-           s"length - 1: ${output.length - 1} != expected: " +
-             s"${matchString.groupCount}")
+    assertTrue(s"length - 1: ${output.length - 1} != expected: " +
+                 s"${matchString.groupCount}",
+               output.length - 1 == matchString.groupCount)
 
     val pj           = java.util.regex.Pattern.compile(regexp)
     val matchStringj = pj.matcher(text)
-    assert(matchStringj.find, s"j.u.regex find failed")
+    assertTrue(s"j.u.regex find failed", matchStringj.find)
 
-    assert(output(0) == matchStringj.group,
-           s"j.u.regex output(0): ${output(0)} != " +
-             s"expected: ${matchStringj.group}")
+    assertTrue(s"j.u.regex output(0): ${output(0)} != " +
+                 s"expected: ${matchStringj.group}",
+               output(0) == matchStringj.group)
 
     for (i <- 0 until output.length) {
-      assert(matchString.group(i) == matchStringj.group(i),
-             s"matchString(${i}): ${matchString.group(i)} != " +
-               s"java: ${matchStringj.group(i)}")
+      assertTrue(s"matchString(${i}): ${matchString.group(i)} != " +
+                   s"java: ${matchStringj.group(i)}",
+                 matchString.group(i) == matchStringj.group(i))
     }
   }
 
@@ -228,24 +211,24 @@ object ApiTestUtils extends tests.Suite {
     val p           = Pattern.compile(regexp)
     val matchString = p.matcher(text)
     // RE2Matcher matchBytes = p.matcher(text.getBytes(Charsets.UTF_8));
-    assert(matchString.find(start))
-    // assert(matchBytes.find(start));
-    assert(output == matchString.group)
-    // assert(output == matchBytes.group());
+    assertTrue(matchString.find(start))
+    // assertTrue(matchBytes.find(start));
+    assertTrue(output == matchString.group)
+    // assertTrue(output == matchBytes.group());
     val pj           = java.util.regex.Pattern.compile(regexp)
     val matchStringj = pj.matcher(text)
-    assert(matchStringj.find(start))
-    assert(output == matchStringj.group)
+    assertTrue(matchStringj.find(start))
+    assertTrue(output == matchStringj.group)
   }
 
   def testFindNoMatch(text: String, regexp: String, start: Int): Unit = {
     val p           = Pattern.compile(regexp)
     val matchString = p.matcher(text)
-    assert(!matchString.find(start))
+    assertFalse(matchString.find(start))
     // assertFalse(matchBytes.find(start));
     val pj           = java.util.regex.Pattern.compile(regexp)
     val matchStringj = pj.matcher(text)
-    assert(!matchStringj.find(start))
+    assertFalse(matchStringj.find(start))
   }
 
   def testInvalidGroup(text: String, regexp: String, group: Int): Unit = {
@@ -257,8 +240,8 @@ object ApiTestUtils extends tests.Suite {
   }
 
   def verifyLookingAt(text: String, regexp: String, output: Boolean): Unit = {
-    assert(output == Pattern.compile(regexp).matcher(text).lookingAt)
-    assert(
+    assertTrue(output == Pattern.compile(regexp).matcher(text).lookingAt)
+    assertTrue(
       output == java.util.regex.Pattern.compile(regexp).matcher(text).lookingAt)
   }
 }

@@ -200,17 +200,22 @@ final class Check(implicit linked: linker.Result) {
         case _ =>
           error(s"method must take a method signature, not ${sig.show}")
       }
+
+      def checkCallable(cls: Class): Unit = {
+        if (cls.allocated) {
+          if (cls.resolve(sig).isEmpty) {
+            error(s"can't call ${sig.show} on ${cls.name.show}")
+          }
+        }
+      }
+
       obj.ty match {
         case Type.Null =>
           ok
-        case ScopeRef(info) =>
-          info.implementors.foreach { cls =>
-            if (cls.allocated) {
-              if (cls.resolve(sig).isEmpty) {
-                error(s"can't call ${sig.show} on ${cls.name.show}")
-              }
-            }
-          }
+        case ScopeRef(info) if sig.isVirtual =>
+          info.implementors.foreach(checkCallable)
+        case ClassRef(info) =>
+          checkCallable(info)
         case ty =>
           error(s"can't resolve method on ${ty.show}")
       }
@@ -265,9 +270,7 @@ final class Check(implicit linked: linker.Result) {
         .get(ty)
         .fold {
           error(s"uknown box type ${ty.show}")
-        } { unboxedty =>
-          expect(unboxedty, value)
-        }
+        } { unboxedty => expect(unboxedty, value) }
     case Op.Unbox(ty, obj) =>
       expect(Rt.Object, obj)
     case Op.Var(ty) =>
@@ -330,9 +333,7 @@ final class Check(implicit linked: linker.Result) {
     def loop(ty: Type, indexes: Seq[Val]): Unit =
       indexes match {
         case Seq() =>
-          stores.foreach { v =>
-            expect(ty, v)
-          }
+          stores.foreach { v => expect(ty, v) }
         case value +: rest =>
           ty match {
             case Type.StructValue(tys) =>

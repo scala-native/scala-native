@@ -14,6 +14,9 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeVersion = nir.Versions.current
 
+    val nativeConfig =
+      taskKey[build.NativeConfig]("Configuration of the Scala Native plugin")
+
     val nativeClang =
       taskKey[File]("Location of the clang compiler.")
 
@@ -29,26 +32,27 @@ object ScalaNativePlugin extends AutoPlugin {
         "Additional options that are passed to clang during linking.")
 
     val nativeLinkStubs =
-      settingKey[Boolean]("Whether to link `@stub` methods, or ignore them.")
+      taskKey[Boolean]("Whether to link `@stub` methods, or ignore them.")
 
     val nativeLink =
       taskKey[File]("Generates native binary without running it.")
 
     val nativeMode =
-      settingKey[String]("Compilation mode, either \"debug\" or \"release\".")
+      taskKey[String]("Compilation mode, either \"debug\" or \"release\".")
 
     val nativeGC =
-      settingKey[String]("GC choice, either \"none\", \"boehm\" or \"immix\".")
+      taskKey[String](
+        "GC choice, either \"none\", \"boehm\", \"immix\" or \"commix\".")
 
     val nativeLTO =
       taskKey[String](
         "LTO variant used for release mode (either \"none\", \"thin\" or \"full\").")
 
     val nativeCheck =
-      settingKey[Boolean]("Shall native toolchain check NIR during linking?")
+      taskKey[Boolean]("Shall native toolchain check NIR during linking?")
 
     val nativeDump =
-      settingKey[Boolean](
+      taskKey[Boolean](
         "Shall native toolchain dump intermediate NIR to disk during linking?")
   }
 

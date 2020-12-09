@@ -1,4 +1,4 @@
-def GCs   = ["none","boehm", "immix"]
+def GCs   = ["none","boehm","immix","commix"]
 def OSs   = ["mac", "linux"]
 def tasks = [:]
 
@@ -63,7 +63,7 @@ def job(String OS, List<String> GCs) {
 
             advance("Building", OS) {
                 retry(2) {
-                    sh "sbt -Dsbt.ivy.home=$ivyHome -J-Xmx3G rebuild"
+                    sh "sbt -Dsbt.ivy.home=$ivyHome -J-Xmx3G scalalib/package"
                 }
             }
 

@@ -115,7 +115,7 @@ class GZIPInputStream(in: InputStream, size: Int)
     }
   }
 
-  private def readFully(buffer: Array[Byte], offset: Int, length: Int) {
+  private def readFully(buffer: Array[Byte], offset: Int, length: Int): Unit = {
     var result: Int = 0
     var off: Int    = offset
     var l: Int      = length
@@ -131,7 +131,7 @@ class GZIPInputStream(in: InputStream, size: Int)
 
   private def readZeroTerminated(hcrc: Boolean): Unit = {
     var result: Int = 0
-    while ({ result = in.read; result > 0 }) {
+    while ({ result = in.read(); result > 0 }) {
       if (hcrc) {
         crc.update(result)
       }

@@ -9,7 +9,9 @@ object CreateNewFileTest {
     assert(willBeCreatedFile.exists())
 
     val exceptionThrown =
-      try { new File(nonexistentDirectory, "somefile").createNewFile(); false } catch {
+      try {
+        new File(nonexistentDirectory, "somefile").createNewFile(); false
+      } catch {
         case _: IOException => true
       }
 

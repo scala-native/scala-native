@@ -20,13 +20,13 @@ trait PolyInline { self: Interflow =>
     val res = objty match {
       case ExactClassRef(cls, _) =>
         cls.resolve(sig).map(g => (cls, g)).toSeq
+      case ClassRef(cls) if !sig.isVirtual =>
+        cls.resolve(sig).map(g => (cls, g)).toSeq
       case ScopeRef(scope) =>
         val targets = mutable.UnrolledBuffer.empty[(Class, Global)]
         scope.implementors.foreach { cls =>
           if (cls.allocated) {
-            cls.resolve(sig).foreach { g =>
-              targets += ((cls, g))
-            }
+            cls.resolve(sig).foreach { g => targets += ((cls, g)) }
           }
         }
         targets
@@ -56,7 +56,8 @@ trait PolyInline { self: Interflow =>
   }
 
   def polyInline(op: Op.Method, args: Seq[Val])(implicit state: State,
-                                                linked: linker.Result): Val = {
+                                                linked: linker.Result,
+                                                origPos: Position): Val = {
     import state.{emit, fresh, materialize}
 
     val obj     = materialize(op.obj)
@@ -117,7 +118,7 @@ trait PolyInline { self: Interflow =>
         emit.jump(Next.Label(mergeLabel, Seq(res)))
     }
 
-    val result = Val.Local(fresh(), Sub.lub(rettys))
+    val result = Val.Local(fresh(), Sub.lub(rettys, Some(op.resty)))
     emit.label(mergeLabel, Seq(result))
 
     result

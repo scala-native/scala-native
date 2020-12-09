@@ -1,35 +1,37 @@
 package scala.scalanative
 package nscplugin
 
+import java.io.FileOutputStream
 import java.nio.file.{Path, Paths}
-import scala.tools.nsc._
+import scala.scalanative.nir.serialization.serializeBinary
+import scala.tools.nsc.Global
 import scala.tools.nsc.io.AbstractFile
-import scalanative.nir.serialization.{serializeText, serializeBinary}
-import scalanative.io.withScratchBuffer
-import scalanative.io.VirtualDirectory
 
-trait NirGenFile { self: NirGenPhase =>
+trait NirGenFile[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import global._
 
-  def genPathFor(cunit: CompilationUnit, sym: Symbol): Path = {
+  def genPathFor(cunit: CompilationUnit, ownerName: nir.Global): Path = {
+    val nir.Global.Top(id) = ownerName
+    genPathFor(cunit, id)
+  }
+
+  def genPathFor(cunit: CompilationUnit, id: String): Path = {
     val baseDir: AbstractFile =
       settings.outputDirs.outputDirFor(cunit.source.file)
 
-    val nir.Global.Top(id) = genTypeName(sym)
-
     val pathParts = id.split("[./]")
-    val dir       = (baseDir /: pathParts.init)(_.subdirectoryNamed(_))
+    val dir       = pathParts.init.foldLeft(baseDir)(_.subdirectoryNamed(_))
 
-    var filename = pathParts.last
+    val filename = pathParts.last
     val file     = dir fileNamed (filename + ".nir")
 
     Paths.get(file.file.getAbsolutePath)
   }
 
-  def genIRFile(path: Path, defns: Seq[nir.Defn]): Unit =
-    withScratchBuffer { buffer =>
-      serializeBinary(defns, buffer)
-      buffer.flip
-      VirtualDirectory.local(path.getParent).write(path, buffer)
-    }
+  def genIRFile(path: Path, defns: Seq[nir.Defn]): Unit = {
+    val outStream = new FileOutputStream(path.toFile)
+    try {
+      serializeBinary(defns, outStream)
+    } finally outStream.close()
+  }
 }

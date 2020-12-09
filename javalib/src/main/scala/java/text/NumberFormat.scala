@@ -10,8 +10,8 @@ abstract class NumberFormat extends Format {
              pos: FieldPosition): StringBuffer =
     obj match {
       case num: Number =>
-        val l = num.longValue
-        val d = num.doubleValue
+        val l = num.longValue()
+        val d = num.doubleValue()
         if (l == d)
           format(l, toAppendTo, pos)
         else

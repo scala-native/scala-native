@@ -82,7 +82,7 @@ final class Long(val _value: scala.Long) extends Number with Comparable[Long] {
   protected def unary_+ : scala.Long = _value
   protected def unary_- : scala.Long = -_value
 
-  protected def +(x: String): String = _value + x
+  protected def +(x: String): String = "" + _value + x
 
   protected def <<(x: scala.Int): scala.Long   = _value << x
   protected def <<(x: scala.Long): scala.Long  = _value << x
@@ -183,7 +183,7 @@ final class Long(val _value: scala.Long) extends Number with Comparable[Long] {
 }
 
 object Long {
-  final val TYPE      = classOf[scala.Long]
+  final val TYPE      = scala.Predef.classOf[scala.scalanative.runtime.PrimitiveLong]
   final val MIN_VALUE = -9223372036854775808L
   final val MAX_VALUE = 9223372036854775807L
   final val SIZE      = 64

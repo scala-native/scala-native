@@ -172,9 +172,7 @@ class DecimalFormat extends NumberFormat {
           Iterator.iterate(numabs / 10)(_ / 10).takeWhile(_ > 0)
       def whole =
         toBeTruncated
-          .map { i =>
-            (dfsym.getZeroDigit() + (i % 10)).toChar
-          }
+          .map { i => (dfsym.getZeroDigit() + (i % 10)).toChar }
           .toList
           .reverse
       Digits(number < 0, whole, Seq.empty)
@@ -185,7 +183,8 @@ class DecimalFormat extends NumberFormat {
       toDigits {
         val signum = if (negative) -1 else 1
         // assuming Long can be represented by Double
-        val toBeRounded = (whole.mkString.toDouble + ("0." + frac.mkString).toDouble) * signum
+        val toBeRounded =
+          (whole.mkString.toDouble + ("0." + frac.mkString).toDouble) * signum
         Math.round(toBeRounded)
       }
     }
@@ -218,7 +217,7 @@ class DecimalFormat extends NumberFormat {
 
       val (fracDigits, expDigits) = suffix.tail.span(_ != 'E')
 
-      if (expDigits.isEmpty) {
+      if (expDigits.isEmpty()) {
         DoubleDigits(toUnicode(wdPrefix.toSeq), toUnicode(fracDigits.toSeq))
       } else {
         val exponentB10 = java.lang.Integer.parseInt(expDigits.tail)
@@ -262,7 +261,7 @@ class DecimalFormat extends NumberFormat {
               0.0
           }
         val toBeRounded = (whole.mkString.toDouble + fracd) * signum
-        Math.round(toBeRounded)
+        Math.round(toBeRounded).toDouble
       }
     }
 
@@ -271,12 +270,8 @@ class DecimalFormat extends NumberFormat {
         Iterator(number) ++
           Iterator.iterate(number / 10)(_ / 10).takeWhile(_ >= 1)
       toBeTruncated
-        .map { d =>
-          (d % 10).toInt
-        }
-        .map { i =>
-          (dfsym.getZeroDigit() + i).toChar
-        }
+        .map { d => (d % 10).toInt }
+        .map { i => (dfsym.getZeroDigit() + i).toChar }
         .toList
         .reverse
     }
@@ -288,21 +283,17 @@ class DecimalFormat extends NumberFormat {
         // workaround to avoid getting noises beyond java.lang.Double.MIN_VALUE == 4.9e-324
         .take(325)
         // take while the fractional part exists
-        .takeWhile { f =>
-          f != Math.floor(f)
-        }
+        .takeWhile { f => f != Math.floor(f) }
         // extract the first decimal place
-        .map { f =>
-          (f * 10 % 10).toInt
-        }
+        .map { f => (f * 10 % 10).toInt }
         .mkString
     }
   }
 
   implicit private object BigIntegerFormatting extends Formatting[BigInteger] {
     def toDigits(number: BigInteger): Digits = {
-      val numabs = number.abs
-      Digits(number.signum < 0, numabs.toString.toSeq, Seq.empty)
+      val numabs = number.abs()
+      Digits(number.signum() < 0, numabs.toString.toSeq, Seq.empty)
     }
 
     def roundToInteger(digits: Digits): Digits = {
@@ -311,22 +302,22 @@ class DecimalFormat extends NumberFormat {
         val sign = if (negative) "-" else ""
         val toBeRounded =
           new BigDecimal(sign + whole.mkString + "." + frac.mkString)
-        toBeRounded.setScale(0, getRoundingMode()).toBigInteger
+        toBeRounded.setScale(0, getRoundingMode()).toBigInteger()
       }
     }
   }
 
   implicit private object BigDecimalFormatting extends Formatting[BigDecimal] {
     def toDigits(number: BigDecimal): Digits = {
-      val numabs = number.abs
-      val s      = numabs.toPlainString
+      val numabs = number.abs()
+      val s      = numabs.toPlainString()
       val (whole, frac) = s.indexOf('.') match {
         case -1 => (s, "")
         case dp =>
           val (whole, dotFrac) = s.splitAt(dp)
           (whole, dotFrac.tail)
       }
-      Digits(number.signum < 0, whole.toSeq, frac.toSeq)
+      Digits(number.signum() < 0, whole.toSeq, frac.toSeq)
     }
 
     def roundToInteger(digits: Digits): Digits = {
@@ -349,8 +340,8 @@ class DecimalFormat extends NumberFormat {
       case bd: BigDecimal =>
         formatImpl(bd, toAppendTo, pos)
       case num: Number =>
-        val l = num.longValue
-        val d = num.doubleValue
+        val l = num.longValue()
+        val d = num.doubleValue()
         // type ascriptions are put to make sure the correct overload is called
         if (num == l)
           format(l: Long, toAppendTo, pos)
@@ -426,10 +417,11 @@ class DecimalFormat extends NumberFormat {
       case Pattern(PositivePattern(prefix, number, suffix), negative) =>
         prefix.map(_.value.mkString).foreach(setPositivePrefix)
         suffix.map(_.value.mkString).foreach(setPositiveSuffix)
-        negative.map {
+        negative.foreach {
           case NegativePattern(prefix, _, suffix) =>
             prefix.map(_.value.mkString).foreach(setNegativePrefix)
             suffix.map(_.value.mkString).foreach(setNegativeSuffix)
+          case _ => throw new MatchError(negative)
         }
         number match {
           case Number(Integer(max, min, grp), frac, exp) =>
@@ -446,9 +438,11 @@ class DecimalFormat extends NumberFormat {
               case Fraction(max, min) =>
                 setMaximumFractionDigits(max)
                 setMinimumFractionDigits(min)
+              case _ => throw new MatchError(frac)
             }
             decimalSepShown = frac.isDefined
             sciExpoDigits = exp.map(_.exp).getOrElse(0)
+          case _ => throw new MatchError(number)
         }
       case _ => throw new IllegalArgumentException
     }
@@ -495,7 +489,7 @@ object DecimalFormat {
       }
 
       def unapply(input: Seq[Char])
-        : Option[(PositivePattern, Option[NegativePattern])] =
+          : Option[(PositivePattern, Option[NegativePattern])] =
         input match {
           case pp ++ rest =>
             rest match {
@@ -560,9 +554,7 @@ object DecimalFormat {
         rest match {
           case Seq() => Some(matched)
           case '\'' +: '\'' +: more =>
-            unapply(more).map { m =>
-              matched ++ ('\'' +: m)
-            }
+            unapply(more).map { m => matched ++ ('\'' +: m) }
           case '\'' +: literalPlus =>
             literalPlus.indexOf('\'') match {
               case -1 => None
@@ -606,7 +598,7 @@ object DecimalFormat {
       }
 
       def unapply(input: Seq[Char])
-        : Option[(Integer, Option[Fraction], Option[Exponent])] =
+          : Option[(Integer, Option[Fraction], Option[Exponent])] =
         input match {
           case Integer(max, min, grp) =>
             Some((Integer(max, min, grp), None, None))

@@ -93,8 +93,8 @@ class JarEntry(private val ze: ZipEntry) extends ZipEntry(ze) {
       if (asigners.isEmpty()) {
         null
       } else {
-        val tmp = new Array[CodeSigner](asigners.size)
-        System.arraycopy(asigners, 0, tmp, 0, asigners.size)
+        val tmp = new Array[CodeSigner](asigners.size())
+        System.arraycopy(asigners, 0, tmp, 0, asigners.size())
         tmp
       }
     }
@@ -114,9 +114,7 @@ class JarEntry(private val ze: ZipEntry) extends ZipEntry(ze) {
       ()
     } else {
       val certPath = scala.util.Try(factory.generateCertPath(list)).toOption
-      certPath.foreach { cert =>
-        asigners.add(new CodeSigner(cert, null))
-      }
+      certPath.foreach { cert => asigners.add(new CodeSigner(cert, null)) }
     }
   }
 }

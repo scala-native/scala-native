@@ -3,8 +3,9 @@ package nir
 
 import fastparse.all.Parsed
 import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
 
-class BinParserTest extends FunSuite {
+class BinParserTest extends AnyFunSuite {
   import Bin._
 
   Seq[Bin](Iadd,

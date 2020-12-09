@@ -82,10 +82,10 @@ private[net] class PlainSocketImpl extends SocketImpl {
     hints.ai_socktype = socket.SOCK_STREAM
 
     Zone { implicit z =>
-      val cIP = toCString(addr.getHostAddress)
+      val cIP = toCString(addr.getHostAddress())
       if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
         throw new BindException(
-          "Couldn't resolve address: " + addr.getHostAddress)
+          "Couldn't resolve address: " + addr.getHostAddress())
       }
     }
 
@@ -96,13 +96,14 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     if (bindRes < 0) {
       throw new BindException(
-        "Couldn't bind to an address: " + addr.getHostAddress +
+        "Couldn't bind to an address: " + addr.getHostAddress() +
           " on port: " + port.toString)
     }
 
     this.localport = fetchLocalPort(family).getOrElse {
       throw new BindException(
-        "Couldn't bind to address: " + addr.getHostAddress + " on port: " + port)
+        "Couldn't bind to address: " + addr.getHostAddress() +
+          " on port: " + port)
     }
   }
 
@@ -183,9 +184,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       s.port = inet.ntohs(sa.sin6_port).toInt
     }
 
-    Zone { implicit z =>
-      s.address = InetAddress.getByName(fromCString(ipstr))
-    }
+    Zone { implicit z => s.address = InetAddress.getByName(fromCString(ipstr)) }
 
     s.fd = new FileDescriptor(newFd)
     s.localport = this.localport
@@ -277,7 +276,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
     hints.ai_socktype = socket.SOCK_STREAM
-    val remoteAddress = inetAddr.getAddress.getHostAddress
+    val remoteAddress = inetAddr.getAddress.getHostAddress()
 
     Zone { implicit z =>
       val cIP   = toCString(remoteAddress)

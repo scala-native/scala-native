@@ -32,7 +32,7 @@ object Attr {
   final case object Abstract          extends Attr
 }
 
-final case class Attrs(inline: Inline = MayInline,
+final case class Attrs(inlineHint: Inline = MayInline,
                        specialize: Specialize = MaySpecialize,
                        opt: Opt = UnOpt,
                        isExtern: Boolean = false,
@@ -41,9 +41,9 @@ final case class Attrs(inline: Inline = MayInline,
                        isAbstract: Boolean = false,
                        links: Seq[Attr.Link] = Seq()) {
   def toSeq: Seq[Attr] = {
-    val out = mutable.UnrolledBuffer.empty[Attr]
+    val out = Seq.newBuilder[Attr]
 
-    if (inline != MayInline) out += inline
+    if (inlineHint != MayInline) out += inlineHint
     if (specialize != MaySpecialize) out += specialize
     if (opt != UnOpt) out += opt
     if (isExtern) out += Extern
@@ -52,22 +52,21 @@ final case class Attrs(inline: Inline = MayInline,
     if (isAbstract) out += Abstract
     out ++= links
 
-    out
+    out.result()
   }
 }
 object Attrs {
   val None = new Attrs()
 
-  def fromSeq(attrs: Seq[Attr]) = {
-    var inline     = None.inline
+  def fromSeq(attrs: Seq[Attr]): Attrs = {
+    var inline     = None.inlineHint
     var specialize = None.specialize
     var opt        = None.opt
     var isExtern   = false
     var isDyn      = false
     var isStub     = false
     var isAbstract = false
-    val overrides  = mutable.UnrolledBuffer.empty[Global]
-    val links      = mutable.UnrolledBuffer.empty[Attr.Link]
+    val links      = Seq.newBuilder[Attr.Link]
 
     attrs.foreach {
       case attr: Inline     => inline = attr
@@ -87,6 +86,6 @@ object Attrs {
               isDyn,
               isStub,
               isAbstract,
-              links)
+              links.result())
   }
 }

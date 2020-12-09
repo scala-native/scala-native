@@ -1,10 +1,12 @@
 package java.lang
 
 import scalanative.unsafe._
-import scalanative.libc._
+import scalanative.libc
 import scalanative.runtime.Intrinsics
 
 import scalanative.runtime.ieee754tostring.ryu.{RyuRoundingMode, RyuFloat}
+
+import java.lang.IEEE754Helpers.parseIEEE754
 
 final class Float(val _value: scala.Float)
     extends Number
@@ -101,7 +103,7 @@ final class Float(val _value: scala.Float)
   protected def unary_+ : scala.Float = _value
   protected def unary_- : scala.Float = -_value
 
-  protected def +(x: String): String = _value + x
+  protected def +(x: String): String = "" + _value + x
 
   protected def <(x: scala.Byte): scala.Boolean   = _value < x
   protected def <(x: scala.Short): scala.Boolean  = _value < x
@@ -187,7 +189,8 @@ object Float {
   final val NEGATIVE_INFINITY = 1.0f / -0.0f
   final val POSITIVE_INFINITY = 1.0f / 0.0f
   final val SIZE              = 32
-  final val TYPE              = classOf[scala.Float]
+  final val TYPE =
+    scala.Predef.classOf[scala.scalanative.runtime.PrimitiveFloat]
 
   @inline def compare(x: scala.Float, y: scala.Float): scala.Int =
     if (x > y) 1
@@ -235,19 +238,7 @@ object Float {
     Math.min(a, b)
 
   def parseFloat(s: String): scala.Float =
-    Zone { implicit z =>
-      val cstr = toCString(s)
-      val end  = stackalloc[CString]
-
-      errno.errno = 0
-      val res = stdlib.strtof(cstr, end)
-
-      if (errno.errno == 0 && cstr != !end && string.strlen(!end).toInt == 0) {
-        res
-      } else {
-        throw new NumberFormatException(s)
-      }
-    }
+    parseIEEE754[scala.Float](s, libc.stdlib.strtof)
 
   @inline def sum(a: scala.Float, b: scala.Float): scala.Float =
     a + b

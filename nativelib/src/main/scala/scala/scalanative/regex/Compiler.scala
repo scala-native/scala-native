@@ -241,7 +241,7 @@ object Compiler {
   // A fragment of a compiled regular expression program.
   // @see http://swtch.com/~rsc/regexp/regexp1.html
   private class Frag(
-      val i: Int, // an instruction address (pc).
+      val i: Int,  // an instruction address (pc).
       var out: Int // a patch list see explanation in Prog.java
   ) {
     def this() = this(0, 0)

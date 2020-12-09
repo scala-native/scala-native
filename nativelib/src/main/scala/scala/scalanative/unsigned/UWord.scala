@@ -1,6 +1,8 @@
 package scala.scalanative
 package unsigned
 
+import scala.language.implicitConversions
+
 import scala.runtime.BoxesRunTime._
 import scala.reflect.ClassTag
 

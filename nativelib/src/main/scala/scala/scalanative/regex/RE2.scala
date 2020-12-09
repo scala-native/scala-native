@@ -56,7 +56,7 @@ class RE2 private {
   private val machine = new ArrayList[Machine]()
 
   // This is visible for testing.
-  def this(expr: String) {
+  def this(expr: String) = {
     this()
     val re2 = RE2.compile(expr)
     // Copy everything.
@@ -76,7 +76,7 @@ class RE2 private {
            prog: Prog,
            numSubexp: Int,
            longest: Boolean,
-           namedCaps: Map[String, Int]) {
+           namedCaps: Map[String, Int]) = {
     this()
     this.expr = expr
     this.prog = prog
@@ -190,9 +190,7 @@ class RE2 private {
   //
   // This is visible for testing.
   def replaceAll(src: String, repl: String): String =
-    replaceAllFunc(src, 2 * src.length() + 1) { orig =>
-      repl
-    }
+    replaceAllFunc(src, 2 * src.length() + 1) { orig => repl }
 
   // Returns a copy of {@code src} in which only the first match for this regexp
   // has been replaced by {@code repl}.  No support is provided for
@@ -201,9 +199,7 @@ class RE2 private {
   //
   // This is visible for testing.
   def replaceFirst(src: String, repl: String): String =
-    replaceAllFunc(src, 1) { orig =>
-      repl
-    }
+    replaceAllFunc(src, 1) { orig => repl }
 
   // Returns a copy of {@code src} in which at most {@code maxReplaces} matches
   // for this regexp have been replaced by the return value of of function
@@ -613,9 +609,7 @@ class RE2 private {
   // This is visible for testing.
   def findAllUTF8SubmatchIndex(b: Array[Byte], n: Int): List[Array[Int]] = {
     val result = new ArrayList[Array[Int]]()
-    allMatches(MachineInput.fromUTF8(b), n) { _match =>
-      result.add(_match)
-    }
+    allMatches(MachineInput.fromUTF8(b), n) { _match => result.add(_match) }
     if (result.isEmpty()) {
       return null
     }
@@ -659,9 +653,7 @@ class RE2 private {
   // This is visible for testing.
   def findAllSubmatchIndex(s: String, n: Int): List[Array[Int]] = {
     val result = new ArrayList[Array[Int]]()
-    allMatches(MachineInput.fromUTF16(s), n) { _match =>
-      result.add(_match)
-    }
+    allMatches(MachineInput.fromUTF16(s), n) { _match => result.add(_match) }
     if (result.isEmpty()) {
       return null
     }
@@ -767,16 +759,16 @@ object RE2 {
   def compileImpl(expr: String, mode: Int, longest: Boolean): RE2 = {
     var re        = Parser.parse(expr, mode)
     val maxCap    = re.maxCap() // (may shrink during simplify)
-    val namedCaps = re.namedCaps
+    val namedCaps = re.namedCaps()
     re = Simplify.simplify(re)
     val prog          = Compiler.compileRegexp(re)
     val re2           = new RE2(expr, prog, maxCap, longest, namedCaps)
     val prefixBuilder = new java.lang.StringBuilder()
     re2.prefixComplete = prog.prefix(prefixBuilder)
-    re2.prefix = prefixBuilder.toString()
+    re2.prefix = prefixBuilder.toString
     re2.prefixUTF8 = re2.prefix.getBytes("UTF-8")
 
-    if (!re2.prefix.isEmpty()) {
+    if (!re2.prefix.isEmpty) {
       re2.prefixRune = re2.prefix.codePointAt(0)
     }
     re2

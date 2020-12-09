@@ -35,11 +35,11 @@ trait Inline { self: Interflow =>
         val noOpt =
           defn.attrs.opt == Attr.NoOpt
         val noInline =
-          defn.attrs.inline == Attr.NoInline
+          defn.attrs.inlineHint == Attr.NoInline
         val alwaysInline =
-          defn.attrs.inline == Attr.AlwaysInline
+          defn.attrs.inlineHint == Attr.AlwaysInline
         val hintInline =
-          defn.attrs.inline == Attr.InlineHint
+          defn.attrs.inlineHint == Attr.InlineHint
         val isRecursive =
           hasContext(s"inlining ${name.show}")
         val isBlacklisted =
@@ -69,11 +69,21 @@ trait Inline { self: Interflow =>
         if (shall) {
           if (shallNot) {
             log(s"not inlining ${name.show}, because:")
-            if (noInline) { log("* has noinline attr") }
-            if (isRecursive) { log("* is recursive") }
-            if (isBlacklisted) { log("* is blacklisted") }
-            if (callerTooBig) { log("* caller is too big") }
-            if (calleeTooBig) { log("* callee is too big") }
+            if (noInline) {
+              log("* has noinline attr")
+            }
+            if (isRecursive) {
+              log("* is recursive")
+            }
+            if (isBlacklisted) {
+              log("* is blacklisted")
+            }
+            if (callerTooBig) {
+              log("* caller is too big")
+            }
+            if (calleeTooBig) {
+              log("* callee is too big")
+            }
           }
         } else {
           log(
@@ -104,9 +114,7 @@ trait Inline { self: Interflow =>
     val expected = argtys match {
       case inittys :+ Type.Vararg =>
         val nonvarargs = args.take(inittys.size).zip(inittys)
-        val varargs = args.drop(inittys.size).map { arg =>
-          (arg, Type.Vararg)
-        }
+        val varargs    = args.drop(inittys.size).map { arg => (arg, Type.Vararg) }
         nonvarargs ++ varargs
       case _ =>
         args.zip(argtys)
@@ -121,7 +129,8 @@ trait Inline { self: Interflow =>
   }
 
   def inline(name: Global, args: Seq[Val])(implicit state: State,
-                                           linked: linker.Result): Val =
+                                           linked: linker.Result,
+                                           origPos: Position): Val =
     in(s"inlining ${name.show}") {
       val defn = mode match {
         case build.Mode.Debug =>
@@ -129,10 +138,12 @@ trait Inline { self: Interflow =>
         case _: build.Mode.Release =>
           getDone(name)
       }
+      val Type.Function(_, origRetTy) = defn.ty
 
       val inlineArgs  = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
-      val blocks      = process(inlineInsts, inlineArgs, state, inline = true)
+      val blocks =
+        process(inlineInsts, inlineArgs, state, doInline = true, origRetTy)
 
       val emit = new nir.Buffer()(state.fresh)
 

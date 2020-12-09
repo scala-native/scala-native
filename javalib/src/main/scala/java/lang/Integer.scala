@@ -53,7 +53,8 @@ final class Integer(val _value: scala.Int)
       case other: java.lang.Float     => _value == other._value
       case other: java.lang.Double    => _value == other._value
       case other: java.lang.Character => _value == other._value
-      case _                          => super.__scala_==(other)
+      // TODO(shadaj): equality with word
+      case _ => super.__scala_==(other)
     }
 
   /*
@@ -77,14 +78,14 @@ final class Integer(val _value: scala.Int)
   protected def unary_+ : scala.Int = _value
   protected def unary_- : scala.Int = -_value
 
-  protected def +(x: String): String = _value + x
+  protected def +(x: String): String = "" + _value + x
 
   protected def <<(x: scala.Int): scala.Int   = _value << x
-  protected def <<(x: scala.Long): scala.Int  = _value << x
+  protected def <<(x: scala.Long): scala.Int  = _value << x.toInt
   protected def >>>(x: scala.Int): scala.Int  = _value >>> x
-  protected def >>>(x: scala.Long): scala.Int = _value >>> x
+  protected def >>>(x: scala.Long): scala.Int = _value >>> x.toInt
   protected def >>(x: scala.Int): scala.Int   = _value >> x
-  protected def >>(x: scala.Long): scala.Int  = _value >> x
+  protected def >>(x: scala.Long): scala.Int  = _value >> x.toInt
 
   protected def <(x: scala.Byte): scala.Boolean   = _value < x
   protected def <(x: scala.Short): scala.Boolean  = _value < x
@@ -189,7 +190,7 @@ private[lang] object IntegerCache {
 object Integer {
   import IntegerDecimalScale.decimalScale
 
-  final val TYPE      = classOf[scala.Int]
+  final val TYPE      = scala.Predef.classOf[scala.scalanative.runtime.PrimitiveInt]
   final val MIN_VALUE = -2147483648
   final val MAX_VALUE = 2147483647
   final val SIZE      = 32

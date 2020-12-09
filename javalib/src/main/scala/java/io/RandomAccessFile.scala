@@ -76,7 +76,7 @@ class RandomAccessFile private (file: File,
     in.readInt()
 
   override final def readLine(): String = {
-    if (getFilePointer == length) null
+    if (getFilePointer() == length()) null
     else {
       val builder = new StringBuilder
       var c       = '0'
@@ -87,7 +87,7 @@ class RandomAccessFile private (file: File,
 
       // If there's a newline after carriage-return, we must eat it too.
       if (c == '\r' && readChar() != '\n') {
-        seek(getFilePointer - 1)
+        seek(getFilePointer() - 1)
       }
       builder.toString.init
     }
@@ -125,7 +125,7 @@ class RandomAccessFile private (file: File,
   override def skipBytes(n: Int): Int =
     if (n <= 0) 0
     else {
-      val currentPosition = getFilePointer
+      val currentPosition = getFilePointer()
       val fileLength      = length()
       val toSkip =
         if (currentPosition + n > fileLength) fileLength - currentPosition
@@ -201,7 +201,7 @@ class RandomAccessFile private (file: File,
 
   override final def writeUTF(str: String): Unit = {
     out.writeUTF(str)
-    maybeFlush
+    maybeFlush()
   }
 
   private def maybeFlush(): Unit =
@@ -213,8 +213,8 @@ private object RandomAccessFile {
     Zone { implicit z =>
       import fcntl._
       import stat._
-      if (_flags == "r" && !file.exists)
-        throw new FileNotFoundException(file.getName)
+      if (_flags == "r" && !file.exists())
+        throw new FileNotFoundException(file.getName())
       val flags = _flags match {
         case "r"                  => O_RDONLY
         case "rw" | "rws" | "rwd" => O_RDWR | O_CREAT
@@ -223,7 +223,7 @@ private object RandomAccessFile {
             s"""Illegal mode "${_flags}" must be one of "r", "rw", "rws" or "rwd"""")
       }
       val mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
-      val fd   = open(toCString(file.getPath), flags, mode)
+      val fd   = open(toCString(file.getPath()), flags, mode)
       new FileDescriptor(fd)
     }
 

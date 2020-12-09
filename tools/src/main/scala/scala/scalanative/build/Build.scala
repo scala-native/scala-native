@@ -1,8 +1,8 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Path, Files}
-import scalanative.nir.Global
+import java.nio.file.{Files, Path}
+import scala.scalanative.util.Scope
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -20,24 +20,26 @@ object Build {
    *  val workdir: Path        = ...
    *  val main: String         = ...
    *
-   *  val clang     = Discover.clang()
-   *  val clangpp   = Discover.clangpp()
-   *  val linkopts  = Discover.linkingOptions()
-   *  val compopts  = Discover.compileOptions()
-   *  val triple    = Discover.targetTriple(clang, workdir)
-   *  val nativelib = Discover.nativelib(classpath).get
-   *  val outpath   = workdir.resolve("out")
+   *  val clang    = Discover.clang()
+   *  val clangpp  = Discover.clangpp()
+   *  val linkopts = Discover.linkingOptions()
+   *  val compopts = Discover.compileOptions()
+   *  val triple   = Discover.targetTriple(clang, workdir)
+   *  val outpath  = workdir.resolve("out")
    *
    *  val config =
    *    Config.empty
-   *      .withGC(GC.default)
-   *      .withMode(Mode.default)
-   *      .withClang(clang)
-   *      .withClangPP(clangpp)
-   *      .withLinkingOptions(linkopts)
-   *      .withCompileOptions(compopts)
+   *      .withCompilerConfig{
+   *        NativeConfig.empty
+   *         .withGC(GC.default)
+   *         .withMode(Mode.default)
+   *         .withClang(clang)
+   *         .withClangPP(clangpp)
+   *         .withLinkingOptions(linkopts)
+   *         .withCompileOptions(compopts)
+   *         .withLinkStubs(true)
+   *       }
    *      .withTargetTriple(triple)
-   *      .withNativelib(nativelib)
    *      .withMainClass(main)
    *      .withClassPath(classpath)
    *      .withLinkStubs(true)
@@ -50,24 +52,33 @@ object Build {
    *  @param outpath The path to the resulting native binary.
    *  @return `outpath`, the path to the resulting native binary.
    */
-  def build(config: Config, outpath: Path): Path = config.logger.time("Total") {
-    val entries = ScalaNative.entries(config)
-    val linked  = ScalaNative.link(config, entries)
-    ScalaNative.logLinked(config, linked)
-    val optimized = ScalaNative.optimize(config, linked)
+  def build(config: Config, outpath: Path)(implicit scope: Scope): Path =
+    config.logger.time("Total") {
+      val fclasspath = NativeLib.filterClasspath(config.classPath)
+      val fconfig    = config.withClassPath(fclasspath)
 
-    IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
-    ScalaNative.codegen(config, optimized)
-    val generated = IO.getAll(config.workdir, "glob:**.ll")
+      val workdir = fconfig.workdir
+      val entries = ScalaNative.entries(fconfig)
+      val linked  = ScalaNative.link(fconfig, entries)
+      ScalaNative.logLinked(fconfig, linked)
+      val optimized = ScalaNative.optimize(fconfig, linked)
 
-    val unpackedLib = LLVM.unpackNativelib(config.nativelib, config.workdir)
-    val objectFiles = config.logger.time("Compiling to native code") {
-      val nativelibConfig =
-        config.withCompileOptions("-O2" +: config.compileOptions)
-      LLVM.compileNativelib(nativelibConfig, linked, unpackedLib)
-      LLVM.compile(config, generated)
+      IO.getAll(workdir, "glob:**.ll").foreach(Files.delete)
+      ScalaNative.codegen(fconfig, optimized)
+      val generated = IO.getAll(workdir, "glob:**.ll")
+
+      val nativelibs   = NativeLib.findNativeLibs(fconfig.classPath, workdir)
+      val nativelib    = NativeLib.findNativeLib(nativelibs)
+      val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
+
+      val objectFiles = config.logger.time("Compiling to native code") {
+        val nativelibConfig =
+          fconfig.withCompilerConfig(
+            _.withCompileOptions("-O2" +: fconfig.compileOptions))
+        LLVM.compileNativelibs(nativelibConfig, linked, unpackedLibs, nativelib)
+        LLVM.compile(fconfig, generated)
+      }
+
+      LLVM.link(config, linked, objectFiles, unpackedLibs, outpath)
     }
-
-    LLVM.link(config, linked, objectFiles, unpackedLib, outpath)
-  }
 }

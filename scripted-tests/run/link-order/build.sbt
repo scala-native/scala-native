@@ -2,11 +2,18 @@ enablePlugins(ScalaNativePlugin)
 
 import scala.sys.process._
 
-scalaVersion := "2.11.12"
+scalaVersion := {
+  val scalaVersion = System.getProperty("scala.version")
+  if (scalaVersion == null)
+    throw new RuntimeException(
+      """|The system property 'scala.version' is not defined.
+         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
+  else scalaVersion
+}
 
-nativeLinkingOptions in Compile += s"-L${target.value.getAbsoluteFile}"
+Compile / nativeLinkingOptions += s"-L${target.value.getAbsoluteFile}"
 
-compile in Compile := {
+Compile / compile := {
   val log            = streams.value.log
   val cwd            = target.value
   val compileOptions = nativeCompileOptions.value
@@ -45,5 +52,5 @@ compile in Compile := {
     sys.error(s"Failed to create archive $archivePath")
   }
 
-  (compile in Compile).value
+  (Compile / compile).value
 }

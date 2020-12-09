@@ -14,7 +14,7 @@ class DirectoryStreamImpl[T](stream: Stream[T],
     val predicate = new Predicate[T] {
       override def test(t: T): Boolean = filter.accept(t)
     }
-    stream.filter(predicate).iterator
+    stream.filter(predicate).iterator()
   }
 
   override def iterator(): Iterator[T] =
@@ -23,10 +23,10 @@ class DirectoryStreamImpl[T](stream: Stream[T],
     else {
       iteratorCalled = true
       new Iterator[T] {
-        override def hasNext(): Boolean = !closed && underlying.hasNext
+        override def hasNext(): Boolean = !closed && underlying.hasNext()
         override def next(): T =
           if (!hasNext()) throw new NoSuchElementException()
-          else underlying.next
+          else underlying.next()
         override def remove(): Unit = throw new UnsupportedOperationException()
       }
     }

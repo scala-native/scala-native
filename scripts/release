@@ -2,7 +2,7 @@
 
 set -ex
 
-sbt rebuild test-all
+sbt test-all
 sbt "tools/mimaReportBinaryIssues"
 sbt \
     nativelib/publishSigned \

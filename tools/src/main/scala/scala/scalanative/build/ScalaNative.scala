@@ -1,17 +1,15 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.Path
 import scala.collection.mutable
-import scala.sys.process.Process
-import scalanative.build.IO.RichPath
-import scalanative.nir.{Type, Rt, Sig, Global}
-import scalanative.linker.Link
-import scalanative.codegen.CodeGen
-import scalanative.interflow.Interflow
-import scalanative.checker.Check
+import scala.scalanative.checker.Check
+import scala.scalanative.codegen.CodeGen
+import scala.scalanative.linker.Link
+import scala.scalanative.nir._
+import scala.scalanative.util.Scope
 
-/** Internal utilities to instrument Scala Native linker, otimizer and codegen. */
+/** Internal utilities to instrument Scala Native linker, optimizer and codegen. */
 private[scalanative] object ScalaNative {
 
   /** Compute all globals that must be reachable
@@ -28,7 +26,8 @@ private[scalanative] object ScalaNative {
   /** Given the classpath and main entry point, link under closed-world
    *  assumption.
    */
-  def link(config: Config, entries: Seq[Global]): linker.Result =
+  def link(config: Config, entries: Seq[Global])(
+      implicit scope: Scope): linker.Result =
     dump(config, "linked") {
       check(config) {
         config.logger.time("Linking")(Link(config, entries))
@@ -72,11 +71,15 @@ private[scalanative] object ScalaNative {
   def optimize(config: Config, linked: linker.Result): linker.Result =
     dump(config, "optimized") {
       check(config) {
-        config.logger.time(s"Optimizing (${config.mode} mode)") {
-          val optimized =
-            interflow.Interflow(config, linked)
+        if (config.compilerConfig.optimize) {
+          config.logger.time(s"Optimizing (${config.mode} mode)") {
+            val optimized =
+              interflow.Interflow(config, linked)
 
-          linker.Link(config, linked.entries, optimized)
+            linker.Link(config, linked.entries, optimized)
+          }
+        } else {
+          linked
         }
       }
     }
@@ -142,13 +145,16 @@ private[scalanative] object ScalaNative {
 
   def dump(config: Config, phase: String)(
       linked: scalanative.linker.Result): scalanative.linker.Result = {
+    dumpDefns(config, phase, linked.defns)
+    linked
+  }
+
+  def dumpDefns(config: Config, phase: String, defns: Seq[Defn]): Unit = {
     if (config.dump) {
-      config.logger.time("Dumping intermediate code") {
+      config.logger.time(s"Dumping intermediate code ($phase)") {
         val path = config.workdir.resolve(phase + ".hnir")
-        nir.Show.dump(linked.defns, path.toFile.getAbsolutePath)
+        nir.Show.dump(defns, path.toFile.getAbsolutePath)
       }
     }
-
-    linked
   }
 }

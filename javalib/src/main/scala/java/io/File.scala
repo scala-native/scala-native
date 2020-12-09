@@ -31,7 +31,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     this(Option(parent).map(_.path).orNull, child)
 
   def this(uri: URI) = {
-    this(uri.getPath)
+    this(uri.getPath())
     checkURI(uri)
   }
 
@@ -41,19 +41,13 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def canExecute(): Boolean =
-    Zone { implicit z =>
-      access(toCString(path), fcntl.X_OK) == 0
-    }
+    Zone { implicit z => access(toCString(path), unistd.X_OK) == 0 }
 
   def canRead(): Boolean =
-    Zone { implicit z =>
-      access(toCString(path), fcntl.R_OK) == 0
-    }
+    Zone { implicit z => access(toCString(path), unistd.R_OK) == 0 }
 
   def canWrite(): Boolean =
-    Zone { implicit z =>
-      access(toCString(path), fcntl.W_OK) == 0
-    }
+    Zone { implicit z => access(toCString(path), unistd.W_OK) == 0 }
 
   def setExecutable(executable: Boolean): Boolean =
     setExecutable(executable, ownerOnly = true)
@@ -92,9 +86,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   def exists(): Boolean =
-    Zone { implicit z =>
-      access(toCString(path), fcntl.F_OK) == 0
-    }
+    Zone { implicit z => access(toCString(path), unistd.F_OK) == 0 }
 
   def toPath(): Path =
     FileSystems.getDefault().getPath(this.getPath(), Array.empty)
@@ -109,14 +101,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   private def deleteDirImpl(): Boolean =
-    Zone { implicit z =>
-      remove(toCString(path)) == 0
-    }
+    Zone { implicit z => remove(toCString(path)) == 0 }
 
   private def deleteFileImpl(): Boolean =
-    Zone { implicit z =>
-      unlink(toCString(path)) == 0
-    }
+    Zone { implicit z => unlink(toCString(path)) == 0 }
 
   override def equals(that: Any): Boolean =
     that match {
@@ -134,7 +122,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def getCanonicalPath(): String =
     Zone { implicit z =>
-      if (exists) {
+      if (exists()) {
         fromCString(simplifyExistingPath(toCString(properPath)))
       } else {
         simplifyNonExistingPath(fromCString(resolve(toCString(properPath))))
@@ -165,7 +153,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         case (acc, seg)  => seg :: acc
       }
       .reverse
-      .filterNot(_.isEmpty)
+      .filterNot(_.isEmpty())
       .mkString(separator, separator, "")
 
   @throws(classOf[IOException])
@@ -178,11 +166,12 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def getParent(): String =
-    path.split(separatorChar).filterNot(_.isEmpty) match {
-      case Array() if !isAbsolute  => null
-      case Array(_) if !isAbsolute => null
-      case parts if !isAbsolute    => parts.init.mkString(separator)
-      case parts if isAbsolute     => parts.init.mkString(separator, separator, "")
+    path.split(separatorChar).filterNot(_.isEmpty()) match {
+      case Array() if !isAbsolute()  => null
+      case Array(_) if !isAbsolute() => null
+      case parts if !isAbsolute()    => parts.init.mkString(separator)
+      case parts if isAbsolute() =>
+        parts.init.mkString(separator, separator, "")
     }
 
   def getParentFile(): File = {
@@ -199,14 +188,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
     File.isAbsolute(path)
 
   def isDirectory(): Boolean =
-    Zone { implicit z =>
-      stat.S_ISDIR(accessMode()) != 0
-    }
+    Zone { implicit z => stat.S_ISDIR(accessMode()) != 0 }
 
   def isFile(): Boolean =
-    Zone { implicit z =>
-      stat.S_ISREG(accessMode()) != 0
-    }
+    Zone { implicit z => stat.S_ISREG(accessMode()) != 0 }
 
   def isHidden(): Boolean =
     getName().startsWith(".")
@@ -249,7 +234,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
   def setReadOnly(): Boolean =
     Zone { implicit z =>
       import stat._
-      val mask    = S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
+      val mask =
+        S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
       val newMode = accessMode() & mask
       chmod(toCString(path), newMode) == 0
     }
@@ -325,7 +311,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   override def toString(): String = path
 
-  def deleteOnExit(): Unit = DeleteOnExit.addFile(this.getAbsolutePath)
+  def deleteOnExit(): Unit = DeleteOnExit.addFile(this.getAbsolutePath())
 
   @stub
   def toURL(): java.net.URL = ???
@@ -376,7 +362,7 @@ object File {
     var uncIndex =
       if (separatorChar == '/') 0 // UNIX world
       else if (length > 2 && path.charAt(1) == ':')
-        2 // Windows, but starts with C:...
+        2    // Windows, but starts with C:...
       else 1 // Possible UNC path name
 
     var foundSlash = false
@@ -434,7 +420,7 @@ object File {
             throw new IOException(
               "getcwd() error in trying to get user directory."))
 
-      if (path.isEmpty) userdir
+      if (path.isEmpty()) userdir
       else if (userdir.endsWith(separator)) userdir + path
       else userdir + separator + path
     }
@@ -536,16 +522,16 @@ object File {
     }
   }
 
-  val pathSeparatorChar: Char        = if (Platform.isWindows) ';' else ':'
+  val pathSeparatorChar: Char        = if (Platform.isWindows()) ';' else ':'
   val pathSeparator: String          = pathSeparatorChar.toString
-  val separatorChar: Char            = if (Platform.isWindows) '\\' else '/'
+  val separatorChar: Char            = if (Platform.isWindows()) '\\' else '/'
   val separator: String              = separatorChar.toString
   private var counter: Int           = 0
   private var counterBase: Int       = 0
-  private val caseSensitive: Boolean = !Platform.isWindows
+  private val caseSensitive: Boolean = !Platform.isWindows()
 
   def listRoots(): Array[File] =
-    if (Platform.isWindows) ???
+    if (Platform.isWindows()) ???
     else {
       var array = new Array[File](1)
       array(0) = new File("/")
@@ -571,19 +557,19 @@ object File {
     def compMsg(comp: String): String =
       s"Found $comp component in URI"
 
-    if (!uri.isAbsolute) {
+    if (!uri.isAbsolute()) {
       throwExc("URI is not absolute")
-    } else if (!uri.getRawSchemeSpecificPart.startsWith("/")) {
+    } else if (!uri.getRawSchemeSpecificPart().startsWith("/")) {
       throwExc("URI is not hierarchical")
-    } else if (uri.getScheme == null || !(uri.getScheme == "file")) {
+    } else if (uri.getScheme() == null || !(uri.getScheme() == "file")) {
       throwExc("Expected file scheme in URI")
-    } else if (uri.getRawPath == null || uri.getRawPath.length == 0) {
+    } else if (uri.getRawPath() == null || uri.getRawPath().length() == 0) {
       throwExc("Expected non-empty path in URI")
-    } else if (uri.getRawAuthority != null) {
+    } else if (uri.getRawAuthority() != null) {
       throwExc(compMsg("authority"))
-    } else if (uri.getRawQuery != null) {
+    } else if (uri.getRawQuery() != null) {
       throwExc(compMsg("query"))
-    } else if (uri.getRawFragment != null) {
+    } else if (uri.getRawFragment() != null) {
       throwExc(compMsg("fragment"))
     }
     // else URI is ok

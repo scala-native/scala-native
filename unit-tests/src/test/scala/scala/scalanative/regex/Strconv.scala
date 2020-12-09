@@ -1,7 +1,8 @@
 package scala.scalanative
 package regex
 
-object Strconv { // unquoteChar decodes the first character or byte in the escaped
+object Strconv {
+  // unquoteChar decodes the first character or byte in the escaped
   // string or character literal represented by the Go literal encoded
   // in UTF-16 in s.
   //
@@ -126,7 +127,7 @@ object Strconv { // unquoteChar decodes the first character or byte in the escap
       throw new IllegalArgumentException("multiline string literal")
     // Is it trivial?  Avoid allocation.
     if (s.indexOf('\\') < 0 && s.indexOf(quote) < 0)
-      if (quote == '"' || // "abc"
+      if (quote == '"' ||                       // "abc"
           s.codePointCount(0, s.length) == 1) { // 'a'
         // if s == "\\" then this return is wrong.
         return s

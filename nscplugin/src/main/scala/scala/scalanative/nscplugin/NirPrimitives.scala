@@ -70,9 +70,10 @@ object NirPrimitives {
   final val CAST_INT_TO_RAWWORD_UNSIGNED  = 1 + CAST_INT_TO_RAWWORD
   final val CAST_LONG_TO_RAWWORD          = 1 + CAST_INT_TO_RAWWORD_UNSIGNED
 
-  final val RESOLVE_CFUNCPTR = 1 + CAST_LONG_TO_RAWWORD
+  final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWWORD
+  final val CFUNCPTR_APPLY         = 1 + CFUNCPTR_FROM_FUNCTION
 
-  final val AND_RAW_WORDS          = 1 + RESOLVE_CFUNCPTR
+  final val AND_RAW_WORDS          = 1 + CFUNCPTR_APPLY
   final val OR_RAW_WORDS           = 1 + AND_RAW_WORDS
   final val XOR_RAW_WORDS          = 1 + OR_RAW_WORDS
   final val ADD_RAW_WORDS          = 1 + XOR_RAW_WORDS
@@ -152,7 +153,16 @@ abstract class NirPrimitives {
     addPrimitive(ULongToFloatMethod, ULONG_TO_FLOAT)
     addPrimitive(UIntToDoubleMethod, UINT_TO_DOUBLE)
     addPrimitive(ULongToDoubleMethod, ULONG_TO_DOUBLE)
-    HashMethods.foreach(addPrimitive(_, HASH))
+
+    {
+      import scala.tools.nsc.settings._
+      ScalaVersion.current match {
+        case SpecificScalaVersion(2, 11, _, _) =>
+          HashMethods.foreach(addPrimitive(_, HASH))
+        case _ =>
+      }
+    }
+
     addPrimitive(LoadBoolMethod, LOAD_BOOL)
     addPrimitive(LoadWordMethod, LOAD_WORD)
     addPrimitive(LoadCharMethod, LOAD_CHAR)
@@ -187,14 +197,15 @@ abstract class NirPrimitives {
     addPrimitive(CastRawPtrToLongMethod, CAST_RAWPTR_TO_LONG)
     addPrimitive(CastIntToRawPtrMethod, CAST_INT_TO_RAWPTR)
     addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
+    CFuncPtrApplyMethods.foreach(addPrimitive(_, CFUNCPTR_APPLY))
+    CFuncPtrFromFunctionMethods.foreach(addPrimitive(_, CFUNCPTR_FROM_FUNCTION))
+
     addPrimitive(CastRawWordToInt, CAST_RAWWORD_TO_INT)
     addPrimitive(CastRawWordToLong, CAST_RAWWORD_TO_LONG)
     addPrimitive(CastRawWordToLongUnsigned, CAST_RAWWORD_TO_LONG_UNSIGNED)
     addPrimitive(CastIntToRawWord, CAST_INT_TO_RAWWORD)
     addPrimitive(CastIntToRawWordUnsigned, CAST_INT_TO_RAWWORD_UNSIGNED)
     addPrimitive(CastLongToRawWord, CAST_LONG_TO_RAWWORD)
-
-    addPrimitive(ResolveCFuncPtrMethod, RESOLVE_CFUNCPTR)
 
     addPrimitive(AndRawWords, AND_RAW_WORDS)
     addPrimitive(OrRawWords, OR_RAW_WORDS)

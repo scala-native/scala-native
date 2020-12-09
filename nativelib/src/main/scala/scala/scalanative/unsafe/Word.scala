@@ -1,6 +1,8 @@
 package scala.scalanative
 package unsafe
 
+import scala.language.implicitConversions
+
 import scala.runtime.BoxesRunTime._
 import scala.reflect.ClassTag
 
@@ -34,6 +36,8 @@ final class Word(private[scalanative] val rawWord: RawWord) {
       case _ =>
         false
     })
+
+  // TODO(shadaj): equality with integers
 
   override def toString(): String = toLong.toString
 

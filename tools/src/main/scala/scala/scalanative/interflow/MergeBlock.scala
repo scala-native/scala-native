@@ -12,6 +12,10 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
   var end: State          = _
   var cf: Inst.Cf         = _
   var invalidations: Int  = 0
+  implicit def cfPos: Position = {
+    if (cf != null) cf.pos
+    else label.pos
+  }
 
   def toInsts(): Seq[Inst] = {
     val block  = this
@@ -57,6 +61,8 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
         result.raise(v, mergeUnwind(unwind))
       case Inst.Unreachable(unwind) =>
         result.unreachable(mergeUnwind(unwind))
+      case unknown =>
+        throw BailOut(s"MergeUnwind unknown Inst: ${unknown.show}")
     }
     result.toSeq
   }

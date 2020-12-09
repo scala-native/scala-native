@@ -1,3 +1,12 @@
+
+// BEWARE: This file is generated - direct edits will be lost.
+// Do not edit this it directly other than to remove
+// personally identifiable information in sourceLocation lines.
+// All direct edits to this file will be lost the next time it
+// is generated.
+//
+// See nativelib runtime/Arrays.scala.gyb for details.
+
 package scala.scalanative
 package unsafe
 
@@ -11,7 +20,9 @@ sealed abstract class CStruct
 %    Ts = "" if N == 0 else "[" + ", ".join("T" + str(i) for i in range(1, N + 1)) + "]"
 %    underscores = "" if N == 0 else "[" + ", ".join("_" for i in range(0, N)) + "]"
 
-final class CStruct${N}${Ts} private[scalanative] (private[scalanative] val rawptr: RawPtr) extends CStruct {
+final class CStruct${N}${Ts} private[scalanative] (
+    private[scalanative] val rawptr: RawPtr)
+    extends CStruct {
   @alwaysinline override def equals(other: Any): Boolean =
     (this eq other.asInstanceOf[AnyRef]) || (other match {
       case other: CStruct${N}${underscores} =>
@@ -32,7 +43,7 @@ final class CStruct${N}${Ts} private[scalanative] (private[scalanative] val rawp
   % for F in range(1, N + 1):
 
   /** Load a value of a field number ${F}. */
-  @alwaysinline def at${F}(implicit tag: Tag.CStruct${N}${Ts}): Ptr[T${F}] = 
+  @alwaysinline def at${F}(implicit tag: Tag.CStruct${N}${Ts}): Ptr[T${F}] =
     new Ptr[T${F}](elemRawPtr(rawptr, castIntToRawWord(tag.offset(${F - 1}))))
 
   /** Load a value of a field number ${F}. */

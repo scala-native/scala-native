@@ -21,7 +21,7 @@ authorship of your contribution.
 
 However, we are prepared to accept contributions that include code
 copied from `Scala.js`_ or `Apache Harmony project`_ on a case-by-case
-basis. In such cases, you must fulfil your obligations and include the
+basis. In such cases, you must fulfill your obligations and include the
 relevant copyright / license information.
 
 

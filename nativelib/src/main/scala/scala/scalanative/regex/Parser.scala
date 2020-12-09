@@ -361,9 +361,9 @@ class Parser(wholeRegexp: String, _flags: Int) {
       // In the comments we'll use the logical notation of go slices,
       // e.g. sub[i] even though the Java code will read array[s + i].
 
-      var s      = 0 // offset of first |sub| within array.
+      var s      = 0            // offset of first |sub| within array.
       var lensub = array.length // = len(sub)
-      var lenout = 0 // = len(out)
+      var lenout = 0            // = len(out)
 
       // Round 1: Factor out common literal prefixes.
       // Note: (str, strlen) and (istr, istrlen) are like Go slices
@@ -746,7 +746,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
           case '*' | '+' | '?' =>
             repeatPos = t.pos()
             val op =
-              (t.pop: @scala.annotation.switch) match {
+              (t.pop(): @scala.annotation.switch) match {
                 case '*' => ROP.STAR
                 case '+' => ROP.PLUS
                 case '?' => ROP.QUEST
@@ -852,7 +852,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
 
       val n = stack.size()
       if (n != 1) {
-        throw new PatternSyntaxException(ERR_MISSING_PAREN,
+        throw new PatternSyntaxException(ERR_UNCLOSED_GROUP,
                                          wholeRegexp,
                                          t.pos())
       }
@@ -953,8 +953,8 @@ class Parser(wholeRegexp: String, _flags: Int) {
 
       if (!parseCompleted) {
         throw new PatternSyntaxException(ERR_INVALID_PERL_OP,
-                                         t.from(startPos),
-                                         0)
+                                         t.from(startPos) + t.rest(),
+                                         t.pos() - 1)
       }
     }
   }
@@ -1026,14 +1026,16 @@ class Parser(wholeRegexp: String, _flags: Int) {
 
     val n = stack.size()
     if (n < 2) {
-      throw new PatternSyntaxException(ERR_MISSING_BRACKET,
+      throw new PatternSyntaxException(ERR_UNMATCHED_CLOSING_PAREN,
                                        wholeRegexp,
                                        pos - 1)
     }
     val re1 = pop()
     val re2 = pop()
     if (re2.op != ROP.LEFT_PAREN) {
-      throw new PatternSyntaxException(ERR_MISSING_PAREN, wholeRegexp, pos - 1)
+      throw new PatternSyntaxException(ERR_UNMATCHED_CLOSING_PAREN,
+                                       wholeRegexp,
+                                       pos - 1)
     }
     // Restore flags at time of paren.
     this.flags = re2.flags
@@ -1277,8 +1279,11 @@ object Parser {
     "regexp/syntax: internal error"
 
   // Parse errors
+  // For sanity & matching to equivalent JVM text, please keep in
+  // alphabetical order of val name.
+
   private final val ERR_INVALID_CHAR_CLASS =
-    "Illegal/unsupported character class"
+    "Unclosed character class"
 
   private final val ERR_INVALID_CHAR_RANGE =
     "Illegal character range"
@@ -1290,25 +1295,25 @@ object Parser {
     "Bad named capture group"
 
   private final val ERR_INVALID_PERL_OP =
-    "Bad perl operator"
+    "Unknown inline modifier"
 
   private final val ERR_INVALID_REPEAT_OP =
     "invalid nested repetition operator"
 
   private final val ERR_INVALID_REPEAT_SIZE =
-    "Bad repetition argument"
-
-  private final val ERR_MISSING_BRACKET =
-    "Unclosed character class"
-
-  private final val ERR_MISSING_PAREN =
-    "Missing parenthesis"
-
-  private final val ERR_MISSING_REPEAT_ARGUMENT =
-    "Bad repetition operator"
+    "Dangling meta character '*'"
 
   private final val ERR_TRAILING_BACKSLASH =
     "Trailing Backslash"
+
+  private final val ERR_MISSING_REPEAT_ARGUMENT =
+    "Dangling meta character '*'"
+
+  private final val ERR_UNCLOSED_GROUP =
+    "Unclosed group"
+
+  private final val ERR_UNMATCHED_CLOSING_PAREN =
+    "Unmatched closing ')'"
 
   // Hack to expose ArrayList.removeRange().
   private class Stack extends ArrayList[Regexp] {
@@ -1465,7 +1470,7 @@ object Parser {
 
         case StateTwo =>
           state = StateThree
-          t.skip(1) // '{'
+          t.skip(1)         // '{'
           min = parseInt(t) // (can be -2)
           if ((min == -1) || (!t.more())) {
             state = StateDone
@@ -1543,7 +1548,7 @@ object Parser {
 
     if (n.isEmpty() ||
         n.length() > 1 && n.charAt(0) == '0') { // disallow leading zeros
-      -1 // bad format
+      -1                                        // bad format
     } else if (n.length() > 8) {
       -2 // overflow
     } else {

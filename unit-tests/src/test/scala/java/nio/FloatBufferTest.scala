@@ -1,7 +1,9 @@
 package java.nio
-import java.nio.ByteBufferFactories._
 
 // Ported from Scala.js
+
+import java.nio.ByteBufferFactories._
+
 abstract class FloatBufferTest extends BaseBufferTest {
   type Factory = BufferFactory.FloatBufferFactory
 
@@ -33,20 +35,20 @@ abstract class FloatBufferTest extends BaseBufferTest {
 
 }
 
-object AllocFloatBufferTest extends FloatBufferTest {
+class AllocFloatBufferTest extends FloatBufferTest {
   val factory: Factory = new AllocFloatBufferFactory
 }
 
-object WrappedFloatBufferTest extends FloatBufferTest {
+class WrappedFloatBufferTest extends FloatBufferTest {
   val factory: Factory = new WrappedFloatBufferFactory
 }
 
-object WrappedFloatReadOnlyBufferTest extends FloatBufferTest {
+class WrappedFloatReadOnlyBufferTest extends FloatBufferTest {
   val factory: Factory =
     new WrappedFloatBufferFactory with BufferFactory.ReadOnlyBufferFactory
 }
 
-object AllocFloatSlicedBufferTest extends FloatBufferTest {
+class AllocFloatSlicedBufferTest extends FloatBufferTest {
   val factory: Factory =
     new AllocFloatBufferFactory with BufferFactory.SlicedBufferFactory
 }
@@ -62,27 +64,27 @@ abstract class FloatViewOfByteBufferTest(
     new ByteBufferFloatViewFactory(byteBufferFactory, order)
 }
 
-object FloatViewOfAllocByteBufferBigEndianTest
+class FloatViewOfAllocByteBufferBigEndianTest
     extends FloatViewOfByteBufferTest(new AllocByteBufferFactory,
                                       ByteOrder.BIG_ENDIAN)
 
-object FloatViewOfWrappedByteBufferBigEndianTest
+class FloatViewOfWrappedByteBufferBigEndianTest
     extends FloatViewOfByteBufferTest(new WrappedByteBufferFactory,
                                       ByteOrder.BIG_ENDIAN)
 
-object FloatViewOfSlicedAllocByteBufferBigEndianTest
+class FloatViewOfSlicedAllocByteBufferBigEndianTest
     extends FloatViewOfByteBufferTest(new SlicedAllocByteBufferFactory,
                                       ByteOrder.BIG_ENDIAN)
 
-object FloatViewOfAllocByteBufferLittleEndianTest
+class FloatViewOfAllocByteBufferLittleEndianTest
     extends FloatViewOfByteBufferTest(new AllocByteBufferFactory,
                                       ByteOrder.LITTLE_ENDIAN)
 
-object FloatViewOfWrappedByteBufferLittleEndianTest
+class FloatViewOfWrappedByteBufferLittleEndianTest
     extends FloatViewOfByteBufferTest(new WrappedByteBufferFactory,
                                       ByteOrder.LITTLE_ENDIAN)
 
-object FloatViewOfSlicedAllocByteBufferLittleEndianTest
+class FloatViewOfSlicedAllocByteBufferLittleEndianTest
     extends FloatViewOfByteBufferTest(new SlicedAllocByteBufferFactory,
                                       ByteOrder.LITTLE_ENDIAN)
 
@@ -95,30 +97,30 @@ abstract class ReadOnlyFloatViewOfByteBufferTest(
 
   val factory: BufferFactory.FloatBufferFactory = {
     new ByteBufferFloatViewFactory(byteBufferFactory, order)
-    with BufferFactory.ReadOnlyBufferFactory
+      with BufferFactory.ReadOnlyBufferFactory
   }
 }
 
-object ReadOnlyFloatViewOfAllocByteBufferBigEndianTest
+class ReadOnlyFloatViewOfAllocByteBufferBigEndianTest
     extends ReadOnlyFloatViewOfByteBufferTest(new AllocByteBufferFactory,
                                               ByteOrder.BIG_ENDIAN)
 
-object ReadOnlyFloatViewOfWrappedByteBufferBigEndianTest
+class ReadOnlyFloatViewOfWrappedByteBufferBigEndianTest
     extends ReadOnlyFloatViewOfByteBufferTest(new WrappedByteBufferFactory,
                                               ByteOrder.BIG_ENDIAN)
 
-object ReadOnlyFloatViewOfSlicedAllocByteBufferBigEndianTest
+class ReadOnlyFloatViewOfSlicedAllocByteBufferBigEndianTest
     extends ReadOnlyFloatViewOfByteBufferTest(new SlicedAllocByteBufferFactory,
                                               ByteOrder.BIG_ENDIAN)
 
-object ReadOnlyFloatViewOfAllocByteBufferLittleEndianTest
+class ReadOnlyFloatViewOfAllocByteBufferLittleEndianTest
     extends ReadOnlyFloatViewOfByteBufferTest(new AllocByteBufferFactory,
                                               ByteOrder.LITTLE_ENDIAN)
 
-object ReadOnlyFloatViewOfWrappedByteBufferLittleEndianTest
+class ReadOnlyFloatViewOfWrappedByteBufferLittleEndianTest
     extends ReadOnlyFloatViewOfByteBufferTest(new WrappedByteBufferFactory,
                                               ByteOrder.LITTLE_ENDIAN)
 
-object ReadOnlyFloatViewOfSlicedAllocByteBufferLittleEndianTest
+class ReadOnlyFloatViewOfSlicedAllocByteBufferLittleEndianTest
     extends ReadOnlyFloatViewOfByteBufferTest(new SlicedAllocByteBufferFactory,
                                               ByteOrder.LITTLE_ENDIAN)

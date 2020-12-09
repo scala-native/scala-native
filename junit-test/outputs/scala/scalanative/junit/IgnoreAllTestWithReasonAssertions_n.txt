@@ -1,0 +1,5 @@
+ldTest run started
+liTest scala.scalanative.junit.IgnoreAllTestWithReason ignored
+e3scala.scalanative.junit.IgnoreAllTestWithReason
+ldTest run finished: 0 failed, 1 ignored, 0 total, <TIME>
+d

@@ -3,7 +3,8 @@ package nscplugin
 
 import scala.tools.nsc._
 
-trait NirDefinitions { self: NirGlobalAddons =>
+trait NirDefinitions {
+  val global: Global
   import global._
   import definitions._
   import rootMirror._
@@ -43,15 +44,29 @@ trait NirDefinitions { self: NirGlobalAddons =>
       "scala.scalanative.unsafe.package$CQuote")
     lazy val CQuoteMethod = getDecl(CQuoteClass, TermName("c"))
 
-    lazy val CCastClass = getRequiredClass(
-      "scala.scalanative.unsafe.package$CCast")
-    lazy val CCastMethod = getDecl(CCastClass, TermName("cast"))
-
-    lazy val CFuncPtrClass = (0 to 22).map { n =>
-      getRequiredClass("scala.scalanative.unsafe.CFuncPtr" + n)
+    lazy val CFuncPtrNClass = (0 to 22).map { n =>
+      getRequiredClass(s"scala.scalanative.unsafe.CFuncPtr$n")
     }
-    lazy val CFuncRawPtrClass =
-      getRequiredClass("scala.scalanative.runtime.CFuncRawPtr")
+
+    lazy val CFuncPtrNModule = (0 to 22).map { n =>
+      getRequiredModule(s"scala.scalanative.unsafe.CFuncPtr$n")
+    }
+
+    lazy val CFuncPtrClass =
+      getRequiredClass("scala.scalanative.unsafe.CFuncPtr")
+
+    lazy val NatBaseClass = (0 to 9).map { n =>
+      getRequiredClass("scala.scalanative.unsafe.Nat$_" + n)
+    }
+    lazy val NatDigitClass = (2 to 9).map { n =>
+      getRequiredClass("scala.scalanative.unsafe.Nat$Digit" + n)
+    }
+
+    lazy val CStructClass = (0 to 22).map { n =>
+      getRequiredClass("scala.scalanative.unsafe.CStruct" + n)
+    }
+    lazy val CArrayClass =
+      getRequiredClass("scala.scalanative.unsafe.CArray")
 
     lazy val TagModule     = getRequiredModule("scala.scalanative.unsafe.Tag")
     lazy val UnitTagMethod = getDecl(TagModule, TermName("materializeUnitTag"))
@@ -81,8 +96,9 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NatBaseTagMethod = (0 to 9).map { n =>
       getDecl(TagModule, TermName("materializeNat" + n + "Tag"))
     }
-    lazy val NatDigitTagMethod =
-      getDecl(TagModule, TermName("materializeNatDigitTag"))
+    lazy val NatDigitTagMethod = (2 to 9).map { n =>
+      getDecl(TagModule, TermName(s"materializeNatDigit${n}Tag"))
+    }
     lazy val CArrayTagMethod =
       getDecl(TagModule, TermName("materializeCArrayTag"))
     lazy val CStructTagMethod = (0 to 22).map { n =>
@@ -98,7 +114,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val StructClass = getRequiredClass("scala.scalanative.runtime.struct")
 
-    lazy val RuntimePackage = getPackage(TermName("scala.scalanative.runtime"))
+    lazy val RuntimePackage = getPackageObject("scala.scalanative.runtime")
 
     lazy val RuntimeMonitorClass = getRequiredClass(
       "scala.scalanative.runtime.Monitor")
@@ -203,8 +219,16 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getMember(IntrinsicsModule, TermName("castLongToRawPtr"))
     lazy val StackallocMethod =
       getMember(IntrinsicsModule, TermName("stackalloc"))
-    lazy val ResolveCFuncPtrMethod =
-      getMember(IntrinsicsModule, TermName("resolveCFuncPtr"))
+
+    lazy val CFuncPtrApplyMethods = CFuncPtrNClass.map(
+      getMember(_, TermName("apply"))
+    )
+
+    lazy val CFuncPtrFromFunctionMethods =
+      CFuncPtrNModule.zipWithIndex.map {
+        case (module, n) =>
+          getMember(module, TermName(s"fromScalaFunction"))
+      }
 
     lazy val CastRawWordToInt =
       getMember(IntrinsicsModule, TermName("castRawWordToInt"))
@@ -263,23 +287,26 @@ trait NirDefinitions { self: NirGlobalAddons =>
       'O' -> getRequiredClass("scala.scalanative.runtime.ObjectArray")
     )
 
+    private def mapValue[K, V1, V2](fn: V1 => V2)(in: (K, V1)): (K, V2) =
+      (in._1, fn(in._2))
+
     lazy val RuntimeArrayModule: Map[Char, Symbol] =
-      RuntimeArrayClass.mapValues(_.companion)
+      RuntimeArrayClass.map(mapValue(_.companion))
 
     lazy val RuntimeArrayAllocMethod: Map[Char, Symbol] =
-      RuntimeArrayModule.mapValues(getMember(_, TermName("alloc")))
+      RuntimeArrayModule.map(mapValue(getMember(_, TermName("alloc"))))
 
     lazy val RuntimeArrayApplyMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.mapValues(getMember(_, TermName("apply")))
+      RuntimeArrayClass.map(mapValue(getMember(_, TermName("apply"))))
 
     lazy val RuntimeArrayUpdateMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.mapValues(getMember(_, TermName("update")))
+      RuntimeArrayClass.map(mapValue(getMember(_, TermName("update"))))
 
     lazy val RuntimeArrayLengthMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.mapValues(getMember(_, TermName("length")))
+      RuntimeArrayClass.map(mapValue(getMember(_, TermName("length"))))
 
     lazy val RuntimeArrayCloneMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.mapValues(getMember(_, TermName("clone")))
+      RuntimeArrayClass.map(mapValue(getMember(_, TermName("clone"))))
 
     lazy val RuntimeBoxesModule = getRequiredModule(
       "scala.scalanative.runtime.Boxes")
@@ -367,5 +394,19 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val AnyRefClassTag  = getDecl(ClassTagModule, TermName("AnyRef"))
     lazy val NothingClassTag = getDecl(ClassTagModule, TermName("Nothing"))
     lazy val NullClassTag    = getDecl(ClassTagModule, TermName("Null"))
+
+    lazy val ReflectModule =
+      getRequiredModule("scala.scalanative.reflect.Reflect")
+    lazy val Reflect_registerLoadableModuleClass =
+      getMemberMethod(ReflectModule, newTermName("registerLoadableModuleClass"))
+    lazy val Reflect_registerInstantiatableClass =
+      getMemberMethod(ReflectModule, newTermName("registerInstantiatableClass"))
+
+    lazy val EnableReflectiveInstantiationAnnotation =
+      getRequiredClass(
+        "scala.scalanative.reflect.annotation.EnableReflectiveInstantiation")
   }
+
+  lazy val JavaDefaultMethodAnnotation =
+    getRequiredClass("scala.scalanative.annotation.JavaDefaultMethod")
 }

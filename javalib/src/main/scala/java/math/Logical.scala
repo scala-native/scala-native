@@ -108,7 +108,7 @@ private[math] object Logical {
   def andPositive(bi: BigInteger, that: BigInteger): BigInteger = {
     // PRE: both arguments are positive
     val resLength = Math.min(bi.numberLength, that.numberLength)
-    var i         = Math.max(bi.getFirstNonzeroDigit, that.getFirstNonzeroDigit)
+    var i         = Math.max(bi.getFirstNonzeroDigit(), that.getFirstNonzeroDigit())
 
     if (i >= resLength) {
       BigInteger.ZERO
@@ -128,8 +128,8 @@ private[math] object Logical {
   /** @return sign = positive.magnitude & magnitude = -negative.magnitude */
   def andDiffSigns(positive: BigInteger, negative: BigInteger): BigInteger = {
     // PRE: positive is positive and negative is negative
-    val iPos = positive.getFirstNonzeroDigit
-    val iNeg = negative.getFirstNonzeroDigit
+    val iPos = positive.getFirstNonzeroDigit()
+    val iNeg = negative.getFirstNonzeroDigit()
 
     // Look if the trailing zeros of the negative will "blank" all
     // the positive digits
@@ -170,8 +170,8 @@ private[math] object Logical {
     // scalastyle:off return
     // PRE: longer and shorter are negative
     // PRE: longer has at least as many digits as shorter
-    val iLonger  = longer.getFirstNonzeroDigit
-    val iShorter = shorter.getFirstNonzeroDigit
+    val iLonger  = longer.getFirstNonzeroDigit()
+    val iShorter = shorter.getFirstNonzeroDigit()
 
     // Does shorter matter?
     if (iLonger >= shorter.numberLength) {
@@ -255,7 +255,7 @@ private[math] object Logical {
     val resDigits = new Array[Int](bi.numberLength)
     val limit     = Math.min(bi.numberLength, that.numberLength)
     var i: Int    = 0
-    i = bi.getFirstNonzeroDigit
+    i = bi.getFirstNonzeroDigit()
     while (i < limit) {
       resDigits(i) = bi.digits(i) & ~that.digits(i)
       i += 1
@@ -274,8 +274,8 @@ private[math] object Logical {
   def andNotPositiveNegative(positive: BigInteger,
                              negative: BigInteger): BigInteger = {
     // PRE: positive > 0 && negative < 0
-    val iNeg = negative.getFirstNonzeroDigit
-    val iPos = positive.getFirstNonzeroDigit
+    val iNeg = negative.getFirstNonzeroDigit()
+    val iPos = positive.getFirstNonzeroDigit()
     if (iNeg >= positive.numberLength) {
       positive
     } else {
@@ -310,8 +310,8 @@ private[math] object Logical {
     // PRE: negative < 0 && positive > 0
     var limit: Int = 0
     var digit: Int = 0
-    val iNeg       = negative.getFirstNonzeroDigit
-    val iPos       = positive.getFirstNonzeroDigit
+    val iNeg       = negative.getFirstNonzeroDigit()
+    val iPos       = positive.getFirstNonzeroDigit()
     if (iNeg >= positive.numberLength) {
       negative
     } else {
@@ -397,8 +397,8 @@ private[math] object Logical {
   /** @return sign = 1, magnitude = -val.magnitude & ~(-that.magnitude) */
   def andNotNegative(bi: BigInteger, that: BigInteger): BigInteger = {
     // PRE: val < 0 && that < 0
-    val iVal  = bi.getFirstNonzeroDigit
-    val iThat = that.getFirstNonzeroDigit
+    val iVal  = bi.getFirstNonzeroDigit()
+    val iThat = that.getFirstNonzeroDigit()
     if (iVal >= that.numberLength) {
       BigInteger.ZERO
     } else {
@@ -463,7 +463,7 @@ private[math] object Logical {
       }
     } else if (that.sign > 0) {
       orDiffSigns(that, bi)
-    } else if (that.getFirstNonzeroDigit > bi.getFirstNonzeroDigit) {
+    } else if (that.getFirstNonzeroDigit() > bi.getFirstNonzeroDigit()) {
       orNegative(that, bi)
     } else {
       orNegative(bi, that)
@@ -492,8 +492,8 @@ private[math] object Logical {
   def orNegative(bi: BigInteger, that: BigInteger): BigInteger = {
     // PRE: val and that are negative;
     // PRE: val has at least as many trailing zeros digits as that
-    val iThat = that.getFirstNonzeroDigit
-    val iVal  = bi.getFirstNonzeroDigit
+    val iThat = that.getFirstNonzeroDigit()
+    val iVal  = bi.getFirstNonzeroDigit()
     var i     = 0
     if (iVal >= that.numberLength) {
       that
@@ -529,8 +529,8 @@ private[math] object Logical {
   /** @return sign = -1, magnitude = -(positive.magnitude | -negative.magnitude) */
   def orDiffSigns(positive: BigInteger, negative: BigInteger): BigInteger = {
     // Jumping over the least significant zero bits
-    val iNeg = negative.getFirstNonzeroDigit
-    val iPos = positive.getFirstNonzeroDigit
+    val iNeg = negative.getFirstNonzeroDigit()
+    val iPos = positive.getFirstNonzeroDigit()
 
     // Look if the trailing zeros of the positive will "copy" all
     // the negative digits
@@ -608,7 +608,7 @@ private[math] object Logical {
       }
     } else if (that.sign > 0) {
       xorDiffSigns(that, bi)
-    } else if (that.getFirstNonzeroDigit > bi.getFirstNonzeroDigit) {
+    } else if (that.getFirstNonzeroDigit() > bi.getFirstNonzeroDigit()) {
       xorNegative(that, bi)
     } else {
       xorNegative(bi, that)
@@ -621,7 +621,8 @@ private[math] object Logical {
     // PRE: longer has at least as many digits as shorter
     val resLength = longer.numberLength
     val resDigits = new Array[Int](resLength)
-    var i         = Math.min(longer.getFirstNonzeroDigit, shorter.getFirstNonzeroDigit)
+    var i =
+      Math.min(longer.getFirstNonzeroDigit(), shorter.getFirstNonzeroDigit())
     while (i < shorter.numberLength) {
       resDigits(i) = longer.digits(i) ^ shorter.digits(i)
       i += 1
@@ -641,8 +642,8 @@ private[math] object Logical {
     // PRE: val has at least as many trailing zero digits as that
     val resLength = Math.max(bi.numberLength, that.numberLength)
     val resDigits = new Array[Int](resLength)
-    val iVal      = bi.getFirstNonzeroDigit
-    val iThat     = that.getFirstNonzeroDigit
+    val iVal      = bi.getFirstNonzeroDigit()
+    val iThat     = that.getFirstNonzeroDigit()
     var i         = iThat
 
     if (iVal == iThat) {
@@ -693,8 +694,8 @@ private[math] object Logical {
     // scalastyle:off return
     val resLength             = Math.max(negative.numberLength, positive.numberLength)
     val resDigits: Array[Int] = new Array[Int](resLength)
-    val iNeg                  = negative.getFirstNonzeroDigit
-    val iPos                  = positive.getFirstNonzeroDigit
+    val iNeg                  = negative.getFirstNonzeroDigit()
+    val iPos                  = positive.getFirstNonzeroDigit()
     var i                     = 0
 
     //The first

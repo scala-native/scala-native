@@ -1,0 +1,13 @@
+ldTest run started
+ldTest scala.scalanative.junit.AsyncTest.asyncFailure started
+leTest scala.scalanative.junit.AsyncTest.asyncFailure failed: java.lang.IllegalArgumentException: null, took <TIME>
+e2scala.scalanative.junit.AsyncTest.asyncFailure
+ldTest scala.scalanative.junit.AsyncTest.asyncFailure finished, took <TIME>
+ldTest scala.scalanative.junit.AsyncTest.expectedException started
+ldTest scala.scalanative.junit.AsyncTest.expectedException finished, took <TIME>
+e0scala.scalanative.junit.AsyncTest.expectedException
+ldTest scala.scalanative.junit.AsyncTest.success started
+ldTest scala.scalanative.junit.AsyncTest.success finished, took <TIME>
+e0scala.scalanative.junit.AsyncTest.success
+ldTest run finished: 1 failed, 0 ignored, 3 total, <TIME>
+d
