@@ -24,7 +24,9 @@ object Build {
    *  val clangpp  = Discover.clangpp()
    *  val linkopts = Discover.linkingOptions()
    *  val compopts = Discover.compileOptions()
-   *  val triple   = Discover.targetTriple(clang, workdir)
+   *  // Empty string or target triple if cross compiling
+   *  val triple   = ""
+   *
    *  val outpath  = workdir.resolve("out")
    *
    *  val config =
@@ -37,12 +39,11 @@ object Build {
    *         .withClangPP(clangpp)
    *         .withLinkingOptions(linkopts)
    *         .withCompileOptions(compopts)
+   *         .withTargetTriple(triple)
    *         .withLinkStubs(true)
    *       }
-   *      .withTargetTriple(triple)
    *      .withMainClass(main)
    *      .withClassPath(classpath)
-   *      .withLinkStubs(true)
    *      .withWorkdir(workdir)
    *
    *  Build.build(config, outpath)
@@ -63,31 +64,34 @@ object Build {
       ScalaNative.logLinked(fconfig, linked)
       val optimized = ScalaNative.optimize(fconfig, linked)
 
-    // clean ll files
-    IO.getAll(workdir, "glob:**.ll").foreach(Files.delete)
+      // clean ll files
+      IO.getAll(workdir, "glob:**.ll").foreach(Files.delete)
 
-    val generated = ScalaNative.codegen(fconfig, optimized)
+      val generated = ScalaNative.codegen(fconfig, optimized)
 
       val nativelibs   = NativeLib.findNativeLibs(fconfig.classPath, workdir)
       val nativelib    = NativeLib.findNativeLib(nativelibs)
       val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
 
-    val msg = s"Compiling to native code (${targetTripleMsg(config)})"
-    val objectPaths = config.logger.time(msg) {
-      val nativelibConfig =
-        fconfig.withCompilerConfig(
-          _.withCompileOptions("-O2" +: fconfig.compileOptions))
-      val libObjectPaths =
-        LLVM.compileNativelibs(nativelibConfig, linked, unpackedLibs, nativelib)
-      val llObjectPaths = LLVM.compile(fconfig, generated)
-      libObjectPaths ++ llObjectPaths
+      val msg = s"Compiling to native code (${targetTripleMsg(config)})"
+      val objectPaths = config.logger.time(msg) {
+        val nativelibConfig =
+          fconfig.withCompilerConfig(
+            _.withCompileOptions("-O2" +: fconfig.compileOptions))
+        val libObjectPaths =
+          LLVM.compileNativelibs(nativelibConfig,
+                                 linked,
+                                 unpackedLibs,
+                                 nativelib)
+        val llObjectPaths = LLVM.compile(fconfig, generated)
+        libObjectPaths ++ llObjectPaths
+      }
+
+      LLVM.link(config, linked, objectPaths, outpath)
     }
 
-    LLVM.link(config, linked, objectPaths, outpath)
-  }
-
   private def targetTripleMsg(config: Config): String = {
-    val tt = config.targetTriple
+    val tt = config.compilerConfig.targetTriple
     if (tt.nonEmpty) tt else "default target triple"
   }
 }

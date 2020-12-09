@@ -45,8 +45,9 @@ object CodeGen {
   private def emit(config: build.Config, assembly: Seq[Defn])(
       implicit meta: Metadata): Seq[Path] =
     Scope { implicit in =>
-      val env     = assembly.map(defn => defn.name -> defn).toMap
-      val workdir = VirtualDirectory.real(config.workdir)
+      val env          = assembly.map(defn => defn.name -> defn).toMap
+      val workdir      = VirtualDirectory.real(config.workdir)
+      val targetTriple = config.compilerConfig.targetTriple
 
       // Partition into multiple LLVM IR files proportional to number
       // of available processesors. This prevents LLVM from optimizing
@@ -56,7 +57,7 @@ object CodeGen {
           .map {
             case (id, defns) =>
               val sorted = defns.sortBy(_.name.show)
-              new Impl(config.targetTriple, env, sorted)
+              new Impl(targetTriple, env, sorted)
                 .gen(id.toString, workdir)
           }
           .toSeq
@@ -68,7 +69,7 @@ object CodeGen {
       def single(): Seq[Path] = {
         val sorted = assembly.sortBy(_.name.show)
         Seq(
-          new Impl(config.targetTriple, env, sorted)
+          new Impl(targetTriple, env, sorted)
             .gen(id = "out", workdir))
       }
 

@@ -43,6 +43,7 @@ object ScalaNativePluginInternal {
     nativeClangPP := nativeConfig.value.clangPP.toFile,
     nativeCompileOptions := nativeConfig.value.compileOptions,
     nativeLinkingOptions := nativeConfig.value.linkingOptions,
+    nativeTarget := nativeConfig.value.targetTriple,
     nativeMode := nativeConfig.value.mode.name,
     nativeGC := nativeConfig.value.gc.name,
     nativeLTO := nativeConfig.value.lto.name,
@@ -82,9 +83,6 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
-    nativeTarget := { // placeholder for future use
-      ""
-    },
     nativeLink / artifactPath := {
       crossTarget.value / (moduleName.value + "-out")
     },
@@ -101,6 +99,7 @@ object ScalaNativePluginInternal {
         .withClangPP(nativeClangPP.value.toPath)
         .withCompileOptions(nativeCompileOptions.value)
         .withLinkingOptions(nativeLinkingOptions.value)
+        .withTargetTriple(nativeTarget.value)
         .withGC(build.GC(nativeGC.value))
         .withMode(build.Mode(nativeMode.value))
         .withLTO(build.LTO(nativeLTO.value))
@@ -124,7 +123,6 @@ object ScalaNativePluginInternal {
           .withMainClass(maincls)
           .withClassPath(classpath)
           .withWorkdir(cwd)
-          .withTargetTriple(nativeTarget.value)
           .withCompilerConfig(nativeConfig.value)
       }
 
