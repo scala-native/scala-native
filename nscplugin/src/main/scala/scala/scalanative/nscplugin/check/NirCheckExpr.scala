@@ -286,9 +286,8 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
   def checkCFuncFromScalaFunction(app: Apply): Unit = {
     def checkResolvableClousure(tree: Tree): Unit = {
       freeLocalVars(tree).foreach { freeSym =>
-        reporter.error(
-          freeSym.pos,
-          s"can't infer a function pointer to a closure with captures: $freeSym")
+        reporter.error(freeSym.usagePosition,
+                       s"CFuncPtr cannot use free variable: ${freeSym.symbol}")
       }
     }
 

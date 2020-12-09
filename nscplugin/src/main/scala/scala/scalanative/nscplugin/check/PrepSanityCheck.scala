@@ -57,18 +57,21 @@ abstract class PrepSanityCheck[G <: NscGlobal with Singleton](
       if (sym.asClass.isTrait) "trait" else "class"
     else "object"
 
-  protected def freeLocalVars(tree: Tree): List[Symbol] = {
+  def freeLocalVars(tree: Tree): List[FreeVarTraverser.FreeVarUsage] = {
     new FreeVarTraverser().apply(tree)
   }
 
+  object FreeVarTraverser {
+    class FreeVarUsage(val usagePosition: Position, val symbol: Symbol)
+  }
   // Capture free variables and methods
   // Inspired by LambdaLift phase in scalac
   private class FreeVarTraverser extends Traverser {
-
+    import FreeVarTraverser._
     private val localVars = new ScopedVar[List[Symbol]]
-    private val freeVars  = List.newBuilder[Symbol]
+    private val freeVars  = List.newBuilder[FreeVarUsage]
 
-    def apply(tree: Tree): List[Symbol] = {
+    def apply(tree: Tree): List[FreeVarUsage] = {
       freeVars.clear()
       ScopedVar.scoped(localVars := Nil) {
         traverse(tree)
@@ -105,9 +108,9 @@ abstract class PrepSanityCheck[G <: NscGlobal with Singleton](
             assert(name == nme.WILDCARD, s"expected wildcard, but got $name")
           } else if (sym.isLocalToBlock && !isLocal(sym)) {
             if (sym.isMethod) {
-              freeVars += sym
+              freeVars += new FreeVarUsage(tree.pos, sym)
             } else if (sym.isTerm) {
-              freeVars += sym
+              freeVars += new FreeVarUsage(tree.pos, sym)
             }
           }
           super.traverse(tree)
@@ -121,13 +124,13 @@ abstract class PrepSanityCheck[G <: NscGlobal with Singleton](
           super.traverse(tree)
 
         case Select(receiver @ This(_), _) if !isLocal(receiver.symbol) =>
-          freeVars += sym
+          freeVars += new FreeVarUsage(tree.pos, sym)
 
         case Select(_, _) =>
           if (sym.isConstructor &&
               sym.owner.isLocalToBlock &&
               !isLocal(sym.owner)) {
-            freeVars += sym.owner
+            freeVars += new FreeVarUsage(tree.pos, sym.owner)
           }
           super.traverse(tree)
 
