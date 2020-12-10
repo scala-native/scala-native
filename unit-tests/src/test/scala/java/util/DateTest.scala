@@ -1,4 +1,6 @@
-package java.util
+package org.scalanative.testsuite.javalib.util
+
+import java.{util => ju}, ju.Date
 
 import org.junit.Test
 import org.junit.Assert._
@@ -51,6 +53,12 @@ class DateTest {
   }
 
   @Test def testToString(): Unit = {
-    assertTrue(now.toString equals "Date(1490986064740)")
+    val result = now.toString
+    // regex should match: "Fri Mar 31 14:47:44 EDT 2017"
+    val expected = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
+      "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 20[1-3]\\d"
+
+    assertTrue(s"""Result "${result}" does not match regex "${expected}"""",
+               result.matches(expected))
   }
 }
