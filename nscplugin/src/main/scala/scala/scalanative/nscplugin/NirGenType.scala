@@ -164,7 +164,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     val owner    = sym.owner
     val paramtys = genMethodSigParamsImpl(sym, isExtern)
     val selfty =
-      if (isExtern || owner.isExtern || isImplClass(owner)) None
+      if (isExtern || sym.isExtern || isImplClass(owner)) None
       else Some(genType(owner.tpe))
     val retty =
       if (sym.isClassConstructor) nir.Type.Unit
@@ -185,7 +185,11 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       }
     }.toMap
 
-    sym.tpe.params.map {
+    val params =
+      if (isExtern && isImplClass(sym.owner)) sym.tpe.params.tail
+      else sym.tpe.params
+
+    params.map {
       case p
           if wereRepeated.getOrElse(p.name, false) &&
             sym.isExtern =>

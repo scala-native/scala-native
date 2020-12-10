@@ -623,9 +623,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
           buf += externDefn
 
-        case Apply(Select(Super(_, _), _), _)    => ()
-        case _ if curMethodSym.hasFlag(ACCESSOR) => ()
-        case _                                   => unsupported("methods in extern objects must have extern body")
+        // 2.11 only, call to extern inherited from trait
+        case Apply(ref: RefTree, _) if ref.symbol.isExtern => ()
+        case Apply(Select(Super(_, _), _), _)              => ()
+        case _ if curMethodSym.hasFlag(ACCESSOR)           => ()
+        case _                                             => unsupported("methods in extern objects must have extern body")
       }
     }
 
