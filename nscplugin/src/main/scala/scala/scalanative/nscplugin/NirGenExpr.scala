@@ -1401,7 +1401,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       case (nir.Type.Bool, nir.Type.Bool) =>
         nir.Type.Bool
       case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _))
-          if lwidth < 32 && rwidth < 32 =>
+        if lwidth < 32 && rwidth < 32 =>
         nir.Type.Int
       case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) =>
         if (lwidth >= rwidth) lty else rty
@@ -1415,6 +1415,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         Rt.Object
       case (ty1, ty2) if ty1 == ty2 =>
         ty1
+      case (Type.Nothing, ty) => ty
+      case (ty, Type.Nothing) => ty
+
       case _ =>
         abort(s"can't perform binary operation between $lty and $rty")
     }
