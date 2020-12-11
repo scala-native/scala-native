@@ -24,8 +24,8 @@ sealed trait NativeConfig {
   /** The compilation options passed to LLVM. */
   def compileOptions: Seq[String]
 
-  /** Target triple that defines current OS, ABI and CPU architecture. */
-  def targetTriple: String
+  /** Optional target triple that defines current OS, ABI and CPU architecture. */
+  def targetTriple: Option[String]
 
   /** Should stubs be linked? */
   def linkStubs: Boolean
@@ -60,8 +60,8 @@ sealed trait NativeConfig {
   /** Create a new config with given compilation options. */
   def withCompileOptions(value: Seq[String]): NativeConfig
 
-  /** Create a new config with given optimize value */
-  def withTargetTriple(value: String): NativeConfig
+  /** Create a new config given a target triple. */
+  def withTargetTriple(value: Option[String]): NativeConfig
 
   /** Create a new config with given behavior for stubs. */
   def withLinkStubs(value: Boolean): NativeConfig
@@ -88,7 +88,7 @@ object NativeConfig {
       clangPP = Paths.get(""),
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
-      targetTriple = "",
+      targetTriple = None,
       gc = GC.default,
       lto = LTO.default,
       mode = Mode.default,
@@ -102,7 +102,7 @@ object NativeConfig {
                                 clangPP: Path,
                                 linkingOptions: Seq[String],
                                 compileOptions: Seq[String],
-                                targetTriple: String,
+                                targetTriple: Option[String],
                                 gc: GC,
                                 mode: Mode,
                                 lto: LTO,
@@ -124,7 +124,7 @@ object NativeConfig {
     def withCompileOptions(value: Seq[String]): NativeConfig =
       copy(compileOptions = value)
 
-    def withTargetTriple(value: String): NativeConfig =
+    def withTargetTriple(value: Option[String]): NativeConfig =
       copy(targetTriple = value)
 
     def withGC(value: GC): NativeConfig =

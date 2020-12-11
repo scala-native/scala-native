@@ -237,9 +237,9 @@ private[scalanative] object LLVM {
       Seq()
     } { name => Seq(s"-flto=$name") }
 
-  private def target(config: Config): Seq[String] = {
-    val tt = config.compilerConfig.targetTriple
-    if (tt.isEmpty()) Seq("-Wno-override-module")
-    else Seq("-target", tt)
-  }
+  private def target(config: Config): Seq[String] =
+    config.compilerConfig.targetTriple match {
+      case Some(tt) => Seq("-target", tt)
+      case None     => Seq("-Wno-override-module")
+    }
 }

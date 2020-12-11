@@ -90,8 +90,6 @@ object Build {
       LLVM.link(config, linked, objectPaths, outpath)
     }
 
-  private def targetTripleMsg(config: Config): String = {
-    val tt = config.compilerConfig.targetTriple
-    if (tt.nonEmpty) tt else "default target triple"
-  }
+  private def targetTripleMsg(config: Config): String =
+    config.compilerConfig.targetTriple.getOrElse("default target triple")
 }

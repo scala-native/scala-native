@@ -55,8 +55,8 @@ object ScalaNativePlugin extends AutoPlugin {
       taskKey[Boolean](
         "Shall native toolchain dump intermediate NIR to disk during linking?")
 
-    val nativeTarget =
-      taskKey[String]("The LLVM target triple for cross compiling.")
+    val targetTriple =
+      taskKey[String]("The optional LLVM target triple for cross compiling.")
   }
 
   @deprecated("use autoImport instead", "0.3.7")
