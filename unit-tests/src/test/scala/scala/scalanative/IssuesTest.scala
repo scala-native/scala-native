@@ -2,6 +2,7 @@ package scala.scalanative
 
 import org.junit.Test
 import org.junit.Assert._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 import scalanative.unsigned._
 import scalanative.unsafe._
@@ -351,6 +352,12 @@ class IssuesTest {
 
   @Test def test_Issue809(): Unit = {
     assertTrue(null.asInstanceOf[AnyRef].## == 0)
+  }
+
+  @Test def test_Issue899(): Unit = {
+    def giveNothing: Any = throw new RuntimeException()
+
+    assertThrows(classOf[RuntimeException], giveNothing == true)
   }
 
   @Test def test_Issue900(): Unit = {
