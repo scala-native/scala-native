@@ -224,14 +224,12 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
       case _: TypeApply => checkApplyTypeApply(app)
       case Select(New(_), nme.CONSTRUCTOR) =>
         checkApplyNew(app)
-      case Select(fun, _) =>
-        args.foreach(checkExpr)
+      case Select(_, _) => checkMethodArgs(fun, args)
       case _ =>
         val sym = fun.symbol
-
         if (isNirPrimitive(sym)) checkApplyNirPrimitive(app)
         if (isPrimitive(sym)) checkApplyPrimitive(app)
-        else args.foreach(checkExpr)
+        else checkMethodArgs(fun, args)
     }
   }
 
@@ -434,6 +432,25 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
     val UnApply(fun, args) = tree
     checkExpr(fun)
     args.foreach(checkExpr)
+  }
+
+  protected def checkMethodArgs(fn: Tree, args: Seq[Tree]): Unit = {
+    val isExternMethod = fn.symbol.owner.isExtern
+    if (isExternMethod) {
+      args.foreach { arg =>
+        if (isExternMethod) {
+          def isCStructClass = CStructClass.contains(arg.tpe.typeSymbol)
+          def isStructClass  = arg.tpe.typeSymbol.isStruct
+
+          if (isCStructClass || isStructClass) {
+            reporter.error(
+              arg.pos,
+              "Passing struct by value to external functions is currently unsupported")
+          }
+        }
+        checkExpr(arg)
+      }
+    }
   }
 
   protected def checkExternMemberHasTpeAnnotation(df: ValOrDefDef): Unit = {
