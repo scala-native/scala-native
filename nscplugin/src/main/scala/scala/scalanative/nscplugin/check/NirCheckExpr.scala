@@ -439,14 +439,23 @@ trait NirCheckExpr[G <: nsc.Global with Singleton] {
     if (isExternMethod) {
       args.foreach { arg =>
         if (isExternMethod) {
-          def isCStructClass = CStructClass.contains(arg.tpe.typeSymbol)
-          def isStructClass  = arg.tpe.typeSymbol.isStruct
+          val tpeSym         = arg.tpe.typeSymbol
+          def isCStructClass = CStructClass.contains(tpeSym)
+          def isStructClass  = tpeSym.isStruct
 
           if (isCStructClass || isStructClass) {
             reporter.error(
               arg.pos,
               "Passing struct by value to external functions is currently unsupported")
           }
+
+          if (CArrayClass == tpeSym) {
+            reporter.error(
+              arg.pos,
+              "Passing fixed size array to extern function by value is currently unsupported"
+            )
+          }
+
         }
         checkExpr(arg)
       }
