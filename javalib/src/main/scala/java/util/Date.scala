@@ -1,7 +1,5 @@
 package java.util
 
-import java.io.IOException
-
 import scalanative.posix.time._
 import scalanative.posix.sys.types.size_t
 import scalanative.unsafe._
