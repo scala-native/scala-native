@@ -1,6 +1,8 @@
 package java.util
 
-import scalanative.posix.time, time.time_t
+import java.io.IOException
+
+import scalanative.posix.time._
 import scalanative.posix.sys.types.size_t
 import scalanative.unsafe._
 
@@ -44,37 +46,25 @@ class Date(var milliseconds: Long)
   }
 }
 
-@extern
-private object DateC {
-
-  def scalanative_ju_secondsToLocaltime(seconds: Ptr[time_t],
-                                        format: CString,
-                                        fallback: CString,
-                                        buf: Ptr[Byte],
-                                        maxsize: size_t): CString = extern
-}
-
 private object Date {
-
   def secondsToString(seconds: Long, default: String): String = Zone {
     implicit z =>
       val ttPtr = alloc[time_t]
       !ttPtr = seconds
 
-      // 72 is gross over-provisioning based on fear.
-      // Most result strings should be about 28 + 1 for terminal NULL
-      // + 2 because some IANA timezone abbreviation can have 5 characters.
-      val bufSize = 72
-      val buf     = alloc[Byte](bufSize)
+      val tmPtr = alloc[tm]
 
-      val cstr = DateC.scalanative_ju_secondsToLocaltime(
-        ttPtr,
-        c"%a %b %d %T %Z %Y",
-        toCString(default),
-        buf,
-        bufSize
-      )
+      if (localtime_r(ttPtr, tmPtr) == null) {
+        default
+      } else {
+        // 40 is over-provisioning.
+        // Most result strings should be about 28 + 1 for terminal NULL
+        // + 2 because some IANA timezone abbreviation can have 5 characters.
+        val bufSize = 40
+        val buf     = alloc[Byte](bufSize)
+        val n       = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 
-      fromCString(cstr)
+        if (n <= 0) default else fromCString(buf)
+      }
   }
 }
