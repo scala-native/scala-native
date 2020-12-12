@@ -45,14 +45,19 @@ class Date(var milliseconds: Long)
 }
 
 private object Date {
+  // Provide prerequisite for localtime_r calls.
+  // Applications which must track timezone changes over their lifetime
+  // must do timely subsequent tzset() calls, either directly or through
+  // an occasional localtime().
+
+  tzset()
+
   def secondsToString(seconds: Long, default: String): String = Zone {
     implicit z =>
       val ttPtr = alloc[time_t]
       !ttPtr = seconds
 
       val tmPtr = alloc[tm]
-
-      tzset()
 
       if (localtime_r(ttPtr, tmPtr) == null) {
         default
