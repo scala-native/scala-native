@@ -3,6 +3,9 @@ package scala.scalanative.posix
 import org.junit.Test
 import org.junit.Assert._
 
+import java.io.IOException
+
+import scalanative.libc.{errno => libcErrno, string}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
@@ -69,6 +72,55 @@ class TimeTest {
     assertTrue(now_time_t > 1502752688)
   }
 
+  @Test def strftimeDoesNotReadMemoryOutsideStructTm(): Unit = {
+    Zone { implicit z =>
+      if (sizeof[tm] < 56) {
+        val ttPtr = alloc[time_t]
+        !ttPtr = 1490986064740L / 1000L // Fri Mar 31 14:47:44 EDT 2017
+
+        // This code is testing for reading past the end of a "short"
+        // Scala Native tm, so the linux 56 byte form is necessary here.
+        val tmBufSize = 7
+
+        // alloc will zero/clear all bytes
+        val tmBuf = alloc[Ptr[Byte]](tmBufSize)
+        val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
+
+        if (localtime_r(ttPtr, tmPtr) == null) {
+          throw new IOException(fromCString(string.strerror(libcErrno.errno)))
+        } else {
+          val unexpected = "BOGUS"
+
+          // With the "short" 36 byte SN struct tm tmBuf(6) is
+          // is linux tm_zone, and outside the posix minimal required range.
+          // strftime() should not read it.
+
+          tmBuf(6) = toCString(unexpected)
+
+          val bufSize = 70 // grossly over-provision rather than chase bugs
+          val buf     = alloc[Byte](bufSize) // will zero/clear all bytes
+          val n       = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
+
+          // strftime does not set errno on error
+          assertNotEquals("unexpected zero from strftime", n, 0)
+
+          val result = fromCString(buf)
+
+          assertEquals(
+            "strftime failed",
+            result.indexOf(unexpected, "Fri Mar 31 14:47:44 ".length),
+            -1)
+
+          val regex = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
+            "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 20[1-3]\\d"
+
+          assertTrue(s"result: '${result}' does not match regex: '${regex}'",
+                     result.matches(regex))
+        }
+      }
+    }
+  }
+
   @Test def strftimeForJanOne1900ZeroZulu(): Unit = {
     Zone { implicit z =>
       val isoDatePtr: Ptr[CChar] = alloc[CChar](70)
@@ -131,6 +183,61 @@ class TimeTest {
         strptime(c"December 32, 2016 23:59", c"%B %d, %Y %T", tmPtr)
 
       assertTrue(s"expected null result, got pointer", result == null)
+    }
+  }
+
+  @Test def strptimeDoesNotWriteMemoryOutsideStructTm(): Unit = {
+    Zone { implicit z =>
+      // Linux 56 Bytes, Posix specifies 36 but allows more.
+      val tmBufSize = 7
+      val tmBuf     = alloc[Ptr[Byte]](tmBufSize) // will zero/clear all bytes
+      val tmPtr     = tmBuf.asInstanceOf[Ptr[tm]]
+
+      val cp =
+        strptime(c"Fri Mar 31 14:47:44 EDT 2017", c"%a %b %d %T %Z %Y", tmPtr)
+
+      assertNotNull(s"strptime() returned unexpected null pointer", cp)
+
+      val ch = cp(0)
+      assertEquals("strptime() result is not NUL terminated", ch, '\u0000')
+
+      val tm_gmtoff = tmBuf(5) // tm_gmtoff is outside posix minimal range.
+      assertNull("tm_gmtoff", null)
+
+      val tm_zone = tmBuf(6) // tm_zone is outside posix minimal range.
+      assertNull("tm_zone", null)
+
+      // Major concerning conditions passed. Sanity check the tm proper.
+
+      val expectedSec = 44
+      assertEquals("tm_sec", expectedSec, tmPtr.tm_sec)
+
+      val expectedMin = 47
+      assertEquals("tm_min", expectedMin, tmPtr.tm_min)
+
+      val expectedHour = 14
+      assertEquals("tm_hour", expectedHour, tmPtr.tm_hour)
+
+      val expectedMday = 31
+      assertEquals("tm_mday", expectedMday, tmPtr.tm_mday)
+
+      val expectedMonth = 2
+      assertEquals("tm_mon", expectedMonth, tmPtr.tm_mon)
+
+      val expectedYear = 117
+      assertEquals("tm_year", expectedYear, tmPtr.tm_year)
+
+      val expectedWday = 5
+      assertEquals("tm_wday", expectedWday, tmPtr.tm_wday)
+
+      val expectedYday = 89
+      assertEquals("tm_yday", expectedYday, tmPtr.tm_yday)
+
+      // strptime() parses %Z but does not set corresponding field.
+      // Daylight saving time in most of the USA started March 12, 2017,
+      // so this would be a 1 if the field were being set.
+      val expectedIsdst = 0
+      assertEquals("tm_isdst", expectedIsdst, tmPtr.tm_isdst)
     }
   }
 

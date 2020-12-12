@@ -30,6 +30,7 @@ object time {
   def localtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
   @name("scalanative_mktime")
   def mktime(time: Ptr[tm]): time_t = extern
+  @name("scalanative_strftime")
   def strftime(str: Ptr[CChar],
                count: CSize,
                format: CString,
