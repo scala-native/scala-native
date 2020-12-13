@@ -1,4 +1,4 @@
-package java.util
+package org.scalanative.testsuite.javalib.util
 
 // Ported from Scala.js
 
