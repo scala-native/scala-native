@@ -1,7 +1,7 @@
 // Ported, with thanks & gratitude, from Scala.js.
 //   commit: 9dc4d5b36ff2b2a3dfe2e91d5c6b1ef6d10d3e51 dated: Oct 12, 2018
 //
-//   Minor scalafmt change to subMap() declaraton in order to pass current
+//   Minor scalafmt change to subMap() declaration in order to pass current
 //   Scala Native Travis CI scalafmt check stage.
 
 package java.util
