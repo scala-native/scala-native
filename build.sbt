@@ -24,7 +24,7 @@ lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
 )
 
 lazy val docsSettings: Seq[Setting[_]] = {
-  val javaDocBaseURL: String = "http://docs.oracle.com/javase/8/docs/api/"
+  val javaDocBaseURL: String = "https://docs.oracle.com/javase/8/docs/api/"
   // partially ported from Scala.js
   Def.settings(
     autoAPIMappings := true,
