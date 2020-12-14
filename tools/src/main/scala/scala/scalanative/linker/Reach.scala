@@ -740,7 +740,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   private def addMissing(global: Global, pos: Position): Unit = {
     val prev = missing.getOrElse(global, Set.empty)
     val position = NonReachablePosition(path = Paths.get(pos.source.getPath),
-                                        column = pos.column + 1)
+                                        line = pos.line + 1)
     missing(global) = prev + position
   }
 
@@ -752,9 +752,9 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         case (global, positions) =>
           log.error(s"Not found $global")
           positions.toList
-            .sortBy(p => (p.path, p.column))
+            .sortBy(p => (p.path, p.line))
             .foreach { pos =>
-              log.error(s"\tat ${pos.path.toString}:${pos.column}")
+              log.error(s"\tat ${pos.path.toString}:${pos.line}")
             }
 
       }
@@ -773,7 +773,7 @@ object Reach {
     reachability.result()
   }
 
-  private[scalanative] case class NonReachablePosition(path: Path, column: Int)
+  private[scalanative] case class NonReachablePosition(path: Path, line: Int)
 
   case class ReachabilityFailureException(msg: String)
       extends RuntimeException(msg)
