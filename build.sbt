@@ -478,6 +478,16 @@ lazy val javalib =
     )
     .dependsOn(nscplugin % "plugin", posixlib, clib)
 
+lazy val javalibExtDummies = project
+  .in(file("javalib-ext-dummies"))
+  .enablePlugins(MyScalaNativePlugin)
+  .settings(noPublishSettings)
+  .settings(
+    name := "Java Ext Dummies library for Scala Native",
+    exportJars := true
+  )
+  .dependsOn(nativelib)
+
 val fetchScalaSource =
   taskKey[File]("Fetches the scala source for the current scala version")
 
@@ -673,6 +683,22 @@ lazy val tests =
                allCoreLibs,
                testInterface,
                junitRuntime)
+
+lazy val testsExt = project
+  .in(file("unit-tests-ext"))
+  .enablePlugins(MyScalaNativePlugin)
+  .settings(noPublishSettings)
+  .settings(
+    Test / testOptions ++= Seq(
+      Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+    )
+  )
+  .dependsOn(nscplugin   % "plugin",
+             junitPlugin % "plugin",
+             allCoreLibs,
+             testInterface,
+             junitRuntime,
+             tests)
 
 lazy val sandbox =
   project
