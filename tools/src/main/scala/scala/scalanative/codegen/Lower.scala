@@ -479,7 +479,7 @@ object Lower {
       def genClassVirtualLookup(cls: Class): Unit = {
         val vindex = vtable(cls).index(sig)
         assert(vindex != -1,
-               s"Virtual table of ${cls.name} have not contained $sig ")
+               s"The virtual table of ${cls.name} does not contain $sig")
 
         val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
         val methptrptr = let(
@@ -530,7 +530,7 @@ object Lower {
           .resolve(sig)
           .getOrElse {
             unsupported(
-              s"Did not found signature of method $sig in ${cls.name}")
+              s"Did not find the signature of method $sig in ${cls.name}")
           }
         let(n, Op.Copy(Val.Global(method, Type.Ptr)), unwind)
       }
