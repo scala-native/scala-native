@@ -43,7 +43,6 @@ object ScalaNativePluginInternal {
     nativeClangPP := nativeConfig.value.clangPP.toFile,
     nativeCompileOptions := nativeConfig.value.compileOptions,
     nativeLinkingOptions := nativeConfig.value.linkingOptions,
-    targetTriple := nativeConfig.value.targetTriple.getOrElse(""),
     nativeMode := nativeConfig.value.mode.name,
     nativeGC := nativeConfig.value.gc.name,
     nativeLTO := nativeConfig.value.lto.name,
@@ -99,7 +98,6 @@ object ScalaNativePluginInternal {
         .withClangPP(nativeClangPP.value.toPath)
         .withCompileOptions(nativeCompileOptions.value)
         .withLinkingOptions(nativeLinkingOptions.value)
-        .withTargetTriple(toOption(targetTriple.value))
         .withGC(build.GC(nativeGC.value))
         .withMode(build.Mode(nativeMode.value))
         .withLTO(build.LTO(nativeLTO.value))
@@ -220,8 +218,5 @@ object ScalaNativePluginInternal {
     if (l.compareAndSet(prev, r :: prev)) r
     else registerResource(l, r)
   }
-
-  def toOption(s: String): Option[String] =
-    if (s.trim().isEmpty()) None else Some(s)
 
 }

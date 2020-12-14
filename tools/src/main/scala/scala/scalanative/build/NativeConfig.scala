@@ -63,6 +63,9 @@ sealed trait NativeConfig {
   /** Create a new config given a target triple. */
   def withTargetTriple(value: Option[String]): NativeConfig
 
+  /** Create a new config given a target triple. */
+  def withTargetTriple(value: String): NativeConfig
+
   /** Create a new config with given behavior for stubs. */
   def withLinkStubs(value: Boolean): NativeConfig
 
@@ -126,6 +129,11 @@ object NativeConfig {
 
     def withTargetTriple(value: Option[String]): NativeConfig =
       copy(targetTriple = value)
+
+    def withTargetTriple(value: String): NativeConfig = {
+      val optValue = if (value.trim().isEmpty()) None else Some(value)
+      withTargetTriple(optValue)
+    }
 
     def withGC(value: GC): NativeConfig =
       copy(gc = value)
