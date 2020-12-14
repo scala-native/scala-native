@@ -3,7 +3,7 @@ package linker
 
 import java.nio.file.{Path, Paths}
 import scala.collection.mutable
-import scala.util.control.NoStackTrace
+import scala.scalanative.build.BuildException
 import scalanative.nir._
 
 class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
@@ -756,9 +756,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
             .foreach { pos =>
               log.error(s"\tat ${pos.path.toString}:${pos.line}")
             }
-
       }
-      throw ReachabilityFailureException(
+      throw new BuildException(
         "Undefined definitions found in reachability phase")
     }
   }
@@ -774,8 +773,4 @@ object Reach {
   }
 
   private[scalanative] case class NonReachablePosition(path: Path, line: Int)
-
-  case class ReachabilityFailureException(msg: String)
-      extends RuntimeException(msg)
-      with NoStackTrace
 }
