@@ -28,8 +28,13 @@ lazy val docsSettings: Seq[Setting[_]] = {
   // partially ported from Scala.js
   Def.settings(
     autoAPIMappings := true,
-    exportJars := true,                                    // required so ScalaDoc linking works
-    scalacOptions in (Compile, doc) -= "-Xfatal-warnings", // needed only for 2.11 docs to mitigate not found java.lang members
+    exportJars := true, // required so ScalaDoc linking works
+    scalacOptions in (Compile, doc) := {
+      val prev = (scalacOptions in (Compile, doc)).value
+      if (scalaVersion.value.startsWith("2.11."))
+        prev.filter(_ != "-Xfatal-warnings")
+      else prev
+    },
     // Add Java Scaladoc mapping
     apiMappings ++= {
       val optRTJar = {
