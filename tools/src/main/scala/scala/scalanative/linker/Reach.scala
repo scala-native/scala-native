@@ -3,7 +3,6 @@ package linker
 
 import java.nio.file.{Path, Paths}
 import scala.collection.mutable
-import scala.scalanative.build.BuildException
 import scalanative.nir._
 
 class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
@@ -757,7 +756,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
               log.error(s"\tat ${pos.path.toString}:${pos.line}")
             }
       }
-      throw new BuildException(
+      throw new LinkingException(
         "Undefined definitions found in reachability phase")
     }
   }
