@@ -41,11 +41,9 @@ lazy val docsSettings: Seq[Setting[_]] = {
           def matches(path: String, name: String): Boolean =
             path.endsWith(s"${java.io.File.separator}$name.jar")
 
-          val jar = jars
-            .find(matches(_, "rt"))                   // most JREs
-            .orElse(jars.find(matches(_, "classes"))) // Java 6 on Mac OS X
-            .get
-          Some(file(jar))
+          jars
+            .find(matches(_, "rt")) // most JREs
+            .map(file)
         } else {
           // JDK >= 9, maybe sbt gives us a fake rt.jar in `scala.ext.dirs`
           val scalaExtDirs = Option(System.getProperty("scala.ext.dirs"))
