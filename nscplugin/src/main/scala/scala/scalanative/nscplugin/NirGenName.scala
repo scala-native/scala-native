@@ -4,7 +4,7 @@ package nscplugin
 import scala.tools.nsc.Global
 import scalanative.util.unreachable
 
-trait NirGenName[G <: Global with Singleton] { self: NirGenPhase[G] =>
+trait NirGenName[G <: Global with Singleton] { self: NirPhase[G] =>
   import global.{Name => _, _}, definitions._
   import nirAddons.nirDefinitions._
   import SimpleType.{fromSymbol, fromType}

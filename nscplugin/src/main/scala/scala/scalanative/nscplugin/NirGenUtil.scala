@@ -4,7 +4,7 @@ package nscplugin
 import scala.tools.nsc.Global
 import scalanative.util._
 
-trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
+trait NirGenUtil[G <: Global with Singleton] { self: NirPhase[G] =>
   import global._
   import definitions._
   import nirAddons._

@@ -77,7 +77,6 @@ abstract class NirPrimitives {
 
   import global._
   import definitions._
-  import rootMirror._
   import scalaPrimitives._
   import nirAddons._
   import nirDefinitions._
@@ -86,7 +85,7 @@ abstract class NirPrimitives {
   def init(): Unit =
     initWithPrimitives(addPrimitive)
 
-  def initPrepJSPrimitives(): Unit = {
+  def initPrepNativePrimitives(): Unit = {
     nirPrimitives.clear()
     initWithPrimitives(nirPrimitives.put)
   }
@@ -96,6 +95,11 @@ abstract class NirPrimitives {
 
   def isNirPrimitive(code: Int): Boolean =
     code >= 300 && code < 360
+
+  def getNirPrimitive(sym: Symbol): Int =
+    nirPrimitives.getOrElse(
+      sym,
+      throw new AssertionError(s"No nir primitive for symbol ${sym}"))
 
   def isRawPtrOp(code: Int): Boolean =
     code >= LOAD_BOOL && code <= ELEM_RAW_PTR

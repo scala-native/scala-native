@@ -4,7 +4,7 @@ package nscplugin
 import scala.reflect.internal.Flags
 import scala.tools.nsc._
 
-trait NirCompat[G <: Global with Singleton] { self: NirGenPhase[G] =>
+trait NirCompat[G <: Global with Singleton] { self: NirPhase[G] =>
   import NirCompat.{infiniteLoop, noImplClasses}
   import global._
 

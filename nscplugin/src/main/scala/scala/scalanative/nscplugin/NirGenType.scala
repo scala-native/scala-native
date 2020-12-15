@@ -2,7 +2,7 @@ package scala.scalanative
 package nscplugin
 import scala.tools.nsc.Global
 
-trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
+trait NirGenType[G <: Global with Singleton] { self: NirPhase[G] =>
   import SimpleType.{fromSymbol, fromType}
   import global._
   import definitions._
@@ -17,8 +17,11 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     def isScalaModule: Boolean =
       sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
 
+    def isExtern: Boolean =
+      sym.annotations.exists(_.symbol == ExternClass)
+
     def isExternModule: Boolean =
-      isScalaModule && sym.annotations.exists(_.symbol == ExternClass)
+      isScalaModule && isExtern
 
     def isStruct: Boolean =
       sym.annotations.exists(_.symbol == StructClass)
@@ -55,6 +58,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
         case ClassInfoType(_, _, sym) => SimpleType(sym, Seq.empty)
         case t: AnnotatedType         => fromType(t.underlying)
         case tpe: ErasedValueType     => SimpleType(tpe.valueClazz, Seq())
+        case ExistentialType(_, tpe)  => fromType(tpe)
       }
 
     implicit def fromSymbol(sym: Symbol): SimpleType =
