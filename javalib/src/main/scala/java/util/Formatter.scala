@@ -477,13 +477,19 @@ final class Formatter private (private[this] var dest: Appendable,
           if (flags.altFormat) "0"
           else ""
 
-        toNormalizedIntegerType(arg) match {
-          case arg: Int =>
-            padAndSendToDest(RootLocaleInfo,
-                             flags,
-                             width,
-                             prefix,
-                             java.lang.Integer.toOctalString(arg))
+        def padAndSendWithOctalInt(arg: Int): Unit = padAndSendToDest(
+          RootLocaleInfo,
+          flags,
+          width,
+          prefix,
+          java.lang.Integer.toOctalString(arg)
+        )
+
+        arg match {
+          case arg: Byte  => padAndSendWithOctalInt(arg & 0xFF)
+          case arg: Char  => padAndSendWithOctalInt(arg & 0xFFFF)
+          case arg: Short => padAndSendWithOctalInt(arg & 0xFFFF)
+          case arg: Int   => padAndSendWithOctalInt(arg)
           case arg: Long =>
             padAndSendToDest(RootLocaleInfo,
                              flags,
@@ -851,7 +857,6 @@ final class Formatter private (private[this] var dest: Appendable,
                                str: String): Unit = {
 
     val len = prefix.length + str.length
-
     if (len >= width)
       sendToDest(prefix, str)
     else if (flags.zeroPad)

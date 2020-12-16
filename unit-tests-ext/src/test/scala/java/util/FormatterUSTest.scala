@@ -1266,7 +1266,6 @@ class FormatterUSTest {
     }
   }
 
-  @Ignore
   @Test def formatForLegalByteShortIntegerLongConversionType_o(): Unit = {
     val triple = Array(
       Array(0, "%o", "0"),
@@ -1324,7 +1323,6 @@ class FormatterUSTest {
     }
   }
 
-  @Ignore
   @Test def formatForLegalByteShortIntegerLongConversionType_xX(): Unit = {
     val triple = Array(
       Array(0, "%x", "0"),
