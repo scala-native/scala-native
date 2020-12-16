@@ -183,7 +183,7 @@ final class Formatter private (private[this] var dest: Appendable,
 
     val fmtLength     = format.length
     var fmtIndex: Int = 0
-    val matcher       = FormatSpecifier.matcher(format)
+
     while (fmtIndex != fmtLength) {
       // Process a portion without '%'
       val nextPercentIndex = format.indexOf("%", fmtIndex)
@@ -197,6 +197,8 @@ final class Formatter private (private[this] var dest: Appendable,
 
       // Process one '%'
       val formatSpecifierIndex = nextPercentIndex + 1
+      val matcher              = FormatSpecifier.matcher(format)
+
       if (!matcher.find(formatSpecifierIndex) ||
           matcher.start() != formatSpecifierIndex) {
         /* Could not parse a valid format specifier. The reported unknown
@@ -221,14 +223,22 @@ final class Formatter private (private[this] var dest: Appendable,
       val width      = parsePositiveIntSilent(optGroup(3), default = -1)
       val precision  = parsePositiveIntSilent(optGroup(4), default = -1)
 
+//      println(s"""
+//           |format: ${format}
+//           |args:   ${args.toList}
+//           |conversion: ${conversion}
+//           |matched:    ${matcher.group()}
+//           |argIdx:     ${optGroup(1)}
+//           |flags:      ${matcher.group(2)} :: ${flags.bits}
+//           |width:      ${optGroup(3)}
+//           |precision:  ${optGroup(4)}""".stripMargin)
+
       val arg = if (conversion == '%' || conversion == 'n') {
         /* No argument. Make sure not to bump `lastImplicitArgIndex` nor to
          * affect `lastArgIndex`.
          */
         null
       } else {
-        if (flags.leftAlign && width < 0)
-          throw new MissingFormatWidthException("%" + matcher.group())
 
         val argIndex = if (flags.useLastIndex) {
           // Explicitly use the last index
@@ -248,12 +258,16 @@ final class Formatter private (private[this] var dest: Appendable,
           }
         }
 
+        val conversionStr = conversion.toString
+        if ("bBhHsScCdoxXeEgGfn%".indexOf(conversionStr) < 0)
+          throw new UnknownFormatConversionException(conversionStr)
+
         if (argIndex <= 0 || argIndex > args.length) {
-          val conversionStr = conversion.toString
-          if ("bBhHsHcCdoxXeEgGfn%".indexOf(conversionStr) < 0)
-            throw new UnknownFormatConversionException(conversionStr)
-          else
-            throw new MissingFormatArgumentException("%" + matcher.group())
+          throw new MissingFormatArgumentException("%" + matcher.group())
+        }
+
+        if (flags.leftAlign && width < 0) {
+          throw new MissingFormatWidthException("%" + matcher.group())
         }
 
         lastArgIndex = argIndex
@@ -406,10 +420,19 @@ final class Formatter private (private[this] var dest: Appendable,
                       conversion,
                       invalidFlags = NumericOnlyFlags | AltFormat)
         rejectPrecision()
+        def checkValidCodePoint(arg: Int): Unit =
+          if (!Character.isValidCodePoint(arg))
+            throw new IllegalFormatCodePointException(arg)
+
         arg match {
-          case arg: Char =>
-            formatNonNumericString(localeInfo, flags, width, -1, arg.toString)
           case arg: Byte =>
+            checkValidCodePoint(arg)
+            formatNonNumericString(localeInfo, flags, width, -1, arg.toString)
+          case arg: Char =>
+            checkValidCodePoint(arg)
+            formatNonNumericString(localeInfo, flags, width, -1, arg.toString)
+          case arg: Short =>
+            checkValidCodePoint(arg)
             formatNonNumericString(localeInfo, flags, width, -1, arg.toString)
           case arg: Int =>
             if (!Character.isValidCodePoint(arg))
@@ -448,9 +471,6 @@ final class Formatter private (private[this] var dest: Appendable,
 
       case 'o' =>
         // Octal formatting is not localized
-        validateFlags(flags,
-                      conversion,
-                      invalidFlags = InvalidFlagsForOctalAndHex)
         rejectPrecision()
         val prefix =
           if (flags.altFormat) "0"
@@ -477,7 +497,11 @@ final class Formatter private (private[this] var dest: Appendable,
                                 prefix)
           case _ =>
             formatNullOrThrowIllegalFormatConversion()
+
         }
+        validateFlags(flags,
+                      conversion,
+                      invalidFlags = InvalidFlagsForOctalAndHex)
 
       case 'x' | 'X' =>
         // Hex formatting is not localized
@@ -538,13 +562,15 @@ final class Formatter private (private[this] var dest: Appendable,
         padAndSendToDestNoZeroPad(flags, width, "%")
 
       case 'n' =>
-        validateFlagsForPercentAndNewline(flags,
-                                          conversion,
-                                          invalidFlags = AllWrittenFlags)
         rejectPrecision()
         if (width >= 0)
           throw new IllegalFormatWidthException(width)
+        validateFlagsForPercentAndNewline(flags,
+                                          conversion,
+                                          invalidFlags = AllWrittenFlags)
+
         sendToDest("\n")
+
       // todo case 't' | 'T' => date/time
       // todo case 'a' | 'A' => floating point formatted as hex
       case _ =>
