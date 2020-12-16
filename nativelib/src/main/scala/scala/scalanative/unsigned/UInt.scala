@@ -276,7 +276,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
   @inline override def hashCode(): Int = underlying.##
 
   @inline override def equals(obj: Any): Boolean = obj match {
-    case that: UInt => this == that
+    case that: UInt => this.underlying == that.underlying
     case _          => false
   }
 

@@ -266,7 +266,7 @@ final class UByte private[scalanative] (
   @inline override def hashCode(): Int = underlying.##
 
   @inline override def equals(obj: Any): Boolean = obj match {
-    case that: UByte => this == that
+    case that: UByte => this.underlying == that.underlying
     case _           => false
   }
 

@@ -272,7 +272,7 @@ final class ULong private[scalanative] (
   @inline override def hashCode(): Int = underlying.##
 
   @inline override def equals(obj: Any): Boolean = obj match {
-    case that: ULong => this == that
+    case that: ULong => this.underlying == that.underlying
     case _           => false
   }
 

@@ -266,7 +266,7 @@ final class UShort private[scalanative] (
   @inline override def hashCode(): Int = underlying.##
 
   @inline override def equals(obj: Any): Boolean = obj match {
-    case that: UShort => this == that
+    case that: UShort => this.underlying == that.underlying
     case _            => false
   }
 
