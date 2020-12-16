@@ -424,16 +424,21 @@ final class Formatter private (private[this] var dest: Appendable,
           if (!Character.isValidCodePoint(arg))
             throw new IllegalFormatCodePointException(arg)
 
+        def formatCharString(charString: String) =
+          formatNonNumericString(localeInfo, flags, width, -1, charString)
+
         arg match {
           case arg: Byte =>
             checkValidCodePoint(arg)
-            formatNonNumericString(localeInfo, flags, width, -1, arg.toString)
+            formatCharString(arg.toChar.toString)
+
           case arg: Char =>
             checkValidCodePoint(arg)
-            formatNonNumericString(localeInfo, flags, width, -1, arg.toString)
+            formatCharString(arg.toString)
+
           case arg: Short =>
             checkValidCodePoint(arg)
-            formatNonNumericString(localeInfo, flags, width, -1, arg.toString)
+            formatCharString(arg.toChar.toString)
           case arg: Int =>
             if (!Character.isValidCodePoint(arg))
               throw new IllegalFormatCodePointException(arg)
@@ -446,11 +451,7 @@ final class Formatter private (private[this] var dest: Appendable,
                   (0xdc00 | (arg & 0x3ff)).toChar
                 ))
             }
-            formatNonNumericString(localeInfo,
-                                   flags,
-                                   width,
-                                   -1,
-                                   str.asInstanceOf[String])
+            formatCharString(str)
           case _ =>
             formatNullOrThrowIllegalFormatConversion()
         }

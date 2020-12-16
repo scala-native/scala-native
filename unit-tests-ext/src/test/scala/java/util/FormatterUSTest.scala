@@ -1150,7 +1150,6 @@ class FormatterUSTest {
     val output  = 2
     for (i <- 0 until triple.length) {
       val f = new Formatter(Locale.US)
-      println(triple(i).toList)
       f.format(triple(i)(pattern).asInstanceOf[String],
                triple(i)(input).asInstanceOf[Object])
       assertEquals(triple(i)(output), f.toString())
