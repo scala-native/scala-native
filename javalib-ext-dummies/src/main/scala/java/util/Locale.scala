@@ -2,25 +2,33 @@ package java.util
 
 //import java.{util => ju}
 
-/** Ported from Harmony and using Java API docs.
+/** Ported from Harmony, Scala.js and using Java API docs.
  *
  * TODO: Commented out code needed to finish implementation.
  *
  * Harmony defers much of the work to icu4j from
  * [[http://site.icu-project.org/ ICU - International Components for Unicode]]
  */
-final class Locale(val language: String,
-                   val country: String,
-                   val variant: String)
+final class Locale(languageRaw: String,
+                   countryRaw: String,
+                   variant: String,
+                   private val extensions: Map[Char, String])
     extends Serializable
     with Cloneable {
+
+  private[this] val language: String = languageRaw.toLowerCase()
+
+  private[this] val country: String = countryRaw.toUpperCase()
 
   if (language == null || country == null || variant == null)
     throw new NullPointerException()
 
-  def this(language: String) = this(language, "", "")
+  def this(languageRaw: String, countryRaw: String, variantRaw: String) =
+    this(languageRaw, countryRaw, variantRaw, Collections.emptyMap())
 
   def this(language: String, country: String) = this(language, country, "")
+
+  def this(language: String) = this(language, "", "")
 
   override def clone() =
     try {
@@ -32,9 +40,10 @@ final class Locale(val language: String,
   @inline override def equals(that: Any): scala.Boolean =
     that match {
       case that: Locale =>
-        language == that.language &&
-          country == that.country &&
-          variant == that.variant
+        getLanguage() == that.getLanguage() &&
+          getCountry() == that.getCountry() &&
+          getVariant() == that.getVariant() &&
+          extensions == that.extensions
       case _ =>
         false
     }
@@ -61,15 +70,17 @@ final class Locale(val language: String,
 
   //def getDisplayVariant(locale: Locale): String = ???
 
-  //def getExtension(key: Char): String = ???
+  def hasExtensions(): Boolean = !extensions.isEmpty()
 
-  //def getExtensionKeys(): ju.Set[Character] = ???
+  def getExtension(key: Char): String = extensions.get(key)
+
+  def getExtensionKeys(): Set[Char] = extensions.keySet()
 
   //def getISO3Country(): String = ???
 
   //def getISO3Language(): String = ???
 
-  //def getLanguage(): String = language
+  def getLanguage(): String = language
 
   //def getScript(): String = ???
 
@@ -79,10 +90,13 @@ final class Locale(val language: String,
 
   //def getUnicodeLocaleType(key: String) = ???
 
-  //def getVariant(): String = variant
+  def getVariant(): String = variant
 
   @inline override def hashCode(): Int =
-    country.hashCode() + language.hashCode() + variant.hashCode()
+    country.hashCode() +
+      language.hashCode() +
+      variant.hashCode() +
+      extensions.hashCode()
 
   //def toLanguageTag(): String = ???
 
@@ -108,7 +122,7 @@ final class Locale(val language: String,
 
 object Locale {
 
-  private[this] var defaultLocale = Locale.US
+  private[this] var defaultLocale = Locale.ROOT
 
   lazy val CANADA                   = new Locale("en", "CA")
   lazy val CANADA_FRENCH            = new Locale("fr", "CA")
@@ -154,4 +168,38 @@ object Locale {
     this.defaultLocale = locale
 
   //class Category
+
+  final class Builder {
+    private var language: String = ""
+    private var country: String  = ""
+    private var variant: String  = ""
+    private val extensions       = new java.util.HashMap[Char, String]
+
+    def setLanguage(language: String): Builder = {
+      this.language = language.toLowerCase()
+      this
+    }
+
+    def setCountry(country: String): Builder = {
+      this.country = country.toUpperCase()
+      this
+    }
+
+    def setVariant(variant: String): Builder = {
+      this.variant = variant
+      this
+    }
+
+    def setExtension(key: Char, value: String): Builder = {
+      extensions.put(key, value)
+      this
+    }
+
+    def build(): Locale = {
+      new Locale(language,
+                 country,
+                 variant,
+                 extensions.clone().asInstanceOf[Map[Char, String]])
+    }
+  }
 }
