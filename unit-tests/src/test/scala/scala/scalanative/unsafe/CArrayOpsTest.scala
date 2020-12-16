@@ -14,7 +14,7 @@ class CArrayOpsTest {
     val ptr   = alloc.asInstanceOf[Ptr[Int]]
 
     assertTrue(ptr == carr.at(0))
-    (1 to 100).foreach { i => assertTrue((ptr + i) == carr.at(i)) }
+    (1 to 31).foreach { i => assertTrue((ptr + i) == carr.at(i)) }
   }
 
   @Test def applyUpdate(): Unit = {
