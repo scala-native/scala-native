@@ -1,6 +1,6 @@
 package java.util
 
-// Ported from Harmony
+// Ported from Scala.js
 
 import java.io._
 import java.lang.{Double => JDouble, StringBuilder => JStringBuilder}
