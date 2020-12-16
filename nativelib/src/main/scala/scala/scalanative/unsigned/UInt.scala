@@ -273,6 +273,13 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
   @inline final override def toString(): String =
     JInteger.toUnsignedString(underlying)
 
+  @inline override def hashCode(): Int = underlying.##
+
+  @inline override def equals(obj: Any): Boolean = obj match {
+    case that: UInt => this == that
+    case _          => false
+  }
+
   // "Rich" API
 
   @inline final def max(that: UInt): UInt = if (this >= that) this else that

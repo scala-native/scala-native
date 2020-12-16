@@ -263,6 +263,13 @@ final class UByte private[scalanative] (
 
   @inline final override def toString(): String = toInt.toString()
 
+  @inline override def hashCode(): Int = underlying.##
+
+  @inline override def equals(obj: Any): Boolean = obj match {
+    case that: UByte => this == that
+    case _           => false
+  }
+
   // "Rich" API
 
   @inline final def max(that: UByte): UByte =
