@@ -1,6 +1,7 @@
 package scala.scalanative
 package build
 
+import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Try
 import scala.sys.process._
@@ -43,10 +44,16 @@ object Discover {
   /** Find default clang compilation options. */
   def compileOptions(): Seq[String] = {
     val includes = {
-      val includedir =
+      val llvmIncludeDir =
         Try(Process("llvm-config --includedir").lineStream_!.toSeq)
           .getOrElse(Seq.empty)
-      ("/usr/local/include" +: includedir).map(s => s"-I$s")
+
+      val includeDirs =
+        getenv("SCALANATIVE_INCLUDE_DIRS")
+          .map(_.split(File.pathSeparatorChar).toSeq)
+          .getOrElse(Seq("/usr/local/include", "/opt/local/include"))
+
+      (includeDirs ++ llvmIncludeDir).map(s => s"-I$s")
     }
     includes :+ "-Qunused-arguments"
   }
@@ -54,10 +61,16 @@ object Discover {
   /** Find default options passed to the system's native linker. */
   def linkingOptions(): Seq[String] = {
     val libs = {
-      val libdir =
+      val llvmLibDir =
         Try(Process("llvm-config --libdir").lineStream_!.toSeq)
           .getOrElse(Seq.empty)
-      ("/usr/local/lib" +: libdir).map(s => s"-L$s")
+
+      val libDirs =
+        getenv("SCALANATIVE_LIB_DIRS")
+          .map(_.split(File.pathSeparatorChar).toSeq)
+          .getOrElse(Seq("/usr/local/lib", "/opt/local/lib"))
+
+      (libDirs ++ llvmLibDir).map(s => s"-L$s")
     }
     libs
   }
