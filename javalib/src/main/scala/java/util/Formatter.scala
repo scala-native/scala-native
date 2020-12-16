@@ -409,6 +409,8 @@ final class Formatter private (private[this] var dest: Appendable,
         arg match {
           case arg: Char =>
             formatNonNumericString(localeInfo, flags, width, -1, arg.toString)
+          case arg: Byte =>
+            formatNonNumericString(localeInfo, flags, width, -1, arg.toString)
           case arg: Int =>
             if (!Character.isValidCodePoint(arg))
               throw new IllegalFormatCodePointException(arg)
@@ -433,7 +435,7 @@ final class Formatter private (private[this] var dest: Appendable,
       case 'd' =>
         validateFlags(flags, conversion, invalidFlags = AltFormat)
         rejectPrecision()
-        arg match {
+        toNormalizedIntegerType(arg) match {
           case arg: Int =>
             formatNumericString(localeInfo, flags, width, arg.toString())
           case arg: Long =>
@@ -662,16 +664,14 @@ final class Formatter private (private[this] var dest: Appendable,
                               forceDecimalSep: Boolean): String = {
 
     val s2: String = Zone { implicit z =>
-      val buf = z.alloc(Math.log10(x).toInt + 1 + precision)
+      val bufSize = Math.log10(x).toInt.max(1) + 1 + precision
+      val buf     = z.alloc(bufSize)
       vsprintf(buf, toCString(s"%.${precision}f"), toCVarArgList(x))
       fromCString(buf)
     }
-
     // Finally, force the decimal separator, if requested
-    if (forceDecimalSep && s2.indexOf(".") < 0)
-      s2 + "."
-    else
-      s2
+    if (forceDecimalSep && s2.indexOf(".") < 0) s2 + "."
+    else s2
   }
 
   private def formatNonNumericString(localeInfo: LocaleInfo,
