@@ -521,14 +521,19 @@ final class Formatter private (private[this] var dest: Appendable,
           else if (flags.upperCase) "0X"
           else "0x"
         }
-        toNormalizedIntegerType(arg) match {
-          case arg: Int =>
-            padAndSendToDest(
-              RootLocaleInfo,
-              flags,
-              width,
-              prefix,
-              applyNumberUpperCase(flags, java.lang.Integer.toHexString(arg)))
+        def padAndSendWithHexInt(arg: Int): Unit = padAndSendToDest(
+          RootLocaleInfo,
+          flags,
+          width,
+          prefix,
+          applyNumberUpperCase(flags, java.lang.Integer.toHexString(arg))
+        )
+
+        arg match {
+          case arg: Byte  => padAndSendWithHexInt(arg & 0xFF)
+          case arg: Char  => padAndSendWithHexInt(arg & 0xFFFF)
+          case arg: Short => padAndSendWithHexInt(arg & 0xFFFF)
+          case arg: Int   => padAndSendWithHexInt(arg)
           case arg: Long =>
             padAndSendToDest(
               RootLocaleInfo,
