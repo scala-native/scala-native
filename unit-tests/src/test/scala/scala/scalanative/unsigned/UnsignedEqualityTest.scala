@@ -5,7 +5,7 @@ import org.junit.Assert._
 
 class UnsignedEqualityTest {
 
-  def testEquality[T <: AnyRef](u1: T, u2: T, u3: T): Unit = {
+  def testEquality(u1: AnyRef, u2: AnyRef, u3: AnyRef): Unit = {
     assertFalse(u1.eq(u2))
     assertFalse(u1.eq(u3))
     assertFalse(u2.eq(u3))
