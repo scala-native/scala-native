@@ -22,8 +22,10 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
 
   val name: String = "Scala Native JUnit plugin"
 
-  val components: List[NscPluginComponent] =
-    List(ScalaNativeJUnitPluginComponent)
+  val components: List[NscPluginComponent] = global match {
+    case _: doc.ScaladocGlobal => Nil
+    case _                     => List(ScalaNativeJUnitPluginComponent)
+  }
 
   val description: String = "Makes JUnit test classes invokable in Scala Native"
 
