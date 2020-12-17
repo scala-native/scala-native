@@ -10,7 +10,17 @@ object time {
   type time_t   = types.time_t
   type clock_t  = types.clock_t
   type timespec = CStruct2[time_t, CLong]
-  type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
+  type tm = CStruct11[CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CLong,
+                      CString]
 
   @name("scalanative_asctime")
   def asctime(time_ptr: Ptr[tm]): CString = extern
@@ -57,23 +67,27 @@ object timeOps {
   }
 
   implicit class tmOps(val ptr: Ptr[tm]) extends AnyVal {
-    def tm_sec: CInt              = ptr._1
-    def tm_min: CInt              = ptr._2
-    def tm_hour: CInt             = ptr._3
-    def tm_mday: CInt             = ptr._4
-    def tm_mon: CInt              = ptr._5
-    def tm_year: CInt             = ptr._6
-    def tm_wday: CInt             = ptr._7
-    def tm_yday: CInt             = ptr._8
-    def tm_isdst: CInt            = ptr._9
-    def tm_sec_=(v: CInt): Unit   = ptr._1 = v
-    def tm_min_=(v: CInt): Unit   = ptr._2 = v
-    def tm_hour_=(v: CInt): Unit  = ptr._3 = v
-    def tm_mday_=(v: CInt): Unit  = ptr._4 = v
-    def tm_mon_=(v: CInt): Unit   = ptr._5 = v
-    def tm_year_=(v: CInt): Unit  = ptr._6 = v
-    def tm_wday_=(v: CInt): Unit  = ptr._7 = v
-    def tm_yday_=(v: CInt): Unit  = ptr._8 = v
-    def tm_isdst_=(v: CInt): Unit = ptr._9 = v
+    def tm_sec: CInt                = ptr._1
+    def tm_min: CInt                = ptr._2
+    def tm_hour: CInt               = ptr._3
+    def tm_mday: CInt               = ptr._4
+    def tm_mon: CInt                = ptr._5
+    def tm_year: CInt               = ptr._6
+    def tm_wday: CInt               = ptr._7
+    def tm_yday: CInt               = ptr._8
+    def tm_isdst: CInt              = ptr._9
+    def tm_gmtoff: CLong            = ptr._10
+    def tm_zone: CString            = ptr._11
+    def tm_sec_=(v: CInt): Unit     = ptr._1 = v
+    def tm_min_=(v: CInt): Unit     = ptr._2 = v
+    def tm_hour_=(v: CInt): Unit    = ptr._3 = v
+    def tm_mday_=(v: CInt): Unit    = ptr._4 = v
+    def tm_mon_=(v: CInt): Unit     = ptr._5 = v
+    def tm_year_=(v: CInt): Unit    = ptr._6 = v
+    def tm_wday_=(v: CInt): Unit    = ptr._7 = v
+    def tm_yday_=(v: CInt): Unit    = ptr._8 = v
+    def tm_isdst_=(v: CInt): Unit   = ptr._9 = v
+    def tm_gmtoff_=(v: CLong): Unit = ptr._10 = v
+    def tm_zone_=(v: CString): Unit = ptr._11 = v
   }
 }

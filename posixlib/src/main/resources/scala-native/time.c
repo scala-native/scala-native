@@ -1,3 +1,5 @@
+#define __USE_BSD /* for tm_gmtoff and tm_zone */
+
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
@@ -12,6 +14,8 @@ struct scalanative_tm {
     int tm_wday;
     int tm_yday;
     int tm_isdst;
+    long tm_gmtoff;
+    char *tm_zone;
 };
 
 static struct scalanative_tm scalanative_gmtime_buf;
@@ -28,6 +32,8 @@ static void scalanative_tm_init(struct scalanative_tm *scala_tm,
     scala_tm->tm_wday = tm->tm_wday;
     scala_tm->tm_yday = tm->tm_yday;
     scala_tm->tm_isdst = tm->tm_isdst;
+    scala_tm->tm_gmtoff = tm->tm_gmtoff;
+    scala_tm->tm_zone = tm->tm_zone;
 }
 
 static void tm_init(struct tm *tm, struct scalanative_tm *scala_tm) {
@@ -40,6 +46,8 @@ static void tm_init(struct tm *tm, struct scalanative_tm *scala_tm) {
     tm->tm_wday = scala_tm->tm_wday;
     tm->tm_yday = scala_tm->tm_yday;
     tm->tm_isdst = scala_tm->tm_isdst;
+    tm->tm_gmtoff = scala_tm->tm_gmtoff;
+    tm->tm_zone = scala_tm->tm_zone;
 }
 
 char *scalanative_asctime_r(struct scalanative_tm *scala_tm, char *buf) {
