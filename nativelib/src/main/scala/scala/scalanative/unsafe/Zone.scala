@@ -2,7 +2,8 @@ package scala.scalanative
 package unsafe
 
 import scala.annotation.implicitNotFound
-import scalanative.runtime.{libc, RawPtr, fromRawPtr}
+import scala.scalanative.unsigned.UnsignedRichInt
+import scalanative.runtime.{RawPtr, fromRawPtr, libc}
 
 /** Zone allocator which manages memory allocations. */
 @implicitNotFound("Given method requires an implicit zone.")
@@ -50,7 +51,7 @@ object Zone {
       if (isClosed) {
         throw new IllegalStateException("zone allocator is closed")
       }
-      val rawptr = libc.malloc(size)
+      val rawptr = libc.calloc(1.toUInt, size)
       if (rawptr == null) {
         throw new OutOfMemoryError(s"Unable to allocate $size bytes")
       }

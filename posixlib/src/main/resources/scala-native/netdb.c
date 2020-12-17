@@ -48,13 +48,13 @@ void scalanative_convert_addrinfo(struct addrinfo *in,
         socklen_t size;
         if (in->ai_addr->sa_family == AF_INET) {
             struct scalanative_sockaddr_in *addr =
-                malloc(sizeof(struct scalanative_sockaddr_in));
+                calloc(1, sizeof(struct scalanative_sockaddr_in));
             scalanative_convert_scalanative_sockaddr_in(
                 (struct sockaddr_in *)in->ai_addr, addr, &size);
             out->ai_addr = (struct scalanative_sockaddr *)addr;
         } else {
             struct scalanative_sockaddr_in6 *addr =
-                malloc(sizeof(struct scalanative_sockaddr_in6));
+                calloc(1, sizeof(struct scalanative_sockaddr_in6));
             scalanative_convert_scalanative_sockaddr_in6(
                 (struct sockaddr_in6 *)in->ai_addr, addr, &size);
             out->ai_addr = (struct scalanative_sockaddr *)addr;
@@ -70,7 +70,7 @@ void scalanative_convert_addrinfo(struct addrinfo *in,
         out->ai_next = NULL;
     } else {
         struct scalanative_addrinfo *next_native =
-            malloc(sizeof(struct scalanative_addrinfo));
+            calloc(1, sizeof(struct scalanative_addrinfo));
         scalanative_convert_addrinfo(in->ai_next, next_native);
         out->ai_next = next_native;
     }
@@ -97,7 +97,7 @@ int scalanative_getaddrinfo(char *name, char *service,
         return status;
     }
     struct scalanative_addrinfo *res_native =
-        malloc(sizeof(struct scalanative_addrinfo));
+        calloc(1, sizeof(struct scalanative_addrinfo));
     scalanative_convert_addrinfo(res_c, res_native);
     freeaddrinfo(res_c);
     *res = res_native;

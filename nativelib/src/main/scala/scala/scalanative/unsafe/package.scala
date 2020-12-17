@@ -238,7 +238,6 @@ package object unsafe {
         val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
         val $ptr    = $z.alloc($size)
         val $rawptr = $runtime.toRawPtr($ptr)
-        $runtime.libc.memset($rawptr, 0, $size)
         $ptr.asInstanceOf[Ptr[$T]]
       }"""
     }
@@ -258,7 +257,6 @@ package object unsafe {
         val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n.toULong
         val $ptr    = $z.alloc($size)
         val $rawptr = $runtime.toRawPtr($ptr)
-        $runtime.libc.memset($rawptr, 0, $size)
         $ptr.asInstanceOf[Ptr[$T]]
       }"""
     }

@@ -23,7 +23,6 @@ object SocketHelpers {
       var hints = alloc[addrinfo]
       var ret   = alloc[Ptr[addrinfo]]
 
-      libc.memset(hints.rawptr, 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
       hints.ai_protocol = 0
       hints.ai_addr = null
@@ -145,7 +144,6 @@ object SocketHelpers {
       var hints = alloc[addrinfo]
       var ret   = alloc[Ptr[addrinfo]]
 
-      libc.memset(hints.rawptr, 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
       hints.ai_socktype = SOCK_STREAM
       hints.ai_protocol = 0

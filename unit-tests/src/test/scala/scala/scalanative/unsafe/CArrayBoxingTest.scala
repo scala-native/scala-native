@@ -8,16 +8,16 @@ import scalanative.junit.utils.AssertThrows._
 
 import scalanative.unsafe.Nat._
 import scalanative.unsigned._
-import scalanative.libc.stdlib.malloc
+import scalanative.libc.stdlib.calloc
 import java.lang.Long.toHexString
 
 class CArrayBoxingTest {
   var any: Any = null
 
   @noinline lazy val nullArr: CArray[Byte, _4] = null
-  @noinline lazy val arr: CArray[Byte, _4] = !malloc(64.toULong)
+  @noinline lazy val arr: CArray[Byte, _4] = !calloc(1.toUInt, 64.toUInt)
     .asInstanceOf[Ptr[CArray[Byte, _4]]]
-  @noinline lazy val arr2: CArray[Byte, _4] = !malloc(64.toULong)
+  @noinline lazy val arr2: CArray[Byte, _4] = !calloc(1.toUInt, 64.toUInt)
     .asInstanceOf[Ptr[CArray[Byte, _4]]]
 
   @noinline def f[T](x: T): T      = x

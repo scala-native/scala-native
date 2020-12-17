@@ -7,7 +7,7 @@
 int scalanative_convert_sockaddr_in(struct scalanative_sockaddr_in *in,
                                     struct sockaddr_in **out, socklen_t *size) {
     struct sockaddr_in *s =
-        (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in));
+        (struct sockaddr_in *)calloc(1, sizeof(struct sockaddr_in));
     *size = sizeof(struct sockaddr_in);
     s->sin_family = in->sin_family;
     s->sin_port = in->sin_port;
@@ -20,7 +20,7 @@ int scalanative_convert_sockaddr_in6(struct scalanative_sockaddr_in6 *in,
                                      struct sockaddr_in6 **out,
                                      socklen_t *size) {
     struct sockaddr_in6 *s =
-        (struct sockaddr_in6 *)malloc(sizeof(struct sockaddr_in6));
+        (struct sockaddr_in6 *)calloc(1, sizeof(struct sockaddr_in6));
     *size = sizeof(struct sockaddr_in6);
     s->sin6_family = in->sin6_family;
     s->sin6_port = in->sin6_port;
@@ -35,7 +35,7 @@ int scalanative_convert_sockaddr_storage(
     struct scalanative_sockaddr_storage *in, struct sockaddr_storage **out,
     socklen_t *size) {
     struct sockaddr_storage *s =
-        (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
+        (struct sockaddr_storage *)calloc(1, sizeof(struct sockaddr_storage));
     *size = sizeof(struct sockaddr_storage);
     s->ss_family = in->ss_family;
     *out = s;
