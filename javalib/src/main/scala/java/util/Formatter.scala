@@ -375,6 +375,7 @@ final class Formatter private (private[this] var dest: Appendable,
               width,
               notation(arg, precisionWithDefault, forceDecimalSep))
           }
+        // todo BigDecimal
 
         case _ =>
           formatNullOrThrowIllegalFormatConversion()

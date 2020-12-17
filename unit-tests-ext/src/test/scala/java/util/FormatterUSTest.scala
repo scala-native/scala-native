@@ -2409,13 +2409,12 @@ class FormatterUSTest {
     }
   }
 
-  @Ignore
   @Test def formatForFloatDoubleConversionType_gGOverflow(): Unit = {
-    locally {
-      val f = new Formatter()
-      f.format("%g", 999999.5.asInstanceOf[Object])
-      assertEquals("1.00000e+06", f.toString())
-    }
+//    locally {
+//      val f = new Formatter()
+//      f.format("%g", 999999.5.asInstanceOf[Object])
+//      assertEquals("1.00000e+06", f.toString())
+//    }
 
     locally {
       val f = new Formatter()
@@ -2441,11 +2440,11 @@ class FormatterUSTest {
       assertEquals("0.900000", f.toString())
     }
 
-    locally {
-      val f = new Formatter()
-      f.format("%.0g", 0.000095.asInstanceOf[Object])
-      assertEquals("0.0001", f.toString())
-    }
+//    locally {
+//      val f = new Formatter()
+//      f.format("%.0g", 0.000095.asInstanceOf[Object])
+//      assertEquals("0.0001", f.toString())
+//    }
 
     locally {
       val f = new Formatter()
@@ -2460,11 +2459,10 @@ class FormatterUSTest {
     }
   }
 
-  @Ignore
+  @Ignore("Needs to replace usage of underlying vsprintf")
   @Test def formatForFloatDoubleMaxValueConversionType_f(): Unit = {
     // These need a way to reproduce the same decimal representation of
     // extreme values as JVM.
-
     val tripleF = Array(
       Array(-1234567890.012345678d, "% 0#(9.8f", "(1234567890.01234580)"),
       Array(
@@ -2724,7 +2722,7 @@ class FormatterUSTest {
     }
   }
 
-  @Ignore
+  @Ignore("aA conversion not implemented")
   @Test def formatForDoubleMinValueConversionType_aA(): Unit = {
 
     val tripleA: Array[Array[Any]] = Array(
@@ -2753,7 +2751,7 @@ class FormatterUSTest {
     }
   }
 
-  @Ignore
+  @Ignore("aA conversion not implemented")
   @Test def formatForFloatDoubleConversionType_aA(): Unit = {
     val tripleA: Array[Array[Any]] = Array(
       Array(-0f, "%a", "-0x0.0p0"),
@@ -2905,7 +2903,7 @@ class FormatterUSTest {
     }
   }
 
-  @Ignore
+  @Ignore("BigDecimal support not implemented")
   @Test def formatForBigDecimalConversionType_eE(): Unit = {
     val tripleE: Array[Array[Any]] = Array(
       Array(BigDecimal.ZERO, "%e", "0.000000e+00"),
@@ -2967,7 +2965,7 @@ class FormatterUSTest {
     }
   }
 
-  @Ignore
+  @Ignore("BigDecimal support not implemented")
   @Test def formatForBigDecimalConversionType_gG(): Unit = {
     val tripleG: Array[Array[Any]] = Array(
       Array(BigDecimal.ZERO, "%g", "0.00000"),
@@ -3050,7 +3048,7 @@ class FormatterUSTest {
     assertEquals(" 4.00000e+06", f.toString)
   }
 
-  @Ignore //segfault
+  @Ignore("BigDecimal support not implemented")
   @Test def formatForBigDecimalConversionType_f(): Unit = {
     val input: Int   = 0
     val pattern: Int = 1
@@ -3213,7 +3211,7 @@ class FormatterUSTest {
                  f.format("%F", 1.asInstanceOf[Object]))
   }
 
-  @Ignore
+  @Ignore("aA conversion not implemented")
   @Test def formatForExceptionsInFloatDoubleBigDecimalConversionType_aA()
       : Unit = {
     locally {
@@ -3246,7 +3244,6 @@ class FormatterUSTest {
     )
   }
 
-  @Ignore
   @Test def formatForExceptionsInFloatDoubleBigDecimalConversionType_eEgGf()
       : Unit = {
 
