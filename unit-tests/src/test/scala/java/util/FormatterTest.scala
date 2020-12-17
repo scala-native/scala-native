@@ -383,13 +383,10 @@ class FormatterTest {
             "%#o",
             new BigInteger("43212345678987654321"))
 
-    /* Negative Bytes and Shorts are formatted as if they were Ints.
-     * This is a consequence of the non-boxing behavior of numbers in Scala.js.
-     */
-    assertF("   37777777766", "%14o", -10.toByte)
-    assertF("37777777766", "%05o", -10.toByte)
-    assertF("37777777766", "%5o", -10.toShort)
-    assertF("000037777777766", "%015o", -10.toShort)
+    assertF("           366", "%14o", -10.toByte)
+    assertF("00366", "%05o", -10.toByte)
+    assertF("177766", "%5o", -10.toShort)
+    assertF("000000000177766", "%015o", -10.toShort)
 
     testWithNull('o', "#0", acceptPrecision = false, acceptUpperCase = false)
 
@@ -437,16 +434,17 @@ class FormatterTest {
     assertF("0x0003ade68b1", "%0#13x", new BigInteger("987654321"))
     assertF("-0x003ade68b1", "%0#13x", new BigInteger("-987654321"))
 
-    assertF("fffffffc", "%x", -4.toByte)
+    // in Scala.js it was fffffffc which is not JVM complaint
+    assertF("fc", "%x", -4.toByte)
     assertF("0x005", "%0#5x", 5.toByte)
     assertF("  0x5", "%#5x", 5.toByte)
     assertF("  0X5", "%#5X", 5.toByte)
-    assertF("fffffffd", "%x", -3.toByte)
+    assertF("fd", "%x", -3.toByte)
 
     assertF("0x005", "%0#5x", 5.toShort)
     assertF("  0x5", "%#5x", 5.toShort)
     assertF("  0X5", "%#5X", 5.toShort)
-    assertF("fffffffd", "%x", -3.toShort)
+    assertF("fffd", "%x", -3.toShort)
 
     assertF("ffffffffffff2bcf", "%x", -54321L)
     assertF("28EEA4CB1", "%X", 10987654321L)
