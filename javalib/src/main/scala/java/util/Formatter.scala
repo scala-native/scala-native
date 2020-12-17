@@ -223,16 +223,6 @@ final class Formatter private (private[this] var dest: Appendable,
       val width      = parsePositiveIntSilent(optGroup(3), default = -1)
       val precision  = parsePositiveIntSilent(optGroup(4), default = -1)
 
-//      println(s"""
-//           |format: ${format}
-//           |args:   ${args.toList}
-//           |conversion: ${conversion}
-//           |matched:    ${matcher.group()}
-//           |argIdx:     ${optGroup(1)}
-//           |flags:      ${matcher.group(2)} :: ${flags.bits}
-//           |width:      ${optGroup(3)}
-//           |precision:  ${optGroup(4)}""".stripMargin)
-
       val arg = if (conversion == '%' || conversion == 'n') {
         /* No argument. Make sure not to bump `lastImplicitArgIndex` nor to
          * affect `lastArgIndex`.
