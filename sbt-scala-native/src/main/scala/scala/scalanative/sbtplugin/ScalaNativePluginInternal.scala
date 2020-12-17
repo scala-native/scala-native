@@ -9,6 +9,7 @@ import sbt.complete.DefaultParsers._
 import scala.annotation.tailrec
 import scala.scalanative.util.Scope
 import scala.scalanative.build.{Build, BuildException, Discover}
+import scala.scalanative.linker.LinkingException
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
@@ -214,7 +215,8 @@ object ScalaNativePluginInternal {
   private def interceptBuildException[T](op: => T): T = {
     try op
     catch {
-      case ex: BuildException => throw new MessageOnlyException(ex.getMessage)
+      case ex: BuildException   => throw new MessageOnlyException(ex.getMessage)
+      case ex: LinkingException => throw new MessageOnlyException(ex.getMessage)
     }
   }
 
