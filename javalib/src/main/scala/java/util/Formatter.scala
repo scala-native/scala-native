@@ -1045,12 +1045,13 @@ object Formatter {
     private lazy val decimalFormatSymbols: DecimalFormatSymbols =
       DecimalFormatSymbols.getInstance(actualLocale)
 
-    lazy val groupingSize: Int = {
+    lazy val groupingSize: Int = getGroupingSize
+
+    private def getGroupingSize =
       NumberFormat.getNumberInstance(actualLocale) match {
         case decimalFormat: DecimalFormat => decimalFormat.getGroupingSize()
         case _                            => 3
       }
-    }
 
     def zeroDigitString: String = decimalFormatSymbols.getZeroDigit().toString()
 
