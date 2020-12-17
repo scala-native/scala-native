@@ -24,7 +24,7 @@ private[junit] final class Reporter(eventHandler: EventHandler,
         Ansi.c(s", ", Ansi.BLUE) +
         Ansi.c(s"$ignored ignored",
                if (ignored == 0) Ansi.BLUE else Ansi.YELLOW) +
-        Ansi.c(s", $total total, ${timeInSeconds}s", Ansi.BLUE)
+        Ansi.c(f", $total total, $timeInSeconds%.3fs", Ansi.BLUE)
     }
 
     log(infoOrDebug, msg)
@@ -41,7 +41,7 @@ private[junit] final class Reporter(eventHandler: EventHandler,
   def reportTestFinished(method: String,
                          succeeded: Boolean,
                          timeInSeconds: Double): Unit = {
-    logTestInfo(_.debug, Some(method), s"finished, took $timeInSeconds sec")
+    logTestInfo(_.debug, Some(method), f"finished, took $timeInSeconds%.3f sec")
 
     if (succeeded)
       emitEvent(Some(method), Status.Success)
@@ -104,7 +104,7 @@ private[junit] final class Reporter(eventHandler: EventHandler,
 
     val m = formatTest(method, Ansi.RED)
     val msg =
-      s"$prefix$m failed: $fmtName${ex.getMessage}, took $timeInSeconds sec"
+      f"$prefix$m failed: $fmtName${ex.getMessage}, took $timeInSeconds%.3f sec"
     log(level, msg)
   }
 
