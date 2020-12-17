@@ -102,10 +102,9 @@ private[junit] final class Reporter(eventHandler: EventHandler,
       ""
     }
 
-    val m             = formatTest(method, Ansi.RED)
-    val timeFormatted = f"$timeInSeconds%.3f"
+    val m = formatTest(method, Ansi.RED)
     val msg =
-      s"$prefix$m failed: $fmtName${ex.getMessage}, took $timeFormatted sec"
+      f"$prefix$m failed: $fmtName${ex.getMessage}, took $timeInSeconds%.3f sec"
     log(level, msg)
   }
 
