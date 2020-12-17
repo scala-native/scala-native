@@ -1949,7 +1949,6 @@ class FormatterUSTest {
       Array("%+ d", "%-08d", "%+ o", "%-08o", "%+ x", "%-08x", "%+ X", "%-08X")
     for (i <- 0 until illFlags.length) {
       val f = new Formatter(Locale.US)
-      println(illFlags(i))
       assertThrows(classOf[IllegalFormatFlagsException],
                    f.format(illFlags(i), new BigInteger("1")))
     }
@@ -1960,7 +1959,7 @@ class FormatterUSTest {
       assertThrows(classOf[IllegalFormatPrecisionException],
                    f.format(precisionExceptions(i), new BigInteger("1")))
     }
-    println(0)
+
     locally {
       val f = new Formatter(Locale.US)
       assertThrows(classOf[UnknownFormatConversionException],
@@ -2016,7 +2015,6 @@ class FormatterUSTest {
                  f.format("%-O", big))
   }
 
-  @Ignore
   @Test def formatForFloatDoubleConversionType_eE(): Unit = {
     val tripleE = Array(
       Array(0f, "%e", "0.000000e+00"),
@@ -2157,12 +2155,20 @@ class FormatterUSTest {
       Array(java.lang.Double.MAX_VALUE, "%#+0(8.4e", "+1.7977e+308"),
       Array(java.lang.Double.MAX_VALUE, "%-+(1.6e", "+1.797693e+308"),
       Array(java.lang.Double.MAX_VALUE, "% 0(12e", " 1.797693e+308"),
-      Array(java.lang.Double.MIN_VALUE, "%e", "4.900000e-324"),
+      // vsprintf is used to convert to exponential number-strings in Formatter.
+      // It allows us to get greater range then JDK 4.9e-324
+      // Array(java.lang.Double.MIN_VALUE, "%e", "4.900000e-324"),
+      // Array(java.lang.Double.MIN_VALUE, "%#.0e", "5.e-324"),
+      // Array(java.lang.Double.MIN_VALUE, "%#- (9.8e", " 4.90000000e-324"),
+      // Array(java.lang.Double.MIN_VALUE, "%#+0(8.4e", "+4.9000e-324"),
+      // Array(java.lang.Double.MIN_VALUE, "%-+(1.6e", "+4.900000e-324"),
+      // Array(java.lang.Double.MIN_VALUE, "% 0(12e", " 4.900000e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%e", "4.940656e-324"),
       Array(java.lang.Double.MIN_VALUE, "%#.0e", "5.e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%#- (9.8e", " 4.90000000e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%#+0(8.4e", "+4.9000e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%-+(1.6e", "+4.900000e-324"),
-      Array(java.lang.Double.MIN_VALUE, "% 0(12e", " 4.900000e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%#- (9.8e", " 4.94065646e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%#+0(8.4e", "+4.9407e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%-+(1.6e", "+4.940656e-324"),
+      Array(java.lang.Double.MIN_VALUE, "% 0(12e", " 4.940656e-324"),
       Array(java.lang.Double.NaN, "%e", "NaN"),
       Array(java.lang.Double.NaN, "%#.0e", "NaN"),
       Array(java.lang.Double.NaN, "%#- (9.8e", "NaN      "),
@@ -2216,7 +2222,6 @@ class FormatterUSTest {
     assertEquals("1.001000e+03", f.toString())
   }
 
-  @Ignore
   @Test def formatForFloatDoubleConversionType_gG(): Unit = {
     val tripleG = Array(
       Array(1001f, "%g", "1001.00"),
@@ -2324,10 +2329,17 @@ class FormatterUSTest {
       Array(java.lang.Double.MAX_VALUE, "%+0(,8.4g", "+1.798e+308"),
       Array(java.lang.Double.MAX_VALUE, "%-+(,1.6g", "+1.79769e+308"),
       Array(java.lang.Double.MAX_VALUE, "% 0(,12.0g", " 000002e+308"),
-      Array(java.lang.Double.MIN_VALUE, "%g", "4.90000e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%- (,9.8g", " 4.9000000e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%+0(,8.4g", "+4.900e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%-+(,1.6g", "+4.90000e-324"),
+      // vsprintf is used to convert to exponential number-strings in Formatter.
+      // It allows us to get greater range then JDK 4.9e-324
+      // Array(java.lang.Double.MIN_VALUE, "%g", "4.90000e-324"),
+      // Array(java.lang.Double.MIN_VALUE, "%- (,9.8g", " 4.9000000e-324"),
+      // Array(java.lang.Double.MIN_VALUE, "%+0(,8.4g", "+4.900e-324"),
+      // Array(java.lang.Double.MIN_VALUE, "%-+(,1.6g", "+4.90000e-324"),
+      // Array(java.lang.Double.MIN_VALUE, "% 0(,12.0g", " 000005e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%g", "4.94066e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%- (,9.8g", " 4.9406565e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%+0(,8.4g", "+4.941e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%-+(,1.6g", "+4.94066e-324"),
       Array(java.lang.Double.MIN_VALUE, "% 0(,12.0g", " 000005e-324"),
       Array(java.lang.Double.NaN, "%g", "NaN"),
       Array(java.lang.Double.NaN, "%- (,9.8g", "NaN      "),
