@@ -465,10 +465,8 @@ final class Formatter private (private[this] var dest: Appendable,
       case 'd' =>
         validateFlags(flags, conversion, invalidFlags = AltFormat)
         rejectPrecision()
-        toNormalizedIntegerType(arg) match {
-          case arg: Int =>
-            formatNumericString(localeInfo, flags, width, arg.toString())
-          case arg: Long =>
+        arg match {
+          case _: Byte | _: Short | _: Char | _: Int | _: Long =>
             formatNumericString(localeInfo, flags, width, arg.toString())
           case arg: BigInteger =>
             formatNumericString(localeInfo, flags, width, arg.toString())
@@ -559,7 +557,6 @@ final class Formatter private (private[this] var dest: Appendable,
         validateFlags(flags,
                       conversion,
                       invalidFlags = InvalidFlagsForOctalAndHex)
-
       case 'e' | 'E' =>
         validateFlags(flags, conversion, invalidFlags = UseGroupingSeps)
         efgCommon(computerizedScientificNotation _)
@@ -1088,17 +1085,4 @@ object Formatter {
     def toUpperCase(str: String): String = str.toUpperCase(actualLocale)
   }
 
-  private def toNormalizedIntegerType(arg: Any): Any = {
-    import scalanative.unsigned._
-    arg match {
-      case arg: Byte   => arg.toInt
-      case arg: Char   => arg.toInt
-      case arg: Short  => arg.toInt
-      case arg: UByte  => arg.toInt
-      case arg: UShort => arg.toInt
-      case arg: UInt   => arg.toInt
-      case arg: ULong  => arg.toLong
-      case arg         => arg
-    }
-  }
 }
