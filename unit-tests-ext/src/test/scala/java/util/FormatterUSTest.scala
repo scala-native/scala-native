@@ -1666,7 +1666,6 @@ class FormatterUSTest {
     }
   }
 
-  @Ignore
   @Test def formatForNullArgumentForByteShortIntegerLongBigIntegerConversion()
       : Unit = {
     locally {
@@ -1693,14 +1692,15 @@ class FormatterUSTest {
       assertEquals("   nullnull null  NULL", f.toString())
     }
 
+    /* todo FormatFlagsConversionMismatchException: Conversion = o, Flags =  (
     locally {
       val f = new Formatter(Locale.US)
       f.format("%(+,-7d%<( o%<+(x %<( 06X", null.asInstanceOf[BigInteger])
       assertEquals("null   nullnull   NULL", f.toString())
     }
+   */
   }
 
-  @Ignore
   @Test def formatForLegalBigIntegerConversionType_d(): Unit = {
     val tripleD = Array(
       Array(new BigInteger("123456789012345678901234567890"),
@@ -1864,22 +1864,26 @@ class FormatterUSTest {
       assertEquals(tripleX(i)(output), f.toString())
     }
 
+    /* todo FormatFlagsConversionMismatchException: Conversion = o, Flags =  (
     locally {
       val f = new Formatter(Locale.US)
       f.format("%(+,-7d%<( o%<+(x %<( 06X", null.asInstanceOf[BigInteger])
       assertEquals("null   nullnull   NULL", f.toString())
     }
+   */
   }
 
-  @Ignore
   @Test def formatForPaddingOfBigIntegerConversion(): Unit = {
-    val bigInt = new BigInteger("123456789012345678901234567890")
+    val bigInt    = new BigInteger("123456789012345678901234567890")
+    val negBigInt = new BigInteger("-1234567890123456789012345678901234567890")
+
     locally {
       val f = new Formatter(Locale.US)
       f.format("%32d", bigInt)
       assertEquals("  123456789012345678901234567890", f.toString())
     }
 
+    /* todo FormatFlagsConversionMismatchException
     locally {
       val f = new Formatter(Locale.US)
       f.format("%+32x", bigInt)
@@ -1892,12 +1896,12 @@ class FormatterUSTest {
       assertEquals(" 143564417755415637016711617605322", f.toString())
     }
 
-    val negBigInt = new BigInteger("-1234567890123456789012345678901234567890")
     locally {
-      val f = new Formatter(Locale.US)
-      f.format("%( 040X", negBigInt)
-      assertEquals("(000003A0C92075C0DBF3B8ACBC5F96CE3F0AD2)", f.toString())
-    }
+    val f = new Formatter(Locale.US)
+    f.format("%( 040X", negBigInt)
+    assertEquals("(000003A0C92075C0DBF3B8ACBC5F96CE3F0AD2)", f.toString())
+  }
+     */
 
     locally {
       val f = new Formatter(Locale.US)
@@ -1915,7 +1919,6 @@ class FormatterUSTest {
     }
   }
 
-  @Ignore
   @Test def formatForBigIntegerConversionException(): Unit = {
     val flagsConversionMismatches = Array("%#d", "%,o", "%,x", "%,X")
     for (i <- 0 until flagsConversionMismatches.length) {
@@ -1946,6 +1949,7 @@ class FormatterUSTest {
       Array("%+ d", "%-08d", "%+ o", "%-08o", "%+ x", "%-08x", "%+ X", "%-08X")
     for (i <- 0 until illFlags.length) {
       val f = new Formatter(Locale.US)
+      println(illFlags(i))
       assertThrows(classOf[IllegalFormatFlagsException],
                    f.format(illFlags(i), new BigInteger("1")))
     }
@@ -1956,7 +1960,7 @@ class FormatterUSTest {
       assertThrows(classOf[IllegalFormatPrecisionException],
                    f.format(precisionExceptions(i), new BigInteger("1")))
     }
-
+    println(0)
     locally {
       val f = new Formatter(Locale.US)
       assertThrows(classOf[UnknownFormatConversionException],

@@ -266,7 +266,9 @@ final class Formatter private (private[this] var dest: Appendable,
           throw new MissingFormatArgumentException("%" + matcher.group())
         }
 
-        if (flags.leftAlign && width < 0) {
+        if (width < 0 &&
+            (isNumericConversion(conversion) && flags.zeroPad ||
+            flags.leftAlign)) {
           throw new MissingFormatWidthException("%" + matcher.group())
         }
 
@@ -281,6 +283,9 @@ final class Formatter private (private[this] var dest: Appendable,
 
     // scalastyle:on return
   }
+
+  private def isNumericConversion(conversion: Char) =
+    !"bBhHsScC%n".contains(conversion)
 
   /* Should in theory be a method of `object Flags`. See the comment on that
    * object about why we keep it here.
@@ -512,15 +517,15 @@ final class Formatter private (private[this] var dest: Appendable,
 
       case 'x' | 'X' =>
         // Hex formatting is not localized
-        validateFlags(flags,
-                      conversion,
-                      invalidFlags = InvalidFlagsForOctalAndHex)
+
         rejectPrecision()
+
         val prefix = {
           if (!flags.altFormat) ""
           else if (flags.upperCase) "0X"
           else "0x"
         }
+
         def padAndSendWithHexInt(arg: Int): Unit = padAndSendToDest(
           RootLocaleInfo,
           flags,
@@ -550,6 +555,9 @@ final class Formatter private (private[this] var dest: Appendable,
           case _ =>
             formatNullOrThrowIllegalFormatConversion()
         }
+        validateFlags(flags,
+                      conversion,
+                      invalidFlags = InvalidFlagsForOctalAndHex)
 
       case 'e' | 'E' =>
         validateFlags(flags, conversion, invalidFlags = UseGroupingSeps)
@@ -599,24 +607,19 @@ final class Formatter private (private[this] var dest: Appendable,
         flagsToString(new Flags(flags.bits & invalidFlags)),
         conversion)
     }
-
-    if ((flags.bits & invalidFlags) != 0)
-      flagsConversionMismatch()
-
     @noinline def illegalFlags(): Nothing =
       throw new IllegalFormatFlagsException(flagsToString(flags))
 
-    /* The test `(invalidFlags & BadCombo) == 0` is redundant, but is
-     * constant-folded away at called site, and if false it allows to dce the
-     * test after the `&&`. If both tests are eliminated, the entire `if`
-     * disappears.
-     */
     val BadCombo1 = LeftAlign | ZeroPad
     val BadCombo2 = PositivePlus | PositiveSpace
-    if (((invalidFlags & BadCombo1) == 0 && (flags.bits & BadCombo1) == BadCombo1) ||
-        ((invalidFlags & BadCombo2) == 0 && (flags.bits & BadCombo2) == BadCombo2)) {
+
+    if (((flags.bits & BadCombo1) == BadCombo1) ||
+        (flags.bits & BadCombo2) == BadCombo2) {
       illegalFlags()
     }
+
+    if ((flags.bits & invalidFlags) != 0)
+      flagsConversionMismatch()
   }
 
   @inline private def validateFlagsForPercentAndNewline(
