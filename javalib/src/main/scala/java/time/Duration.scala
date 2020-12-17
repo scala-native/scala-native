@@ -67,7 +67,7 @@ final class Duration private (seconds: Long, nanos: Int)
 object Duration {
   private final val NANOS_PER_MILLI: Int = 1000000
   private final val MILLIS_PER_SEC: Int  = 1000
-  private final val NANOS_PER_SEC: Long  = NANOS_PER_MILLI * MILLIS_PER_SEC
+  private final val NANOS_PER_SEC: Int   = NANOS_PER_MILLI * MILLIS_PER_SEC
 
   private def create(seconds: Long, nanoAdjustment: Int): Duration =
     if ((seconds | nanoAdjustment) == 0) ZERO
