@@ -89,7 +89,7 @@ class CStringTest {
     Zone { implicit z =>
       val szFrom = "abcde"
       val cstrTo = toCString(szFrom)
-      assertTrue(strlen(cstrTo) == 5.toULong)
+      assertEquals(5.toULong, strlen(cstrTo))
       assertTrue(cstrTo(0) == 'a'.toByte)
       assertTrue(cstrTo(1) == 'b'.toByte)
       assertTrue(cstrTo(2) == 'c'.toByte)
@@ -100,7 +100,7 @@ class CStringTest {
       val piArr = Charset.forName("UTF-8").encode("\u03c0")
       val cstr2 = toCString("2\u03c0r")
 //    val cstr3 = c"2\u03c0r" //would result in error at NIR
-      assert(strlen(cstr2) == 4.toULong)
+      assertEquals(4.toULong, strlen(cstr2))
       assertEquals(cstr2(0), '2')
       assertEquals(cstr2(1), piArr.get(0))
       assertEquals(cstr2(2), piArr.get(1))
@@ -124,7 +124,7 @@ class CStringTest {
       val jstr2: String = fromCString(arr.at(0))
 
       assertEquals(strcmp(cstr1, cstr2), 0)
-      assert(strlen(arr.at(0)) == 10.toULong)
+      assertEquals(strlen(arr.at(0)), 10.toULong)
 
       assertEquals(jstr2, jstr1 * 2)
       assertEquals(jstr2.last, 'd')

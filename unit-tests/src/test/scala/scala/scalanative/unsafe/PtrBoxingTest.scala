@@ -203,9 +203,8 @@ class PtrBoxingTest {
       assertEquals(expectedInt, x._1.apply())
       assertEquals(expectedInt, loadedGetInt())
 
-      //assertEquals uses Object.equals which would return false in following cases
-      assert(expectedLength == x._2.apply(testStr))
-      assert(expectedLength == loadedStringLength(testStr))
+      assertEquals(expectedLength, x._2.apply(testStr))
+      assertEquals(expectedLength, loadedStringLength(testStr))
     }
   }
 }
