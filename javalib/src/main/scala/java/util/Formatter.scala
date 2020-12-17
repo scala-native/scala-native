@@ -695,6 +695,8 @@ final class Formatter private (private[this] var dest: Appendable,
        */
       val sig = if (Math.pow(10, sig0) <= m) sig0 + 1 else sig0
       decimalNotation(x, Math.max(p - sig, 0), forceDecimalSep)
+    } else if (m == 0.0) { // exact 0 should always be fixed
+      decimalNotation(x, Math.max(precision - 1, 0), forceDecimalSep)
     } else {
       computerizedScientificNotation(x, p - 1, forceDecimalSep)
     }
