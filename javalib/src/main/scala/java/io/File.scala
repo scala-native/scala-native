@@ -136,7 +136,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
    */
   private def simplifyExistingPath(path: CString)(implicit z: Zone): CString = {
     val resolvedName = alloc[Byte](limits.PATH_MAX.toUInt)
-    realpath(path, resolvedName)
+    if (realpath(path, resolvedName) == null) {
+      throw new IOException(
+        s"realpath can't resolve: ${fromCString(resolvedName)}")
+    }
     resolvedName
   }
 
