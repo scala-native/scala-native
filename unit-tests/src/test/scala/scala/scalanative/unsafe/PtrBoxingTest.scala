@@ -7,7 +7,7 @@ import org.junit.Assert._
 import scalanative.junit.utils.AssertThrows._
 
 import scalanative.unsigned._
-import scalanative.libc.stdlib.malloc
+import scalanative.libc.stdlib.calloc
 import java.lang.Long.toHexString
 
 class PtrBoxingTest {
@@ -15,8 +15,8 @@ class PtrBoxingTest {
   var any: Any = null
 
   @noinline lazy val nullPtr: Ptr[Byte] = null
-  @noinline lazy val ptr: Ptr[Byte]     = malloc(64.toULong)
-  @noinline lazy val ptr2: Ptr[Byte]    = malloc(64.toULong)
+  @noinline lazy val ptr: Ptr[Byte]     = calloc(1.toUInt, 64.toUInt)
+  @noinline lazy val ptr2: Ptr[Byte]    = calloc(1.toUInt, 64.toUInt)
 
   @noinline def f[T](x: T): T      = x
   @noinline def cond(): Boolean    = true

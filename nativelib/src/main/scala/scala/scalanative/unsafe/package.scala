@@ -235,10 +235,10 @@ package object unsafe {
       val runtime = q"_root_.scala.scalanative.runtime"
 
       q"""{
+        import _root_.scala.scalanative.unsigned.UnsignedRichLong
         val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
-        val $ptr    = $z.alloc($size)
+        val $ptr    = $z.alloc(1.toUInt, $size)
         val $rawptr = $runtime.toRawPtr($ptr)
-        $runtime.libc.memset($rawptr, 0, $size)
         $ptr.asInstanceOf[Ptr[$T]]
       }"""
     }
@@ -255,10 +255,9 @@ package object unsafe {
 
       q"""{
         import _root_.scala.scalanative.unsigned.UnsignedRichLong
-        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n.toULong
-        val $ptr    = $z.alloc($size)
+        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
+        val $ptr    = $z.alloc($n.toUInt, $size)
         val $rawptr = $runtime.toRawPtr($ptr)
-        $runtime.libc.memset($rawptr, 0, $size)
         $ptr.asInstanceOf[Ptr[$T]]
       }"""
     }

@@ -2,11 +2,15 @@ package scala.scalanative
 package unsafe
 
 import scala.annotation.implicitNotFound
-import scalanative.runtime.{libc, RawPtr, fromRawPtr}
+import scala.scalanative.unsigned.UnsignedRichInt
+import scalanative.runtime.{RawPtr, fromRawPtr, libc}
 
 /** Zone allocator which manages memory allocations. */
 @implicitNotFound("Given method requires an implicit zone.")
 trait Zone {
+
+  /** Allocates n elements of memory of given size. */
+  def alloc(n: CSize, size: CSize): Ptr[Byte]
 
   /** Allocates memory of given size. */
   def alloc(size: CSize): Ptr[Byte]
@@ -46,17 +50,20 @@ object Zone {
 
     final override def isClosed: Boolean = closed
 
-    final def alloc(size: CSize): Ptr[Byte] = {
+    final def alloc(n: CSize, size: CSize): Ptr[Byte] = {
       if (isClosed) {
         throw new IllegalStateException("zone allocator is closed")
       }
-      val rawptr = libc.malloc(size)
+      val rawptr = libc.calloc(n, size)
       if (rawptr == null) {
         throw new OutOfMemoryError(s"Unable to allocate $size bytes")
       }
       node = new Node(rawptr, node)
       fromRawPtr[Byte](rawptr)
     }
+
+    final def alloc(size: CSize): Ptr[Byte] =
+      alloc(1.toUInt, size)
 
     final override def close(): Unit = {
       while (node != null) {
