@@ -350,6 +350,11 @@ object File {
     Zone { implicit z =>
       var buff: CString = alloc[CChar](4096.toUInt)
       var res: CString  = getcwd(buff, 4095.toUInt)
+      if (res == null) {
+        throw new IOException(
+          s"getcwd() error in trying to get user director: ${fromCString(
+            string.strerror(errno.errno))}")
+      }
       fromCString(res)
     }
 
@@ -417,12 +422,7 @@ object File {
   private def properPath(path: String): String = {
     if (isAbsolute(path)) path
     else {
-      val userdir =
-        Option(getUserDir())
-          .getOrElse(
-            throw new IOException(
-              "getcwd() error in trying to get user directory."))
-
+      val userdir = getUserDir()
       if (path.isEmpty()) userdir
       else if (userdir.endsWith(separator)) userdir + path
       else userdir + separator + path
