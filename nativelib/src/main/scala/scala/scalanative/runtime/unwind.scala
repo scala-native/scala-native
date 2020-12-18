@@ -3,7 +3,6 @@ package runtime
 
 import scalanative.unsafe._
 
-@extern
 object unwind {
   @name("scalanative_unwind_get_context")
   def get_context(context: Ptr[Byte]): CInt = extern

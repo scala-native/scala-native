@@ -3,7 +3,6 @@ package posix
 
 import scalanative.unsafe._
 
-@extern
 object regex {
 
   @name("regcomp")

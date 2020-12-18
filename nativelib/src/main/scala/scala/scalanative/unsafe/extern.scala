@@ -1,7 +1,7 @@
 package scala.scalanative
 package unsafe
 
-/** An annotation that is used to mark objects that
- *  contain externally-defined members.
+/** An annotation internally used in NativePlugin used to mark externally-defined members.
+ *  Is applied only in PrepNativeInterop phase
  */
-final class extern extends scala.annotation.StaticAnnotation
+sealed trait extern extends scala.annotation.StaticAnnotation

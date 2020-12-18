@@ -3,7 +3,6 @@ package runtime
 
 import scala.scalanative.unsafe.{CInt, CString, CFuncPtr2, Ptr, extern, name}
 
-@extern
 object Platform {
   @name("scalanative_platform_is_mac")
   def isMac(): Boolean = extern

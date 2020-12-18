@@ -3,7 +3,6 @@ package scala.scalanative.posix.sys
 import scalanative.unsafe._
 import scalanative.unsafe.Nat._
 
-@extern
 object select {
 
   // posix requires this file declares suseconds_t. Use single point of truth.

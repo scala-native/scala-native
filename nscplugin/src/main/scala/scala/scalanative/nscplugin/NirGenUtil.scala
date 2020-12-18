@@ -1,6 +1,7 @@
 package scala.scalanative
 package nscplugin
 
+import scala.scalanative.nir.Attr
 import scala.tools.nsc.Global
 import scalanative.util._
 
@@ -9,7 +10,6 @@ trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import definitions._
   import nirAddons._
   import nirDefinitions._
-  import SimpleType.fromSymbol
 
   def genParamSyms(dd: DefDef, isStatic: Boolean): Seq[Option[Symbol]] = {
     val vp     = dd.vparamss
@@ -97,4 +97,12 @@ trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
     unwrapClassTagOption(tree).getOrElse {
       unsupported(s"can't recover runtime class tag from $tree")
     }
+
+  def links(symbol: Symbol): List[Attr.Link] = {
+    symbol.annotations.collect {
+      case ann if ann.symbol == LinkClass =>
+        val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
+        Attr.Link(name)
+    }
+  }
 }

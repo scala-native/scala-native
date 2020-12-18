@@ -6,7 +6,6 @@ import scalanative.unsafe._
 /**
  * @see [[http://llvm.org/releases/3.7.0/docs/LangRef.html#intrinsic-functions LLVM intrinsics functions]]
  */
-@extern
 object LLVMIntrinsics {
   @struct class IntOverflow(val value: Int, val flag: Boolean)
   @struct class LongOverflow(val value: Long, val flag: Boolean)

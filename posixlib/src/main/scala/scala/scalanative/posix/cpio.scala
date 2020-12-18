@@ -3,7 +3,6 @@ package posix
 
 import scalanative.unsafe._
 
-@extern
 object cpio {
   @name("scalanative_c_issock")
   def C_ISSOCK: CUnsignedShort = extern

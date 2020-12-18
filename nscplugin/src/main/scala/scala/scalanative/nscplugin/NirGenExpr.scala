@@ -574,7 +574,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val ty   = genType(tree.symbol.tpe)
         val qual = genExpr(qualp)
         val name = genFieldName(tree.symbol)
-        if (sym.owner.isExternModule) {
+        if (sym.isExtern) {
           val externTy = genExternType(tree.symbol.tpe)
           genLoadExtern(ty, externTy, tree.symbol)
         } else {
@@ -602,7 +602,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val qual = genExpr(qualp)
           val rhs  = genExpr(rhsp)
           val name = genFieldName(sel.symbol)
-          if (sel.symbol.owner.isExternModule) {
+          if (sel.symbol.isExtern) {
             val externTy = genExternType(sel.symbol.tpe)
             genStoreExtern(externTy, sel.symbol, rhs)
           } else {
@@ -1989,7 +1989,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                        statically: Boolean,
                        selfp: Tree,
                        argsp: Seq[Tree])(implicit pos: nir.Position): Val = {
-      if (sym.owner.isExternModule && sym.isAccessor) {
+      if (sym.isExtern && sym.isAccessor) {
         genApplyExternAccessor(sym, argsp)
       } else if (isImplClass(sym.owner)) {
         genApplyMethod(sym, statically = true, Val.Null, argsp)
@@ -2014,7 +2014,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genLoadExtern(ty: nir.Type, externTy: nir.Type, sym: Symbol)(
         implicit pos: nir.Position): Val = {
-      assert(sym.owner.isExternModule, "loadExtern was not extern")
+      assert(sym.isExtern, "loadExtern was not extern")
 
       val name = Val.Global(genName(sym), Type.Ptr)
 
@@ -2023,7 +2023,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genStoreExtern(externTy: nir.Type, sym: Symbol, value: Val)(
         implicit pos: nir.Position): Val = {
-      assert(sym.owner.isExternModule, "storeExtern was not extern")
+      assert(sym.isExtern, "storeExtern was not extern")
       val name        = Val.Global(genName(sym), Type.Ptr)
       val externValue = toExtern(externTy, value)
 
@@ -2057,29 +2057,30 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val owner   = sym.owner
       val name    = genMethodName(sym)
       val origSig = genMethodSig(sym)
+      val isExtern = sym.isExtern
       val sig =
-        if (owner.isExternModule) {
+        if (isExtern) {
           genExternMethodSig(sym)
         } else {
           origSig
         }
       val args = genMethodArgs(sym, argsp)
       val method =
-        if (isImplClass(owner) || statically || owner.isStruct || owner.isExternModule) {
+        if (isImplClass(owner) || statically || owner.isStruct || isExtern) {
           Val.Global(name, nir.Type.Ptr)
         } else {
           val Global.Member(_, sig) = name
           buf.method(self, sig, unwind)
         }
       val values =
-        if (owner.isExternModule || isImplClass(owner))
+        if (isExtern || isImplClass(owner))
           args
         else
           self +: args
 
       val res = buf.call(sig, method, values, unwind)
 
-      if (!owner.isExternModule) {
+      if (!isExtern) {
         res
       } else {
         val Type.Function(_, retty) = origSig
@@ -2089,7 +2090,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genMethodArgs(sym: Symbol,
                       argsp: Seq[Tree]): Seq[Val] =
-      if (!sym.owner.isExternModule) {
+      if (!sym.isExtern) {
         genSimpleArgs(argsp)
       } else {
         val res = Seq.newBuilder[Val]

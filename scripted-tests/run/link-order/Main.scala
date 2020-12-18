@@ -6,7 +6,6 @@ object Main {
 }
 
 @link("link-order-test")
-@extern
 object Util {
   def forty_two(): CInt = extern
 }

@@ -4,7 +4,6 @@ package sys
 
 import scalanative.unsafe._
 
-@extern
 object socket {
   type socklen_t   = CUnsignedInt
   type sa_family_t = CUnsignedShort

@@ -60,7 +60,7 @@ trait NirGenName[G <: Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     owner.member {
-      if (sym.owner.isExternModule) {
+      if (sym.isExtern) {
         nir.Sig.Extern(id)
       } else {
         nir.Sig.Field(id, scope)
@@ -80,9 +80,9 @@ trait NirGenName[G <: Global with Singleton] { self: NirGenPhase[G] =>
 
     if (sym == String_+) {
       genMethodName(StringConcatMethod)
-    } else if (sym.owner.isExternModule) {
+    } else if (sym.isExtern) {
       if (sym.isSetter) {
-        val id0 = sym.name.dropSetter.decoded.toString
+        val id0 = sym.name.dropSetter.decoded
         owner.member(nir.Sig.Extern(id0))
       } else {
         owner.member(nir.Sig.Extern(id))

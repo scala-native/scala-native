@@ -140,14 +140,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genClassAttrs(cd: ClassDef): Attrs = {
       val sym = cd.symbol
       val annotationAttrs = sym.annotations.collect {
-        case ann if ann.symbol == ExternClass =>
-          Attr.Extern
-        case ann if ann.symbol == LinkClass =>
-          val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
-          Attr.Link(name)
         case ann if ann.symbol == StubClass =>
           Attr.Stub
-      }
+      } ++ links(sym)
+
       val abstractAttr =
         if (sym.isAbstract) Seq(Attr.Abstract) else Seq()
 
@@ -163,10 +159,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
     def genClassFields(sym: Symbol)(implicit pos: nir.Position): Unit = {
-      val attrs = nir.Attrs(isExtern = sym.isExternModule)
-
       for (f <- sym.info.decls
            if !f.isMethod && f.isTerm && !f.isModule) {
+
+        val attrs = nir.Attrs(
+          isExtern = f.isExtern,
+          links = links(f)
+        )
         val ty   = genType(f.tpe)
         val name = genFieldName(f)
 
@@ -570,7 +569,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val attrs    = genMethodAttrs(sym)
         val name     = genMethodName(sym)
         val sig      = genMethodSig(sym)
-        val isStatic = owner.isExternModule || isImplClass(owner)
+        val isExtern = dd.symbol.isExtern
+        val isStatic = isExtern || isImplClass(owner)
 
         dd.rhs match {
           case EmptyTree
@@ -586,14 +586,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case EmptyTree =>
             buf += Defn.Declare(attrs, name, sig)
 
-          case _ if dd.name == nme.CONSTRUCTOR && owner.isExternModule =>
-            validateExternCtor(dd.rhs)
-            ()
-
           case _ if dd.name == nme.CONSTRUCTOR && owner.isStruct =>
             ()
 
-          case rhs if owner.isExternModule =>
+          case rhs if isExtern =>
             checkExplicitReturnTypeAnnotation(dd)
             genExternMethod(attrs, name, sig, rhs)
 
@@ -608,7 +604,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             scoped(
               curMethodSig := sig
             ) {
-              val body = genMethodBody(dd, rhs, isStatic, isExtern = false)
+              val body = genMethodBody(dd, rhs, isStatic)
               buf += Defn.Define(attrs, name, sig, body)
             }
         }
@@ -621,18 +617,17 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                         rhs: Tree): Unit = {
       rhs match {
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
-          val moduleName  = genTypeName(curClassSym)
           val externAttrs = Attrs(isExtern = true)
           val externSig   = genExternMethodSig(curMethodSym)
           val externDefn  = Defn.Declare(externAttrs, name, externSig)(rhs.pos)
 
           buf += externDefn
 
-        case _ if curMethodSym.hasFlag(ACCESSOR) =>
-          ()
-
-        case rhs =>
-          unsupported("methods in extern objects must have extern body")
+        // 2.11 only, call to extern inherited from trait
+        case Apply(ref: RefTree, _) if ref.symbol.isExtern => ()
+        case Apply(Select(Super(_, _), _), _)              => ()
+        case _ if curMethodSym.hasFlag(ACCESSOR)           => ()
+        case _                                             => unsupported("methods in extern objects must have extern body")
       }
     }
 
@@ -674,19 +669,22 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case ann if ann.symbol == NoOptimizeClass   => Attr.NoOpt
           case ann if ann.symbol == NoSpecializeClass => Attr.NoSpecialize
         }
+      val optExtern = if (sym.isExtern) Some(Attr.Extern) else None
+      val optLinks  = links(sym)
 
-      Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs)
+      Attrs.fromSeq(
+        inlineAttrs ++ stubAttrs ++ optAttrs ++ optLinks ++ optExtern)
     }
 
     def genMethodBody(dd: DefDef,
                       bodyp: Tree,
-                      isStatic: Boolean,
-                      isExtern: Boolean): Seq[nir.Inst] = {
+                      isStatic: Boolean): Seq[nir.Inst] = {
       val fresh = curFresh.get
       val buf   = new ExprBuffer()(fresh)
 
       implicit val pos: nir.Position = bodyp.pos
 
+      val isExtern  = dd.symbol.isExtern
       val paramSyms = genParamSyms(dd, isStatic)
       val params = paramSyms.map {
         case None =>
@@ -736,7 +734,26 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
       }
 
-      def genBody(): Val = bodyp match {
+      def prepBody(): Tree = {
+        val hasExernFields =
+          dd.symbol.owner.info.decls.exists(f => f.isField && f.isExtern)
+        val isCtor =
+          dd.name == nme.CONSTRUCTOR || dd.name == nme.MIXIN_CONSTRUCTOR
+        val ctorWithExternFields = isCtor && hasExernFields
+
+        bodyp match {
+          case Block(stats, last) if ctorWithExternFields =>
+            val newStats = stats.filter {
+              // Constructor for extern var would try to initialize it using extern() leading to exception
+              case Assign(_, Apply(fn, Seq())) => fn.symbol != ExternMethod
+              case _                           => true
+            }
+            treeCopy.Block(bodyp, newStats, last)
+          case _ => bodyp
+        }
+      }
+
+      def genBody(): Val = prepBody() match {
         // Tailrec emits magical labeldefs that can hijack this reference is
         // current method. This requires special treatment on our side.
         case Block(List(ValDef(_, nme.THIS, _, _)),
@@ -764,7 +781,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             buf.genReturn(nir.Val.Unit)
           }
 
-        case _ =>
+        case body =>
           scoped(
             curMethodThis := {
               if (isStatic) None
@@ -773,7 +790,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             curMethodIsExtern := isExtern
           ) {
             buf.genReturn {
-              withOptSynchronized(_.genExpr(bodyp))
+              withOptSynchronized(_.genExpr(body))
             }
           }
       }

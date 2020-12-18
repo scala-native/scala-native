@@ -17,7 +17,6 @@ private[runtime] object Shutdown {
   NativeShutdown.init(() => runHooks())
 }
 
-@extern
 private[runtime] object NativeShutdown {
   @name("scalanative_native_shutdown_init")
   def init(func: CFuncPtr0[Unit]): Unit = extern

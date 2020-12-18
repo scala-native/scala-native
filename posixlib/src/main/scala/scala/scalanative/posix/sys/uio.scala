@@ -4,7 +4,6 @@ package sys
 
 import scalanative.unsafe._
 
-@extern
 object uio {
   type iovec = CStruct2[Ptr[Byte], // iov_base
                         CSize] // iov_len
