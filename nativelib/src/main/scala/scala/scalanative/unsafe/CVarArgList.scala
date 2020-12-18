@@ -100,7 +100,7 @@ object CVarArgList {
     }
 
     val resultStorage =
-      z.alloc(sizeof[Long] * storage.size.toULong).asInstanceOf[Ptr[Long]]
+      z.alloc(storage.size.toUInt, sizeof[Long]).asInstanceOf[Ptr[Long]]
     val storageStart = storage.asInstanceOf[LongArray].at(0)
     libc.memcpy(toRawPtr(resultStorage),
                 toRawPtr(storageStart),
