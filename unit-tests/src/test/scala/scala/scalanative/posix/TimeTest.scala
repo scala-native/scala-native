@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 import time._
 import timeOps.tmOps
@@ -75,7 +76,7 @@ class TimeTest {
 
       timePtr.tm_mday = 1
 
-      strftime(isoDatePtr, 70, c"%FT%TZ", timePtr)
+      strftime(isoDatePtr, 70.toULong, c"%FT%TZ", timePtr)
 
       val isoDateString: String = fromCString(isoDatePtr)
 
@@ -91,7 +92,7 @@ class TimeTest {
       timePtr.tm_mday = 1
       timePtr.tm_wday = 1
 
-      strftime(datePtr, 70, c"%A %c", timePtr)
+      strftime(datePtr, 70.toULong, c"%A %c", timePtr)
 
       val dateString: String = fromCString(datePtr)
       assertTrue("Monday Mon Jan  1 00:00:00 1900".equals(dateString))

@@ -26,6 +26,7 @@ package scala.scalanative
 package runtime
 
 import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
 
 % sizePtr = 8
@@ -102,7 +103,7 @@ object Array {
     } else {
       val fromPtr = from.atRaw(fromPos)
       val toPtr   = to.atRaw(toPos)
-      val size    = to.stride * len
+      val size    = to.stride * len.toULong
       libc.memmove(toPtr, fromPtr, size)
     }
   }
@@ -147,7 +148,7 @@ object Array {
     } else {
       val leftPtr  = left.atRaw(leftPos)
       val rightPtr = right.atRaw(rightPos)
-      libc.memcmp(leftPtr, rightPtr, len * left.stride)
+      libc.memcmp(leftPtr, rightPtr, len.toULong * left.stride)
     }
   }
 }
@@ -174,7 +175,7 @@ object Array {
 final class ${T}Array private () extends Array[${T}] {
 
   @inline def stride: CSize =
-    ${sizeT}
+    ${sizeT}.toULong
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
@@ -204,7 +205,7 @@ final class ${T}Array private () extends Array[${T}] {
 
   @inline override def clone(): ${T}Array = {
     val arrty   = toRawType(classOf[${T}Array])
-    val arrsize = ${sizeHeader} + ${sizeT} * length
+    val arrsize = (${sizeHeader} + ${sizeT} * length).toULong
     val arr     = ${alloc}(arrty, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -216,7 +217,7 @@ object ${T}Array {
 
   @inline def alloc(length: Int): ${T}Array = {
     val arrty   = toRawType(classOf[${T}Array])
-    val arrsize = ${sizeHeader} + ${sizeT} * length
+    val arrsize = (${sizeHeader} + ${sizeT} * length).toULong
     val arr     = ${alloc}(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
     storeInt(elemRawPtr(arr, 12), ${sizeT}.toInt)
@@ -227,7 +228,7 @@ object ${T}Array {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = ${sizeT} * length
+    val size = (${sizeT} * length).toULong
     libc.memcpy(dst, src, size)
     arr
   }

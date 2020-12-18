@@ -58,7 +58,7 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
     // we use the runtime knowledge of the array layout to avoid
     // intermediate buffer, and write straight into the array memory
     val buf       = buffer.asInstanceOf[runtime.ByteArray].at(offset)
-    val readCount = unistd.read(fd.fd, buf, count)
+    val readCount = unistd.read(fd.fd, buf, count.toUInt)
 
     if (readCount == 0) {
       // end of file

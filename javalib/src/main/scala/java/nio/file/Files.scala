@@ -448,7 +448,7 @@ object Files {
       var offset = 0
       var read   = 0
       while ({
-        read = unistd.read(fd, bytes.at(offset), len - offset);
+        read = unistd.read(fd, bytes.at(offset), (len - offset).toUInt);
         read != -1 && (offset + read) < len
       }) {
         offset += read
@@ -514,8 +514,10 @@ object Files {
       throw new NotLinkException(link.toString)
     } else
       Zone { implicit z =>
-        val buf: CString = alloc[Byte](limits.PATH_MAX)
-        if (unistd.readlink(toCString(link.toString), buf, limits.PATH_MAX) == -1) {
+        val buf: CString = alloc[Byte](limits.PATH_MAX.toUInt)
+        if (unistd.readlink(toCString(link.toString),
+                            buf,
+                            limits.PATH_MAX.toUInt) == -1) {
           throw UnixException(link.toString, errno.errno)
         } else {
           Paths.get(fromCString(buf), Array.empty)

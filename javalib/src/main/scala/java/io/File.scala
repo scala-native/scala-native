@@ -135,7 +135,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
    * match that of Java on non-existing file.
    */
   private def simplifyExistingPath(path: CString)(implicit z: Zone): CString = {
-    val resolvedName = alloc[Byte](limits.PATH_MAX)
+    val resolvedName = alloc[Byte](limits.PATH_MAX.toUInt)
     realpath(path, resolvedName)
     resolvedName
   }
@@ -345,8 +345,8 @@ object File {
 
   private def getUserDir(): String =
     Zone { implicit z =>
-      var buff: CString = alloc[CChar](4096)
-      var res: CString  = getcwd(buff, 4095)
+      var buff: CString = alloc[CChar](4096.toUInt)
+      var res: CString  = getcwd(buff, 4095.toUInt)
       fromCString(res)
     }
 
@@ -459,12 +459,13 @@ object File {
         case link =>
           val linkLength = strlen(link)
           val pathLength = strlen(path)
-          var last       = pathLength - 1
-          while (path(last) != separatorChar) last -= 1
-          last += 1
+          val `1UL`      = 1.toULong
+          var last       = pathLength - `1UL`
+          while (path(last) != separatorChar) last -= `1UL`
+          last += `1UL`
 
           // previous path up to last /, plus result of resolving the link.
-          val newPathLength = last + linkLength + 1
+          val newPathLength = last + linkLength + `1UL`
           val newPath       = alloc[Byte](newPathLength)
           strncpy(newPath, path, last)
           strncat(newPath, link, linkLength)
@@ -472,35 +473,35 @@ object File {
           resolveLink(newPath, resolveAbsolute, restart)
       }
 
-    if (restart) resolve(resolved, start = 0)
+    if (restart) resolve(resolved)
     else resolved
   }
 
-  @tailrec private def resolve(path: CString, start: Int = 0)(
+  @tailrec private def resolve(path: CString, start: UInt = 0.toUInt)(
       implicit z: Zone): CString = {
-    val part: CString = alloc[Byte](limits.PATH_MAX)
-
+    val part: CString = alloc[Byte](limits.PATH_MAX.toUInt)
+    val `1U`          = 1.toUInt
     // Find the next separator
     var i = start
-    while (i < strlen(path) && path(i) != separatorChar) i += 1
+    while (i < strlen(path) && path(i) != separatorChar) i += `1U`
 
     if (i == strlen(path)) resolveLink(path, resolveAbsolute = true)
     else {
       // copy path from start to next separator.
       // and resolve that subpart.
-      strncpy(part, path, i + 1)
+      strncpy(part, path, i + `1U`)
 
       val resolved = resolveLink(part, resolveAbsolute = true)
 
       strcpy(part, resolved)
-      strcat(part, path + i + 1)
+      strcat(part, path + i + `1U`)
 
-      if (strncmp(resolved, path, i + 1) == 0) {
+      if (strncmp(resolved, path, i + `1U`) == 0) {
         // Nothing changed. Continue from the next segment.
-        resolve(part, i + 1)
+        resolve(part, i + `1U`)
       } else {
         // The path has changed. Start over.
-        resolve(part, 0)
+        resolve(part, 0.toUInt)
       }
     }
 
@@ -511,13 +512,13 @@ object File {
    * Otherwise, returns `None`.
    */
   private def readLink(link: CString)(implicit z: Zone): CString = {
-    val buffer: CString = alloc[Byte](limits.PATH_MAX)
-    readlink(link, buffer, limits.PATH_MAX - 1) match {
+    val buffer: CString = alloc[Byte](limits.PATH_MAX.toUInt)
+    readlink(link, buffer, (limits.PATH_MAX - 1).toUInt) match {
       case -1 =>
         null
       case read =>
         // readlink doesn't null-terminate the result.
-        buffer(read) = 0
+        buffer(read) = 0.toByte
         buffer
     }
   }

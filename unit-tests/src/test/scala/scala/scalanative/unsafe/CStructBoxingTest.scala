@@ -6,7 +6,7 @@ import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows._
 
-import scalanative.runtime.toRawPtr
+import scalanative.unsigned._
 import scalanative.libc.stdlib.malloc
 import java.lang.Long.toHexString
 
@@ -14,9 +14,9 @@ class CStructBoxingTest {
   var any: Any = null
 
   @noinline lazy val nullStruct: CStruct2[Int, Int] = null
-  @noinline lazy val struct: CStruct2[Int, Int] = !malloc(64)
+  @noinline lazy val struct: CStruct2[Int, Int] = !malloc(64.toULong)
     .asInstanceOf[Ptr[CStruct2[Int, Int]]]
-  @noinline lazy val struct2: CStruct2[Int, Int] = !malloc(64)
+  @noinline lazy val struct2: CStruct2[Int, Int] = !malloc(64.toULong)
     .asInstanceOf[Ptr[CStruct2[Int, Int]]]
 
   @noinline def f[T](x: T): T      = x

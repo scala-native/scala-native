@@ -3,6 +3,7 @@ package java.lang
 import scala.scalanative.unsafe._
 import scala.scalanative.runtime._
 import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.unsigned._
 
 class _Object {
   @inline def __equals(that: _Object): scala.Boolean =
@@ -50,7 +51,7 @@ class _Object {
 
   protected def __clone(): _Object = {
     val rawty = getRawType(this)
-    val size  = loadInt(elemRawPtr(rawty, sizeof[Type]))
+    val size  = loadInt(elemRawPtr(rawty, sizeof[Type].toLong)).toULong
     val clone = GC.alloc(rawty, size)
     val src   = castObjectToRawPtr(this)
     libc.memcpy(clone, src, size)

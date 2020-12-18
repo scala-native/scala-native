@@ -75,7 +75,7 @@ object SocketHelpers {
           return false
         }
 
-        val sentBytes = send(sock, toCString("echo"), 4, 0)
+        val sentBytes = send(sock, toCString("echo"), 4.toUInt, 0)
         if (sentBytes < 4) {
           return false
         }
@@ -89,8 +89,8 @@ object SocketHelpers {
         if (select(sock + 1, fdsetPtr, null, null, time) != 1) {
           return false
         } else {
-          val buf      = alloc[CChar](5)
-          val recBytes = recv(sock, buf, 5, 0)
+          val buf      = alloc[CChar](5.toUInt)
+          val recBytes = recv(sock, buf, 5.toUInt, 0)
           if (recBytes < 4) {
             return false
           }
@@ -110,7 +110,7 @@ object SocketHelpers {
       var hints = alloc[addrinfo]
       var ret   = alloc[Ptr[addrinfo]]
 
-      var ipstr = alloc[CChar](INET6_ADDRSTRLEN + 1)
+      var ipstr = alloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
       libc.memset(hints.rawptr, 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
       hints.ai_socktype = 0
@@ -158,7 +158,7 @@ object SocketHelpers {
 
       var p = !ret
       while (p != null) {
-        var ipstr = alloc[CChar](INET6_ADDRSTRLEN + 1)
+        var ipstr = alloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
         var addr  = alloc[Byte]
         if (p.ai_family == AF_INET) {
           addr = p.ai_addr
@@ -185,8 +185,8 @@ object SocketHelpers {
   def ipToHost(ip: String, isV6: Boolean): Option[String] = {
     Zone { implicit z =>
       var status  = 0
-      val host    = alloc[CChar](1024)
-      val service = alloc[CChar](20)
+      val host    = alloc[CChar](1024.toUInt)
+      val service = alloc[CChar](20.toUInt)
       if (isV6) {
         val addr6 = alloc[sockaddr_in6]
         addr6.sin6_family = AF_INET6.toUShort

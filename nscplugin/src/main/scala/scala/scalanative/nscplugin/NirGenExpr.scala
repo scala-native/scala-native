@@ -1683,9 +1683,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genStackalloc(app: Apply): Val = {
       val Apply(_, Seq(sizep)) = app
 
-      val size = genExpr(sizep)
+      val size    = genExpr(sizep)
+      val unboxed = buf.unbox(size.ty, size, unwind)(sizep.pos)
 
-      buf.stackalloc(nir.Type.Byte, size, unwind)(app.pos)
+      buf.stackalloc(nir.Type.Byte, unboxed, unwind)(app.pos)
     }
 
     def genCQuoteOp(app: Apply): Val = {
