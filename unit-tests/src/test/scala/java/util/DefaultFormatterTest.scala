@@ -746,7 +746,11 @@ class DefaultFormatterTest {
       Array(Int.box(1), "%-6.4s", "1     "),
       Array(Int.box(1), "%.5s", "1"),
       Array(Float.box(1.1f), "%2.3s", "1.1"),
+      Array(Float.box(1.1f), "%-6.4s", "1.1   "),
+      Array(Float.box(1.1f), "%.5s", "1.1"),
       Array(Double.box(1.1d), "%2.3s", "1.1"),
+      Array(Double.box(1.1d), "%-6.4s", "1.1   "),
+      Array(Double.box(1.1d), "%.5s", "1.1"),
       Array("", "%2.3s", "  "),
       Array("", "%-6.4s", "      "),
       Array("", "%.5s", ""),
@@ -1938,7 +1942,7 @@ class DefaultFormatterTest {
     }
   }
 
-  @Test def formatForFloatDoubleConversionType_gGOverflow(): Unit = {
+  @Test def formatForFloatDoubleConversionType_gG_Overflow(): Unit = {
 //    locally {
 //      val f = new Formatter()
 //      f.format("%g", 999999.5.asInstanceOf[Object])
@@ -2388,6 +2392,8 @@ class DefaultFormatterTest {
       Array(-1234567890.012345678d, "%-+8.4a", "-0x1.2658p30"),
       Array(java.lang.Double.MAX_VALUE, "%a", "0x1.fffffffffffffp1023"),
       Array(java.lang.Double.MAX_VALUE, "%5a", "0x1.fffffffffffffp1023"),
+      Array(java.lang.Double.MIN_VALUE, "%a", "0x0.0000000000001p-1022"),
+      Array(java.lang.Double.MIN_VALUE, "%5a", "0x0.0000000000001p-1022"),
       Array(java.lang.Double.NaN, "%a", "NaN"),
       Array(java.lang.Double.NaN, "%#.3a", "NaN"),
       Array(java.lang.Double.NaN, "%5a", "  NaN"),
@@ -2861,7 +2867,6 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore
   @Test def formatForNullArgumentForFloatDoubleBigDecimalConversion_a()
       : Unit = {
     locally {
@@ -2869,6 +2874,7 @@ class DefaultFormatterTest {
       f.format("% .4a", null.asInstanceOf[java.lang.Float])
       assertEquals("null", f.toString)
     }
+
     locally {
       val f = new Formatter()
       f.format("%06A", null.asInstanceOf[java.lang.Float])
@@ -2880,16 +2886,19 @@ class DefaultFormatterTest {
       f.format("%06a", null.asInstanceOf[BigDecimal])
       assertEquals("  null", f.toString)
     }
+
     locally {
       val f = new Formatter()
       f.format("% .5A", null.asInstanceOf[BigDecimal])
       assertEquals("NULL", f.toString)
     }
+
     locally {
       val f = new Formatter()
       f.format("%#.6a", null.asInstanceOf[java.lang.Double])
       assertEquals("null", f.toString)
     }
+
     locally {
       val f = new Formatter()
       f.format("% 2.5A", null.asInstanceOf[java.lang.Double])
@@ -2951,7 +2960,16 @@ class DefaultFormatterTest {
       f.format("% (.4f", null.asInstanceOf[java.lang.Double])
       assertEquals("null", f.toString)
     }
-
+    locally {
+      val f = new Formatter()
+      f.format("%#.6a", null.asInstanceOf[java.lang.Double])
+      assertEquals("null", f.toString)
+    }
+    locally {
+      val f = new Formatter()
+      f.format("% 2.5A", null.asInstanceOf[java.lang.Double])
+      assertEquals("NULL", f.toString)
+    }
     // test (BigDecimal)null
     locally {
       val f = new Formatter()
@@ -2982,6 +3000,16 @@ class DefaultFormatterTest {
       val f = new Formatter()
       f.format("% (.5f", null.asInstanceOf[BigDecimal])
       assertEquals("null", f.toString)
+    }
+    locally {
+      val f = new Formatter()
+      f.format("%06a", null.asInstanceOf[BigDecimal])
+      assertEquals("  null", f.toString)
+    }
+    locally {
+      val f = new Formatter()
+      f.format("% .5A", null.asInstanceOf[BigDecimal])
+      assertEquals("NULL", f.toString)
     }
   }
 
