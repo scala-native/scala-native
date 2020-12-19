@@ -135,7 +135,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
    * match that of Java on non-existing file.
    */
   private def simplifyExistingPath(path: CString)(implicit z: Zone): CString = {
-    val resolvedName = alloc[Byte](limits.PATH_MAX.toUInt)
+    val resolvedName = alloc[Byte](limits.PATH_MAX)
     if (realpath(path, resolvedName) == null) {
       throw new IOException(
         s"realpath can't resolve: ${fromCString(resolvedName)}")
@@ -341,6 +341,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
 object File {
 
+  private val `1U`    = 1.toUInt
+  private val `4096U` = 4096.toUInt
+  private val `4095U` = 4095.toUInt
+
   private val random = new java.util.Random()
 
   private def octal(v: String): UInt =
@@ -348,8 +352,8 @@ object File {
 
   private def getUserDir(): String =
     Zone { implicit z =>
-      var buff: CString = alloc[CChar](4096.toUInt)
-      var res: CString  = getcwd(buff, 4095.toUInt)
+      val buff: CString = alloc[CChar](`4096U`)
+      val res: CString  = getcwd(buff, `4095U`)
       if (res == null) {
         throw new IOException(
           s"getcwd() error in trying to get user director: ${fromCString(
@@ -482,8 +486,7 @@ object File {
 
   @tailrec private def resolve(path: CString, start: UInt = 0.toUInt)(
       implicit z: Zone): CString = {
-    val part: CString = alloc[Byte](limits.PATH_MAX.toUInt)
-    val `1U`          = 1.toUInt
+    val part: CString = alloc[Byte](limits.PATH_MAX)
     // Find the next separator
     var i = start
     while (i < strlen(path) && path(i) != separatorChar) i += `1U`
@@ -515,8 +518,8 @@ object File {
    * Otherwise, returns `None`.
    */
   private def readLink(link: CString)(implicit z: Zone): CString = {
-    val buffer: CString = alloc[Byte](limits.PATH_MAX.toUInt)
-    readlink(link, buffer, (limits.PATH_MAX - 1).toUInt) match {
+    val buffer: CString = alloc[Byte](limits.PATH_MAX)
+    readlink(link, buffer, limits.PATH_MAX - `1U`) match {
       case -1 =>
         null
       case read =>
