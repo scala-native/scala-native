@@ -547,6 +547,53 @@ final class Formatter private (private[this] var dest: Appendable,
         validateFlags(flags,
                       conversion,
                       invalidFlags = InvalidFlagsForOctalAndHex)
+      case 'a' | 'A' =>
+        validateFlags(flags,
+                      conversion,
+                      invalidFlags = NegativeParen | UseGroupingSeps)
+
+        def formatHex(hex: String) = {
+          val formatedHex =
+            if (precision < 0) hex
+            else {
+              raw"\.(.*)p".r.replaceSomeIn(
+                hex,
+                res => {
+                  val prev            = res.group(1)
+                  val actualPrecision = precision.max(1)
+                  val diff            = actualPrecision - prev.length
+                  if (diff == 0) None
+                  else {
+                    val replacement =
+                      if (diff > 0) prev + ("0" * diff)
+                      else prev.take(actualPrecision)
+
+                    Some(raw"\.${replacement}p")
+                  }
+                }
+              )
+            }
+
+          formatNumericString(RootLocaleInfo,
+                              flags,
+                              width,
+                              applyNumberUpperCase(flags, formatedHex))
+
+        }
+
+        arg match {
+          case f: Float =>
+            if (JFloat.isNaN(f) || JFloat.isInfinite(f)) {
+              formatNaNOrInfinite(flags, width, f)
+            } else formatHex(JFloat.toHexString(f))
+          case d: Double =>
+            if (JDouble.isNaN(d) || JDouble.isInfinite(d)) {
+              formatNaNOrInfinite(flags, width, d)
+            } else formatHex(JDouble.toHexString(d))
+          case _ =>
+            formatNullOrThrowIllegalFormatConversion()
+        }
+
       case 'e' | 'E' =>
         validateFlags(flags, conversion, invalidFlags = UseGroupingSeps)
         efgCommon(computerizedScientificNotation _)
@@ -580,7 +627,6 @@ final class Formatter private (private[this] var dest: Appendable,
         sendToDest("\n")
 
       // todo case 't' | 'T' => date/time
-      // todo case 'a' | 'A' => floating point formatted as hex
       case _ =>
         throw new UnknownFormatConversionException(conversion.toString)
     }

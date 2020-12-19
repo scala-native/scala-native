@@ -2251,7 +2251,6 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore("aA conversion not implemented")
   @Test def formatForDoubleMinValueConversionType_aA(): Unit = {
 
     val tripleA: Array[Array[Any]] = Array(
@@ -2279,7 +2278,6 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore("aA conversion not implemented")
   @Test def formatForFloatDoubleConversionType_aA(): Unit = {
     val tripleA: Array[Array[Any]] = Array(
       Array(-0f, "%a", "-0x0.0p0"),
@@ -2736,7 +2734,6 @@ class DefaultFormatterTest {
                  f.format("%F", 1.asInstanceOf[Object]))
   }
 
-  @Ignore("aA conversion not implemented")
   @Test def formatForExceptionsInFloatDoubleBigDecimalConversionType_aA()
       : Unit = {
     locally {
