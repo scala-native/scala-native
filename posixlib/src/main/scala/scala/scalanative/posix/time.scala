@@ -4,6 +4,9 @@ package posix
 import scala.scalanative.unsafe._
 import scala.scalanative.posix.sys.types, types._
 
+// XSI comment before method indicates it is defined in
+// extended POSIX X/Open System Interfaces, not base POSIX.
+
 @extern
 object time {
 
@@ -17,7 +20,7 @@ object time {
   // the arguments or return value do not need that layer & its
   // annotation.
   //
-  // time_t is a simple type, not a structure, so it do not need to be
+  // time_t is a simple type, not a structure, so it does not need to be
   // transformed.
   //
   // Structures, such as timespec or tm, are subject to differing total
@@ -57,6 +60,7 @@ object time {
                format: CString,
                time: Ptr[tm]): CSize = extern
 
+  // XSI
   @name("scalanative_strptime")
   def strptime(str: Ptr[CChar], format: CString, time: Ptr[tm]): CString =
     extern
@@ -67,9 +71,11 @@ object time {
   @name("scalanative_daylight")
   def daylight(): CInt = extern
 
+  // XSI
   @name("scalanative_timezone")
   def timezone(): CLong = extern
 
+  // XSI
   @name("scalanative_tzname")
   def tzname(): Ptr[CStruct2[CString, CString]] = extern
 }

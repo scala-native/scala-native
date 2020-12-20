@@ -14,7 +14,9 @@ import timeOps.tmOps
 
 class TimeTest {
   tzset()
-  //In 2.11/2.12 time was resolved to posix.time.type, in 2.13 to posix.time.time method
+
+  // In 2.11/2.12 time was resolved to posix.time.type, in 2.13 to
+  // posix.time.time method.
   val now_time_t: time_t = scala.scalanative.posix.time.time(null)
   val epoch: time_t      = 0L
 
@@ -74,16 +76,16 @@ class TimeTest {
 
   @Test def strftimeDoesNotReadMemoryOutsideStructTm(): Unit = {
     Zone { implicit z =>
-      if (sizeof[tm] < 56) {
+      if (sizeof[tm] < 56.toULong) {
         val ttPtr = alloc[time_t]
         !ttPtr = 1490986064740L / 1000L // Fri Mar 31 14:47:44 EDT 2017
 
         // This code is testing for reading past the end of a "short"
         // Scala Native tm, so the linux 56 byte form is necessary here.
-        val tmBufSize = 7
+        val tmBufCount = 7.toULong
 
         // alloc will zero/clear all bytes
-        val tmBuf = alloc[Ptr[Byte]](tmBufSize)
+        val tmBuf = alloc[Ptr[Byte]](tmBufCount)
         val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
         if (localtime_r(ttPtr, tmPtr) == null) {
@@ -92,12 +94,13 @@ class TimeTest {
           val unexpected = "BOGUS"
 
           // With the "short" 36 byte SN struct tm tmBuf(6) is
-          // is linux tm_zone, and outside the posix minimal required range.
-          // strftime() should not read it.
+          // is BSD linux tm_zone, and outside the posix minimal required
+          // range. strftime() should not read it.
 
           tmBuf(6) = toCString(unexpected)
 
-          val bufSize = 70 // grossly over-provision rather than chase bugs
+          // grossly over-provision rather than chase fencepost bugs.
+          val bufSize = 70.toULong
           val buf     = alloc[Byte](bufSize) // will zero/clear all bytes
           val n       = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 
@@ -105,11 +108,9 @@ class TimeTest {
           assertNotEquals("unexpected zero from strftime", n, 0)
 
           val result = fromCString(buf)
+          val len    = "Fri Mar 31 14:47:44 ".length
 
-          assertEquals(
-            "strftime failed",
-            result.indexOf(unexpected, "Fri Mar 31 14:47:44 ".length),
-            -1)
+          assertEquals("strftime failed", result.indexOf(unexpected, len), -1)
 
           val regex = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
             "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 20[1-3]\\d"
@@ -188,7 +189,7 @@ class TimeTest {
 
   @Test def strptimeDoesNotWriteMemoryOutsideStructTm(): Unit = {
     Zone { implicit z =>
-      // Linux 56 Bytes, Posix specifies 36 but allows more.
+      // Linux _BSD_Source 56 Bytes, Posix specifies 36 but allows more.
       val tmBufSize = 7
       val tmBuf     = alloc[Ptr[Byte]](tmBufSize) // will zero/clear all bytes
       val tmPtr     = tmBuf.asInstanceOf[Ptr[tm]]
@@ -237,7 +238,7 @@ class TimeTest {
       // Daylight saving time in most of the USA started March 12, 2017,
       // so this would be a 1 if the field were being set.
       val expectedIsdst = 0
-      assertEquals("tm_isdst", expectedIsdst, tmPtr.tm_isdst)
+      assertEquals("tm_isdst", 0, tmPtr.tm_isdst)
     }
   }
 
