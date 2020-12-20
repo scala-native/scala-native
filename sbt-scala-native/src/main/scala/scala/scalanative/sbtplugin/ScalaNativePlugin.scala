@@ -54,7 +54,6 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeDump =
       taskKey[Boolean](
         "Shall native toolchain dump intermediate NIR to disk during linking?")
-
   }
 
   @deprecated("use autoImport instead", "0.3.7")

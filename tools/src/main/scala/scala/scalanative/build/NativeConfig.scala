@@ -131,8 +131,7 @@ object NativeConfig {
       copy(targetTriple = value)
 
     def withTargetTriple(value: String): NativeConfig = {
-      val optValue = if (value.trim().isEmpty()) None else Some(value)
-      withTargetTriple(optValue)
+      withTargetTriple(Some(value))
     }
 
     def withGC(value: GC): NativeConfig =

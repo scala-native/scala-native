@@ -125,7 +125,8 @@ private[scalanative] object LLVM {
     // delete .o files for all excluded source files
     excludePaths.foreach { path =>
       val opath = Paths.get(path + oExt)
-      if (Files.exists(opath)) Files.delete(opath)
+      if (Files.exists(opath))
+        Files.delete(opath)
     }
 
     val fltoOpt   = flto(config)

@@ -24,8 +24,6 @@ object Build {
    *  val clangpp  = Discover.clangpp()
    *  val linkopts = Discover.linkingOptions()
    *  val compopts = Discover.compileOptions()
-   *  // Empty string or target triple if cross compiling
-   *  val triple   = ""
    *
    *  val outpath  = workdir.resolve("out")
    *
@@ -39,7 +37,6 @@ object Build {
    *         .withClangPP(clangpp)
    *         .withLinkingOptions(linkopts)
    *         .withCompileOptions(compopts)
-   *         .withTargetTriple(triple)
    *         .withLinkStubs(true)
    *       }
    *      .withMainClass(main)
