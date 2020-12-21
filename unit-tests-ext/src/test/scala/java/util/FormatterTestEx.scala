@@ -1,4 +1,4 @@
-// ported from Scala.js
+// Ported from Scala.js, commit: 00915e8, dated: 2020-09-29
 
 package java.util
 
@@ -103,7 +103,7 @@ class FormatterTestEx {
     assertF(HindiWithDevanagariDigits, "-14", "%o", new BigInteger("-12"))
   }
 
-  @Ignore
+  @Ignore("localized to{lowwer, upper}case not implemented")
   @Test def testFormatTurkish(): Unit = {
     // U+0130 LATIN CAPITAL LETTER I WITH DOT ABOVE
     assertF(Turkish, "TİTLE", "%S", "title")

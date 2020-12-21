@@ -5,7 +5,6 @@ package java.util
 
 import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream
-import java.io.Closeable
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -14,13 +13,8 @@ import java.io.IOException
 import java.io.OutputStream
 import java.io.PrintStream
 import java.io.UnsupportedEncodingException
-import java.lang.StringBuilder
-import java.math.BigDecimal
-import java.math.BigInteger
-import java.math.MathContext
 import java.nio.charset.Charset
 
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.Before
 import org.junit.After

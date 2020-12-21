@@ -1,6 +1,6 @@
 package java.util
 
-// Ported from Scala.js
+// Ported from Scala.js, commit: 00915e8, dated: 2020-09-29
 
 import java.io._
 import java.lang.{
