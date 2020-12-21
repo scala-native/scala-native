@@ -14,7 +14,7 @@ import java.io.OutputStream
 import java.io.PrintStream
 import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
-
+import java.lang.StringBuilder
 import org.junit.Test
 import org.junit.Before
 import org.junit.After
