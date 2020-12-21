@@ -1451,7 +1451,7 @@ object Formatter {
 
     def localizeNumber(str: String): String = {
       val formatSymbols = decimalFormatSymbols
-      val digitOffset   = formatSymbols.getZeroDigit() - zeroDigit
+      val digitOffset   = formatSymbols.getZeroDigit() - Defaults.zeroDigit
       var result        = ""
       val len           = str.length()
       var i             = 0
