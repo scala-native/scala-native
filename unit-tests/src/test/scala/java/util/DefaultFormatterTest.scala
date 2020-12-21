@@ -6,6 +6,7 @@ import java.io._
 import java.math.{BigDecimal, BigInteger, MathContext}
 import java.nio.charset.Charset
 import java.lang.StringBuilder
+import java.util.Formatter.BigDecimalLayoutForm
 import org.junit.Assert._
 import org.junit.{After, Before, Ignore, Test}
 import scala.scalanative.junit.utils.AssertThrows._
@@ -3003,23 +3004,22 @@ class DefaultFormatterTest {
     }
   }
 
-  //todo restore
-//  @Test def formatterBigDecimalLayoutFormValues(): Unit = {
-//    import Formatter.BigDecimalLayoutForm
-//    val vals: Array[BigDecimalLayoutForm] = BigDecimalLayoutForm.values()
-//    assertEquals(2, vals.length)
-//    assertEquals(BigDecimalLayoutForm.SCIENTIFIC, vals(0))
-//    assertEquals(BigDecimalLayoutForm.DECIMAL_FLOAT, vals(1))
-//  }
-//
-//  @Test def formatterBigDecimalLayoutFormValueOfString(): Unit = {
-//    import Formatter.BigDecimalLayoutForm
-//    val sci: BigDecimalLayoutForm = BigDecimalLayoutForm.valueOf("SCIENTIFIC")
-//    assertEquals(BigDecimalLayoutForm.SCIENTIFIC, sci)
-//    val decFloat: BigDecimalLayoutForm =
-//      BigDecimalLayoutForm.valueOf("DECIMAL_FLOAT")
-//    assertEquals(BigDecimalLayoutForm.DECIMAL_FLOAT, decFloat)
-//  }
+  @Test def formatterBigDecimalLayoutFormValues(): Unit = {
+    import Formatter.BigDecimalLayoutForm
+    val vals: Array[BigDecimalLayoutForm] = BigDecimalLayoutForm.values()
+    assertEquals(2, vals.length)
+    assertEquals(BigDecimalLayoutForm.SCIENTIFIC, vals(0))
+    assertEquals(BigDecimalLayoutForm.DECIMAL_FLOAT, vals(1))
+  }
+
+  @Test def formatterBigDecimalLayoutFormValueOfString(): Unit = {
+    import Formatter.BigDecimalLayoutForm
+    val sci: BigDecimalLayoutForm = BigDecimalLayoutForm.valueOf("SCIENTIFIC")
+    assertEquals(BigDecimalLayoutForm.SCIENTIFIC, sci)
+    val decFloat: BigDecimalLayoutForm =
+      BigDecimalLayoutForm.valueOf("DECIMAL_FLOAT")
+    assertEquals(BigDecimalLayoutForm.DECIMAL_FLOAT, decFloat)
+  }
 
   /*
    * Regression test for Harmony-5845
