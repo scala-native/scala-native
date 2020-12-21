@@ -1690,20 +1690,12 @@ class DefaultFormatterTest {
       Array(java.lang.Double.MAX_VALUE, "%#+0(8.4e", "+1.7977e+308"),
       Array(java.lang.Double.MAX_VALUE, "%-+(1.6e", "+1.797693e+308"),
       Array(java.lang.Double.MAX_VALUE, "% 0(12e", " 1.797693e+308"),
-      // vsprintf is used to convert to exponential number-strings in Formatter.
-      // It allows us to get greater range then JDK 4.9e-324
-      // Array(java.lang.Double.MIN_VALUE, "%e", "4.900000e-324"),
-      // Array(java.lang.Double.MIN_VALUE, "%#.0e", "5.e-324"),
-      // Array(java.lang.Double.MIN_VALUE, "%#- (9.8e", " 4.90000000e-324"),
-      // Array(java.lang.Double.MIN_VALUE, "%#+0(8.4e", "+4.9000e-324"),
-      // Array(java.lang.Double.MIN_VALUE, "%-+(1.6e", "+4.900000e-324"),
-      // Array(java.lang.Double.MIN_VALUE, "% 0(12e", " 4.900000e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%e", "4.940656e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%e", "4.900000e-324"),
       Array(java.lang.Double.MIN_VALUE, "%#.0e", "5.e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%#- (9.8e", " 4.94065646e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%#+0(8.4e", "+4.9407e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%-+(1.6e", "+4.940656e-324"),
-      Array(java.lang.Double.MIN_VALUE, "% 0(12e", " 4.940656e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%#- (9.8e", " 4.90000000e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%#+0(8.4e", "+4.9000e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%-+(1.6e", "+4.900000e-324"),
+      Array(java.lang.Double.MIN_VALUE, "% 0(12e", " 4.900000e-324"),
       Array(java.lang.Double.NaN, "%e", "NaN"),
       Array(java.lang.Double.NaN, "%#.0e", "NaN"),
       Array(java.lang.Double.NaN, "%#- (9.8e", "NaN      "),
@@ -1863,17 +1855,10 @@ class DefaultFormatterTest {
       Array(java.lang.Double.MAX_VALUE, "%+0(,8.4g", "+1.798e+308"),
       Array(java.lang.Double.MAX_VALUE, "%-+(,1.6g", "+1.79769e+308"),
       Array(java.lang.Double.MAX_VALUE, "% 0(,12.0g", " 000002e+308"),
-      // vsprintf is used to convert to exponential number-strings in Formatter.
-      // It allows us to get greater range then JDK 4.9e-324
-      // Array(java.lang.Double.MIN_VALUE, "%g", "4.90000e-324"),
-      // Array(java.lang.Double.MIN_VALUE, "%- (,9.8g", " 4.9000000e-324"),
-      // Array(java.lang.Double.MIN_VALUE, "%+0(,8.4g", "+4.900e-324"),
-      // Array(java.lang.Double.MIN_VALUE, "%-+(,1.6g", "+4.90000e-324"),
-      // Array(java.lang.Double.MIN_VALUE, "% 0(,12.0g", " 000005e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%g", "4.94066e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%- (,9.8g", " 4.9406565e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%+0(,8.4g", "+4.941e-324"),
-      Array(java.lang.Double.MIN_VALUE, "%-+(,1.6g", "+4.94066e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%g", "4.90000e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%- (,9.8g", " 4.9000000e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%+0(,8.4g", "+4.900e-324"),
+      Array(java.lang.Double.MIN_VALUE, "%-+(,1.6g", "+4.90000e-324"),
       Array(java.lang.Double.MIN_VALUE, "% 0(,12.0g", " 000005e-324"),
       Array(java.lang.Double.NaN, "%g", "NaN"),
       Array(java.lang.Double.NaN, "%- (,9.8g", "NaN      "),
@@ -1992,7 +1977,6 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore("Needs to replace usage of underlying vsprintf")
   @Test def formatForFloatDoubleMaxValueConversionType_f(): Unit = {
     // These need a way to reproduce the same decimal representation of
     // extreme values as JVM.
@@ -2434,7 +2418,6 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore("BigDecimal support not implemented")
   @Test def formatForBigDecimalConversionType_eE(): Unit = {
     val tripleE: Array[Array[Any]] = Array(
       Array(BigDecimal.ZERO, "%e", "0.000000e+00"),
@@ -2495,7 +2478,6 @@ class DefaultFormatterTest {
     }
   }
 
-  @Ignore("BigDecimal support not implemented")
   @Test def formatForBigDecimalConversionType_gG(): Unit = {
     val tripleG: Array[Array[Any]] = Array(
       Array(BigDecimal.ZERO, "%g", "0.00000"),
@@ -2577,7 +2559,6 @@ class DefaultFormatterTest {
     assertEquals(" 4.00000e+06", f.toString)
   }
 
-  @Ignore("BigDecimal support not implemented")
   @Test def formatForBigDecimalConversionType_f(): Unit = {
     val input: Int   = 0
     val pattern: Int = 1
@@ -2933,7 +2914,16 @@ class DefaultFormatterTest {
       f.format("%- (12.1f", null.asInstanceOf[java.lang.Float])
       assertEquals("n           ", f.toString)
     }
-
+    locally {
+      val f = new Formatter()
+      f.format("% .4a", null.asInstanceOf[java.lang.Float])
+      assertEquals("null", f.toString)
+    }
+    locally {
+      val f = new Formatter()
+      f.format("%06A", null.asInstanceOf[java.lang.Float])
+      assertEquals("  NULL", f.toString)
+    }
     // test (Double)null
     locally {
       val f = new Formatter()

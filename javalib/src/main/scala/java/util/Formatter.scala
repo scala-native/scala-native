@@ -3,13 +3,15 @@ package java.util
 // Ported from Scala.js
 
 import java.io._
-import java.lang.{Double => JDouble, StringBuilder => JStringBuilder}
-import java.math.{BigDecimal, BigInteger}
+import java.lang.{
+  Double => JDouble,
+  Float => JFloat,
+  StringBuilder => JStringBuilder
+}
+import java.math.{BigDecimal, BigInteger, MathContext, RoundingMode}
 import java.nio.charset.Charset
 import scala.annotation.switch
-import scala.scalanative.libc.stdio.vsprintf
 import scala.scalanative.regex.Pattern
-import scala.scalanative.unsafe.{Zone, fromCString, toCString, toCVarArgList}
 
 final class Formatter private (private[this] var dest: Appendable,
                                formatterLocaleInfo: Formatter.LocaleInfo)
@@ -17,6 +19,7 @@ final class Formatter private (private[this] var dest: Appendable,
     with Flushable {
 
   import Formatter._
+  import Defaults._
   import Flags._
 
   /** If `dest == null`, the real content is in `stringOutput`.
@@ -249,7 +252,7 @@ final class Formatter private (private[this] var dest: Appendable,
         }
 
         val conversionStr = conversion.toString
-        if ("bBhHsScCdoxXeEgGfn%".indexOf(conversionStr) < 0)
+        if ("bBhHsScCdoxXaAeEgGfn%".indexOf(conversionStr) < 0)
           throw new UnknownFormatConversionException(conversionStr)
 
         if (argIndex <= 0 || argIndex > args.length) {
@@ -342,30 +345,31 @@ final class Formatter private (private[this] var dest: Appendable,
       if (precision >= 0) precision
       else 6
 
-    @inline def efgCommon(notation: (Double, Int, Boolean) => String): Unit = {
-      val arg0 = arg match {
-        case arg: Double     => arg
-        case arg: Float      => arg.toDouble
-        case arg: BigDecimal => arg.doubleValue()
-        case arg             => arg
+    @inline def efgCommon(notation: (Number, Int, Boolean) => String): Unit = {
+      def formatArg(arg: Number) = {
+        /* The alternative format # of 'e', 'f' and 'g' is to force a
+         * decimal separator.
+         */
+        val forceDecimalSep = flags.altFormat
+        formatNumericString(
+          localeInfo,
+          flags,
+          width,
+          notation(arg, precisionWithDefault, forceDecimalSep))
       }
 
-      arg0 match {
+      arg match {
+        case arg: Float =>
+          if (JFloat.isNaN(arg) || JFloat.isInfinite(arg)) {
+            formatNaNOrInfinite(flags, width, arg)
+          } else formatArg(arg)
+
         case arg: Double =>
           if (JDouble.isNaN(arg) || JDouble.isInfinite(arg)) {
             formatNaNOrInfinite(flags, width, arg)
-          } else {
-            /* The alternative format # of 'e', 'f' and 'g' is to force a
-             * decimal separator.
-             */
-            val forceDecimalSep = flags.altFormat
-            formatNumericString(
-              localeInfo,
-              flags,
-              width,
-              notation(arg, precisionWithDefault, forceDecimalSep))
-          }
-        // todo BigDecimal
+          } else formatArg(arg)
+
+        case arg: BigDecimal => formatArg(arg)
 
         case _ =>
           formatNullOrThrowIllegalFormatConversion()
@@ -468,7 +472,7 @@ final class Formatter private (private[this] var dest: Appendable,
         // Octal formatting is not localized
         rejectPrecision()
         val prefix =
-          if (flags.altFormat) "0"
+          if (flags.altFormat) zeroDigitString
           else ""
 
         def padAndSendWithOctalInt(arg: Int): Unit = padAndSendToDest(
@@ -565,7 +569,7 @@ final class Formatter private (private[this] var dest: Appendable,
                   if (diff == 0) None
                   else {
                     val replacement =
-                      if (diff > 0) prev + ("0" * diff)
+                      if (diff > 0) prev + (zeroDigitString * diff)
                       else prev.take(actualPrecision)
 
                     Some(raw"\.${replacement}p")
@@ -683,72 +687,105 @@ final class Formatter private (private[this] var dest: Appendable,
   }
 
   private def computerizedScientificNotation(
-      x: Double,
+      num: Number,
       precision: Int,
       forceDecimalSep: Boolean): String = {
-    val s1: String = Zone { implicit z =>
-      val buf = z.alloc(2 + precision)
-      vsprintf(buf, toCString(s"%.${precision}e"), toCVarArgList(x))
-      fromCString(buf)
-    }
 
-    // Then make sure the exponent has at least 2 digits for the JDK spec
-    val len = s1.length
-    val s2 =
-      if ('e' != s1.charAt(len - 3)) s1
-      else s1.substring(0, len - 1) + "0" + s1.substring(len - 1)
+    val str = Formatting
+      .formatScientific(num, precision)
+      .replace("E", "e+")
+      .replace("e+-", "e-")
 
     // Finally, force the decimal separator, if requested
-    if (!forceDecimalSep || s2.indexOf(".") >= 0) {
-      s2
+    if (!forceDecimalSep || str.indexOf(decimalSeparator) >= 0) {
+      str
     } else {
-      val pos = s2.indexOf("e")
-      s2.substring(0, pos) + "." + s2.substring(pos)
+      val pos = str.indexOf("e")
+      str.substring(0, pos) + decimalSeparator + str.substring(pos)
     }
   }
 
-  private def generalScientificNotation(x: Double,
+  private def generalScientificNotation(num: Number,
                                         precision: Int,
                                         forceDecimalSep: Boolean): String = {
-    val m = Math.abs(x)
-
     val p =
       if (precision == 0) 1
       else precision
 
-    // between 1e-4 and 10e(p): display as fixed
-    if (m >= 1e-4 && m < Math.pow(10, p)) {
+    val numAbs: Number = num match {
+      case bd: BigDecimal => bd.abs()
+      case f: JFloat      => Math.abs(f)
+      case d: JDouble     => Math.abs(d)
+    }
+
+    val shouldDisplayFixed: Boolean = numAbs match {
+      case abs: BigDecimal =>
+        abs.compareTo(BigDecimal.valueOf(1e-4)) >= 0 &&
+          abs.compareTo(BigDecimal.TEN.pow(p)) < 0
+
+      case _: JFloat | _: JDouble =>
+        val abs = numAbs.doubleValue()
+        abs >= 1e-4 && abs < Math.pow(10, p)
+    }
+
+    def calcSignificantDigits: Int = {
       /* First approximation of the smallest power of 10 that is >= m.
        * Due to rounding errors in the event of an imprecise `log10`
        * function, sig0 could actually be the smallest power of 10
        * that is > m.
        */
-      val sig0 = Math.ceil(Math.log10(m)).toInt
+      val (sig0, isLessOrEqual) = numAbs match {
+        case bd: BigDecimal =>
+          val sig0 = bd
+            .round(new MathContext(1, RoundingMode.CEILING))
+            .scale() * -1
+          val isLE = BigDecimal
+            .valueOf(Math.pow(10, sig0))
+            .compareTo(bd) <= 0
+          (sig0, isLE)
+
+        case _: JFloat | _: JDouble =>
+          val abs  = num.doubleValue().abs
+          val sig0 = Math.ceil(Math.log10(abs)).toInt
+          (sig0, Math.pow(10, sig0) <= abs)
+      }
+
       /* Increment sig0 so that it is always the first power of 10
        * that is > m.
        */
-      val sig = if (Math.pow(10, sig0) <= m) sig0 + 1 else sig0
-      decimalNotation(x, Math.max(p - sig, 0), forceDecimalSep)
-    } else if (m == 0.0) { // exact 0 should always be fixed
-      decimalNotation(x, Math.max(precision - 1, 0), forceDecimalSep)
+      if (isLessOrEqual) sig0 + 1
+      else sig0
+    }
+
+    def isZero = numAbs match {
+      case bd: BigDecimal => bd.compareTo(BigDecimal.ZERO) == 0
+      case f: JFloat      => f == 0.0f
+      case d: JDouble     => d == 0.0
+    }
+
+    // between 1e-4 and 10e(p): display as fixed
+    if (shouldDisplayFixed) {
+      decimalNotation(num,
+                      Math.max(p - calcSignificantDigits, 0),
+                      forceDecimalSep)
+    } else if (isZero) {
+      // exact 0 should always be decimal
+      decimalNotation(num, Math.max(precision - 1, 0), forceDecimalSep)
     } else {
-      computerizedScientificNotation(x, p - 1, forceDecimalSep)
+      computerizedScientificNotation(num, p - 1, forceDecimalSep)
     }
   }
 
-  private def decimalNotation(x: Double,
+  private def decimalNotation(num: Number,
                               precision: Int,
                               forceDecimalSep: Boolean): String = {
 
-    val s2: String = Zone { implicit z =>
-      val bufSize = Math.log10(x).toInt.max(1) + 1 + precision
-      val buf     = z.alloc(bufSize)
-      vsprintf(buf, toCString(s"%.${precision}f"), toCVarArgList(x))
-      fromCString(buf)
-    }
+    val str = Formatting.formatDecimal(num, precision)
+
     // Finally, force the decimal separator, if requested
-    if (forceDecimalSep && s2.indexOf(".") < 0) s2 + "."
-    else s2
+    if (forceDecimalSep && str.indexOf(decimalSeparator) < 0) {
+      str + decimalSeparator
+    } else str
   }
 
   private def formatNonNumericString(localeInfo: LocaleInfo,
@@ -860,10 +897,10 @@ final class Formatter private (private[this] var dest: Appendable,
       var result = s.substring(index)
       while (index > groupingSize) {
         val next = index - groupingSize
-        result = s.substring(next, index) + "," + result
+        result = s.substring(next, index) + groupingSeparator + result
         index = next
       }
-      s.substring(0, index) + "," + result
+      s.substring(0, index) + groupingSeparator + result
     }
   }
 
@@ -956,6 +993,16 @@ final class Formatter private (private[this] var dest: Appendable,
 
 object Formatter {
 
+  object Defaults {
+    final val minusSign         = '-'
+    final val decimalSeparator  = '.'
+    final val groupingSeparator = ','
+    final val zeroDigit         = '0'
+    final val minusSignString   = minusSign.toString
+    final val zeroDigitString   = zeroDigit.toString
+    final val roundingMode      = RoundingMode.HALF_UP
+  }
+
   final class BigDecimalLayoutForm private (name: String, ordinal: Int)
       extends Enum[BigDecimalLayoutForm](name, ordinal)
 
@@ -1036,6 +1083,307 @@ object Formatter {
       LeftAlign | AltFormat | NumericOnlyFlags | UseLastIndex
   }
 
+  private trait Formatting[A] {
+    import Defaults._
+    // whole: "0" or [1-9]+[0-9]* (i.e. empty seqs and leading zeros are NOT allowed)
+    // frac: [0-9]* (i.e. empty seqs and leading zeros are allowed)
+    case class Digits(negative: Boolean, whole: Seq[Char], frac: Seq[Char])
+
+    def toDigits(number: A): Digits
+
+    def roundToInteger(digits: Digits): Digits
+
+    def padLeft(len: Int, elem: Char, str: Seq[Char]): Seq[Char] = {
+      val padnum = len - str.length
+      if (padnum > 0)
+        Seq.fill(padnum)(elem) ++ str
+      else
+        str
+    }
+
+    def roundAt(digits: Digits, afterDecimal: Int): Digits = {
+      val shifted = {
+        import digits._
+        val (newWhole, newFrac) = frac.splitAt(afterDecimal)
+        Digits(negative, whole ++ newWhole, newFrac)
+      }
+      val rounded = roundToInteger(shifted)
+      // rounded.frac should be empty
+      val (rwholeEmpty, rfracZeros) = {
+        val paddedWhole =
+          padLeft(afterDecimal, zeroDigit, rounded.whole)
+        paddedWhole.splitAt(paddedWhole.length - afterDecimal)
+      }
+      val rwhole =
+        if (rwholeEmpty.isEmpty) Seq(zeroDigit) else rwholeEmpty
+      val rfrac =
+        if (rfracZeros.forall(_ == zeroDigit)) Seq.empty
+        else rfracZeros
+      Digits(digits.negative, rwhole, rfrac)
+    }
+
+    def formatFixedPoint(number: A, fractionDigits: Int): String = {
+      val ungroupedDigits = toDigits(number)
+
+      val Digits(negative, wholePart, fracPart0) = {
+        import ungroupedDigits._
+        if (frac.length > fractionDigits)
+          roundAt(ungroupedDigits, fractionDigits)
+        else
+          ungroupedDigits
+      }
+
+      val fracPart = fracPart0.padTo(fractionDigits, zeroDigit)
+      val dotPart =
+        if (fracPart.isEmpty && fractionDigits <= 0) Seq.empty
+        else Seq(decimalSeparator)
+      val signPart =
+        if (negative) Seq(minusSign)
+        else Seq.empty
+
+      (signPart ++ wholePart ++ dotPart ++ fracPart).mkString
+    }
+
+    def scaleDigits(unscaled: Digits): (Digits, Int) = {
+      val Digits(negative, wholeDigits, fracDigits) = unscaled
+      val allDigits                                 = (wholeDigits ++ fracDigits).dropWhile(_ == '0')
+      val wholeDigitNum                             = 1
+      val (wholePart, fracPartNotCutoff)            = allDigits.splitAt(wholeDigitNum)
+      val exp                                       = fracPartNotCutoff.length - fracDigits.length
+      (Digits(negative, wholePart, fracPartNotCutoff), exp)
+    }
+
+    def formatScientific(number: A, fractionDigits: Int): String = {
+      val (roundedDigits, exp) = {
+        val unscaledDigits                = toDigits(number)
+        val (scaledDigits, exp)           = scaleDigits(unscaledDigits)
+        val Digits(negative, whole, frac) = scaledDigits
+
+        if (frac.length > fractionDigits) {
+          val rounded = roundAt(scaledDigits, fractionDigits)
+          // check if carried
+          if (scaledDigits.whole.length != rounded.whole.length) {
+            val (newWhole, newPartZeros) =
+              rounded.whole.splitAt(scaledDigits.whole.length)
+            val newPart =
+              if (newPartZeros.forall(_ == zeroDigit)) Seq.empty
+              else newPartZeros
+            (Digits(rounded.negative, newWhole, newPart ++ rounded.frac),
+             exp + newPartZeros.length)
+          } else
+            (rounded, exp)
+        } else
+          (scaledDigits, exp)
+      }
+      val Digits(negative, wholePart, fracPart) = roundedDigits
+
+      val dotPart =
+        if (fracPart.isEmpty && fractionDigits <= 0) Seq.empty
+        else Seq(decimalSeparator)
+      val signPart =
+        if (negative) Seq(minusSign)
+        else Seq.empty
+      def padInt(len: Int, elem: Char, num: Int): Seq[Char] =
+        if (num < 0)
+          minusSign +: padLeft(len, elem, (-num).toString.toSeq)
+        else
+          padLeft(len, elem, num.toString.toSeq)
+
+      (
+        signPart ++
+          wholePart.padTo(1, zeroDigit) ++
+          dotPart ++
+          fracPart.padTo(fractionDigits, zeroDigit) ++
+          ('E' +: padInt(2, zeroDigit, exp))
+      ).mkString
+    }
+  }
+
+  object Formatting {
+    import Defaults._
+    implicit private object LongFormatting extends Formatting[Long] {
+      def toDigits(number: Long): Digits = {
+        val numabs = number.abs
+
+        def toBeTruncated =
+          scala.Iterator(numabs) ++
+            scala.Iterator.iterate(numabs / 10)(_ / 10).takeWhile(_ > 0)
+
+        def whole =
+          toBeTruncated
+            .map { i => (zeroDigit + (i % 10)).toChar }
+            .toList
+            .reverse
+
+        Digits(number < 0, whole, Seq.empty)
+      }
+
+      def roundToInteger(digits: Digits): Digits = {
+        import digits._
+        toDigits {
+          val signum = if (negative) -1 else 1
+          // assuming Long can be represented by Double
+          val toBeRounded =
+            (whole.mkString.toDouble + ("0." + frac.mkString).toDouble) * signum
+          Math.round(toBeRounded)
+        }
+      }
+    }
+
+    implicit private object DoubleFormatting extends Formatting[Double] {
+
+      import Defaults._
+
+      case class DoubleDigits(whole: Seq[Char], frac: Seq[Char])
+
+      private[this] def getDoubleDigits(number: Double): DoubleDigits = {
+        // regular expressions (regex) are a good Computer Science candidate
+        // here but are not used.
+        // This is essential low level code. I doubt the current
+        // implementation of regex is either robust or perfomant enough.
+        // I do not have time to benchmark alternate implementations, so
+        // I go for an implementation I believe I can both do quickly
+        // and get correct.
+
+        val (wdPrefix, suffix) = number.toString.span(_ != '.')
+
+        val (fracDigits, expDigits) = suffix.tail.span(_ != 'E')
+
+        if (expDigits.isEmpty()) {
+          DoubleDigits(wdPrefix.toSeq, fracDigits.toSeq)
+        } else {
+          val exponentB10 = java.lang.Integer.parseInt(expDigits.tail)
+
+          if (exponentB10 > 0) {
+            val (wdSuffix, fd) = fracDigits.splitAt(Math.min(exponentB10, 16))
+            val wd =
+              (wdPrefix + wdSuffix).padTo(exponentB10 + 1, zeroDigit)
+
+            DoubleDigits(wd.toSeq, fd.toSeq)
+
+          } else {
+            val fdSeq = padLeft(exponentB10.abs + fracDigits.length,
+                                zeroDigit,
+                                (wdPrefix + fracDigits).toSeq)
+
+            DoubleDigits(Seq(zeroDigit), fdSeq)
+          }
+        }
+      }
+
+      def toDigits(number: Double): Digits = {
+        val numabs                    = number.abs
+        val DoubleDigits(whole, frac) = getDoubleDigits(numabs)
+        val neg                       = number < 0 || number == -0.0
+        Digits(neg, whole, frac)
+      }
+
+      def roundToInteger(digits: Digits): Digits = {
+        import digits._
+        toDigits {
+          val signum = if (negative) -1 else 1
+          val fracd =
+            try {
+              ("0." + frac.mkString).toDouble
+            } catch {
+              case e: NumberFormatException =>
+                // typically frac contains too many zeros
+                // consider other cases?
+                0.0
+            }
+          val toBeRounded = (whole.mkString.toDouble + fracd) * signum
+          // Conversion to BigDecimal was used for JVM half-up rounding compliance
+          BigDecimal
+            .valueOf(toBeRounded)
+            .setScale(0, roundingMode)
+            .doubleValue()
+        }
+      }
+
+    }
+
+    implicit private object BigIntegerFormatting
+        extends Formatting[BigInteger] {
+      def toDigits(number: BigInteger): Digits = {
+        val numabs = number.abs()
+        Digits(number.signum() < 0, numabs.toString.toSeq, Seq.empty)
+      }
+
+      def roundToInteger(digits: Digits): Digits = {
+        import digits._
+        toDigits {
+          val sign = if (negative) minusSignString else ""
+          val toBeRounded =
+            new BigDecimal(
+              sign + whole.mkString + decimalSeparator + frac.mkString)
+          toBeRounded
+            .setScale(0, roundingMode)
+            .toBigInteger()
+        }
+      }
+    }
+
+    implicit private object BigDecimalFormatting
+        extends Formatting[BigDecimal] {
+      def toDigits(number: BigDecimal): Digits = {
+        val numabs = number.abs()
+        val s      = numabs.toPlainString()
+        val (whole, frac) = s.indexOf(decimalSeparator) match {
+          case -1 => (s, "")
+          case dp =>
+            val (whole, dotFrac) = s.splitAt(dp)
+            (whole, dotFrac.tail)
+        }
+        Digits(number.signum() < 0, whole.toSeq, frac.toSeq)
+      }
+
+      def roundToInteger(digits: Digits): Digits = {
+        import digits._
+        toDigits {
+          val sign = if (negative) minusSignString else ""
+          val toBeRounded =
+            new BigDecimal(
+              sign + whole.mkString + decimalSeparator + frac.mkString)
+          toBeRounded.setScale(0, roundingMode)
+        }
+      }
+    }
+
+    def formatDecimal(arg: Number, precision: Int): String =
+      format(f => f.formatFixedPoint(_, precision))(arg)
+    def formatScientific(arg: Number, precision: Int): String =
+      format(f => f.formatScientific(_, precision))(arg)
+
+    private def format(notation: Formatting[Any] => Any => String)(
+        arg: Number): String = {
+
+      def formatImpl[A](arg: A)(implicit fmt: Formatting[A]): String = {
+        notation(fmt.asInstanceOf[Formatting[Any]])(arg)
+      }
+
+      arg match {
+        case bi: BigInteger =>
+          formatImpl(bi)
+        case bd: BigDecimal =>
+          formatImpl(bd)
+        case num: Number =>
+          val l = num.longValue()
+          val d = num.doubleValue()
+          // type ascriptions are put to make sure the correct overload is called
+          if (num == l)
+            formatImpl(l: Long)
+          // special case, num.doubleValue would erase sign
+          else if (num == d)
+            formatImpl(d: Double)
+          else
+            throw new UnsupportedOperationException(
+              s"number ${num} cannot be represented by either of Long or Double, and class ${num.getClass.getName} is not supported"
+            )
+        case _ => throw new IllegalArgumentException
+      }
+    }
+  }
+
   /** A proxy for a `java.util.Locale` or for the root locale that provides
    * the info required by `Formatter`.
    *
@@ -1061,11 +1409,13 @@ object Formatter {
 
     def groupingSize: Int
 
-    def zeroDigitString: String
-
     def localizeNumber(str: String): String
 
     def toUpperCase(str: String): String
+
+    def zeroDigit: Char
+
+    def zeroDigitString: String = zeroDigit.toString
   }
 
   private object RootLocaleInfo extends LocaleInfo {
@@ -1073,7 +1423,7 @@ object Formatter {
 
     def groupingSize: Int = 3
 
-    def zeroDigitString: String = "0"
+    def zeroDigit: Char = '0'
 
     def localizeNumber(str: String): String = str
 
@@ -1099,7 +1449,7 @@ object Formatter {
         case _                            => 3
       }
 
-    def zeroDigitString: String = decimalFormatSymbols.getZeroDigit().toString()
+    def zeroDigit: Char = decimalFormatSymbols.getZeroDigit()
 
     def localizeNumber(str: String): String = {
       val formatSymbols = decimalFormatSymbols
