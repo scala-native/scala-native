@@ -626,7 +626,7 @@ final class Formatter private (private[this] var dest: Appendable,
         validateFlagsForPercentAndNewline(flags,
                                           conversion,
                                           invalidFlags = AllWrittenFlags)
-        sendToDest("\n")
+        sendToDest(lineSeparatorString)
 
       // todo case 't' | 'T' => date/time
       case _ =>
@@ -991,13 +991,15 @@ final class Formatter private (private[this] var dest: Appendable,
 object Formatter {
 
   object Defaults {
-    final val minusSign         = '-'
-    final val decimalSeparator  = '.'
-    final val groupingSeparator = ','
-    final val zeroDigit         = '0'
-    final val minusSignString   = minusSign.toString
-    final val zeroDigitString   = zeroDigit.toString
-    final val roundingMode      = RoundingMode.HALF_UP
+    final val minusSign           = '-'
+    final val decimalSeparator    = '.'
+    final val groupingSeparator   = ','
+    final val zeroDigit           = '0'
+    final val lineSeparator       = '\n'
+    final val lineSeparatorString = lineSeparator.toString
+    final val minusSignString     = minusSign.toString
+    final val zeroDigitString     = zeroDigit.toString
+    final val roundingMode        = RoundingMode.HALF_UP
   }
 
   final class BigDecimalLayoutForm private (name: String, ordinal: Int)
@@ -1419,7 +1421,7 @@ object Formatter {
 
     def groupingSize: Int = 3
 
-    def zeroDigit: Char = '0'
+    def zeroDigit: Char = Defaults.zeroDigit
 
     def localizeNumber(str: String): String = str
 
@@ -1449,15 +1451,17 @@ object Formatter {
 
     def localizeNumber(str: String): String = {
       val formatSymbols = decimalFormatSymbols
-      val digitOffset   = formatSymbols.getZeroDigit() - '0'
+      val digitOffset   = formatSymbols.getZeroDigit() - zeroDigit
       var result        = ""
       val len           = str.length()
       var i             = 0
+      import Defaults._
       while (i != len) {
         result += (str.charAt(i) match {
           case c if c >= '0' && c <= '9' => (c + digitOffset).toChar
-          case '.'                       => formatSymbols.getDecimalSeparator()
-          case ','                       => formatSymbols.getGroupingSeparator()
+          case `decimalSeparator`        => formatSymbols.getDecimalSeparator()
+          case `groupingSeparator`       => formatSymbols.getGroupingSeparator()
+          case `lineSeparator`           => System.lineSeparator()
           case c                         => c
         })
         i += 1

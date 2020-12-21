@@ -633,7 +633,7 @@ class FormatterTest {
   }
 
   @Test def `should_support_%n`(): Unit = {
-    assertF("1\n2", "%d%n%d", 1, 2)
+    assertF(s"1${System.lineSeparator()}2", "%d%n%d", 1, 2)
 
     expectIllegalFormatFlags("%0-,+< (#n", "-#+ 0,(<", null)
     expectIllegalFormatPrecision('%', null)
