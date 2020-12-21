@@ -189,23 +189,43 @@ class TimeTest {
 
   @Test def strptimeDoesNotWriteMemoryOutsideStructTm(): Unit = {
     Zone { implicit z =>
-      // Linux _BSD_Source 56 Bytes, Posix specifies 36 but allows more.
-      val tmBufSize = 7
-      val tmBuf     = alloc[Ptr[Byte]](tmBufSize) // will zero/clear all bytes
+      // Key to magic numbers 56 & 36.
+      // Linux _BSD_Source uses at least 56 Bytes.
+      // Posix specifies 36 but allows more.
+      val tmBufSize = 56.toULong
+      val tmBuf     = alloc[Byte](tmBufSize) // will zero/clear all bytes
       val tmPtr     = tmBuf.asInstanceOf[Ptr[tm]]
+
+      // C strptime() parses %Z but does not set corresponding field.
+      // Initialize tm_isdate to something other than 0 to ensure
+      // Scala Native strptime() is clearing it.
+      // Change in this initial condition is checked in a test below.
+      tmPtr.tm_isdst = Int.MinValue
+
+      val gmtIndex = 36.toULong
+
+      // To detect the case where strptime() is writing tm_gmtoff
+      // use a value outside the known range of valid values.
+      val expectedGmtOff = Long.MaxValue
+      (tmBuf + gmtIndex).asInstanceOf[Ptr[CLong]](0) = expectedGmtOff
 
       val cp =
         strptime(c"Fri Mar 31 14:47:44 EDT 2017", c"%a %b %d %T %Z %Y", tmPtr)
 
       assertNotNull(s"strptime() returned unexpected null pointer", cp)
 
-      val ch = cp(0)
+      val ch = cp(0) // last character not processed by strptime().
       assertEquals("strptime() result is not NUL terminated", ch, '\u0000')
 
-      val tm_gmtoff = tmBuf(5) // tm_gmtoff is outside posix minimal range.
-      assertNull("tm_gmtoff", null)
+      // tm_gmtoff & tm_zone are outside the posix defined range.
+      // Scala Native strftime() should never write to them.
+      // Assume no leading or interior padding.
 
-      val tm_zone = tmBuf(6) // tm_zone is outside posix minimal range.
+      val tm_gmtoff = (tmBuf + gmtIndex).asInstanceOf[Ptr[CLong]](0)
+      assertEquals("tm_gmtoff", expectedGmtOff, tm_gmtoff)
+
+      val tmZoneIndex = (gmtIndex + sizeof[CLong])
+      val tm_zone     = (tmBuf + tmZoneIndex).asInstanceOf[CString]
       assertNull("tm_zone", null)
 
       // Major concerning conditions passed. Sanity check the tm proper.
@@ -234,11 +254,11 @@ class TimeTest {
       val expectedYday = 89
       assertEquals("tm_yday", expectedYday, tmPtr.tm_yday)
 
-      // strptime() parses %Z but does not set corresponding field.
-      // Daylight saving time in most of the USA started March 12, 2017,
-      // so this would be a 1 if the field were being set.
-      val expectedIsdst = 0
-      assertEquals("tm_isdst", 0, tmPtr.tm_isdst)
+      // C strptime() parses %Z but does not set corresponding field.
+      // This and the initializaton at beginning of test
+      // ensures that Scala Native strptime() initializes that field to zero.
+      val expectedIsDst = 0
+      assertEquals("tm_isdst", expectedIsDst, tmPtr.tm_isdst)
     }
   }
 
