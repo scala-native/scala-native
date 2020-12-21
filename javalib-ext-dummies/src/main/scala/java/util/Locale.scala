@@ -154,7 +154,7 @@ object Locale {
   // should have bundles for this list
   //def getAvailableLocales(): Array[Locale] = ???
 
-  def getDefault(): Locale = defaultLocale
+  def getDefault(): Locale = Locale.ROOT
 
   //def getDefault(category: Locale.Category): Locale = ???
 
@@ -164,8 +164,8 @@ object Locale {
 
   //def setDefault(category: Locale.Category, locale: Locale): Unit = ???
 
-  def setDefault(locale: Locale): Unit =
-    this.defaultLocale = locale
+//  def setDefault(locale: Locale): Unit =
+//    this.defaultLocale = locale
 
   //class Category
 
