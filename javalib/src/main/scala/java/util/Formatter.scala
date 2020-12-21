@@ -6,6 +6,7 @@ import java.io._
 import java.lang.{
   Double => JDouble,
   Float => JFloat,
+  Boolean => JBoolean,
   StringBuilder => JStringBuilder
 }
 import java.math.{BigDecimal, BigInteger, MathContext, RoundingMode}
@@ -215,7 +216,7 @@ final class Formatter private (private[this] var dest: Appendable,
         throw new UnknownFormatConversionException(conversion)
       }
 
-      fmtIndex = matcher.`end`() // position at the end of the match
+      fmtIndex = matcher.end() // position at the end of the match
 
       def optGroup(groupId: Int): Option[String] =
         Option(matcher.group(groupId))
@@ -368,7 +369,8 @@ final class Formatter private (private[this] var dest: Appendable,
             formatNaNOrInfinite(flags, width, arg)
           } else formatArg(arg)
 
-        case arg: BigDecimal => formatArg(arg)
+        case arg: BigDecimal =>
+          formatArg(arg)
 
         case _ =>
           formatNullOrThrowIllegalFormatConversion()
@@ -380,10 +382,11 @@ final class Formatter private (private[this] var dest: Appendable,
         validateFlags(flags,
                       conversion,
                       invalidFlags = NumericOnlyFlags | AltFormat)
-        val str =
-          if ((arg.asInstanceOf[AnyRef] eq false
-                .asInstanceOf[AnyRef]) || arg == null) "false"
-          else "true"
+        val str = arg match {
+          case arg: JBoolean => arg.toString
+          case null          => "false"
+          case _             => "true"
+        }
         formatNonNumericString(RootLocaleInfo, flags, width, precision, str)
 
       case 'h' | 'H' =>
@@ -419,9 +422,11 @@ final class Formatter private (private[this] var dest: Appendable,
                       conversion,
                       invalidFlags = NumericOnlyFlags | AltFormat)
         rejectPrecision()
-        def checkValidCodePoint(arg: Int): Unit =
+
+        def checkValidCodePoint(arg: Int): Unit = {
           if (!Character.isValidCodePoint(arg))
             throw new IllegalFormatCodePointException(arg)
+        }
 
         def formatCharString(charString: String) =
           formatNonNumericString(localeInfo, flags, width, -1, charString)
@@ -438,9 +443,9 @@ final class Formatter private (private[this] var dest: Appendable,
           case arg: Short =>
             checkValidCodePoint(arg)
             formatCharString(arg.toChar.toString)
+
           case arg: Int =>
-            if (!Character.isValidCodePoint(arg))
-              throw new IllegalFormatCodePointException(arg)
+            checkValidCodePoint(arg)
             val str = if (arg < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
               new String(Array(arg.toChar))
             } else {
@@ -451,17 +456,16 @@ final class Formatter private (private[this] var dest: Appendable,
                 ))
             }
             formatCharString(str)
-          case _ =>
-            formatNullOrThrowIllegalFormatConversion()
+
+          case _ => formatNullOrThrowIllegalFormatConversion()
         }
 
       case 'd' =>
         validateFlags(flags, conversion, invalidFlags = AltFormat)
         rejectPrecision()
         arg match {
-          case _: Byte | _: Short | _: Char | _: Int | _: Long =>
-            formatNumericString(localeInfo, flags, width, arg.toString())
-          case arg: BigInteger =>
+          case _: Byte | _: Short | _: Char | _: Int | _: Long |
+              _: BigInteger =>
             formatNumericString(localeInfo, flags, width, arg.toString())
           case _ =>
             formatNullOrThrowIllegalFormatConversion()
@@ -484,7 +488,6 @@ final class Formatter private (private[this] var dest: Appendable,
 
         arg match {
           case arg: Byte  => padAndSendWithOctalInt(arg & 0xFF)
-          case arg: Char  => padAndSendWithOctalInt(arg & 0xFFFF)
           case arg: Short => padAndSendWithOctalInt(arg & 0xFFFF)
           case arg: Int   => padAndSendWithOctalInt(arg)
           case arg: Long =>
@@ -501,7 +504,6 @@ final class Formatter private (private[this] var dest: Appendable,
                                 prefix)
           case _ =>
             formatNullOrThrowIllegalFormatConversion()
-
         }
         validateFlags(flags,
                       conversion,
@@ -509,7 +511,6 @@ final class Formatter private (private[this] var dest: Appendable,
 
       case 'x' | 'X' =>
         // Hex formatting is not localized
-
         rejectPrecision()
 
         val prefix = {
@@ -528,7 +529,6 @@ final class Formatter private (private[this] var dest: Appendable,
 
         arg match {
           case arg: Byte  => padAndSendWithHexInt(arg & 0xFF)
-          case arg: Char  => padAndSendWithHexInt(arg & 0xFFFF)
           case arg: Short => padAndSendWithHexInt(arg & 0xFFFF)
           case arg: Int   => padAndSendWithHexInt(arg)
           case arg: Long =>
@@ -550,6 +550,7 @@ final class Formatter private (private[this] var dest: Appendable,
         validateFlags(flags,
                       conversion,
                       invalidFlags = InvalidFlagsForOctalAndHex)
+
       case 'a' | 'A' =>
         validateFlags(flags,
                       conversion,
@@ -581,7 +582,6 @@ final class Formatter private (private[this] var dest: Appendable,
                               flags,
                               width,
                               applyNumberUpperCase(flags, formatedHex))
-
         }
 
         arg match {
@@ -626,7 +626,6 @@ final class Formatter private (private[this] var dest: Appendable,
         validateFlagsForPercentAndNewline(flags,
                                           conversion,
                                           invalidFlags = AllWrittenFlags)
-
         sendToDest("\n")
 
       // todo case 't' | 'T' => date/time
@@ -635,10 +634,10 @@ final class Formatter private (private[this] var dest: Appendable,
     }
   }
 
-  @inline private def validateFlags(flags: Flags,
-                                    conversion: Char,
-                                    invalidFlags: Int): Unit = {
-
+  @inline
+  private def validateFlags(flags: Flags,
+                            conversion: Char,
+                            invalidFlags: Int): Unit = {
     @noinline def flagsConversionMismatch(): Nothing = {
       throw new FormatFlagsConversionMismatchException(
         flagsToString(new Flags(flags.bits & invalidFlags)),
@@ -659,11 +658,10 @@ final class Formatter private (private[this] var dest: Appendable,
       flagsConversionMismatch()
   }
 
-  @inline private def validateFlagsForPercentAndNewline(
-      flags: Flags,
-      conversion: Char,
-      invalidFlags: Int): Unit = {
-
+  @inline
+  private def validateFlagsForPercentAndNewline(flags: Flags,
+                                                conversion: Char,
+                                                invalidFlags: Int): Unit = {
     @noinline def illegalFlags(): Nothing =
       throw new IllegalFormatFlagsException(flagsToString(flags))
 
@@ -690,7 +688,7 @@ final class Formatter private (private[this] var dest: Appendable,
       precision: Int,
       forceDecimalSep: Boolean): String = {
 
-    val str = Formatting
+    val str = NumberFormatting
       .formatScientific(num, precision)
       .replace("E", "e+")
       .replace("e+-", "e-")
@@ -779,7 +777,7 @@ final class Formatter private (private[this] var dest: Appendable,
                               precision: Int,
                               forceDecimalSep: Boolean): String = {
 
-    val str = Formatting.formatDecimal(num, precision)
+    val str = NumberFormatting.formatDecimal(num, precision)
 
     // Finally, force the decimal separator, if requested
     if (forceDecimalSep && str.indexOf(decimalSeparator) < 0) {
@@ -970,7 +968,7 @@ final class Formatter private (private[this] var dest: Appendable,
     checkNotClosed()
     if (dest eq null) {
       dest = new java.lang.StringBuilder(stringOutput)
-      stringOutput == ""
+      stringOutput = ""
     }
     dest
   }
@@ -1082,7 +1080,7 @@ object Formatter {
       LeftAlign | AltFormat | NumericOnlyFlags | UseLastIndex
   }
 
-  private trait Formatting[A] {
+  private trait NumberFormatting[A] {
     import Defaults._
     // whole: "0" or [1-9]+[0-9]* (i.e. empty seqs and leading zeros are NOT allowed)
     // frac: [0-9]* (i.e. empty seqs and leading zeros are allowed)
@@ -1122,14 +1120,14 @@ object Formatter {
     }
 
     def formatFixedPoint(number: A, fractionDigits: Int): String = {
-      val ungroupedDigits = toDigits(number)
+      val digits = toDigits(number)
 
       val Digits(negative, wholePart, fracPart0) = {
-        import ungroupedDigits._
+        import digits._
         if (frac.length > fractionDigits)
-          roundAt(ungroupedDigits, fractionDigits)
+          roundAt(digits, fractionDigits)
         else
-          ungroupedDigits
+          digits
       }
 
       val fracPart = fracPart0.padTo(fractionDigits, zeroDigit)
@@ -1198,9 +1196,9 @@ object Formatter {
     }
   }
 
-  object Formatting {
+  object NumberFormatting {
     import Defaults._
-    implicit private object LongFormatting extends Formatting[Long] {
+    implicit private object LongFormatting extends NumberFormatting[Long] {
       def toDigits(number: Long): Digits = {
         val numabs = number.abs
 
@@ -1229,7 +1227,7 @@ object Formatter {
       }
     }
 
-    implicit private object DoubleFormatting extends Formatting[Double] {
+    implicit private object DoubleFormatting extends NumberFormatting[Double] {
 
       import Defaults._
 
@@ -1302,7 +1300,7 @@ object Formatter {
     }
 
     implicit private object BigIntegerFormatting
-        extends Formatting[BigInteger] {
+        extends NumberFormatting[BigInteger] {
       def toDigits(number: BigInteger): Digits = {
         val numabs = number.abs()
         Digits(number.signum() < 0, numabs.toString.toSeq, Seq.empty)
@@ -1323,7 +1321,7 @@ object Formatter {
     }
 
     implicit private object BigDecimalFormatting
-        extends Formatting[BigDecimal] {
+        extends NumberFormatting[BigDecimal] {
       def toDigits(number: BigDecimal): Digits = {
         val numabs = number.abs()
         val s      = numabs.toPlainString()
@@ -1353,18 +1351,17 @@ object Formatter {
     def formatScientific(arg: Number, precision: Int): String =
       format(f => f.formatScientific(_, precision))(arg)
 
-    private def format(notation: Formatting[Any] => Any => String)(
+    private def format(
+        formatWithNotation: NumberFormatting[Any] => Any => String)(
         arg: Number): String = {
 
-      def formatImpl[A](arg: A)(implicit fmt: Formatting[A]): String = {
-        notation(fmt.asInstanceOf[Formatting[Any]])(arg)
+      def formatImpl[A](arg: A)(implicit fmt: NumberFormatting[A]): String = {
+        formatWithNotation(fmt.asInstanceOf[NumberFormatting[Any]])(arg)
       }
 
       arg match {
-        case bi: BigInteger =>
-          formatImpl(bi)
-        case bd: BigDecimal =>
-          formatImpl(bd)
+        case bi: BigInteger => formatImpl(bi)
+        case bd: BigDecimal => formatImpl(bd)
         case num: Number =>
           val l = num.longValue()
           val d = num.doubleValue()
@@ -1376,14 +1373,14 @@ object Formatter {
             formatImpl(d: Double)
           else
             throw new UnsupportedOperationException(
-              s"number ${num} cannot be represented by either of Long or Double, and class ${num.getClass.getName} is not supported"
+              s"number $num cannot be represented by either of Long or Double, and class ${num.getClass.getName} is not supported"
             )
         case _ => throw new IllegalArgumentException
       }
     }
   }
 
-  /** A proxy for a `java.util.Locale` or for the root locale that provides
+  /* A proxy for a `java.util.Locale` or for the root locale that provides
    * the info required by `Formatter`.
    *
    * The purpose of this abstraction is to allow `java.util.Formatter` to link
