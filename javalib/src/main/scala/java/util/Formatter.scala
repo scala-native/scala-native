@@ -218,8 +218,7 @@ final class Formatter private (private[this] var dest: Appendable,
       fmtIndex = matcher.`end`() // position at the end of the match
 
       def optGroup(groupId: Int): Option[String] =
-        if (matcher.groupCount() < groupId) None
-        else Option(matcher.group(groupId))
+        Option(matcher.group(groupId))
 
       val conversion = format.charAt(fmtIndex - 1)
       val flags      = parseFlags(matcher.group(2), conversion)
