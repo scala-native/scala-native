@@ -124,7 +124,7 @@ trait NirGenName[G <: Global with Singleton] {
        * We're replacing them with unicode to allow distinction between x / `x` and `"x"`.
        * It follows Scala JVM naming convention.
        */
-      id.replaceAllLiterally("\"", "$u0022")
+      id.replace("\"", "$u0022")
     }
   }
 }
