@@ -517,7 +517,7 @@ object Files {
         val buf: CString = alloc[Byte](limits.PATH_MAX.toUInt)
         if (unistd.readlink(toCString(link.toString),
                             buf,
-                            limits.PATH_MAX.toUInt) == -1) {
+                            (limits.PATH_MAX - 1).toUInt) == -1) {
           throw UnixException(link.toString, errno.errno)
         } else {
           Paths.get(fromCString(buf), Array.empty)
