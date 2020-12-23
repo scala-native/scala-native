@@ -486,8 +486,8 @@ class DefaultFormatterTest {
     }
   }
 
-  @Test def formatForLineSeparator(): Unit = {
-    /* todo line.seperator is hard coded
+  @Ignore("line separator is hard coded")
+  def formatForCustomLineSeparator(): Unit = {
     val oldSeparator = System.getProperty("line.separator")
     System.setProperty("line.separator", "!\n")
     try {
@@ -511,8 +511,9 @@ class DefaultFormatterTest {
     } finally {
       System.setProperty("line.separator", oldSeparator)
     }
-     */
+  }
 
+  @Test def formatForLineSeparator(): Unit = {
     locally {
       val f = new Formatter()
       assertThrows(classOf[IllegalFormatFlagsException], f.format("%-n"))
@@ -3025,7 +3026,6 @@ class DefaultFormatterTest {
    * Regression test for Harmony-5845
    * test the short name for timezone whether uses DaylightTime or not
    */
-
   @Test def daylightTime(): Unit = {
     // 2018-09-05 Implementation note:
     // The TimeZone.getAvailableIDs() now stub returns an empty array,

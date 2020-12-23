@@ -103,7 +103,7 @@ class FormatterTestEx {
     assertF(HindiWithDevanagariDigits, "-14", "%o", new BigInteger("-12"))
   }
 
-  @Ignore("localized to{lowwer, upper}case not implemented")
+  @Ignore("localized to{Lower, Upper}Case not implemented")
   @Test def testFormatTurkish(): Unit = {
     // U+0130 LATIN CAPITAL LETTER I WITH DOT ABOVE
     assertF(Turkish, "TİTLE", "%S", "title")
