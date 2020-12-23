@@ -50,6 +50,7 @@ Scala Native Version       Scala Versions
 0.2.x                      2.11.8, 2.11.11
 0.3.0-0.3.3                2.11.8, 2.11.11
 0.3.4+, 0.4.0-M1, 0.4.0-M2 2.11.8, 2.11.11, 2.11.12
+0.4.0                      2.11.12, 2.12.12, 2.13.4
 ========================== ========================
 
 Sbt settings and tasks
@@ -134,12 +135,16 @@ Garbage collectors
    More information about the collector is available as part of the original
    `0.3.0 announcement <https://github.com/scala-native/scala-native/releases/tag/v0.3.0>`_.
 
-2. **boehm.** (default through 0.3.7)
+2. **commix.** (introduced in 0.4)
+
+   Commix is pararell mark and concurrent sweep garbage collector based on Immix
+
+3. **boehm.** (default through 0.3.7)
 
    Conservative generational garbage collector. More information is available
    at the Github project "ivmai/bdgc" page.
 
-3. **none.** (experimental, introduced in 0.2)
+4. **none.** (experimental, introduced in 0.2)
 
    Garbage collector that allocates things without ever freeing them. Useful
    for short-running command-line applications or applications where garbage
