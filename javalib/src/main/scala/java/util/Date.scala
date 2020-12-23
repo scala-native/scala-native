@@ -1,5 +1,7 @@
 package java.util
 
+import java.time.Instant
+
 /** Ported from Scala JS and Apache Harmony
  * - omits deprecated methods
  * - toString not jdk compatible
@@ -34,5 +36,16 @@ class Date(var milliseconds: Long)
     milliseconds = time
 
   override def toString(): String = s"Date($milliseconds)"
+
+  def toInstant(): Instant = Instant.ofEpochMilli(getTime())
+
+  def from(instant: Instant): Date = {
+    try {
+      new Date(instant.toEpochMilli())
+    } catch {
+      case ex: ArithmeticException =>
+        throw new IllegalArgumentException(ex)
+    }
+  }
 
 }
