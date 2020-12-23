@@ -758,7 +758,6 @@ final class Formatter private (private[this] var dest: Appendable,
                                      width: Int,
                                      precision: Int,
                                      str: String): Unit = {
-
     val truncatedStr =
       if (precision < 0) str
       else str.substring(0, precision.min(str.length))
@@ -862,10 +861,10 @@ final class Formatter private (private[this] var dest: Appendable,
       var result = s.substring(index)
       while (index > groupingSize) {
         val next = index - groupingSize
-        result = s.substring(next, index) + groupingSeparator + result
+        result = s.substring(next, index) + "," + result
         index = next
       }
-      s.substring(0, index) + groupingSeparator + result
+      s.substring(0, index) + "," + result
     }
   }
 
@@ -916,13 +915,13 @@ final class Formatter private (private[this] var dest: Appendable,
   }
 
   private def strRepeat(s: String, times: Int): String = {
-    var result: String = ""
-    var i              = 0
+    val result = new JStringBuilder()
+    var i      = 0
     while (i != times) {
-      result += s
+      result.append(s)
       i += 1
     }
-    result
+    result.toString
   }
 
   def ioException(): IOException = lastIOException
