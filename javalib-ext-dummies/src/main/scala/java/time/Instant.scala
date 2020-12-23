@@ -7,6 +7,13 @@ final class Instant(private val epochSecond: Long, private val nano: Int)
     extends Comparable[Instant]
     with java.io.Serializable {
 
+  override def compareTo(that: Instant): Int = {
+    val secondsCompare = epochSecond.compareTo(that.epochSecond)
+    if (secondsCompare == 0) {
+      nano.compareTo(that.nano)
+    } else secondsCompare
+  }
+
   override def equals(that: Any): Boolean = that match {
     case that: Instant =>
       this.epochSecond == that.epochSecond &&
@@ -76,6 +83,5 @@ object Instant {
     checkAndCreate(adjustedSecond, adjustedNano)
   }
 
-  def now(): Instant =
-    new Instant(System.currentTimeMillis())
+  def now(): Instant = Instant.ofEpochMilli(System.currentTimeMillis())
 }
