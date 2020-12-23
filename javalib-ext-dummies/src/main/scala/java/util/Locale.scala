@@ -1,7 +1,5 @@
 package java.util
 
-//import java.{util => ju}
-
 /** Ported from Harmony, Scala.js and using Java API docs.
  *
  * TODO: Commented out code needed to finish implementation.
@@ -50,45 +48,13 @@ final class Locale(languageRaw: String,
 
   def getCountry(): String = country
 
-  //def getDisplayCountry(): String = ???
-
-  //def getDisplayCountry(locale: Locale): String = ???
-
-  //def getDisplayLanguage(): String = ???
-
-  //def getDisplayLanguage(locale: Locale): String = ???
-
-  //def getDisplayName(): String = ???
-
-  //def getDisplayName(locale: Locale): String = ???
-
-  //def getDisplayScript(): String = ???
-
-  //def getDisplayScript(locale: Locale): String = ???
-
-  //def getDisplayVariant(): String = ???
-
-  //def getDisplayVariant(locale: Locale): String = ???
-
   def hasExtensions(): Boolean = !extensions.isEmpty()
 
   def getExtension(key: Char): String = extensions.get(key)
 
   def getExtensionKeys(): Set[Char] = extensions.keySet()
 
-  //def getISO3Country(): String = ???
-
-  //def getISO3Language(): String = ???
-
   def getLanguage(): String = language
-
-  //def getScript(): String = ???
-
-  //def getUnicodeLocaleAttributes(): ju.Set[String] = ???
-
-  //def getUnicodeLocaleKeys(): ju.Set[String] = ???
-
-  //def getUnicodeLocaleType(key: String) = ???
 
   def getVariant(): String = variant
 
@@ -97,8 +63,6 @@ final class Locale(languageRaw: String,
       language.hashCode() +
       variant.hashCode() +
       extensions.hashCode()
-
-  //def toLanguageTag(): String = ???
 
   // Examples: "en", "en_US", "_US", "en__POSIX", "en_US_POSIX"
   @inline override def toString(): String = {
@@ -121,8 +85,6 @@ final class Locale(languageRaw: String,
 }
 
 object Locale {
-
-  private[this] var defaultLocale = Locale.ROOT
 
   lazy val CANADA                   = new Locale("en", "CA")
   lazy val CANADA_FRENCH            = new Locale("fr", "CA")
@@ -149,25 +111,7 @@ object Locale {
   lazy val UNICODE_LOCALE_EXTENSION = 'u'
   lazy val US                       = new Locale("en", "US")
 
-  //def forLanguageTag(languageTag: String): String = ???
-
-  // should have bundles for this list
-  //def getAvailableLocales(): Array[Locale] = ???
-
   def getDefault(): Locale = Locale.ROOT
-
-  //def getDefault(category: Locale.Category): Locale = ???
-
-  //def getISOCountries(): Array[String] = ???
-
-  //def getISOLanguages(): Array[String] = ???
-
-  //def setDefault(category: Locale.Category, locale: Locale): Unit = ???
-
-//  def setDefault(locale: Locale): Unit =
-//    this.defaultLocale = locale
-
-  //class Category
 
   final class Builder {
     private var language: String = ""
