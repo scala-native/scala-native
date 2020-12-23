@@ -23,17 +23,9 @@ final class Formatter private (private[this] var dest: Appendable,
   import Defaults._
   import Flags._
 
-  /** If `dest == null`, the real content is in `stringOutput`.
-   *
-   *  A real `StringBuilder` may be created lazily if `out()` is called, which
-   *  will then capture the current content of `stringOutput`.
-   *
-   *  This allows to bypass the allocation of the `StringBuilder`, the call
-   *  through `dest.append()` and more importantly the `try..catch`es in the
-   *  common case where the `Formatter` is created without a specific
-   *  destination.
-   */
-  private[this] var stringOutput: String = ""
+  if (dest eq null) {
+    dest = new java.lang.StringBuilder()
+  }
 
   private[this] var closed: Boolean              = false
   private[this] var lastIOException: IOException = null
@@ -43,7 +35,7 @@ final class Formatter private (private[this] var dest: Appendable,
   def this(a: Appendable) =
     this(a, Formatter.RootLocaleInfo)
   def this(l: Locale) =
-    this(null: Appendable, new Formatter.LocaleLocaleInfo(l))
+    this(new JStringBuilder(), new Formatter.LocaleLocaleInfo(l))
 
   def this(a: Appendable, l: Locale) =
     this(a, new Formatter.LocaleLocaleInfo(l))
@@ -115,36 +107,14 @@ final class Formatter private (private[this] var dest: Appendable,
     }
   }
 
-  private def sendToDest(s: String): Unit = {
-    if (dest eq null)
-      stringOutput += s
-    else
-      sendToDestSlowPath(Array(s))
-  }
-
-  private def sendToDest(s1: String, s2: String): Unit = {
-    if (dest eq null)
-      stringOutput += s1 + s2
-    else
-      sendToDestSlowPath(Array(s1, s2))
-  }
-
-  private def sendToDest(s1: String, s2: String, s3: String): Unit = {
-    if (dest eq null)
-      stringOutput += s1 + s2 + s3
-    else
-      sendToDestSlowPath(Array(s1, s2, s3))
-  }
-
-  @noinline
-  private def sendToDestSlowPath(ss: Array[String]): Unit = {
+  private def sendToDest(strings: String*): Unit = {
     trapIOExceptions {
-      ss.foreach(dest.append(_))
+      strings.foreach(dest.append(_))
     }
   }
 
   def close(): Unit = {
-    if (!closed && (dest ne null)) {
+    if (!closed) {
       dest match {
         case cl: Closeable =>
           trapIOExceptions {
@@ -158,14 +128,12 @@ final class Formatter private (private[this] var dest: Appendable,
 
   def flush(): Unit = {
     checkNotClosed()
-    if (dest ne null) {
-      dest match {
-        case fl: Flushable =>
-          trapIOExceptions {
-            fl.flush()
-          }
-        case _ =>
-      }
+    dest match {
+      case fl: Flushable =>
+        trapIOExceptions {
+          fl.flush()
+        }
+      case _ =>
     }
   }
 
@@ -966,19 +934,12 @@ final class Formatter private (private[this] var dest: Appendable,
 
   def out(): Appendable = {
     checkNotClosed()
-    if (dest eq null) {
-      dest = new java.lang.StringBuilder(stringOutput)
-      stringOutput = ""
-    }
     dest
   }
 
   override def toString(): String = {
     checkNotClosed()
-    if (dest eq null)
-      stringOutput
-    else
-      dest.toString()
+    dest.toString()
   }
 
   @inline private def checkNotClosed(): Unit = {
