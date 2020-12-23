@@ -1,57 +1,80 @@
-/*
- * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
- *
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *  * Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- *
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- *  * Neither the name of JSR-310 nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
+// Ported from Scala.js, commit 54648372, dated: 2020-09-24
 // see the license file for more information about java.time
+
 package java.time
 
-final class Instant(private val epochMilli: Long)
+final class Instant(private val epochSecond: Long, private val nano: Int)
     extends Comparable[Instant]
     with java.io.Serializable {
 
-  override def equals(other: Any): Boolean =
-    other match {
-      case that: Instant => epochMilli == that.epochMilli
-      case _             => false
+  override def equals(that: Any): Boolean = that match {
+    case that: Instant =>
+      this.epochSecond == that.epochSecond &&
+        this.nano == that.nano
+    case _ =>
+      false
+  }
+
+  def toEpochMilli(): Long = {
+    if (epochSecond == -9223372036854776L) {
+      /* Special case: epochSecond * 1000L would overflow, but the addition
+       * of the nanos might save the day. So we transfer one unit of the
+       * seconds into the contribution of the nanos.
+       */
+      Math.addExact(-9223372036854775000L, (nano / 1000000) - 1000)
+    } else {
+      Math.addExact(Math.multiplyExact(epochSecond, 1000L), nano / 1000000)
     }
+  }
 
-  def toEpochMilli(): Long = epochMilli
+  def getEpochSecond(): Long = epochSecond
 
-  override def compareTo(other: Instant) =
-    epochMilli.compareTo(other.epochMilli)
+  def getNano(): Int = nano
+
+  def isAfter(otherInstant: Instant): Boolean = {
+    this.epochSecond > otherInstant.epochSecond || {
+      this.epochSecond == otherInstant.epochSecond &&
+      this.nano > otherInstant.nano
+    }
+  }
+
+  def isBefore(otherInstant: Instant): Boolean = {
+    this.epochSecond < otherInstant.epochSecond || {
+      this.epochSecond == otherInstant.epochSecond &&
+      this.nano < otherInstant.nano
+    }
+  }
+
+  override def hashCode(): Int =
+    java.lang.Long.hashCode(epochSecond) ^ java.lang.Integer.hashCode(nano)
+
+  // non compliant, for debugging purposes only
+  override def toString(): String =
+    "Instant(" + epochSecond + ", " + nano + ")"
 }
 
 object Instant {
-  def ofEpochMilli(epochMilli: Long): Instant =
-    new Instant(epochMilli)
+  final val MIN: Instant = new Instant(-31557014167219200L, 0)
+  final val MAX: Instant = new Instant(31556889864403199L, 999999999)
+
+  private def checkAndCreate(epochSecond: Long, nano: Int): Instant = {
+    val instant = new Instant(epochSecond, nano)
+    if (instant.isBefore(MIN) || instant.isAfter(MAX))
+      throw new DateTimeException("Instant exceeds minimum or maximum instant")
+    instant
+  }
+
+  def ofEpochMilli(epochMilli: Long): Instant = {
+    new Instant(Math.floorDiv(epochMilli, 1000L),
+                1000000 * Math.floorMod(epochMilli, 1000L).toInt)
+  }
+
+  def ofEpochSecond(epochSecond: Long, nanoAdjustment: Long): Instant = {
+    val adjustedSecond =
+      Math.addExact(epochSecond, Math.floorDiv(nanoAdjustment, 1000000000L))
+    val adjustedNano = Math.floorMod(nanoAdjustment, 1000000000L).toInt
+    checkAndCreate(adjustedSecond, adjustedNano)
+  }
 
   def now(): Instant =
     new Instant(System.currentTimeMillis())
