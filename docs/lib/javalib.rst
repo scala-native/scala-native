@@ -442,16 +442,6 @@ Here is the list of currently available classes:
 * ``java.util.Random``
 * ``java.util.RandomAccess``
 * ``java.util.RandomAccessListIterator``
-* ``java.util.ScalaCompatOps``
-* ``java.util.ScalaCompatOps$ScalaMutableSetCompatOps``
-* ``java.util.ScalaCompatOps$ToScalaMutableSortedSetCompatOps``
-* ``java.util.ScalaOps``
-* ``java.util.ScalaOps$JavaEnumerationOps``
-* ``java.util.ScalaOps$JavaIterableOps``
-* ``java.util.ScalaOps$JavaIteratorOps``
-* ``java.util.ScalaOps$ToJavaEnumerationOps``
-* ``java.util.ScalaOps$ToJavaIterableOps``
-* ``java.util.ScalaOps$ToJavaIteratorOps``
 * ``java.util.ServiceConfigurationError``
 * ``java.util.Set``
 * ``java.util.SizeChangeEvent``
@@ -469,7 +459,6 @@ Here is the list of currently available classes:
 * ``java.util.concurrent.Callable``
 * ``java.util.concurrent.CancellationException``
 * ``java.util.concurrent.ConcurrentLinkedQueue``
-* ``java.util.concurrent.ConcurrentLinkedQueue$Node``
 * ``java.util.concurrent.ExecutionException``
 * ``java.util.concurrent.Executor``
 * ``java.util.concurrent.RejectedExecutionException``
