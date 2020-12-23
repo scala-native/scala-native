@@ -24,7 +24,7 @@ object Build {
    *  val clangpp  = Discover.clangpp()
    *  val linkopts = Discover.linkingOptions()
    *  val compopts = Discover.compileOptions()
-   *  val triple   = Discover.targetTriple(clang, workdir)
+   *
    *  val outpath  = workdir.resolve("out")
    *
    *  val config =
@@ -39,10 +39,8 @@ object Build {
    *         .withCompileOptions(compopts)
    *         .withLinkStubs(true)
    *       }
-   *      .withTargetTriple(triple)
    *      .withMainClass(main)
    *      .withClassPath(classpath)
-   *      .withLinkStubs(true)
    *      .withWorkdir(workdir)
    *
    *  Build.build(config, outpath)
@@ -63,22 +61,28 @@ object Build {
       ScalaNative.logLinked(fconfig, linked)
       val optimized = ScalaNative.optimize(fconfig, linked)
 
+      // clean ll files
       IO.getAll(workdir, "glob:**.ll").foreach(Files.delete)
-      ScalaNative.codegen(fconfig, optimized)
-      val generated = IO.getAll(workdir, "glob:**.ll")
+
+      val generated = ScalaNative.codegen(fconfig, optimized)
 
       val nativelibs   = NativeLib.findNativeLibs(fconfig.classPath, workdir)
       val nativelib    = NativeLib.findNativeLib(nativelibs)
       val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
 
-      val objectFiles = config.logger.time("Compiling to native code") {
+      val objectPaths = config.logger.time("Compiling to native code") {
         val nativelibConfig =
           fconfig.withCompilerConfig(
             _.withCompileOptions("-O2" +: fconfig.compileOptions))
-        LLVM.compileNativelibs(nativelibConfig, linked, unpackedLibs, nativelib)
-        LLVM.compile(fconfig, generated)
+        val libObjectPaths =
+          LLVM.compileNativelibs(nativelibConfig,
+                                 linked,
+                                 unpackedLibs,
+                                 nativelib)
+        val llObjectPaths = LLVM.compile(fconfig, generated)
+        libObjectPaths ++ llObjectPaths
       }
 
-      LLVM.link(config, linked, objectFiles, unpackedLibs, outpath)
+      LLVM.link(config, linked, objectPaths, outpath)
     }
 }

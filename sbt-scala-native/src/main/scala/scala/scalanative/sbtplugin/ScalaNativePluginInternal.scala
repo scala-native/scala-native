@@ -21,9 +21,6 @@ object ScalaNativePluginInternal {
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
 
-  val nativeTarget =
-    taskKey[String]("Target triple.")
-
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
 
@@ -85,12 +82,7 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
-    nativeTarget := interceptBuildException {
-      val cwd   = nativeWorkdir.value.toPath
-      val clang = nativeClang.value.toPath
-      Discover.targetTriple(clang, cwd)
-    },
-    artifactPath in nativeLink := {
+    nativeLink / artifactPath := {
       crossTarget.value / (moduleName.value + "-out")
     },
     nativeWorkdir := {
@@ -114,7 +106,7 @@ object ScalaNativePluginInternal {
         .withDump(nativeDump.value)
     },
     nativeLink := {
-      val outpath = (artifactPath in nativeLink).value
+      val outpath = (nativeLink / artifactPath).value
       val config = {
         val mainClass = selectMainClass.value.getOrElse {
           throw new MessageOnlyException("No main class detected.")
@@ -129,7 +121,6 @@ object ScalaNativePluginInternal {
           .withMainClass(maincls)
           .withClassPath(classpath)
           .withWorkdir(cwd)
-          .withTargetTriple(nativeTarget.value)
           .withCompilerConfig(nativeConfig.value)
       }
 
@@ -140,7 +131,7 @@ object ScalaNativePluginInternal {
       outpath
     },
     run := {
-      val env    = (envVars in run).value.toSeq
+      val env    = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = nativeLink.value.getAbsolutePath
       val args   = spaceDelimited("<arg>").parsed
