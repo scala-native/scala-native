@@ -385,9 +385,6 @@ Here is the list of currently available classes:
 * ``java.security.cert.CertificateFactory``
 * ``java.security.cert.X509Certificate``
 * ``java.security.cert.X509Extension``
-* ``java.time.Duration``
-* ``java.time.Instant``
-* ``java.time.temporal.TemporalAmount``
 * ``java.util.AbstractCollection``
 * ``java.util.AbstractList``
 * ``java.util.AbstractListView``
