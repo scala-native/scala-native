@@ -41,6 +41,9 @@ object Discover {
     path
   }
 
+  private def filterExisting(paths: Seq[String]): Seq[String] =
+    paths.filter(new File(_).exists())
+
   /** Find default clang compilation options. */
   def compileOptions(): Seq[String] = {
     val includes = {
@@ -51,7 +54,8 @@ object Discover {
       val includeDirs =
         getenv("SCALANATIVE_INCLUDE_DIRS")
           .map(_.split(File.pathSeparatorChar).toSeq)
-          .getOrElse(Seq("/usr/local/include", "/opt/local/include"))
+          .getOrElse(
+            filterExisting(Seq("/usr/local/include", "/opt/local/include")))
 
       (includeDirs ++ llvmIncludeDir).map(s => s"-I$s")
     }
@@ -68,7 +72,7 @@ object Discover {
       val libDirs =
         getenv("SCALANATIVE_LIB_DIRS")
           .map(_.split(File.pathSeparatorChar).toSeq)
-          .getOrElse(Seq("/usr/local/lib", "/opt/local/lib"))
+          .getOrElse(filterExisting(Seq("/usr/local/lib", "/opt/local/lib")))
 
       (libDirs ++ llvmLibDir).map(s => s"-L$s")
     }
