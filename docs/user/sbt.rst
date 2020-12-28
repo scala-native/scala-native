@@ -137,7 +137,7 @@ Garbage collectors
 
 2. **commix.** (introduced in 0.4)
 
-   Commix is pararell mark and concurrent sweep garbage collector based on Immix
+   Commix is parallel mark and concurrent sweep garbage collector based on Immix
 
 3. **boehm.** (default through 0.3.7)
 
