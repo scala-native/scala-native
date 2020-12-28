@@ -345,6 +345,12 @@ final class Formatter private (private[this] var dest: Appendable,
       }
     }
 
+    // On JVM list of invalid flags for 'o' and 'x' conversions is different for BigInteger and primitive types
+    // In case of null we won't be able correctly distinguish underlying type, so we're using wider set of allowed flags.
+    def invalidFlagsForOctalAndHex(arg: Any): Int =
+      if (arg == null || arg.isInstanceOf[BigInteger]) UseGroupingSeps
+      else InvalidFlagsForOctalAndHex
+
     (conversion: @switch) match {
       case 'b' | 'B' =>
         validateFlags(flags,
@@ -473,9 +479,8 @@ final class Formatter private (private[this] var dest: Appendable,
             rejectPrecision() // used here to respect order of throwing exceptions in the JVM
             formatNullOrThrowIllegalFormatConversion()
         }
-        validateFlags(flags,
-                      conversion,
-                      invalidFlags = InvalidFlagsForOctalAndHex)
+
+        validateFlags(flags, conversion, invalidFlagsForOctalAndHex(arg))
         rejectPrecision()
 
       case 'x' | 'X' =>
@@ -516,9 +521,8 @@ final class Formatter private (private[this] var dest: Appendable,
           case _ =>
             formatNullOrThrowIllegalFormatConversion()
         }
-        validateFlags(flags,
-                      conversion,
-                      invalidFlags = InvalidFlagsForOctalAndHex)
+
+        validateFlags(flags, conversion, invalidFlagsForOctalAndHex(arg))
 
       case 'a' | 'A' =>
         validateFlags(flags,
