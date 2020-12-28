@@ -2782,7 +2782,6 @@ class DefaultFormatterTest {
                    f.format("%,e", 1.toByte.asInstanceOf[Object]))
     }
 
-    /* todo
     locally {
       // compare IllegalFormatFlagsException and
       // FormatFlagsConversionMismatchException
@@ -2790,7 +2789,6 @@ class DefaultFormatterTest {
       assertThrows(classOf[IllegalFormatFlagsException],
                    f.format("%+ ,e", 1f.asInstanceOf[Object]))
     }
-     */
 
     locally {
       // compare MissingFormatWidthException and
@@ -2825,14 +2823,13 @@ class DefaultFormatterTest {
       assertThrows(classOf[FormatFlagsConversionMismatchException],
                    f.format("%,e", 1.toByte.asInstanceOf[Object]))
     }
-    /* todo
+
     locally {
       // compare IllegalFormatFlagsException and
       // FormatFlagsConversionMismatchException
       val f = new Formatter()
       assertThrows(classOf[IllegalFormatFlagsException], f.format("%+ ,e", bd))
     }
-     */
 
     locally {
       // compare MissingFormatWidthException and
