@@ -14,7 +14,7 @@ import java.nio.charset.Charset
 import scala.annotation.switch
 import scala.scalanative.regex.Pattern
 
-final class Formatter private (private[this] var dest: Appendable,
+final class Formatter private (private var dest: Appendable,
                                formatterLocaleInfo: Formatter.LocaleInfo)
     extends Closeable
     with Flushable {
@@ -23,8 +23,8 @@ final class Formatter private (private[this] var dest: Appendable,
   import Defaults._
   import Flags._
 
-  if (dest eq null) {
-    dest = new java.lang.StringBuilder()
+  if (dest == null) {
+    dest = new JStringBuilder()
   }
 
   private[this] var closed: Boolean              = false
@@ -147,7 +147,6 @@ final class Formatter private (private[this] var dest: Appendable,
                      format: String,
                      args: Array[AnyRef]): Formatter = {
     // scalastyle:off return
-
     checkNotClosed()
 
     var lastImplicitArgIndex: Int = 0
@@ -159,14 +158,13 @@ final class Formatter private (private[this] var dest: Appendable,
     while (fmtIndex != fmtLength) {
       // Process a portion without '%'
       val nextPercentIndex = format.indexOf("%", fmtIndex)
-
       if (nextPercentIndex < 0) {
         // No more '%'
         sendToDest(format.substring(fmtIndex))
         return this
       }
-      sendToDest(format.substring(fmtIndex, nextPercentIndex))
 
+      sendToDest(format.substring(fmtIndex, nextPercentIndex))
       // Process one '%'
       val formatSpecifierIndex = nextPercentIndex + 1
       val matcher              = FormatSpecifier.matcher(format)
@@ -239,9 +237,7 @@ final class Formatter private (private[this] var dest: Appendable,
 
       formatArg(localeInfo, arg, conversion, flags, width, precision)
     }
-
     this
-
     // scalastyle:on return
   }
 
@@ -737,9 +733,7 @@ final class Formatter private (private[this] var dest: Appendable,
   private def decimalNotation(num: Number,
                               precision: Int,
                               forceDecimalSep: Boolean): String = {
-
     val str = NumberFormatting.formatDecimal(num, precision)
-
     // Finally, force the decimal separator, if requested
     if (forceDecimalSep && str.indexOf(decimalSeparator) < 0) {
       str + decimalSeparator
@@ -1036,7 +1030,9 @@ object Formatter {
   }
 
   private trait NumberFormatting[A] {
+
     import Defaults._
+
     // whole: "0" or [1-9]+[0-9]* (i.e. empty seqs and leading zeros are NOT allowed)
     // frac: [0-9]* (i.e. empty seqs and leading zeros are allowed)
     case class Digits(negative: Boolean, whole: Seq[Char], frac: Seq[Char])
@@ -1135,6 +1131,7 @@ object Formatter {
       val signPart =
         if (negative) Seq(minusSign)
         else Seq.empty
+
       def padInt(len: Int, elem: Char, num: Int): Seq[Char] =
         if (num < 0)
           minusSign +: padLeft(len, elem, (-num).toString.toSeq)
@@ -1152,7 +1149,9 @@ object Formatter {
   }
 
   object NumberFormatting {
+
     import Defaults._
+
     implicit private object LongFormatting extends NumberFormatting[Long] {
       def toDigits(number: Long): Digits = {
         val numabs = number.abs
@@ -1303,6 +1302,7 @@ object Formatter {
 
     def formatDecimal(arg: Number, precision: Int): String =
       format(f => f.formatFixedPoint(_, precision))(arg)
+
     def formatScientific(arg: Number, precision: Int): String =
       format(f => f.formatScientific(_, precision))(arg)
 
