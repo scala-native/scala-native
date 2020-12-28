@@ -1540,7 +1540,7 @@ class DefaultFormatterTest {
 
     // compare IllegalFormatFlagsException and
     // IllegalFormatPrecisionException
-    //todo assertThrows(classOf[IllegalFormatFlagsException], f.format("%+ .4o", big))
+    assertThrows(classOf[IllegalFormatFlagsException], f.format("%+ .4o", big))
 
     // compare MissingFormatWidthException and
     // IllegalFormatFlagsException

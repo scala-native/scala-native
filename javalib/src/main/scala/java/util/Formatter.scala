@@ -441,7 +441,6 @@ final class Formatter private (private[this] var dest: Appendable,
 
       case 'o' =>
         // Octal formatting is not localized
-        rejectPrecision()
         val prefix =
           if (flags.altFormat) zeroDigitString
           else ""
@@ -471,11 +470,13 @@ final class Formatter private (private[this] var dest: Appendable,
                                 arg.toString(8),
                                 prefix)
           case _ =>
+            rejectPrecision() // used here to respect order of throwing exceptions in the JVM
             formatNullOrThrowIllegalFormatConversion()
         }
         validateFlags(flags,
                       conversion,
                       invalidFlags = InvalidFlagsForOctalAndHex)
+        rejectPrecision()
 
       case 'x' | 'X' =>
         // Hex formatting is not localized
