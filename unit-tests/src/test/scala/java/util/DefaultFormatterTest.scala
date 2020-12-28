@@ -1930,11 +1930,11 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForFloatDoubleConversionType_gG_Overflow(): Unit = {
-//    locally {
-//      val f = new Formatter()
-//      f.format("%g", 999999.5.asInstanceOf[Object])
-//      assertEquals("1.00000e+06", f.toString())
-//    }
+    locally {
+      val f = new Formatter()
+      f.format("%g", 999999.5.asInstanceOf[Object])
+      assertEquals("1.00000e+06", f.toString())
+    }
 
     locally {
       val f = new Formatter()
@@ -1960,11 +1960,11 @@ class DefaultFormatterTest {
       assertEquals("0.900000", f.toString())
     }
 
-//    locally {
-//      val f = new Formatter()
-//      f.format("%.0g", 0.000095.asInstanceOf[Object])
-//      assertEquals("0.0001", f.toString())
-//    }
+    locally {
+      val f = new Formatter()
+      f.format("%.0g", 0.000095.asInstanceOf[Object])
+      assertEquals("0.0001", f.toString())
+    }
 
     locally {
       val f = new Formatter()

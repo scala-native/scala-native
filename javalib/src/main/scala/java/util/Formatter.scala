@@ -677,20 +677,20 @@ final class Formatter private (private[this] var dest: Appendable,
       if (precision == 0) 1
       else precision
 
-    val numAbs: Number = num match {
-      case bd: BigDecimal => bd.abs()
-      case f: JFloat      => Math.abs(f)
-      case d: JDouble     => Math.abs(d)
+    /* Decisions about output format are based on BigDecimal rounding for compliance with JVM behaviour.
+     * It handles overflow corner cases tested in `DefaultFormatterTest.formatForFloatDoubleConversionType_gG_Overflow`
+     * eg. "%.0g", 0.000095 needs to be represented in decimal notation, but "%g", 0.00009 needs to use scientific notation
+     */
+    val bigDecimalAbs: BigDecimal = num match {
+      case bd: BigDecimal => bd.abs(new MathContext(p))
+      case _: JFloat | _: JDouble =>
+        new BigDecimal(num.doubleValue().abs, new MathContext(p))
     }
 
-    val shouldDisplayFixed: Boolean = numAbs match {
-      case abs: BigDecimal =>
-        abs.compareTo(BigDecimal.valueOf(1e-4)) >= 0 &&
-          abs.compareTo(BigDecimal.TEN.pow(p)) < 0
-
-      case _: JFloat | _: JDouble =>
-        val abs = numAbs.doubleValue()
-        abs >= 1e-4 && abs < Math.pow(10, p)
+    val shouldDisplayFixed: Boolean = {
+      val abs = bigDecimalAbs.doubleValue()
+      if (abs.isInfinite || abs.isNaN) false
+      else abs >= 1e-4 && abs < Math.pow(10, p)
     }
 
     def calcSignificantDigits: Int = {
@@ -699,21 +699,13 @@ final class Formatter private (private[this] var dest: Appendable,
        * function, sig0 could actually be the smallest power of 10
        * that is > m.
        */
-      val (sig0, isLessOrEqual) = numAbs match {
-        case bd: BigDecimal =>
-          val sig0 = bd
-            .round(new MathContext(1, RoundingMode.CEILING))
-            .scale() * -1
-          val isLE = BigDecimal
-            .valueOf(Math.pow(10, sig0))
-            .compareTo(bd) <= 0
-          (sig0, isLE)
+      val sig0 = bigDecimalAbs
+        .round(new MathContext(1, RoundingMode.CEILING))
+        .scale() * -1
 
-        case _: JFloat | _: JDouble =>
-          val abs  = num.doubleValue().abs
-          val sig0 = Math.ceil(Math.log10(abs)).toInt
-          (sig0, Math.pow(10, sig0) <= abs)
-      }
+      val isLessOrEqual = BigDecimal
+        .valueOf(Math.pow(10, sig0))
+        .compareTo(bigDecimalAbs) <= 0
 
       /* Increment sig0 so that it is always the first power of 10
        * that is > m.
@@ -722,11 +714,7 @@ final class Formatter private (private[this] var dest: Appendable,
       else sig0
     }
 
-    def isZero = numAbs match {
-      case bd: BigDecimal => bd.compareTo(BigDecimal.ZERO) == 0
-      case f: JFloat      => f == 0.0f
-      case d: JDouble     => d == 0.0
-    }
+    def isZero = bigDecimalAbs.doubleValue() == 0.0
 
     // between 1e-4 and 10e(p): display as fixed
     if (shouldDisplayFixed) {
