@@ -694,7 +694,7 @@ final class Formatter private (private[this] var dest: Appendable,
 
     val shouldDisplayFixed: Boolean = {
       val abs = bigDecimalAbs.doubleValue()
-      if (abs.isInfinite || abs.isNaN) false
+      if (JDouble.isNaN(abs) || JDouble.isInfinite(abs)) false
       else abs >= 1e-4 && abs < Math.pow(10, p)
     }
 
