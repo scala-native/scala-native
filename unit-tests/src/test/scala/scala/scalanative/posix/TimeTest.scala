@@ -2,6 +2,7 @@ package scala.scalanative.posix
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.BeforeClass
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -9,9 +10,37 @@ import scala.scalanative.unsigned._
 import time._
 import timeOps.tmOps
 
+object TimeTest {
+  private def validateStructTmDeclaredSize(): Unit = {
+    // See comments at declaration site in time.scala for explanation
+    // of magic number 56.
+    val EXPECTED_SIZE = 56.toULong
+    assertEquals("sizeof(struct tm)", EXPECTED_SIZE, sizeof[tm])
+  }
+
+  @BeforeClass def initialize(): Unit = {
+    // Initialize C time environment before any calls to it.
+    // localtime_r and other _r calls assume this has happened.
+    tzset()
+
+    // Test that the Scala Native size is large enough for C libs
+    // which expect memory for the 11 field _BSD_SOURCE definition.
+    //
+    // Check before using to avoid painful and hard to debug cases of
+    // reading and/or writing unallocated memory beyond the end of the struct.
+    //
+    // This validation could/should be a @Test but those seem to get run
+    // in reverse order of declaration. Executing the code here removes
+    // a sensitivity to execution order and makes evident both that it
+    // exists and when it should be run.
+
+    validateStructTmDeclaredSize()
+  }
+}
+
 class TimeTest {
-  tzset()
-  //In 2.11/2.12 time was resolved to posix.time.type, in 2.13 to posix.time.time method
+  // In 2.11/2.12 time was resolved to posix.time.type, in 2.13 to
+  // posix.time.time method
   val now_time_t: time_t = scala.scalanative.posix.time.time(null)
   val epoch: time_t      = 0L
 
@@ -44,7 +73,7 @@ class TimeTest {
     val cstr: CString = asctime(time)
     val str: String   = fromCString(cstr)
 
-    assertTrue("Thu Jan  1 00:00:00 1970\n".equals(str))
+    assertEquals("Thu Jan  1 00:00:00 1970\n", str)
   }
 
   @Test def localtime_rShouldTransformTheEpochToLocaltime(): Unit = {
@@ -55,7 +84,7 @@ class TimeTest {
       val cstr: CString = asctime_r(time, alloc[Byte](26))
       val str: String   = fromCString(cstr)
 
-      assertTrue("Thu Jan  1 00:00:00 1970\n".equals(str))
+      assertEquals("Thu Jan  1 00:00:00 1970\n", str)
     }
   }
 
@@ -188,5 +217,4 @@ class TimeTest {
                  !result == expected)
     }
   }
-
 }

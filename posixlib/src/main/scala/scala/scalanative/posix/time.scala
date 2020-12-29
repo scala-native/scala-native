@@ -2,34 +2,63 @@ package scala.scalanative
 package posix
 
 import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.Nat._
 import scala.scalanative.posix.sys.types, types._
 
 @extern
 object time {
-
   type time_t   = types.time_t
   type clock_t  = types.clock_t
   type timespec = CStruct2[time_t, CLong]
-  type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
 
-  @name("scalanative_asctime")
-  def asctime(time_ptr: Ptr[tm]): CString = extern
-  @name("scalanative_asctime_r")
+  // Design Note:
+  // POSIX defines the number & meaning of members but does not define
+  // their order.  Almost all supporting libc implementation use the
+  // order below.
+  //
+  // Code in time.c checks that both the order of "struct tm" members and the
+  // total size of the structure match the declaration below.
+  //
+  // The "extra" 20 bytes have no meaning in POSIX. Many libc implementations
+  // which support _BSD_SOURCE, especially glibc, expect to be able
+  // to freely read and write fields beyond the POSIX 9.
+  // Spend memory here to gain execution speed by eliminating both the need
+  // to copy structures and to call intermediate glue code.
+  //
+  // Memory other than the 9 POSIX members should be neither read nor
+  // written by posixlib Scala code. Depending upon the libc and
+  // operating system in use at run time, that memory may or may not
+  // hold semantically useful information. Here is it just opaque padding.
+  //
+  // An analysis of the amount of memory "wasted" by this padding
+  // is complex. In many/most cases it is as little as 8 heap bytes spent
+  // with as much as 56 heap bytes not spent.
+
+  // 56 (sizeof[tm]) becomes a magic number for both time.c and TimeTest.scala
+  type tm = CStruct10[
+    CInt,                        // tm_sec
+    CInt,                        // tm_min
+    CInt,                        // tm_hour
+    CInt,                        // tm_mday
+    CInt,                        // tm_mon
+    CInt,                        // tm_year
+    CInt,                        // tm_wday
+    CInt,                        // tm_yday
+    CInt,                        // tm_isdst
+    CArray[Byte, Digit2[_2, _0]] // Not POSIX, DO NOT READ! DO NOT WRITE!
+  ]
+
+  def asctime(time_ptr: Ptr[tm]): CString                    = extern
   def asctime_r(time_ptr: Ptr[tm], buf: Ptr[CChar]): CString = extern
   def clock(): clock_t                                       = extern
   def ctime(time: Ptr[time_t]): CString                      = extern
   def ctime_r(time: Ptr[time_t], buf: Ptr[CChar]): CString   = extern
   def difftime(time_end: CLong, time_beg: CLong): CDouble    = extern
-  @name("scalanative_gmtime")
-  def gmtime(time: Ptr[time_t]): Ptr[tm] = extern
-  @name("scalanative_gmtime_r")
-  def gmtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
-  @name("scalanative_localtime")
-  def localtime(time: Ptr[time_t]): Ptr[tm] = extern
-  @name("scalanative_localtime_r")
-  def localtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
-  @name("scalanative_mktime")
-  def mktime(time: Ptr[tm]): time_t = extern
+  def gmtime(time: Ptr[time_t]): Ptr[tm]                     = extern
+  def gmtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm]      = extern
+  def localtime(time: Ptr[time_t]): Ptr[tm]                  = extern
+  def localtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm]   = extern
+  def mktime(time: Ptr[tm]): time_t                          = extern
   def strftime(str: Ptr[CChar],
                count: CSize,
                format: CString,
@@ -38,10 +67,13 @@ object time {
     extern
   def time(arg: Ptr[time_t]): time_t = extern
   def tzset(): Unit                  = extern
+
   @name("scalanative_daylight")
   def daylight(): CInt = extern
+
   @name("scalanative_timezone")
   def timezone(): CLong = extern
+
   @name("scalanative_tzname")
   def tzname(): Ptr[CStruct2[CString, CString]] = extern
 }

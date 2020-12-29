@@ -1,95 +1,33 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
 
-struct scalanative_tm {
-    int tm_sec;
-    int tm_min;
-    int tm_hour;
-    int tm_mday;
-    int tm_mon;
-    int tm_year;
-    int tm_wday;
-    int tm_yday;
-    int tm_isdst;
-};
+#if !(defined __STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
+#ifndef SCALANATIVE_SUPPRESS_STRUCT_CHECK_WARNING
+#warning "Size and order of C structures are not checked when -std < c11."
+#endif
+#else
+// Make the reasonable assumption that the order and size of members
+// used in link time libc matches that of compilation time .h files.
+// This is true with Scala Native default compilation and link options.
+//
+// It is possible, but not easy, to chose a combination of compile &
+// link time options which break this assumption. 
 
-static struct scalanative_tm scalanative_gmtime_buf;
-static struct scalanative_tm scalanative_localtime_buf;
+_Static_assert(sizeof(struct tm) <= 56,
+               "struct is larger than its declaration in time.scala");
 
-static void scalanative_tm_init(struct scalanative_tm *scala_tm,
-                                struct tm *tm) {
-    scala_tm->tm_sec = tm->tm_sec;
-    scala_tm->tm_min = tm->tm_min;
-    scala_tm->tm_hour = tm->tm_hour;
-    scala_tm->tm_mday = tm->tm_mday;
-    scala_tm->tm_mon = tm->tm_mon;
-    scala_tm->tm_year = tm->tm_year;
-    scala_tm->tm_wday = tm->tm_wday;
-    scala_tm->tm_yday = tm->tm_yday;
-    scala_tm->tm_isdst = tm->tm_isdst;
-}
-
-static void tm_init(struct tm *tm, struct scalanative_tm *scala_tm) {
-    tm->tm_sec = scala_tm->tm_sec;
-    tm->tm_min = scala_tm->tm_min;
-    tm->tm_hour = scala_tm->tm_hour;
-    tm->tm_mday = scala_tm->tm_mday;
-    tm->tm_mon = scala_tm->tm_mon;
-    tm->tm_year = scala_tm->tm_year;
-    tm->tm_wday = scala_tm->tm_wday;
-    tm->tm_yday = scala_tm->tm_yday;
-    tm->tm_isdst = scala_tm->tm_isdst;
-}
-
-char *scalanative_asctime_r(struct scalanative_tm *scala_tm, char *buf) {
-    struct tm tm;
-    tm_init(&tm, scala_tm);
-    return asctime_r(&tm, buf);
-}
-
-char *scalanative_asctime(struct scalanative_tm *scala_tm) {
-    struct tm tm;
-    tm_init(&tm, scala_tm);
-    return asctime(&tm);
-}
-
-struct scalanative_tm *scalanative_gmtime_r(const time_t *clock,
-                                            struct scalanative_tm *result) {
-    struct tm tm;
-    gmtime_r(clock, &tm);
-    scalanative_tm_init(result, &tm);
-    return result;
-}
-
-struct scalanative_tm *scalanative_gmtime(const time_t *clock) {
-    return scalanative_gmtime_r(clock, &scalanative_gmtime_buf);
-}
-
-struct scalanative_tm *scalanative_localtime_r(const time_t *clock,
-                                               struct scalanative_tm *result) {
-    struct tm tm;
-    localtime_r(clock, &tm);
-    scalanative_tm_init(result, &tm);
-    return result;
-}
-
-struct scalanative_tm *scalanative_localtime(const time_t *clock) {
-    return scalanative_localtime_r(clock, &scalanative_localtime_buf);
-}
-
-time_t scalanative_mktime(struct scalanative_tm *result) {
-    struct tm tm;
-    tm_init(&tm, result);
-    return mktime(&tm);
-}
-
-size_t scalanative_strftime(char *buf, size_t maxsize, const char *format,
-                            struct scalanative_tm *scala_tm) {
-    struct tm tm;
-    tm_init(&tm, scala_tm);
-    return strftime(buf, maxsize, format, &tm);
-}
+_Static_assert(offsetof(struct tm, tm_sec) == 0, "Unexpected offset");
+_Static_assert(offsetof(struct tm, tm_min) == 4, "Unexpected offset");
+_Static_assert(offsetof(struct tm, tm_hour) == 8, "Unexpected offset");
+_Static_assert(offsetof(struct tm, tm_mday) == 12, "Unexpected offset");
+_Static_assert(offsetof(struct tm, tm_mon) == 16, "Unexpected offset");
+_Static_assert(offsetof(struct tm, tm_year) == 20, "Unexpected offset");
+_Static_assert(offsetof(struct tm, tm_wday) == 24, "Unexpected offset");
+_Static_assert(offsetof(struct tm, tm_yday) == 28, "Unexpected offset");
+_Static_assert(offsetof(struct tm, tm_isdst) == 32, "Unexpected offset");
+#endif
 
 char **scalanative_tzname() { return tzname; }
 
