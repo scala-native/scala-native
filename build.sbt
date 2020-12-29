@@ -132,6 +132,7 @@ addCommandAlias(
   Seq(
     "sandbox/run",
     "tests/test",
+    "testsExt/test",
     "junitTestOutputsJVM/test",
     "junitTestOutputsNative/test"
   ).mkString(";")
@@ -448,35 +449,44 @@ lazy val posixlib =
     .settings(mavenPublishSettings)
     .dependsOn(nscplugin % "plugin", nativelib)
 
+lazy val javalibCommonSettings = Def.settings(
+  disabledDocsSettings,
+  // This is required to have incremental compilation to work in javalib.
+  // We put our classes on scalac's `javabootclasspath` so that it uses them
+  // when compiling rather than the definitions from the JDK.
+  Compile / scalacOptions := {
+    val previous = (Compile / scalacOptions).value
+    val javaBootClasspath =
+      scala.tools.util.PathResolver.Environment.javaBootClassPath
+    val classDir  = (Compile / classDirectory).value.getAbsolutePath
+    val separator = sys.props("path.separator")
+    "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
+  },
+  // Don't include classfiles for javalib in the packaged jar.
+  Compile / packageBin / mappings := {
+    val previous = (Compile / packageBin / mappings).value
+    previous.filter {
+      case (_, path) =>
+        !path.endsWith(".class")
+    }
+  },
+  exportJars := true
+)
+
 lazy val javalib =
   project
     .in(file("javalib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
-    .settings(disabledDocsSettings)
-    .settings(
-      // This is required to have incremental compilation to work in javalib.
-      // We put our classes on scalac's `javabootclasspath` so that it uses them
-      // when compiling rather than the definitions from the JDK.
-      Compile / scalacOptions := {
-        val previous = (Compile / scalacOptions).value
-        val javaBootClasspath =
-          scala.tools.util.PathResolver.Environment.javaBootClassPath
-        val classDir  = (Compile / classDirectory).value.getAbsolutePath
-        val separator = sys.props("path.separator")
-        "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
-      },
-      // Don't include classfiles for javalib in the packaged jar.
-      Compile / packageBin / mappings := {
-        val previous = (Compile / packageBin / mappings).value
-        previous.filter {
-          case (_, path) =>
-            !path.endsWith(".class")
-        }
-      },
-      exportJars := true
-    )
+    .settings(javalibCommonSettings)
     .dependsOn(nscplugin % "plugin", posixlib, clib)
+
+lazy val javalibExtDummies = project
+  .in(file("javalib-ext-dummies"))
+  .enablePlugins(MyScalaNativePlugin)
+  .settings(noPublishSettings)
+  .settings(javalibCommonSettings)
+  .dependsOn(nscplugin % "plugin", nativelib)
 
 val fetchScalaSource =
   taskKey[File]("Fetches the scala source for the current scala version")
@@ -673,6 +683,23 @@ lazy val tests =
                allCoreLibs,
                testInterface,
                junitRuntime)
+
+lazy val testsExt = project
+  .in(file("unit-tests-ext"))
+  .enablePlugins(MyScalaNativePlugin)
+  .settings(noPublishSettings)
+  .settings(
+    Test / testOptions ++= Seq(
+      Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+    ),
+    nativeLinkStubs := true
+  )
+  .dependsOn(nscplugin     % "plugin",
+             junitPlugin   % "plugin",
+             testInterface % "test",
+             tests,
+             junitRuntime,
+             javalibExtDummies)
 
 lazy val sandbox =
   project
