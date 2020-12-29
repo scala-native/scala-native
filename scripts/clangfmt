@@ -12,9 +12,8 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# The required version of clang-format.
-CLANG_FORMAT_VERSION=5.0
-CLANG_FORMAT_VERSION_STRING="clang-format version $CLANG_FORMAT_VERSION"
+# The required version of clang-format (matches minimum clang version) for CI
+CLANG_FORMAT_VERSION=6
 
 die() {
   while [ "$#" -gt 0 ]; do
@@ -26,28 +25,28 @@ die() {
 check_clang_format_version() {
   cmd="$1"
   [ -e "$(type -P "$cmd")" ] && \
-    "$cmd" --version 2> /dev/null | grep -q "$CLANG_FORMAT_VERSION_STRING"
+    version=$("$cmd" --version | cut -d" " -f3)
+    major=$(echo $version | cut -d. -f1)
+    [ $major -eq $CLANG_FORMAT_VERSION ]
 }
 
 clang_format=
 
 if [ -n "${CLANG_FORMAT_PATH:-}" ]; then
   check_clang_format_version "$CLANG_FORMAT_PATH" || \
-    die "CLANG_FORMAT_PATH does not have required version $CLANG_FORMAT_VERSION" \
+    die "CLANG_FORMAT_PATH must point to version $CLANG_FORMAT_VERSION" \
         "CLANG_FORMAT_PATH points to $CLANG_FORMAT_PATH"
   clang_format="$CLANG_FORMAT_PATH"
 else
-  for cmd in "clang-format-$CLANG_FORMAT_VERSION" clang-format; do
-    if check_clang_format_version "$cmd"; then
-      clang_format="$cmd"
-      break
-    fi
-  done
+  if check_clang_format_version clang-format; then
+    clang_format=clang-format
+  fi
 fi
 
 if [ -z "$clang_format" ]; then
   die "clang-format version $CLANG_FORMAT_VERSION not found" \
-      "Install LLVM version $CLANG_FORMAT_VERSION and rerun."
+      "Install LLVM version $CLANG_FORMAT_VERSION and rerun." \
+      "Hint: export CLANG_FORMAT_PATH=/path/to/clang-format"
 fi
 
 test_mode=
@@ -61,14 +60,31 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+# Use this block for version 10 and above
+# if [ "$test_mode" = true ]; then
+#   opts="--dry-run"
+#   err="--Werror"
+# else
+#   opts="-i"
+#   err=
+# fi
+
+# Remove for version 10 and above
+opts="-i"
+err=
+
 if [ "$#" -gt 0 ]; then
-  "$clang_format" --style=file -i "$@"
+  "$clang_format" --style=file "$opts" "$@"
 else
-  find . -name "*.[ch]" -or -name "*.cpp" | xargs "$clang_format" --style=file -i
+  find . -name "*.[ch]" -or -name "*.cpp" | \
+    xargs "$clang_format" --style=file "$opts" $err || \
+      die "C/C++ code formatting changes detected" \
+          "Run '$0' to reformat."
 fi
 
+# Remove for version 10 and above
 if [ "$test_mode" = true ]; then
   git diff --quiet --exit-code || \
     die "C/C++ code formatting changes detected" \
-        "Run \`$0\` to reformat."
+        "Run '$0' to reformat."
 fi
