@@ -2,17 +2,16 @@
 package java.lang
 
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import java.util.Locale
 
 /** Additional tests for java.lang.String that require `java.util.Locale`. */
-class StringTestExt {
+class StringTestEx {
   val English    = new Locale("en")
   val Lithuanian = new Locale("lt")
   val Turkish    = new Locale("tr")
   val Azeri      = new Locale("Az") // randomly test the lowercase normalization
 
-  @Ignore("Handling of special, non-locale-dependant cases not implemented")
   @Test def testToLowerCaseWithLocale(): Unit = {
     assertEquals("title", "TITLE".toLowerCase(English))
     assertEquals("title", "TITLE".toLowerCase(Lithuanian))
