@@ -38,7 +38,9 @@ class Date(var milliseconds: Long)
   override def toString(): String = s"Date($milliseconds)"
 
   def toInstant(): Instant = Instant.ofEpochMilli(getTime())
+}
 
+object Date {
   def from(instant: Instant): Date = {
     try {
       new Date(instant.toEpochMilli())
@@ -48,4 +50,5 @@ class Date(var milliseconds: Long)
     }
   }
 
+  def getMillisOf(date: Date): Long = date.milliseconds
 }
