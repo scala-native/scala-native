@@ -831,69 +831,7 @@ final class _String()
     preprocessed.toLowerCase()
   }
 
-  @inline def toLowerCase(): _String = {
-    replaceCharsAtIndex { i =>
-      // Test if given character is last cased letter within given word context, that means
-      // given char at index has at least 1 preceding cased letter within word
-      // and is not followed by any cased letter
-      def isFinalCased(idx: Int): Boolean = {
-
-        /* Character is cased when its type matches lowercase, uppercase or title-case type.
-         * Alternatively it can be non standard cased character, eq. modifier or circled letter or roman number
-         */
-        def isCased(c: Char): scala.Boolean = {
-          val charType = Character.getType(c)
-          charType == Character.LOWERCASE_LETTER ||
-          charType == Character.UPPERCASE_LETTER ||
-          charType == Character.TITLECASE_LETTER ||
-          ((c >= 0x02B0) && (c <= 0x02B8)) || // Modifier small letter h..y
-          ((c >= 0x02C0) && (c <= 0x02C1)) || // Modifier letter or reversed letter glottal stop
-          ((c >= 0x02E0) && (c <= 0x02E4)) || // Modifier small or reversed small letter gamma
-          c == '\u0345' ||                    // Combining greek ypogegrammeni
-          c == '\u037A' ||                    // Greek ypogegrammeni
-          ((c >= 0x1D2C) && (c <= 0x1D61)) || // Modifier letter capital A to CHI
-          ((c >= 0x2160) && (c <= 0x217F)) || // Roman capital or small numeral one to one thousand
-          ((c >= 0x24B6) && (c <= 0x24E9))    // Circled latin capital or small letters A to Z
-        }
-
-        @tailrec
-        def followsCased(i: Int): scala.Boolean = {
-          if (i < offset) false // Not found non cased in whole string
-          else {
-            val c = charAt(i)
-            // Outside word boundary and not found cased
-            if (c.isWhitespace) false
-            else if (isCased(c)) true
-            else followsCased(i - Character.charCount(c))
-          }
-        }
-
-        @tailrec
-        def precedesOnlyNonCased(i: Int): scala.Boolean = {
-          if (i >= offset + count) true // At string boundary and no cased found
-          else {
-            val c = charAt(i)
-            if (c.isWhitespace) true // At word boundary and no cased found
-            else if (isCased(c)) false
-            else precedesOnlyNonCased(i + Character.charCount(c))
-          }
-        }
-
-        followsCased(idx - 1) && precedesOnlyNonCased(idx + 1)
-      }
-
-      /* Greek lower letter sigma exists in two forms:
-       * \u03c3 'σ' - is standard lower case variant
-       * \u03c2 'ς' - is used when it's final cased character in given word
-       */
-      (charAt(i): @switch) match {
-        case '\u03A3' if isFinalCased(i) => "\u03C2"
-        case '\u0130'                    => "\u0069\u0307"
-        case _                           => null
-      }
-    }.asInstanceOf[_String]
-      .toCase(Character.toLowerCase)
-  }
+  @inline def toLowerCase(): _String = toCase(Character.toLowerCase)
 
   override def toString(): String = this
 
@@ -980,7 +918,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
   }
   @inline def toUpperCase(): _String = toCase(Character.toUpperCase)
 
-  private def toCase(convert: Int => Int): _String = {
+  private[this] def toCase(convert: Int => Int): _String = {
     if (count == 0) return this
     val buf = new java.lang.StringBuilder(count)
     var i   = offset

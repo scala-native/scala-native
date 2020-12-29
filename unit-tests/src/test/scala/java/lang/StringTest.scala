@@ -408,7 +408,6 @@ class StringTest {
         .subSequence(4, 16)
         .toString
         .toUpperCase equals "SCALA NATIVE")
-    assertEquals("DΣΣ AΣΣ BΣC", "dσς aσς bσc".toUpperCase)
   }
 
   @Test def toLowerCase(): Unit = {
@@ -424,23 +423,5 @@ class StringTest {
         .subSequence(4, 16)
         .toString
         .toLowerCase equals "scala native")
-  }
-
-  @Test def toLowerCaseSpecialCases(): Unit = {
-    assertEquals("iíìĩi\u0307", "IÍÌĨİ".toLowerCase())
-
-    /* Greek lower letter sigma exists in two forms:
-     * \u03c3 'σ' - is standard lower case variant
-     * \u03c2 'ς' - is used when it's final cased character in given word
-     */
-    assertEquals("dς", "DΣ".toLowerCase())
-    assertEquals("dσς aσς bσc", "DΣΣ AΣΣ BΣC".toLowerCase())
-    assertEquals("dσσa", "DΣΣA".toLowerCase())
-    // \u02B9 is not cased character
-    assertEquals("dσ\u02B9\u02B9ς\u02B9\u02B9",
-                 "DΣ\u02B9\u02B9Σ\u02B9\u02B9".toLowerCase)
-    assertEquals("dσ\u02B9\u02B9σ\u02B9\u02B9z",
-                 "DΣ\u02B9\u02B9Σ\u02B9\u02B9Z".toLowerCase)
-
   }
 }

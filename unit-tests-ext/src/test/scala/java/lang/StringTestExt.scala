@@ -35,9 +35,16 @@ class StringTestEx {
       "PI\u0307JAMALI HASTA, YAĞIZ ŞOFÖRE ÇABUCAK GÜVENDI\u0307.".toLowerCase(
         Turkish))
 
+    println(-1)
+    "IÍÌĨİ".toLowerCase(English).foreach(x => println(Integer.toHexString(x)))
+    println("---")
+    "iíìĩi\u0307".foreach(x => println(Integer.toHexString(x)))
     assertEquals("iíìĩi\u0307", "IÍÌĨİ".toLowerCase(English))
+    println(0)
     assertEquals("ıíìĩi", "IÍÌĨİ".toLowerCase(Turkish))
+    println(1)
     assertEquals("ıíìĩi", "IÍÌĨİ".toLowerCase(Azeri))
+    println(2)
     assertEquals("ii\u0307\u0301i\u0307\u0300i\u0307\u0303i\u0307",
                  "IÍÌĨİ".toLowerCase(Lithuanian))
   }
