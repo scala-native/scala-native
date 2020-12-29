@@ -55,13 +55,12 @@ trait UnicodeTableData {
         builder ++= List(start.get, end.get, delta.get)
       }
 
-      builder.result
+      builder.result()
     }
 
     // Guess generously to reduce copying of large structures during resize.
     def sizeHint(size: Int): Unit =
       builder.sizeHint(size * MAX_EMITTED_PER_INPUT)
-
   }
 
 // Format: off
@@ -151,9 +150,7 @@ trait UnicodeTableData {
       builder += i
     }
 
-    val result = builder.result
-
-    result
+    builder.result()
   }
 
   private[regex] def generateUnicodeTable(category: Byte): UnicodeTable_t = {
