@@ -29,14 +29,14 @@ object Discover {
 
   /** Find the newest compatible clang binary. */
   def clang(): Path = {
-    val path = discover("clang", clangVersions)
+    val path = discover2("clang", clangVersions)
     checkThatClangIsRecentEnough(path)
     path
   }
 
   /** Find the newest compatible clang++ binary. */
   def clangpp(): Path = {
-    val path = discover("clang++", clangVersions)
+    val path = discover2("clang++", clangVersions)
     checkThatClangIsRecentEnough(path)
     path
   }
@@ -162,6 +162,47 @@ object Discover {
             throw new BuildException(
               s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang ($docSetup)")
           }
+      }
+    }
+  }
+
+  private[scalanative] def discover2(
+      binaryName: String,
+      binaryVersions: Seq[(String, String)]): Path = {
+    val docSetup =
+      "http://www.scala-native.org/en/latest/user/setup.html"
+
+    val envName =
+      if (binaryName == "clang") "CLANG"
+      else if (binaryName == "clang++") "CLANGPP"
+      else binaryName
+
+    sys.env.get(s"${envName}_PATH") match {
+      case Some(path) =>
+        println(s"Path: $path")
+        Paths.get(path)
+      case None => {
+        val binaryNames = binaryVersions.flatMap {
+          case (major, minor) =>
+            val sep = if (minor == "") "" else "."
+            Seq(s"$binaryName$major$minor", s"$binaryName-$major${sep}$minor")
+        } :+ binaryName
+
+        println(s"Names: $binaryNames")
+
+        val res = Process("which" +: binaryNames)
+          .lineStream_!(silentLogger())
+          .map { p =>
+            println(s"p: $p")
+            Paths.get(p)
+          }
+          .headOption
+          .getOrElse {
+            throw new BuildException(
+              s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang ($docSetup)")
+          }
+        println("Which: " + res)
+        res
       }
     }
   }
