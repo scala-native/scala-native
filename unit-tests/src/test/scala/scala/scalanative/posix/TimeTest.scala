@@ -51,7 +51,7 @@ class TimeTest {
       anno_zero_ptr.tm_wday = 1
       val cstr: CString = asctime(anno_zero_ptr)
       val str: String   = fromCString(cstr)
-      assertTrue("Mon Jan  1 00:00:00 1900\n".equals(str))
+      assertEquals("Mon Jan  1 00:00:00 1900\n", str)
     }
   }
 
@@ -62,7 +62,7 @@ class TimeTest {
       anno_zero_ptr.tm_wday = 1
       val cstr: CString = asctime_r(anno_zero_ptr, alloc[Byte](26))
       val str: String   = fromCString(cstr)
-      assertTrue("Mon Jan  1 00:00:00 1900\n".equals(str))
+      assertEquals("Mon Jan  1 00:00:00 1900\n", str)
     }
   }
 
@@ -108,8 +108,7 @@ class TimeTest {
       strftime(isoDatePtr, 70.toULong, c"%FT%TZ", timePtr)
 
       val isoDateString: String = fromCString(isoDatePtr)
-
-      assertTrue("1900-01-01T00:00:00Z".equals(isoDateString))
+      assertEquals("1900-01-01T00:00:00Z", isoDateString)
     }
   }
 
@@ -124,7 +123,7 @@ class TimeTest {
       strftime(datePtr, 70.toULong, c"%A %c", timePtr)
 
       val dateString: String = fromCString(datePtr)
-      assertTrue("Monday Mon Jan  1 00:00:00 1900".equals(dateString))
+      assertEquals("Monday Mon Jan  1 00:00:00 1900", dateString)
     }
   }
 
@@ -136,7 +135,7 @@ class TimeTest {
       val result =
         strptime(c"December 31, 2016 23:59:60", c"%B %d, %Y %Q", tmPtr)
 
-      assertTrue(s"expected null result, got pointer", result == null)
+      assertNull(result)
     }
   }
 
@@ -148,7 +147,7 @@ class TimeTest {
       val result =
         strptime(c"December 32, 2016 23:59:60", c"%B %d, %Y %T", tmPtr)
 
-      assertTrue(s"expected null result, got pointer", result == null)
+      assertNull(result)
     }
   }
 
@@ -159,7 +158,7 @@ class TimeTest {
       val result =
         strptime(c"December 32, 2016 23:59", c"%B %d, %Y %T", tmPtr)
 
-      assertTrue(s"expected null result, got pointer", result == null)
+      assertNull(result)
     }
   }
 
@@ -171,35 +170,28 @@ class TimeTest {
       val result =
         strptime(c"December 31, 2016 23:59:60", c"%B %d, %Y %T", tmPtr)
 
-      assertTrue(s"error: unexpected null returned", result != null)
+      assertNotNull(s"error: unexpected null returned", result)
 
       val expectedYear = 116
-      assertTrue(s"tm_year: ${tmPtr.tm_year} != expected: ${expectedYear}",
-                 tmPtr.tm_year == expectedYear)
+      assertEquals("tm_year", tmPtr.tm_year, expectedYear)
 
       val expectedMonth = 11
-      assertTrue(s"tm_mon: ${tmPtr.tm_mon} != expected: ${expectedMonth}",
-                 tmPtr.tm_mon == expectedMonth)
+      assertEquals("tm_mon", tmPtr.tm_mon, expectedMonth)
 
       val expectedMday = 31
-      assertTrue(s"tm_mon: ${tmPtr.tm_mday} != expected: ${expectedMday}",
-                 tmPtr.tm_mday == expectedMday)
+      assertEquals(s"tm_mday", tmPtr.tm_mday, expectedMday)
 
       val expectedHour = 23
-      assertTrue(s"tm_mon: ${tmPtr.tm_hour} != expected: ${expectedHour}",
-                 tmPtr.tm_hour == expectedHour)
+      assertEquals(s"tm_hour", tmPtr.tm_hour, expectedHour)
 
       val expectedMin = 59
-      assertTrue(s"tm_min: ${tmPtr.tm_min} != expected: ${expectedMin}",
-                 tmPtr.tm_min == expectedMin)
+      assertEquals(s"tm_min", tmPtr.tm_min, expectedMin)
 
       val expectedSec = 60
-      assertTrue(s"tm_sec: ${tmPtr.tm_sec} != expected: ${expectedSec}",
-                 tmPtr.tm_sec == expectedSec)
+      assertEquals(s"tm_sec", tmPtr.tm_sec, expectedSec)
 
       val expectedIsdst = 0
-      assertTrue(s"tm_isdst: ${tmPtr.tm_isdst} != expected: ${expectedIsdst}",
-                 tmPtr.tm_isdst == expectedIsdst)
+      assertEquals(s"tm_isdst", tmPtr.tm_isdst, expectedIsdst)
     }
   }
 
@@ -210,11 +202,10 @@ class TimeTest {
       val result =
         strptime(c"December 31, 2016 23:59:60 UTC", c"%B %d, %Y %T ", tmPtr)
 
-      assertTrue(s"error: null returned", result != null)
+      assertNotNull("strptime", result)
 
       val expected = 'U'
-      assertTrue(s"character: ${!result} != expected: ${expected}",
-                 !result == expected)
+      assertNotEquals("result", result, expected)
     }
   }
 }
