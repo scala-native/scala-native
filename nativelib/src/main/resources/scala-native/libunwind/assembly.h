@@ -13,6 +13,8 @@
  * ===----------------------------------------------------------------------===
  */
 
+// clang-format off
+
 #ifndef UNWIND_ASSEMBLY_H
 #define UNWIND_ASSEMBLY_H
 
@@ -108,3 +110,5 @@
 #endif /* __arm__ */
 
 #endif /* UNWIND_ASSEMBLY_H */
+
+// clang-format on
