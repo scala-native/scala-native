@@ -9,9 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Use clang-format to match minimum clang version
-        run: |
-          sudo apt-get update
-          sudo apt-get install clang-format-6.0
-          export CLANG_FORMAT_PATH=/usr/lib/llvm-6.0/bin/clang-format
       - run: ./scripts/check-lint.sh
+        env:
+          CLANG_FORMAT_PATH: "/usr/lib/llvm-6.0/bin/clang-format"
