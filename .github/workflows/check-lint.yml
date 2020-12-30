@@ -9,4 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - name: Install clang-format to match minimum clang version
+        run: sudo apt-get install clang-format-6.0
       - run: ./scripts/check-lint.sh
