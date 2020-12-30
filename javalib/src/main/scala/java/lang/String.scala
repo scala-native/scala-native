@@ -881,10 +881,26 @@ final class _String()
 
         followsCased(idx - 1) && precedesOnlyNonCased(idx + 1)
       }
+      /* Relevant excerpt from SpecialCasing.txt
+       * # Preserve canonical equivalence for I with dot. Turkic is handled below.
+       *
+       * 0130; 0069 0307; 0130; 0130; # LATIN CAPITAL LETTER I WITH DOT ABOVE
+       * ...
+       * # Special case for final form of sigma
+       *
+       * 03A3; 03C2; 03A3; 03A3; Final_Sigma; # GREEK CAPITAL LETTER SIGMA
+       *
+       * # Note: the following cases for non-final are already in the UnicodeData.txt file.
+       *
+       * # 03A3; 03C3; 03A3; 03A3; # GREEK CAPITAL LETTER SIGMA
+       * # 03C3; 03C3; 03A3; 03A3; # GREEK SMALL LETTER SIGMA
+       * # 03C2; 03C2; 03A3; 03A3; # GREEK SMALL LETTER FINAL SIGMA
+       *
+       * # Note: the following cases are not included, since they would case-fold in lowercasing
+       *
+       * # 03C3; 03C2; 03A3; 03A3; Final_Sigma; # GREEK SMALL LETTER SIGMA
+       * # 03C2; 03C3; 03A3; 03A3; Not_Final_Sigma; # GREEK SMALL LETTER FINAL SIGMA
 
-      /* Greek lower letter sigma exists in two forms:
-       * \u03c3 'σ' - is standard lower case variant
-       * \u03c2 'ς' - is used when it's final cased character in given word
        */
       (charAt(i): @switch) match {
         case '\u03A3' if isFinalCased(i) => "\u03C2"
@@ -1118,11 +1134,6 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
      * 1FB7; 1FB7; 0391 0342 0345; 0391 0342 0399; # GREEK SMALL LETTER ALPHA WITH PERISPOMENI AND YPOGEGRAMMENI
      * 1FC7; 1FC7; 0397 0342 0345; 0397 0342 0399; # GREEK SMALL LETTER ETA WITH PERISPOMENI AND YPOGEGRAMMENI
      * 1FF7; 1FF7; 03A9 0342 0345; 03A9 0342 0399; # GREEK SMALL LETTER OMEGA WITH PERISPOMENI AND YPOGEGRAMMENI
-
-     * # The German es-zed is special--the normal mapping is to SS.
-     * # Note: the titlecase should never occur in practice. It is equal to titlecase(uppercase(<es-zed>))
-     *
-     * 00DF; 00DF; 0053 0073; 0053 0053; # LATIN SMALL LETTER SHARP S
      */
     replaceCharsAtIndex { i =>
       val c = this.charAt(i)
