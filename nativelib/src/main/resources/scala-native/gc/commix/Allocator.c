@@ -159,8 +159,8 @@ bool Allocator_newBlock(Allocator *allocator) {
     if (concurrent) {
         block = BlockList_Pop(&allocator->recycledBlocks, blockMetaStart);
     } else {
-        block = BlockList_PopOnlyThread(&allocator->recycledBlocks,
-                                        blockMetaStart);
+        block =
+            BlockList_PopOnlyThread(&allocator->recycledBlocks, blockMetaStart);
     }
     word_t *blockStart;
 
@@ -308,7 +308,8 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
 
     // prefetch starting from 36 words away from the object start
     // rw = 0 => prefetch for reading
-    // locality = 3 => data has high locality, leave the values in as many caches as possible
+    // locality = 3 => data has high locality, leave the values in as many
+    // caches as possible
     __builtin_prefetch(object + 36, 0, 3);
 
     assert(Heap_IsWordInHeap(heap, object));

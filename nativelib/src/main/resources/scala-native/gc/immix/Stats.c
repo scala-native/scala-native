@@ -10,7 +10,8 @@ void Stats_Init(Stats *stats, const char *statsFile) {
     stats->collections = 0;
 }
 
-void Stats_RecordCollection(Stats *stats, uint64_t start_ns, uint64_t sweep_start_ns, uint64_t end_ns) {
+void Stats_RecordCollection(Stats *stats, uint64_t start_ns,
+                            uint64_t sweep_start_ns, uint64_t end_ns) {
     uint64_t index = stats->collections % STATS_MEASUREMENTS;
     stats->mark_time_ns[index] = sweep_start_ns - start_ns;
     stats->sweep_time_ns[index] = end_ns - sweep_start_ns;
@@ -28,7 +29,8 @@ void Stats_writeToFile(Stats *stats) {
     }
     FILE *outFile = stats->outFile;
     for (uint64_t i = 0; i < remainder; i++) {
-        fprintf(outFile, "%" PRIu64 ",%" PRIu64 "\n", stats->mark_time_ns[i], stats->sweep_time_ns[i]);
+        fprintf(outFile, "%" PRIu64 ",%" PRIu64 "\n", stats->mark_time_ns[i],
+                stats->sweep_time_ns[i]);
     }
     fflush(outFile);
 }
