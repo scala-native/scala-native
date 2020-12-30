@@ -45,6 +45,7 @@ fi
 
 if [ -z "$clang_format" ]; then
   die "clang-format version $CLANG_FORMAT_VERSION not found" \
+      "clang-format version $version found" \
       "Install LLVM version $CLANG_FORMAT_VERSION and rerun." \
       "Hint: export CLANG_FORMAT_PATH=/path/to/clang-format"
 fi
