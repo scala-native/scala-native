@@ -198,7 +198,7 @@ class PtrBoxingTest {
 
       val testStr        = toCString("hello_native")
       val expectedInt    = 42
-      val expectedLength = 12.toWord
+      val expectedLength = 12.toUWord
 
       assertEquals(expectedInt, x._1.apply())
       assertEquals(expectedInt, loadedGetInt())
