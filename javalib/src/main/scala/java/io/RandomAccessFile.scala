@@ -25,7 +25,7 @@ class RandomAccessFile private (file: File,
 
   override def close(): Unit = {
     closed = true
-    fcntl.close(fd.fd)
+    unistd.close(fd.fd)
   }
 
   // final def getChannel(): FileChannel
@@ -76,20 +76,39 @@ class RandomAccessFile private (file: File,
     in.readInt()
 
   override final def readLine(): String = {
-    if (getFilePointer() == length()) null
-    else {
+    // DataInputStream#readLine has been deprecated since JDK 1.1
+    // so implement RAF#readLine, rather than delegating.
+    var pos = getFilePointer()
+    var end = length() // standard practice: 1 past last valid byte.
+    if (pos >= end) {
+      null // JDK 8 specification requires null here.
+    } else {
       val builder = new StringBuilder
-      var c       = '0'
-      do {
-        c = readChar()
-        builder.append(c)
-      } while (c != '\n' && c != '\r')
+      var done    = false
 
-      // If there's a newline after carriage-return, we must eat it too.
-      if (c == '\r' && readChar() != '\n') {
-        seek(getFilePointer() - 1)
+      while (!done && (pos < end)) {
+        val c = readByte().toChar
+        pos += 1
+
+        c match {
+          case '\n' => done = true
+
+          case '\r' =>
+            // If there's a newline after carriage-return, we must eat it too.
+            if (pos < end) {
+              if (readByte().toChar == '\n') {
+                pos += 1
+              } else {
+                seek(getFilePointer() - 1)
+              }
+            }
+            done = true
+
+          case _ => builder.append(c)
+        }
       }
-      builder.toString.init
+
+      builder.toString
     }
   }
 
