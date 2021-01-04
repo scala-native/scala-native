@@ -37,8 +37,6 @@ final class Word(private[scalanative] val rawWord: RawWord) {
         false
     })
 
-  // TODO(shadaj): equality with integers
-
   override def toString(): String = toLong.toString
 
   /**

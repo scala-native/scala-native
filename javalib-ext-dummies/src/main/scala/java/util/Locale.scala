@@ -1,26 +1,32 @@
 package java.util
 
-//import java.{util => ju}
-
-/** Ported from Harmony and using Java API docs.
+/** Ported from Harmony, Scala.js and using Java API docs.
  *
  * TODO: Commented out code needed to finish implementation.
  *
  * Harmony defers much of the work to icu4j from
  * [[http://site.icu-project.org/ ICU - International Components for Unicode]]
  */
-final class Locale(val language: String,
-                   val country: String,
-                   val variant: String)
+final class Locale(languageRaw: String,
+                   countryRaw: String,
+                   variant: String,
+                   private val extensions: Map[Char, String])
     extends Serializable
     with Cloneable {
+
+  private[this] val language: String = languageRaw.toLowerCase()
+
+  private[this] val country: String = countryRaw.toUpperCase()
 
   if (language == null || country == null || variant == null)
     throw new NullPointerException()
 
-  def this(language: String) = this(language, "", "")
+  def this(languageRaw: String, countryRaw: String, variantRaw: String) =
+    this(languageRaw, countryRaw, variantRaw, Collections.emptyMap())
 
   def this(language: String, country: String) = this(language, country, "")
+
+  def this(language: String) = this(language, "", "")
 
   override def clone() =
     try {
@@ -32,59 +38,31 @@ final class Locale(val language: String,
   @inline override def equals(that: Any): scala.Boolean =
     that match {
       case that: Locale =>
-        language == that.language &&
-          country == that.country &&
-          variant == that.variant
+        getLanguage() == that.getLanguage() &&
+          getCountry() == that.getCountry() &&
+          getVariant() == that.getVariant() &&
+          extensions == that.extensions
       case _ =>
         false
     }
 
   def getCountry(): String = country
 
-  //def getDisplayCountry(): String = ???
+  def hasExtensions(): Boolean = !extensions.isEmpty()
 
-  //def getDisplayCountry(locale: Locale): String = ???
+  def getExtension(key: Char): String = extensions.get(key)
 
-  //def getDisplayLanguage(): String = ???
+  def getExtensionKeys(): Set[Char] = extensions.keySet()
 
-  //def getDisplayLanguage(locale: Locale): String = ???
+  def getLanguage(): String = language
 
-  //def getDisplayName(): String = ???
-
-  //def getDisplayName(locale: Locale): String = ???
-
-  //def getDisplayScript(): String = ???
-
-  //def getDisplayScript(locale: Locale): String = ???
-
-  //def getDisplayVariant(): String = ???
-
-  //def getDisplayVariant(locale: Locale): String = ???
-
-  //def getExtension(key: Char): String = ???
-
-  //def getExtensionKeys(): ju.Set[Character] = ???
-
-  //def getISO3Country(): String = ???
-
-  //def getISO3Language(): String = ???
-
-  //def getLanguage(): String = language
-
-  //def getScript(): String = ???
-
-  //def getUnicodeLocaleAttributes(): ju.Set[String] = ???
-
-  //def getUnicodeLocaleKeys(): ju.Set[String] = ???
-
-  //def getUnicodeLocaleType(key: String) = ???
-
-  //def getVariant(): String = variant
+  def getVariant(): String = variant
 
   @inline override def hashCode(): Int =
-    country.hashCode() + language.hashCode() + variant.hashCode()
-
-  //def toLanguageTag(): String = ???
+    country.hashCode() +
+      language.hashCode() +
+      variant.hashCode() +
+      extensions.hashCode()
 
   // Examples: "en", "en_US", "_US", "en__POSIX", "en_US_POSIX"
   @inline override def toString(): String = {
@@ -107,8 +85,6 @@ final class Locale(val language: String,
 }
 
 object Locale {
-
-  private[this] var defaultLocale = Locale.US
 
   lazy val CANADA                   = new Locale("en", "CA")
   lazy val CANADA_FRENCH            = new Locale("fr", "CA")
@@ -135,23 +111,39 @@ object Locale {
   lazy val UNICODE_LOCALE_EXTENSION = 'u'
   lazy val US                       = new Locale("en", "US")
 
-  //def forLanguageTag(languageTag: String): String = ???
+  def getDefault(): Locale = Locale.ROOT
 
-  // should have bundles for this list
-  //def getAvailableLocales(): Array[Locale] = ???
+  final class Builder {
+    private var language: String = ""
+    private var country: String  = ""
+    private var variant: String  = ""
+    private val extensions       = new java.util.HashMap[Char, String]
 
-  def getDefault(): Locale = defaultLocale
+    def setLanguage(language: String): Builder = {
+      this.language = language.toLowerCase()
+      this
+    }
 
-  //def getDefault(category: Locale.Category): Locale = ???
+    def setCountry(country: String): Builder = {
+      this.country = country.toUpperCase()
+      this
+    }
 
-  //def getISOCountries(): Array[String] = ???
+    def setVariant(variant: String): Builder = {
+      this.variant = variant
+      this
+    }
 
-  //def getISOLanguages(): Array[String] = ???
+    def setExtension(key: Char, value: String): Builder = {
+      extensions.put(key, value)
+      this
+    }
 
-  //def setDefault(category: Locale.Category, locale: Locale): Unit = ???
-
-  def setDefault(locale: Locale): Unit =
-    this.defaultLocale = locale
-
-  //class Category
+    def build(): Locale = {
+      new Locale(language,
+                 country,
+                 variant,
+                 extensions.clone().asInstanceOf[Map[Char, String]])
+    }
+  }
 }

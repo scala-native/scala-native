@@ -2,6 +2,7 @@ package java.lang
 
 import scala.collection.mutable
 import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.runtime.unwind
 
 private[lang] object StackTrace {
@@ -11,15 +12,15 @@ private[lang] object StackTrace {
   private def makeStackTraceElement(
       cursor: Ptr[scala.Byte]): StackTraceElement = {
     val nameMax = 1024
-    val name    = stackalloc[CChar](nameMax)
-    val offset  = stackalloc[scala.Byte](8)
+    val name    = stackalloc[CChar](nameMax.toUInt)
+    val offset  = stackalloc[scala.Byte](8.toUInt)
 
-    unwind.get_proc_name(cursor, name, nameMax, offset)
+    unwind.get_proc_name(cursor, name, nameMax.toUInt, offset)
 
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's
     // behavior is not defined for non-zero-terminated strings.
-    name(nameMax - 1) = 0
+    name(nameMax - 1) = 0.toByte
 
     StackTraceElement.fromSymbol(name)
   }
@@ -33,9 +34,9 @@ private[lang] object StackTrace {
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    val cursor  = stackalloc[scala.Byte](2048)
-    val context = stackalloc[scala.Byte](2048)
-    val offset  = stackalloc[scala.Byte](8)
+    val cursor  = stackalloc[scala.Byte](2048.toUInt)
+    val context = stackalloc[scala.Byte](2048.toUInt)
+    val offset  = stackalloc[scala.Byte](8.toUInt)
     val ip      = stackalloc[CUnsignedLong]
     var buffer  = mutable.ArrayBuffer.empty[StackTraceElement]
 

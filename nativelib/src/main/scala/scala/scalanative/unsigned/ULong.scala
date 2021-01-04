@@ -271,6 +271,13 @@ final class ULong private[scalanative] (
   @inline final override def toString(): String =
     JLong.toUnsignedString(underlying)
 
+  @inline override def hashCode(): Int = underlying.##
+
+  @inline override def equals(obj: Any): Boolean = obj match {
+    case that: ULong => this.underlying == that.underlying
+    case _           => false
+  }
+
   // "Rich" API
 
   @inline final def max(that: ULong): ULong = if (this >= that) this else that

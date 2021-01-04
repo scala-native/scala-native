@@ -7,7 +7,10 @@ import scala.tools.nsc.plugins._
 class NirPlugin(val global: Global) extends Plugin {
   val name        = "nir"
   val description = "Compile to Scala Native IR (NIR)"
-  val components  = List[PluginComponent](prepNativeInterop, nirGen)
+  val components: List[PluginComponent] = global match {
+    case _: doc.ScaladocGlobal => List(prepNativeInterop)
+    case _                     => List(prepNativeInterop, nirGen)
+  }
 
   /** A trick to avoid early initializers while still enforcing that `global`
    *  is initialized early.

@@ -1,6 +1,7 @@
 package java.lang
 
 import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.libc.string.memcmp
 import scalanative.runtime.CharArray
 import java.io.Serializable
@@ -244,7 +245,7 @@ final class _String()
                 .asInstanceOf[CharArray]
                 .at(s.offset)
                 .asInstanceOf[Ptr[scala.Byte]]
-            memcmp(data1, data2, count * 2) == 0
+            memcmp(data1, data2, (count * 2).toUInt) == 0
           }
         }
       }
@@ -667,18 +668,19 @@ final class _String()
   }
 
   def toLowerCase(locale: Locale): _String =
-    toCase(locale, Character.toLowerCase)
+    toCase(Character.toLowerCase)
 
-  def toLowerCase(): _String = toLowerCase(Locale.getDefault())
+  @inline
+  def toLowerCase(): _String = toCase(Character.toLowerCase)
 
   override def toString(): String = this
 
-  def toUpperCase(locale: Locale): _String =
-    toCase(locale, Character.toUpperCase)
+  def toUpperCase(locale: Locale): _String = toCase(Character.toUpperCase)
 
-  def toUpperCase(): _String = toUpperCase(Locale.getDefault())
+  @inline
+  def toUpperCase(): _String = toCase(Character.toUpperCase)
 
-  private[this] def toCase(locale: Locale, convert: Int => Int): _String = {
+  private[this] def toCase(convert: Int => Int): _String = {
     if (count == 0) return this
     val buf = new StringBuilder(count)
     var i   = offset
@@ -902,19 +904,10 @@ object _String {
     if (value != null) value.toString else "null"
 
   def format(fmt: _String, args: Array[AnyRef]): _String =
-    format(Locale.getDefault(), fmt, args)
+    new Formatter().format(fmt, args).toString
 
-  def format(loc: Locale, fmt: _String, args: Array[AnyRef]): _String = {
-    if (fmt == null) {
-      throw new NullPointerException("null format argument")
-    } else {
-      val bufferSize =
-        if (args == null) fmt.length() + 0
-        else fmt.length() + args.length * 10
-      val f = new Formatter(new java.lang.StringBuilder(bufferSize), loc)
-      f.format(fmt, args).toString
-    }
-  }
+  def format(loc: Locale, fmt: _String, args: Array[AnyRef]): _String =
+    new Formatter(loc).format(fmt, args).toString()
 
   import scala.language.implicitConversions
   @inline private implicit def _string2string(s: _String): String =

@@ -2,7 +2,7 @@ package scala.scalanative
 package codegen
 
 import scala.collection.mutable
-import scalanative.util.ScopedVar
+import scalanative.util.{ScopedVar, unsupported}
 import scalanative.nir._
 import scalanative.linker.{
   Class,
@@ -477,8 +477,12 @@ object Lower {
 
       val Op.Method(v, sig) = op
       val obj               = genVal(buf, v)
+
       def genClassVirtualLookup(cls: Class): Unit = {
-        val vindex  = vtable(cls).index(sig)
+        val vindex = vtable(cls).index(sig)
+        assert(vindex != -1,
+               s"The virtual table of ${cls.name} does not contain $sig")
+
         val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
         val methptrptr = let(
           Op.Elem(rtti(cls).struct,
@@ -505,19 +509,8 @@ object Lower {
         let(n, Op.Load(Type.Ptr, methptrptr), unwind)
       }
 
-      def genMethodLookup(): Unit = {
-        // We check type of original value, because it may change inside `genVal` transformation
-        // Eg. Val.String is transformed to Const(StructValue) which changes type from Ref to Ptr
-        val targets = v.ty match {
-          case ClassRef(cls) if !sig.isVirtual =>
-            cls.resolve(sig).toSeq
-          case ScopeRef(scope) =>
-            scope.targets(sig).toSeq
-          case _ =>
-            Seq()
-        }
-
-        targets match {
+      def genMethodLookup(scope: ScopeInfo): Unit = {
+        scope.targets(sig).toSeq match {
           case Seq() =>
             let(n, Op.Copy(Val.Null), unwind)
           case Seq(impl) =>
@@ -534,8 +527,39 @@ object Lower {
         }
       }
 
-      genGuardNotNull(buf, obj)
-      genMethodLookup()
+      def genStaticMethod(cls: Class): Unit = {
+        val method = cls
+          .resolve(sig)
+          .getOrElse {
+            unsupported(
+              s"Did not find the signature of method $sig in ${cls.name}")
+          }
+        let(n, Op.Copy(Val.Global(method, Type.Ptr)), unwind)
+      }
+
+      def staticMethodIn(cls: Class): Boolean =
+        !sig.isVirtual || !cls.calls.contains(sig)
+
+      // We check type of original value, because it may change inside `genVal` transformation
+      // Eg. Val.String is transformed to Const(StructValue) which changes type from Ref to Ptr
+      v.ty match {
+        // Method call with `null` ref argument might be inlined, in such case materialization of local value in Eval would
+        // result with Val.Null. We're directly throwing NPE which normally would be handled in slow path of `genGuardNotNull`
+        case Type.Null =>
+          let(n,
+              Op.Call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null)),
+              unwind)
+          buf.unreachable(Next.None)
+
+        case ClassRef(cls) if staticMethodIn(cls) =>
+          genStaticMethod(cls)
+
+        case ScopeRef(scope) =>
+          genGuardNotNull(buf, obj)
+          genMethodLookup(scope)
+
+        case _ => util.unreachable
+      }
     }
 
     def genDynmethodOp(buf: Buffer, n: Local, op: Op.Dynmethod)(

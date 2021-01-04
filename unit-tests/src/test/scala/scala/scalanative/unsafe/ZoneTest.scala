@@ -5,6 +5,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows._
+import scalanative.unsigned._
 
 class ZoneTest {
   private def assertAccessible(bptr: Ptr[_], n: Int) {
@@ -27,11 +28,11 @@ class ZoneTest {
 
   @Test def zoneAllocatorAllocWithApply(): Unit = {
     Zone { implicit z =>
-      val ptr = z.alloc(64 * sizeof[Int])
+      val ptr = z.alloc(64.toUWord * sizeof[Int])
 
       assertAccessible(ptr, 64)
 
-      val ptr2 = alloc[Int](128)
+      val ptr2 = alloc[Int](128.toUInt)
 
       assertAccessible(ptr2, 128)
     }
@@ -42,11 +43,11 @@ class ZoneTest {
     assertTrue(zone.isOpen)
     assertFalse(zone.isClosed)
 
-    val ptr = zone.alloc(64 * sizeof[Int])
+    val ptr = zone.alloc(64.toUWord * sizeof[Int])
 
     assertAccessible(ptr, 64)
 
-    val ptr2 = alloc[Int](128)
+    val ptr2 = alloc[Int](128.toUInt)
 
     assertAccessible(ptr2, 128)
 
@@ -58,10 +59,12 @@ class ZoneTest {
   @Test def allocThrowsExceptionIfZoneAllocatorIsClosed(): Unit = {
     implicit val zone: Zone = Zone.open()
 
-    zone.alloc(64 * sizeof[Int])
+    zone.alloc(64.toUWord * sizeof[Int])
 
     zone.close()
 
-    assertThrows(classOf[IllegalStateException], zone.alloc(64 * sizeof[Int]))
+    assertThrows(classOf[IllegalStateException],
+                 zone.alloc(64.toUWord * sizeof[Int]))
+    assertThrows(classOf[IllegalStateException], zone.close())
   }
 }

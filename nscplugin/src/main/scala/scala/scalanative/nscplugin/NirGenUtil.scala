@@ -70,6 +70,7 @@ trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
           case LongTagMethod    => just(LongClass)
           case ULongTagMethod   => just(ULongClass)
           case WordTagMethod    => just(WordClass)
+          case UWordTagMethod   => just(UWordClass)
           case FloatTagMethod   => just(FloatClass)
           case DoubleTagMethod  => just(DoubleClass)
           case PtrTagMethod     => just(PtrClass)

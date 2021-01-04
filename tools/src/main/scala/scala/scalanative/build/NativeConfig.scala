@@ -24,6 +24,9 @@ sealed trait NativeConfig {
   /** The compilation options passed to LLVM. */
   def compileOptions: Seq[String]
 
+  /** Optional target triple that defines current OS, ABI and CPU architecture. */
+  def targetTriple: Option[String]
+
   /** Should stubs be linked? */
   def linkStubs: Boolean
 
@@ -57,6 +60,12 @@ sealed trait NativeConfig {
   /** Create a new config with given compilation options. */
   def withCompileOptions(value: Seq[String]): NativeConfig
 
+  /** Create a new config given a target triple. */
+  def withTargetTriple(value: Option[String]): NativeConfig
+
+  /** Create a new config given a target triple. */
+  def withTargetTriple(value: String): NativeConfig
+
   /** Create a new config with given behavior for stubs. */
   def withLinkStubs(value: Boolean): NativeConfig
 
@@ -82,6 +91,7 @@ object NativeConfig {
       clangPP = Paths.get(""),
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
+      targetTriple = None,
       gc = GC.default,
       lto = LTO.default,
       mode = Mode.default,
@@ -95,6 +105,7 @@ object NativeConfig {
                                 clangPP: Path,
                                 linkingOptions: Seq[String],
                                 compileOptions: Seq[String],
+                                targetTriple: Option[String],
                                 gc: GC,
                                 mode: Mode,
                                 lto: LTO,
@@ -116,6 +127,13 @@ object NativeConfig {
     def withCompileOptions(value: Seq[String]): NativeConfig =
       copy(compileOptions = value)
 
+    def withTargetTriple(value: Option[String]): NativeConfig =
+      copy(targetTriple = value)
+
+    def withTargetTriple(value: String): NativeConfig = {
+      withTargetTriple(Some(value))
+    }
+
     def withGC(value: GC): NativeConfig =
       copy(gc = value)
 
@@ -134,7 +152,7 @@ object NativeConfig {
     def withDump(value: Boolean): NativeConfig =
       copy(dump = value)
 
-    override def withOptimize(value: Boolean): NativeConfig =
+    def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
     override def toString: String =
@@ -143,6 +161,7 @@ object NativeConfig {
         | - clangPP:         $clangPP
         | - linkingOptions:  $linkingOptions
         | - compileOptions:  $compileOptions
+        | - targetTriple:    $targetTriple
         | - GC:              $gc
         | - mode:            $mode
         | - LTO:             $lto

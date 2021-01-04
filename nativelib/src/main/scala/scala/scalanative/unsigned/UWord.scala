@@ -340,13 +340,22 @@ final class UWord(private[scalanative] val rawWord: RawWord) {
   @alwaysinline def %(other: UWord): UWord =
     new UWord(modRawWords(rawWord, other.rawWord))
 
+  // TODO(shadaj): intrinsify
+  @inline final def max(that: UWord): UWord =
+    this.toULong.max(that.toULong).toUWord
+  @inline final def min(that: UWord): UWord =
+    this.toULong.min(that.toULong).toUWord
 }
 
 object UWord {
-  @alwaysinline implicit def byteToWord(x: Byte): UWord =
+  @alwaysinline implicit def byteToUWord(x: Byte): UWord =
     new UWord(castIntToRawWord(x.toInt))
-  @alwaysinline implicit def charToWord(x: Char): UWord =
+  @alwaysinline implicit def charToUWord(x: Char): UWord =
     new UWord(castIntToRawWord(x.toInt))
+  @alwaysinline implicit def shortToUWord(x: Short): UWord =
+    new UWord(castIntToRawWord(x.toInt))
+  @alwaysinline implicit def intToUWord(x: Int): UWord =
+    new UWord(castIntToRawWord(x))
   @alwaysinline implicit def ushortToWord(x: UShort): UWord =
     new UWord(castIntToRawWord(x.toInt))
   @alwaysinline implicit def uintToWord(x: UInt): UWord =

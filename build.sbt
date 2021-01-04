@@ -19,6 +19,57 @@ lazy val nameSettings: Seq[Setting[_]] = Seq(
   name := projectName(thisProject.value) // Maven <name>
 )
 
+lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
+  sources in (Compile, doc) := Nil
+)
+
+lazy val docsSettings: Seq[Setting[_]] = {
+  val javaDocBaseURL: String = "https://docs.oracle.com/javase/8/docs/api/"
+  // partially ported from Scala.js
+  Def.settings(
+    autoAPIMappings := true,
+    exportJars := true, // required so ScalaDoc linking works
+    scalacOptions in (Compile, doc) := {
+      val prev = (scalacOptions in (Compile, doc)).value
+      if (scalaVersion.value.startsWith("2.11."))
+        prev.filter(_ != "-Xfatal-warnings")
+      else prev
+    },
+    // Add Java Scaladoc mapping
+    apiMappings ++= {
+      val optRTJar = {
+        val bootClasspath = System.getProperty("sun.boot.class.path")
+        if (bootClasspath != null) {
+          // JDK <= 8, there is an rt.jar (or classes.jar) on the boot classpath
+          val jars = bootClasspath.split(java.io.File.pathSeparator)
+
+          def matches(path: String, name: String): Boolean =
+            path.endsWith(s"${java.io.File.separator}$name.jar")
+
+          jars
+            .find(matches(_, "rt")) // most JREs
+            .map(file)
+        } else {
+          // JDK >= 9, maybe sbt gives us a fake rt.jar in `scala.ext.dirs`
+          val scalaExtDirs = Option(System.getProperty("scala.ext.dirs"))
+          scalaExtDirs.map(extDirs => file(extDirs) / "rt.jar")
+        }
+      }
+
+      optRTJar.fold[Map[File, URL]] {
+        Map.empty
+      } { rtJar =>
+        assert(rtJar.exists, s"$rtJar does not exist")
+        Map(rtJar -> url(javaDocBaseURL))
+      }
+    },
+    /* Add a second Java Scaladoc mapping for cases where Scala actually
+     * understands the jrt:/ filesystem of Java 9.
+     */
+    apiMappings += file("/modules/java.base") -> url(javaDocBaseURL)
+  )
+}
+
 // The previous releases of Scala Native with which this version is binary compatible.
 val binCompatVersions = Set()
 
@@ -81,6 +132,7 @@ addCommandAlias(
   Seq(
     "sandbox/run",
     "tests/test",
+    "testsExt/test",
     "junitTestOutputsJVM/test",
     "junitTestOutputsNative/test"
   ).mkString(";")
@@ -186,7 +238,7 @@ lazy val noPublishSettings: Seq[Setting[_]] = Seq(
   publishLocal := {},
   publishSnapshot := { println("no publish") },
   publish / skip := true
-) ++ nameSettings
+) ++ nameSettings ++ disabledDocsSettings
 
 lazy val toolSettings: Seq[Setting[_]] =
   Def.settings(
@@ -376,6 +428,7 @@ lazy val nativelib =
     .in(file("nativelib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
+    .settings(docsSettings)
     .settings(
       libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       exportJars := true
@@ -396,35 +449,44 @@ lazy val posixlib =
     .settings(mavenPublishSettings)
     .dependsOn(nscplugin % "plugin", nativelib)
 
+lazy val javalibCommonSettings = Def.settings(
+  disabledDocsSettings,
+  // This is required to have incremental compilation to work in javalib.
+  // We put our classes on scalac's `javabootclasspath` so that it uses them
+  // when compiling rather than the definitions from the JDK.
+  Compile / scalacOptions := {
+    val previous = (Compile / scalacOptions).value
+    val javaBootClasspath =
+      scala.tools.util.PathResolver.Environment.javaBootClassPath
+    val classDir  = (Compile / classDirectory).value.getAbsolutePath
+    val separator = sys.props("path.separator")
+    "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
+  },
+  // Don't include classfiles for javalib in the packaged jar.
+  Compile / packageBin / mappings := {
+    val previous = (Compile / packageBin / mappings).value
+    previous.filter {
+      case (_, path) =>
+        !path.endsWith(".class")
+    }
+  },
+  exportJars := true
+)
+
 lazy val javalib =
   project
     .in(file("javalib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
-    .settings(
-      Compile / doc / sources := Nil, // doc generation currently broken
-      // This is required to have incremental compilation to work in javalib.
-      // We put our classes on scalac's `javabootclasspath` so that it uses them
-      // when compiling rather than the definitions from the JDK.
-      Compile / scalacOptions := {
-        val previous = (Compile / scalacOptions).value
-        val javaBootClasspath =
-          scala.tools.util.PathResolver.Environment.javaBootClassPath
-        val classDir  = (Compile / classDirectory).value.getAbsolutePath
-        val separator = sys.props("path.separator")
-        "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
-      },
-      // Don't include classfiles for javalib in the packaged jar.
-      Compile / packageBin / mappings := {
-        val previous = (Compile / packageBin / mappings).value
-        previous.filter {
-          case (_, path) =>
-            !path.endsWith(".class")
-        }
-      },
-      exportJars := true
-    )
+    .settings(javalibCommonSettings)
     .dependsOn(nscplugin % "plugin", posixlib, clib)
+
+lazy val javalibExtDummies = project
+  .in(file("javalib-ext-dummies"))
+  .enablePlugins(MyScalaNativePlugin)
+  .settings(noPublishSettings)
+  .settings(javalibCommonSettings)
+  .dependsOn(nscplugin % "plugin", nativelib)
 
 val fetchScalaSource =
   taskKey[File]("Fetches the scala source for the current scala version")
@@ -453,6 +515,7 @@ lazy val scalalib =
       scalacOptions += "-language:higherKinds"
     )
     .settings(mavenPublishSettings)
+    .settings(disabledDocsSettings)
     .settings(
       // Code to fetch scala sources adapted, with gratitude, from
       // Scala.js Build.scala at the suggestion of @sjrd.
@@ -621,6 +684,23 @@ lazy val tests =
                testInterface,
                junitRuntime)
 
+lazy val testsExt = project
+  .in(file("unit-tests-ext"))
+  .enablePlugins(MyScalaNativePlugin)
+  .settings(noPublishSettings)
+  .settings(
+    Test / testOptions ++= Seq(
+      Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+    ),
+    nativeLinkStubs := true
+  )
+  .dependsOn(nscplugin     % "plugin",
+             junitPlugin   % "plugin",
+             testInterface % "test",
+             tests,
+             junitRuntime,
+             javalibExtDummies)
+
 lazy val sandbox =
   project
     .in(file("sandbox"))
@@ -675,6 +755,7 @@ lazy val testInterfaceSbtDefs =
     .in(file("test-interface-sbt-defs"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
+    .settings(docsSettings)
     .dependsOn(nscplugin % "plugin", allCoreLibs)
 
 lazy val testRunner =
@@ -717,6 +798,7 @@ lazy val junitPlugin =
 
 val commonJUnitTestOutputsSettings = Def.settings(
   nameSettings,
+  noPublishSettings,
   Compile / publishArtifact := false,
   Test / parallelExecution := false,
   Test / unmanagedSourceDirectories +=

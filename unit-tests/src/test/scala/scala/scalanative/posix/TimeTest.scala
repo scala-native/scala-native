@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 import time._
 import timeOps.tmOps
@@ -30,7 +31,7 @@ class TimeTest {
       val anno_zero_ptr = alloc[tm]
       anno_zero_ptr.tm_mday = 1
       anno_zero_ptr.tm_wday = 1
-      val cstr: CString = asctime_r(anno_zero_ptr, alloc[Byte](26))
+      val cstr: CString = asctime_r(anno_zero_ptr, alloc[Byte](26.toUWord))
       val str: String   = fromCString(cstr)
       assertTrue("Mon Jan  1 00:00:00 1900\n".equals(str))
     }
@@ -51,7 +52,7 @@ class TimeTest {
       val time_ptr = stackalloc[time_t]
       !time_ptr = epoch + timezone
       val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
-      val cstr: CString = asctime_r(time, alloc[Byte](26))
+      val cstr: CString = asctime_r(time, alloc[Byte](26.toUWord))
       val str: String   = fromCString(cstr)
 
       assertTrue("Thu Jan  1 00:00:00 1970\n".equals(str))
@@ -70,12 +71,12 @@ class TimeTest {
 
   @Test def strftimeForJanOne1900ZeroZulu(): Unit = {
     Zone { implicit z =>
-      val isoDatePtr: Ptr[CChar] = alloc[CChar](70)
+      val isoDatePtr: Ptr[CChar] = alloc[CChar](70.toUWord)
       val timePtr                = alloc[tm]
 
       timePtr.tm_mday = 1
 
-      strftime(isoDatePtr, 70, c"%FT%TZ", timePtr)
+      strftime(isoDatePtr, 70.toUWord, c"%FT%TZ", timePtr)
 
       val isoDateString: String = fromCString(isoDatePtr)
 
@@ -86,12 +87,12 @@ class TimeTest {
   @Test def strftimeForMondayJanOne1990ZeroTime(): Unit = {
     Zone { implicit z =>
       val timePtr             = alloc[tm]
-      val datePtr: Ptr[CChar] = alloc[CChar](70)
+      val datePtr: Ptr[CChar] = alloc[CChar](70.toUWord)
 
       timePtr.tm_mday = 1
       timePtr.tm_wday = 1
 
-      strftime(datePtr, 70, c"%A %c", timePtr)
+      strftime(datePtr, 70.toUWord, c"%A %c", timePtr)
 
       val dateString: String = fromCString(datePtr)
       assertTrue("Monday Mon Jan  1 00:00:00 1900".equals(dateString))

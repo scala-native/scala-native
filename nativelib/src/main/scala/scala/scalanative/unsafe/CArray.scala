@@ -2,6 +2,7 @@ package scala.scalanative
 package unsafe
 
 import scalanative.annotation.alwaysinline
+import scalanative.unsigned._
 import scalanative.runtime.RawPtr
 import scalanative.runtime.Intrinsics._
 
@@ -23,17 +24,17 @@ final class CArray[T, N <: Nat] private[scalanative] (
 
   @alwaysinline def at(idx: Int)(implicit tag: Tag[T]): Ptr[T] = {
     val ptr = new Ptr[T](rawptr)
-    ptr + idx
+    ptr + idx.toUWord
   }
 
   @alwaysinline def apply(idx: Int)(implicit tag: Tag[T]): T = {
     val ptr = new Ptr[T](rawptr)
-    ptr(idx)
+    ptr(idx.toUWord)
   }
 
   @alwaysinline def update(idx: Int, value: T)(implicit tag: Tag[T]): Unit = {
     val ptr = new Ptr[T](rawptr)
-    ptr(idx) = value
+    ptr(idx.toUWord) = value
   }
 
   @alwaysinline def length(implicit tag: Tag[N]): Int = {

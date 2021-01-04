@@ -86,12 +86,11 @@ private[scalanative] object ScalaNative {
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, linked: linker.Result): Seq[Path] = {
-    config.logger.time("Generating intermediate code") {
+    val llPaths = config.logger.time("Generating intermediate code") {
       CodeGen(config, linked)
     }
-    val produced = IO.getAll(config.workdir, "glob:**.ll")
-    config.logger.info(s"Produced ${produced.length} files")
-    produced
+    config.logger.info(s"Produced ${llPaths.length} files")
+    llPaths
   }
 
   /** Run NIR checker on the linker result. */

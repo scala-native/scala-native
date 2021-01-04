@@ -3,6 +3,7 @@ package java.lang
 import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 import scala.scalanative.posix.unistd
 import scala.scalanative.posix.sys.utsname._
 import scala.scalanative.posix.sys.uname._
@@ -72,7 +73,7 @@ object System {
         }
       }
       locally {
-        val bufSize = 1024
+        val bufSize = 1024.toUInt
         val buf     = stackalloc[scala.Byte](bufSize)
         val cwd     = unistd.getcwd(buf, bufSize)
         if (cwd != null) {

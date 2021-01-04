@@ -63,17 +63,6 @@ private[scalanative] object NativeLib {
     srcExtensions.mkString(s"glob:${pathPat}**{", ",", "}")
   }
 
-  /**
-   * Allow all the object files ".o" to be found with one
-   * directory recursion.
-   *
-   * @param workdir    The base working directory
-   * @param nativelibs The Paths to the native libs
-   * @return the object file pattern
-   */
-  def destObjPatterns(workdir: Path, nativelibs: Seq[Path]): String =
-    s"glob:${destPathPattern(workdir, nativelibs)}**${oExt}"
-
   private def destPathPattern(workdir: Path, nativelibs: Seq[Path]): String = {
     val workdirStr = workdir.toString()
     val nativeDirs = nativelibs.map(_.getFileName().toString())

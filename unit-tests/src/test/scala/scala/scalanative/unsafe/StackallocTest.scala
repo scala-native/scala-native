@@ -3,6 +3,7 @@ package unsafe
 
 import org.junit.Test
 import org.junit.Assert._
+import scalanative.unsigned._
 
 class StackallocTest {
 
@@ -15,7 +16,7 @@ class StackallocTest {
   }
 
   @Test def stackallocInt4(): Unit = {
-    val ptr = stackalloc[Int](4)
+    val ptr = stackalloc[Int](4.toUInt)
 
     ptr(0) = 1
     ptr(1) = 2

@@ -1,6 +1,7 @@
 package java.lang
 
 import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.libc.errno
 
 import scalanative.posix.errno.ERANGE
@@ -29,7 +30,7 @@ private[java] object IEEE754Helpers {
 
   private def bytesToCString(bytes: Array[scala.Byte], n: Int)(
       implicit z: Zone): CString = {
-    val cStr = z.alloc(n + 1) // z.alloc() does not clear bytes.
+    val cStr = z.alloc((n + 1).toUInt) // z.alloc() does not clear bytes.
 
     var c = 0
     while (c < n) {
@@ -74,10 +75,10 @@ private[java] object IEEE754Helpers {
 
         // magic: is first char one of D d F f
         var idx =
-          if ((cStr(nSeen.toWord) & 0xdd) == 0x44) (nSeen + 1) else nSeen
+          if ((cStr(nSeen.toUWord) & 0xdd) == 0x44) (nSeen + 1) else nSeen
 
         while (idx < bytesLen) { // Check for garbage in the unparsed remnant.
-          val b = cStr(idx.toWord)
+          val b = cStr(idx.toUWord)
           if ((b < 0) || b > 0x20) {
             throw new NumberFormatException(exceptionMsg(s))
           }

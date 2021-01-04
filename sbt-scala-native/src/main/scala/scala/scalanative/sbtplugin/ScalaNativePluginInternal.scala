@@ -9,6 +9,7 @@ import sbt.complete.DefaultParsers._
 import scala.annotation.tailrec
 import scala.scalanative.util.Scope
 import scala.scalanative.build.{Build, BuildException, Discover}
+import scala.scalanative.linker.LinkingException
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
@@ -19,9 +20,6 @@ object ScalaNativePluginInternal {
 
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
-
-  val nativeTarget =
-    taskKey[String]("Target triple.")
 
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
@@ -84,12 +82,7 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
-    nativeTarget := interceptBuildException {
-      val cwd   = nativeWorkdir.value.toPath
-      val clang = nativeClang.value.toPath
-      Discover.targetTriple(clang, cwd)
-    },
-    artifactPath in nativeLink := {
+    nativeLink / artifactPath := {
       crossTarget.value / (moduleName.value + "-out")
     },
     nativeWorkdir := {
@@ -113,7 +106,7 @@ object ScalaNativePluginInternal {
         .withDump(nativeDump.value)
     },
     nativeLink := {
-      val outpath = (artifactPath in nativeLink).value
+      val outpath = (nativeLink / artifactPath).value
       val config = {
         val mainClass = selectMainClass.value.getOrElse {
           throw new MessageOnlyException("No main class detected.")
@@ -128,7 +121,6 @@ object ScalaNativePluginInternal {
           .withMainClass(maincls)
           .withClassPath(classpath)
           .withWorkdir(cwd)
-          .withTargetTriple(nativeTarget.value)
           .withCompilerConfig(nativeConfig.value)
       }
 
@@ -139,7 +131,7 @@ object ScalaNativePluginInternal {
       outpath
     },
     run := {
-      val env    = (envVars in run).value.toSeq
+      val env    = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = nativeLink.value.getAbsolutePath
       val args   = spaceDelimited("<arg>").parsed
@@ -214,7 +206,8 @@ object ScalaNativePluginInternal {
   private def interceptBuildException[T](op: => T): T = {
     try op
     catch {
-      case ex: BuildException => throw new MessageOnlyException(ex.getMessage)
+      case ex: BuildException   => throw new MessageOnlyException(ex.getMessage)
+      case ex: LinkingException => throw new MessageOnlyException(ex.getMessage)
     }
   }
 

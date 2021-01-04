@@ -18,6 +18,7 @@ trait NirDefinitions {
     lazy val UIntClass   = getRequiredClass("scala.scalanative.unsigned.UInt")
     lazy val ULongClass  = getRequiredClass("scala.scalanative.unsigned.ULong")
     lazy val WordClass   = getRequiredClass("scala.scalanative.unsafe.Word")
+    lazy val UWordClass  = getRequiredClass("scala.scalanative.unsigned.UWord")
     lazy val RawWordClass = getRequiredClass(
       "scala.scalanative.runtime.RawWord")
     lazy val PtrClass    = getRequiredClass("scala.scalanative.unsafe.Ptr")
@@ -73,6 +74,7 @@ trait NirDefinitions {
     lazy val BooleanTagMethod =
       getDecl(TagModule, TermName("materializeBooleanTag"))
     lazy val WordTagMethod = getDecl(TagModule, TermName("materializeWordTag"))
+    lazy val UWordTagMethod = getDecl(TagModule, TermName("materializeUWordTag"))
     lazy val CharTagMethod = getDecl(TagModule, TermName("materializeCharTag"))
     lazy val ByteTagMethod = getDecl(TagModule, TermName("materializeByteTag"))
     lazy val UByteTagMethod =

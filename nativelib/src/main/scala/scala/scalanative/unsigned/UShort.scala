@@ -266,6 +266,13 @@ final class UShort private[scalanative] (
 
   @inline final override def toString(): String = toInt.toString()
 
+  @inline override def hashCode(): Int = underlying.##
+
+  @inline override def equals(obj: Any): Boolean = obj match {
+    case that: UShort => this.underlying == that.underlying
+    case _            => false
+  }
+
   // "Rich" API
 
   @inline final def max(that: UShort): UShort =

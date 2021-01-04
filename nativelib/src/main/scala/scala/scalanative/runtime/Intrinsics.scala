@@ -1,6 +1,8 @@
 package scala.scalanative
 package runtime
 
+import scalanative.unsafe._
+
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
