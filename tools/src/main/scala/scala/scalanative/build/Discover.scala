@@ -87,9 +87,9 @@ object Discover {
   private[scalanative] def checkThatClangIsRecentEnough(
       pathToClangBinary: Path): Unit = {
 
-    val defineStrs = "__DECIMAL_DIG__ __LDBL_DECIMAL_DIG__"
-
+    // this could be obsolete with our current minimum version
     def checkDefinesBuiltIn(clang: String): Unit = {
+      val defineStrs = "__DECIMAL_DIG__ __LDBL_DECIMAL_DIG__"
       def commandLineToListBuiltInDefines(clang: String) =
         Process(Seq("echo", "")) #| Process(Seq(clang, "-dM", "-E", "-"))
       def splitIntoLines(s: String): Array[String] =
