@@ -969,14 +969,17 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
    */
   @inline
   private def replaceCharsAtIndex(replacementAtIndex: Int => String): String = {
-    var prep           = ""
-    val len            = this.length()
-    var i              = 0
-    var startOfSegment = 0
+    var prep: java.lang.StringBuilder = null
+    val len                           = this.length()
+    var i                             = 0
+    var startOfSegment                = 0
 
     while (i != len) {
       val replacement = replacementAtIndex(i)
       if (replacement != null) {
+        if (prep == null) {
+          prep = new java.lang.StringBuilder(len * 2)
+        }
         prep += this.substring(startOfSegment, i)
         prep += replacement
         startOfSegment = i + 1
