@@ -76,6 +76,8 @@ object Instant {
                 1000000 * Math.floorMod(epochMilli, 1000L).toInt)
   }
 
+  def ofEpochSecond(epochSecond: Long): Instant = ofEpochSecond(epochSecond, 0L)
+
   def ofEpochSecond(epochSecond: Long, nanoAdjustment: Long): Instant = {
     val adjustedSecond =
       Math.addExact(epochSecond, Math.floorDiv(nanoAdjustment, 1000000000L))
