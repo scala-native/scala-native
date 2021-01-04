@@ -997,7 +997,8 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
 
   @inline
   def toUpperCase(): _String = {
-    /* Generated based on unconditional mappings in [SpecialCasing.txt](https://unicode.org/Public/UNIDATA/SpecialCasing.txt)
+    /* Generated based on unconditional mappings in [SpecialCasing.txt](https://unicode.org/Public/13.0.0/ucd/SpecialCasing.txt)
+     *
      * Relevant excerpt from SpecialCasing.txt
      * # The German es-zed is special--the normal mapping is to SS.
      * # Note: the titlecase should never occur in practice. It is equal to titlecase(uppercase(<es-zed>))
