@@ -3,9 +3,8 @@
 package java.util
 
 import java.math.BigInteger
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.junit.Assert._
-import org.junit.Assume._
 
 /** Additional tests for java.lang.String that require `java.util.Locale`
  *  as well as classes in `java.text.*`.
@@ -103,7 +102,6 @@ class FormatterTestEx {
     assertF(HindiWithDevanagariDigits, "-14", "%o", new BigInteger("-12"))
   }
 
-  @Ignore("localized to{Lower, Upper}Case not implemented")
   @Test def testFormatTurkish(): Unit = {
     // U+0130 LATIN CAPITAL LETTER I WITH DOT ABOVE
     assertF(Turkish, "TİTLE", "%S", "title")
