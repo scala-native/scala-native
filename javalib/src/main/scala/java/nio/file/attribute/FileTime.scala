@@ -29,7 +29,13 @@ final class FileTime private (private val value: Long,
 
   def toMillis(): Long = to(TimeUnit.MILLISECONDS)
 
-  def toInstant(): Instant = Instant.ofEpochMilli(toMillis())
+  def toInstant(): Instant = {
+    val asNanos = to(TimeUnit.NANOSECONDS)
+    val seconds = to(TimeUnit.SECONDS)
+    Instant.ofEpochSecond(
+      seconds,
+      asNanos - TimeUnit.NANOSECONDS.convert(seconds, TimeUnit.SECONDS))
+  }
 
   override def toString(): String = s"FileTime($value, $unit)"
 }
@@ -39,6 +45,9 @@ object FileTime {
 
   def fromMillis(value: Long): FileTime = from(value, TimeUnit.MILLISECONDS)
 
-  def from(instant: Instant): FileTime =
-    new FileTime(instant.toEpochMilli, TimeUnit.MILLISECONDS)
+  def from(instant: Instant): FileTime = {
+    val secondsAsNanos =
+      TimeUnit.NANOSECONDS.convert(instant.getEpochSecond, TimeUnit.SECONDS)
+    new FileTime(secondsAsNanos + instant.getNano, TimeUnit.NANOSECONDS)
+  }
 }
