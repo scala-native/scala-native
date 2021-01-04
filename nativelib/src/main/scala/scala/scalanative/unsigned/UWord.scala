@@ -356,8 +356,14 @@ object UWord {
     new UWord(castIntToRawWord(x.toInt))
   @alwaysinline implicit def intToUWord(x: Int): UWord =
     new UWord(castIntToRawWord(x))
-  @alwaysinline implicit def ushortToWord(x: UShort): UWord =
-    new UWord(castIntToRawWord(x.toInt))
-  @alwaysinline implicit def uintToWord(x: UInt): UWord =
-    new UWord(castIntToRawWord(x.toInt))
+
+  @alwaysinline implicit def ubyteToUWord(x: UByte): UWord =
+    x.toUWord
+  @alwaysinline implicit def ushortToUWord(x: UShort): UWord =
+    x.toUWord
+  @alwaysinline implicit def uintToUWord(x: UInt): UWord =
+    x.toUWord
+
+  @alwaysinline implicit def uwordToULong(x: UWord): ULong =
+    x.toULong
 }

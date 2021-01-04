@@ -63,7 +63,7 @@ package object runtime {
     var c = 0
     while (c < argc - 1) {
       // use the default Charset (UTF_8 atm)
-      args(c) = fromCString(argv(c + 1.toUWord))
+      args(c) = fromCString(argv(c + 1))
       c += 1
     }
 

@@ -93,7 +93,7 @@ package object unsafe {
   @alwaysinline def ssizeof[T](implicit tag: Tag[T]): CSSize = tag.size.toWord
 
   /** C-style alignment operator. */
-  @alwaysinline def alignmentof[T](implicit tag: Tag[T]): Int = tag.alignment.toInt
+  @alwaysinline def alignmentof[T](implicit tag: Tag[T]): CSize = tag.alignment
 
   /** Heap allocate and zero-initialize a value
    *  using current implicit allocator.
@@ -198,15 +198,15 @@ package object unsafe {
       null
     } else {
       val bytes = str.getBytes(charset)
-      val cstr  = z.alloc((bytes.length + 1).toUWord)
+      val cstr  = z.alloc(bytes.length + 1)
 
       var c = 0
       while (c < bytes.length) {
-        !(cstr + c.toUWord) = bytes(c)
+        !(cstr + c) = bytes(c)
         c += 1
       }
 
-      !(cstr + c.toUWord) = 0.toByte
+      !(cstr + c) = 0.toByte
 
       cstr
     }
