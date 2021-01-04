@@ -2,8 +2,8 @@
 #
 # Format C/C++ code using clang-format.
 #
-# To ensure reproducible formatting the script checks that clang-format
-# is from the most recent version of LLVM supported by Scala Native.
+# To ensure reproducible formatting this script checks that clang-format
+# matches the lowest version number of LLVM supported by Scala Native.
 #
 # Usage: $0 [--test]
 #
