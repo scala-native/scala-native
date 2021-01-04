@@ -126,8 +126,7 @@ class TagTest {
     assertTrue(tagof[CArray[Byte, Nat._0]].offset(42) == 42.toULong)
     assertTrue(tagof[CArray[Int, Nat._0]].offset(0) == 0.toULong)
     assertTrue(tagof[CArray[Int, Nat._0]].offset(1) == 4.toULong)
-    assertTrue(
-      tagof[CArray[Int, Nat._0]].offset(42) == (4 * 42).toULong)
+    assertTrue(tagof[CArray[Int, Nat._0]].offset(42) == (4 * 42).toULong)
     assertTrue(tagof[CStruct1[Int]].offset(0) == 0.toULong)
     assertTrue(tagof[CStruct2[Byte, Int]].offset(0) == 0.toULong)
     assertTrue(tagof[CStruct2[Byte, Int]].offset(1) == 4.toULong)

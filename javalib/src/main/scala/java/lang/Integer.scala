@@ -53,7 +53,7 @@ final class Integer(val _value: scala.Int)
       case other: java.lang.Float     => _value == other._value
       case other: java.lang.Double    => _value == other._value
       case other: java.lang.Character => _value == other._value
-      case _ => super.__scala_==(other)
+      case _                          => super.__scala_==(other)
     }
 
   /*

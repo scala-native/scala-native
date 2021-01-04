@@ -74,7 +74,8 @@ trait NirDefinitions {
     lazy val BooleanTagMethod =
       getDecl(TagModule, TermName("materializeBooleanTag"))
     lazy val WordTagMethod = getDecl(TagModule, TermName("materializeWordTag"))
-    lazy val UWordTagMethod = getDecl(TagModule, TermName("materializeUWordTag"))
+    lazy val UWordTagMethod =
+      getDecl(TagModule, TermName("materializeUWordTag"))
     lazy val CharTagMethod = getDecl(TagModule, TermName("materializeCharTag"))
     lazy val ByteTagMethod = getDecl(TagModule, TermName("materializeByteTag"))
     lazy val UByteTagMethod =

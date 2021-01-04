@@ -1640,7 +1640,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genRawWordOp(app: Apply, code: Int): Val = {
       val Apply(_, Seq(leftp, rightp)) = app
-      
+
       val bin = code match {
         case AND_RAW_WORDS          => Bin.And
         case OR_RAW_WORDS           => Bin.Or
@@ -1661,14 +1661,18 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genRawWordCastOp(app: Apply, receiver: Tree, code: Int): Val = {
-      val rec            = genExpr(receiver)
+      val rec = genExpr(receiver)
       val (fromty, toty, convType) = code match {
         case CAST_RAWWORD_TO_INT => (nir.Type.Word, nir.Type.Int, Conv.Trunc)
-        case CAST_RAWWORD_TO_LONG => (nir.Type.Word, nir.Type.Long, Conv.Bitcast)
-        case CAST_RAWWORD_TO_LONG_UNSIGNED => (nir.Type.Word, nir.Type.Long, Conv.Bitcast)
+        case CAST_RAWWORD_TO_LONG =>
+          (nir.Type.Word, nir.Type.Long, Conv.Bitcast)
+        case CAST_RAWWORD_TO_LONG_UNSIGNED =>
+          (nir.Type.Word, nir.Type.Long, Conv.Bitcast)
         case CAST_INT_TO_RAWWORD => (nir.Type.Int, nir.Type.Word, Conv.Sext)
-        case CAST_INT_TO_RAWWORD_UNSIGNED => (nir.Type.Int, nir.Type.Word, Conv.Zext)
-        case CAST_LONG_TO_RAWWORD => (nir.Type.Long, nir.Type.Word, Conv.Bitcast)
+        case CAST_INT_TO_RAWWORD_UNSIGNED =>
+          (nir.Type.Int, nir.Type.Word, Conv.Zext)
+        case CAST_LONG_TO_RAWWORD =>
+          (nir.Type.Long, nir.Type.Word, Conv.Bitcast)
       }
 
       genCoercion(rec, fromty, toty)(app.pos)
@@ -1750,7 +1754,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genStackalloc(app: Apply): Val = {
       val Apply(_, Seq(sizep)) = app
 
-      val size    = genExpr(sizep)
+      val size = genExpr(sizep)
 
       buf.stackalloc(nir.Type.Byte, size, unwind)(app.pos)
     }

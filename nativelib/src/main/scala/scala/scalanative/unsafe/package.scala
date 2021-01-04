@@ -155,7 +155,7 @@ package object unsafe {
   /** Scala Native unsafe extensions to the standard Int. */
   implicit class UnsafeRichInt(val value: Int) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(value))
-    @inline def toWord:  Word    = new Word(castIntToRawWord(value))
+    @inline def toWord: Word     = new Word(castIntToRawWord(value))
     @inline def toUWord: UWord   = value.toUInt
   }
 
