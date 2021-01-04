@@ -980,8 +980,8 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
         if (prep == null) {
           prep = new java.lang.StringBuilder(len * 2)
         }
-        prep += this.substring(startOfSegment, i)
-        prep += replacement
+        prep.append(this.substring(startOfSegment, i))
+        prep.append(replacement)
         startOfSegment = i + 1
       }
       i += 1
@@ -990,7 +990,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     if (startOfSegment == 0)
       this // opt: no character needed replacing, directly return the original string
     else
-      prep + this.substring(startOfSegment, i)
+      prep.append(this.substring(startOfSegment, i)).toString
   }
 
   private def skipCharsWithCombiningClassOtherThanNoneOrAboveForwards(
