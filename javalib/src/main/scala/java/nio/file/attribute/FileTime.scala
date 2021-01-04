@@ -3,15 +3,17 @@ package java.nio.file.attribute
 import java.util.concurrent.TimeUnit
 import java.time.Instant
 
-final class FileTime private (private val epochMillis: Long,
-                              private val nanos: Int)
+final class FileTime private (private val value: Long,
+                              private val unit: TimeUnit)
     extends Comparable[FileTime] {
 
   def compareTo(other: FileTime) = {
-    val compareMillis = epochMillis.compareTo(other.epochMillis)
-    if (compareMillis == 0) {
-      nanos.compareTo(other.nanos)
-    } else compareMillis
+    if (this.unit == other.unit) {
+      this.value.compareTo(other.value)
+    } else {
+      val compareUnit = TimeUnit.NANOSECONDS
+      this.to(compareUnit).compareTo(other.to(compareUnit))
+    }
   }
 
   override def equals(obj: Any): Boolean =
@@ -21,25 +23,22 @@ final class FileTime private (private val epochMillis: Long,
     }
 
   override def hashCode(): Int =
-    epochMillis.## + nanos.##
+    value.## + unit.##
 
-  def to(unit: TimeUnit): Long =
-    unit.convert(toMillis(), TimeUnit.MILLISECONDS)
+  def to(unit: TimeUnit): Long = unit.convert(value, this.unit)
 
-  def toMillis(): Long = epochMillis
+  def toMillis(): Long = to(TimeUnit.MILLISECONDS)
 
-  def toInstant(): Instant = Instant.ofEpochMilli(epochMillis).plusNanos(nanos)
+  def toInstant(): Instant = Instant.ofEpochMilli(toMillis())
 
-  override def toString(): String = s"FileTime($epochMillis, $nanos)"
+  override def toString(): String = s"FileTime($value, $unit)"
 }
 
 object FileTime {
-  def from(value: Long, unit: TimeUnit): FileTime =
-    fromMillis(TimeUnit.MILLISECONDS.convert(value, unit))
+  def from(value: Long, unit: TimeUnit): FileTime = new FileTime(value, unit)
 
-  def fromMillis(value: Long): FileTime =
-    new FileTime(value, 0)
+  def fromMillis(value: Long): FileTime = from(value, TimeUnit.MILLISECONDS)
 
   def from(instant: Instant): FileTime =
-    new FileTime(instant.toEpochMilli, instant.getNano)
+    new FileTime(instant.toEpochMilli, TimeUnit.MILLISECONDS)
 }
