@@ -41,6 +41,8 @@ ENV LC_ALL "C.UTF-8"
 
 ENV LANG "C.UTF-8"
 
+ENV PATH=/usr/lib/llvm-6.0/bin:${PATH}
+
 RUN useradd -ms /bin/bash scala-native
 
 USER scala-native
