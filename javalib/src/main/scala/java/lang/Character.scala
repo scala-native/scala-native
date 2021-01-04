@@ -1191,7 +1191,6 @@ object Character {
   private[lang] final val CombiningClassIsNone = 0
   private[lang] final val CombiningClassIsAbove = 1
   private[lang] final val CombiningClassIsOther = 2
- 
   
   /* Ported from Scala.js, commit: ac38a148, dated: 2020-09-25
    * Indices representing the start of ranges of codePoint that have the same

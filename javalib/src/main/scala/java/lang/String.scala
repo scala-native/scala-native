@@ -668,7 +668,7 @@ final class _String()
     buffer
   }
 
-  /*  Ported from Scala.js, commit: ac38a148, dated: 2020-09-25
+  /* Ported from Scala.js, commit: ac38a148, dated: 2020-09-25
    *
    * The overloads without an explicit locale use the default locale, which is
    * the root locale by specification. They are implemented by direct
@@ -831,7 +831,8 @@ final class _String()
     preprocessed.toLowerCase()
   }
 
-  @inline def toLowerCase(): _String = toCase(Character.toLowerCase)
+  @inline
+  def toLowerCase(): _String = toCase(Character.toLowerCase)
 
   override def toString(): String = this
 
@@ -916,7 +917,9 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
 
     preprocessed.toUpperCase()
   }
-  @inline def toUpperCase(): _String = toCase(Character.toUpperCase)
+
+  @inline
+  def toUpperCase(): _String = toCase(Character.toUpperCase)
 
   private[this] def toCase(convert: Int => Int): _String = {
     if (count == 0) return this
@@ -966,7 +969,6 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
    */
   @inline
   private def replaceCharsAtIndex(replacementAtIndex: Int => String): String = {
-
     var prep           = ""
     val len            = this.length()
     var i              = 0
