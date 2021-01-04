@@ -168,7 +168,7 @@ object Discover {
       else if (binaryName == "clang++") "CLANGPP"
       else {
         // shouldn't happen
-        throw new BuildException("binaryName must be clang or clang++")
+        throw new BuildException(s"'$binaryName' must be clang or clang++")
       }
 
     val envPath = s"${envName}_PATH"
@@ -181,7 +181,7 @@ object Discover {
       .headOption
       .getOrElse {
         throw new BuildException(
-          s"""No $binaryNameOrPath found in PATH or via $envPath environment variable.
+          s"""No '$binaryNameOrPath' found in PATH or via '$envPath' environment variable.
              |Please refer to ($docSetup)""".stripMargin)
       }
     path
