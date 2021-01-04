@@ -1,7 +1,7 @@
 package scala.scalanative
 package unsigned
 
-import scalanative.runtime.Intrinsics.castIntToRawWord
+import scalanative.runtime.Intrinsics.castIntToRawWordUnsigned
 
 /** `UByte`, a 8-bit unsigned integer. */
 final class UByte private[scalanative] (
@@ -21,7 +21,7 @@ final class UByte private[scalanative] (
   @inline final def toUShort: UShort = new UShort(toShort)
   @inline final def toUInt: UInt     = new UInt(toInt)
   @inline final def toULong: ULong   = new ULong(toLong)
-  @inline final def toUWord: UWord   = new UWord(castIntToRawWord(toInt))
+  @inline final def toUWord: UWord   = new UWord(castIntToRawWordUnsigned(toInt))
 
   /**
    * Returns the bitwise negation of this value.
