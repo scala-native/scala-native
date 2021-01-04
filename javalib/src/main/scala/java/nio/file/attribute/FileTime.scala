@@ -7,12 +7,17 @@ final class FileTime private (private val value: Long,
                               private val unit: TimeUnit)
     extends Comparable[FileTime] {
 
-  def compareTo(other: FileTime) = {
+  @inline
+  private def compareTo(other: FileTime, unit: TimeUnit) =
+    this.to(unit).compareTo(other.to(unit))
+
+  def compareTo(other: FileTime): Int = {
     if (this.unit == other.unit) {
       this.value.compareTo(other.value)
     } else {
-      val compareUnit = TimeUnit.NANOSECONDS
-      this.to(compareUnit).compareTo(other.to(compareUnit))
+      val daysComp = compareTo(other, TimeUnit.DAYS)
+      if (daysComp != 0) daysComp
+      else compareTo(other, TimeUnit.NANOSECONDS)
     }
   }
 
