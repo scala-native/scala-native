@@ -1,5 +1,7 @@
 package java.io
 
+import java.{lang => jl}
+
 import scalanative.unsafe.{toCString, Zone}
 import scalanative.libc.stdio
 import scalanative.posix.{fcntl, unistd}
@@ -83,7 +85,7 @@ class RandomAccessFile private (file: File,
     if (pos >= end) {
       null // JDK 8 specification requires null here.
     } else {
-      val builder = new StringBuilder
+      val builder = new jl.StringBuilder
       var done    = false
 
       while (!done && (pos < end)) {
