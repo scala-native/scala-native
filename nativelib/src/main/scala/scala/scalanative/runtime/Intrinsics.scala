@@ -192,4 +192,7 @@ object Intrinsics {
 
   /** Intrinsified modulo on raw words. */
   def modRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+
+  /** Intrinsified modulo on unsignedraw words. */
+  def modRawWordsUnsigned(a: RawWord, b: RawWord): RawWord = intrinsic
 }

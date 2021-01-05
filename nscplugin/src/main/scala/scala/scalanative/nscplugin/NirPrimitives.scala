@@ -83,6 +83,7 @@ object NirPrimitives {
   final val DIV_RAW_WORDS          = 1 + MULT_RAW_WORDS
   final val DIV_RAW_WORDS_UNSIGNED = 1 + DIV_RAW_WORDS
   final val MOD_RAW_WORDS          = 1 + DIV_RAW_WORDS_UNSIGNED
+  final val MOD_RAW_WORDS_UNSIGNED = 1 + MOD_RAW_WORDS
 }
 
 abstract class NirPrimitives {
@@ -132,7 +133,7 @@ abstract class NirPrimitives {
     code >= CAST_RAWWORD_TO_INT && code <= CAST_LONG_TO_RAWWORD
 
   def isRawWordOp(code: Int): Boolean =
-    code >= SIZE_OF_WORD && code <= MOD_RAW_WORDS
+    code >= SIZE_OF_WORD && code <= MOD_RAW_WORDS_UNSIGNED
 
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
@@ -218,5 +219,6 @@ abstract class NirPrimitives {
     addPrimitive(DivRawWords, DIV_RAW_WORDS)
     addPrimitive(DivRawWordsUnsigned, DIV_RAW_WORDS_UNSIGNED)
     addPrimitive(ModRawWords, MOD_RAW_WORDS)
+    addPrimitive(ModRawWordsUnsigned, MOD_RAW_WORDS_UNSIGNED)
   }
 }

@@ -867,7 +867,7 @@ trait Eval { self: Interflow =>
         value
       case Val.SizeOfWord =>
         // TODO(shadaj): depends on architecture
-        Val.Long(8)
+        value.canonicalize
       case _ =>
         value.canonicalize
     }

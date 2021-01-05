@@ -1654,6 +1654,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             case DIV_RAW_WORDS          => Bin.Sdiv
             case DIV_RAW_WORDS_UNSIGNED => Bin.Udiv
             case MOD_RAW_WORDS          => Bin.Srem
+            case MOD_RAW_WORDS_UNSIGNED => Bin.Urem
             case _ =>
               abort(
                 s"Unknown word operation #$code : " + app +

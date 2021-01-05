@@ -317,7 +317,7 @@ final class UWord(private[scalanative] val rawWord: RawWord) {
 
   /** Returns the quotient of this value and `x`. */
   @inline def /(other: UWord): UWord =
-    new UWord(divRawWords(rawWord, other.rawWord))
+    new UWord(divRawWordsUnsigned(rawWord, other.rawWord))
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline def %(x: UByte): UWord = this % x.toUWord
@@ -333,7 +333,7 @@ final class UWord(private[scalanative] val rawWord: RawWord) {
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline def %(other: UWord): UWord =
-    new UWord(modRawWords(rawWord, other.rawWord))
+    new UWord(modRawWordsUnsigned(rawWord, other.rawWord))
 
   // TODO(shadaj): intrinsify
   @inline final def max(that: UWord): UWord =
