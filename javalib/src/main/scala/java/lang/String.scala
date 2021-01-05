@@ -833,54 +833,45 @@ final class _String()
 
   @inline def toLowerCase(): _String = {
     replaceCharsAtIndex { i =>
-      // Test if given character is last cased letter within given word context, that means
-      // given char at index has at least 1 preceding cased letter within word
-      // and is not followed by any cased letter
-      def isFinalCased(idx: Int): Boolean = {
+      /* Tests whether we are in an `Final_Sigma` context.
+       * From Table 3.17 in the Unicode standard:
+       * - Description: C is preceded by a sequence consisting of a cased letter and then zero or more case-ignorable characters,
+       *     and C is not followed by a sequence consisting of zero or more case-ignorable characters and then a cased letter.
+       * - Regex:
+       *     before C: \p{cased}(\p{case-ignorable})*
+       *     after C:  !((\p{case-ignorable})*\p{cased})
+       */
+      def isFinalSigma(idx: Int): scala.Boolean = {
+        import Character._
 
-        /* Character is cased when its type matches lowercase, uppercase or title-case type.
-         * Alternatively it can be non standard cased character, eq. modifier or circled letter or roman number
-         */
-        def isCased(c: Char): scala.Boolean = {
-          val charType = Character.getType(c)
-          charType == Character.LOWERCASE_LETTER ||
-          charType == Character.UPPERCASE_LETTER ||
-          charType == Character.TITLECASE_LETTER ||
-          ((c >= 0x02B0) && (c <= 0x02B8)) || // Modifier small letter h..y
-          ((c >= 0x02C0) && (c <= 0x02C1)) || // Modifier letter or reversed letter glottal stop
-          ((c >= 0x02E0) && (c <= 0x02E4)) || // Modifier small or reversed small letter gamma
-          c == '\u0345' ||                    // Combining greek ypogegrammeni
-          c == '\u037A' ||                    // Greek ypogegrammeni
-          ((c >= 0x1D2C) && (c <= 0x1D61)) || // Modifier letter capital A to CHI
-          ((c >= 0x2160) && (c <= 0x217F)) || // Roman capital or small numeral one to one thousand
-          ((c >= 0x24B6) && (c <= 0x24E9))    // Circled latin capital or small letters A to Z
-        }
-
-        @tailrec
-        def followsCased(i: Int): scala.Boolean = {
-          if (i < offset) false // Not found non cased in whole string
-          else {
-            val c = charAt(i)
-            // Outside word boundary and not found cased
-            if (c.isWhitespace) false
-            else if (isCased(c)) true
-            else followsCased(i - Character.charCount(c))
+        def hasCasedAfterCaseIgnorable(
+            iterateForward: scala.Boolean): scala.Boolean = {
+          @inline
+          def nextIndex(currentIdx: Int, currentChar: Char): Int = {
+            val charSize = Character.charCount(currentChar)
+            if (iterateForward) currentIdx + charSize
+            else currentIdx - charSize
           }
-        }
 
-        @tailrec
-        def precedesOnlyNonCased(i: Int): scala.Boolean = {
-          if (i >= offset + count) true // At string boundary and no cased found
-          else {
-            val c = charAt(i)
-            if (c.isWhitespace) true // At word boundary and no cased found
-            else if (isCased(c)) false
-            else precedesOnlyNonCased(i + Character.charCount(c))
+          @tailrec
+          def loop(idx: Int): scala.Boolean = {
+            if (idx < offset || idx >= offset + count) false
+            else {
+              val c = charAt(idx)
+              if (isCased(c)) true
+              else if (isCaseIgnorable(c)) loop(nextIndex(idx, c))
+              else false //is neither cased or caseIgnorable, eg. word break
+            }
           }
+
+          loop(nextIndex(idx, charAt(idx)))
         }
 
-        followsCased(idx - 1) && precedesOnlyNonCased(idx + 1)
+        val hasCasedBefore = hasCasedAfterCaseIgnorable(iterateForward = false)
+        val hasCasedAfter  = hasCasedAfterCaseIgnorable(iterateForward = true)
+        hasCasedBefore && !hasCasedAfter
       }
+
       /* Relevant excerpt from SpecialCasing.txt
        * # Preserve canonical equivalence for I with dot. Turkic is handled below.
        *
@@ -903,7 +894,7 @@ final class _String()
 
        */
       (charAt(i): @switch) match {
-        case '\u03A3' if isFinalCased(i) => "\u03C2"
+        case '\u03A3' if isFinalSigma(i) => "\u03C2"
         case '\u0130'                    => "\u0069\u0307"
         case _                           => null
       }
