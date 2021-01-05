@@ -163,6 +163,9 @@ object Intrinsics {
   /** Intrinsified cast that reinterprets long as a raw word. */
   def castLongToRawWord(long: Long): RawWord = intrinsic
 
+  /** Intrinsic to get the size of a word in bytes, resolved to a constant in the linker */
+  def sizeOfWord: RawWord = intrinsic
+
   /** Intrinsified bitwise and on raw words. */
   def andRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
 

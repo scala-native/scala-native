@@ -73,7 +73,8 @@ object NirPrimitives {
   final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWWORD
   final val CFUNCPTR_APPLY         = 1 + CFUNCPTR_FROM_FUNCTION
 
-  final val AND_RAW_WORDS          = 1 + CFUNCPTR_APPLY
+  final val SIZE_OF_WORD           = 1 + CFUNCPTR_APPLY
+  final val AND_RAW_WORDS          = 1 + SIZE_OF_WORD
   final val OR_RAW_WORDS           = 1 + AND_RAW_WORDS
   final val XOR_RAW_WORDS          = 1 + OR_RAW_WORDS
   final val ADD_RAW_WORDS          = 1 + XOR_RAW_WORDS
@@ -131,7 +132,7 @@ abstract class NirPrimitives {
     code >= CAST_RAWWORD_TO_INT && code <= CAST_LONG_TO_RAWWORD
 
   def isRawWordOp(code: Int): Boolean =
-    code >= AND_RAW_WORDS && code <= MOD_RAW_WORDS
+    code >= SIZE_OF_WORD && code <= MOD_RAW_WORDS
 
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
@@ -207,6 +208,7 @@ abstract class NirPrimitives {
     addPrimitive(CastIntToRawWordUnsigned, CAST_INT_TO_RAWWORD_UNSIGNED)
     addPrimitive(CastLongToRawWord, CAST_LONG_TO_RAWWORD)
 
+    addPrimitive(SizeOfWord, SIZE_OF_WORD)
     addPrimitive(AndRawWords, AND_RAW_WORDS)
     addPrimitive(OrRawWords, OR_RAW_WORDS)
     addPrimitive(XorRawWords, XOR_RAW_WORDS)

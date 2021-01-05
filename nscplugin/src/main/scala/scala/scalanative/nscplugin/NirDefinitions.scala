@@ -246,6 +246,8 @@ trait NirDefinitions {
     lazy val CastLongToRawWord =
       getMember(IntrinsicsModule, TermName("castLongToRawWord"))
 
+    lazy val SizeOfWord =
+      getMember(IntrinsicsModule, TermName("sizeOfWord"))
     lazy val AndRawWords =
       getMember(IntrinsicsModule, TermName("andRawWords"))
     lazy val OrRawWords =

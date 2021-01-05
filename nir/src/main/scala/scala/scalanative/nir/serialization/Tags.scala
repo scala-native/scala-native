@@ -232,4 +232,5 @@ object Tags {
   final val StringVal      = 1 + ConstVal
   final val VirtualVal     = 1 + StringVal
   final val ClassOfVal     = 1 + VirtualVal
+  final val SizeOfWordVal  = 1 + ClassOfVal
 }

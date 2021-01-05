@@ -485,6 +485,8 @@ object Show {
         str("classOf[")
         global_(cls)
         str("]")
+      case Val.SizeOfWord =>
+        str("sizeofword")
     }
 
     def defns_(defns: Seq[Defn]): Unit =

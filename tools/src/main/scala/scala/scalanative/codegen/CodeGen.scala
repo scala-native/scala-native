@@ -469,7 +469,7 @@ object CodeGen {
         case Type.Bool                                             => str("i1")
         case i: Type.FixedSizeI                                    => str("i"); str(i.width)
         case Type.Word =>
-          // TODO(shadaj): changes based on target architecture
+          // TODO(shadaj): depends on architecture
           str("i64")
         case Type.Float                                            => str("float")
         case Type.Double                                           => str("double")
@@ -553,6 +553,9 @@ object CodeGen {
           str("* @")
           genGlobal(n)
           str(" to i8*)")
+        case Val.SizeOfWord =>
+          // TODO(shadaj): depends on architecture
+          str("8")
         case _ =>
           unsupported(v)
       }

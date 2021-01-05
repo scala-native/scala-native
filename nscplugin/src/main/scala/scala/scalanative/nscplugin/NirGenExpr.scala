@@ -1639,25 +1639,29 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genRawWordOp(app: Apply, code: Int): Val = {
-      val Apply(_, Seq(leftp, rightp)) = app
+      code match {
+        case SIZE_OF_WORD => Val.SizeOfWord
+        case _ => // just a binary op
+          val Apply(_, Seq(leftp, rightp)) = app
 
-      val bin = code match {
-        case AND_RAW_WORDS          => Bin.And
-        case OR_RAW_WORDS           => Bin.Or
-        case XOR_RAW_WORDS          => Bin.Xor
-        case ADD_RAW_WORDS          => Bin.Iadd
-        case SUB_RAW_WORDS          => Bin.Isub
-        case MULT_RAW_WORDS         => Bin.Imul
-        case DIV_RAW_WORDS          => Bin.Sdiv
-        case DIV_RAW_WORDS_UNSIGNED => Bin.Udiv
-        case MOD_RAW_WORDS          => Bin.Srem
-        case _ =>
-          abort(
-            s"Unknown word operation #$code : " + app +
-              " at: " + app.pos)
+          val bin = code match {
+            case AND_RAW_WORDS          => Bin.And
+            case OR_RAW_WORDS           => Bin.Or
+            case XOR_RAW_WORDS          => Bin.Xor
+            case ADD_RAW_WORDS          => Bin.Iadd
+            case SUB_RAW_WORDS          => Bin.Isub
+            case MULT_RAW_WORDS         => Bin.Imul
+            case DIV_RAW_WORDS          => Bin.Sdiv
+            case DIV_RAW_WORDS_UNSIGNED => Bin.Udiv
+            case MOD_RAW_WORDS          => Bin.Srem
+            case _ =>
+              abort(
+                s"Unknown word operation #$code : " + app +
+                  " at: " + app.pos)
+          }
+
+          buf.bin(bin, Type.Word, genExpr(leftp), genExpr(rightp), unwind)(app.pos)
       }
-
-      buf.bin(bin, Type.Word, genExpr(leftp), genExpr(rightp), unwind)(app.pos)
     }
 
     def genRawWordCastOp(app: Apply, receiver: Tree, code: Int): Val = {

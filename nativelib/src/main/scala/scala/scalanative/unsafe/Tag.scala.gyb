@@ -27,8 +27,8 @@ sealed abstract class Tag[T] {
 object Tag {
   final case class Ptr[T](of: Tag[T])
       extends Tag[unsafe.Ptr[T]] {
-    @alwaysinline def size: CSize = 8.toUWord
-    @alwaysinline def alignment: CSize = 8.toUWord
+    @alwaysinline def size: CSize = new UWord(sizeOfWord)
+    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
     @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Ptr[T]]): unsafe.Ptr[T] =
       fromRawPtr[T](loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Ptr[T]], value: unsafe.Ptr[T]): Unit =
@@ -36,8 +36,8 @@ object Tag {
   }
 
   final case object Word extends Tag[unsafe.Word] {
-    @alwaysinline def size: CSize = 8.toUWord
-    @alwaysinline def alignment: CSize = 8.toUWord
+    @alwaysinline def size: CSize = new UWord(sizeOfWord)
+    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
     @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Word]): unsafe.Word =
       new Word(loadWord(toRawPtr(ptr)))
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Word], value: unsafe.Word): Unit =
@@ -45,8 +45,8 @@ object Tag {
   }
 
   final case object UWord extends Tag[unsigned.UWord] {
-    @alwaysinline def size: CSize = 8.toUWord
-    @alwaysinline def alignment: CSize = 8.toUWord
+    @alwaysinline def size: CSize = new UWord(sizeOfWord)
+    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
     @alwaysinline override def load(ptr: unsafe.Ptr[unsigned.UWord]): unsigned.UWord =
       new UWord(loadWord(toRawPtr(ptr)))
     @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.UWord], value: unsigned.UWord): Unit =
@@ -55,32 +55,32 @@ object Tag {
 
   final case class Class[T <: AnyRef](of: java.lang.Class[T])
       extends Tag[T] {
-    @alwaysinline def size: CSize = 8.toUWord
-    @alwaysinline def alignment: CSize = 8.toUWord
+    @alwaysinline def size: CSize = new UWord(sizeOfWord)
+    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
     @alwaysinline override def load(ptr: unsafe.Ptr[T]): T =
       loadObject(toRawPtr(ptr)).asInstanceOf[T]
     @alwaysinline override def store(ptr: unsafe.Ptr[T], value: T): Unit =
       storeObject(toRawPtr(ptr), value.asInstanceOf[Object])
   }
 
-  % prims = [('Unit', 'scala.Unit', 8),
-  %          ('Boolean', 'scala.Boolean', 1),
-  %          ('Char', 'scala.Char', 2),
-  %          ('Byte', 'scala.Byte', 1),
-  %          ('UByte', 'unsigned.UByte', 1),
-  %          ('Short', 'scala.Short', 2),
-  %          ('UShort', 'unsigned.UShort', 2),
-  %          ('Int', 'scala.Int', 4),
-  %          ('UInt', 'unsigned.UInt', 4),
-  %          ('Long', 'scala.Long', 8),
-  %          ('ULong', 'unsigned.ULong', 8),
-  %          ('Float', 'scala.Float', 4),
-  %          ('Double', 'scala.Double', 8)]
+  % prims = [('Unit', 'scala.Unit', 'new UWord(sizeOfWord)'),
+  %          ('Boolean', 'scala.Boolean', '1.toUWord'),
+  %          ('Char', 'scala.Char', '2.toUWord'),
+  %          ('Byte', 'scala.Byte', '1.toUWord'),
+  %          ('UByte', 'unsigned.UByte', '1.toUWord'),
+  %          ('Short', 'scala.Short', '2.toUWord'),
+  %          ('UShort', 'unsigned.UShort', '2.toUWord'),
+  %          ('Int', 'scala.Int', '4.toUWord'),
+  %          ('UInt', 'unsigned.UInt', '4.toUWord'),
+  %          ('Long', 'scala.Long', '8.toUWord'),
+  %          ('ULong', 'unsigned.ULong', '8.toUWord'),
+  %          ('Float', 'scala.Float', '4.toUWord'),
+  %          ('Double', 'scala.Double', '8.toUWord')]
   % for (name, T, size) in prims:
 
   object ${name} extends Tag[${T}] {
-    @alwaysinline def size: CSize = ${size}.toUWord
-    @alwaysinline def alignment: CSize = ${size}.toUWord
+    @alwaysinline def size: CSize = ${size}
+    @alwaysinline def alignment: CSize = ${size}
     @alwaysinline override def load(ptr: unsafe.Ptr[${T}]): ${T} =
       % if name == 'Unit':
       loadObject(toRawPtr(ptr)).asInstanceOf[Unit]
