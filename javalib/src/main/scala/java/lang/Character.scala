@@ -1503,7 +1503,7 @@ object Character {
    *  (it can also be used to generated deltas for cased characters)
    * ```
    * val codePoints = io.Source
-   *   .fromURL( "http://www.unicode.org/Public/UNIDATA/DerivedCoreProperties.txt")
+   *   .fromURL( "https://www.unicode.org/Public/13.0.0/ucd/DerivedCoreProperties.txt)
    *   .getLines().filterNot(_.isEmpty)
    *   .dropWhile(!_.startsWith("# Derived Property:   Cased (Cased)"))
    *   // .dropWhile(!_.startsWith("# Derived Property:   Case_Ignorable (CI)"))
@@ -1582,7 +1582,7 @@ object Character {
 
   /* Indices defining ranges of case-ignorable characters defined in Unicode reference chapter 3.13.
    * They are only used in String special casing method, eg. String.toLowerCase.
-   * Indices were generated based on [DerivedCodeProperties.txt](http://www.unicode.org/Public/UNIDATA/DerivedCoreProperties.txt)
+   * Indices were generated based on [DerivedCodeProperties.txt](https://www.unicode.org/Public/13.0.0/ucd/DerivedCoreProperties.txt)
    *
    * Definition of cased character from Unicode [reference document](https://www.unicode.org/versions/Unicode13.0.0/ch03.pdf#G33992):
    * D135 A character C is defined to be cased if and only if
