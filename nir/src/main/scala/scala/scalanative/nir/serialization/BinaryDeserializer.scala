@@ -136,6 +136,8 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   }
 
   private def getConv(): Conv = getInt match {
+    case T.SWordCastConv => Conv.SWordCast
+    case T.ZWordCastConv => Conv.ZWordCast
     case T.TruncConv    => Conv.Trunc
     case T.ZextConv     => Conv.Zext
     case T.SextConv     => Conv.Sext

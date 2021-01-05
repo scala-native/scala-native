@@ -77,7 +77,9 @@ object Tags {
 
   final val Conv = Comp + 32
 
-  final val TruncConv    = 1 + Conv
+  final val SWordCastConv    = 1 + Conv
+  final val ZWordCastConv    = 1 + SWordCastConv
+  final val TruncConv    = 1 + ZWordCastConv
   final val ZextConv     = 1 + TruncConv
   final val SextConv     = 1 + ZextConv
   final val FptruncConv  = 1 + SextConv

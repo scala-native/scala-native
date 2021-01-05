@@ -397,6 +397,8 @@ object Show {
     }
 
     def conv_(conv: Conv): Unit = conv match {
+      case Conv.SWordCast => str("swordcast")
+      case Conv.ZWordCast => str("zwordcast")
       case Conv.Trunc    => str("trunc")
       case Conv.Zext     => str("zext")
       case Conv.Sext     => str("sext")

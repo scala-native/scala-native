@@ -722,6 +722,13 @@ trait Eval { self: Interflow =>
     conv match {
       case _ if ty == value.ty =>
         value
+      
+      case Conv.SWordCast =>
+        bailOut // TODO(shadaj)
+
+      case Conv.ZWordCast =>
+        bailOut // TODO(shadaj)
+
       case Conv.Trunc =>
         (value, ty) match {
           case (Val.Char(v), Type.Byte)  => Val.Byte(v.toByte)

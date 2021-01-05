@@ -467,7 +467,10 @@ object CodeGen {
         case Type.Vararg                                           => str("...")
         case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing => str("i8*")
         case Type.Bool                                             => str("i1")
-        case i: Type.I                                             => str("i"); str(i.width)
+        case i: Type.FixedSizeI                                    => str("i"); str(i.width)
+        case Type.Word =>
+          // TODO(shadaj): changes based on target architecture
+          str("i64")
         case Type.Float                                            => str("float")
         case Type.Double                                           => str("double")
         case Type.ArrayValue(ty, n) =>
@@ -1008,7 +1011,7 @@ object CodeGen {
           str(", ")
           genJustVal(r)
         case Op.Conv(conv, ty, v) =>
-          genConv(conv)
+          genConv(conv, v.ty, ty)
           str(" ")
           genVal(v)
           str(" to ")
@@ -1037,8 +1040,33 @@ object CodeGen {
       }
     }
 
-    def genConv(conv: Conv)(implicit sb: ShowBuilder): Unit =
-      sb.str(conv.show)
+    def genConv(conv: Conv, fromType: Type, toType: Type)(implicit sb: ShowBuilder): Unit = conv match {
+      case Conv.ZWordCast | Conv.SWordCast =>
+        // TODO(shadaj): depends on architecture
+        val fromSize = fromType match {
+          case Type.Word => 64
+          case Type.FixedSizeI(s, _) => s
+          case o => unsupported(o)
+        }
+
+        val toSize = toType match {
+          case Type.Word => 64
+          case Type.FixedSizeI(s, _) => s
+          case o => unsupported(o)
+        }
+
+        val castOp = if (fromSize == toSize) {
+          "bitcast"
+        } else if (fromSize > toSize) {
+          "trunc"
+        } else {
+          if (conv == Conv.ZWordCast) "zext" else "sext"
+        }
+
+        sb.str(castOp)
+
+      case o => sb.str(o.show)
+    }
 
     def genAttr(attr: Attr)(implicit sb: ShowBuilder): Unit =
       sb.str(attr.show)

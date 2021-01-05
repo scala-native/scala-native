@@ -200,6 +200,8 @@ final class BinarySerializer {
   }
 
   private def putConv(conv: Conv) = conv match {
+    case Conv.SWordCast => putInt(T.SWordCastConv)
+    case Conv.ZWordCast => putInt(T.ZWordCastConv)
     case Conv.Trunc    => putInt(T.TruncConv)
     case Conv.Zext     => putInt(T.ZextConv)
     case Conv.Sext     => putInt(T.SextConv)

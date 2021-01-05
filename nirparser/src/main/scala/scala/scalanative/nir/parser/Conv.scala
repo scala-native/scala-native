@@ -5,7 +5,8 @@ package parser
 import fastparse.all._
 
 object Conv extends Base[nir.Conv] {
-
+  val SWordCast = P("swordcast".! map (_ => nir.Conv.SWordCast))
+  val ZWordCast = P("zwordcast".! map (_ => nir.Conv.ZWordCast))
   val Trunc    = P("trunc".! map (_ => nir.Conv.Trunc))
   val Zext     = P("zext".! map (_ => nir.Conv.Zext))
   val Sext     = P("sext".! map (_ => nir.Conv.Sext))

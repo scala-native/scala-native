@@ -1428,14 +1428,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         rty
       case (nir.Type.Bool, nir.Type.Bool) =>
         nir.Type.Bool
-      case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _))
+      case (nir.Type.FixedSizeI(lwidth, _), nir.Type.FixedSizeI(rwidth, _))
           if lwidth < 32 && rwidth < 32 =>
         nir.Type.Int
-      case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) =>
+      case (nir.Type.FixedSizeI(lwidth, _), nir.Type.FixedSizeI(rwidth, _)) =>
         if (lwidth >= rwidth) lty else rty
-      case (nir.Type.I(_, _), nir.Type.F(_)) =>
+      case (nir.Type.FixedSizeI(_, _), nir.Type.F(_)) =>
         rty
-      case (nir.Type.F(_), nir.Type.I(_, _)) =>
+      case (nir.Type.F(_), nir.Type.FixedSizeI(_, _)) =>
         lty
       case (nir.Type.F(lwidth), nir.Type.F(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
@@ -1662,20 +1662,20 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genRawWordCastOp(app: Apply, receiver: Tree, code: Int): Val = {
       val rec = genExpr(receiver)
-      val (fromty, toty, convType) = code match {
-        case CAST_RAWWORD_TO_INT => (nir.Type.Word, nir.Type.Int, Conv.Trunc)
+      val (fromty, toty, conv) = code match {
+        case CAST_RAWWORD_TO_INT => (nir.Type.Word, nir.Type.Int, Conv.SWordCast)
         case CAST_RAWWORD_TO_LONG =>
-          (nir.Type.Word, nir.Type.Long, Conv.Bitcast)
+          (nir.Type.Word, nir.Type.Long, Conv.SWordCast)
         case CAST_RAWWORD_TO_LONG_UNSIGNED =>
-          (nir.Type.Word, nir.Type.Long, Conv.Bitcast)
-        case CAST_INT_TO_RAWWORD => (nir.Type.Int, nir.Type.Word, Conv.Sext)
+          (nir.Type.Word, nir.Type.Long, Conv.ZWordCast)
+        case CAST_INT_TO_RAWWORD => (nir.Type.Int, nir.Type.Word, Conv.SWordCast)
         case CAST_INT_TO_RAWWORD_UNSIGNED =>
-          (nir.Type.Int, nir.Type.Word, Conv.Zext)
+          (nir.Type.Int, nir.Type.Word, Conv.ZWordCast)
         case CAST_LONG_TO_RAWWORD =>
-          (nir.Type.Long, nir.Type.Word, Conv.Bitcast)
+          (nir.Type.Long, nir.Type.Word, Conv.SWordCast)
       }
 
-      genCoercion(rec, fromty, toty)(app.pos)
+      buf.conv(conv, toty, rec, unwind)(app.pos)
     }
 
     def castConv(fromty: nir.Type, toty: nir.Type): Option[nir.Conv] =
@@ -1687,8 +1687,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case (_: Type.RefKind, _: Type.RefKind)      => Some(nir.Conv.Bitcast)
         case (_: Type.RefKind, _: Type.I)            => Some(nir.Conv.Ptrtoint)
         case (_: Type.I, _: Type.RefKind)            => Some(nir.Conv.Inttoptr)
-        case (Type.I(w1, _), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
-        case (Type.F(w1), Type.I(w2, _)) if w1 == w2 => Some(nir.Conv.Bitcast)
+        case (Type.FixedSizeI(w1, _), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
+        case (Type.F(w1), Type.FixedSizeI(w2, _)) if w1 == w2 => Some(nir.Conv.Bitcast)
         case _ if fromty == toty                     => None
         case _ =>
           unsupported(s"cast from $fromty to $toty")
@@ -1868,7 +1868,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             Conv.Bitcast
           case (_: nir.Type.RefKind, nir.Type.Ptr) =>
             Conv.Bitcast
-          case (nir.Type.I(fromw, froms), nir.Type.I(tow, tos)) =>
+          case (nir.Type.FixedSizeI(fromw, froms), nir.Type.FixedSizeI(tow, tos)) =>
             if (fromw < tow) {
               if (froms) {
                 Conv.Sext
@@ -1880,17 +1880,17 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             } else {
               Conv.Bitcast
             }
-          case (nir.Type.I(_, true), _: nir.Type.F) =>
+          case (nir.Type.FixedSizeI(_, true), _: nir.Type.F) => // TODO(shadaj): use Type.I whenever we don't care about the size
             Conv.Sitofp
-          case (nir.Type.I(_, false), _: nir.Type.F) =>
+          case (nir.Type.FixedSizeI(_, false), _: nir.Type.F) =>
             Conv.Uitofp
-          case (_: nir.Type.F, nir.Type.I(iwidth, true)) =>
+          case (_: nir.Type.F, nir.Type.FixedSizeI(iwidth, true)) =>
             if (iwidth < 32) {
               val ivalue = genCoercion(value, fromty, Type.Int)
               return genCoercion(ivalue, Type.Int, toty)
             }
             Conv.Fptosi
-          case (_: nir.Type.F, nir.Type.I(iwidth, false)) =>
+          case (_: nir.Type.F, nir.Type.FixedSizeI(iwidth, false)) =>
             if (iwidth < 32) {
               val ivalue = genCoercion(value, fromty, Type.Int)
               return genCoercion(ivalue, Type.Int, toty)

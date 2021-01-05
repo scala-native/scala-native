@@ -6,6 +6,8 @@ sealed abstract class Conv {
 }
 
 object Conv {
+  final case object ZWordCast extends Conv
+  final case object SWordCast extends Conv
   final case object Trunc    extends Conv
   final case object Zext     extends Conv
   final case object Sext     extends Conv
