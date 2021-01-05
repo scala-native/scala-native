@@ -35,11 +35,12 @@ object Type {
   }
 
   sealed abstract class FixedSizeI(width: Int, val signed: Boolean)
-      extends PrimitiveKind(width) with I
+      extends PrimitiveKind(width)
+      with I
   object FixedSizeI {
     def unapply(i: FixedSizeI): Some[(Int, Boolean)] = Some((i.width, i.signed))
   }
-  final case object Word  extends I {
+  final case object Word extends I {
     val signed = true;
   }
   final case object Char  extends FixedSizeI(16, signed = false)

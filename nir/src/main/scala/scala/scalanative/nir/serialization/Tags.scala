@@ -77,20 +77,20 @@ object Tags {
 
   final val Conv = Comp + 32
 
-  final val SWordCastConv    = 1 + Conv
-  final val ZWordCastConv    = 1 + SWordCastConv
-  final val TruncConv    = 1 + ZWordCastConv
-  final val ZextConv     = 1 + TruncConv
-  final val SextConv     = 1 + ZextConv
-  final val FptruncConv  = 1 + SextConv
-  final val FpextConv    = 1 + FptruncConv
-  final val FptouiConv   = 1 + FpextConv
-  final val FptosiConv   = 1 + FptouiConv
-  final val UitofpConv   = 1 + FptosiConv
-  final val SitofpConv   = 1 + UitofpConv
-  final val PtrtointConv = 1 + SitofpConv
-  final val InttoptrConv = 1 + PtrtointConv
-  final val BitcastConv  = 1 + InttoptrConv
+  final val SWordCastConv = 1 + Conv
+  final val ZWordCastConv = 1 + SWordCastConv
+  final val TruncConv     = 1 + ZWordCastConv
+  final val ZextConv      = 1 + TruncConv
+  final val SextConv      = 1 + ZextConv
+  final val FptruncConv   = 1 + SextConv
+  final val FpextConv     = 1 + FptruncConv
+  final val FptouiConv    = 1 + FpextConv
+  final val FptosiConv    = 1 + FptouiConv
+  final val UitofpConv    = 1 + FptosiConv
+  final val SitofpConv    = 1 + UitofpConv
+  final val PtrtointConv  = 1 + SitofpConv
+  final val InttoptrConv  = 1 + PtrtointConv
+  final val BitcastConv   = 1 + InttoptrConv
 
   // Definitions
 

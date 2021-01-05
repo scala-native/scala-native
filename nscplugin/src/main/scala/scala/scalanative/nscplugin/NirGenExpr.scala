@@ -1660,19 +1660,22 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                   " at: " + app.pos)
           }
 
-          buf.bin(bin, Type.Word, genExpr(leftp), genExpr(rightp), unwind)(app.pos)
+          buf.bin(bin, Type.Word, genExpr(leftp), genExpr(rightp), unwind)(
+            app.pos)
       }
     }
 
     def genRawWordCastOp(app: Apply, receiver: Tree, code: Int): Val = {
       val rec = genExpr(receiver)
       val (fromty, toty, conv) = code match {
-        case CAST_RAWWORD_TO_INT => (nir.Type.Word, nir.Type.Int, Conv.SWordCast)
+        case CAST_RAWWORD_TO_INT =>
+          (nir.Type.Word, nir.Type.Int, Conv.SWordCast)
         case CAST_RAWWORD_TO_LONG =>
           (nir.Type.Word, nir.Type.Long, Conv.SWordCast)
         case CAST_RAWWORD_TO_LONG_UNSIGNED =>
           (nir.Type.Word, nir.Type.Long, Conv.ZWordCast)
-        case CAST_INT_TO_RAWWORD => (nir.Type.Int, nir.Type.Word, Conv.SWordCast)
+        case CAST_INT_TO_RAWWORD =>
+          (nir.Type.Int, nir.Type.Word, Conv.SWordCast)
         case CAST_INT_TO_RAWWORD_UNSIGNED =>
           (nir.Type.Int, nir.Type.Word, Conv.ZWordCast)
         case CAST_LONG_TO_RAWWORD =>
@@ -1684,16 +1687,18 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def castConv(fromty: nir.Type, toty: nir.Type): Option[nir.Conv] =
       (fromty, toty) match {
-        case (_: Type.I, Type.Ptr)                   => Some(nir.Conv.Inttoptr)
-        case (Type.Ptr, _: Type.I)                   => Some(nir.Conv.Ptrtoint)
-        case (_: Type.RefKind, Type.Ptr)             => Some(nir.Conv.Bitcast)
-        case (Type.Ptr, _: Type.RefKind)             => Some(nir.Conv.Bitcast)
-        case (_: Type.RefKind, _: Type.RefKind)      => Some(nir.Conv.Bitcast)
-        case (_: Type.RefKind, _: Type.I)            => Some(nir.Conv.Ptrtoint)
-        case (_: Type.I, _: Type.RefKind)            => Some(nir.Conv.Inttoptr)
-        case (Type.FixedSizeI(w1, _), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
-        case (Type.F(w1), Type.FixedSizeI(w2, _)) if w1 == w2 => Some(nir.Conv.Bitcast)
-        case _ if fromty == toty                     => None
+        case (_: Type.I, Type.Ptr)              => Some(nir.Conv.Inttoptr)
+        case (Type.Ptr, _: Type.I)              => Some(nir.Conv.Ptrtoint)
+        case (_: Type.RefKind, Type.Ptr)        => Some(nir.Conv.Bitcast)
+        case (Type.Ptr, _: Type.RefKind)        => Some(nir.Conv.Bitcast)
+        case (_: Type.RefKind, _: Type.RefKind) => Some(nir.Conv.Bitcast)
+        case (_: Type.RefKind, _: Type.I)       => Some(nir.Conv.Ptrtoint)
+        case (_: Type.I, _: Type.RefKind)       => Some(nir.Conv.Inttoptr)
+        case (Type.FixedSizeI(w1, _), Type.F(w2)) if w1 == w2 =>
+          Some(nir.Conv.Bitcast)
+        case (Type.F(w1), Type.FixedSizeI(w2, _)) if w1 == w2 =>
+          Some(nir.Conv.Bitcast)
+        case _ if fromty == toty => None
         case _ =>
           unsupported(s"cast from $fromty to $toty")
       }
@@ -1872,7 +1877,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             Conv.Bitcast
           case (_: nir.Type.RefKind, nir.Type.Ptr) =>
             Conv.Bitcast
-          case (nir.Type.FixedSizeI(fromw, froms), nir.Type.FixedSizeI(tow, tos)) =>
+          case (nir.Type.FixedSizeI(fromw, froms),
+                nir.Type.FixedSizeI(tow, tos)) =>
             if (fromw < tow) {
               if (froms) {
                 Conv.Sext
@@ -1884,7 +1890,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             } else {
               Conv.Bitcast
             }
-          case (nir.Type.FixedSizeI(_, true), _: nir.Type.F) => // TODO(shadaj): use Type.I whenever we don't care about the size
+          case (nir.Type.FixedSizeI(_, true),
+                _: nir.Type.F) => // TODO(shadaj): use Type.I whenever we don't care about the size
             Conv.Sitofp
           case (nir.Type.FixedSizeI(_, false), _: nir.Type.F) =>
             Conv.Uitofp

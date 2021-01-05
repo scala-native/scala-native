@@ -469,7 +469,8 @@ final class Check(implicit linked: linker.Result) {
         case (lty: Type.FixedSizeI, Type.Word) => ok
         case (Type.Word, rty: Type.FixedSizeI) => ok
         case _ =>
-          error(s"can't word cast (unsigned) from ${value.ty.show} to ${ty.show}")
+          error(
+            s"can't word cast (unsigned) from ${value.ty.show} to ${ty.show}")
       }
 
     case Conv.SWordCast =>
@@ -482,21 +483,24 @@ final class Check(implicit linked: linker.Result) {
 
     case Conv.Trunc =>
       (value.ty, ty) match {
-        case (lty: Type.FixedSizeI, rty: Type.FixedSizeI) if lty.width > rty.width =>
+        case (lty: Type.FixedSizeI, rty: Type.FixedSizeI)
+            if lty.width > rty.width =>
           ok
         case _ =>
           error(s"can't trunc from ${value.ty.show} to ${ty.show}")
       }
     case Conv.Zext =>
       (value.ty, ty) match {
-        case (lty: Type.FixedSizeI, rty: Type.FixedSizeI) if lty.width < rty.width =>
+        case (lty: Type.FixedSizeI, rty: Type.FixedSizeI)
+            if lty.width < rty.width =>
           ok
         case _ =>
           error(s"can't zext from ${value.ty.show} to ${ty.show}")
       }
     case Conv.Sext =>
       (value.ty, ty) match {
-        case (lty: Type.FixedSizeI, rty: Type.FixedSizeI) if lty.width < rty.width =>
+        case (lty: Type.FixedSizeI, rty: Type.FixedSizeI)
+            if lty.width < rty.width =>
           ok
         case _ =>
           error(s"can't sext from ${value.ty.show} to ${ty.show}")

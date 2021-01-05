@@ -722,7 +722,7 @@ trait Eval { self: Interflow =>
     conv match {
       case _ if ty == value.ty =>
         value
-      
+
       case Conv.SWordCast =>
         bailOut // TODO(shadaj)
 

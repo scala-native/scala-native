@@ -468,11 +468,11 @@ object CodeGen {
         case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing => str("i8*")
         case Type.Bool                                             => str("i1")
         case i: Type.FixedSizeI                                    => str("i"); str(i.width)
-        case Type.Word =>
+        case Type.Word                                             =>
           // TODO(shadaj): depends on architecture
           str("i64")
-        case Type.Float                                            => str("float")
-        case Type.Double                                           => str("double")
+        case Type.Float  => str("float")
+        case Type.Double => str("double")
         case Type.ArrayValue(ty, n) =>
           str("[")
           str(n)
@@ -1043,19 +1043,20 @@ object CodeGen {
       }
     }
 
-    def genConv(conv: Conv, fromType: Type, toType: Type)(implicit sb: ShowBuilder): Unit = conv match {
+    def genConv(conv: Conv, fromType: Type, toType: Type)(
+        implicit sb: ShowBuilder): Unit = conv match {
       case Conv.ZWordCast | Conv.SWordCast =>
         // TODO(shadaj): depends on architecture
         val fromSize = fromType match {
-          case Type.Word => 64
+          case Type.Word             => 64
           case Type.FixedSizeI(s, _) => s
-          case o => unsupported(o)
+          case o                     => unsupported(o)
         }
 
         val toSize = toType match {
-          case Type.Word => 64
+          case Type.Word             => 64
           case Type.FixedSizeI(s, _) => s
-          case o => unsupported(o)
+          case o                     => unsupported(o)
         }
 
         val castOp = if (fromSize == toSize) {

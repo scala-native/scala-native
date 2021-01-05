@@ -138,18 +138,18 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   private def getConv(): Conv = getInt match {
     case T.SWordCastConv => Conv.SWordCast
     case T.ZWordCastConv => Conv.ZWordCast
-    case T.TruncConv    => Conv.Trunc
-    case T.ZextConv     => Conv.Zext
-    case T.SextConv     => Conv.Sext
-    case T.FptruncConv  => Conv.Fptrunc
-    case T.FpextConv    => Conv.Fpext
-    case T.FptouiConv   => Conv.Fptoui
-    case T.FptosiConv   => Conv.Fptosi
-    case T.UitofpConv   => Conv.Uitofp
-    case T.SitofpConv   => Conv.Sitofp
-    case T.PtrtointConv => Conv.Ptrtoint
-    case T.InttoptrConv => Conv.Inttoptr
-    case T.BitcastConv  => Conv.Bitcast
+    case T.TruncConv     => Conv.Trunc
+    case T.ZextConv      => Conv.Zext
+    case T.SextConv      => Conv.Sext
+    case T.FptruncConv   => Conv.Fptrunc
+    case T.FpextConv     => Conv.Fpext
+    case T.FptouiConv    => Conv.Fptoui
+    case T.FptosiConv    => Conv.Fptosi
+    case T.UitofpConv    => Conv.Uitofp
+    case T.SitofpConv    => Conv.Sitofp
+    case T.PtrtointConv  => Conv.Ptrtoint
+    case T.InttoptrConv  => Conv.Inttoptr
+    case T.BitcastConv   => Conv.Bitcast
   }
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn())
@@ -294,8 +294,8 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
         val chars = Array.fill(getInt)(getChar)
         new String(chars)
       }
-    case T.VirtualVal => Val.Virtual(getLong)
-    case T.ClassOfVal => Val.ClassOf(getGlobal())
+    case T.VirtualVal    => Val.Virtual(getLong)
+    case T.ClassOfVal    => Val.ClassOf(getGlobal())
     case T.SizeOfWordVal => Val.SizeOfWord
   }
 
