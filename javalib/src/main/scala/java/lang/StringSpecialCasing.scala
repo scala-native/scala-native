@@ -1,6 +1,6 @@
 package java.lang
 
-object StringSpecialCasing {
+private[lang] object StringSpecialCasing {
   /* Generated based on unconditional mappings in [SpecialCasing.txt](https://unicode.org/Public/13.0.0/ucd/SpecialCasing.txt)
    *
    * Relevant excerpt from SpecialCasing.txt

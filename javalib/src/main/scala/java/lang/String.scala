@@ -891,7 +891,6 @@ final class _String()
        *
        * # 03C3; 03C2; 03A3; 03A3; Final_Sigma; # GREEK SMALL LETTER SIGMA
        * # 03C2; 03C3; 03A3; 03A3; Not_Final_Sigma; # GREEK SMALL LETTER FINAL SIGMA
-
        */
       (charAt(i): @switch) match {
         case '\u03A3' if isFinalSigma(i) => "\u03C2"

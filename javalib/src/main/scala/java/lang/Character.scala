@@ -1495,7 +1495,7 @@ object Character {
    * Definition of case-ignorable character form Unicode [reference document](https://www.unicode.org/versions/Unicode13.0.0/ch03.pdf#G33992):
    * A character C is defined to be case-ignorable if C has the value MidLetter (ML),
    * MidNumLet (MB), or Single_Quote (SQ) for the Word_Break property or its General_Category is one of Nonspacing_Mark (Mn),
-   * Enclosing_Mark (Me), Format(Cf ), Modifier_Letter (Lm), or Modifier_Symbol (Sk).
+   * Enclosing_Mark (Me), Format (Cf), Modifier_Letter (Lm), or Modifier_Symbol (Sk).
    * - The Word_Break property is defined in the data file WordBreakProperty.txt in the Unicode Character Database.
    * - The derived property Case_Ignorable is listed in the data file DerivedCoreProperties.txt in the Unicode Character Database.
    *
@@ -1503,25 +1503,22 @@ object Character {
    *  (it can also be used to generated deltas for cased characters)
    * ```
    * val codePoints = io.Source
-   *   .fromURL( "https://www.unicode.org/Public/13.0.0/ucd/DerivedCoreProperties.txt)
+   *   .fromURL("https://www.unicode.org/Public/13.0.0/ucd/DerivedCoreProperties.txt")
    *   .getLines().filterNot(_.isEmpty)
    *   .dropWhile(!_.startsWith("# Derived Property:   Cased (Cased)"))
    *   // .dropWhile(!_.startsWith("# Derived Property:   Case_Ignorable (CI)"))
    *   .takeWhile(!_.startsWith("# Total"))
    *   .filter(!_.startsWith("#"))
-   *   .map{_
+   *   .map { _
    *     .split(";").head
    *     .split("\\.\\.")
    *     .filterNot(_.isEmpty)
    *     .map(Integer.parseInt(_, 16))
    *    }
-   *   .foldLeft(List.newBuilder[Int]){ (b, elem) =>
-   *     elem match {
-   *       case Array(single) => b += single
-   *       case Array(from, to) => from.to(to).foreach(b += _)
-   *     }
-   *     b
-   *   }.result()
+   *    .flatMap {
+   *       case Array(single) => single :: Nil
+   *       case Array(from, to) => from.to(to)
+   *    }.toList
    *
    * val deltas: List[Int] = {
    *   val b = List.newBuilder[Int]
