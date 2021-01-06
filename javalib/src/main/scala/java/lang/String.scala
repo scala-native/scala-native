@@ -1057,17 +1057,15 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
   private def skipConditionalCharsForwards(i: Int)(
       shouldSkip: Int => scala.Boolean): Int = {
     // scalastyle:off return
-    // use offset + count instead of length to handle Strings created using subString method
-    val len = offset + count
+    val len = length()
     var j   = i
     while (j != len) {
       val cp = this.codePointAt(j)
       if (!shouldSkip(cp))
-        return j - offset
+        return j
       j += Character.charCount(cp)
     }
-    // Subtract offset so result can be matched against length() or passed to codePointAt
-    j - offset
+    j
     // scalastyle:on return
   }
 
@@ -1075,11 +1073,11 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
       shouldSkip: Int => scala.Boolean): Int = {
     // scalastyle:off return
     var j = i
-    // use offset instead of 0 to handle Strings created using subString method
-    while (j > offset) {
+    while (j > 0) {
       val cp = this.codePointBefore(j)
-      if (!shouldSkip(cp))
-        return j - offset // Subtract offset so resulting index can be passed to codePointAt
+      if (!shouldSkip(cp)) {
+        return j
+      }
       j -= Character.charCount(cp)
     }
     0
