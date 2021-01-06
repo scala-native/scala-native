@@ -65,9 +65,11 @@ class FileTimeExtTest {
     assertEquals(Instant.MIN.getNano, fromInstantMin.toInstant.getNano)
   }
 
-  @Test def toInstantWhenLargerThenInstantRange(): Unit = {
-    assume(Instant.MAX.getEpochSecond != Long.MaxValue)
-    assume(Instant.MIN.getEpochSecond != Long.MinValue)
+  @Test def toInstantWhenLargerThanInstantRange(): Unit = {
+    assert(Instant.MAX.getEpochSecond != Long.MaxValue,
+           "Instant.MAX seconds != Long.MaxValue")
+    assert(Instant.MIN.getEpochSecond != Long.MinValue,
+           "Instant.MIN seconds != Long.MinValue")
 
     assertEquals(Instant.MAX,
                  FileTime
