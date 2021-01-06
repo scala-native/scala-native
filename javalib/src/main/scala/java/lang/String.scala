@@ -1087,29 +1087,34 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
   }
 
   private def skipCharsWithCombiningClassOtherThanNoneOrAboveForwards(
-      i: Int): Int =
+      i: Int): Int = {
     skipConditionalCharsForwards(i) { cp =>
       import Character._
       combiningClassNoneOrAboveOrOther(cp) == CombiningClassIsOther
     }
-
-  private def skipCharsWithCombiningClassOtherThanNoneOrAboveBackwards(
-      i: Int): Int = skipConditionalCharsBackwards(i) { cp =>
-    import Character._
-    combiningClassNoneOrAboveOrOther(cp) == CombiningClassIsOther
   }
 
-  private def skipCaseIgnorableCharsForwards(i: Int): Int =
+  private def skipCharsWithCombiningClassOtherThanNoneOrAboveBackwards(
+      i: Int): Int = {
+    skipConditionalCharsBackwards(i) { cp =>
+      import Character._
+      combiningClassNoneOrAboveOrOther(cp) == CombiningClassIsOther
+    }
+  }
+
+  private def skipCaseIgnorableCharsForwards(i: Int): Int = {
     skipConditionalCharsForwards(i) { cp =>
       import Character._
       isCaseIgnorable(cp)
     }
+  }
 
-  private def skipCaseIgnorableCharsBackwards(i: Int): Int =
+  private def skipCaseIgnorableCharsBackwards(i: Int): Int = {
     skipConditionalCharsBackwards(i) { cp =>
       import Character._
       isCaseIgnorable(cp)
     }
+  }
 
   def trim(): _String = {
     var start = offset
