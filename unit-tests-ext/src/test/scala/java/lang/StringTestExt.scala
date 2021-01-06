@@ -114,10 +114,13 @@ class StringTestExt {
     assertEquals(
       "İÍÌĨI İ\u0307\u0301İ\u0307\u0300İ\u0307\u0303İ\u0307",
       "iíìĩı i\u0307\u0301i\u0307\u0300i\u0307\u0303i\u0307".toUpperCase(Azeri))
-    assertEquals(
-      "IÍÌĨI I\u0301I\u0300I\u0303I",
-      "iíìĩı i\u0307\u0301i\u0307\u0300i\u0307\u0303i\u0307".toUpperCase(
-        Lithuanian))
+    assertEquals("IÍÌĨI I\u0301I\u0300I\u0303I",
+                 "iíìĩı i\u0307\u0301i\u0307\u0300i\u0307\u0303i\u0307"
+                   .toUpperCase(Lithuanian))
+    assertEquals("\u0307\u0301I",
+                 "iíìĩı i\u0307\u0301i".substring(7).toUpperCase(Lithuanian))
+    assertEquals("I\u0301I",
+                 "iíìĩı i\u0307\u0301i".substring(6).toUpperCase(Lithuanian))
   }
 
   @Test def testToUpperCaseWithLocale_CornerCasesFor_Lithuanian(): Unit = {
