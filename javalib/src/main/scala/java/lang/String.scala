@@ -831,7 +831,7 @@ final class _String()
     preprocessed.toLowerCase()
   }
 
-  @inline def toLowerCase(): _String = {
+  def toLowerCase(): _String = {
     replaceCharsAtIndex { i =>
       /* Tests whether we are in an `Final_Sigma` context.
        * From Table 3.17 in the Unicode standard:
