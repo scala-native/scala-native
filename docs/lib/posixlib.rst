@@ -78,7 +78,7 @@ C Header          Scala Native Module
 `sys/uio.h`_      scala.scalanative.posix.sys.uio_
 `sys/un.h`_       N/A
 `sys/utsname.h`_  N/A
-`sys/wait.h`_     N/A
+`sys/wait.h`_     scala.scalanative.posix.sys.wait_
 `syslog.h`_       scala.scalanative.posix.syslog_
 `tar.h`_          N/A
 `termios.h`_      scala.scalanative.posix.termios_
@@ -202,6 +202,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.sys.time: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/time.scala
 .. _scala.scalanative.posix.sys.types: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/types.scala
 .. _scala.scalanative.posix.sys.uio: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/uio.scala
+.. _scala.scalanative.posix.sys.wait: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/wait.scala
 .. _scala.scalanative.posix.syslog: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/syslog.scala
 .. _scala.scalanative.posix.termios: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/termios.scala
 .. _scala.scalanative.posix.time: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/time.scala
