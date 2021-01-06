@@ -543,6 +543,9 @@ class StringTest {
      */
     assertEquals("dς", "DΣ".toLowerCase())
     assertEquals("dσς aσς bσc", "DΣΣ AΣΣ BΣC".toLowerCase())
+    assertEquals(
+      "dσς a\uD804\uDC00σ\uD804\uDC00σ\uD804\uDC00 bσc",
+      "DΣΣ A\uD804\uDC00Σ\uD804\uDC00Σ\uD804\uDC00 BΣC".toLowerCase())
     assertEquals("dσσa", "DΣΣA".toLowerCase())
     assertEquals("dσς", "DΣΣA".substring(0, 3).toLowerCase())
     // \u02B9 is not cased character
