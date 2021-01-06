@@ -1,4 +1,4 @@
-.. _tech:
+.. _blog:
 
 Blog
 ====
@@ -7,4 +7,3 @@ Blog
   :maxdepth: 2
 
   interflow
-
