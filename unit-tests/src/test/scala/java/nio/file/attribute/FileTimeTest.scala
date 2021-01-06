@@ -9,9 +9,10 @@ class FileTimeTest {
   @Test def isComparableAgainstDiffTimeUnits(): Unit = {
     val timestamp        = 1582230020000L
     val timestampSeconds = timestamp / 1000L
-    val ft1              = FileTime.fromMillis(timestamp)
-    val ft2              = FileTime.from(timestamp, TimeUnit.MILLISECONDS)
-    val ft3              = FileTime.from(timestampSeconds, TimeUnit.SECONDS)
+
+    val ft1 = FileTime.fromMillis(timestamp)
+    val ft2 = FileTime.from(timestamp, TimeUnit.MILLISECONDS)
+    val ft3 = FileTime.from(timestampSeconds, TimeUnit.SECONDS)
 
     val ft4 = FileTime.fromMillis(timestamp + 1)
     val ft5 = FileTime.from(timestampSeconds + 1, TimeUnit.SECONDS)
@@ -54,4 +55,21 @@ class FileTimeTest {
     assertEquals(106751L, asNanos.to(TimeUnit.DAYS))
   }
 
+  @Test def handlesLargeValues(): Unit = {
+    def unitIdentityEquals(value: Long, unit: TimeUnit) = {
+      assertEquals(s"$unit", value, FileTime.from(value, unit).to(unit))
+    }
+
+    TimeUnit
+      .values()
+      .foreach { unit =>
+        unitIdentityEquals(Long.MaxValue - 1, unit)
+        unitIdentityEquals(Long.MinValue + 1, unit)
+      }
+
+    assertEquals(Long.MaxValue - 1,
+                 FileTime.fromMillis(Long.MaxValue - 1).toMillis)
+    assertEquals(Long.MinValue + 1,
+                 FileTime.fromMillis(Long.MinValue + 1).toMillis)
+  }
 }

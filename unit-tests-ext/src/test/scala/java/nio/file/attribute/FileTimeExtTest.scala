@@ -6,101 +6,83 @@ import org.junit.Test
 import org.junit.Assert._
 
 class FileTimeExtTest {
-  private val timestamp          = 1582230020000L
-  private val timestampAsSeconds = timestamp / 1000L
-  private val timestampAsNanos   = timestamp * 1e6.toLong
-  private val nanosAdjustment    = 1234L
+  private val timestampNanos   = 1582230020123456789L
+  private val timestampMillis  = timestampNanos / 1e6.toLong
+  private val timestampSeconds = timestampMillis / 1000L
+  private val nanosAdjustment  = 123456789L
 
   @Test def fromInstant(): Unit = {
-    def fileTimeFromInstantEquals(ft: FileTime, instant: Instant) = {
-      assertEquals(timestamp, instant.toEpochMilli)
-      assertEquals(timestamp, ft.toMillis)
-
+    def fileTimeFromInstantEquals(ft: FileTime, instant: Instant)(
+        extFn: FileTime => Unit = _ => ()) = {
       val fromInstant = FileTime.from(instant)
       assertEquals(0, ft.compareTo(fromInstant))
-      assertEquals(timestamp, fromInstant.toMillis)
-      assertEquals(timestampAsSeconds, fromInstant.to(TimeUnit.SECONDS))
       assertEquals(ft, fromInstant)
+      assertEquals(timestampSeconds, fromInstant.to(TimeUnit.SECONDS))
+      extFn(fromInstant)
     }
-
-    fileTimeFromInstantEquals(FileTime.fromMillis(timestamp),
-                              Instant.ofEpochMilli(timestamp))
 
     fileTimeFromInstantEquals(
-      FileTime.from(timestampAsSeconds, TimeUnit.SECONDS),
-      Instant.ofEpochSecond(timestampAsSeconds))
+      FileTime.from(timestampNanos, TimeUnit.NANOSECONDS),
+      Instant.ofEpochSecond(timestampSeconds, nanosAdjustment)) { fromInstant =>
+      assertEquals(timestampMillis, fromInstant.toMillis)
+      assertEquals(timestampNanos, fromInstant.to(TimeUnit.NANOSECONDS))
+    }
+
+    fileTimeFromInstantEquals(FileTime.fromMillis(timestampMillis),
+                              Instant.ofEpochMilli(timestampMillis)) {
+      fromInstant => assertEquals(timestampMillis, fromInstant.toMillis)
+    }
 
     fileTimeFromInstantEquals(
-      FileTime.from(timestampAsNanos + nanosAdjustment, TimeUnit.NANOSECONDS),
-      Instant.ofEpochSecond(timestampAsSeconds, nanosAdjustment))
+      FileTime.from(timestampSeconds, TimeUnit.SECONDS),
+      Instant.ofEpochSecond(timestampSeconds)
+    )()
   }
 
-  @Test def fromInstantMaxPrecision(): Unit = {
-    val maxSecondsWithNanos  = Long.MaxValue / 1e9.toLong - 1L
-    val naxSecondsWithMicros = Long.MaxValue / 1e6.toLong - 1L
-    val maxSecondsWithMillis = Long.MaxValue / 1e3.toLong - 1L
-
-    def toUnit(seconds: Long, nanos: Long, unit: TimeUnit) = {
-      val fromSeconds = unit.convert(seconds, TimeUnit.SECONDS)
-      val fromNanos   = unit.convert(nanos, TimeUnit.NANOSECONDS)
-      fromSeconds + fromNanos
-    }
-
-    def fromSeconds(seconds: Long, unit: TimeUnit) =
-      FileTime.from(toUnit(seconds, Instant.MAX.getNano, unit), unit)
-
-    def testPrecision(seconds: Long,
-                      expectedPrecision: TimeUnit,
-                      lowerPrecision: TimeUnit) = {
-      val overflowSeconds = seconds + 1L
-
-      val fileTimeMax = FileTime.from(
-        Instant.ofEpochSecond(seconds, Instant.MAX.getNano)
-      )
-      val fileTimeOverflow = FileTime.from(
-        Instant.ofEpochSecond(overflowSeconds, Instant.MAX.getNano)
-      )
-
-      val expectedMax   = fromSeconds(seconds, expectedPrecision)
-      val overflowValue = fromSeconds(overflowSeconds, lowerPrecision)
-
-      assertEquals(expectedMax, fileTimeMax)
-      assertEquals(overflowValue, fileTimeOverflow)
-
-      assertNotEquals(Long.MaxValue, fileTimeMax.to(expectedPrecision))
-      if (expectedPrecision == TimeUnit.MILLISECONDS) {
-        // in this case it does not overflow yet (it's exactly Long.MaxValue - 807L), but any greater precision would cause overflow
-        assertNotEquals(Long.MaxValue,
-                        fileTimeOverflow.to(TimeUnit.MILLISECONDS))
-        assertEquals(Long.MaxValue, fileTimeOverflow.to(TimeUnit.MICROSECONDS))
-      } else {
-        assertEquals(Long.MaxValue, fileTimeOverflow.to(expectedPrecision))
-      }
-    }
-
-    testPrecision(maxSecondsWithNanos,
-                  TimeUnit.NANOSECONDS,
-                  TimeUnit.MICROSECONDS)
-
-    testPrecision(naxSecondsWithMicros,
-                  TimeUnit.MICROSECONDS,
-                  TimeUnit.MILLISECONDS)
-
-    testPrecision(maxSecondsWithMillis, TimeUnit.MILLISECONDS, TimeUnit.SECONDS)
-
-  }
   @Test def toInstant(): Unit = {
-    val fromNanos =
-      FileTime.from(timestampAsNanos + nanosAdjustment, TimeUnit.NANOSECONDS)
+    val fromNanos = FileTime.from(timestampNanos, TimeUnit.NANOSECONDS)
     val toInstant = fromNanos.toInstant
     val instantFromNanos =
-      Instant.ofEpochSecond(timestampAsSeconds, nanosAdjustment)
+      Instant.ofEpochSecond(timestampSeconds, nanosAdjustment)
 
-    assertEquals(timestamp, fromNanos.toMillis)
-    assertEquals(timestamp, toInstant.toEpochMilli)
-    assertEquals(timestamp, instantFromNanos.toEpochMilli)
+    assertEquals(timestampMillis, fromNanos.toMillis)
+    assertEquals(timestampMillis, toInstant.toEpochMilli)
+    assertEquals(timestampMillis, instantFromNanos.toEpochMilli)
     assertEquals(0, toInstant.compareTo(instantFromNanos))
     assertEquals(nanosAdjustment, instantFromNanos.getNano)
-    assertEquals(timestampAsSeconds, instantFromNanos.getEpochSecond)
+    assertEquals(timestampSeconds, instantFromNanos.getEpochSecond)
+  }
+
+  @Test def hasRangeMatchingAtLeastInstant(): Unit = {
+    val fromInstantMax = FileTime.from(Instant.MAX)
+    assertEquals(Instant.MAX.getEpochSecond,
+                 fromInstantMax.to(TimeUnit.SECONDS))
+    assertEquals(Instant.MAX.getNano, fromInstantMax.toInstant.getNano)
+
+    val fromInstantMin = FileTime.from(Instant.MIN)
+    assertEquals(Instant.MIN.getEpochSecond,
+                 fromInstantMin.to(TimeUnit.SECONDS))
+    assertEquals(Instant.MIN.getNano, fromInstantMin.toInstant.getNano)
+  }
+
+  @Test def toInstantWhenLargerThenInstantRange(): Unit = {
+    assume(Instant.MAX.getEpochSecond != Long.MaxValue)
+    assume(Instant.MIN.getEpochSecond != Long.MinValue)
+
+    assertEquals(Instant.MAX,
+                 FileTime
+                   .from(Instant.MAX.getEpochSecond + 1L, TimeUnit.SECONDS)
+                   .toInstant)
+
+    assertEquals(Instant.MIN,
+                 FileTime
+                   .from(Instant.MIN.getEpochSecond - 1L, TimeUnit.SECONDS)
+                   .toInstant)
+
+    val almostInstantMax = Instant.ofEpochSecond(Instant.MAX.getEpochSecond - 1)
+    val almostInstantMin = Instant.ofEpochSecond(Instant.MIN.getEpochSecond + 1)
+
+    assertEquals(almostInstantMax, FileTime.from(almostInstantMax).toInstant)
+    assertEquals(almostInstantMin, FileTime.from(almostInstantMin).toInstant)
   }
 }
