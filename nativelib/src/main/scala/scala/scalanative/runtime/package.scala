@@ -32,7 +32,7 @@ package object runtime {
 
   def toClass(rtti: RawPtr): _Class[_] = {
     val clsPtr =
-      elemRawPtr(rtti, (8.toUWord + implicitly[Tag[Word]].size).rawWord)
+      elemRawPtr(rtti, addRawWords(castIntToRawWord(8), sizeOfWord))
 
     if (loadRawPtr(clsPtr) == null) {
       val newClass = new _Class[Any](rtti)
