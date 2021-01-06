@@ -3,24 +3,26 @@ package scala.scalanative
 import scalanative.annotation.alwaysinline
 import scalanative.unsafe._
 import scalanative.runtime.Intrinsics._
+import scalanative.unsigned._
 
 package object runtime {
 
   /** Runtime Type Information. */
-  type Type = CStruct3[Int, String, Class[Any]]
+  type Type = CStruct4[Int, Int, String, Class[Any]]
 
   implicit class TypeOps(val self: Ptr[Type]) extends AnyVal {
     @alwaysinline def id: Int          = self._1
-    @alwaysinline def name: String     = self._2
+    @alwaysinline def tid: Int         = self._2
+    @alwaysinline def name: String     = self._3
     @alwaysinline def isClass: Boolean = id >= 0
   }
 
   /** Class runtime type information. */
-  type ClassType = CStruct3[Type, Int, Int]
+  type ClassType = CStruct4[Type, Int, Int, Ptr[Long]]
 
   implicit class ClassTypeOps(val self: Ptr[ClassType]) extends AnyVal {
     @alwaysinline def id: Int            = self._1._1
-    @alwaysinline def name: String       = self._1._2
+    @alwaysinline def name: String       = self._1._3
     @alwaysinline def size: Int          = self._2
     @alwaysinline def idRangeUntil: Long = self._3
   }
@@ -29,7 +31,8 @@ package object runtime {
   def intrinsic: Nothing = throwUndefined()
 
   def toClass(rtti: RawPtr): _Class[_] = {
-    val clsPtr = elemRawPtr(rtti, castIntToRawWord(16))
+    val clsPtr =
+      elemRawPtr(rtti, (8.toUWord + implicitly[Tag[Word]].size).rawWord)
 
     if (loadRawPtr(clsPtr) == null) {
       val newClass = new _Class[Any](rtti)
