@@ -541,6 +541,8 @@ class StringTest {
      * \u03c3 'σ' - is standard lower case variant
      * \u03c2 'ς' - is used when it's final cased character in given word
      */
+    assertEquals("σ", "Σ".toLowerCase())
+    assertEquals("σς", "ΣΣ".toLowerCase())
     assertEquals("dς", "DΣ".toLowerCase())
     assertEquals("dσς aσς bσc", "DΣΣ AΣΣ BΣC".toLowerCase())
     assertEquals(
@@ -555,5 +557,19 @@ class StringTest {
                  "DΣ\u02B9\u02B9Σ\u02B9\u02B9Z".toLowerCase)
     assertEquals("dσ\u02B9\u02B9ς\u02B9\u02B9",
                  "DΣ\u02B9\u02B9Σ\u02B9\u02B9Z".substring(0, 7).toLowerCase)
+
+    /* From Unicode 13.0.0 reference, chapter 13.3, description to table 3-17.
+     * The sets of case-ignorable and cased characters are not disjoint: for example, they both contain U+0345 ypogegrammeni.
+     * Thus, the Before condition is not satisfied if C is preceded by only U+0345,
+     * but would be satisfied by the sequence <capital-alpha, ypogegrammeni>.
+     * Similarly, the After condition is satisfied if C is only followed by ypogegrammeni,
+     * but would not satisfied by the sequence <ypogegrammeni, capital-alpha>.
+     */
+    assertEquals("\u0345σ", "\u0345Σ".toLowerCase())
+    assertEquals("\u03B1\u0345ς", "\u0391\u0345Σ".toLowerCase())
+    assertEquals("\u03B1\u0345ς\u0345", "\u0391\u0345Σ\u0345".toLowerCase())
+    assertEquals("\u03B1\u0345σ\u0345\u03B1",
+                 "\u0391\u0345Σ\u0345\u0391".toLowerCase())
+
   }
 }
