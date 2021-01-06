@@ -846,8 +846,7 @@ final class _String()
 
         val hasCasedBefore = {
           val j = skipCaseIgnorableCharsBackwards(idx)
-          j > 0 && isCased(this.codePointBefore(j)) ||
-          j == 0 && isCased(this.codePointAt(j))
+          j > 0 && isCased(this.codePointBefore(j))
         }
 
         val hasCasedAfter = {
@@ -931,14 +930,12 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
      */
     def afterSoftDotted(i: Int): scala.Boolean = {
       val j = skipCharsWithCombiningClassOtherThanNoneOrAboveBackwards(i)
-      def isSoftDotted(codePoint: Int): scala.Boolean = codePoint match {
+      j > 0 && (codePointBefore(j) match {
         case 0x0069 | 0x006a | 0x012f | 0x0268 | 0x0456 | 0x0458 | 0x1e2d |
             0x1ecb =>
           true
         case _ => false
-      }
-      j > 0 && isSoftDotted(codePointBefore(j)) ||
-      j == 0 && isSoftDotted(codePointAt(j))
+      })
     }
 
     val preprocessed = replaceCharsAtIndex { i =>
@@ -1075,9 +1072,8 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     var j = i
     while (j > 0) {
       val cp = this.codePointBefore(j)
-      if (!shouldSkip(cp)) {
+      if (!shouldSkip(cp))
         return j
-      }
       j -= Character.charCount(cp)
     }
     0
