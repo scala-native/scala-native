@@ -844,31 +844,17 @@ final class _String()
       def isFinalSigma(idx: Int): scala.Boolean = {
         import Character._
 
-        def hasCasedAfterCaseIgnorable(
-            iterateForward: scala.Boolean): scala.Boolean = {
-          @inline
-          def nextIndex(currentIdx: Int, currentChar: Char): Int = {
-            val charSize = Character.charCount(currentChar)
-            if (iterateForward) currentIdx + charSize
-            else currentIdx - charSize
-          }
-
-          @tailrec
-          def loop(idx: Int): scala.Boolean = {
-            if (idx < offset || idx >= offset + count) false
-            else {
-              val c = charAt(idx)
-              if (isCased(c)) true
-              else if (isCaseIgnorable(c)) loop(nextIndex(idx, c))
-              else false //is neither cased or caseIgnorable, eg. word break
-            }
-          }
-
-          loop(nextIndex(idx, charAt(idx)))
+        val hasCasedBefore = {
+          val j = skipCaseIgnorableCharsBackwards(idx)
+          j > 0 && isCased(this.codePointBefore(j)) ||
+          j == 0 && isCased(this.codePointAt(j))
         }
 
-        val hasCasedBefore = hasCasedAfterCaseIgnorable(iterateForward = false)
-        val hasCasedAfter  = hasCasedAfterCaseIgnorable(iterateForward = true)
+        val hasCasedAfter = {
+          val j = skipCaseIgnorableCharsForwards(idx + 1)
+          j < length() && isCased(charAt(j))
+        }
+
         hasCasedBefore && !hasCasedAfter
       }
 
@@ -942,16 +928,17 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
   if (!output.contains('\u0307'))
     println(cp.toHexString)
 }
-
      */
     def afterSoftDotted(i: Int): scala.Boolean = {
       val j = skipCharsWithCombiningClassOtherThanNoneOrAboveBackwards(i)
-      j > 0 && (codePointBefore(j) match {
+      def isSoftDotted(codePoint: Int): scala.Boolean = codePoint match {
         case 0x0069 | 0x006a | 0x012f | 0x0268 | 0x0456 | 0x0458 | 0x1e2d |
             0x1ecb =>
           true
         case _ => false
-      })
+      }
+      j > 0 && isSoftDotted(codePointBefore(j)) ||
+      j == 0 && isSoftDotted(codePointAt(j))
     }
 
     val preprocessed = replaceCharsAtIndex { i =>
@@ -1067,36 +1054,62 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
       prep.append(this.substring(startOfSegment, i)).toString
   }
 
-  private def skipCharsWithCombiningClassOtherThanNoneOrAboveForwards(
-      i: Int): Int = {
+  private def skipConditionalCharsForwards(i: Int)(
+      shouldSkip: Int => scala.Boolean): Int = {
     // scalastyle:off return
-    import Character._
-    val len = length()
+    // use offset + count instead of length to handle Strings created using subString method
+    val len = offset + count
     var j   = i
     while (j != len) {
       val cp = this.codePointAt(j)
-      if (combiningClassNoneOrAboveOrOther(cp) != CombiningClassIsOther)
-        return j
+      if (!shouldSkip(cp))
+        return j - offset
       j += Character.charCount(cp)
     }
-    j
+    // Subtract offset so result can be matched against length() or passed to codePointAt
+    j - offset
     // scalastyle:on return
   }
 
-  private def skipCharsWithCombiningClassOtherThanNoneOrAboveBackwards(
-      i: Int): Int = {
+  private def skipConditionalCharsBackwards(i: Int)(
+      shouldSkip: Int => scala.Boolean): Int = {
     // scalastyle:off return
-    import Character._
     var j = i
-    while (j > 0) {
+    // use offset instead of 0 to handle Strings created using subString method
+    while (j > offset) {
       val cp = this.codePointBefore(j)
-      if (combiningClassNoneOrAboveOrOther(cp) != CombiningClassIsOther)
-        return j
+      if (!shouldSkip(cp))
+        return j - offset // Subtract offset so resulting index can be passed to codePointAt
       j -= Character.charCount(cp)
     }
     0
     // scalastyle:on return
   }
+
+  private def skipCharsWithCombiningClassOtherThanNoneOrAboveForwards(
+      i: Int): Int =
+    skipConditionalCharsForwards(i) { cp =>
+      import Character._
+      combiningClassNoneOrAboveOrOther(cp) == CombiningClassIsOther
+    }
+
+  private def skipCharsWithCombiningClassOtherThanNoneOrAboveBackwards(
+      i: Int): Int = skipConditionalCharsBackwards(i) { cp =>
+    import Character._
+    combiningClassNoneOrAboveOrOther(cp) == CombiningClassIsOther
+  }
+
+  private def skipCaseIgnorableCharsForwards(i: Int): Int =
+    skipConditionalCharsForwards(i) { cp =>
+      import Character._
+      isCaseIgnorable(cp)
+    }
+
+  private def skipCaseIgnorableCharsBackwards(i: Int): Int =
+    skipConditionalCharsBackwards(i) { cp =>
+      import Character._
+      isCaseIgnorable(cp)
+    }
 
   def trim(): _String = {
     var start = offset
