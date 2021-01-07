@@ -71,7 +71,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.host_arch }}-${{ matrix.docker_arch }}
       - name: Run local image registry
         run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
 
@@ -113,6 +113,7 @@ jobs:
         scala: [2.13.4, 2.12.12, 2.11.12]
         build-mode: [ debug , release-fast ]
         gc: [ boehm, immix, commix ]
+        host_arch: [ amd64 ]
         docker_arch: [ library, i386 ]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
@@ -152,7 +153,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.host_arch }}-${{ matrix.docker_arch }}
 
       - name: Run tests
         env:
