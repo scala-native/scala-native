@@ -166,6 +166,36 @@ object Discover {
     }
   }
 
+  /** Detect the target architecture.
+   *
+   *  @param clang   A path to the executable `clang`.
+   *  @param workdir A working directory where the compilation will take place.
+   *  @return The detected target triple describing the target architecture.
+   */
+  def targetTriple(clang: Path, workdir: Path): String = {
+    // Use non-standard extension to not include the ll file when linking (#639)
+    val targetc  = workdir.resolve("target").resolve("c.probe")
+    val targetll = workdir.resolve("target").resolve("ll.probe")
+    val compilec =
+      Seq(clang.abs, "-S", "-xc", "-emit-llvm", "-o", targetll.abs, targetc.abs)
+    def fail =
+      throw new BuildException("Failed to detect native target.")
+
+    IO.write(targetc, "int probe;".getBytes("UTF-8"))
+    val exit = Process(compilec, workdir.toFile).!
+    if (exit != 0) {
+      fail
+    } else {
+      val linesIter = Files.readAllLines(targetll).iterator()
+      while (linesIter.hasNext()) {
+        val line = linesIter.next()
+        if (line.startsWith("target triple"))
+          return line.split("\"").apply(1)
+      }
+      fail
+    }
+  }
+
   private def silentLogger(): ProcessLogger =
     ProcessLogger(_ => (), _ => ())
 

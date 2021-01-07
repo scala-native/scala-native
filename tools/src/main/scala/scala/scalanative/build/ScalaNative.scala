@@ -68,13 +68,15 @@ private[scalanative] object ScalaNative {
   }
 
   /** Optimizer high-level NIR under closed-world assumption. */
-  def optimize(config: Config, linked: linker.Result): linker.Result =
+  def optimize(config: Config,
+               linked: linker.Result,
+               is32: Boolean): linker.Result =
     dump(config, "optimized") {
       check(config) {
         if (config.compilerConfig.optimize) {
           config.logger.time(s"Optimizing (${config.mode} mode)") {
             val optimized =
-              interflow.Interflow(config, linked)
+              interflow.Interflow(config, linked, is32)
 
             linker.Link(config, linked.entries, optimized)
           }
@@ -85,9 +87,11 @@ private[scalanative] object ScalaNative {
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
-  def codegen(config: Config, linked: linker.Result): Seq[Path] = {
+  def codegen(config: Config,
+              linked: linker.Result,
+              is32: Boolean): Seq[Path] = {
     val llPaths = config.logger.time("Generating intermediate code") {
-      CodeGen(config, linked)
+      CodeGen(config, linked, is32)
     }
     config.logger.info(s"Produced ${llPaths.length} files")
     llPaths

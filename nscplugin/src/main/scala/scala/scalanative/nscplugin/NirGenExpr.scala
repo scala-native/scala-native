@@ -1891,10 +1891,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             } else {
               Conv.Bitcast
             }
-          case (nir.Type.FixedSizeI(_, true),
-                _: nir.Type.F) => // TODO(shadaj): use Type.I whenever we don't care about the size
+          case (i: nir.Type.I, _: nir.Type.F) if i.signed =>
             Conv.Sitofp
-          case (nir.Type.FixedSizeI(_, false), _: nir.Type.F) =>
+          case (i: nir.Type.I, _: nir.Type.F) if !i.signed =>
             Conv.Uitofp
           case (_: nir.Type.F, nir.Type.FixedSizeI(iwidth, true)) =>
             if (iwidth < 32) {

@@ -5,7 +5,9 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.linker.{Trait, Class}
 
-class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
+class Metadata(val linked: linker.Result,
+               proxies: Seq[Defn],
+               val is32: Boolean) {
   val rtti   = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
@@ -62,7 +64,7 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
   def initClassMetadata(): Unit = {
     classes.foreach { node =>
       vtable(node) = new VirtualTable(this, node)
-      layout(node) = new FieldLayout(this, node)
+      layout(node) = new FieldLayout(this, node, is32)
       if (linked.dynsigs.nonEmpty) {
         dynmap(node) = new DynamicHashMap(this, node, proxies)
       }

@@ -54,17 +54,18 @@ object Build {
     config.logger.time("Total") {
       val fclasspath = NativeLib.filterClasspath(config.classPath)
       val fconfig    = config.withClassPath(fclasspath)
+      val is32       = config.is32
 
       val workdir = fconfig.workdir
       val entries = ScalaNative.entries(fconfig)
       val linked  = ScalaNative.link(fconfig, entries)
       ScalaNative.logLinked(fconfig, linked)
-      val optimized = ScalaNative.optimize(fconfig, linked)
+      val optimized = ScalaNative.optimize(fconfig, linked, is32)
 
       // clean ll files
       IO.getAll(workdir, "glob:**.ll").foreach(Files.delete)
 
-      val generated = ScalaNative.codegen(fconfig, optimized)
+      val generated = ScalaNative.codegen(fconfig, optimized, is32)
 
       val nativelibs   = NativeLib.findNativeLibs(fconfig.classPath, workdir)
       val nativelib    = NativeLib.findNativeLib(nativelibs)

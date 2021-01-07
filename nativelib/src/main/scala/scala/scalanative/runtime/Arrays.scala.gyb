@@ -29,8 +29,8 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
 
-% sizePtr = 8
-% sizeHeader = 16
+% sizePtr = 'sizeOfWord'
+% sizeHeader = 'addRawWords(castIntToRawWord(8), sizeOfWord)'
 
 sealed abstract class Array[T]
     extends java.io.Serializable
@@ -39,7 +39,7 @@ sealed abstract class Array[T]
   /** Number of elements of the array. */
   @inline def length: Int = {
     val rawptr = castObjectToRawPtr(this)
-    val lenptr = elemRawPtr(rawptr, castIntToRawWord(${sizePtr}))
+    val lenptr = elemRawPtr(rawptr, ${sizePtr})
     loadInt(lenptr)
   }
 
@@ -155,7 +155,7 @@ object Array {
 
 %{
    types = {'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
-            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': sizePtr}
+            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'castRawWordToInt(sizeOfWord)'}
 }%
 % # BEWARE: Order of iteration of the dictionary depends on version of Python
 % #         used to run this script.
@@ -182,7 +182,7 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, castIntToRawWord(${sizeHeader} + ${sizeT} * i))
+      elemRawPtr(rawptr, addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(i))))
     }
 
   @inline def apply(i: Int): ${T} =
@@ -190,7 +190,7 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, castIntToRawWord(${sizeHeader} + ${sizeT} * i))
+      val ith    = elemRawPtr(rawptr, addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(i))))
       load${T}(ith)
     }
 
@@ -199,13 +199,13 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, castIntToRawWord(${sizeHeader} + ${sizeT} * i))
+      val ith    = elemRawPtr(rawptr, addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(i))))
       store${T}(ith, value)
     }
 
   @inline override def clone(): ${T}Array = {
     val arrty   = toRawType(classOf[${T}Array])
-    val arrsize = (${sizeHeader} + ${sizeT} * length).toUWord
+    val arrsize = new UWord(addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(length))))
     val arr     = ${alloc}(arrty, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -217,10 +217,10 @@ object ${T}Array {
 
   @inline def alloc(length: Int): ${T}Array = {
     val arrty   = toRawType(classOf[${T}Array])
-    val arrsize = (${sizeHeader} + ${sizeT} * length).toUWord
+    val arrsize = new UWord(addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(length))))
     val arr     = ${alloc}(arrty, arrsize)
-    storeInt(elemRawPtr(arr, castIntToRawWord(8)), length)
-    storeInt(elemRawPtr(arr, castIntToRawWord(12)), ${sizeT}.toInt)
+    storeInt(elemRawPtr(arr, ${sizePtr}), length)
+    storeInt(elemRawPtr(arr, addRawWords(${sizePtr}, castIntToRawWord(4))), ${sizeT}.toInt)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 

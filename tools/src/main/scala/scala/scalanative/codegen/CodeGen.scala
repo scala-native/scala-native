@@ -15,16 +15,18 @@ import scalanative.build.ScalaNative.dumpDefns
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
-  def apply(config: build.Config, linked: linker.Result): Seq[Path] = {
+  def apply(config: build.Config,
+            linked: linker.Result,
+            is32: Boolean): Seq[Path] = {
     val defns   = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
-    implicit val meta = new Metadata(linked, proxies)
+    implicit val meta = new Metadata(linked, proxies, is32)
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
     val lowered   = lower(generated)
     dumpDefns(config, "lowered", lowered)
-    emit(config, lowered)
+    emit(config, lowered, is32)
   }
 
   private def lower(defns: Seq[Defn])(implicit meta: Metadata): Seq[Defn] = {
@@ -42,7 +44,7 @@ object CodeGen {
   }
 
   /** Generate code for given assembly. */
-  private def emit(config: build.Config, assembly: Seq[Defn])(
+  private def emit(config: build.Config, assembly: Seq[Defn], is32: Boolean)(
       implicit meta: Metadata): Seq[Path] =
     Scope { implicit in =>
       val env          = assembly.map(defn => defn.name -> defn).toMap
@@ -57,7 +59,7 @@ object CodeGen {
           .map {
             case (id, defns) =>
               val sorted = defns.sortBy(_.name.show)
-              new Impl(targetTriple, env, sorted)
+              new Impl(targetTriple, is32, env, sorted)
                 .gen(id.toString, workdir)
           }
           .toSeq
@@ -69,7 +71,7 @@ object CodeGen {
       def single(): Seq[Path] = {
         val sorted = assembly.sortBy(_.name.show)
         Seq(
-          new Impl(targetTriple, env, sorted)
+          new Impl(targetTriple, is32, env, sorted)
             .gen(id = "out", workdir))
       }
 
@@ -81,6 +83,7 @@ object CodeGen {
     }
 
   private final class Impl(targetTriple: String,
+                           is32: Boolean,
                            env: Map[Global, Defn],
                            defns: Seq[Defn])(implicit meta: Metadata) {
     import Impl._
@@ -468,9 +471,12 @@ object CodeGen {
         case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing => str("i8*")
         case Type.Bool                                             => str("i1")
         case i: Type.FixedSizeI                                    => str("i"); str(i.width)
-        case Type.Word                                             =>
-          // TODO(shadaj): depends on architecture
-          str("i64")
+        case Type.Word =>
+          if (is32) {
+            str("i32")
+          } else {
+            str("i64")
+          }
         case Type.Float  => str("float")
         case Type.Double => str("double")
         case Type.ArrayValue(ty, n) =>
@@ -554,8 +560,11 @@ object CodeGen {
           genGlobal(n)
           str(" to i8*)")
         case Val.SizeOfWord =>
-          // TODO(shadaj): depends on architecture
-          str("8")
+          if (is32) {
+            str("4")
+          } else {
+            str("8")
+          }
         case _ =>
           unsupported(v)
       }
@@ -1046,15 +1055,16 @@ object CodeGen {
     def genConv(conv: Conv, fromType: Type, toType: Type)(
         implicit sb: ShowBuilder): Unit = conv match {
       case Conv.ZWordCast | Conv.SWordCast =>
-        // TODO(shadaj): depends on architecture
         val fromSize = fromType match {
-          case Type.Word             => 64
+          case Type.Word =>
+            if (is32) 32 else 64
           case Type.FixedSizeI(s, _) => s
           case o                     => unsupported(o)
         }
 
         val toSize = toType match {
-          case Type.Word             => 64
+          case Type.Word =>
+            if (is32) 32 else 64
           case Type.FixedSizeI(s, _) => s
           case o                     => unsupported(o)
         }

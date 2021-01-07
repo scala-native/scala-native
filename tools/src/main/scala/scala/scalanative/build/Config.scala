@@ -73,6 +73,23 @@ sealed trait Config {
 
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean = compilerConfig.dump
+
+  def is32: Boolean =
+    compilerConfig.targetTriple
+      .getOrElse(
+        Discover.targetTriple(clang, workdir)
+      )
+      .split('-')
+      .headOption
+      .getOrElse("") match {
+      case "x86_64" => false
+      case "i386"   => true
+      case "i686"   => true
+      case o =>
+        println(
+          s"Unexpected architecture in target triple: ${o}, defaulting to 64-bit")
+        false
+    }
 }
 
 object Config {

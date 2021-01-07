@@ -25,6 +25,7 @@ object Lower {
     import meta._
 
     implicit val linked = meta.linked
+    val is32            = meta.is32
 
     val Object = linked.infos(Rt.Object.name).asInstanceOf[Class]
 
@@ -711,14 +712,14 @@ object Lower {
         implicit pos: Position): Unit = {
       val Op.Sizeof(ty) = op
 
-      buf.let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty))), unwind)
+      buf.let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty, is32))), unwind)
     }
 
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(
         implicit pos: Position): Unit = {
       val Op.Classalloc(ClassRef(cls)) = op
 
-      val size = MemoryLayout.sizeOf(layout(cls).struct)
+      val size = MemoryLayout.sizeOf(layout(cls).struct, is32)
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
