@@ -8701,8 +8701,8 @@ object Tag {
      */
     private[unsafe] def fromRawPtr(rawptr: RawPtr): F
 
-    @alwaysinline def size: CSize      = 8.toUWord
-    @alwaysinline def alignment: CSize = 8.toUWord
+    @alwaysinline def size: CSize      = new UWord(sizeOfWord)
+    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
     @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
       fromRawPtr(loadRawPtr(ptr.rawptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit =
