@@ -1,7 +1,8 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Path, Files}
+import java.nio.file.{Files, Path}
+import scala.scalanative.util.Scope
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -23,7 +24,7 @@ object Build {
    *  val clangpp  = Discover.clangpp()
    *  val linkopts = Discover.linkingOptions()
    *  val compopts = Discover.compileOptions()
-   *  val triple   = Discover.targetTriple(clang, workdir)
+   *
    *  val outpath  = workdir.resolve("out")
    *
    *  val config =
@@ -38,10 +39,8 @@ object Build {
    *         .withCompileOptions(compopts)
    *         .withLinkStubs(true)
    *       }
-   *      .withTargetTriple(triple)
    *      .withMainClass(main)
    *      .withClassPath(classpath)
-   *      .withLinkStubs(true)
    *      .withWorkdir(workdir)
    *
    *  Build.build(config, outpath)
@@ -51,29 +50,39 @@ object Build {
    *  @param outpath The path to the resulting native binary.
    *  @return `outpath`, the path to the resulting native binary.
    */
-  def build(config: Config, outpath: Path): Path = config.logger.time("Total") {
-    val workdir = config.workdir
-    val entries = ScalaNative.entries(config)
-    val linked  = ScalaNative.link(config, entries)
-    ScalaNative.logLinked(config, linked)
-    val optimized = ScalaNative.optimize(config, linked)
+  def build(config: Config, outpath: Path)(implicit scope: Scope): Path =
+    config.logger.time("Total") {
+      val fclasspath = NativeLib.filterClasspath(config.classPath)
+      val fconfig    = config.withClassPath(fclasspath)
 
-    IO.getAll(workdir, "glob:**.ll").foreach(Files.delete)
-    ScalaNative.codegen(config, optimized)
-    val generated = IO.getAll(workdir, "glob:**.ll")
+      val workdir = fconfig.workdir
+      val entries = ScalaNative.entries(fconfig)
+      val linked  = ScalaNative.link(fconfig, entries)
+      ScalaNative.logLinked(fconfig, linked)
+      val optimized = ScalaNative.optimize(fconfig, linked)
 
-    val nativelibs   = NativeLib.findNativeLibs(config.classPath, workdir)
-    val nativelib    = NativeLib.findNativeLib(nativelibs)
-    val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
+      // clean ll files
+      IO.getAll(workdir, "glob:**.ll").foreach(Files.delete)
 
-    val objectFiles = config.logger.time("Compiling to native code") {
-      val nativelibConfig =
-        config.withCompilerConfig(
-          _.withCompileOptions("-O2" +: config.compileOptions))
-      LLVM.compileNativelibs(nativelibConfig, linked, unpackedLibs, nativelib)
-      LLVM.compile(config, generated)
+      val generated = ScalaNative.codegen(fconfig, optimized)
+
+      val nativelibs   = NativeLib.findNativeLibs(fconfig.classPath, workdir)
+      val nativelib    = NativeLib.findNativeLib(nativelibs)
+      val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
+
+      val objectPaths = config.logger.time("Compiling to native code") {
+        val nativelibConfig =
+          fconfig.withCompilerConfig(
+            _.withCompileOptions("-O2" +: fconfig.compileOptions))
+        val libObjectPaths =
+          LLVM.compileNativelibs(nativelibConfig,
+                                 linked,
+                                 unpackedLibs,
+                                 nativelib)
+        val llObjectPaths = LLVM.compile(fconfig, generated)
+        libObjectPaths ++ llObjectPaths
+      }
+
+      LLVM.link(config, linked, objectPaths, outpath)
     }
-
-    LLVM.link(config, linked, objectFiles, unpackedLibs, outpath)
-  }
 }

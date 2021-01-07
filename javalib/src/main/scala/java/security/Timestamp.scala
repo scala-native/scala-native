@@ -23,7 +23,7 @@ final class Timestamp private (private val signerCertPath: CertPath,
 
   @inline def getSignerCertPath: CertPath = signerCertPath
 
-  @inline def getTimestamp: Date = new Date(timestamp.getTime)
+  @inline def getTimestamp: Date = new Date(timestamp.getTime())
 
   override def equals(obj: Any): Boolean =
     obj match {
@@ -45,8 +45,8 @@ final class Timestamp private (private val signerCertPath: CertPath,
     buf.append("Timestamp [")
     buf.append(timestamp.toString)
     buf.append(" certPath=")
-    val certificates = signerCertPath.getCertificates
-    if (certificates.isEmpty) {
+    val certificates = signerCertPath.getCertificates()
+    if (certificates.isEmpty()) {
       buf.append(certificates.get(0).toString)
     } else {
       buf.append("<empty>")
@@ -63,6 +63,6 @@ private object TimestampConstructorHelper {
     if (timestamp eq null) {
       throw new NullPointerException("Timestamp cannot be null")
     } else {
-      new Date(timestamp.getTime)
+      new Date(timestamp.getTime())
     }
 }

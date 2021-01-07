@@ -34,14 +34,14 @@ private[nio] final class HeapByteBufferCharView private (
     GenHeapBufferView(this).generic_asReadOnlyBuffer()
 
   def subSequence(start: Int, end: Int): CharBuffer = {
-    if (start < 0 || end < start || end > remaining)
+    if (start < 0 || end < start || end > remaining())
       throw new IndexOutOfBoundsException
-    new HeapByteBufferCharView(capacity,
+    new HeapByteBufferCharView(capacity(),
                                _byteArray,
                                _byteArrayOffset,
                                position() + start,
                                position() + end,
-                               isReadOnly,
+                               isReadOnly(),
                                isBigEndian)
   }
 

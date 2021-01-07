@@ -1,5 +1,6 @@
 package java.io
 
+import scala.scalanative.unsigned._
 import scalanative.nio.fs.UnixException
 import scalanative.unsafe._
 import scalanative.libc._
@@ -45,7 +46,7 @@ class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
     // we use the runtime knowledge of the array layout to avoid
     // intermediate buffer, and read straight from the array memory
     val buf        = buffer.asInstanceOf[runtime.ByteArray].at(offset)
-    val writeCount = unistd.write(fd.fd, buf, count)
+    val writeCount = unistd.write(fd.fd, buf, count.toUInt)
 
     if (writeCount < 0) {
       // negative value (typically -1) indicates that write failed
@@ -67,7 +68,7 @@ object FileOutputStream {
       import stat._
       val flags = O_CREAT | O_WRONLY | (if (append) O_APPEND else O_TRUNC)
       val mode  = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
-      val fd    = open(toCString(file.getPath), flags, mode)
+      val fd    = open(toCString(file.getPath()), flags, mode)
       if (fd == -1)
         throw new FileNotFoundException(
           s"$file (${fromCString(string.strerror(errno.errno))})")

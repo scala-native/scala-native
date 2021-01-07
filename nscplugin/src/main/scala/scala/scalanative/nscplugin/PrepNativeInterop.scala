@@ -11,11 +11,12 @@ import scala.tools.nsc._
  * - Rewrite the body `scala.util.PropertiesTrait.scalaProps` to
  *   be statically determined at compile-time.
  */
-abstract class PrepNativeInterop
+abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
     extends plugins.PluginComponent
     with transform.Transform {
   import PrepNativeInterop._
 
+  /** Not for use in the constructor body: only initialized afterwards. */
   val nirAddons: NirGlobalAddons {
     val global: PrepNativeInterop.this.global.type
   }
@@ -203,14 +204,12 @@ abstract class PrepNativeInterop
   private def isScalaEnum(implDef: ImplDef) =
     implDef.symbol.tpe.typeSymbol isSubClass EnumerationClass
 
-  private trait ScalaEnumFctExtractors {
-    protected val methSym: Symbol
-
+  private abstract class ScalaEnumFctExtractors(val methSym: Symbol) {
     protected def resolve(ptpes: Symbol*) = {
       val res = methSym suchThat {
         _.tpe.params.map(_.tpe.typeSymbol) == ptpes.toList
       }
-      assert(res != NoSymbol)
+      assert(res != NoSymbol, "tried to resolve NoSymbol")
       res
     }
 
@@ -250,16 +249,18 @@ abstract class PrepNativeInterop
 
   }
 
-  private object ScalaEnumValue extends {
-    protected val methSym = getMemberMethod(EnumerationClass, nativenme.Value)
-  } with ScalaEnumFctExtractors
+  private object ScalaEnumValue
+      extends ScalaEnumFctExtractors(
+        methSym = getMemberMethod(EnumerationClass, nativenme.Value)
+      )
 
-  private object ScalaEnumVal extends {
-    protected val methSym = {
-      val valSym = getMemberClass(EnumerationClass, nativenme.Val)
-      valSym.tpe.member(nme.CONSTRUCTOR)
-    }
-  } with ScalaEnumFctExtractors
+  private object ScalaEnumVal
+      extends ScalaEnumFctExtractors(
+        methSym = {
+          val valSym = getMemberClass(EnumerationClass, nativenme.Val)
+          valSym.tpe.member(nme.CONSTRUCTOR)
+        }
+      )
 
   /**
    * Construct a call to Enumeration.Value

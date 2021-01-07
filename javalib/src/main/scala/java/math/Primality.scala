@@ -254,7 +254,7 @@ private[math] object Primality {
     var y: BigInteger = null
     val nMinus1       = n.subtract(BigInteger.ONE)
     val bitLength     = nMinus1.bitLength()
-    val k             = nMinus1.getLowestSetBit
+    val k             = nMinus1.getLowestSetBit()
     val q             = nMinus1.shiftRight(k)
     val rnd           = new Random()
     for (i <- 0 until t) {
@@ -270,15 +270,15 @@ private[math] object Primality {
         do {
           x = new BigInteger(bitLength, rnd)
         } while ((x.compareTo(n) >= BigInteger.EQUALS) || x.sign == 0 ||
-          x.isOne)
+          x.isOne())
       }
 
       y = x.modPow(q, n)
-      if (!(y.isOne || y == nMinus1)) {
+      if (!(y.isOne() || y == nMinus1)) {
         for (j <- 1 until k) {
           if (y != nMinus1) {
             y = y.multiply(y).mod(n)
-            if (y.isOne)
+            if (y.isOne())
               return false
           }
         }

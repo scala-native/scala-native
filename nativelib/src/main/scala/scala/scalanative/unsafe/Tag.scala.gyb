@@ -17,9 +17,9 @@ import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
 
 sealed abstract class Tag[T] {
-  def size: Int
-  def alignment: Int
-  @noinline def offset(idx: Int): Int = throwUndefined()
+  def size: CSize
+  def alignment: CSize
+  @noinline def offset(idx: CSize): CSize = throwUndefined()
   @noinline def load(ptr: unsafe.Ptr[T]): T = throwUndefined()
   @noinline def store(ptr: unsafe.Ptr[T], value: T): Unit = throwUndefined()
 }
@@ -27,8 +27,8 @@ sealed abstract class Tag[T] {
 object Tag {
   final case class Ptr[T](of: Tag[T])
       extends Tag[unsafe.Ptr[T]] {
-    @alwaysinline def size: Int = 8
-    @alwaysinline def alignment: Int = 8
+    @alwaysinline def size: CSize = 8.toULong
+    @alwaysinline def alignment: CSize = 8.toULong
     @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Ptr[T]]): unsafe.Ptr[T] =
       fromRawPtr[T](loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Ptr[T]], value: unsafe.Ptr[T]): Unit =
@@ -37,8 +37,8 @@ object Tag {
 
   final case class Class[T <: AnyRef](of: java.lang.Class[T])
       extends Tag[T] {
-    @alwaysinline def size: Int = 8
-    @alwaysinline def alignment: Int = 8
+    @alwaysinline def size: CSize = 8.toULong
+    @alwaysinline def alignment: CSize = 8.toULong
     @alwaysinline override def load(ptr: unsafe.Ptr[T]): T =
       loadObject(toRawPtr(ptr)).asInstanceOf[T]
     @alwaysinline override def store(ptr: unsafe.Ptr[T], value: T): Unit =
@@ -61,8 +61,8 @@ object Tag {
   % for (name, T, size) in prims:
 
   object ${name} extends Tag[${T}] {
-    @alwaysinline def size: Int = ${size}
-    @alwaysinline def alignment: Int = ${size}
+    @alwaysinline def size: CSize = ${size}.toULong
+    @alwaysinline def alignment: CSize = ${size}.toULong
     @alwaysinline override def load(ptr: unsafe.Ptr[${T}]): ${T} =
       % if name == 'Unit':
       loadObject(toRawPtr(ptr)).asInstanceOf[Unit]
@@ -87,13 +87,14 @@ object Tag {
 
   private[scalanative] sealed trait NatTag {
     def toInt: Int
+    def toUInt: UInt = toInt.toUInt
   }
 
   % for N in range(0, 10):
 
   object Nat${N} extends Tag[unsafe.Nat._${N}] with NatTag {
-    @noinline def size: Int = throwUndefined()
-    @noinline def alignment: Int = throwUndefined()
+    @noinline def size: CSize = throwUndefined()
+    @noinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int = ${N}
   }
 
@@ -110,8 +111,8 @@ object Tag {
       extends Tag[unsafe.Nat.Digit${N}${JustNs}]
       with NatTag
   {
-    @alwaysinline def size: Int = throwUndefined()
-    @alwaysinline def alignment: Int = throwUndefined()
+    @alwaysinline def size: CSize = throwUndefined()
+    @alwaysinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int = {
       var res = 0
       % for i in range(1, N + 1):
@@ -126,9 +127,9 @@ object Tag {
   final case class CArray[T, N <: unsafe.Nat](of: Tag[T], n: Tag[N])
       extends Tag[unsafe.CArray[T, N]]
   {
-    @alwaysinline def size: Int = of.size * n.asInstanceOf[NatTag].toInt
-    @alwaysinline def alignment: Int = of.alignment
-    @alwaysinline override def offset(idx: Int): Int = of.size * idx
+    @alwaysinline def size: CSize = of.size * n.asInstanceOf[NatTag].toUInt
+    @alwaysinline def alignment: CSize = of.alignment
+    @alwaysinline override def offset(idx: CSize): CSize = of.size * idx.toUInt
     @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CArray[T, N]]): unsafe.CArray[T, N] = {
       new unsafe.CArray[T, N](ptr.rawptr)
     }
@@ -141,10 +142,11 @@ object Tag {
   
   private[scalanative] sealed trait StructTag
 
-  @alwaysinline private[scalanative] def align(offset: Int, alignment: Int) = {
-    val alignmentMask = alignment - 1
+  @alwaysinline private[scalanative] def align(offset: CSize, alignment: CSize) = {
+    val alignmentMask = alignment - 1.toULong
+    val zeroUL = 0.toULong
     val padding =
-      if ((offset & alignmentMask) == 0) 0
+      if ((offset & alignmentMask) == zeroUL) zeroUL
       else alignment - (offset & alignmentMask)
     offset + padding
   }
@@ -159,24 +161,24 @@ object Tag {
     extends Tag[unsafe.CStruct${N}${JustTs}]
     with StructTag
   {
-    @alwaysinline def size: Int = {
-      var res = 0
+    @alwaysinline def size: CSize = {
+      var res = 0.toULong
       % for i in range(1, N + 1):
       res = align(res, _${i}.alignment) + _${i}.size
       % end
       align(res, alignment)
     }
-    @alwaysinline def alignment: Int = {
-      var res = 1
+    @alwaysinline def alignment: CSize = {
+      var res = 1.toULong
       % for i in range(1, N + 1):
-      res = Math.max(res, _${i}.alignment)
+      res = res.max(_${i}.alignment)
       % end
       res
     }
-    @alwaysinline override def offset(idx: Int): Int = idx match {
+    @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       % for fld in range(1, N + 1):
       case ${fld - 1} =>
-        var res = 0
+        var res = 0.toULong
         % for i in range(1, fld):
         res = align(res, _${i}.alignment) + _${i}.size
         % end
@@ -191,25 +193,33 @@ object Tag {
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct${N}${JustTs}], value: unsafe.CStruct${N}${JustTs}): Unit = {
       val dst = ptr.rawptr
       val src = value.rawptr
-      libc.memcpy(dst, src, size)
+      libc.memcpy(dst, src, size.toULong)
     }
   }
 
   % end
 
+  abstract class CFuncPtrTag[F <: unsafe.CFuncPtr] private[unsafe] ()
+      extends Tag[F] {
+    /** Internal method used to cast Ptr[_] to CFuncPtr using its underlying RawPtr
+     *  Takes RawPtr instead Ptr[_] to skip extra boxing
+     */
+    private[unsafe] def fromRawPtr(rawptr: RawPtr): F
+
+    @alwaysinline def size: CSize = 8.toULong
+    @alwaysinline def alignment: CSize = 8.toULong
+    @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
+      fromRawPtr(loadRawPtr(ptr.rawptr))
+    @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit =
+      storeRawPtr(toRawPtr(ptr), value.rawptr)
+    }
+
   % for N in range(0, 23):
-  %   targs = ", ".join(["Any" for i in range(1, N+1)] + ["Any"])
+  %   targs = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
+  %   tag   = "CFuncPtr{}[{}]".format(N, targs)
   %   nativeCFuncPtr = "unsafe.CFuncPtr{}[{}]".format(N, targs)
-
-  object CFuncPtr${N} extends Tag[${nativeCFuncPtr}] {
-    @alwaysinline def size: Int = 8
-    @alwaysinline def alignment: Int = 8
-    @alwaysinline override def load(ptr: unsafe.Ptr[${nativeCFuncPtr}]): ${nativeCFuncPtr} =
-      Boxes.boxToCFuncRawPtr(loadRawPtr(toRawPtr(ptr)))
-    @alwaysinline override def store(ptr: unsafe.Ptr[${nativeCFuncPtr}], value: ${nativeCFuncPtr}): Unit =
-      storeRawPtr(toRawPtr(ptr), Boxes.unboxToCFuncRawPtr(value))
-  }
-
+  abstract class ${tag}
+      extends CFuncPtrTag[${nativeCFuncPtr}]
   % end
 
   @alwaysinline implicit def materializePtrTag[T](implicit tag: Tag[T]): Tag[unsafe.Ptr[T]] =
@@ -243,8 +253,19 @@ object Tag {
   @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]: Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
   % for N in range(0, 23):
-  %   targs = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
-  @alwaysinline implicit def materializeCFuncPtr${N}[${targs}]: Tag[unsafe.CFuncPtr${N}[${targs}]] =
-    Tag.CFuncPtr${N}.asInstanceOf[Tag[unsafe.CFuncPtr${N}[${targs}]]]
-  % end 
+  %   tps     = ", ".join(["T" + str(i)                for i in range(1, N+1)] + ["R"])
+  %   tpsDecl = ", ".join(["T" + str(i) + ": Tag"      for i in range(1, N+1)] + ["R: Tag"])
+  %   args    = ", ".join(["$fnPtr"] + ["arg" + str(i) for i in range(1, N+1)])
+  %
+  %   CFuncPtrN     = "CFuncPtr{}[{}]".format(N, tps)
+  %   CFuncPtrNDecl = "CFuncPtr{}[{}]".format(N, tpsDecl)
+
+  @alwaysinline implicit def materialize${CFuncPtrNDecl}: CFuncPtrTag[unsafe.${CFuncPtrN}] = {
+    new CFuncPtrTag[unsafe.${CFuncPtrN}] {
+      @alwaysinline override private[unsafe] def fromRawPtr(rawptr: RawPtr): unsafe.${CFuncPtrN} = {
+        unsafe.CFuncPtr${N}.fromRawPtr[${tps}](rawptr)
+      }
+    }
+  }
+  % end
 }

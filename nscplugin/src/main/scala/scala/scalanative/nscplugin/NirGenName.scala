@@ -1,11 +1,12 @@
 package scala.scalanative
 package nscplugin
 
-import scala.tools.nsc._
-import scala.reflect.internal.Flags._
+import scala.tools.nsc.Global
 import scalanative.util.unreachable
 
-trait NirGenName { self: NirGenPhase =>
+trait NirGenName[G <: Global with Singleton] {
+  self: NirGenPhase[G] =>
+
   import global.{Name => _, _}, definitions._
   import nirAddons.nirDefinitions._
   import SimpleType.{fromSymbol, fromType}
@@ -103,16 +104,14 @@ trait NirGenName { self: NirGenPhase =>
 
   private def nativeIdOf(sym: Symbol): String = {
     sym.getAnnotation(NameClass).flatMap(_.stringArg(0)).getOrElse {
-      if (sym.isField) {
+      val id: String = if (sym.isField) {
         val id0 = sym.name.decoded.toString
         if (id0.charAt(id0.length() - 1) != ' ') id0
         else id0.substring(0, id0.length() - 1) // strip trailing ' '
       } else if (sym.isMethod) {
         val name                = sym.name.decoded
         val isScalaHashOrEquals = name.startsWith("__scala_")
-        if (sym.owner == NObjectClass) {
-          name.substring(2) // strip the __
-        } else if (isScalaHashOrEquals) {
+        if (sym.owner == NObjectClass || isScalaHashOrEquals) {
           name.substring(2) // strip the __
         } else {
           name
@@ -120,6 +119,12 @@ trait NirGenName { self: NirGenPhase =>
       } else {
         scalanative.util.unreachable
       }
+      /*
+       * Double quoted identifiers are not allowed in CLang.
+       * We're replacing them with unicode to allow distinction between x / `x` and `"x"`.
+       * It follows Scala JVM naming convention.
+       */
+      id.replace("\"", "$u0022")
     }
   }
 }

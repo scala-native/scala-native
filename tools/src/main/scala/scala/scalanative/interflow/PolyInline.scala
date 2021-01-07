@@ -20,6 +20,8 @@ trait PolyInline { self: Interflow =>
     val res = objty match {
       case ExactClassRef(cls, _) =>
         cls.resolve(sig).map(g => (cls, g)).toSeq
+      case ClassRef(cls) if !sig.isVirtual =>
+        cls.resolve(sig).map(g => (cls, g)).toSeq
       case ScopeRef(scope) =>
         val targets = mutable.UnrolledBuffer.empty[(Class, Global)]
         scope.implementors.foreach { cls =>
@@ -116,13 +118,7 @@ trait PolyInline { self: Interflow =>
         emit.jump(Next.Label(mergeLabel, Seq(res)))
     }
 
-    // !!! CAUTION: j.l.Object is provided here as the most generic upper bound type.
-    // !!! In case `tys` have more than one common super-type and a type which is more
-    // !!! specific than j.l.Object is expected as the return type, then Sub.lub may
-    // !!! calculate the wrong type.
-    val result = Val.Local(
-      fresh(),
-      Sub.lub(rettys, Type.Ref(Global.Top("java.lang.Object"))))
+    val result = Val.Local(fresh(), Sub.lub(rettys, Some(op.resty)))
     emit.label(mergeLabel, Seq(result))
 
     result

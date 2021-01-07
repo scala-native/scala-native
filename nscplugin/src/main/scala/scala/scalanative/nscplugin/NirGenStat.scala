@@ -4,11 +4,13 @@ package nscplugin
 import scala.collection.mutable
 import scala.reflect.internal.Flags._
 import scala.scalanative.nir._
+import scala.tools.nsc.Properties
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
+import scala.tools.nsc
 import scalanative.nir.ControlFlow.removeDeadBlocks
 
-trait NirGenStat { self: NirGenPhase =>
+trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
   import global._
   import definitions._
@@ -18,6 +20,8 @@ trait NirGenStat { self: NirGenPhase =>
 
   val reflectiveInstantiationInfo =
     mutable.UnrolledBuffer.empty[ReflectiveInstantiationBuffer]
+
+  protected val isScala211 = Properties.versionNumberString.startsWith("2.11")
 
   def isStaticModule(sym: Symbol): Boolean =
     sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
@@ -69,7 +73,7 @@ trait NirGenStat { self: NirGenPhase =>
 
   class StatBuffer {
     private val buf          = mutable.UnrolledBuffer.empty[nir.Defn]
-    def toSeq: Seq[nir.Defn] = buf
+    def toSeq: Seq[nir.Defn] = buf.toSeq
 
     def +=(defn: nir.Defn): Unit = {
       buf += defn
@@ -101,67 +105,6 @@ trait NirGenStat { self: NirGenPhase =>
 
     def genStructAttrs(sym: Symbol): Attrs = Attrs.None
 
-    def genFuncRawPtrExternForwarder(cd: ClassDef): Defn = {
-      val attrs                      = Attrs(isExtern = true)
-      val name                       = genFuncPtrExternForwarderName(cd.symbol)
-      val sig                        = Type.Function(Seq.empty, Type.Unit)
-      implicit val pos: nir.Position = cd.pos
-      val body =
-        Seq(Inst.Label(Local(0), Seq.empty), Inst.Unreachable(Next.None))
-
-      Defn.Define(attrs, name, sig, body)(cd.pos)
-    }
-
-    def genFuncPtrExternForwarder(cd: ClassDef): Defn = {
-      val applys = cd.impl.body.collect {
-        case dd: DefDef
-            if dd.name == nme.apply
-              && !dd.symbol.hasFlag(BRIDGE) =>
-          dd
-      }
-      val applySym = applys match {
-        case Seq() =>
-          unsupported("func ptr impl not found")
-        case Seq(apply) =>
-          apply.symbol
-        case _ =>
-          unsupported("multiple func ptr impls found")
-      }
-      val applyName = Val.Global(genMethodName(applySym), Type.Ptr)
-      val applySig  = genMethodSig(applySym)
-
-      val attrs = Attrs(isExtern = true)
-      val name  = genFuncPtrExternForwarderName(cd.symbol)
-      val sig   = genExternMethodSig(applySym)
-
-      implicit val pos: nir.Position = applySym.pos
-
-      val body = scoped(
-        curUnwindHandler := None
-      ) {
-        val fresh = Fresh()
-        val buf   = new ExprBuffer()(fresh)
-
-        val Type.Function(origtys, origretty) = applySig
-        val Type.Function(paramtys, retty)    = sig
-
-        val params = paramtys.map(ty => Val.Local(fresh(), ty))
-        buf.label(fresh(), params)
-        val boxedParams = params.zip(origtys.tail).map {
-          case (param, ty) =>
-            buf.fromExtern(ty, param)
-        }
-        val res =
-          buf.call(applySig, applyName, Val.Null +: boxedParams, Next.None)
-        val unboxedRes = buf.toExtern(retty, res)
-        buf.ret(unboxedRes)
-
-        buf.toSeq
-      }
-
-      Defn.Define(attrs, name, sig, body)(cd.pos)
-    }
-
     def genNormalClass(cd: ClassDef): Unit = {
       val sym    = cd.symbol
       def attrs  = genClassAttrs(cd)
@@ -173,13 +116,6 @@ trait NirGenStat { self: NirGenPhase =>
       genReflectiveInstantiation(cd)
       genClassFields(sym)
       genMethods(cd)
-      if (sym.isCFuncPtrNClass) {
-        if (sym == CFuncRawPtrClass) {
-          buf += genFuncRawPtrExternForwarder(cd)
-        } else {
-          buf += genFuncPtrExternForwarder(cd)
-        }
-      }
 
       buf += {
         if (sym.isScalaModule) {
@@ -392,9 +328,8 @@ trait NirGenStat { self: NirGenPhase =>
       withFreshExprBuffer { exprBuf =>
         exprBuf.label(curFresh(), Seq())
 
-        val fqcnArg = Val.String(fqSymId)
-        val runtimeClassArg =
-          exprBuf.genBoxClass(Val.Global(Global.Top(fqSymId), Type.Ptr))
+        val fqcnArg          = Val.String(fqSymId)
+        val runtimeClassArg  = Val.ClassOf(fqSymName)
         val loadModuleFunArg = genModuleLoaderAnonFun(exprBuf)
 
         exprBuf.genApplyModuleMethod(
@@ -518,18 +453,11 @@ trait NirGenStat { self: NirGenPhase =>
                                              Val.Int(ctorSig.args.tail.length),
                                              unwind(curFresh))
           for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
-            // Allocate and instantiate a java.lang.Class object for the arg.
-            val co = allocAndConstruct(
-              exprBuf,
-              jlClass,
-              Seq(Type.Ptr),
-              Seq(Val.Global(Type.typeToName(arg), Type.Ptr))
-            )
             // Store the runtime class in the array.
             exprBuf.arraystore(jlClassRef,
                                rtClasses,
                                Val.Int(argIdx),
-                               co,
+                               Val.ClassOf(Type.typeToName(arg)),
                                unwind(curFresh))
           }
 
@@ -562,9 +490,9 @@ trait NirGenStat { self: NirGenPhase =>
         withFreshExprBuffer { exprBuf =>
           exprBuf.label(curFresh(), Seq())
 
-          val fqcnArg = Val.String(fqSymId)
-          val runtimeClassArg =
-            exprBuf.genBoxClass(Val.Global(fqSymName, Type.Ptr))
+          val fqcnArg         = Val.String(fqSymId)
+          val runtimeClassArg = Val.ClassOf(fqSymName)
+
           val instantiateClassFunArg =
             genClassConstructorsInfo(exprBuf, ctors)
 
@@ -587,6 +515,43 @@ trait NirGenStat { self: NirGenPhase =>
           ()
       }
 
+    private def genJavaDefaultMethodBody(dd: DefDef): Seq[nir.Inst] = {
+      val fresh = Fresh()
+      val buf   = new ExprBuffer()(fresh)
+
+      implicit val pos: nir.Position = dd.pos
+
+      val sym               = dd.symbol
+      val implClassFullName = sym.owner.fullName + "$class"
+
+      val implClassSym = findMemberFromRoot(TermName(implClassFullName))
+
+      val implMethodSym = implClassSym.info
+        .member(sym.name)
+        .suchThat { s =>
+          s.isMethod &&
+          s.tpe.params.size == sym.tpe.params.size + 1 &&
+          s.tpe.params.head.tpe =:= sym.owner.toTypeConstructor &&
+          s.tpe.params.tail.zip(sym.tpe.params).forall {
+            case (sParam, symParam) =>
+              sParam.tpe =:= symParam.tpe
+          }
+        }
+
+      val implName = Val.Global(genMethodName(implMethodSym), Type.Ptr)
+      val implSig  = genMethodSig(implMethodSym)
+
+      val Type.Function(paramtys, retty) = implSig
+
+      val params = paramtys.map(ty => Val.Local(fresh(), ty))
+      buf.label(fresh(), params)
+
+      val res = buf.call(implSig, implName, params, Next.None)
+      buf.ret(res)
+
+      buf.toSeq
+    }
+
     def genMethod(dd: DefDef): Unit = {
       val fresh = Fresh()
       val env   = new MethodEnv(fresh)
@@ -608,6 +573,16 @@ trait NirGenStat { self: NirGenPhase =>
         val isStatic = owner.isExternModule || isImplClass(owner)
 
         dd.rhs match {
+          case EmptyTree
+              if (isScala211 &&
+                sym.hasAnnotation(JavaDefaultMethodAnnotation)) =>
+            scoped(
+              curMethodSig := sig
+            ) {
+              val body = genJavaDefaultMethodBody(dd)
+              buf += Defn.Define(attrs, name, sig, body)
+            }
+
           case EmptyTree =>
             buf += Defn.Declare(attrs, name, sig)
 
@@ -621,6 +596,13 @@ trait NirGenStat { self: NirGenPhase =>
           case rhs if owner.isExternModule =>
             checkExplicitReturnTypeAnnotation(dd)
             genExternMethod(attrs, name, sig, rhs)
+
+          case rhs
+              if (isScala211 &&
+                sym.hasAnnotation(JavaDefaultMethodAnnotation) &&
+                !isImplClass(sym.owner)) =>
+          // Have a concrete method with JavaDefaultMethodAnnotation; a blivet.
+          // Do not emit, not even as abstract.
 
           case rhs =>
             scoped(
@@ -703,7 +685,7 @@ trait NirGenStat { self: NirGenPhase =>
       val fresh = curFresh.get
       val buf   = new ExprBuffer()(fresh)
 
-      implicit val pos: nir.Position = dd.pos
+      implicit val pos: nir.Position = bodyp.pos
 
       val paramSyms = genParamSyms(dd, isStatic)
       val params = paramSyms.map {
@@ -716,6 +698,8 @@ trait NirGenStat { self: NirGenPhase =>
           curMethodEnv.enter(sym, param)
           param
       }
+
+      val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
 
       def genEntry(): Unit = {
         buf.label(fresh(), params)
@@ -741,6 +725,17 @@ trait NirGenStat { self: NirGenPhase =>
         }
       }
 
+      def withOptSynchronized(bodyGen: ExprBuffer => Val): Val = {
+        if (!isSynchronized) bodyGen(buf)
+        else {
+          val syncedIn = curMethodThis.getOrElse {
+            unsupported(
+              s"cannot generate `synchronized` for method ${curMethodSym.name}, curMethodThis was empty")
+          }
+          buf.genSynchronized(ValTree(syncedIn))(bodyGen)
+        }
+      }
+
       def genBody(): Val = bodyp match {
         // Tailrec emits magical labeldefs that can hijack this reference is
         // current method. This requires special treatment on our side.
@@ -757,15 +752,16 @@ trait NirGenStat { self: NirGenPhase =>
             },
             curMethodIsExtern := isExtern
           ) {
-            buf.genReturn(buf.genTailRecLabel(dd, isStatic, label))(
-              bodyp.pos.focusEnd)
+            buf.genReturn {
+              withOptSynchronized(_.genTailRecLabel(dd, isStatic, label))
+            }
           }
 
         case _ if curMethodSym.get == NObjectInitMethod =>
           scoped(
             curMethodIsExtern := isExtern
           ) {
-            buf.genReturn(nir.Val.Unit)(bodyp.pos.focusEnd)
+            buf.genReturn(nir.Val.Unit)
           }
 
         case _ =>
@@ -776,7 +772,9 @@ trait NirGenStat { self: NirGenPhase =>
             },
             curMethodIsExtern := isExtern
           ) {
-            buf.genReturn(buf.genExpr(bodyp))(bodyp.pos.focusEnd)
+            buf.genReturn {
+              withOptSynchronized(_.genExpr(bodyp))
+            }
           }
       }
 

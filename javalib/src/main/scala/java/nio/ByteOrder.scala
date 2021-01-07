@@ -13,7 +13,7 @@ object ByteOrder {
   val LITTLE_ENDIAN: ByteOrder = new ByteOrder("LITTLE_ENDIAN")
 
   def nativeOrder(): ByteOrder = {
-    if (Platform.littleEndian) LITTLE_ENDIAN
+    if (Platform.littleEndian()) LITTLE_ENDIAN
     else BIG_ENDIAN
   }
 }

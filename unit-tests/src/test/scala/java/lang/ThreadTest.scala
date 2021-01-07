@@ -11,12 +11,14 @@ package java.lang
 import org.junit.Test
 import org.junit.Assert._
 
+import org.scalanative.testsuite.utils.Platform.{
+  executingInJVM,
+  executingInScalaNative
+}
+
 class ThreadTest {
 
-  val executingInJVM         = false
-  val executingInScalaNative = true
-
-  @Test def getName_and_setName(): Unit = {
+  @Test def getNameAndSetName(): Unit = {
     if (!executingInJVM) {
       val t = Thread.currentThread()
       assertEquals("main", t.getName) // default name of the main thread
@@ -30,7 +32,7 @@ class ThreadTest {
     }
   }
 
-  @Test def currentThread_getStackTrace(): Unit = {
+  @Test def currentThreadGetStackTrace(): Unit = {
     val trace = Thread.currentThread().getStackTrace()
     if (executingInScalaNative) {
       assertEquals(trace.length, 0)
@@ -41,7 +43,7 @@ class ThreadTest {
     assertTrue(Thread.currentThread().getId > 0)
   }
 
-  @Test def interrupt_exist_and_the_status_is_properly_reflected(): Unit = {
+  @Test def interruptExistAndTheStatusIsProperlyReflected(): Unit = {
     val t = Thread.currentThread()
     assertFalse(t.isInterrupted())
     assertFalse(Thread.interrupted())

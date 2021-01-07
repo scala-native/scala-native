@@ -6,6 +6,7 @@ import scalanative.annotation.alwaysinline
 import scalanative.unsigned._
 import scalanative.runtime.{libc, intrinsic, fromRawPtr}
 import scalanative.runtime.Intrinsics.{castIntToRawPtr, castLongToRawPtr}
+import scalanative.unsigned._
 
 package object unsafe {
 
@@ -73,7 +74,7 @@ package object unsafe {
   type CBool = Boolean
 
   /** The C/C++ 'size_t' type. */
-  type CSize = Word
+  type CSize = UWord
 
   /** The C/C++ 'ssize_t' type. */
   type CSSize = Word
@@ -90,6 +91,9 @@ package object unsafe {
   /** The C 'sizeof' operator. */
   @alwaysinline def sizeof[T](implicit tag: Tag[T]): CSize = tag.size
 
+  /** The C 'ssizeof' operator. */
+  @alwaysinline def ssizeof[T](implicit tag: Tag[T]): CSSize = tag.size.toLong
+
   /** C-style alignment operator. */
   @alwaysinline def alignmentof[T](implicit tag: Tag[T]): CSize = tag.alignment
 
@@ -105,6 +109,17 @@ package object unsafe {
   def alloc[T](n: CSize)(implicit tag: Tag[T], z: Zone): Ptr[T] =
     macro MacroImpl.allocN[T]
 
+  /** Heap allocate and zero-initialize n values
+   *  using current implicit allocator.
+   *  This method takes argument of type `CSSize` for easier interop,
+   *  but it' always converted into `CSize`
+   */
+  @deprecated(
+    "alloc with signed type is deprecated, convert size to unsigned value",
+    "0.4.0")
+  def alloc[T](n: CSSize)(implicit tag: Tag[T], z: Zone): Ptr[T] =
+    macro MacroImpl.allocN[T]
+
   /** Stack allocate a value of given type.
    *
    *  Note: unlike alloc, the memory is not zero-initialized.
@@ -117,6 +132,18 @@ package object unsafe {
    *  Note: unlike alloc, the memory is not zero-initialized.
    */
   def stackalloc[T](n: CSize)(implicit tag: Tag[T]): Ptr[T] =
+    macro MacroImpl.stackallocN[T]
+
+  /** Stack allocate n values of given type.
+   *
+   *  Note: unlike alloc, the memory is not zero-initialized.
+   *  This method takes argument of type `CSSize` for easier interop,
+   *  but it's always converted into `CSize`
+   */
+  @deprecated(
+    "alloc with signed type is deprecated, convert size to unsigned value",
+    "0.4.0")
+  def stackalloc[T](n: CSSize)(implicit tag: Tag[T]): Ptr[T] =
     macro MacroImpl.stackallocN[T]
 
   /** Used as right hand side of external method and field declarations. */
@@ -140,16 +167,20 @@ package object unsafe {
   /** Convert a CString to a String using given charset. */
   def fromCString(cstr: CString,
                   charset: Charset = Charset.defaultCharset()): String = {
-    val len   = libc.strlen(cstr).toInt
-    val bytes = new Array[Byte](len)
+    if (cstr == null) {
+      null
+    } else {
+      val len   = libc.strlen(cstr).toInt
+      val bytes = new Array[Byte](len)
 
-    var c = 0
-    while (c < len) {
-      bytes(c) = !(cstr + c)
-      c += 1
+      var c = 0
+      while (c < len) {
+        bytes(c) = !(cstr + c)
+        c += 1
+      }
+
+      new String(bytes, charset)
     }
-
-    new String(bytes, charset)
   }
 
   /** Convert a java.lang.String to a CString using default charset and
@@ -161,18 +192,22 @@ package object unsafe {
   /** Convert a java.lang.String to a CString using given charset and allocator.
    */
   def toCString(str: String, charset: Charset)(implicit z: Zone): CString = {
-    val bytes = str.getBytes(charset)
-    val cstr  = z.alloc(bytes.length + 1)
+    if (str == null) {
+      null
+    } else {
+      val bytes = str.getBytes(charset)
+      val cstr  = z.alloc((bytes.length + 1).toULong)
 
-    var c = 0
-    while (c < bytes.length) {
-      !(cstr + c) = bytes(c)
-      c += 1
+      var c = 0
+      while (c < bytes.length) {
+        !(cstr + c) = bytes(c)
+        c += 1
+      }
+
+      !(cstr + c) = 0.toByte
+
+      cstr
     }
-
-    !(cstr + c) = 0.toByte
-
-    cstr
   }
 
   /** Create an empty CVarArgList. */
@@ -219,7 +254,8 @@ package object unsafe {
       val runtime = q"_root_.scala.scalanative.runtime"
 
       q"""{
-        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
+        import _root_.scala.scalanative.unsigned.UnsignedRichLong
+        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n.toULong
         val $ptr    = $z.alloc($size)
         val $rawptr = $runtime.toRawPtr($ptr)
         $runtime.libc.memset($rawptr, 0, $size)
@@ -255,7 +291,8 @@ package object unsafe {
       val runtime = q"_root_.scala.scalanative.runtime"
 
       q"""{
-        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
+        import _root_.scala.scalanative.unsigned.UnsignedRichLong
+        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n.toULong
         val $rawptr = $runtime.Intrinsics.stackalloc($size)
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)

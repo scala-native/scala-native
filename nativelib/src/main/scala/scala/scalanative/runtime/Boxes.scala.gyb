@@ -1,0 +1,73 @@
+// BEWARE: This file is generated - direct edits will be lost.
+// Do not edit this it directly other than to remove
+// personally identifiable information in sourceLocation lines.
+// All direct edits to this file will be lost the next time it
+// is generated.
+//
+// To generate this file manually execute the python scripts/gyb.py
+// script under the project root. For example, from the project root:
+//
+//   scripts/gyb.py \
+//     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb \
+//     -o /nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
+//
+//  After executing the script, you may want to edit this file to remove
+//  personally or build-system specific identifiable information.
+//
+//  The order elements in the output file depends upon the Python version
+//  used to execute the gyb.py. Arrays.scala.gyb has a BEWARE: comment near
+//  types.items() which gives details.
+//
+//  Python >= 3.6 should give a reproducible output order and reduce trivial
+//  & annoying git differences.
+
+package scala.scalanative
+package runtime
+
+import scalanative.unsigned._
+import scalanative.unsafe._
+
+object Boxes {
+
+%{
+    unsigned = [
+      ('UByte', 'Byte'),
+      ('UShort', 'Short'),
+      ('UInt', 'Int'),
+      ('ULong', 'Long')
+    ]
+}%
+% for (U, P) in unsigned:
+  @inline def boxTo${U}(v: ${P}): ${U} = new ${U}(v)
+  @inline def unboxTo${U}(o: java.lang.Object): ${P} =
+    if (o == null) 0.to${P} else o.asInstanceOf[${U}].underlying
+
+% end
+
+  @inline def boxToPtr[T](v: RawPtr): Ptr[T] =
+    if (v == null) null else new Ptr[T](v)
+  @inline def unboxToPtr(o: java.lang.Object): RawPtr =
+    if (o == null) null else o.asInstanceOf[Ptr[_]].rawptr
+
+  @inline def boxToCArray[T, N <: Nat](v: RawPtr): CArray[T, N] =
+    if (v == null) null else new CArray[T, N](v)
+  @inline def unboxToCArray(o: java.lang.Object): RawPtr =
+    if (o == null) null else o.asInstanceOf[CArray[_, _]].rawptr
+
+  @inline def boxToCVarArgList(v: RawPtr): CVarArgList =
+    if (v == null) null else new CVarArgList(v)
+  @inline def unboxToCVarArgList(o: java.lang.Object): RawPtr =
+    if (o == null) null else o.asInstanceOf[CVarArgList].rawptr
+
+% for N in range(0, 23):
+%   args      = ", ".join("arg" + str(i) + ": T" + str(i) for i in range(1, N+1))
+%   allTps    = ", ".join(["T" + str(i)                   for i in range(1, N+1)] + ["R"])
+%   evidences = ", ".join(["ev{}: Tag[T{}]".format(i, i)  for i in range(1, N+1)] + ["evRet: Tag[R]"])
+%   CFuncPtrN = "CFuncPtr{}[{}]".format(N, allTps)
+  @inline def boxTo${CFuncPtrN}(v: RawPtr): ${CFuncPtrN} =
+    if (v == null) null else CFuncPtr${N}.fromRawPtr[${allTps}](v)
+  @inline def unboxTo${CFuncPtrN}(o: java.lang.Object): RawPtr =
+    if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
+
+% end
+}

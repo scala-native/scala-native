@@ -31,7 +31,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     this(Option(parent).map(_.path).orNull, child)
 
   def this(uri: URI) = {
-    this(uri.getPath)
+    this(uri.getPath())
     checkURI(uri)
   }
 
@@ -41,13 +41,13 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def canExecute(): Boolean =
-    Zone { implicit z => access(toCString(path), fcntl.X_OK) == 0 }
+    Zone { implicit z => access(toCString(path), unistd.X_OK) == 0 }
 
   def canRead(): Boolean =
-    Zone { implicit z => access(toCString(path), fcntl.R_OK) == 0 }
+    Zone { implicit z => access(toCString(path), unistd.R_OK) == 0 }
 
   def canWrite(): Boolean =
-    Zone { implicit z => access(toCString(path), fcntl.W_OK) == 0 }
+    Zone { implicit z => access(toCString(path), unistd.W_OK) == 0 }
 
   def setExecutable(executable: Boolean): Boolean =
     setExecutable(executable, ownerOnly = true)
@@ -86,7 +86,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   def exists(): Boolean =
-    Zone { implicit z => access(toCString(path), fcntl.F_OK) == 0 }
+    Zone { implicit z => access(toCString(path), unistd.F_OK) == 0 }
 
   def toPath(): Path =
     FileSystems.getDefault().getPath(this.getPath(), Array.empty)
@@ -122,7 +122,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def getCanonicalPath(): String =
     Zone { implicit z =>
-      if (exists) {
+      if (exists()) {
         fromCString(simplifyExistingPath(toCString(properPath)))
       } else {
         simplifyNonExistingPath(fromCString(resolve(toCString(properPath))))
@@ -135,7 +135,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
    * match that of Java on non-existing file.
    */
   private def simplifyExistingPath(path: CString)(implicit z: Zone): CString = {
-    val resolvedName = alloc[Byte](limits.PATH_MAX)
+    val resolvedName = alloc[Byte](limits.PATH_MAX.toUInt)
     realpath(path, resolvedName)
     resolvedName
   }
@@ -153,7 +153,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         case (acc, seg)  => seg :: acc
       }
       .reverse
-      .filterNot(_.isEmpty)
+      .filterNot(_.isEmpty())
       .mkString(separator, separator, "")
 
   @throws(classOf[IOException])
@@ -166,11 +166,12 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def getParent(): String =
-    path.split(separatorChar).filterNot(_.isEmpty) match {
-      case Array() if !isAbsolute  => null
-      case Array(_) if !isAbsolute => null
-      case parts if !isAbsolute    => parts.init.mkString(separator)
-      case parts if isAbsolute     => parts.init.mkString(separator, separator, "")
+    path.split(separatorChar).filterNot(_.isEmpty()) match {
+      case Array() if !isAbsolute()  => null
+      case Array(_) if !isAbsolute() => null
+      case parts if !isAbsolute()    => parts.init.mkString(separator)
+      case parts if isAbsolute() =>
+        parts.init.mkString(separator, separator, "")
     }
 
   def getParentFile(): File = {
@@ -310,7 +311,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   override def toString(): String = path
 
-  def deleteOnExit(): Unit = DeleteOnExit.addFile(this.getAbsolutePath)
+  def deleteOnExit(): Unit = DeleteOnExit.addFile(this.getAbsolutePath())
 
   @stub
   def toURL(): java.net.URL = ???
@@ -344,8 +345,8 @@ object File {
 
   private def getUserDir(): String =
     Zone { implicit z =>
-      var buff: CString = alloc[CChar](4096)
-      var res: CString  = getcwd(buff, 4095)
+      var buff: CString = alloc[CChar](4096.toUInt)
+      var res: CString  = getcwd(buff, 4095.toUInt)
       fromCString(res)
     }
 
@@ -419,7 +420,7 @@ object File {
             throw new IOException(
               "getcwd() error in trying to get user directory."))
 
-      if (path.isEmpty) userdir
+      if (path.isEmpty()) userdir
       else if (userdir.endsWith(separator)) userdir + path
       else userdir + separator + path
     }
@@ -458,12 +459,13 @@ object File {
         case link =>
           val linkLength = strlen(link)
           val pathLength = strlen(path)
-          var last       = pathLength - 1
-          while (path(last) != separatorChar) last -= 1
-          last += 1
+          val `1UL`      = 1.toULong
+          var last       = pathLength - `1UL`
+          while (path(last) != separatorChar) last -= `1UL`
+          last += `1UL`
 
           // previous path up to last /, plus result of resolving the link.
-          val newPathLength = last + linkLength + 1
+          val newPathLength = last + linkLength + `1UL`
           val newPath       = alloc[Byte](newPathLength)
           strncpy(newPath, path, last)
           strncat(newPath, link, linkLength)
@@ -471,35 +473,35 @@ object File {
           resolveLink(newPath, resolveAbsolute, restart)
       }
 
-    if (restart) resolve(resolved, start = 0)
+    if (restart) resolve(resolved)
     else resolved
   }
 
-  @tailrec private def resolve(path: CString, start: Int = 0)(
+  @tailrec private def resolve(path: CString, start: UInt = 0.toUInt)(
       implicit z: Zone): CString = {
-    val part: CString = alloc[Byte](limits.PATH_MAX)
-
+    val part: CString = alloc[Byte](limits.PATH_MAX.toUInt)
+    val `1U`          = 1.toUInt
     // Find the next separator
     var i = start
-    while (i < strlen(path) && path(i) != separatorChar) i += 1
+    while (i < strlen(path) && path(i) != separatorChar) i += `1U`
 
     if (i == strlen(path)) resolveLink(path, resolveAbsolute = true)
     else {
       // copy path from start to next separator.
       // and resolve that subpart.
-      strncpy(part, path, i + 1)
+      strncpy(part, path, i + `1U`)
 
       val resolved = resolveLink(part, resolveAbsolute = true)
 
       strcpy(part, resolved)
-      strcat(part, path + i + 1)
+      strcat(part, path + i + `1U`)
 
-      if (strncmp(resolved, path, i + 1) == 0) {
+      if (strncmp(resolved, path, i + `1U`) == 0) {
         // Nothing changed. Continue from the next segment.
-        resolve(part, i + 1)
+        resolve(part, i + `1U`)
       } else {
         // The path has changed. Start over.
-        resolve(part, 0)
+        resolve(part, 0.toUInt)
       }
     }
 
@@ -510,27 +512,27 @@ object File {
    * Otherwise, returns `None`.
    */
   private def readLink(link: CString)(implicit z: Zone): CString = {
-    val buffer: CString = alloc[Byte](limits.PATH_MAX)
-    readlink(link, buffer, limits.PATH_MAX - 1) match {
+    val buffer: CString = alloc[Byte](limits.PATH_MAX.toUInt)
+    readlink(link, buffer, (limits.PATH_MAX - 1).toUInt) match {
       case -1 =>
         null
       case read =>
         // readlink doesn't null-terminate the result.
-        buffer(read) = 0
+        buffer(read) = 0.toByte
         buffer
     }
   }
 
-  val pathSeparatorChar: Char        = if (Platform.isWindows) ';' else ':'
+  val pathSeparatorChar: Char        = if (Platform.isWindows()) ';' else ':'
   val pathSeparator: String          = pathSeparatorChar.toString
-  val separatorChar: Char            = if (Platform.isWindows) '\\' else '/'
+  val separatorChar: Char            = if (Platform.isWindows()) '\\' else '/'
   val separator: String              = separatorChar.toString
   private var counter: Int           = 0
   private var counterBase: Int       = 0
-  private val caseSensitive: Boolean = !Platform.isWindows
+  private val caseSensitive: Boolean = !Platform.isWindows()
 
   def listRoots(): Array[File] =
-    if (Platform.isWindows) ???
+    if (Platform.isWindows()) ???
     else {
       var array = new Array[File](1)
       array(0) = new File("/")
@@ -556,19 +558,19 @@ object File {
     def compMsg(comp: String): String =
       s"Found $comp component in URI"
 
-    if (!uri.isAbsolute) {
+    if (!uri.isAbsolute()) {
       throwExc("URI is not absolute")
-    } else if (!uri.getRawSchemeSpecificPart.startsWith("/")) {
+    } else if (!uri.getRawSchemeSpecificPart().startsWith("/")) {
       throwExc("URI is not hierarchical")
-    } else if (uri.getScheme == null || !(uri.getScheme == "file")) {
+    } else if (uri.getScheme() == null || !(uri.getScheme() == "file")) {
       throwExc("Expected file scheme in URI")
-    } else if (uri.getRawPath == null || uri.getRawPath.length == 0) {
+    } else if (uri.getRawPath() == null || uri.getRawPath().length() == 0) {
       throwExc("Expected non-empty path in URI")
-    } else if (uri.getRawAuthority != null) {
+    } else if (uri.getRawAuthority() != null) {
       throwExc(compMsg("authority"))
-    } else if (uri.getRawQuery != null) {
+    } else if (uri.getRawQuery() != null) {
       throwExc(compMsg("query"))
-    } else if (uri.getRawFragment != null) {
+    } else if (uri.getRawFragment() != null) {
       throwExc(compMsg("fragment"))
     }
     // else URI is ok

@@ -20,7 +20,7 @@ This generates the following files:
 
 * ``project/build.properties`` to specify the sbt version::
 
-    sbt.version = 1.3.13
+    sbt.version = 1.4.1
 
 * ``build.sbt`` to enable the plugin and specify Scala version::
 
@@ -55,25 +55,40 @@ Scala Native Version       Scala Versions
 Sbt settings and tasks
 ----------------------
 
-===== ======================== =============== =========================================================
-Since Name                     Type            Description
-===== ======================== =============== =========================================================
-0.1   ``compile``              ``Analysis``    Compile Scala code to NIR
-0.1   ``run``                  ``Unit``        Compile, link and run the generated binary
-0.1   ``package``              ``File``        Similar to standard package with addition of NIR
-0.1   ``publish``              ``Unit``        Similar to standard publish with addition of NIR (1)
-0.1   ``nativeLink``           ``File``        Link NIR and generate native binary
-0.1   ``nativeClang``          ``File``        Path to ``clang`` command
-0.1   ``nativeClangPP``        ``File``        Path to ``clang++`` command
-0.1   ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim during compilation
-0.1   ``nativeLinkingOptions`` ``Seq[String]`` Extra options passed to clang verbatim during linking
-0.1   ``nativeMode``           ``String``      One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
-0.2   ``nativeGC``             ``String``      One of ``"none"``, ``"boehm"`` or ``"immix"`` (3)
-0.3.3 ``nativeLinkStubs``      ``Boolean``     Whether to link ``@stub`` definitions, or to ignore them
-0.4.0 ``nativeLTO``            ``String``      One of ``"none"``, ``"full"`` or ``"thin"`` (4)
-0.4.0 ``nativeCheck``          ``Boolean``     Shall the linker check intermediate results for correctness?
-0.4.0 ``nativeDump``           ``Boolean``     Shall the linker dump intermediate results to disk? 
-===== ======================== =============== =========================================================
+The settings now should be set via ``nativeConfig`` in `sbt`. Setting
+the options directly is now deprecated.
+
+.. code-block:: scala
+
+    import scala.scalanative.build._
+
+    nativeConfig ~= {
+      _.withLTO(LTO.thin)
+        .withMode(Mode.releaseFast)
+        .withGC(GC.commix)
+    }
+
+===== ======================== ================ =========================================================
+Since Name                     Type             Description
+===== ======================== ================ =========================================================
+0.1   ``compile``              ``Analysis``     Compile Scala code to NIR
+0.1   ``run``                  ``Unit``         Compile, link and run the generated binary
+0.1   ``package``              ``File``         Similar to standard package with addition of NIR
+0.1   ``publish``              ``Unit``         Similar to standard publish with addition of NIR (1)
+0.1   ``nativeLink``           ``File``         Link NIR and generate native binary
+0.1   ``nativeClang``          ``File``         Path to ``clang`` command
+0.1   ``nativeClangPP``        ``File``         Path to ``clang++`` command
+0.1   ``nativeCompileOptions`` ``Seq[String]``  Extra options passed to clang verbatim during compilation
+0.1   ``nativeLinkingOptions`` ``Seq[String]``  Extra options passed to clang verbatim during linking
+0.1   ``nativeMode``           ``String``       One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
+0.2   ``nativeGC``             ``String``       One of ``"none"``, ``"boehm"`` or ``"immix"`` (3)
+0.3.3 ``nativeLinkStubs``      ``Boolean``      Whether to link ``@stub`` definitions, or to ignore them
+0.4.0 ``nativeConfig``         ``NativeConfig`` Configuration of the Scala Native plugin
+0.4.0 ``nativeLTO``            ``String``       One of ``"none"``, ``"full"`` or ``"thin"`` (4)
+0.4.0 ``targetTriple``         ``String``       The platform LLVM target triple
+0.4.0 ``nativeCheck``          ``Boolean``      Shall the linker check intermediate results for correctness?
+0.4.0 ``nativeDump``           ``Boolean``      Shall the linker dump intermediate results to disk?
+===== ======================== ================ =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
 2. See `Compilation modes`_ for details.
@@ -152,6 +167,16 @@ of release builds. There are three possible modes that are currently supported:
    Offers both better compilation speed and
    better runtime performance of the generated code
    than the legacy FullLTO mode.
+
+Cross compilation using target triple
+-------------------------------------
+
+The target triple can be set to allow cross compilation (introduced in 0.4.0).
+Use the following approach in `sbt` to set the target triple:
+
+.. code-block:: scala
+
+    nativeConfig ~= { _.withTargetTriple("x86_64-apple-macosx10.14.0") }
 
 Publishing
 ----------
@@ -234,9 +259,9 @@ support Scala/JVM or Scala.js if the Native portions have replacement
 code on the respective platforms.
 
 The primary purpose of this feature is to allow libraries to support
-Scala Native that need native `glue` code to operate. The current
+Scala Native that need native "glue" code to operate. The current
 C interopt does not allow direct access to macro defined constants and
-functions or allow passing `struct`s from the stack to C functions.
+functions or allow passing "struct"s from the stack to C functions.
 Future versions of Scala Native may relax these restrictions making
 this feature obsolete.
 

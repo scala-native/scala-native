@@ -13,6 +13,7 @@ package unsafe
 import scalanative.annotation.alwaysinline
 import scalanative.runtime.{fromRawPtr, RawPtr}
 import scalanative.runtime.Intrinsics._
+import scalanative.unsigned._
 
 sealed abstract class CStruct
 
@@ -42,17 +43,17 @@ final class CStruct${N}${Ts} private[scalanative] (private[scalanative] val rawp
 
   /** Load a value of a field number ${F}. */
   @alwaysinline def at${F}(implicit tag: Tag.CStruct${N}${Ts}): Ptr[T${F}] = 
-    new Ptr[T${F}](elemRawPtr(rawptr, tag.offset(${F - 1})))
+    new Ptr[T${F}](elemRawPtr(rawptr, tag.offset(${F - 1}.toULong).toLong))
 
   /** Load a value of a field number ${F}. */
   @alwaysinline def _${F}(implicit tag: Tag.CStruct${N}${Ts}): T${F} = {
-    val ptr = new Ptr[T${F}](elemRawPtr(rawptr, tag.offset(${F - 1})))
+    val ptr = new Ptr[T${F}](elemRawPtr(rawptr, tag.offset(${F - 1}.toULong).toLong))
     ptr.unary_!(tag._${F})
   }
 
   /** Store a value to a field number ${F}. */
   @alwaysinline def _${F}_=(value: T${F})(implicit tag: Tag.CStruct${N}${Ts}): Unit = {
-    val ptr = new Ptr[T${F}](elemRawPtr(rawptr, tag.offset(${F - 1})))
+    val ptr = new Ptr[T${F}](elemRawPtr(rawptr, tag.offset(${F - 1}.toULong).toLong))
     ptr.`unary_!_=`(value)(tag._${F})
   }
 

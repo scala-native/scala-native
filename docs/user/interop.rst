@@ -48,29 +48,29 @@ C Type                    Scala Type
 ``bool``                  ``unsafe.CBool``
 ``char``                  ``unsafe.CChar``
 ``signed char``           ``unsafe.CSignedChar``
-``unsigned char``         ``unsafe.CUnsignedChar`` [1_]
+``unsigned char``         ``unsafe.CUnsignedChar`` [1]_
 ``short``                 ``unsafe.CShort``
-``unsigned short``        ``unsafe.CUnsignedShort`` [1_]
+``unsigned short``        ``unsafe.CUnsignedShort`` [1]_
 ``int``                   ``unsafe.CInt``
 ``long int``              ``unsafe.CLongInt``
-``unsigned int``          ``unsafe.CUnsignedInt`` [1_]
-``unsigned long int``     ``unsafe.CUnsignedLongInt`` [1_]
+``unsigned int``          ``unsafe.CUnsignedInt`` [1]_
+``unsigned long int``     ``unsafe.CUnsignedLongInt`` [1]_
 ``long``                  ``unsafe.CLong``
-``unsigned long``         ``unsafe.CUnsignedLong`` [1_]
+``unsigned long``         ``unsafe.CUnsignedLong`` [1]_
 ``long long``             ``unsafe.CLongLong``
-``unsigned long long``    ``unsafe.CUnsignedLongLong`` [1_]
+``unsigned long long``    ``unsafe.CUnsignedLongLong`` [1]_
 ``size_t``                ``unsafe.CSize``
-``ptrdiff_t``             ``unsafe.CPtrDiff`` [2_]
+``ptrdiff_t``             ``unsafe.CPtrDiff`` [2]_
 ``wchar_t``               ``unsafe.CWideChar``
 ``char16_t``              ``unsafe.CChar16``
 ``char32_t``              ``unsafe.CChar32``
 ``float``                 ``unsafe.CFloat``
 ``double``                ``unsafe.CDouble``
-``void*``                 ``unsafe.Ptr[Byte]`` [2_]
-``int*``                  ``unsafe.Ptr[unsafe.CInt]`` [2_]
-``char*``                 ``unsafe.CString`` [2_] [3_]
-``int (*)(int)``          ``unsafe.CFuncPtr1[unsafe.CInt, unsafe.CInt]`` [2_] [4_]
-``struct { int x, y; }*`` ``unsafe.Ptr[unsafe.CStruct2[unsafe.CInt, unsafe.CInt]]`` [2_] [5_]
+``void*``                 ``unsafe.Ptr[Byte]`` [2]_
+``int*``                  ``unsafe.Ptr[unsafe.CInt]`` [2]_
+``char*``                 ``unsafe.CString`` [2]_ [3]_
+``int (*)(int)``          ``unsafe.CFuncPtr1[unsafe.CInt, unsafe.CInt]`` [2]_ [4]_
+``struct { int x, y; }*`` ``unsafe.Ptr[unsafe.CStruct2[unsafe.CInt, unsafe.CInt]]`` [2]_ [5]_
 ``struct { int x, y; }``  Not supported
 ========================= =========================
 
@@ -197,15 +197,34 @@ One can declare it as follows in Scala Native:
 
     def test(f: unsafe.CFuncPtr1[CString, Unit]): Unit = unsafe.extern
 
-`CFuncPtrN` types are SAM (single abstract method) traits. You
-can define them by creating a class that inherits from the corresponding
-trait:
+`CFuncPtrN` types are final classes containing pointer to underlying
+C function pointer. They automatically handle boxing call arguments
+and unboxing result. You can create them from C pointer using `CFuncPtr` helper methods:
 
 .. code-block:: scala
 
-   val myfuncptr = new unsafe.CFuncPtr0[Unit] {
-     def apply(): Unit = println("hi there!")
-   }
+    def fnDef(str: CString): CInt = ???
+
+    val anyPtr: Ptr[Byte] = CFuncPtr.toPtr {
+      CFuncPtr1.fromScalaFunction(fnDef)
+    }
+
+    type StringLengthFn = CFuncPtr1[CString, CInt]
+    val func: StringLengthFn = CFuncPtr.fromPtr[StringLengthFn](anyPtr)
+    func(c"hello")
+
+It's also possible to create `CFuncPtrN` from Scala `FunctionN`.
+You can do this by using implicit method conversion method
+from the corresponding companion object.
+
+.. code-block:: scala
+
+   import scalanative.unsafe.CFuncPtr0
+   def myFunc(): Unit = println("hi there!")
+
+   val myFuncPtr: CFuncPtr0[Unit] = CFuncPtr0.fromScalaFunction(myFunc)
+   val myImplFn: CFuncPtr0[Unit] = myFunc _
+   val myLambdaFuncPtr: CFuncPtr0[Unit] = () => println("hello!")
 
 On Scala 2.12 or newer, the Scala language automatically converts
 from closures to SAM types:
@@ -322,21 +341,28 @@ pointers and do not have a corresponding first-class values backing them.
 
 * ``unsafe.Ptr[unsafe.CArray[T, N]]``
 
+  .. Wizardry and lore ahead!
+  ..
+  .. Sphinx & Pygments warn that they can not parse & highlight next code-block
+  .. as Scala. Use double colon code-block idiom to avoid build warning.
+  .. Default Python style will highlight code-block "close enough" to Scala.
+
   Pointer to a C array with statically-known length ``N``. Length is encoded as
   a type-level natural number. Natural numbers are types that are composed of
   base naturals ``Nat._0, ... Nat._9`` and an additional ``Nat.DigitN``
   constructors, where ``N`` refers to number of digits in the given number. 
-  So for example number ``1024`` is going to be encoded as following:
-
-  .. code-block:: scala
+  So for example number ``1024`` is going to be encoded as following::
 
       import scalanative.unsafe._, Nat._
 
       type _1024 = Digit4[_1, _0, _2, _4]
 
-  Once you have a natural for the length, it can be used as an array length:
+  .. Sphinx & Pygments warn that they can not parse & highlight next code-block
+  .. as Scala. Use double colon code-block idiom to avoid build warning.
+  .. There will be a slight visual glitch because default Python will not.
+  .. highlight it.
 
-  .. code-block:: scala
+  Once you have a natural for the length, it can be used as an array length::
 
       val arrptr = unsafe.stackalloc[CArray[Byte, _1024]]
 
@@ -368,6 +394,9 @@ and Java-style `String` (sequence of 2-byte Chars usually interpreted as UTF-16)
 It's worth to remember that ``unsafe.toCString`` and `c"..."` interpreter cannot be used interchangeably as they handle literals differently.
 Helper methods ``unsafe.fromCString` and ``unsafe.toCString`` are charset aware.
 They will always assume `String` is UTF-16, and take a `Charset` parameter to know what encoding to assume for the byte string (`CString`) - if not present it is UTF-8.
+
+If passed a null as an argument, they will return a null of the appropriate
+type instead of throwing a NullPointerException.
 
 
 Platform-specific types

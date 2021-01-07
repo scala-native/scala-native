@@ -1,7 +1,8 @@
 package scala.scalanative
 package nscplugin
+import scala.tools.nsc.Global
 
-trait NirGenType { self: NirGenPhase =>
+trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import SimpleType.{fromSymbol, fromType}
   import global._
   import definitions._
@@ -25,13 +26,12 @@ trait NirGenType { self: NirGenPhase =>
     def isField: Boolean =
       !sym.isMethod && sym.isTerm && !isScalaModule
 
-    /** Tests if this type inherits from CFuncPtr with exclusion of CFuncRawPtr */
-    def isCFuncPtrClass: Boolean = sym != CFuncRawPtrClass && {
+    /** Tests if this type inherits from CFuncPtr */
+    def isCFuncPtrClass: Boolean =
       sym == CFuncPtrClass ||
-      sym.info.parents.exists(_.typeSymbol == CFuncPtrClass)
-    }
+        sym.info.parents.exists(_.typeSymbol == CFuncPtrClass)
 
-    /** Tests if this type is some of some CFuncPtrN types */
+    /** Tests if this type is implementations of CFuncPtr */
     def isCFuncPtrNClass: Boolean =
       CFuncPtrNClass.contains(sym) || {
         sym.info.parents.exists { parent =>
@@ -118,7 +118,7 @@ trait NirGenType { self: NirGenPhase =>
       case _ if st.sym == ArrayClass =>
         genTypeValue(RuntimeArrayClass(genPrimCode(st.targs.head)))
       case 'O' =>
-        nir.Val.Global(genTypeName(st.sym), nir.Type.Ptr)
+        nir.Val.ClassOf(genTypeName(st.sym))
       case code =>
         genTypeValue(RuntimePrimitive(code))
     }
@@ -157,7 +157,7 @@ trait NirGenType { self: NirGenPhase =>
 
   private def genMethodSigImpl(sym: Symbol,
                                isExtern: Boolean): nir.Type.Function = {
-    require(sym.isMethod || sym.isStaticMember)
+    require(sym.isMethod || sym.isStaticMember, "symbol is not a method")
 
     val tpe      = sym.tpe
     val owner    = sym.owner

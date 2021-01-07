@@ -138,10 +138,12 @@ trait Inline { self: Interflow =>
         case _: build.Mode.Release =>
           getDone(name)
       }
+      val Type.Function(_, origRetTy) = defn.ty
 
       val inlineArgs  = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
-      val blocks      = process(inlineInsts, inlineArgs, state, doInline = true)
+      val blocks =
+        process(inlineInsts, inlineArgs, state, doInline = true, origRetTy)
 
       val emit = new nir.Buffer()(state.fresh)
 

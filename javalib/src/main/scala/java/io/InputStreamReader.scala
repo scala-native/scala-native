@@ -42,12 +42,12 @@ class InputStreamReader(private[this] var in: InputStream,
     this(in,
          Objects
            .requireNonNull(charset)
-           .newDecoder
+           .newDecoder()
            .onMalformedInput(CodingErrorAction.REPLACE)
            .onUnmappableCharacter(CodingErrorAction.REPLACE))
 
   def this(in: InputStream) =
-    this(in, Charset.defaultCharset)
+    this(in, Charset.defaultCharset())
 
   def this(in: InputStream, charsetName: String) =
     this(
@@ -70,12 +70,12 @@ class InputStreamReader(private[this] var in: InputStream,
   }
 
   def getEncoding(): String =
-    if (closed) null else decoder.charset.name
+    if (closed) null else decoder.charset().name()
 
   override def read(): Int = {
     ensureOpen()
 
-    if (outBuf.hasRemaining) outBuf.get()
+    if (outBuf.hasRemaining()) outBuf.get()
     else super.read()
   }
 
@@ -87,9 +87,9 @@ class InputStreamReader(private[this] var in: InputStream,
 
     if (len == 0) {
       0
-    } else if (outBuf.hasRemaining) {
+    } else if (outBuf.hasRemaining()) {
       // Reuse chars decoded last time
-      val available = Math.min(outBuf.remaining, len)
+      val available = Math.min(outBuf.remaining(), len)
       outBuf.get(cbuf, off, available)
       available
     } else if (!endOfInput) {
@@ -117,12 +117,12 @@ class InputStreamReader(private[this] var in: InputStream,
                                     off: Int,
                                     len: Int): Int = {
     // Return outBuf to its full capacity
-    outBuf.limit(outBuf.capacity)
+    outBuf.limit(outBuf.capacity())
     outBuf.position(0)
 
     @tailrec // but not inline, this is not a common path
     def loopWithOutBuf(desiredOutBufSize: Int): Int = {
-      if (outBuf.capacity < desiredOutBufSize)
+      if (outBuf.capacity() < desiredOutBufSize)
         outBuf = CharBuffer.allocate(desiredOutBufSize)
       val charsRead = readImpl(outBuf)
       if (charsRead == InputStreamReader.Overflow)
@@ -158,16 +158,16 @@ class InputStreamReader(private[this] var in: InputStream,
        * at all), which will cause one of the following cases to be handled.
        */
       out.position() - initPos
-    } else if (result.isUnderflow) {
+    } else if (result.isUnderflow()) {
       if (endOfInput) {
         assert(
-          !inBuf.hasRemaining,
+          !inBuf.hasRemaining(),
           "CharsetDecoder.decode() should not have returned UNDERFLOW when " +
-            "both endOfInput and inBuf.hasRemaining are true. It should have " +
+            "both endOfInput and inBuf.hasRemaining() are true. It should have " +
             "returned a MalformedInput error instead."
         )
         // Flush
-        if (decoder.flush(out).isOverflow) {
+        if (decoder.flush(out).isOverflow()) {
           InputStreamReader.Overflow
         } else {
           // Done
@@ -176,13 +176,13 @@ class InputStreamReader(private[this] var in: InputStream,
         }
       } else {
         // We need to read more from the underlying input stream
-        if (inBuf.limit() == inBuf.capacity) {
+        if (inBuf.limit() == inBuf.capacity()) {
           inBuf.compact()
-          if (!inBuf.hasRemaining) {
+          if (!inBuf.hasRemaining()) {
             throw new AssertionError(
               "Scala.js implementation restriction: " +
-                inBuf.capacity + " bytes do not seem to be enough for " +
-                getEncoding + " to decode a single code point. " +
+                inBuf.capacity() + " bytes do not seem to be enough for " +
+                getEncoding() + " to decode a single code point. " +
                 "Please report this as a bug.")
           }
           inBuf.limit(inBuf.position())
@@ -194,7 +194,9 @@ class InputStreamReader(private[this] var in: InputStream,
          * according to the specification of InputStreamReader.
          */
         val bytesRead =
-          in.read(inBuf.array, inBuf.limit(), inBuf.capacity - inBuf.limit())
+          in.read(inBuf.array(),
+                  inBuf.limit(),
+                  inBuf.capacity() - inBuf.limit())
 
         if (bytesRead == -1)
           endOfInput = true
@@ -203,7 +205,7 @@ class InputStreamReader(private[this] var in: InputStream,
 
         readImpl(out)
       }
-    } else if (result.isOverflow) {
+    } else if (result.isOverflow()) {
       InputStreamReader.Overflow
     } else {
       result.throwException()
@@ -217,7 +219,7 @@ class InputStreamReader(private[this] var in: InputStream,
    * is the expected behavior.
    */
   override def ready(): Boolean =
-    outBuf.hasRemaining || in.available() > 0
+    outBuf.hasRemaining() || in.available() > 0
 
   private def ensureOpen(): Unit = {
     if (closed)

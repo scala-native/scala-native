@@ -107,6 +107,9 @@ The `optimize` setting is controlled via the `SCALANATIVE_OPTIMIZE` environment
 variable. Valid values are `true` and `false`. The default value is `true`.
 This setting controls whether the Interflow optimizer is enabled or not.
 
+The path to used include and library dirs is controlled via environment variables
+the `SCALANATIVE_INCLUDE_DIRS` and `SCALANATIVE_LIB_DIRS`.
+
 Setting the GC setting via `sbt`
 --------------------------------
 The GC setting is only used during the link phase of the Scala Native

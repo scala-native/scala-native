@@ -3,6 +3,7 @@ package java.lang
 import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 import scala.scalanative.posix.unistd
 import scala.scalanative.posix.sys.utsname._
 import scala.scalanative.posix.sys.uname._
@@ -41,7 +42,7 @@ object System {
                          "Java Platform API Specification")
     sysProps.setProperty("line.separator", lineSeparator())
 
-    if (Platform.isWindows) {
+    if (Platform.isWindows()) {
       sysProps.setProperty("file.separator", "\\")
       sysProps.setProperty("path.separator", ";")
       val userLang    = fromCString(Platform.windowsGetUserLang())
@@ -72,7 +73,7 @@ object System {
         }
       }
       locally {
-        val bufSize = 1024
+        val bufSize = 1024.toUInt
         val buf     = stackalloc[scala.Byte](bufSize)
         val cwd     = unistd.getcwd(buf, bufSize)
         if (cwd != null) {
@@ -92,13 +93,12 @@ object System {
     new PrintStream(new FileOutputStream(FileDescriptor.err))
 
   private val systemProperties = loadProperties()
-  Platform.setOSProps(new CFuncPtr2[CString, CString, Unit] {
-    def apply(key: CString, value: CString): Unit =
-      systemProperties.setProperty(fromCString(key), fromCString(value))
-  })
+  Platform.setOSProps { (key: CString, value: CString) =>
+    val _ = systemProperties.setProperty(fromCString(key), fromCString(value))
+  }
 
   def lineSeparator(): String = {
-    if (Platform.isWindows) "\r\n"
+    if (Platform.isWindows()) "\r\n"
     else "\n"
   }
 

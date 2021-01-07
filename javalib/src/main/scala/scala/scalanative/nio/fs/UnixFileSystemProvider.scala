@@ -1,6 +1,7 @@
 package scala.scalanative.nio.fs
 
 import scala.scalanative.unsafe.{CChar, fromCString, stackalloc}
+import scala.scalanative.unsigned._
 import scala.scalanative.posix.unistd
 import scala.collection.immutable.{Map => SMap}
 
@@ -25,34 +26,34 @@ class UnixFileSystemProvider extends FileSystemProvider {
     "file"
 
   override def newFileSystem(uri: URI, env: Map[String, _]): FileSystem =
-    if (uri.getPath != "/") {
+    if (uri.getPath() != "/") {
       throw new IllegalArgumentException("Path component should be '/'")
-    } else if (uri.getScheme != "file") {
+    } else if (uri.getScheme() != "file") {
       throw new IllegalArgumentException("URI does not match this provider.")
     } else {
       throw new FileSystemAlreadyExistsException()
     }
 
   override def getFileSystem(uri: URI): FileSystem =
-    if (uri.getPath != "/") {
+    if (uri.getPath() != "/") {
       throw new IllegalArgumentException("Path component should be '/'")
-    } else if (uri.getScheme != "file") {
+    } else if (uri.getScheme() != "file") {
       throw new IllegalArgumentException("URI does not match this provider")
     } else {
       fs
     }
 
   override def getPath(uri: URI): Path =
-    if (uri.getScheme != "file") {
+    if (uri.getScheme() != "file") {
       throw new IllegalArgumentException("URI scheme is not \"file\"")
-    } else if (!uri.getPath.startsWith("/")) {
+    } else if (!uri.getPath().startsWith("/")) {
       throw new IllegalArgumentException("URI is not hierarchical")
     } else {
-      fs.getPath(uri.getPath, Array.empty)
+      fs.getPath(uri.getPath(), Array.empty)
     }
 
   override def newFileSystem(path: Path, env: Map[String, _]): FileSystem =
-    newFileSystem(path.toUri, env)
+    newFileSystem(path.toUri(), env)
 
   override def newFileChannel(path: Path,
                               options: Set[_ <: OpenOption],
@@ -99,7 +100,7 @@ class UnixFileSystemProvider extends FileSystemProvider {
     Files.isHidden(path)
 
   override def checkAccess(path: Path, modes: Array[AccessMode]): Unit = {
-    val file = path.toFile
+    val file = path.toFile()
     if (modes.contains(AccessMode.READ) && !file.canRead())
       throw new AccessDeniedException(path.toString)
     if (modes.contains(AccessMode.WRITE) && !file.canWrite())
@@ -137,8 +138,8 @@ class UnixFileSystemProvider extends FileSystemProvider {
     Files.setAttribute(path, attribute, value, options)
 
   private def getUserDir(): String = {
-    val buff = stackalloc[CChar](4096)
-    val res  = unistd.getcwd(buff, 4095)
+    val buff = stackalloc[CChar](4096.toUInt)
+    val res  = unistd.getcwd(buff, 4095.toUInt)
     if (res == null)
       throw UnixException("Could not determine current working directory",
                           errno.errno)

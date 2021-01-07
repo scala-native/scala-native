@@ -547,8 +547,11 @@ private[net] trait InetAddressBase {
   }
 
   private def addressToString(value: Int): String = {
-    return (((value >> 24) & 0xff) + "." + ((value >> 16) & 0xff) + "."
-      + ((value >> 8) & 0xff) + "." + (value & 0xff))
+    val p1 = (value >> 24) & 0xff
+    val p2 = (value >> 16) & 0xff
+    val p3 = (value >> 8) & 0xff
+    val p4 = value & 0xff
+    s"$p1.$p2.$p3.$p4"
   }
 }
 
@@ -581,7 +584,7 @@ class InetAddress private[net] (ipAddress: Array[Byte],
     if (obj == null || obj.getClass != this.getClass) {
       false
     } else {
-      val objIPAddress = obj.asInstanceOf[InetAddress].getAddress;
+      val objIPAddress = obj.asInstanceOf[InetAddress].getAddress()
       objIPAddress.indices.forall(i => objIPAddress(i) == ipAddress(i))
     }
   }

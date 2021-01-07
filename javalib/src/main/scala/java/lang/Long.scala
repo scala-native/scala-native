@@ -82,7 +82,7 @@ final class Long(val _value: scala.Long) extends Number with Comparable[Long] {
   protected def unary_+ : scala.Long = _value
   protected def unary_- : scala.Long = -_value
 
-  protected def +(x: String): String = _value + x
+  protected def +(x: String): String = "" + _value + x
 
   protected def <<(x: scala.Int): scala.Long   = _value << x
   protected def <<(x: scala.Long): scala.Long  = _value << x

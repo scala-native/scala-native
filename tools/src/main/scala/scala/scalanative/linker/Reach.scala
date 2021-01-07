@@ -1,10 +1,13 @@
 package scala.scalanative
 package linker
 
+import java.nio.file.{Path, Paths}
 import scala.collection.mutable
 import scalanative.nir._
 
 class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
+  import Reach._
+
   val unavailable = mutable.Set.empty[Global]
   val loaded      = mutable.Map.empty[Global, mutable.Map[Global, Defn]]
   val enqueued    = mutable.Set.empty[Global]
@@ -14,6 +17,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val links       = mutable.Set.empty[Attr.Link]
   val infos       = mutable.Map.empty[Global, Info]
   val from        = mutable.Map.empty[Global, Global]
+  val missing     = mutable.Map.empty[Global, Set[NonReachablePosition]]
 
   val dyncandidates = mutable.Map.empty[Sig, mutable.Set[Global]]
   val dynsigs       = mutable.Set.empty[Sig]
@@ -23,6 +27,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   loader.classesWithEntryPoints.foreach(reachClinit)
 
   def result(): Result = {
+    reportMissing()
     cleanup()
 
     val defns = mutable.UnrolledBuffer.empty[Defn]
@@ -303,7 +308,13 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       }
       info.parent.foreach(loopParent)
       info.traits.foreach(loopTraits)
-      calls.foreach { sig => info.responds.get(sig).foreach(reachGlobal) }
+      calls.foreach { sig =>
+        def respondImpl = info.responds.get(sig)
+        def defaultImpl = info.defaultResponds.get(sig)
+        respondImpl
+          .orElse(defaultImpl)
+          .foreach(reachGlobal)
+      }
 
       // 1. Handle all dynamic methods on this class.
       //    Any method that implements a known dynamic
@@ -517,6 +528,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachGlobal(n); reachType(ty)
     case Val.Const(v) =>
       reachVal(v)
+    case Val.ClassOf(cls) =>
+      reachGlobal(cls)
     case _ =>
       ()
   }
@@ -528,7 +541,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     case Inst.Label(n, params) =>
       params.foreach(p => reachType(p.ty))
     case Inst.Let(n, op, unwind) =>
-      reachOp(op)
+      reachOp(op)(inst.pos)
       reachNext(unwind)
     case Inst.Ret(v) =>
       reachVal(v)
@@ -549,7 +562,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachNext(unwind)
   }
 
-  def reachOp(op: Op): Unit = op match {
+  def reachOp(op: Op)(implicit pos: Position): Unit = op match {
     case Op.Call(ty, ptrv, argvs) =>
       reachType(ty)
       reachVal(ptrv)
@@ -605,8 +618,10 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     case Op.Module(n) =>
       classInfo(n).foreach(reachAllocation)
       val init = n.member(Sig.Ctor(Seq()))
-      if (loaded(n).contains(init)) {
-        reachGlobal(init)
+      loaded.get(n).fold(addMissing(n, pos)) { defn =>
+        if (defn.contains(init)) {
+          reachGlobal(init)
+        }
       }
     case Op.As(ty, v) =>
       reachType(ty)
@@ -720,6 +735,31 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         lookupSig(cls, sig)
     }
   }
+
+  private def addMissing(global: Global, pos: Position): Unit = {
+    val prev = missing.getOrElse(global, Set.empty)
+    val position = NonReachablePosition(path = Paths.get(pos.source.getPath),
+                                        line = pos.line + 1)
+    missing(global) = prev + position
+  }
+
+  private def reportMissing(): Unit = {
+    if (missing.nonEmpty) {
+      val log = config.logger
+      log.error(s"Found ${missing.size} missing definitions while linking")
+      missing.foreach {
+        case (global, positions) =>
+          log.error(s"Not found $global")
+          positions.toList
+            .sortBy(p => (p.path, p.line))
+            .foreach { pos =>
+              log.error(s"\tat ${pos.path.toString}:${pos.line}")
+            }
+      }
+      throw new LinkingException(
+        "Undefined definitions found in reachability phase")
+    }
+  }
 }
 
 object Reach {
@@ -730,4 +770,6 @@ object Reach {
     reachability.process()
     reachability.result()
   }
+
+  private[scalanative] case class NonReachablePosition(path: Path, line: Int)
 }

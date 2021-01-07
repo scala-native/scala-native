@@ -385,43 +385,6 @@ Here is the list of currently available classes:
 * ``java.security.cert.CertificateFactory``
 * ``java.security.cert.X509Certificate``
 * ``java.security.cert.X509Extension``
-* ``java.text.DateFormatSymbols``
-* ``java.text.DecimalFormat``
-* ``java.text.DecimalFormat$BigDecimalFormatting``
-* ``java.text.DecimalFormat$BigIntegerFormatting``
-* ``java.text.DecimalFormat$DoubleFormatting``
-* ``java.text.DecimalFormat$DoubleFormatting$DoubleDigits``
-* ``java.text.DecimalFormat$Formatting``
-* ``java.text.DecimalFormat$Formatting$Digits``
-* ``java.text.DecimalFormat$Formatting$class``
-* ``java.text.DecimalFormat$LongFormatting``
-* ``java.text.DecimalFormat$PatternSyntax``
-* ``java.text.DecimalFormat$PatternSyntax$Affix``
-* ``java.text.DecimalFormat$PatternSyntax$Exponent``
-* ``java.text.DecimalFormat$PatternSyntax$Fraction``
-* ``java.text.DecimalFormat$PatternSyntax$Fraction$$plus$plus``
-* ``java.text.DecimalFormat$PatternSyntax$Integer``
-* ``java.text.DecimalFormat$PatternSyntax$MinimumExponent``
-* ``java.text.DecimalFormat$PatternSyntax$MinimumFraction``
-* ``java.text.DecimalFormat$PatternSyntax$MinimumInteger``
-* ``java.text.DecimalFormat$PatternSyntax$Number``
-* ``java.text.DecimalFormat$PatternSyntax$Number$Fraction_$plus$plus``
-* ``java.text.DecimalFormat$PatternSyntax$Number$Integer_$plus$plus``
-* ``java.text.DecimalFormat$PatternSyntax$OptionalFraction``
-* ``java.text.DecimalFormat$PatternSyntax$Pattern``
-* ``java.text.DecimalFormat$PatternSyntax$Pattern$$plus$plus``
-* ``java.text.DecimalFormat$PatternSyntax$SignedPattern``
-* ``java.text.DecimalFormat$PatternSyntax$SignedPattern$Number_$plus$plus``
-* ``java.text.DecimalFormat$PatternSyntax$SignedPattern$Prefix_$plus$plus``
-* ``java.text.DecimalFormatSymbols``
-* ``java.text.FieldPosition``
-* ``java.text.Format``
-* ``java.text.Format$Field``
-* ``java.text.NumberFormat``
-* ``java.text.ParseException``
-* ``java.time.Duration``
-* ``java.time.Instant``
-* ``java.time.temporal.TemporalAmount``
 * ``java.util.AbstractCollection``
 * ``java.util.AbstractList``
 * ``java.util.AbstractListView``
@@ -498,11 +461,6 @@ Here is the list of currently available classes:
 * ``java.util.FormattableFlags``
 * ``java.util.Formatter``
 * ``java.util.Formatter$BigDecimalLayoutForm``
-* ``java.util.Formatter$DateTimeUtil``
-* ``java.util.Formatter$FloatUtil``
-* ``java.util.Formatter$FormatToken``
-* ``java.util.Formatter$ParserStateMachine``
-* ``java.util.Formatter$Transformer``
 * ``java.util.FormatterClosedException``
 * ``java.util.GregorianCalendar``
 * ``java.util.HashMap``
@@ -532,7 +490,6 @@ Here is the list of currently available classes:
 * ``java.util.LinkedList$Node``
 * ``java.util.List``
 * ``java.util.ListIterator``
-* ``java.util.Locale``
 * ``java.util.Map``
 * ``java.util.Map$Entry``
 * ``java.util.MissingFormatArgumentException``
@@ -680,36 +637,41 @@ Some notes on the implementation:
 2. This implementation of RE2 does not support:
 
    * Character classes:
-    * Unions: ``[a-d[m-p]]``
-    * Intersections: ``[a-z&&[^aeiou]]``
+
+     * Unions: ``[a-d[m-p]]``
+     * Intersections: ``[a-z&&[^aeiou]]``
 
    * Predefined character classes: ``\h``, ``\H``, ``\v``, ``\V``
 
    * Patterns:
-    * Octal: ``\0100`` - use decimal or hexadecimal instead.
-    * Two character Hexadecimal: ``\xFF`` - use ``\x00FF`` instead.
-    * All alphabetic Unicode: ``\uBEEF`` - use hex ``\xBEEF`` instead.
-    * Escape: ``\e`` - use ``\u001B`` instead.
+
+     * Octal: ``\0100`` - use decimal or hexadecimal instead.
+     * Two character Hexadecimal: ``\xFF`` - use ``\x00FF`` instead.
+     * All alphabetic Unicode: ``\uBEEF`` - use hex ``\xBEEF`` instead.
+     * Escape: ``\e`` - use ``\u001B`` instead.
 
    * Java character function classes:
-    * ``\p{javaLowerCase}``
-    * ``\p{javaUpperCase}``
-    * ``\p{javaWhitespace}``
-    * ``\p{javaMirrored}``
+
+     * ``\p{javaLowerCase}``
+     * ``\p{javaUpperCase}``
+     * ``\p{javaWhitespace}``
+     * ``\p{javaMirrored}``
 
    * Boundary matchers: ``\G``, ``\R``, ``\Z``
 
    * Possessive quantifiers: ``X?+``, ``X*+``, ``X++``, ``X{n}+``,
      ``X{n,}+``, ``X{n,m}+``
+
    * Lookaheads: ``(?=X)``, ``(?!X)``, ``(?<=X)``, ``(?<!X)``, ``(?>X)``
 
    * Options
-    *  CANON_EQ
-    *  COMMENTS
-    *  LITERAL
-    *  UNICODE_CASE
-    *  UNICODE_CHARACTER_CLASS
-    *  UNIX_LINES
+
+     *  CANON_EQ
+     *  COMMENTS
+     *  LITERAL
+     *  UNICODE_CASE
+     *  UNICODE_CHARACTER_CLASS
+     *  UNIX_LINES
 
    * Patterns to match a Unicode binary property, such as
      ``\p{isAlphabetic}`` for a codepoint with the 'alphabetic' property,

@@ -51,16 +51,23 @@ object Zone {
         throw new IllegalStateException("zone allocator is closed")
       }
       val rawptr = libc.malloc(size)
+      if (rawptr == null) {
+        throw new OutOfMemoryError(s"Unable to allocate $size bytes")
+      }
       node = new Node(rawptr, node)
       fromRawPtr[Byte](rawptr)
     }
 
     final override def close(): Unit = {
-      while (node != null) {
-        libc.free(node.head)
-        node = node.tail
+      if (closed) {
+        throw new IllegalStateException("zone allocator is closed")
       }
       closed = true
+      while (node != null) {
+        val head = node.head
+        node = node.tail
+        libc.free(head)
+      }
     }
   }
 }

@@ -1,15 +1,15 @@
 package scala.scalanative
 package sbtplugin
 
-import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicReference
-import java.nio.file.Files
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 import sbt.complete.DefaultParsers._
 import scala.annotation.tailrec
+import scala.scalanative.util.Scope
 import scala.scalanative.build.{Build, BuildException, Discover}
+import scala.scalanative.linker.LinkingException
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
@@ -20,9 +20,6 @@ object ScalaNativePluginInternal {
 
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
-
-  val nativeTarget =
-    taskKey[String]("Target triple.")
 
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
@@ -77,18 +74,15 @@ object ScalaNativePluginInternal {
       val prev: () => Unit = onComplete.value
       () => {
         prev()
+        sharedScope.close()
+        sharedScope = Scope.unsafe()
         testAdapters.getAndSet(Nil).foreach(_.close())
       }
     }
   )
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
-    nativeTarget := interceptBuildException {
-      val cwd   = nativeWorkdir.value.toPath
-      val clang = nativeClang.value.toPath
-      Discover.targetTriple(clang, cwd)
-    },
-    artifactPath in nativeLink := {
+    nativeLink / artifactPath := {
       crossTarget.value / (moduleName.value + "-out")
     },
     nativeWorkdir := {
@@ -112,16 +106,14 @@ object ScalaNativePluginInternal {
         .withDump(nativeDump.value)
     },
     nativeLink := {
-      val outpath = (artifactPath in nativeLink).value
+      val outpath = (nativeLink / artifactPath).value
       val config = {
         val mainClass = selectMainClass.value.getOrElse {
           throw new MessageOnlyException("No main class detected.")
         }
-        val classpath = fullClasspath.value
-          .map(_.data.toPath)
-          .filter(f => Files.exists(f))
-        val maincls = mainClass + "$"
-        val cwd     = nativeWorkdir.value.toPath
+        val classpath = fullClasspath.value.map(_.data.toPath)
+        val maincls   = mainClass + "$"
+        val cwd       = nativeWorkdir.value.toPath
 
         val logger = streams.value.log.toLogger
         build.Config.empty
@@ -129,16 +121,17 @@ object ScalaNativePluginInternal {
           .withMainClass(maincls)
           .withClassPath(classpath)
           .withWorkdir(cwd)
-          .withTargetTriple(nativeTarget.value)
           .withCompilerConfig(nativeConfig.value)
       }
 
-      interceptBuildException(Build.build(config, outpath.toPath))
+      interceptBuildException {
+        Build.build(config, outpath.toPath)(sharedScope)
+      }
 
       outpath
     },
     run := {
-      val env    = (envVars in run).value.toSeq
+      val env    = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = nativeLink.value.getAbsolutePath
       val args   = spaceDelimited("<arg>").parsed
@@ -202,6 +195,7 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(scalaNativeCompileSettings) ++
       inConfig(Test)(scalaNativeTestSettings)
 
+  private var sharedScope  = Scope.unsafe()
   private val testAdapters = new AtomicReference[List[TestAdapter]](Nil)
 
   private def newTestAdapter(config: TestAdapter.Config): TestAdapter = {
@@ -212,7 +206,8 @@ object ScalaNativePluginInternal {
   private def interceptBuildException[T](op: => T): T = {
     try op
     catch {
-      case ex: BuildException => throw new MessageOnlyException(ex.getMessage)
+      case ex: BuildException   => throw new MessageOnlyException(ex.getMessage)
+      case ex: LinkingException => throw new MessageOnlyException(ex.getMessage)
     }
   }
 

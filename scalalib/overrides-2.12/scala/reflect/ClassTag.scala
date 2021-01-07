@@ -15,6 +15,8 @@ package reflect
 
 import java.lang.{ Class => jClass }
 
+/* Override for default scala ClassTag due to missing caching using java.lang.Value.ClassValue */
+
 /**
  *
  * A `ClassTag[T]` stores the erased class of a given type `T`, accessible via the `runtimeClass`

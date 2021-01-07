@@ -157,7 +157,7 @@ object Reflect {
    *  A module class is the technical term referring to the class of a Scala
    *  `object`. The object or one of its super types (classes or traits) must
    *  be annotated with
-   *  [[scala.scalajs.reflect.annotation.EnableReflectiveInstantiation @EnableReflectiveInstantiation]].
+   *  [[scala.scalanative.reflect.annotation.EnableReflectiveInstantiation @EnableReflectiveInstantiation]].
    *  Moreover, the object must be "static", i.e., declared at the top-level of
    *  a package or inside a static object.
    *
@@ -175,7 +175,7 @@ object Reflect {
    *
    *  The class or one of its super types (classes or traits) must be annotated
    *  with
-   *  [[scala.scalajs.reflect.annotation.EnableReflectiveInstantiation @EnableReflectiveInstantiation]].
+   *  [[scala.scalanative.reflect.annotation.EnableReflectiveInstantiation @EnableReflectiveInstantiation]].
    *  Moreover, the class must not be abstract, nor be a local class (i.e., a
    *  class defined inside a `def`). Inner classes (defined inside another
    *  class) are supported.

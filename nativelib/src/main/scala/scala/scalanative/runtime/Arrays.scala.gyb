@@ -25,8 +25,8 @@
 package scala.scalanative
 package runtime
 
-import scala.runtime.BoxedUnit
 import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
 
 % sizePtr = 8
@@ -52,10 +52,10 @@ sealed abstract class Array[T]
   /** Raw pointer to the element. */
   def atRaw(i: Int): RawPtr
 
-  /** Loads element at i, throws IndexOutOfBoundsException. */
+  /** Loads element at i, throws ArrayIndexOutOfBoundsException. */
   def apply(i: Int): T
 
-  /** Stores value to element i, throws IndexOutOfBoundsException. */
+  /** Stores value to element i, throws ArrayIndexOutOfBoundsException. */
   def update(i: Int, value: T): Unit
 
   /** Create a shallow copy of given array. */
@@ -93,17 +93,17 @@ object Array {
     } else if (getRawType(from) != getRawType(to)) {
       throw new ArrayStoreException("Invalid array copy.")
     } else if (len < 0) {
-      throw new IndexOutOfBoundsException("length is negative")
+      throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (fromPos < 0 || fromPos + len > from.length) {
-      throw new IndexOutOfBoundsException(fromPos.toString)
+      throwOutOfBounds(fromPos)
     } else if (toPos < 0 || toPos + len > to.length) {
-      throw new IndexOutOfBoundsException(toPos.toString)
+      throwOutOfBounds(toPos)
     } else if (len == 0) {
       ()
     } else {
       val fromPtr = from.atRaw(fromPos)
       val toPtr   = to.atRaw(toPos)
-      val size    = to.stride * len
+      val size    = to.stride * len.toULong
       libc.memmove(toPtr, fromPtr, size)
     }
   }
@@ -138,23 +138,23 @@ object Array {
     } else if (getRawType(left) != getRawType(right)) {
       throw new ArrayStoreException("Invalid array copy.")
     } else if (len < 0) {
-      throw new IndexOutOfBoundsException("length is negative")
+      throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (leftPos < 0 || leftPos + len > left.length) {
-      throw new IndexOutOfBoundsException(leftPos.toString)
+      throwOutOfBounds(leftPos)
     } else if (rightPos < 0 || rightPos + len > right.length) {
-      throw new IndexOutOfBoundsException(rightPos.toString)
+      throwOutOfBounds(rightPos)
     } else if (len == 0) {
       0
     } else {
       val leftPtr  = left.atRaw(leftPos)
       val rightPtr = right.atRaw(rightPos)
-      libc.memcmp(leftPtr, rightPtr, len * left.stride)
+      libc.memcmp(leftPtr, rightPtr, len.toULong * left.stride)
     }
   }
 }
 
 %{
-   types = {'BoxedUnit': sizePtr, 'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
+   types = {'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
             'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': sizePtr}
 }%
 % # BEWARE: Order of iteration of the dictionary depends on version of Python
@@ -169,13 +169,13 @@ object Array {
 % for T, sizeT in types.items():
 
 %{
-   alloc = 'GC.alloc_atomic' if T != 'Object' and T != 'BoxedUnit' else 'GC.alloc'
+   alloc = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
 }%
 
 final class ${T}Array private () extends Array[${T}] {
 
   @inline def stride: CSize =
-    ${sizeT}
+    ${sizeT}.toULong
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
@@ -191,11 +191,7 @@ final class ${T}Array private () extends Array[${T}] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
-      % if T != 'BoxedUnit':
       load${T}(ith)
-      % else:
-      loadObject(ith).asInstanceOf[BoxedUnit]
-      % end
     }
 
   @inline def update(i: Int, value: ${T}): Unit =
@@ -204,16 +200,12 @@ final class ${T}Array private () extends Array[${T}] {
     } else {
       val rawptr = castObjectToRawPtr(this)
       val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
-      % if T != 'BoxedUnit':
       store${T}(ith, value)
-      % else:
-      storeObject(ith, value.asInstanceOf[Object])
-      % end
     }
 
   @inline override def clone(): ${T}Array = {
     val arrty   = toRawType(classOf[${T}Array])
-    val arrsize = ${sizeHeader} + ${sizeT} * length
+    val arrsize = (${sizeHeader} + ${sizeT} * length).toULong
     val arr     = ${alloc}(arrty, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -225,7 +217,7 @@ object ${T}Array {
 
   @inline def alloc(length: Int): ${T}Array = {
     val arrty   = toRawType(classOf[${T}Array])
-    val arrsize = ${sizeHeader} + ${sizeT} * length
+    val arrsize = (${sizeHeader} + ${sizeT} * length).toULong
     val arr     = ${alloc}(arrty, arrsize)
     storeInt(elemRawPtr(arr, 8), length)
     storeInt(elemRawPtr(arr, 12), ${sizeT}.toInt)
@@ -236,7 +228,7 @@ object ${T}Array {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = ${sizeT} * length
+    val size = (${sizeT} * length).toULong
     libc.memcpy(dst, src, size)
     arr
   }

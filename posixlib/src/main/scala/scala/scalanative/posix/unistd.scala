@@ -49,6 +49,34 @@ object unistd {
              path2: CString,
              flag: CInt): CInt = extern
 
+  // NULL, see POSIX stddef
+
+  @name("scalanative_f_ok")
+  def F_OK: CInt = extern
+
+  @name("scalanative_r_ok")
+  def R_OK: CInt = extern
+
+  @name("scalanative_w_ok")
+  def W_OK: CInt = extern
+
+  @name("scalanative_x_ok")
+  def X_OK: CInt = extern
+
+  // SEEK_CUR, SEEK_END, SEEK_SET, see clib stdio
+
+  @name("scalanative_f_lock")
+  def F_LOCK: CInt = extern
+
+  @name("scalanative_f_test")
+  def F_TEST: CInt = extern
+
+  @name("scalanative_f_tlock")
+  def F_TLOCK: CInt = extern
+
+  @name("scalanative_f_ulock")
+  def F_ULOCK: CInt = extern
+
   @name("scalanative_stderr_fileno")
   def STDERR_FILENO: CInt = extern
 

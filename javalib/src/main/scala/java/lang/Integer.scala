@@ -77,7 +77,7 @@ final class Integer(val _value: scala.Int)
   protected def unary_+ : scala.Int = _value
   protected def unary_- : scala.Int = -_value
 
-  protected def +(x: String): String = _value + x
+  protected def +(x: String): String = "" + _value + x
 
   protected def <<(x: scala.Int): scala.Int   = _value << x
   protected def <<(x: scala.Long): scala.Int  = _value << x.toInt
