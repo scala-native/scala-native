@@ -102,23 +102,23 @@ class RandomAccessFileTest {
 
   @Test def canWriteAndReadLineWithTerminatorLf(): Unit = {
     val line = "Hello, world!"
-    raf.writeChars(line + '\n')
+    raf.writeBytes(line + '\n')
     raf.seek(0)
-    assertTrue(raf.readLine() == line)
+    assertEquals(line, raf.readLine())
   }
 
   @Test def canWriteAndReadLineWithTerminatorCr(): Unit = {
     val line = "Hello, world!"
-    raf.writeChars(line + '\r')
+    raf.writeBytes(line + '\r')
     raf.seek(0)
-    assertTrue(raf.readLine() == line)
+    assertEquals(line, raf.readLine())
   }
 
   @Test def canWriteAndReadLineWithTerminatorCrLf(): Unit = {
     val line = "Hello, world!"
-    raf.writeChars(line + "\r\n")
+    raf.writeBytes(line + "\r\n")
     raf.seek(0)
-    assertTrue(raf.readLine() == line)
+    assertEquals(line, raf.readLine())
   }
 
   @Test def canWriteAndReadLong(): Unit = {
