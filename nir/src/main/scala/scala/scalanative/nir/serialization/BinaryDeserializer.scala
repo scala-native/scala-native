@@ -8,7 +8,8 @@ import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.nir.serialization.{Tags => T}
 
-final class BinaryDeserializer(buffer: ByteBuffer) {
+final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
+
   import buffer._
 
   private[this] var lastPosition: Position = Position.NoPosition
@@ -18,7 +19,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
                                          Array[URI]) = {
     buffer.position(0)
 
-    val prelude = Prelude.readFrom(buffer)
+    val prelude = Prelude.readFrom(buffer, bufferName)
 
     val files = Array.fill(getInt())(new URI(getUTF8String()))
 

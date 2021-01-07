@@ -11,6 +11,9 @@ import scalanative.util.{Scope, acquire, defer}
 
 sealed trait VirtualDirectory {
 
+  /** A unique identifier for this directory */
+  def uri: URI
+
   /** Check if file with given path is in the directory. */
   def contains(path: Path): Boolean =
     files.contains(path)
@@ -125,6 +128,9 @@ object VirtualDirectory {
   }
 
   private final class LocalDirectory(path: Path) extends NioDirectory {
+
+    def uri: URI = path.toUri
+
     override protected def resolve(path: Path): Path =
       this.path.resolve(path)
 
@@ -138,9 +144,9 @@ object VirtualDirectory {
 
   private final class JarDirectory(path: Path)(implicit in: Scope)
       extends NioDirectory {
+    def uri: URI = URI.create(s"jar:${path.toUri}")
     private val fileSystem: FileSystem =
       acquire {
-        val uri = URI.create(s"jar:${path.toUri}")
         try {
           val params = new HashMap[String, String]()
           params.put("create", "false")
@@ -166,6 +172,9 @@ object VirtualDirectory {
   }
 
   private final object EmptyDirectory extends VirtualDirectory {
+
+    val uri: URI = URI.create("")
+
     override def files = Seq.empty
 
     override def read(path: Path): ByteBuffer =
