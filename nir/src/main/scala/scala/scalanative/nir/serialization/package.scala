@@ -22,10 +22,8 @@ package object serialization {
   def serializeBinary(defns: Seq[Defn], out: OutputStream): Unit =
     new BinarySerializer().serialize(defns, out)
 
-
   def deserializeBinary(buffer: ByteBuffer, bufferName: String): Seq[Defn] =
     withBigEndian(buffer) {
       new BinaryDeserializer(_, bufferName).deserialize()
     }
-
 }
