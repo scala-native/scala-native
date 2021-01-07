@@ -19,10 +19,10 @@ final class Word(private[scalanative] val rawWord: RawWord) {
   @inline def toInt: Int     = castRawWordToInt(rawWord)
   @inline def toLong: Long   = castRawWordToLong(rawWord)
 
-  @inline def toUByte: UByte   = toByte.toUByte
-  @inline def toUShort: UShort = toShort.toUShort
-  @inline def toUInt: UInt     = toInt.toUInt
-  @inline def toULong: ULong   = toLong.toULong
+  @inline def toUByte: UByte   = toUWord.toUByte
+  @inline def toUShort: UShort = toUWord.toUShort
+  @inline def toUInt: UInt     = toUWord.toUInt
+  @inline def toULong: ULong   = toUWord.toULong
   @inline def toUWord: UWord   = new UWord(rawWord)
 
   @inline override def hashCode: Int = java.lang.Long.hashCode(toLong)

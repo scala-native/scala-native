@@ -14,11 +14,11 @@ import unsafe._
 import java.lang.{Long => JLong}
 
 final class UWord(private[scalanative] val rawWord: RawWord) {
-  @inline def toByte: Byte        = castRawWordToInt(rawWord).toByte
-  @inline def toChar: Char        = castRawWordToInt(rawWord).toChar
-  @inline def toShort: Short      = castRawWordToInt(rawWord).toShort
-  @inline def toInt: Int          = castRawWordToInt(rawWord)
-  @inline def toLong: Long        = castRawWordToLong(rawWord)
+  @inline def toByte: Byte        = castRawWordToLongUnsigned(rawWord).toByte
+  @inline def toChar: Char        = castRawWordToLongUnsigned(rawWord).toChar
+  @inline def toShort: Short      = castRawWordToLongUnsigned(rawWord).toShort
+  @inline def toInt: Int          = castRawWordToLongUnsigned(rawWord).toInt
+  @inline def toLong: Long        = castRawWordToLongUnsigned(rawWord)
   @inline def toWord: unsafe.Word = new unsafe.Word(rawWord)
 
   @inline def toUByte: UByte   = toByte.toUByte
