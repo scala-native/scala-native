@@ -53,7 +53,8 @@ jobs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
       matrix:
-        arch: [ amd64 ]
+        host_arch: [ amd64 ]
+        docker_arch: [ library, i386 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -79,7 +80,7 @@ jobs:
         id: build-image
         run: |
           imageBase="scala-native-testing:linux"
-          imageName="${imageBase}-${{ matrix.arch }}"
+          imageName="${imageBase}-${{ matrix.docker_arch }}"
           echo "::set-output name=image-base-name::${imageBase}"
           echo "::set-output name=image-full-name::${imageName}"
 
@@ -88,8 +89,8 @@ jobs:
           docker build \
           -t ${imageName} \
           --cache-from=localhost:5000/${imageName} \
-          --build-arg TARGET_DOCKER_PLATFORM=library \
-          --build-arg HOST_ARCHITECTURE=${{ matrix.arch }}  \
+          --build-arg TARGET_DOCKER_PLATFORM=${{ matrix.docker_arch }} \
+          --build-arg HOST_ARCHITECTURE=${{ matrix.host_arch }}  \
           --cpuset-cpus=0 \
           ci-docker
 
