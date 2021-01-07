@@ -9,6 +9,9 @@ import scalanative.build.NativeLib._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
+  // settings to make sure that exceptions can be caught and unwinded
+  private val unwindSettings =
+    Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
 
   /**
    * Called to unpack jars and copy native code.
@@ -142,7 +145,7 @@ private[scalanative] object LLVM {
         val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
         val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
         val compilec =
-          Seq(compiler) ++ fltoOpt ++ flags ++ targetOpt ++
+          Seq(compiler) ++ fltoOpt ++ flags ++ unwindSettings ++ targetOpt ++
             Seq("-c", path, "-o", opath)
 
         config.logger.running(compilec)
@@ -178,7 +181,11 @@ private[scalanative] object LLVM {
       val apppath = ll.abs
       val outpath = apppath + oExt
       val compile =
-        Seq(config.clang.abs) ++ fltoOpt ++ Seq("-c", apppath, "-o", outpath) ++ opts
+        Seq(config.clang.abs) ++ fltoOpt ++ unwindSettings ++ Seq(
+          "-c",
+          apppath,
+          "-o",
+          outpath) ++ opts
       config.logger.running(compile)
       Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
         config.logger)
@@ -212,7 +219,8 @@ private[scalanative] object LLVM {
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
     val flags =
-      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ target(config)
+      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ target(
+        config)
     val paths   = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
     val ltoName = lto(config).getOrElse("none")

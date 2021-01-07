@@ -12,7 +12,7 @@ package object runtime {
 
   implicit class TypeOps(val self: Ptr[Type]) extends AnyVal {
     @alwaysinline def id: Int          = self._1
-    @alwaysinline def tid: Int         = self._2
+    @alwaysinline def traitId: Int     = self._2
     @alwaysinline def name: String     = self._3
     @alwaysinline def isClass: Boolean = id >= 0
   }

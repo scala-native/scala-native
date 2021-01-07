@@ -5,7 +5,7 @@ import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime._
-import scala.scalanative.unsigned.UWord
+import scala.scalanative.unsigned.{UWord, UnsignedRichLong}
 
 final class Ptr[T] private[scalanative] (
     private[scalanative] val rawptr: RawPtr) {
@@ -42,9 +42,10 @@ final class Ptr[T] private[scalanative] (
     new Ptr(elemRawPtr(rawptr, (-(offset * sizeof[T]).toWord).rawWord))
 
   @alwaysinline def -(other: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = {
-    val left  = castRawPtrToLong(rawptr)
-    val right = castRawPtrToLong(other.rawptr)
-    (left - right) / sizeof[T].toLong
+    // TODO(shadaj): use an intrinsic to go directly to a word
+    val left  = castRawPtrToLong(rawptr).toWord
+    val right = castRawPtrToLong(other.rawptr).toWord
+    (left - right) / sizeof[T].toWord
   }
 
   @alwaysinline def apply(offset: UWord)(implicit tag: Tag[T]): T =

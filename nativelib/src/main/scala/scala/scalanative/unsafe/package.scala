@@ -30,7 +30,7 @@ package object unsafe {
   type CUnsignedLong = UWord
 
   /** The C 'unsigned long int' type. */
-  type CUnsignedLongInt = ULong
+  type CUnsignedLongInt = UWord
 
   /** The C 'unsigned long long' type. */
   type CUnsignedLongLong = ULong
@@ -78,7 +78,7 @@ package object unsafe {
   type CSSize = Word
 
   /** The C/C++ 'ptrdiff_t' type. */
-  type CPtrDiff = Long
+  type CPtrDiff = Word
 
   /** C-style string with trailing 0. */
   type CString = Ptr[CChar]

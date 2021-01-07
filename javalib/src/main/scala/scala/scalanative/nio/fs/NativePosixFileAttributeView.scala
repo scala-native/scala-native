@@ -75,7 +75,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
       private[this] var st_ino: stat.ino_t         = _
       private[this] var st_uid: stat.uid_t         = _
       private[this] var st_gid: stat.gid_t         = _
-      private[this] var st_size: unistd.off_t      = _
+      private[this] var st_size: stat.off_t        = _
       private[this] var st_atime: time.time_t      = _
       private[this] var st_mtime: time.time_t      = _
       private[this] var st_ctime: time.time_t      = _
@@ -149,7 +149,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
         set
       }
 
-      override def size() = st_size
+      override def size() = st_size.toLong
     }
 
   override def asMap: HashMap[String, Object] = {

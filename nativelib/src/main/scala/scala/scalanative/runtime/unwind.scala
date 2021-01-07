@@ -17,7 +17,7 @@ object unwind {
                     length: CSize,
                     offset: Ptr[Byte]): CInt = extern
   @name("scalanative_unwind_get_reg")
-  def get_reg(cursor: Ptr[Byte], reg: CInt, valp: Ptr[CUnsignedLong]): CInt =
+  def get_reg(cursor: Ptr[Byte], reg: CInt, valp: Ptr[CSize]): CInt =
     extern
 
   @name("scalanative_UNW_REG_IP")

@@ -244,7 +244,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     Zone { implicit z =>
       val buf = alloc[stat.stat]
       if (stat.stat(toCString(path), buf) == 0) {
-        buf._6
+        buf._6.toLong
       } else {
         0L
       }

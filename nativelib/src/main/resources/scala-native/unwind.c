@@ -19,8 +19,8 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
 }
 
 int scalanative_unwind_get_reg(void *cursor, int regnum,
-                               unsigned long *valp) {
-    return unw_get_reg((unw_cursor_t *)cursor, regnum, (unw_word_t *)valp);
+                               unw_word_t *valp) {
+    return unw_get_reg((unw_cursor_t *)cursor, regnum, valp);
 }
 
 int scalanative_UNW_REG_IP() { return UNW_REG_IP; }
