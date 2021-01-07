@@ -927,6 +927,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
   if (!output.contains('\u0307'))
     println(cp.toHexString)
 }
+
      */
     def afterSoftDotted(i: Int): scala.Boolean = {
       val j = skipCharsWithCombiningClassOtherThanNoneOrAboveBackwards(i)
@@ -969,7 +970,6 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     preprocessed.toUpperCase()
   }
 
-  @inline
   def toUpperCase(): _String = {
     replaceCharsAtIndex { i =>
       val c = this.charAt(i)
