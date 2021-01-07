@@ -7,7 +7,7 @@ Scala Native has the following build dependencies:
 
 * Java 8 or newer
 * sbt 1.1.6 or newer
-* LLVM/Clang 3.7 or newer
+* LLVM/Clang 6.0 or newer
 
 And following completely optional runtime library dependencies:
 
@@ -26,7 +26,7 @@ Installing clang and runtime dependencies
 -----------------------------------------
 
 Scala Native requires Clang, which is part of the `LLVM`_ toolchain. The
-recommended LLVM version is 3.7 or newer, however, the Scala Native sbt
+recommended LLVM version is 11 or newer, however, the Scala Native sbt
 plugin uses feature detection to discover the installed version of Clang
 so older versions may also work.
 
@@ -67,24 +67,25 @@ installation of macOS.
 
 .. code-block:: shell
 
-    $ sudo pacman -S llvm clang
+    $ sudo pacman -S llvm clang build-essential
     $ sudo pacman -S gc # optional
 
 *Note:* A version of zlib that is sufficiently recent comes with the
 installation of Arch Linux.
 
-**Fedora 26**
+**Fedora 33**
 
 .. code-block:: shell
 
     $ sudo dnf install llvm clang
+    $ sudo dnf groupinstall "Development Tools"
     $ sudo dnf install gc-devel zlib-devel # both optional
 
 **FreeBSD**
 
 .. code-block:: shell
 
-    $ pkg install llvm38
+    $ pkg install llvm110
     $ pkg install boehm-gc # optional
 
 *Note:* A version of zlib that is sufficiently recent comes with the
