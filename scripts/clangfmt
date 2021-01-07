@@ -44,8 +44,7 @@ else
 fi
 
 if [ -z "$clang_format" ]; then
-  die "clang-format version $CLANG_FORMAT_VERSION not found" \
-      "clang-format version $version found" \
+  die "clang-format version $CLANG_FORMAT_VERSION expected, but version $version found." \
       "Install LLVM version $CLANG_FORMAT_VERSION and rerun." \
       "Hint: export CLANG_FORMAT_PATH=/path/to/clang-format"
 fi
@@ -77,7 +76,7 @@ err=
 if [ "$#" -gt 0 ]; then
   "$clang_format" --style=file "$opts" "$@"
 else
-  find . -name "*.[ch]" -or -name "*.cpp" | \
+  find . -name "*.[ch]" -or -name "*.cpp" -or -name "*.hpp" | \
     xargs "$clang_format" --style=file "$opts" $err || \
       die "C/C++ code formatting changes detected" \
           "Run '$0' to reformat."
