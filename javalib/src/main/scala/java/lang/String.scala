@@ -831,8 +831,60 @@ final class _String()
     preprocessed.toLowerCase()
   }
 
-  @inline
-  def toLowerCase(): _String = toCase(Character.toLowerCase)
+  def toLowerCase(): _String = {
+    replaceCharsAtIndex { i =>
+      /* Tests whether we are in an `Final_Sigma` context.
+       * From Table 3.17 in the Unicode standard:
+       * - Description: C is preceded by a sequence consisting of a cased letter and then zero or more case-ignorable characters,
+       *     and C is not followed by a sequence consisting of zero or more case-ignorable characters and then a cased letter.
+       * - Regex:
+       *     before C: \p{cased}(\p{case-ignorable})*
+       *     after C:  !((\p{case-ignorable})*\p{cased})
+       */
+      def isFinalSigma(idx: Int): scala.Boolean = {
+        import Character._
+
+        val hasCasedBefore = {
+          val j = skipCaseIgnorableCharsBackwards(idx)
+          j > 0 && isCased(this.codePointBefore(j))
+        }
+
+        val hasCasedAfter = {
+          val j = skipCaseIgnorableCharsForwards(idx + 1)
+          j < length() && isCased(charAt(j))
+        }
+
+        hasCasedBefore && !hasCasedAfter
+      }
+
+      /* Relevant excerpt from SpecialCasing.txt
+       * # Preserve canonical equivalence for I with dot. Turkic is handled below.
+       *
+       * 0130; 0069 0307; 0130; 0130; # LATIN CAPITAL LETTER I WITH DOT ABOVE
+       * ...
+       * # Special case for final form of sigma
+       *
+       * 03A3; 03C2; 03A3; 03A3; Final_Sigma; # GREEK CAPITAL LETTER SIGMA
+       *
+       * # Note: the following cases for non-final are already in the UnicodeData.txt file.
+       *
+       * # 03A3; 03C3; 03A3; 03A3; # GREEK CAPITAL LETTER SIGMA
+       * # 03C3; 03C3; 03A3; 03A3; # GREEK SMALL LETTER SIGMA
+       * # 03C2; 03C2; 03A3; 03A3; # GREEK SMALL LETTER FINAL SIGMA
+       *
+       * # Note: the following cases are not included, since they would case-fold in lowercasing
+       *
+       * # 03C3; 03C2; 03A3; 03A3; Final_Sigma; # GREEK SMALL LETTER SIGMA
+       * # 03C2; 03C3; 03A3; 03A3; Not_Final_Sigma; # GREEK SMALL LETTER FINAL SIGMA
+       */
+      (charAt(i): @switch) match {
+        case '\u03A3' if isFinalSigma(i) => "\u03C2"
+        case '\u0130'                    => "\u0069\u0307"
+        case _                           => null
+      }
+    }.asInstanceOf[_String]
+      .toCase(Character.toLowerCase)
+  }
 
   override def toString(): String = this
 
@@ -918,10 +970,16 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     preprocessed.toUpperCase()
   }
 
-  @inline
-  def toUpperCase(): _String = toCase(Character.toUpperCase)
+  def toUpperCase(): _String = {
+    replaceCharsAtIndex { i =>
+      val c = this.charAt(i)
+      if (c < 0x80) null // fast-forward ASCII characters
+      else StringSpecialCasing.toUpperCase.get(c)
+    }.asInstanceOf[_String]
+      .toCase(Character.toUpperCase)
+  }
 
-  private[this] def toCase(convert: Int => Int): _String = {
+  private def toCase(convert: Int => Int): _String = {
     if (count == 0) return this
     val buf = new java.lang.StringBuilder(count)
     var i   = offset
@@ -993,15 +1051,14 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
       prep.append(this.substring(startOfSegment, i)).toString
   }
 
-  private def skipCharsWithCombiningClassOtherThanNoneOrAboveForwards(
-      i: Int): Int = {
+  private def skipConditionalCharsForwards(i: Int)(
+      shouldSkip: Int => scala.Boolean): Int = {
     // scalastyle:off return
-    import Character._
     val len = length()
     var j   = i
     while (j != len) {
       val cp = this.codePointAt(j)
-      if (combiningClassNoneOrAboveOrOther(cp) != CombiningClassIsOther)
+      if (!shouldSkip(cp))
         return j
       j += Character.charCount(cp)
     }
@@ -1009,19 +1066,48 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     // scalastyle:on return
   }
 
-  private def skipCharsWithCombiningClassOtherThanNoneOrAboveBackwards(
-      i: Int): Int = {
+  private def skipConditionalCharsBackwards(i: Int)(
+      shouldSkip: Int => scala.Boolean): Int = {
     // scalastyle:off return
-    import Character._
     var j = i
     while (j > 0) {
       val cp = this.codePointBefore(j)
-      if (combiningClassNoneOrAboveOrOther(cp) != CombiningClassIsOther)
+      if (!shouldSkip(cp))
         return j
       j -= Character.charCount(cp)
     }
     0
     // scalastyle:on return
+  }
+
+  private def skipCharsWithCombiningClassOtherThanNoneOrAboveForwards(
+      i: Int): Int = {
+    skipConditionalCharsForwards(i) { cp =>
+      import Character._
+      combiningClassNoneOrAboveOrOther(cp) == CombiningClassIsOther
+    }
+  }
+
+  private def skipCharsWithCombiningClassOtherThanNoneOrAboveBackwards(
+      i: Int): Int = {
+    skipConditionalCharsBackwards(i) { cp =>
+      import Character._
+      combiningClassNoneOrAboveOrOther(cp) == CombiningClassIsOther
+    }
+  }
+
+  private def skipCaseIgnorableCharsForwards(i: Int): Int = {
+    skipConditionalCharsForwards(i) { cp =>
+      import Character._
+      isCaseIgnorable(cp)
+    }
+  }
+
+  private def skipCaseIgnorableCharsBackwards(i: Int): Int = {
+    skipConditionalCharsBackwards(i) { cp =>
+      import Character._
+      isCaseIgnorable(cp)
+    }
   }
 
   def trim(): _String = {
