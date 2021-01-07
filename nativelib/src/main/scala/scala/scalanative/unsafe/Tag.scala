@@ -219,7 +219,7 @@ object Tag {
 
   object Long extends Tag[scala.Long] {
     @alwaysinline def size: CSize                                            = 8.toUWord
-    @alwaysinline def alignment: CSize                                       = 8.toUWord
+    @alwaysinline def alignment: CSize                                       = new UWord(sizeOfWord)
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Long]): scala.Long =
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)
       loadLong(toRawPtr(ptr))
@@ -235,7 +235,7 @@ object Tag {
 
   object ULong extends Tag[unsigned.ULong] {
     @alwaysinline def size: CSize      = 8.toUWord
-    @alwaysinline def alignment: CSize = 8.toUWord
+    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsigned.ULong]): unsigned.ULong =
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 89)
@@ -268,7 +268,7 @@ object Tag {
 
   object Double extends Tag[scala.Double] {
     @alwaysinline def size: CSize      = 8.toUWord
-    @alwaysinline def alignment: CSize = 8.toUWord
+    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
     @alwaysinline override def load(
         ptr: unsafe.Ptr[scala.Double]): scala.Double =
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)

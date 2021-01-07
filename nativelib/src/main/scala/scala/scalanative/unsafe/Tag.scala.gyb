@@ -63,24 +63,24 @@ object Tag {
       storeObject(toRawPtr(ptr), value.asInstanceOf[Object])
   }
 
-  % prims = [('Unit', 'scala.Unit', 'new UWord(sizeOfWord)'),
-  %          ('Boolean', 'scala.Boolean', '1.toUWord'),
-  %          ('Char', 'scala.Char', '2.toUWord'),
-  %          ('Byte', 'scala.Byte', '1.toUWord'),
-  %          ('UByte', 'unsigned.UByte', '1.toUWord'),
-  %          ('Short', 'scala.Short', '2.toUWord'),
-  %          ('UShort', 'unsigned.UShort', '2.toUWord'),
-  %          ('Int', 'scala.Int', '4.toUWord'),
-  %          ('UInt', 'unsigned.UInt', '4.toUWord'),
-  %          ('Long', 'scala.Long', '8.toUWord'),
-  %          ('ULong', 'unsigned.ULong', '8.toUWord'),
-  %          ('Float', 'scala.Float', '4.toUWord'),
-  %          ('Double', 'scala.Double', '8.toUWord')]
-  % for (name, T, size) in prims:
+  % prims = [('Unit', 'scala.Unit', 'new UWord(sizeOfWord)', 'new UWord(sizeOfWord)'),
+  %          ('Boolean', 'scala.Boolean', '1.toUWord', '1.toUWord'),
+  %          ('Char', 'scala.Char', '2.toUWord', '2.toUWord'),
+  %          ('Byte', 'scala.Byte', '1.toUWord', '1.toUWord'),
+  %          ('UByte', 'unsigned.UByte', '1.toUWord', '1.toUWord'),
+  %          ('Short', 'scala.Short', '2.toUWord', '2.toUWord'),
+  %          ('UShort', 'unsigned.UShort', '2.toUWord', '2.toUWord'),
+  %          ('Int', 'scala.Int', '4.toUWord', '4.toUWord'),
+  %          ('UInt', 'unsigned.UInt', '4.toUWord', '4.toUWord'),
+  %          ('Long', 'scala.Long', '8.toUWord', 'new UWord(sizeOfWord)'),
+  %          ('ULong', 'unsigned.ULong', '8.toUWord', 'new UWord(sizeOfWord)'),
+  %          ('Float', 'scala.Float', '4.toUWord', '4.toUWord'),
+  %          ('Double', 'scala.Double', '8.toUWord', 'new UWord(sizeOfWord)')]
+  % for (name, T, size, align) in prims:
 
   object ${name} extends Tag[${T}] {
     @alwaysinline def size: CSize = ${size}
-    @alwaysinline def alignment: CSize = ${size}
+    @alwaysinline def alignment: CSize = ${align}
     @alwaysinline override def load(ptr: unsafe.Ptr[${T}]): ${T} =
       % if name == 'Unit':
       loadObject(toRawPtr(ptr)).asInstanceOf[Unit]
@@ -248,7 +248,7 @@ object Tag {
     Tag.Word
   @alwaysinline implicit def materializeUWordTag: Tag[unsigned.UWord] =
     Tag.UWord
-  % for (name, T, _) in prims:
+  % for (name, T, _, _) in prims:
   @alwaysinline implicit def materialize${name}Tag: Tag[${T}] =
     ${name}
   % end
