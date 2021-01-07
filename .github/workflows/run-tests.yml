@@ -175,7 +175,8 @@ jobs:
       matrix:
         scala: [ 2.13.4, 2.12.12, 2.11.12 ]
         build-mode: [ debug, release-fast ]
-        docker_arch: [ library, i386 ]
+        host_arch: [ amd64 ]
+        docker_arch: [ library ]
     steps:
       - uses: actions/checkout@v2
       - name: Calculate binary version
@@ -198,7 +199,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.host_arch }}-${{ matrix.docker_arch }}
 
       - name: Run tests
         env:
@@ -207,7 +208,7 @@ jobs:
           SCALANATIVE_OPTIMIZE: false
           SCALA_VERSION: ${{ matrix.scala}}
           TEST_COMMAND: test-runtime
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-amd64"
+        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
 
   # This job is basically copy-paste of test-runtime.
   # Scripted tests take a long time to run, ~30 minutes, and should be limited and absolute minimum.
