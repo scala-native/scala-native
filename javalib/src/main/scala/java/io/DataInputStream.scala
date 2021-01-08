@@ -81,7 +81,7 @@ class DataInputStream(in: InputStream)
     (b1 << 24) | (b2 << 16) + (b3 << 8) + b4
   }
 
-  @deprecated
+  @deprecated("BufferedReader.readLine() is preferred", "JDK 1.1")
   override final def readLine(): String = {
     var v = in.read()
     if (v == -1) null
