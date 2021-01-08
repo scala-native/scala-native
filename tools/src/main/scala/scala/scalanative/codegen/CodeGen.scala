@@ -776,7 +776,7 @@ object CodeGen {
               }
               str(", !")
               str(deref)
-              str(" !{i64 ")
+              str(if (is32) " !{i32 " else " !{i64 ")
               str(size)
               str("}")
             case _ =>
@@ -847,7 +847,7 @@ object CodeGen {
           genType(ty)
           str(", ")
           genVal(n)
-          str(", align 8")
+          str(if (is32) ", align 4" else ", align 8")
 
           newline()
           genBind()
