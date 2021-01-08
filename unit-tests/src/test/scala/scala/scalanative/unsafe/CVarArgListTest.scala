@@ -3,6 +3,7 @@ package unsafe
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import scalanative.unsigned._
 import scalanative.unsafe._
@@ -176,10 +177,14 @@ class CVarArgListTest {
     vatest(c"%d", Seq(1L), "1")
   @Test def longValueMinus1(): Unit =
     vatest(c"%d", Seq(-1L), "-1")
-  @Test def longValueMin(): Unit =
+  @Test def longValueMin(): Unit = {
+    assumeTrue(sizeof[Word].toInt == 8)
     vatest(c"%lld", Seq(java.lang.Long.MIN_VALUE), "-9223372036854775808")
-  @Test def longValueMax(): Unit =
+  }
+  @Test def longValueMax(): Unit = {
+    assumeTrue(sizeof[Word].toInt == 8)
     vatest(c"%lld", Seq(java.lang.Long.MAX_VALUE), "9223372036854775807")
+  }
   @Test def longArgs1(): Unit =
     vatest(c"%d", Seq(1L), "1")
   @Test def longArgs2(): Unit =
@@ -376,10 +381,14 @@ class CVarArgListTest {
                9.toUInt),
            "1 2 3 4 5 6 7 8 9")
 
-  @Test def ulongValueMin(): Unit =
+  @Test def ulongValueMin(): Unit = {
+    assumeTrue(sizeof[Word].toInt == 8)
     vatest(c"%llu", Seq(ULong.MinValue), "0")
-  @Test def ulongValueMax(): Unit =
+  }
+  @Test def ulongValueMax(): Unit = {
+    assumeTrue(sizeof[Word].toInt == 8)
     vatest(c"%llu", Seq(ULong.MaxValue), "18446744073709551615")
+  }
   @Test def ulongArgs1(): Unit =
     vatest(c"%d", Seq(1.toULong), "1")
   @Test def ulongArgs2(): Unit =

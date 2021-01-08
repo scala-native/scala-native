@@ -41,7 +41,7 @@ class SizeofTest {
   }
 
   @Test def testPtr(): Unit = {
-    assertTrue(sizeof[Ptr[_]] == 8.toUWord)
+    assertTrue(sizeof[Ptr[_]] == sizeof[Word])
   }
 
   @Test def testCStruct1Byte(): Unit = {
@@ -65,21 +65,33 @@ class SizeofTest {
   }
 
   @Test def testInnerStructCStruct2ByteCStruct2LongByte(): Unit = {
-    assertTrue(sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == 24.toUWord)
+    if (sizeof[Word].toInt == 8) {
+      assertTrue(sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == 24.toUWord)
+    } else {
+      // TODO(shadaj)
+    }
   }
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntByte(): Unit = {
-    assertTrue(
-      sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == 32.toUWord)
+    if (sizeof[Word].toInt == 8) {
+      assertTrue(
+        sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == 32.toUWord)
+    } else {
+      // TODO(shadaj)
+    }
   }
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntCStruct4ByteIntShortByte()
       : Unit = {
-    assertTrue(
-      sizeof[CStruct3[
-        Byte,
-        Long,
-        CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]]] == 40.toUWord)
+    if (sizeof[Word].toInt == 8) {
+      assertTrue(
+        sizeof[CStruct3[
+          Byte,
+          Long,
+          CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]]] == 40.toUWord)
+    } else {
+      // TODO(shadaj)
+    }
   }
 
   type _32   = Nat.Digit2[Nat._3, Nat._2]
