@@ -27,7 +27,7 @@ final class UWord(private[scalanative] val rawWord: RawWord) {
   @inline def toULong: ULong =
     new ULong(castRawWordToLongUnsigned(rawWord))
 
-  @inline override def hashCode: Int = java.lang.Long.hashCode(toLong)
+  @inline override def hashCode: Int = toULong.hashCode
 
   @inline override def equals(obj: Any): Boolean = obj match {
     case that: UWord => this.rawWord == that.rawWord
