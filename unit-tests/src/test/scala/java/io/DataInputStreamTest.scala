@@ -627,7 +627,7 @@ class DataInputStreamTest {
     assertEquals(expected, dis.readShort())
   }
 
-  // readnUsignedShort
+  // readUnsignedShort
   @Test def readUnsignedShortEndOfFile(): Unit = {
     // readUnsignedShort expects to read 2 bytes, cause EOF by providing 1.
     val inputArray = Array[Byte](0x97.toByte)
