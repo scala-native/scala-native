@@ -274,6 +274,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.FalseVal       => Val.False
     case T.NullVal        => Val.Null
     case T.ZeroVal        => Val.Zero(getType())
+    case T.WordVal        => Val.Word(getInt)
     case T.CharVal        => Val.Char(getShort.toChar)
     case T.ByteVal        => Val.Byte(get)
     case T.ShortVal       => Val.Short(getShort)

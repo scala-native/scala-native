@@ -215,7 +215,8 @@ object Tags {
   final val FalseVal       = 1 + TrueVal
   final val NullVal        = 1 + FalseVal
   final val ZeroVal        = 1 + NullVal
-  final val CharVal        = 1 + ZeroVal
+  final val WordVal        = 1 + ZeroVal
+  final val CharVal        = 1 + WordVal
   final val ByteVal        = 1 + CharVal
   final val ShortVal       = 1 + ByteVal
   final val IntVal         = 1 + ShortVal

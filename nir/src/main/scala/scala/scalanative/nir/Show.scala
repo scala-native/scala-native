@@ -424,6 +424,9 @@ object Show {
         str("zero[")
         type_(ty)
         str("]")
+      case Val.Word(value) =>
+        str("word ")
+        str(value)
       case Val.Char(value) =>
         str("char ")
         str(value.toInt)

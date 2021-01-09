@@ -13,6 +13,10 @@ private[scalanative] object LLVM {
   private val unwindSettings =
     Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
 
+  private val asanSettings =
+    Seq(
+      /*"-fsanitize=address", "-fsanitize-recover=address", "-fno-omit-frame-pointer"*/ )
+
   /**
    * Called to unpack jars and copy native code.
    *
@@ -181,7 +185,7 @@ private[scalanative] object LLVM {
       val apppath = ll.abs
       val outpath = apppath + oExt
       val compile =
-        Seq(config.clang.abs) ++ fltoOpt ++ unwindSettings ++ Seq(
+        Seq(config.clang.abs) ++ fltoOpt ++ unwindSettings ++ asanSettings ++ Seq(
           "-c",
           apppath,
           "-o",
@@ -219,7 +223,7 @@ private[scalanative] object LLVM {
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
     val flags =
-      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ target(
+      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ asanSettings ++ target(
         config)
     val paths   = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)

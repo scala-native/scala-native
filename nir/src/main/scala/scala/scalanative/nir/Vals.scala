@@ -9,6 +9,7 @@ sealed abstract class Val {
     case Val.Null                 => Type.Null
     case Val.Zero(ty)             => ty
     case Val.True | Val.False     => Type.Bool
+    case Val.Word(_)              => Type.Word
     case Val.Char(_)              => Type.Char
     case Val.Byte(_)              => Type.Byte
     case Val.Short(_)             => Type.Short
@@ -42,7 +43,7 @@ sealed abstract class Val {
       true
     case _: Val.Char =>
       true
-    case _: Val.Byte | _: Val.Short | _: Val.Int | _: Val.Long =>
+    case _: Val.Byte | _: Val.Short | _: Val.Int | _: Val.Long | _: Val.Word =>
       true
     case _: Val.Float | _: Val.Double =>
       true
@@ -57,6 +58,7 @@ sealed abstract class Val {
   final def isZero: Boolean = this match {
     case Val.Zero(_)        => true
     case Val.False          => true
+    case Val.Word(0)        => true
     case Val.Char('\u0000') => true
     case Val.Byte(0)        => true
     case Val.Short(0)       => true
@@ -70,6 +72,7 @@ sealed abstract class Val {
 
   final def isOne: Boolean = this match {
     case Val.True                    => true
+    case Val.Word(1)                 => true
     case Val.Char(c) if c.toInt == 1 => true
     case Val.Byte(1)                 => true
     case Val.Short(1)                => true
@@ -81,6 +84,7 @@ sealed abstract class Val {
   }
 
   final def isMinusOne: Boolean = this match {
+    case Val.Word(-1)    => true
     case Val.Byte(-1)    => true
     case Val.Short(-1)   => true
     case Val.Int(-1)     => true
@@ -91,6 +95,7 @@ sealed abstract class Val {
   }
 
   final def isSignedMinValue: Boolean = this match {
+    case Val.Word(v)  => v == Int.MinValue
     case Val.Byte(v)  => v == Byte.MinValue
     case Val.Short(v) => v == Short.MinValue
     case Val.Int(v)   => v == Int.MinValue
@@ -99,6 +104,7 @@ sealed abstract class Val {
   }
 
   final def isSignedMaxValue: Boolean = this match {
+    case Val.Word(v)  => v == Int.MaxValue
     case Val.Byte(v)  => v == Byte.MaxValue
     case Val.Short(v) => v == Short.MaxValue
     case Val.Int(v)   => v == Int.MaxValue
@@ -118,6 +124,8 @@ sealed abstract class Val {
   final def canonicalize: Val = this match {
     case Val.Zero(Type.Bool) =>
       Val.False
+    case Val.Zero(Type.Word) =>
+      Val.Word(0)
     case Val.Zero(Type.Char) =>
       Val.Char('\u0000')
     case Val.Zero(Type.Byte) =>
@@ -153,6 +161,7 @@ object Val {
   }
   final case object Null                     extends Val
   final case class Zero(of: nir.Type)        extends Val
+  final case class Word(value: scala.Int)    extends Val
   final case class Char(value: scala.Char)   extends Val
   final case class Byte(value: scala.Byte)   extends Val
   final case class Short(value: scala.Short) extends Val

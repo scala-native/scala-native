@@ -24,5 +24,5 @@ class FieldLayout(meta: Metadata, cls: Class, is32: Boolean) {
     Type.StructValue(Seq(Type.Ptr))
   val referenceOffsetsValue =
     Val.StructValue(
-      Seq(Val.Const(Val.ArrayValue(Type.Long, layout.offsetArray))))
+      Seq(Val.Const(Val.ArrayValue(Type.Word, layout.offsetArray))))
 }

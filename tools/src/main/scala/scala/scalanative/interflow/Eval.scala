@@ -867,8 +867,7 @@ trait Eval { self: Interflow =>
         }
         value
       case Val.SizeOfWord =>
-        // TODO(shadaj): insert a Val.Word
-        value.canonicalize
+        if (is32) Val.Word(4) else Val.Word(8)
       case _ =>
         value.canonicalize
     }

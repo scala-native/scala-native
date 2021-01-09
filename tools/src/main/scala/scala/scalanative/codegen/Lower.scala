@@ -51,8 +51,6 @@ object Lower {
     private val outOfBoundsSlowPath    = mutable.Map.empty[Option[Local], Local]
     private val noSuchMethodSlowPath   = mutable.Map.empty[Option[Local], Local]
 
-    def wordVal(thirtyTwo: Int, sixtyFour: Long): Val = Val.Long(sixtyFour)
-
     private def unwind: Next =
       unwindHandler.get.fold[Next](Next.None) { handler =>
         val exc = Val.Local(fresh(), Rt.Object)
@@ -712,7 +710,9 @@ object Lower {
         implicit pos: Position): Unit = {
       val Op.Sizeof(ty) = op
 
-      buf.let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty, is32))), unwind)
+      buf.let(n,
+              Op.Copy(Val.Word(MemoryLayout.sizeOf(ty, is32).toInt)),
+              unwind) // TODO(shadaj): check if toInt is safe
     }
 
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(
@@ -723,10 +723,13 @@ object Lower {
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
-      buf.let(
-        n,
-        Op.Call(allocSig, allocMethod, Seq(rtti(cls).const, Val.Long(size))),
-        unwind)
+      buf.let(n,
+              Op.Call(
+                allocSig,
+                allocMethod,
+                Seq(rtti(cls).const, Val.Word(size.toInt))
+              ), // TODO(shadaj): check if toInt is safe
+              unwind)
     }
 
     def genConvOp(buf: Buffer, n: Local, op: Op.Conv)(
@@ -863,15 +866,14 @@ object Lower {
         val minus1 = ty match {
           case Type.Int  => Val.Int(-1)
           case Type.Long => Val.Long(-1L)
-          case Type.Word => wordVal(-1, -1L)
+          case Type.Word => Val.Word(-1)
           case _         => util.unreachable
         }
         val minValue = ty match {
           case Type.Int  => Val.Int(java.lang.Integer.MIN_VALUE)
           case Type.Long => Val.Long(java.lang.Long.MIN_VALUE)
-          case Type.Word =>
-            wordVal(java.lang.Integer.MIN_VALUE, java.lang.Long.MIN_VALUE)
-          case _ => util.unreachable
+          case Type.Word => Val.Word(java.lang.Integer.MIN_VALUE)
+          case _         => util.unreachable
         }
 
         val divisorIsMinus1 =
@@ -1097,7 +1099,7 @@ object Lower {
 
   val LARGE_OBJECT_MIN_SIZE = 8192
 
-  val allocSig = Type.Function(Seq(Type.Ptr, Type.Long), Type.Ptr)
+  val allocSig = Type.Function(Seq(Type.Ptr, Type.Word), Type.Ptr)
 
   val allocSmallName = extern("scalanative_alloc_small")
   val alloc          = Val.Global(allocSmallName, allocSig)

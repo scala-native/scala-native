@@ -1,10 +1,10 @@
 ARG TARGET_DOCKER_PLATFORM
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 RUN apt-get update && apt-get install -y qemu-user-static
 
-FROM $TARGET_DOCKER_PLATFORM/ubuntu:18.04
+FROM $TARGET_DOCKER_PLATFORM/ubuntu:20.04
 
 ARG HOST_ARCHITECTURE
 
@@ -35,7 +35,7 @@ RUN \
   apt-get update && \
   apt-get install -y sbt
 
-RUN apt-get update && apt-get install -y clang-6.0 zlib1g-dev libgc-dev
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y clang:$TARGET_DOCKER_PLATFORM zlib1g-dev:$TARGET_DOCKER_PLATFORM libre2-dev:$TARGET_DOCKER_PLATFORM libgc-dev:$TARGET_DOCKER_PLATFORM
 
 ENV LC_ALL "C.UTF-8"
 

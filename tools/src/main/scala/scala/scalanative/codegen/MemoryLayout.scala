@@ -8,16 +8,19 @@ import scalanative.util.unsupported
 import scalanative.codegen.MemoryLayout.PositionedType
 
 final case class MemoryLayout(size: Long,
-                              tys: Seq[MemoryLayout.PositionedType]) {
+                              tys: Seq[MemoryLayout.PositionedType],
+                              is32: Boolean) {
   lazy val offsetArray: Seq[Val] = {
     val ptrOffsets =
       tys.collect {
         // offset in words without rtti
         case MemoryLayout.PositionedType(_: RefKind, offset) =>
-          Val.Long(offset / MemoryLayout.BITS_IN_BYTE - 1)
+          Val.Word(
+            (offset / (if (is32) 4 else 8) - 1).toInt
+          ) // TODO(shadaj): check if toInt is safe
       }
 
-    ptrOffsets :+ Val.Long(-1)
+    ptrOffsets :+ Val.Word(-1)
   }
 }
 
@@ -76,6 +79,6 @@ object MemoryLayout {
 
     val alignment = if (tys.isEmpty) 1 else tys.map(alignmentOf(_, is32)).max
 
-    MemoryLayout(align(offset, alignment), pos)
+    MemoryLayout(align(offset, alignment), pos, is32)
   }
 }

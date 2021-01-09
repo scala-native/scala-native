@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <string.h>
 
 // Darwin defines MAP_ANON instead of MAP_ANONYMOUS
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
@@ -29,15 +30,19 @@ void scalanative_init() {
 
 void *scalanative_alloc(void *info, size_t size) {
     size = size + (8 - size % 8);
-    if (current + size < end) {
-        void **alloc = current;
-        *alloc = info;
-        current += size;
-        return alloc;
-    } else {
-        scalanative_init();
-        return scalanative_alloc(info, size);
-    }
+    void **alloc = malloc(size);
+    memset(alloc, 0, size);
+    *alloc = info;
+    return alloc;
+    // if (current + size < end) {
+    //     void **alloc = current;
+    //     *alloc = info;
+    //     current += size;
+    //     return alloc;
+    // } else {
+    //     scalanative_init();
+    //     return scalanative_alloc(info, size);
+    // }
 }
 
 void *scalanative_alloc_small(void *info, size_t size) {

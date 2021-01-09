@@ -23,6 +23,8 @@ object Whitelist {
     out += Global.Top("scala.scalanative.unsafe.Tag$ULong$")
     out += Global.Top("scala.scalanative.unsafe.Tag$Float$")
     out += Global.Top("scala.scalanative.unsafe.Tag$Double$")
+    out += Global.Top("scala.scalanative.unsafe.Tag$Word$")
+    out += Global.Top("scala.scalanative.unsafe.Tag$UWord$")
     out += Global.Top("scala.scalanative.unsafe.Tag$Nat0$")
     out += Global.Top("scala.scalanative.unsafe.Tag$Nat1$")
     out += Global.Top("scala.scalanative.unsafe.Tag$Nat2$")
