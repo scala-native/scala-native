@@ -37,7 +37,7 @@ object CVarArgList {
   /** Construct C-style vararg list from Scala sequence. */
   private[scalanative] def fromSeq(varargs: Seq[CVarArg])(
       implicit z: Zone): CVarArgList = {
-    if (sizeof[Word].toInt == 8) {
+    if (!is32) {
       var storage         = new Array[Long](registerSaveWords)
       var wordsUsed       = storage.size
       var gpRegistersUsed = 0

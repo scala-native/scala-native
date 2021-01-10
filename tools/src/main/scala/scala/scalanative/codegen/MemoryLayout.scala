@@ -15,7 +15,7 @@ final case class MemoryLayout(size: Long,
       tys.collect {
         // offset in words without rtti
         case MemoryLayout.PositionedType(_: RefKind, offset) =>
-          Val.Long(offset / 8 - 1) // refMapStruct is int64_t* 
+          Val.Long(offset / 8 - 1) // refMapStruct is int64_t*
       }
 
     ptrOffsets :+ Val.Long(-1)

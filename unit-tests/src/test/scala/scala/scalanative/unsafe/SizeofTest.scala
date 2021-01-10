@@ -65,7 +65,7 @@ class SizeofTest {
   }
 
   @Test def testInnerStructCStruct2ByteCStruct2LongByte(): Unit = {
-    if (sizeof[Word].toInt == 8) {
+    if (!is32) {
       assertTrue(sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == 24.toUWord)
     } else {
       // TODO(shadaj)
@@ -73,7 +73,7 @@ class SizeofTest {
   }
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntByte(): Unit = {
-    if (sizeof[Word].toInt == 8) {
+    if (!is328) {
       assertTrue(
         sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == 32.toUWord)
     } else {
@@ -83,7 +83,7 @@ class SizeofTest {
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntCStruct4ByteIntShortByte()
       : Unit = {
-    if (sizeof[Word].toInt == 8) {
+    if (!is32) {
       assertTrue(
         sizeof[CStruct3[
           Byte,

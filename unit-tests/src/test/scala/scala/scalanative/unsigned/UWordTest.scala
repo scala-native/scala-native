@@ -71,7 +71,7 @@ class UWordTest {
 
   @Test def division: Unit = {
     assertTrue((123.toUWord / 2.toUWord).toInt == 61)
-    if (sizeof[Word].toInt == 8) {
+    if (!is32) {
       assertTrue((-1L.toUWord / 2.toUWord).toLong == 9223372036854775807L)
     } else {
       // TODO(shadaj)
