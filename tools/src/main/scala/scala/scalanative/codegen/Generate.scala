@@ -145,7 +145,7 @@ object Generate {
         Seq(
           Inst.Label(fresh(), Seq(argc, argv)),
           Inst.Let(stackBottom.name,
-                   Op.Stackalloc(Type.Ptr, Val.Int(0)),
+                   Op.Stackalloc(Type.Ptr, Val.Word(0)),
                    unwind),
           Inst.Let(Op.Store(Type.Ptr,
                             Val.Global(stackBottomName, Type.Ptr),

@@ -30,8 +30,7 @@ void scalanative_init() {
 
 void *scalanative_alloc(void *info, size_t size) {
     size = size + (8 - size % 8);
-    void **alloc = malloc(size);
-    memset(alloc, 0, size);
+    void **alloc = calloc(size, 1);
     *alloc = info;
     return alloc;
     // if (current + size < end) {

@@ -9,10 +9,12 @@ import scalanative.runtime.Intrinsics.{
   castIntToRawPtr,
   castIntToRawWord,
   castLongToRawPtr,
-  castLongToRawWord
+  castLongToRawWord,
+  sizeOfWord
 }
 
 package object unsafe {
+  val wordSize = new UWord(sizeOfWord)
 
   /** The C 'char' type. */
   type CChar = Byte

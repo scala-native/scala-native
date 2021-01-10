@@ -10,17 +10,15 @@ import scalanative.codegen.MemoryLayout.PositionedType
 final case class MemoryLayout(size: Long,
                               tys: Seq[MemoryLayout.PositionedType],
                               is32: Boolean) {
-  lazy val offsetArray: Seq[Val] = {
+  lazy val offsetArray: Seq[Val.Long] = {
     val ptrOffsets =
       tys.collect {
         // offset in words without rtti
         case MemoryLayout.PositionedType(_: RefKind, offset) =>
-          Val.Word(
-            (offset / (if (is32) 4 else 8) - 1).toInt
-          ) // TODO(shadaj): check if toInt is safe
+          Val.Long(offset / (if (is32) 8 else 8) - 1)
       }
 
-    ptrOffsets :+ Val.Word(-1)
+    ptrOffsets :+ Val.Long(-1)
   }
 }
 

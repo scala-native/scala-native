@@ -125,7 +125,7 @@ final class UWord(private[scalanative] val rawWord: RawWord) {
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
   @inline def ==(other: UWord): Boolean =
-    this.toULong == other.toULong // TODO(shadaj): intrinsify
+    this.rawWord == other.rawWord
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
   @inline def !=(x: UByte): Boolean = this != x.toUWord

@@ -27,8 +27,8 @@ sealed abstract class Tag[T] {
 
 object Tag {
   final case class Ptr[T](of: Tag[T]) extends Tag[unsafe.Ptr[T]] {
-    @alwaysinline def size: CSize      = new UWord(sizeOfWord)
-    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
+    @alwaysinline def size: CSize      = wordSize
+    @alwaysinline def alignment: CSize = wordSize
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsafe.Ptr[T]]): unsafe.Ptr[T] =
       fromRawPtr[T](loadRawPtr(toRawPtr(ptr)))
@@ -38,8 +38,8 @@ object Tag {
   }
 
   final case object Word extends Tag[unsafe.Word] {
-    @alwaysinline def size: CSize      = new UWord(sizeOfWord)
-    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
+    @alwaysinline def size: CSize      = wordSize
+    @alwaysinline def alignment: CSize = wordSize
     @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Word]): unsafe.Word =
       new Word(loadWord(toRawPtr(ptr)))
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Word],
@@ -48,8 +48,8 @@ object Tag {
   }
 
   final case object UWord extends Tag[unsigned.UWord] {
-    @alwaysinline def size: CSize      = new UWord(sizeOfWord)
-    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
+    @alwaysinline def size: CSize      = wordSize
+    @alwaysinline def alignment: CSize = wordSize
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsigned.UWord]): unsigned.UWord =
       new UWord(loadWord(toRawPtr(ptr)))
@@ -59,8 +59,8 @@ object Tag {
   }
 
   final case class Class[T <: AnyRef](of: java.lang.Class[T]) extends Tag[T] {
-    @alwaysinline def size: CSize      = new UWord(sizeOfWord)
-    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
+    @alwaysinline def size: CSize      = wordSize
+    @alwaysinline def alignment: CSize = wordSize
     @alwaysinline override def load(ptr: unsafe.Ptr[T]): T =
       loadObject(toRawPtr(ptr)).asInstanceOf[T]
     @alwaysinline override def store(ptr: unsafe.Ptr[T], value: T): Unit =
@@ -70,8 +70,8 @@ object Tag {
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object Unit extends Tag[scala.Unit] {
-    @alwaysinline def size: CSize                                            = new UWord(sizeOfWord)
-    @alwaysinline def alignment: CSize                                       = new UWord(sizeOfWord)
+    @alwaysinline def size: CSize                                            = wordSize
+    @alwaysinline def alignment: CSize                                       = wordSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Unit]): scala.Unit =
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 86)
       loadObject(toRawPtr(ptr)).asInstanceOf[Unit]
@@ -219,7 +219,7 @@ object Tag {
 
   object Long extends Tag[scala.Long] {
     @alwaysinline def size: CSize                                            = 8.toUWord
-    @alwaysinline def alignment: CSize                                       = new UWord(sizeOfWord)
+    @alwaysinline def alignment: CSize                                       = wordSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Long]): scala.Long =
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)
       loadLong(toRawPtr(ptr))
@@ -235,7 +235,7 @@ object Tag {
 
   object ULong extends Tag[unsigned.ULong] {
     @alwaysinline def size: CSize      = 8.toUWord
-    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
+    @alwaysinline def alignment: CSize = wordSize
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsigned.ULong]): unsigned.ULong =
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 89)
@@ -268,7 +268,7 @@ object Tag {
 
   object Double extends Tag[scala.Double] {
     @alwaysinline def size: CSize      = 8.toUWord
-    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
+    @alwaysinline def alignment: CSize = wordSize
     @alwaysinline override def load(
         ptr: unsafe.Ptr[scala.Double]): scala.Double =
 // ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)
@@ -8701,8 +8701,8 @@ object Tag {
      */
     private[unsafe] def fromRawPtr(rawptr: RawPtr): F
 
-    @alwaysinline def size: CSize      = new UWord(sizeOfWord)
-    @alwaysinline def alignment: CSize = new UWord(sizeOfWord)
+    @alwaysinline def size: CSize      = wordSize
+    @alwaysinline def alignment: CSize = wordSize
     @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
       fromRawPtr(loadRawPtr(ptr.rawptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit =

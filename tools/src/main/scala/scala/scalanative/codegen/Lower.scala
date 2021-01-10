@@ -710,9 +710,9 @@ object Lower {
         implicit pos: Position): Unit = {
       val Op.Sizeof(ty) = op
 
-      buf.let(n,
-              Op.Copy(Val.Word(MemoryLayout.sizeOf(ty, is32).toInt)),
-              unwind) // TODO(shadaj): check if toInt is safe
+      val memorySize = MemoryLayout.sizeOf(ty, is32)
+      assert(memorySize == memorySize.toInt)
+      buf.let(n, Op.Copy(Val.Word(memorySize.toInt)), unwind)
     }
 
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(
@@ -723,12 +723,13 @@ object Lower {
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
+      assert(size == size.toInt)
       buf.let(n,
               Op.Call(
                 allocSig,
                 allocMethod,
                 Seq(rtti(cls).const, Val.Word(size.toInt))
-              ), // TODO(shadaj): check if toInt is safe
+              ),
               unwind)
     }
 
@@ -1065,7 +1066,7 @@ object Lower {
           Seq(
             rtti(CharArrayCls).const,
             charsLength,
-            Val.Int(0), // padding to get next field aligned properly
+            Val.Int(0), // stride, but unused
             Val.ArrayValue(Type.Char, chars.map(Val.Char))
           )
         ))

@@ -15,7 +15,8 @@ private[scalanative] object LLVM {
 
   private val asanSettings =
     Seq(
-      /*"-fsanitize=address", "-fsanitize-recover=address", "-fno-omit-frame-pointer"*/ )
+      /*"-fsanitize=address",
+        "-fno-omit-frame-pointer"*/ )
 
   /**
    * Called to unpack jars and copy native code.

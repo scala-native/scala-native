@@ -21,10 +21,10 @@ package object runtime {
   type ClassType = CStruct4[Type, Int, Int, Ptr[Long]]
 
   implicit class ClassTypeOps(val self: Ptr[ClassType]) extends AnyVal {
-    @alwaysinline def id: Int            = self._1._1
-    @alwaysinline def name: String       = self._1._3
-    @alwaysinline def size: Int          = self._2
-    @alwaysinline def idRangeUntil: Long = self._3
+    @alwaysinline def id: Int           = self._1._1
+    @alwaysinline def name: String      = self._1._3
+    @alwaysinline def size: Int         = self._2
+    @alwaysinline def idRangeUntil: Int = self._3
   }
 
   /** Used as a stub right hand of intrinsified methods. */
