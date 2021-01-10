@@ -15,7 +15,7 @@ object unwind {
   def get_proc_name(cursor: Ptr[Byte],
                     buffer: CString,
                     length: CSize,
-                    offset: Ptr[Byte]): CInt = extern
+                    offset: Ptr[CSize]): CInt = extern
   @name("scalanative_unwind_get_reg")
   def get_reg(cursor: Ptr[Byte], reg: CInt, valp: Ptr[CSize]): CInt =
     extern

@@ -13,7 +13,7 @@ private[lang] object StackTrace {
       cursor: Ptr[scala.Byte]): StackTraceElement = {
     val nameMax = 1024
     val name    = stackalloc[CChar](nameMax.toUWord)
-    val offset  = stackalloc[scala.Byte](8.toUWord)
+    val offset  = stackalloc[CSize]
 
     unwind.get_proc_name(cursor, name, nameMax.toUWord, offset)
 
@@ -36,7 +36,6 @@ private[lang] object StackTrace {
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
     val cursor  = stackalloc[scala.Byte](2048.toUWord)
     val context = stackalloc[scala.Byte](2048.toUWord)
-    val offset  = stackalloc[scala.Byte](8.toUWord)
     val ip      = stackalloc[CUnsignedLong]
     var buffer  = mutable.ArrayBuffer.empty[StackTraceElement]
 

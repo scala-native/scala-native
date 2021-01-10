@@ -13,9 +13,9 @@ int scalanative_unwind_step(void *cursor) {
 }
 
 int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
-                                     void *offset) {
+                                     unw_word_t *offset) {
     return unw_get_proc_name((unw_cursor_t *)cursor, buffer, length,
-                             (unw_word_t *)offset);
+                             offset);
 }
 
 int scalanative_unwind_get_reg(void *cursor, int regnum,
