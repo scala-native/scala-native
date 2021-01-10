@@ -73,7 +73,7 @@ class SizeofTest {
   }
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntByte(): Unit = {
-    if (!is328) {
+    if (!is32) {
       assertTrue(
         sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == 32.toUWord)
     } else {
