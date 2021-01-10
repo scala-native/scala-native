@@ -15,7 +15,7 @@ import scalanative.runtime.Intrinsics.{
 
 package object unsafe {
   val wordSize = new UWord(sizeOfWord)
-  val is32 = wordSize.toInt == 4
+  val is32     = wordSize.toInt == 4
 
   /** The C 'char' type. */
   type CChar = Byte
