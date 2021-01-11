@@ -14,10 +14,10 @@ val defaultToken = sys.env.get("GITHUB_TOKEN")
 
 @main
 def main(
-          firstTag: String,
-          lastTag: String,
-          githubToken: Seq[String] = defaultToken.toSeq
-        ) = {
+    firstTag: String,
+    lastTag: String,
+    githubToken: Seq[String] = defaultToken.toSeq
+) = {
   val author = os.proc(List("git", "config", "user.name")).call().out.trim()
   val commits = os
     .proc(List("git", "rev-list", s"${firstTag}..${lastTag}"))
@@ -56,14 +56,18 @@ def main(
     .withOAuthToken(token)
     .build()
 
-  val foundPRs = mutable.Set.empty[Int]
+  val foundPRs  = mutable.Set.empty[Int]
   val mergedPRs = ListBuffer[String]()
   for {
     // group in order to optimize API
-    searchSha <-
-      output.split('\n').grouped(5).map(_.mkString("SHA ", " SHA ", ""))
-    allMatching =
-    gh.searchIssues().q(s"repo:scala-native/scala-native type:pr $searchSha").list()
+    searchSha <- output
+      .split('\n')
+      .grouped(5)
+      .map(_.mkString("SHA ", " SHA ", ""))
+    allMatching = gh
+      .searchIssues()
+      .q(s"repo:scala-native/scala-native type:pr $searchSha")
+      .list()
     pr <- allMatching.toList().asScala.sortBy(_.getClosedAt()).reverse
     prNumber = pr.getNumber()
     if !foundPRs(prNumber)
@@ -103,13 +107,13 @@ def today: String = {
 }
 
 def template(
-              author: String,
-              firstTag: String,
-              lastTag: String,
-              mergedPrs: List[String],
-              commits: Int,
-              contributos: List[String]
-            ) = {
+    author: String,
+    firstTag: String,
+    lastTag: String,
+    mergedPrs: List[String],
+    commits: Int,
+    contributos: List[String]
+) = {
   s"""|
       |# Release $lastTag ($todayString)
       |
