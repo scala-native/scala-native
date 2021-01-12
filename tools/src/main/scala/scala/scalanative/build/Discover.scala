@@ -29,15 +29,15 @@ object Discover {
 
   /** Use the clang binary on the path or via CLANG_PATH env var. */
   def clang(): Path = {
-    val path = discover("clang")
-    checkThatClangIsRecentEnough(path)
+    val path = discover("clang", "CLANG_PATH")
+    checkClangVersion(path)
     path
   }
 
   /** Use the clang++ binary on the path or via CLANGPP_PATH env var. */
   def clangpp(): Path = {
-    val path = discover("clang++")
-    checkThatClangIsRecentEnough(path)
+    val path = discover("clang++", "CLANGPP_PATH")
+    checkClangVersion(path)
     path
   }
 
@@ -82,51 +82,43 @@ object Discover {
   /** Tests whether the clang compiler is greater or equal to the
    *  minumum version required.
    */
-  private[scalanative] def checkThatClangIsRecentEnough(
-      pathToClangBinary: Path): Unit = {
-
-    def checkVersion(clang: String): Unit = {
-      def versionMajorFull(clang: String): (Int, String) = {
-        val versionCommand = s"$clang --version"
-        val versionString = Process(versionCommand)
-          .lineStream_!(silentLogger())
-          .headOption
-          .getOrElse {
-            throw new BuildException(
-              s"""Problem running '$versionCommand'. Please check clang setup.
+  private[scalanative] def checkClangVersion(pathToClangBinary: Path): Unit = {
+    def versionMajorFull(clang: String): (Int, String) = {
+      val versionCommand = s"$clang --version"
+      val versionString = Process(versionCommand)
+        .lineStream_!(silentLogger())
+        .headOption
+        .getOrElse {
+          throw new BuildException(
+            s"""Problem running '$versionCommand'. Please check clang setup.
                  |Refer to ($docSetup)""".stripMargin)
-          }
-        // Apple macOS clang is different vs brew installed or Linux
-        // Apple LLVM version 10.0.1 (clang-1001.0.46.4)
-        // clang version 11.0.0
-        try {
-          val versionArray = versionString.split(" ")
-          val versionIndex = versionArray.indexWhere(_.equals("version"))
-          val version      = versionArray(versionIndex + 1)
-          val majorVersion = version.split("\\.").head
-          (majorVersion.toInt, version)
-        } catch {
-          case t: Throwable =>
-            throw new BuildException(
-              s"""Output from '$versionCommand' unexpected.
+        }
+      // Apple macOS clang is different vs brew installed or Linux
+      // Apple LLVM version 10.0.1 (clang-1001.0.46.4)
+      // clang version 11.0.0
+      try {
+        val versionArray = versionString.split(" ")
+        val versionIndex = versionArray.indexWhere(_.equals("version"))
+        val version      = versionArray(versionIndex + 1)
+        val majorVersion = version.split("\\.").head
+        (majorVersion.toInt, version)
+      } catch {
+        case t: Throwable =>
+          throw new BuildException(s"""Output from '$versionCommand' unexpected.
                  |Was expecting '... version n.n.n ...'.
                  |Got '$versionString'.
                  |Cause: ${t}""".stripMargin)
-        }
-      }
-
-      val (majorVersion, version) = versionMajorFull(clang)
-
-      if (majorVersion < clangMinVersion) {
-        throw new BuildException(
-          s"""Minimum version of clang is '$clangMinVersion'.
-             |Discovered version '$version'.
-             |Please refer to ($docSetup)""".stripMargin)
       }
     }
 
-    val clangStr = pathToClangBinary.abs
-    checkVersion(clangStr)
+    val (majorVersion, version) = versionMajorFull(pathToClangBinary.abs)
+
+    if (majorVersion < clangMinVersion) {
+      throw new BuildException(
+        s"""Minimum version of clang is '$clangMinVersion'.
+             |Discovered version '$version'.
+             |Please refer to ($docSetup)""".stripMargin)
+    }
   }
 
   /** Minimum version of clang */
@@ -139,19 +131,9 @@ object Discover {
   /** Discover the binary path using environment
    *  variables or the command from the path.
    */
-  private[scalanative] def discover(binaryName: String): Path = {
-    val envName =
-      if (binaryName == "clang") "CLANG"
-      else if (binaryName == "clang++") "CLANGPP"
-      else {
-        // shouldn't happen
-        throw new BuildException(s"'$binaryName' must be clang or clang++")
-      }
-
-    val envPath = s"${envName}_PATH"
-
+  private[scalanative] def discover(binaryName: String,
+                                    envPath: String): Path = {
     val binaryNameOrPath = sys.env.get(envPath).getOrElse(binaryName)
-
     val path = Process(s"which $binaryNameOrPath")
       .lineStream_!(silentLogger())
       .map { p => Paths.get(p) }
