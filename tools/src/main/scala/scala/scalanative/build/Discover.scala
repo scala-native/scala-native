@@ -79,33 +79,11 @@ object Discover {
     libs
   }
 
-  /** Tests whether the clang compiler is recent enough.
-   *  Clang must be greater or equal to the minumum version and
-   *  by checking for a built-in #define which is more reliable
-   *  than testing for a specific version.
+  /** Tests whether the clang compiler is greater or equal to the
+   *  minumum version required.
    */
   private[scalanative] def checkThatClangIsRecentEnough(
       pathToClangBinary: Path): Unit = {
-
-    // this could be obsolete with our current minimum version
-    def checkDefinesBuiltIn(clang: String): Unit = {
-      val defineStrs = "__DECIMAL_DIG__ __LDBL_DECIMAL_DIG__"
-      def commandLineToListBuiltInDefines(clang: String) =
-        Process(Seq("echo", "")) #| Process(Seq(clang, "-dM", "-E", "-"))
-      def splitIntoLines(s: String): Array[String] =
-        s.split(f"%n")
-      def removeLeadingDefine(s: String): String =
-        s.substring(s.indexOf(' ') + 1)
-
-      val output = commandLineToListBuiltInDefines(clang).!!
-      val defines: Seq[String] =
-        splitIntoLines(output).map(removeLeadingDefine).to[Seq]
-      if (!defines.contains(defineStrs)) {
-        throw new BuildException(s"""Defines '$defineStrs' are expected.
-                                    |Minimum version of clang is '$clangMinVersion'.
-                                    |Please refer to ($docSetup)""".stripMargin)
-      }
-    }
 
     def checkVersion(clang: String): Unit = {
       def versionMajorFull(clang: String): (Int, String) = {
@@ -149,7 +127,6 @@ object Discover {
 
     val clangStr = pathToClangBinary.abs
     checkVersion(clangStr)
-    checkDefinesBuiltIn(clangStr)
   }
 
   /** Minimum version of clang */
