@@ -176,6 +176,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           cd.find(_.symbol == f)
             .map(_.pos)
             .filter(_ != NoPosition)
+            .map(toNirPosition)
             .getOrElse(f.pos)
         }
 
