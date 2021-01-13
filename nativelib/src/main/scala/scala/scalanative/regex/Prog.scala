@@ -9,7 +9,6 @@ package scala.scalanative
 package regex
 
 import java.util.ArrayList
-import java.util.List
 
 import Inst.{Op => IOP}
 
@@ -156,10 +155,10 @@ class Prog {
   // ---
 
   override def toString = {
-    val out = new StringBuilder()
+    val out = new java.lang.StringBuilder()
     var pc  = 0
     while (pc < inst.size()) {
-      val len = out.length
+      val len = out.length()
       out.append(pc)
       if (pc == start) {
         out.append('*')
