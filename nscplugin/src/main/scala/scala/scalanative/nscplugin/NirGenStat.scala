@@ -360,8 +360,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                           Seq(_1, _2))
       }
 
-      def genClassConstructorsInfo(exprBuf: ExprBuffer,
-                                   ctors: Seq[global.Symbol]): Val = {
+      def genClassConstructorsInfo(
+          exprBuf: ExprBuffer,
+          ctors: Seq[global.Symbol])(implicit pos: nir.Position): Val = {
         val applyMethodSig =
           Sig.Method("apply", Seq(jlObjectRef, jlObjectRef))
 
