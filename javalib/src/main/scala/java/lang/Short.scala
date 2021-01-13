@@ -75,14 +75,14 @@ final class Short(val _value: scala.Short)
   protected def unary_+ : scala.Int = _value.toInt
   protected def unary_- : scala.Int = -_value.toInt
 
-  protected def +(x: String): String = _value + x
+  protected def +(x: String): String = "" + _value + x
 
   protected def <<(x: scala.Int): scala.Int   = _value << x
-  protected def <<(x: scala.Long): scala.Int  = _value << x
+  protected def <<(x: scala.Long): scala.Int  = _value << x.toInt
   protected def >>>(x: scala.Int): scala.Int  = _value >>> x
-  protected def >>>(x: scala.Long): scala.Int = _value >>> x
+  protected def >>>(x: scala.Long): scala.Int = _value >>> x.toInt
   protected def >>(x: scala.Int): scala.Int   = _value >> x
-  protected def >>(x: scala.Long): scala.Int  = _value >> x
+  protected def >>(x: scala.Long): scala.Int  = _value >> x.toInt
 
   protected def <(x: scala.Byte): scala.Boolean   = _value < x
   protected def <(x: scala.Short): scala.Boolean  = _value < x
@@ -176,7 +176,8 @@ final class Short(val _value: scala.Short)
 }
 
 object Short {
-  final val TYPE  = classOf[scala.Short]
+  final val TYPE =
+    scala.Predef.classOf[scala.scalanative.runtime.PrimitiveShort]
   final val SIZE  = 16
   final val BYTES = 2
 
@@ -195,7 +196,7 @@ object Short {
     x - y
 
   @inline def decode(nm: String): Short = {
-    val i = Integer.decode(nm).intValue
+    val i = Integer.decode(nm).intValue()
     val r = i.toShort
     if (r == i)
       valueOf(r)

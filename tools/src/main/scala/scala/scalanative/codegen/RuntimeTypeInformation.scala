@@ -41,8 +41,9 @@ class RuntimeTypeInformation(meta: Metadata, info: ScopeInfo) {
       case _ =>
         -1
     })
-    val base =
-      Val.StructValue(Seq(typeId, traitId, typeStr))
+    val base = Val.StructValue(
+      Seq(typeId, traitId, typeStr, Val.Null)
+    )
     info match {
       case cls: Class =>
         val dynmap =

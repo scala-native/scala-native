@@ -25,14 +25,15 @@ class ValParserTest extends AnyFunSuite {
     Val.StructValue(Seq(Val.Int(32), Val.Long(64))),
     Val.ArrayValue(Type.Int, Seq.empty),
     Val.ArrayValue(Type.Int, Seq(Val.Int(32))),
-    Val.Chars("foobar"),
+    Val.Chars("foobar".getBytes("UTF-8")),
     Val.Local(Local(0), Type.Int),
     Val.Global(global, Type.Ptr),
     Val.Unit,
     Val.Const(Val.Int(0)),
     Val.String("foobar"),
     Val.String("foo bar"),
-    Val.String("foo \"bar\" baz")
+    Val.String("foo \"bar\" baz"),
+    Val.ClassOf(global)
   ).foreach { ty =>
     test(s"parse value `${ty.show}`") {
       val Parsed.Success(result, _) = parser.Val.parser.parse(ty.show)

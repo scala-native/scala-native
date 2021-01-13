@@ -28,7 +28,8 @@ object Val extends Base[nir.Val] {
     P("arrayvalue" ~ Type.parser ~ "{" ~ Val.parser.rep(sep = ",") ~ "}" map {
       case (ty, values) => nir.Val.ArrayValue(ty, values)
     })
-  val Chars = P("c" ~ stringLit map (nir.Val.Chars(_)))
+  val Chars = P(
+    "c" ~ stringLit map (_.getBytes("UTF-8")) map (nir.Val.Chars(_)))
   val Local =
     P(nir.parser.Local.parser ~ ":" ~ Type.parser map {
       case (name, ty) => nir.Val.Local(name, ty)
@@ -40,8 +41,11 @@ object Val extends Base[nir.Val] {
   val Unit   = P("unit".! map (_ => nir.Val.Unit))
   val Const  = P("const" ~ Val.parser map (nir.Val.Const(_)))
   val String = P(stringLit map (nir.Val.String(_)))
+  val ClassOf = P(
+    "classOf" ~ "[" ~ nir.parser.Global.parser ~ "]"
+  ) map (nir.Val.ClassOf(_))
 
   override val parser: P[nir.Val] =
-    Char | True | False | Null | Zero | Long | Int | Short | Byte | Double | Float | StructValue | ArrayValue | Chars | Local | Global | Unit | Const | String
+    Char | True | False | Null | Zero | Long | Int | Short | Byte | Double | Float | StructValue | ArrayValue | Chars | Local | Global | Unit | Const | String | ClassOf
 
 }

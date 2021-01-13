@@ -1,15 +1,18 @@
 package scala.scalanative
 package io
 
-import scala.collection.mutable
-import scala.collection.JavaConverters._
+import java.io.Writer
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.file._
 import java.nio.channels._
-import scalanative.util.{acquire, defer, Scope}
+import java.util.HashMap
+import scalanative.util.{Scope, acquire, defer}
 
 sealed trait VirtualDirectory {
+
+  /** A unique identifier for this directory */
+  def uri: URI
 
   /** Check if file with given path is in the directory. */
   def contains(path: Path): Boolean =
@@ -24,8 +27,14 @@ sealed trait VirtualDirectory {
   /** Replaces contents of file with given value. */
   def write(path: Path, buffer: ByteBuffer): Unit
 
+  /** Replaces contents of file using given writer. */
+  def write(path: Path)(fn: Writer => Unit): Path
+
   /** List all files in this directory. */
   def files: Seq[Path]
+
+  /** Merges content of source paths into single file in target */
+  def merge(sources: Seq[Path], target: Path): Unit
 }
 
 object VirtualDirectory {
@@ -86,33 +95,62 @@ object VirtualDirectory {
       } finally stream.close()
     }
 
+    override def write(path: Path)(fn: Writer => Unit): Path = {
+      val fullPath = resolve(path)
+      val writer   = Files.newBufferedWriter(fullPath)
+      try fn(writer)
+      finally writer.close()
+      fullPath
+    }
+
     override def write(path: Path, buffer: ByteBuffer): Unit = {
       val channel = open(resolve(path))
       try channel.write(buffer)
       finally channel.close
     }
+
+    override def merge(sources: Seq[Path], target: Path): Unit = {
+      val output = FileChannel.open(resolve(target),
+                                    StandardOpenOption.CREATE,
+                                    StandardOpenOption.WRITE,
+                                    StandardOpenOption.APPEND)
+      try {
+        sources.foreach { path =>
+          val input = FileChannel.open(resolve(path),
+                                       StandardOpenOption.READ,
+                                       StandardOpenOption.DELETE_ON_CLOSE)
+          try {
+            input.transferTo(0, input.size(), output)
+          } finally input.close()
+        }
+      } finally output.close()
+    }
   }
 
   private final class LocalDirectory(path: Path) extends NioDirectory {
+
+    def uri: URI = path.toUri
+
     override protected def resolve(path: Path): Path =
       this.path.resolve(path)
 
     override def files: Seq[Path] =
-      Files
-        .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
-        .iterator()
-        .asScala
-        .map(fp => path.relativize(fp))
-        .toSeq
+      jIteratorToSeq {
+        Files
+          .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
+          .iterator()
+      }.map(fp => path.relativize(fp))
   }
 
   private final class JarDirectory(path: Path)(implicit in: Scope)
       extends NioDirectory {
+    def uri: URI = URI.create(s"jar:${path.toUri}")
     private val fileSystem: FileSystem =
       acquire {
-        val uri = URI.create(s"jar:${path.toUri}")
         try {
-          FileSystems.newFileSystem(uri, Map("create" -> "false").asJava)
+          val params = new HashMap[String, String]()
+          params.put("create", "false")
+          FileSystems.newFileSystem(uri, params)
         } catch {
           case e: FileSystemAlreadyExistsException =>
             FileSystems.getFileSystem(uri)
@@ -120,19 +158,23 @@ object VirtualDirectory {
       }
 
     override def files: Seq[Path] = {
-      val roots = fileSystem.getRootDirectories.asScala.toSeq
+      val roots = jIteratorToSeq(fileSystem.getRootDirectories.iterator())
 
       roots
         .flatMap { path =>
-          Files
-            .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
-            .iterator()
-            .asScala
+          jIteratorToSeq {
+            Files
+              .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
+              .iterator()
+          }
         }
     }
   }
 
   private final object EmptyDirectory extends VirtualDirectory {
+
+    val uri: URI = URI.create("")
+
     override def files = Seq.empty
 
     override def read(path: Path): ByteBuffer =
@@ -141,7 +183,14 @@ object VirtualDirectory {
 
     override def read(path: Path, len: Int): ByteBuffer = read(path)
 
+    override def write(path: Path)(fn: Writer => Unit): Path =
+      throw new UnsupportedOperationException("Can't write to empty directory.")
+
     override def write(path: Path, buffer: ByteBuffer): Unit =
       throw new UnsupportedOperationException("Can't write to empty directory.")
+
+    override def merge(sources: Seq[Path], target: Path): Unit =
+      throw new UnsupportedOperationException("Can't merge in empty directory.")
+
   }
 }

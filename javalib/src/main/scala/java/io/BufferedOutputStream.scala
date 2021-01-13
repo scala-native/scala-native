@@ -73,7 +73,7 @@ class BufferedOutputStream(out: OutputStream, size: Int)
     count += 1
   }
 
-  private def flushInternal() {
+  private def flushInternal(): Unit = {
     if (count > 0) {
       out.write(buf, 0, count)
       count = 0

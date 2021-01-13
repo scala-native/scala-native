@@ -21,7 +21,7 @@ authorship of your contribution.
 
 However, we are prepared to accept contributions that include code
 copied from `Scala.js`_ or `Apache Harmony project`_ on a case-by-case
-basis. In such cases, you must fulfil your obligations and include the
+basis. In such cases, you must fulfill your obligations and include the
 relevant copyright / license information.
 
 
@@ -31,6 +31,39 @@ Coding style
 Scala Native is formatted via `./scripts/scalafmt` and `./scripts/clangfmt`.
 Make sure that all of your contributions are properly formatted before
 suggesting any changes.
+
+Formatting Scala via `scalafmt` downloads and runs the correct version and
+uses the `.scalafmt.conf` file at the root of the project. No configuration
+is needed.
+
+Formatting C and C++ code uses `clang-format` which requires LLVM library
+dependencies. For `clang-format` we use the same version as the minimum
+version of LLVM and `clang`. This may not be the version of `clang` used
+for development as most developers will use a newer version. In order
+to make this easier we have a environment variable, `CLANG_FORMAT_PATH`
+which can be set to the older version. Another option is to make sure the
+correct version of `clang-format` is available in your path. Refer to
+:ref:`setup` for the minimum version to install and use.
+
+The following shows examples for two common operating systems. You may add
+the environment variable to your shell startup file for convenience:
+
+**macOS**
+
+.. code-block:: shell
+
+    $ export CLANG_FORMAT_PATH=/usr/local/opt/llvm@6/bin/clang-format
+
+*Note:* Example for `brew`. Other package managers may use different locations.
+
+**Ubuntu**
+
+.. code-block:: shell
+
+    $ export CLANG_FORMAT_PATH=/usr/lib/llvm-6.0/bin/clang-format
+
+The script `./scripts/clangfmt` will use the `.clang-format` file
+at the root of the project for settings used in formatting.
 
 General workflow
 ----------------

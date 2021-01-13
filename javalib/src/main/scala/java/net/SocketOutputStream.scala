@@ -7,7 +7,7 @@ private[net] class SocketOutputStream(socket: PlainSocketImpl)
     extends OutputStream {
 
   override def close(): Unit = {
-    socket.close
+    socket.close()
   }
 
   override def write(b: Array[Byte]) = {

@@ -62,14 +62,14 @@ class Character(val _value: scala.Char)
   protected def unary_- : scala.Int = -_value.toInt
   // scalastyle:on disallow.space.before.token
 
-  protected def +(x: String): String = _value + x
+  protected def +(x: String): String = "" + _value + x
 
   protected def <<(x: scala.Int): scala.Int   = _value << x
-  protected def <<(x: scala.Long): scala.Int  = _value << x
+  protected def <<(x: scala.Long): scala.Int  = _value << x.toInt
   protected def >>>(x: scala.Int): scala.Int  = _value >>> x
-  protected def >>>(x: scala.Long): scala.Int = _value >>> x
+  protected def >>>(x: scala.Long): scala.Int = _value >>> x.toInt
   protected def >>(x: scala.Int): scala.Int   = _value >> x
-  protected def >>(x: scala.Long): scala.Int  = _value >> x
+  protected def >>(x: scala.Long): scala.Int  = _value >> x.toInt
 
   protected def ==(x: scala.Byte): scala.Boolean   = _value == x
   protected def ==(x: scala.Short): scala.Boolean  = _value == x
@@ -179,7 +179,7 @@ class Character(val _value: scala.Char)
 }
 
 object Character {
-  final val TYPE      = classOf[scala.Char]
+  final val TYPE      = scala.Predef.classOf[scala.scalanative.runtime.PrimitiveChar]
   final val MIN_VALUE = '\u0000'
   final val MAX_VALUE = '\uffff'
   final val SIZE      = 16
@@ -281,7 +281,7 @@ object Character {
     val indexMinus1 = index - 1
     val indexMinus2 = index - 2
 
-    val low = seq.charAt(indexMinus1)
+    val low = seq(indexMinus1)
 
     if (indexMinus2 < 0) {
       low
@@ -410,12 +410,10 @@ object Character {
   private[this] def getTypeLT256(codePoint: Int): scala.Byte =
     charTypesFirst256(codePoint)
 
+  // Ported from Scala.js, commit: ac38a148, dated: 2020-09-25
   private[this] def getTypeGE256(codePoint: Int): scala.Byte = {
-    // the idx is increased by 1 due to the differences in indexing
-    // between charTypeIndices and charType
-    val idx = Arrays.binarySearch(charTypeIndices, codePoint) + 1
-    // in the case where idx is negative (-insertionPoint - 1)
-    charTypes(Math.abs(idx))
+    charTypes(
+      findIndexOfRange(charTypeIndices, codePoint, hasEmptyRanges = false))
   }
 
   // Two digit() constructors, digitWithValidRadix(), and
@@ -749,8 +747,9 @@ object Character {
     isMirrored(c.toInt)
 
   def isMirrored(codePoint: Int): scala.Boolean = {
-    val idx = Arrays.binarySearch(isMirroredIndices, codePoint) + 1
-    (Math.abs(idx) & 1) != 0
+    val indexOfRange =
+      findIndexOfRange(isMirroredIndices, codePoint, hasEmptyRanges = false)
+    (indexOfRange & 1) != 0
   }
 
   /* Conversions */
@@ -1189,6 +1188,117 @@ object Character {
   private[this] lazy val isMirroredIndices =
     uncompressDeltas(isMirroredIndicesDeltas)
 
+  private[lang] final val CombiningClassIsNone = 0
+  private[lang] final val CombiningClassIsAbove = 1
+  private[lang] final val CombiningClassIsOther = 2
+  
+  /* Ported from Scala.js, commit: ac38a148, dated: 2020-09-25
+   * Indices representing the start of ranges of codePoint that have the same
+   * `combiningClassNoneOrAboveOrOther` result. The results cycle modulo 3 at
+   * every range:
+   *
+   * - 0 for the range [0, array(0))
+   * - 1 for the range [array(0), array(1))
+   * - 2 for the range [array(1), array(2))
+   * - 0 for the range [array(2), array(3))
+   * - etc.
+   *
+   * In general, for a range ending at `array(i)` (excluded), the result is
+   * `i % 3`.
+   *
+   * A range can be empty, i.e., it can happen that `array(i) == array(i + 1)`
+   * (but then it is different from `array(i - 1)` and `array(i + 2)`).
+   *
+   * They where generated with the following script, which can be pasted into
+   * a Scala REPL.
+
+  val url = new java.net.URL("http://unicode.org/Public/UCD/latest/ucd/UnicodeData.txt")
+  val cpToValue = scala.io.Source.fromURL(url, "UTF-8")
+    .getLines()
+    .filter(!_.startsWith("#"))
+    .map(_.split(';'))
+    .map { arr =>
+      val cp = Integer.parseInt(arr(0), 16)
+      val value = arr(3).toInt match {
+        case 0   => 0
+        case 230 => 1
+        case _   => 2
+      }
+      cp -> value
+    }
+    .toMap
+    .withDefault(_ => 0)
+
+  var lastValue = 0
+  val indicesBuilder = List.newBuilder[Int]
+  for (cp <- 0 to Character.MAX_CODE_POINT) {
+    val value = cpToValue(cp)
+    while (lastValue != value) {
+      indicesBuilder += cp
+      lastValue = (lastValue + 1) % 3
+    }
+  }
+  val indices = indicesBuilder.result()
+
+  val indicesDeltas = indices
+    .zip(0 :: indices.init)
+    .map(tup => tup._1 - tup._2)
+  println("combiningClassNoneOrAboveOrOtherIndices, deltas:")
+  println("    Array(")
+  println(formatLargeArray(indicesDeltas.toArray, "        "))
+  println("    )")
+   */
+  private[this] lazy val combiningClassNoneOrAboveOrOtherIndices: Array[Int] = {
+    val deltas = Array(
+      768, 21, 40, 0, 8, 1, 0, 1, 3, 0, 3, 2, 1, 3, 4, 0, 1, 3, 0, 1, 7, 0,
+      13, 0, 275, 5, 0, 265, 0, 1, 0, 4, 1, 0, 3, 2, 0, 6, 6, 0, 2, 1, 0, 2,
+      2, 0, 1, 14, 1, 0, 1, 1, 0, 2, 1, 1, 1, 1, 0, 1, 72, 8, 3, 48, 0, 8, 0,
+      2, 2, 0, 5, 1, 0, 2, 1, 16, 0, 1, 101, 7, 0, 2, 4, 1, 0, 1, 0, 2, 2, 0,
+      1, 0, 1, 0, 2, 1, 35, 0, 1, 30, 1, 1, 0, 2, 1, 0, 2, 3, 0, 1, 2, 0, 1,
+      1, 0, 3, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 2, 0, 160, 7, 1, 0, 1, 0, 9,
+      0, 1, 24, 4, 0, 1, 9, 0, 1, 3, 0, 1, 5, 0, 43, 0, 3, 119, 0, 1, 0, 14,
+      0, 1, 0, 1, 0, 2, 1, 0, 2, 1, 0, 3, 6, 0, 3, 1, 0, 2, 2, 0, 5, 0, 60,
+      0, 1, 16, 0, 1, 3, 1, 1, 0, 2, 0, 103, 0, 1, 16, 0, 1, 48, 1, 0, 61, 0,
+      1, 16, 0, 1, 110, 0, 1, 16, 0, 1, 110, 0, 1, 16, 0, 1, 127, 0, 1, 127,
+      0, 1, 7, 0, 2, 101, 0, 1, 16, 0, 1, 109, 0, 2, 16, 0, 1, 124, 0, 1,
+      109, 0, 3, 13, 0, 4, 108, 0, 3, 13, 0, 4, 76, 0, 2, 27, 0, 1, 1, 0, 1,
+      1, 0, 1, 55, 0, 2, 1, 0, 1, 5, 0, 4, 2, 0, 1, 1, 2, 1, 1, 2, 0, 62, 0,
+      1, 112, 0, 1, 1, 0, 2, 82, 0, 1, 719, 3, 0, 948, 0, 1, 31, 0, 1, 157,
+      0, 1, 10, 1, 0, 203, 0, 1, 143, 0, 1, 0, 1, 1, 219, 1, 1, 71, 0, 1, 20,
+      8, 0, 2, 0, 1, 48, 5, 6, 0, 2, 1, 1, 0, 2, 115, 0, 1, 15, 0, 1, 38, 1,
+      1, 0, 7, 0, 54, 0, 2, 58, 0, 1, 11, 0, 2, 67, 0, 1, 152, 3, 0, 1, 0, 6,
+      0, 2, 4, 0, 1, 0, 1, 0, 7, 4, 0, 1, 6, 1, 0, 3, 2, 0, 198, 2, 1, 0, 7,
+      1, 0, 2, 4, 0, 37, 4, 1, 1, 2, 0, 1, 1, 720, 2, 2, 0, 4, 3, 0, 2, 0, 4,
+      1, 0, 3, 0, 2, 0, 1, 1, 0, 1, 6, 0, 1, 0, 3070, 3, 0, 141, 0, 1, 96,
+      32, 0, 554, 0, 6, 105, 0, 2, 30164, 1, 0, 4, 10, 0, 32, 2, 0, 80, 2, 0,
+      276, 0, 1, 37, 0, 1, 151, 0, 1, 27, 18, 0, 57, 0, 3, 37, 0, 1, 95, 0,
+      1, 12, 0, 1, 239, 1, 0, 1, 2, 1, 2, 2, 0, 5, 2, 0, 1, 1, 0, 52, 0, 1,
+      246, 0, 1, 20272, 0, 1, 769, 7, 7, 0, 2, 0, 973, 0, 1, 226, 0, 1, 149,
+      5, 0, 1682, 0, 1, 1, 1, 0, 40, 1, 2, 4, 0, 1, 165, 1, 1, 573, 4, 0,
+      387, 2, 0, 153, 0, 2, 0, 3, 1, 0, 1, 4, 245, 0, 1, 56, 0, 1, 57, 0, 2,
+      69, 3, 0, 48, 0, 2, 62, 0, 1, 76, 0, 1, 9, 0, 1, 106, 0, 2, 178, 0, 2,
+      80, 0, 2, 16, 0, 1, 24, 7, 0, 3, 5, 0, 205, 0, 1, 3, 0, 1, 23, 1, 0,
+      99, 0, 2, 251, 0, 2, 126, 0, 1, 118, 0, 2, 115, 0, 1, 269, 0, 2, 258,
+      0, 2, 4, 0, 1, 156, 0, 1, 83, 0, 1, 18, 0, 1, 81, 0, 1, 421, 0, 1, 258,
+      0, 1, 1, 0, 2, 81, 0, 1, 19800, 0, 5, 59, 7, 0, 1209, 0, 2, 19628, 0,
+      1, 5318, 0, 5, 3, 0, 6, 8, 0, 8, 2, 5, 2, 30, 4, 0, 148, 3, 0, 3515, 7,
+      0, 1, 17, 0, 2, 7, 0, 1, 2, 0, 1, 5, 0, 261, 7, 0, 437, 4, 0, 1504, 0,
+      7, 109, 6, 1
+    )
+    uncompressDeltas(deltas)
+  }
+
+  /** Tests whether the given code point's combining class is 0 (None), 230
+   *  (Above) or something else (Other).
+   *
+   *  This is a special-purpose method for use by `String.toLowerCase` and
+   *  `String.toUpperCase`.
+   */
+  private[lang] def combiningClassNoneOrAboveOrOther(cp: Int): Int = {
+    val indexOfRange = findIndexOfRange(
+      combiningClassNoneOrAboveOrOtherIndices, cp, hasEmptyRanges = true)
+    indexOfRange % 3
+  }
   // format: on
 
   @noinline private[this] def uncompressDeltas(
@@ -1196,6 +1306,35 @@ object Character {
     for (i <- 1 until deltas.length)
       deltas(i) += deltas(i - 1)
     deltas
+  }
+
+  private[this] def findIndexOfRange(startOfRangesArray: Array[Int],
+                                     value: Int,
+                                     hasEmptyRanges: scala.Boolean): Int = {
+    val i = Arrays.binarySearch(startOfRangesArray, value)
+    if (i >= 0) {
+      /* `value` is at the start of a range. Its range index is therefore
+       * `i + 1`, since there is an implicit range starting at 0 in the
+       * beginning.
+       *
+       * If the array has empty ranges, we may need to advance further than
+       * `i + 1` until the first index `j > i` where
+       * `startOfRangesArray(j) != value`.
+       */
+      if (hasEmptyRanges) {
+        var j = i + 1
+        while (j < startOfRangesArray.length && startOfRangesArray(j) == value)
+          j += 1
+        j
+      } else {
+        i + 1
+      }
+    } else {
+      /* i is `-p - 1` where `p` is the insertion point. In that case the index
+       * of the range is precisely `p`.
+       */
+      -i - 1
+    }
   }
 
   // Tables to support toUpperCase and toLowerCase transformations
@@ -1348,6 +1487,149 @@ object Character {
         }
       }
     }
+  }
+
+  /* Indices defining ranges of case-ignorable characters defined in Unicode reference chapter 3.13.
+   * They are only used in String special casing method, eg. String.toLowerCase
+   *
+   * Definition of case-ignorable character form Unicode [reference document](https://www.unicode.org/versions/Unicode13.0.0/ch03.pdf#G33992):
+   * A character C is defined to be case-ignorable if C has the value MidLetter (ML),
+   * MidNumLet (MB), or Single_Quote (SQ) for the Word_Break property or its General_Category is one of Nonspacing_Mark (Mn),
+   * Enclosing_Mark (Me), Format (Cf), Modifier_Letter (Lm), or Modifier_Symbol (Sk).
+   * - The Word_Break property is defined in the data file WordBreakProperty.txt in the Unicode Character Database.
+   * - The derived property Case_Ignorable is listed in the data file DerivedCoreProperties.txt in the Unicode Character Database.
+   *
+   * Deltas were generated based on DerivedCoreProperties.txt reference document using following code
+   *  (it can also be used to generated deltas for cased characters)
+   * ```
+   * val codePoints = io.Source
+   *   .fromURL("https://www.unicode.org/Public/13.0.0/ucd/DerivedCoreProperties.txt")
+   *   .getLines().filterNot(_.isEmpty)
+   *   .dropWhile(!_.startsWith("# Derived Property:   Cased (Cased)"))
+   *   // .dropWhile(!_.startsWith("# Derived Property:   Case_Ignorable (CI)"))
+   *   .takeWhile(!_.startsWith("# Total"))
+   *   .filter(!_.startsWith("#"))
+   *   .map { _
+   *     .split(";").head
+   *     .split("\\.\\.")
+   *     .filterNot(_.isEmpty)
+   *     .map(Integer.parseInt(_, 16))
+   *    }
+   *    .flatMap {
+   *       case Array(single) => single :: Nil
+   *       case Array(from, to) => from.to(to)
+   *    }.toList
+   *
+   * val deltas: List[Int] = {
+   *   val b = List.newBuilder[Int]
+   *   b += 0
+   *   (0 to Character.MAX_CODE_POINT).foldLeft((0, false)) {
+   *     case ((rangeFrom, last), cp) if codePoints.contains(cp) != last =>
+   *       b += cp - rangeFrom
+   *       (cp, !last)
+   *     case (notChanged, _) => notChanged
+   *   }
+   *   b.result()
+   * }
+   * ```
+   */
+  private[this] lazy val caseIgnorableIndices: Array[Int] = {
+    val deltas: Array[Int] = Array(39, 1, 6, 1, 11, 1, 35, 1, 1, 1, 71, 1, 4, 1,
+      1, 1, 4, 1, 2, 2, 503, 192, 4, 2, 4, 1, 9, 2, 1, 1, 251, 7, 207, 1, 5, 1,
+      49, 45, 1, 1, 1, 2, 1, 2, 1, 1, 44, 1, 11, 6, 10, 11, 1, 1, 35, 1, 10, 21,
+      16, 1, 101, 8, 1, 10, 1, 4, 33, 1, 1, 1, 30, 27, 91, 11, 58, 11, 4, 1, 2,
+      1, 24, 24, 43, 3, 119, 48, 55, 1, 1, 1, 4, 8, 4, 1, 3, 7, 10, 2, 13, 1,
+      15, 1, 58, 1, 4, 4, 8, 1, 20, 2, 26, 1, 2, 2, 57, 1, 4, 2, 4, 2, 2, 3, 3,
+      1, 30, 2, 3, 1, 11, 2, 57, 1, 4, 5, 1, 2, 4, 1, 20, 2, 22, 6, 1, 1, 58, 1,
+      2, 1, 1, 4, 8, 1, 7, 2, 11, 2, 30, 1, 61, 1, 12, 1, 50, 1, 3, 1, 57, 3, 5,
+      3, 1, 4, 7, 2, 11, 2, 29, 1, 58, 1, 2, 1, 6, 1, 5, 2, 20, 2, 28, 2, 57, 2,
+      4, 4, 8, 1, 20, 2, 29, 1, 72, 1, 7, 3, 1, 1, 90, 1, 2, 7, 11, 9, 98, 1, 2,
+      9, 9, 1, 1, 6, 74, 2, 27, 1, 1, 1, 1, 1, 55, 14, 1, 5, 1, 2, 5, 11, 1, 36,
+      9, 1, 102, 4, 1, 6, 1, 2, 2, 2, 25, 2, 4, 3, 16, 4, 13, 1, 2, 2, 6, 1, 15,
+      1, 94, 1, 608, 3, 946, 3, 29, 3, 29, 2, 30, 2, 64, 2, 1, 7, 8, 1, 2, 11,
+      3, 1, 5, 1, 45, 4, 52, 1, 65, 2, 34, 1, 118, 3, 4, 2, 9, 1, 6, 3, 219, 2,
+      2, 1, 58, 1, 1, 7, 1, 1, 1, 1, 2, 8, 6, 10, 2, 1, 39, 1, 8, 17, 63, 4, 48,
+      1, 1, 5, 1, 1, 5, 1, 40, 9, 12, 2, 32, 4, 2, 2, 1, 3, 56, 1, 1, 2, 3, 1,
+      1, 3, 58, 8, 2, 2, 64, 6, 82, 3, 1, 13, 1, 7, 4, 1, 6, 1, 3, 2, 50, 63,
+      13, 1, 34, 95, 1, 5, 445, 1, 1, 3, 11, 3, 13, 3, 13, 3, 13, 2, 12, 5, 8,
+      2, 10, 1, 2, 1, 2, 5, 49, 5, 1, 10, 1, 1, 13, 1, 16, 13, 51, 33, 2955, 2,
+      113, 3, 125, 1, 15, 1, 96, 32, 47, 1, 469, 1, 36, 4, 3, 5, 5, 1, 93, 6,
+      93, 3, 28438, 1, 1250, 6, 270, 1, 98, 4, 1, 10, 1, 1, 28, 4, 80, 2, 14,
+      34, 78, 1, 23, 3, 109, 2, 8, 1, 3, 1, 4, 1, 25, 2, 5, 1, 151, 2, 26, 18,
+      13, 1, 38, 8, 25, 11, 46, 3, 48, 1, 2, 4, 2, 2, 17, 1, 21, 2, 66, 6, 2, 2,
+      2, 2, 12, 1, 8, 1, 35, 1, 11, 1, 51, 1, 1, 3, 2, 2, 5, 2, 1, 1, 27, 1, 14,
+      2, 5, 2, 1, 1, 100, 5, 9, 3, 121, 1, 2, 1, 4, 1, 20272, 1, 147, 16, 574,
+      16, 3, 1, 12, 16, 34, 1, 2, 1, 169, 1, 7, 1, 6, 1, 11, 1, 35, 1, 1, 1, 47,
+      1, 45, 2, 67, 1, 21, 3, 513, 1, 226, 1, 149, 5, 1670, 3, 1, 2, 5, 4, 40,
+      3, 4, 1, 165, 2, 573, 4, 387, 2, 153, 11, 176, 1, 54, 15, 56, 3, 49, 4, 2,
+      2, 2, 1, 15, 1, 50, 3, 36, 5, 1, 8, 62, 1, 12, 2, 52, 9, 10, 4, 2, 1, 95,
+      3, 2, 1, 1, 2, 6, 1, 160, 1, 3, 8, 21, 2, 57, 2, 3, 1, 37, 7, 3, 5, 195,
+      8, 2, 3, 1, 1, 23, 1, 84, 6, 1, 1, 4, 2, 1, 2, 238, 4, 6, 2, 1, 2, 27, 2,
+      85, 8, 2, 1, 1, 2, 106, 1, 1, 1, 2, 6, 1, 1, 101, 3, 2, 4, 1, 5, 259, 9,
+      1, 2, 256, 2, 1, 1, 4, 1, 144, 4, 2, 2, 4, 1, 32, 10, 40, 6, 2, 4, 8, 1,
+      9, 6, 2, 3, 46, 13, 1, 2, 406, 7, 1, 6, 1, 1, 82, 22, 2, 7, 1, 2, 1, 2,
+      122, 6, 3, 1, 1, 2, 1, 7, 1, 1, 72, 2, 3, 1, 1, 1, 347, 2, 5435, 9, 14007,
+      5, 59, 7, 9, 4, 1035, 1, 63, 17, 64, 2, 1, 2, 19640, 2, 1, 4, 5315, 3, 9,
+      16, 2, 7, 30, 4, 148, 3, 1979, 55, 4, 50, 8, 1, 14, 1, 22, 5, 1, 15, 1360,
+      7, 1, 17, 2, 7, 1, 2, 1, 5, 261, 14, 430, 4, 1504, 7, 109, 8, 2735, 5,
+      789505, 1, 30, 96, 128, 240)
+
+    uncompressDeltas(deltas)
+  }
+
+  /* Indices defining ranges of case-ignorable characters defined in Unicode reference chapter 3.13.
+   * They are only used in String special casing method, eg. String.toLowerCase.
+   * Indices were generated based on [DerivedCodeProperties.txt](https://www.unicode.org/Public/13.0.0/ucd/DerivedCoreProperties.txt)
+   *
+   * Definition of cased character from Unicode [reference document](https://www.unicode.org/versions/Unicode13.0.0/ch03.pdf#G33992):
+   * D135 A character C is defined to be cased if and only if
+   * C has the Lowercase or Uppercase property or has a General_Category value of Titlecase_Letter.
+   * - The Uppercase and Lowercase property values are specified in the data file DerivedCoreProperties.txt in the Unicode Character Database.
+   * - The derived property Cased is also listed in DerivedCoreProperties.txt.
+   *
+   * What is worth to notice we currently cannot use isLowerCase || isUpperCase || isTitleCase (not implemented)
+   * test methods instead, as they're not compatible with Unicode 13.0.0 specification used for special casing.
+   * Usage of such methods would result in wrong results for following number of characters based on their type:
+   * 135 Unassigned characters, 261 UppercaseLetters, 312 LowercaseLetters, 6 Modifier letters, 46 OtherLetters and 78 OtherSymbols.
+   * Unicode 10.0 specification implemented in JDK 11 limits this numbers to all unmatched Unassigned and OtherLetter characters
+   *
+   * For code used to generate deltas see `caseIgnorableIndices` comment.
+   */
+  private[this] lazy val casedIndices: Array[Int] = {
+    val deltas: Array[Int] = Array(65, 26, 6, 26, 47, 1, 10, 1, 4, 1, 5, 23, 1,
+      31, 1, 195, 1, 4, 4, 208, 1, 36, 7, 2, 30, 5, 96, 1, 42, 4, 2, 2, 2, 4, 1,
+      1, 6, 1, 1, 3, 1, 1, 1, 20, 1, 83, 1, 139, 8, 166, 1, 38, 9, 41, 2839, 38,
+      1, 1, 5, 1, 2, 43, 2, 3, 672, 86, 2, 6, 2178, 9, 7, 43, 2, 3, 64, 192, 64,
+      278, 2, 6, 2, 38, 2, 6, 2, 8, 1, 1, 1, 1, 1, 1, 1, 31, 2, 53, 1, 7, 1, 1,
+      3, 3, 1, 7, 3, 4, 2, 6, 4, 13, 5, 3, 1, 7, 116, 1, 13, 1, 16, 13, 101, 1,
+      4, 1, 2, 10, 1, 1, 3, 5, 6, 1, 1, 1, 1, 1, 1, 4, 1, 6, 4, 1, 2, 4, 5, 5,
+      4, 1, 17, 32, 3, 2, 817, 52, 1814, 47, 1, 47, 1, 133, 6, 4, 3, 2, 12, 38,
+      1, 1, 5, 1, 30994, 46, 18, 30, 132, 102, 3, 4, 1, 48, 2, 9, 42, 2, 1, 3,
+      821, 43, 1, 13, 7, 80, 20288, 7, 12, 5, 1033, 26, 6, 26, 1189, 80, 96, 36,
+      4, 36, 1924, 51, 13, 51, 2989, 64, 21856, 64, 25984, 85, 1, 71, 1, 2, 2,
+      1, 2, 2, 2, 4, 1, 12, 1, 1, 1, 7, 1, 65, 1, 4, 2, 8, 1, 7, 1, 28, 1, 4, 1,
+      5, 1, 1, 3, 7, 1, 340, 2, 25, 1, 25, 1, 31, 1, 25, 1, 31, 1, 25, 1, 31, 1,
+      25, 1, 31, 1, 25, 1, 8, 4404, 68, 2028, 26, 6, 26, 6, 26)
+
+    uncompressDeltas(deltas)
+  }
+
+  /*
+   * This method is implementation specific. It's only used for support of String.toLowerCase special characters handling
+   */
+  private[lang] def isCaseIgnorable(codePoint: Int): scala.Boolean = {
+    val idx =
+      findIndexOfRange(caseIgnorableIndices, codePoint, hasEmptyRanges = false)
+    idx % 2 == 1
+  }
+
+  /*
+   * This method is implementation specific. It's only used for support of String.toLowerCase special characters handling
+   */
+  private[lang] def isCased(codePoint: Int): scala.Boolean = {
+    val idx =
+      findIndexOfRange(casedIndices, codePoint, hasEmptyRanges = false)
+    idx % 2 == 1
   }
 
   // Ported from Harmony

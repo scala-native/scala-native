@@ -15,13 +15,13 @@ that uses a notation inspired by
         M <name> <sig-name>            // member name
 
     <sig-name> ::=
-        F <name>                       // field name
-        R <type-name>+ E               // constructor name
-        D <name> <type-name>+ E        // method name
-        P <name> <type-name>+ E        // proxy name
-        C <name>                       // c extern name
-        G <name>                       // generated name
-        K <sig-name> <type-name>+ E    // duplicate name
+        F <name> <scope>                    // field name
+        R <type-name>+ E                    // constructor name
+        D <name> <type-name>+ E <scope>     // method name
+        P <name> <type-name>+ E             // proxy name
+        C <name>                            // c extern name
+        G <name>                            // generated name
+        K <sig-name> <type-name>+ E         // duplicate name
 
     <type-name> ::=
         v                              // c vararg
@@ -52,6 +52,15 @@ that uses a notation inspired by
         s                              // scala.Short
         i                              // scala.Int
         j                              // scala.Long
+    
+    <scope> ::=
+        P <defn-name>                  // private to defn-name
+        O                              // public
 
     <name> ::=
-        <length number> <chars>        // raw identifier of given length
+        <length number> [-] <chars>    // raw identifier of given length; `-` separator is only used when <chars> starts with digit or `-` itself
+
+
+Mangling identifiers containing special characters follows Scala JVM conventions.
+Each double-quote `"` character is always converted to `$u0022`
+

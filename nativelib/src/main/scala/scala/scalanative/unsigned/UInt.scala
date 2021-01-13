@@ -49,7 +49,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
    *         filling in the new right bits with zeroes.
    * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
    */
-  @inline final def <<(x: Long): UInt = new UInt(underlying << x)
+  @inline final def <<(x: Long): UInt = new UInt(underlying << x.toInt)
 
   /**
    * Returns this value bit-shifted right by the specified number of bits,
@@ -73,7 +73,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
    * //            00011111 11111111 11111111 11111101
    * }}}
    */
-  @inline final def >>>(x: Long): UInt = new UInt(underlying >>> x)
+  @inline final def >>>(x: Long): UInt = new UInt(underlying >>> x.toInt)
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
@@ -95,7 +95,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
    * //            11111111 11111111 11111111 11111101
    * }}}
    */
-  @inline final def >>(x: Long): UInt = new UInt(underlying >> x)
+  @inline final def >>(x: Long): UInt = new UInt(underlying >> x.toInt)
 
   @inline final override def compareTo(x: UInt): Int =
     JInteger.compareUnsigned(underlying, x.underlying)
@@ -272,6 +272,13 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
 
   @inline final override def toString(): String =
     JInteger.toUnsignedString(underlying)
+
+  @inline override def hashCode(): Int = underlying.##
+
+  @inline override def equals(obj: Any): Boolean = obj match {
+    case that: UInt => this.underlying == that.underlying
+    case _          => false
+  }
 
   // "Rich" API
 

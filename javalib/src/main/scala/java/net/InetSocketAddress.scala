@@ -20,7 +20,7 @@ class InetSocketAddress private[net] (private var addr: InetAddress,
     if (addr == null) {
       addr = InetAddress.wildcard
     }
-    hostName = addr.getHostAddress
+    hostName = addr.getHostAddress()
   }
 
   private var gotHostName = false
@@ -32,7 +32,7 @@ class InetSocketAddress private[net] (private var addr: InetAddress,
   private val isResolved = (addr != null)
 
   def this(port: Int) =
-    this(InetAddress.wildcard, port, InetAddress.wildcard.getHostName, false)
+    this(InetAddress.wildcard, port, InetAddress.wildcard.getHostName(), false)
 
   def this(hostname: String, port: Int) =
     this(Try(InetAddress.getByName(hostname)).getOrElse(null),
@@ -49,7 +49,7 @@ class InetSocketAddress private[net] (private var addr: InetAddress,
   final def getHostName: String = {
     if (!gotHostName && addr != null) {
       gotHostName = true
-      hostName = addr.getHostName
+      hostName = addr.getHostName()
     }
     hostName
   }

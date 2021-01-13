@@ -4,7 +4,7 @@ import scala.scalanative.nir.Global
 import scala.scalanative.nir.Type
 
 object NirGenSymbols {
-  val serializable = Global.Top("scala.Serializable")
+  val serializable = Global.Top("java.io.Serializable")
 
   val jlClass    = Global.Top("java.lang.Class")
   val jlClassRef = Type.Ref(jlClass)

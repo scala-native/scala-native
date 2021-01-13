@@ -43,7 +43,8 @@ final class Boolean(val _value: scala.Boolean) extends Comparable[Boolean] {
 }
 
 object Boolean {
-  final val TYPE           = classOf[scala.Boolean]
+  final val TYPE =
+    scala.Predef.classOf[scala.scalanative.runtime.PrimitiveBoolean]
   final val TRUE: Boolean  = new Boolean(true)
   final val FALSE: Boolean = new Boolean(false)
 

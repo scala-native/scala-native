@@ -14,9 +14,7 @@ private[runtime] object Shutdown {
         case e: Exception => // Maybe add a system propery that adds logging of exceptions?
       }
     }
-  NativeShutdown.init(new CFuncPtr0[Unit] {
-    def apply(): Unit = runHooks()
-  })
+  NativeShutdown.init(() => runHooks())
 }
 
 @extern

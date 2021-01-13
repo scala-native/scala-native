@@ -103,7 +103,7 @@ final class Float(val _value: scala.Float)
   protected def unary_+ : scala.Float = _value
   protected def unary_- : scala.Float = -_value
 
-  protected def +(x: String): String = _value + x
+  protected def +(x: String): String = "" + _value + x
 
   protected def <(x: scala.Byte): scala.Boolean   = _value < x
   protected def <(x: scala.Short): scala.Boolean  = _value < x
@@ -189,7 +189,8 @@ object Float {
   final val NEGATIVE_INFINITY = 1.0f / -0.0f
   final val POSITIVE_INFINITY = 1.0f / 0.0f
   final val SIZE              = 32
-  final val TYPE              = classOf[scala.Float]
+  final val TYPE =
+    scala.Predef.classOf[scala.scalanative.runtime.PrimitiveFloat]
 
   @inline def compare(x: scala.Float, y: scala.Float): scala.Int =
     if (x > y) 1

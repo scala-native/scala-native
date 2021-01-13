@@ -22,8 +22,10 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
 
   val name: String = "Scala Native JUnit plugin"
 
-  val components: List[NscPluginComponent] =
-    List(ScalaNativeJUnitPluginComponent)
+  val components: List[NscPluginComponent] = global match {
+    case _: doc.ScaladocGlobal => Nil
+    case _                     => List(ScalaNativeJUnitPluginComponent)
+  }
 
   val description: String = "Makes JUnit test classes invokable in Scala Native"
 
@@ -53,13 +55,14 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
     }
 
     private object Names {
-      val beforeClass: TermName = newTermName("beforeClass")
-      val afterClass: TermName  = newTermName("afterClass")
-      val before: TermName      = newTermName("before")
-      val after: TermName       = newTermName("after")
-      val tests: TermName       = newTermName("tests")
-      val invokeTest: TermName  = newTermName("invokeTest")
-      val newInstance: TermName = newTermName("newInstance")
+      val beforeClass: TermName       = newTermName("beforeClass")
+      val afterClass: TermName        = newTermName("afterClass")
+      val before: TermName            = newTermName("before")
+      val after: TermName             = newTermName("after")
+      val testClassMetadata: TermName = newTermName("testClassMetadata")
+      val tests: TermName             = newTermName("tests")
+      val invokeTest: TermName        = newTermName("invokeTest")
+      val newInstance: TermName       = newTermName("newInstance")
 
       val instance: TermName = newTermName("instance")
       val name: TermName     = newTermName("name")
@@ -67,6 +70,9 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
 
     private lazy val BootstrapperClass =
       getRequiredClass("scala.scalanative.junit.Bootstrapper")
+
+    private lazy val TestClassMetadataClass =
+      getRequiredClass("scala.scalanative.junit.TestClassMetadata")
 
     private lazy val TestMetadataClass =
       getRequiredClass("scala.scalanative.junit.TestMetadata")
@@ -140,6 +146,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
                           JUnitAnnots.AfterClass),
           genCallOnParam(bootSym, Names.before, testClass, JUnitAnnots.Before),
           genCallOnParam(bootSym, Names.after, testClass, JUnitAnnots.After),
+          genTestMetadata(bootSym, testClass),
           genTests(bootSym, testMethods),
           genInvokeTest(bootSym, testClass, testMethods),
           genNewInstance(bootSym, testClass)
@@ -170,7 +177,17 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
         val sym = owner.newMethodSymbol(name)
         sym.setInfoAndEnter(MethodType(Nil, definitions.UnitTpe))
 
-        val calls = annotatedMethods(module, annot)
+        val (publicCalls, nonPublicCalls) =
+          annotatedMethods(module, annot).partition(_.isPublic)
+
+        if (nonPublicCalls.nonEmpty) {
+          globalError(
+            pos = module.pos,
+            s"Methods marked with ${annot.nameString} annotation in $module must be public"
+          )
+        }
+
+        val calls = publicCalls
           .map(gen.mkMethodCall(Ident(module), _, Nil, Nil))
           .toList
 
@@ -190,15 +207,43 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
           MethodType(List(instanceParam), definitions.UnitTpe))
 
         val instance = castParam(instanceParam, testClass)
-        val calls = annotatedMethods(testClass, annot)
+
+        val (publicCalls, nonPublicCalls) =
+          annotatedMethods(testClass, annot).partition(_.isPublic)
+
+        if (nonPublicCalls.nonEmpty) {
+          globalError(
+            pos = testClass.pos,
+            s"Methods marked with ${annot.nameString} annotation in $testClass must be public"
+          )
+        }
+
+        val calls = publicCalls
           .map(gen.mkMethodCall(instance, _, Nil, Nil))
           .toList
 
         typer.typedDefDef(newDefDef(sym, Block(calls: _*))())
       }
 
+      private def genTestMetadata(owner: ClassSymbol,
+                                  testClass: ClassSymbol): DefDef = {
+        val sym = owner.newMethodSymbol(Names.testClassMetadata)
+
+        sym.setInfoAndEnter(
+          MethodType(Nil, typeRef(NoType, TestClassMetadataClass, Nil))
+        )
+
+        val ignored   = testClass.hasAnnotation(JUnitAnnots.Ignore)
+        val isIgnored = Literal(Constant(ignored))
+
+        val rhs = New(TestClassMetadataClass, isIgnored)
+
+        typer.typedDefDef(newDefDef(sym, rhs)())
+      }
+
       private def genTests(owner: ClassSymbol, tests: Scope): DefDef = {
         val sym = owner.newMethodSymbol(Names.tests)
+
         sym.setInfoAndEnter(
           MethodType(Nil,
                      typeRef(NoType, ArrayClass, List(TestMetadataClass.tpe))))
@@ -209,10 +254,11 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
             test.getAnnotation(JUnitAnnots.Test).get.args: _*)
 
           val name = Literal(Constant(test.name.toString))
-          val ignored = Literal(
-            Constant(test.hasAnnotation(JUnitAnnots.Ignore)))
 
-          New(TestMetadataClass, name, ignored, reifiedAnnot)
+          val testIgnored = test.hasAnnotation(JUnitAnnots.Ignore)
+          val isIgnored   = Literal(Constant(testIgnored))
+
+          New(TestMetadataClass, name, isIgnored, reifiedAnnot)
         }
 
         val rhs = ArrayValue(TypeTree(TestMetadataClass.tpe), metadata.toList)

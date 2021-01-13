@@ -33,29 +33,36 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
     var total   = 0
 
     @tailrec
-    def runTests(tests: List[TestMetadata]): Try[Unit] = {
+    def runTests(tests: List[TestMetadata],
+                 testClass: TestClassMetadata): Try[Unit] = {
       val (nextIgnored, other) = tests.span(_.ignored)
 
-      nextIgnored.foreach(t => reporter.reportIgnored(Some(t.name)))
-      ignored += nextIgnored.size
+      if (testClass.ignored) {
+        reporter.reportIgnored(None)
+        ignored += 1
+        Success(())
+      } else {
+        nextIgnored.foreach(t => reporter.reportIgnored(Some(t.name)))
+        ignored += nextIgnored.size
 
-      other match {
-        case t :: ts =>
-          total += 1
+        other match {
+          case t :: ts =>
+            total += 1
 
-          val fc = executeTestMethod(bootstrapper, t, reporter)
-          failed += fc
-          runTests(ts)
+            val fc = executeTestMethod(bootstrapper, t, reporter)
+            failed += fc
+            runTests(ts, testClass)
 
-        case Nil =>
-          Success(())
+          case Nil =>
+            Success(())
+        }
       }
     }
 
     val result = runTestLifecycle {
       Success(())
     } { _ => catchAll(bootstrapper.beforeClass()) } { _ =>
-      runTests(bootstrapper.tests().toList)
+      runTests(bootstrapper.tests().toList, bootstrapper.testClassMetadata())
     } { _ => catchAll(bootstrapper.afterClass()) }
 
     val (errors, timeInSeconds) = result
@@ -108,7 +115,7 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
 
   private def loadBootstrapper(reporter: Reporter): Option[Bootstrapper] = {
     val bootstrapperName =
-      taskDef.fullyQualifiedName + "$scalanative$junit$bootstrapper$"
+      taskDef.fullyQualifiedName() + "$scalanative$junit$bootstrapper$"
 
     try {
       val b = Reflect

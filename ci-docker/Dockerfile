@@ -35,11 +35,13 @@ RUN \
   apt-get update && \
   apt-get install -y sbt
 
-RUN apt-get update && apt-get install -y clang-5.0 zlib1g-dev libgc-dev
+RUN apt-get update && apt-get install -y clang-6.0 zlib1g-dev libgc-dev
 
 ENV LC_ALL "C.UTF-8"
 
 ENV LANG "C.UTF-8"
+
+ENV PATH=/usr/lib/llvm-6.0/bin:${PATH}
 
 RUN useradd -ms /bin/bash scala-native
 
@@ -47,4 +49,4 @@ USER scala-native
 
 WORKDIR /home/scala-native/scala-native
 
-CMD sbt -no-colors -J-Xmx3G "set scriptedBufferLog in sbtScalaNative := false" "$TEST_COMMAND"
+CMD sbt "++ $SCALA_VERSION -v" -no-colors -J-Xmx5G "set scriptedBufferLog in sbtScalaNative := false" "$TEST_COMMAND"

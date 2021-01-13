@@ -61,7 +61,8 @@ object CVarArgList {
       case value: Float =>
         encode(value.toDouble)
       case _ =>
-        val count = ((sizeof(tag) + sizeof[Long] - 1) / sizeof[Long]).toInt
+        val count =
+          ((sizeof(tag) + sizeof[Long] - 1.toULong) / sizeof[Long]).toInt
         val words = new Array[Long](count)
         val start = words.asInstanceOf[LongArray].at(0).asInstanceOf[Ptr[T]]
         tag.store(start, value)
@@ -99,15 +100,15 @@ object CVarArgList {
     }
 
     val resultStorage =
-      z.alloc(sizeof[Long] * storage.size).asInstanceOf[Ptr[Long]]
+      z.alloc(sizeof[Long] * storage.size.toULong).asInstanceOf[Ptr[Long]]
     val storageStart = storage.asInstanceOf[LongArray].at(0)
     libc.memcpy(toRawPtr(resultStorage),
                 toRawPtr(storageStart),
-                wordsUsed * sizeof[Long])
+                wordsUsed.toULong * sizeof[Long])
 
     val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
     resultHeader.gpOffset = 0.toUInt
-    resultHeader.fpOffset = (countGPRegisters * sizeof[Long]).toUInt
+    resultHeader.fpOffset = (countGPRegisters.toULong * sizeof[Long]).toUInt
     resultHeader.regSaveArea = resultStorage
     resultHeader.overflowArgArea = resultStorage + registerSaveWords
 

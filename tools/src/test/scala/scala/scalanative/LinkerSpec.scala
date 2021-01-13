@@ -5,9 +5,8 @@ import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
-import scalanative.build.{ScalaNative, Config, Mode}
+import scalanative.build.{ScalaNative, Config}
 import scalanative.util.Scope
-import scalanative.nir.Global
 
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -21,13 +20,12 @@ abstract class LinkerSpec extends AnyFlatSpec {
    * @param entry   The entry point for the linker.
    * @param sources Map from file name to file content representing all the code
    *                to compile and link.
-   * @param driver  Optional custom driver that defines the pipeline.
    * @param fn      A function to apply to the products of the compilation.
    * @return The result of applying `fn` to the resulting definitions.
    */
   def link[T](entry: String,
               sources: Map[String, String],
-              linkStubs: Boolean = false)(f: (Config, linker.Result) => T): T =
+              linkStubs: Boolean = false)(fn: (Config, linker.Result) => T): T =
     Scope { implicit in =>
       val outDir     = Files.createTempDirectory("native-test-out")
       val compiler   = NIRCompiler.getCompiler(outDir)
@@ -37,7 +35,7 @@ abstract class LinkerSpec extends AnyFlatSpec {
       val entries    = ScalaNative.entries(config)
       val result     = ScalaNative.link(config, entries)
 
-      f(config, result)
+      fn(config, result)
     }
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
@@ -57,7 +55,7 @@ abstract class LinkerSpec extends AnyFlatSpec {
       .withWorkdir(outDir)
       .withClassPath(classpath)
       .withMainClass(entry)
-      .withLinkStubs(linkStubs)
+      .withCompilerConfig(_.withLinkStubs(linkStubs))
   }
 
   protected implicit def String2MapStringString(

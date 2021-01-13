@@ -4,7 +4,14 @@ import java.io.FileInputStream
 
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.12"
+scalaVersion := {
+  val scalaVersion = System.getProperty("scala.version")
+  if (scalaVersion == null)
+    throw new RuntimeException(
+      """|The system property 'scala.version' is not defined.
+         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
+  else scalaVersion
+}
 
 lazy val createFileWithAlreadyWrittenText =
   taskKey[Unit]("Creating a file with some text on it")

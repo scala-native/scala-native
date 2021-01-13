@@ -50,9 +50,9 @@ private[lang] object StackTraceElement {
     var methodName = ""
 
     def readSymbol(): Boolean = {
-      if (read != '_') {
+      if (read() != '_') {
         false
-      } else if (read != 'S') {
+      } else if (read() != 'S') {
         false
       } else {
         readGlobal()
@@ -141,7 +141,7 @@ private[lang] object StackTraceElement {
     }
 
     def inBounds(pos: Int) =
-      pos >= 0 && pos < len
+      pos >= 0 && pos < len.toLong
 
     if (!readSymbol()) {
       className = "<none>"

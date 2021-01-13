@@ -82,10 +82,10 @@ private[net] class PlainSocketImpl extends SocketImpl {
     hints.ai_socktype = socket.SOCK_STREAM
 
     Zone { implicit z =>
-      val cIP = toCString(addr.getHostAddress)
+      val cIP = toCString(addr.getHostAddress())
       if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
         throw new BindException(
-          "Couldn't resolve address: " + addr.getHostAddress)
+          "Couldn't resolve address: " + addr.getHostAddress())
       }
     }
 
@@ -96,13 +96,14 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     if (bindRes < 0) {
       throw new BindException(
-        "Couldn't bind to an address: " + addr.getHostAddress +
+        "Couldn't bind to an address: " + addr.getHostAddress() +
           " on port: " + port.toString)
     }
 
     this.localport = fetchLocalPort(family).getOrElse {
       throw new BindException(
-        "Couldn't bind to address: " + addr.getHostAddress + " on port: " + port)
+        "Couldn't bind to address: " + addr.getHostAddress() +
+          " on port: " + port)
     }
   }
 
@@ -118,7 +119,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     throwIfClosed(fd.fd, "accept") // Do not send negative fd.fd to poll()
 
     if (timeout > 0) {
-      val nAlloc = 1
+      val nAlloc = 1.toUInt
 
       val pollFdPtr = stackalloc[struct_pollfd](nAlloc)
 
@@ -126,7 +127,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       pollFdPtr.events = POLLIN
       pollFdPtr.revents = 0
 
-      val pollRes = poll(pollFdPtr, nAlloc.toUInt, timeout)
+      val pollRes = poll(pollFdPtr, nAlloc, timeout)
 
       pollRes match {
         case err if err < 0 =>
@@ -165,7 +166,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     }
     val family =
       storage.asInstanceOf[Ptr[socket.sockaddr_storage]].ss_family.toInt
-    val ipstr = stackalloc[CChar](in.INET6_ADDRSTRLEN)
+    val ipstr = stackalloc[CChar](in.INET6_ADDRSTRLEN.toULong)
 
     if (family == socket.AF_INET) {
       val sa = storage.asInstanceOf[Ptr[in.sockaddr_in]]
@@ -231,7 +232,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   private def connectPollTimeout(timeout: Int, fdFd: Int, opts: Int): Unit = {
-    val nAlloc = 1
+    val nAlloc = 1.toUInt
 
     val pollFdPtr = stackalloc[struct_pollfd](nAlloc)
 
@@ -275,7 +276,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
     hints.ai_socktype = socket.SOCK_STREAM
-    val remoteAddress = inetAddr.getAddress.getHostAddress
+    val remoteAddress = inetAddr.getAddress.getHostAddress()
 
     Zone { implicit z =>
       val cIP   = toCString(remoteAddress)
@@ -371,7 +372,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       var sent = 0
       while (sent < count) {
         val ret = socket
-          .send(fd.fd, cArr + sent, count - sent, socket.MSG_NOSIGNAL)
+          .send(fd.fd, cArr + sent, (count - sent).toUInt, socket.MSG_NOSIGNAL)
           .toInt
         if (ret < 0) {
           throw new IOException("Could not send the packet to the client")
@@ -386,7 +387,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     if (shutInput) -1
 
     val bytesNum = socket
-      .recv(fd.fd, buffer.asInstanceOf[ByteArray].at(offset), count, 0)
+      .recv(fd.fd, buffer.asInstanceOf[ByteArray].at(offset), count.toUInt, 0)
       .toInt
     if (bytesNum <= 0) {
       if (errno.errno == EAGAIN || errno.errno == EWOULDBLOCK) {

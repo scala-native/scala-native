@@ -24,8 +24,9 @@ class Thread private (runnable: Runnable) extends Runnable {
   final def getName(): String =
     this.name
 
-  @stub
-  def getStackTrace(): Array[StackTraceElement] = ???
+  // Stub implementation
+  def getStackTrace(): Array[StackTraceElement] =
+    new Array[StackTraceElement](0) // Do not use scala collections.
 
   def getId(): scala.Long = 1
 
@@ -66,8 +67,8 @@ object Thread {
   def currentThread(): Thread = MainThread
 
   def interrupted(): scala.Boolean = {
-    val ret = currentThread.isInterrupted
-    currentThread.interruptedState = false
+    val ret = currentThread().isInterrupted()
+    currentThread().interruptedState = false
     ret
   }
 

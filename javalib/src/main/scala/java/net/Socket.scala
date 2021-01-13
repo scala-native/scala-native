@@ -116,7 +116,7 @@ class Socket protected (private[net] val impl: SocketImpl,
     val addr =
       if (bindpoint == null ||
           bindpoint.asInstanceOf[InetSocketAddress].getAddress == null)
-        new InetSocketAddress(InetAddress.getLoopbackAddress, 0)
+        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0)
       else {
         bindpoint.asInstanceOf[InetSocketAddress]
       }
@@ -270,18 +270,18 @@ class Socket protected (private[net] val impl: SocketImpl,
   }
 
   def shutdownInput(): Unit = {
-    impl.shutdownInput
+    impl.shutdownInput()
     inputShutdown = true
   }
 
   def shutdownOutput(): Unit = {
-    impl.shutdownOutput
+    impl.shutdownOutput()
     outputShutdown = true
   }
 
   override def close(): Unit = {
     closed = true
-    impl.close
+    impl.close()
   }
 
   // def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit

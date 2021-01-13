@@ -25,7 +25,7 @@ class CharClass private (unit: Unit) {
 
   // Constructs a CharClass with initial ranges |r|.
   // The right to mutate |r| is passed to the callee.
-  def this(r: Array[Int]) {
+  def this(r: Array[Int]) = {
     this(())
     this.r = r
     this.len = r.length
@@ -36,7 +36,7 @@ class CharClass private (unit: Unit) {
   // 16 bytes is a best guess. See commit mesage for details on its derivation.
 
   // Constructs an empty CharClass.
-  def this() {
+  def this() = {
     this(())
     val initialCapacity = 16
     this.r = new Array[Int](initialCapacity)

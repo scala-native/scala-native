@@ -103,6 +103,13 @@ whereas the `release` mode performs additional optimizations and takes longer
 to compile. The `release-fast` mode builds faster, performs less optimizations,
 but may perform better than `release`.
 
+The `optimize` setting is controlled via the `SCALANATIVE_OPTIMIZE` environment
+variable. Valid values are `true` and `false`. The default value is `true`.
+This setting controls whether the Interflow optimizer is enabled or not.
+
+The path to used include and library dirs is controlled via environment variables
+the `SCALANATIVE_INCLUDE_DIRS` and `SCALANATIVE_LIB_DIRS`.
+
 Setting the GC setting via `sbt`
 --------------------------------
 The GC setting is only used during the link phase of the Scala Native
@@ -189,8 +196,6 @@ The build has roughly five groups of sub-projects as follows:
 
     - ``testInterface (test-interface)``
 
-    - ``testInterfaceSerialization (test-interface-serialization)``
-
     - ``testInterfaceSbtDefs (test-interface-sbt-defs)``
 
 5.  Tests and benchmarks (no dependencies on each other).
@@ -200,6 +205,9 @@ The build has roughly five groups of sub-projects as follows:
     - ``tools`` This has tests within the project (JVM project)
 
     - ``(scripted-tests)`` (JVM project)
+
+Apart from those mentioned sub-projects it is possible to notice project-like directory ``testInterfaceCommon (test-interface-common)``.
+Its content is shared as unmanaged source dependency between JVM and Native sides of test interface.
 
 The next section has more build and development information for those wanting
 to work on :ref:`compiler`.

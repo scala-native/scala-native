@@ -5,9 +5,7 @@ package object util {
   implicit private[util] class CompareNullablesOps(val self: Any)
       extends AnyVal {
     @inline
-    def ===(that: Any): Boolean =
-      if (self.asInstanceOf[AnyRef] eq null) that.asInstanceOf[AnyRef] eq null
-      else self.equals(that)
+    def ===(that: Any): Boolean = Objects.equals(self, that)
 
     @inline
     def =:=(that: Any): Boolean = {

@@ -13,7 +13,7 @@ abstract class MessageDigestSpi {
   protected def engineUpdate(input: Array[Byte], offset: Int, len: Int): Unit
 
   protected def engineUpdate(input: ByteBuffer): Unit = {
-    if (input.hasRemaining) {
+    if (input.hasRemaining()) {
       if (input.hasArray()) {
         val tmp      = input.array()
         val offset   = input.arrayOffset()

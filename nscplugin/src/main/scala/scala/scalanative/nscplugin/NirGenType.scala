@@ -1,7 +1,8 @@
 package scala.scalanative
 package nscplugin
+import scala.tools.nsc.Global
 
-trait NirGenType { self: NirGenPhase =>
+trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import SimpleType.{fromSymbol, fromType}
   import global._
   import definitions._
@@ -14,7 +15,7 @@ trait NirGenType { self: NirGenPhase =>
       sym.isInterface
 
     def isScalaModule: Boolean =
-      sym.isModuleClass && !sym.isImplClass && !sym.isLifted
+      sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
 
     def isExternModule: Boolean =
       isScalaModule && sym.annotations.exists(_.symbol == ExternClass)
@@ -25,10 +26,16 @@ trait NirGenType { self: NirGenPhase =>
     def isField: Boolean =
       !sym.isMethod && sym.isTerm && !isScalaModule
 
+    /** Tests if this type inherits from CFuncPtr */
     def isCFuncPtrClass: Boolean =
-      CFuncPtrClass.contains(sym) || {
+      sym == CFuncPtrClass ||
+        sym.info.parents.exists(_.typeSymbol == CFuncPtrClass)
+
+    /** Tests if this type is implementations of CFuncPtr */
+    def isCFuncPtrNClass: Boolean =
+      CFuncPtrNClass.contains(sym) || {
         sym.info.parents.exists { parent =>
-          CFuncPtrClass.contains(parent.typeSymbol)
+          CFuncPtrNClass.contains(parent.typeSymbol)
         }
       }
   }
@@ -111,7 +118,7 @@ trait NirGenType { self: NirGenPhase =>
       case _ if st.sym == ArrayClass =>
         genTypeValue(RuntimeArrayClass(genPrimCode(st.targs.head)))
       case 'O' =>
-        nir.Val.Global(genTypeName(st.sym), nir.Type.Ptr)
+        nir.Val.ClassOf(genTypeName(st.sym))
       case code =>
         genTypeValue(RuntimePrimitive(code))
     }
@@ -150,13 +157,13 @@ trait NirGenType { self: NirGenPhase =>
 
   private def genMethodSigImpl(sym: Symbol,
                                isExtern: Boolean): nir.Type.Function = {
-    require(sym.isMethod || sym.isStaticMember)
+    require(sym.isMethod || sym.isStaticMember, "symbol is not a method")
 
     val tpe      = sym.tpe
     val owner    = sym.owner
     val paramtys = genMethodSigParamsImpl(sym, isExtern)
     val selfty =
-      if (isExtern || owner.isExternModule || owner.isImplClass) None
+      if (isExtern || owner.isExternModule || isImplClass(owner)) None
       else Some(genType(owner.tpe))
     val retty =
       if (sym.isClassConstructor) nir.Type.Unit

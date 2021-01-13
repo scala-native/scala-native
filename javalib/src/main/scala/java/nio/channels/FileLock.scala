@@ -39,6 +39,6 @@ abstract class FileLock private (channel: Channel,
     release()
 
   override final def toString(): String =
-    s"FileLock($channel, $position, $size, $shared), isValid = $isValid"
+    s"FileLock($channel, $position, $size, $shared), isValid = ${isValid()}"
 
 }
