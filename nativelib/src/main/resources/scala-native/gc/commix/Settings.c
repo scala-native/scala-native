@@ -92,7 +92,7 @@ int Settings_GCThreadCount() {
     char *str = getenv("SCALANATIVE_GC_THREADS");
     if (str == NULL) {
         // default is number of cores - 1, but no less than 1 and no more than 8
-        int processorCount = (int) sysconf(_SC_NPROCESSORS_ONLN);
+        int processorCount = (int)sysconf(_SC_NPROCESSORS_ONLN);
         int defaultGThreadCount = processorCount - 1;
         if (defaultGThreadCount < 1) {
             defaultGThreadCount = 1;

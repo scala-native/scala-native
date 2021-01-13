@@ -189,8 +189,9 @@ uint32_t Sweeper_sweepSimpleBlock(Allocator *allocator, BlockMeta *blockMeta,
     }
 }
 
-uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta,
-                                 word_t *blockStart, BlockMeta *batchLimit) {
+uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator,
+                                 BlockMeta *blockMeta, word_t *blockStart,
+                                 BlockMeta *batchLimit) {
     // Objects that are larger than a block
     // are always allocated at the beginning the smallest possible superblock.
     // Any gaps at the end can be filled with large objects, that are smaller
@@ -300,8 +301,7 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
         }
     }
 #ifdef DEBUG_PRINT
-    printf("sweepSuperblock %p %" PRIu32 " => FREE %" PRIu32 "/ %" PRIu32
-           "\n",
+    printf("sweepSuperblock %p %" PRIu32 " => FREE %" PRIu32 "/ %" PRIu32 "\n",
            blockMeta,
            BlockMeta_GetBlockIndex(allocator->blockMetaStart, blockMeta),
            freeCount, superblockSize);
@@ -309,7 +309,6 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator, BlockMeta *blockMeta
 #endif
     return freeCount;
 }
-
 
 void Sweep_applyResult(SweepResult *result, Allocator *allocator,
                        BlockAllocator *blockAllocator) {
@@ -401,8 +400,9 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
             assert(reserveFirst != NULL);
             // size = 1, freeCount = 0
         } else if (BlockMeta_IsSimpleBlock(current)) {
-            freeCount = Sweeper_sweepSimpleBlock(&allocator, current, currentBlockStart,
-                                                 lineMetas, &sweepResult);
+            freeCount =
+                Sweeper_sweepSimpleBlock(&allocator, current, currentBlockStart,
+                                         lineMetas, &sweepResult);
 #ifdef DEBUG_PRINT
             printf("Sweeper_Sweep SimpleBlock %p %" PRIu32 "\n", current,
                    BlockMeta_GetBlockIndex(heap->blockMetaStart, current));

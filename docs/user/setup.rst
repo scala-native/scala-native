@@ -26,9 +26,10 @@ Installing clang and runtime dependencies
 -----------------------------------------
 
 Scala Native requires Clang, which is part of the `LLVM`_ toolchain. The
-recommended LLVM version is 11 or newer, however, the Scala Native sbt
-plugin uses feature detection to discover the installed version of Clang
-so older versions may also work.
+recommended LLVM version is the most recent available for your system
+provided that it works with Scala Native. The Scala Native sbt
+plugin checks to ensure that `clang` is at least the minimum version
+shown above.
 
 Scala Native uses the `immix`_ garbage collector by default.
 You can use the `Boehm`_ garbage collector instead.

@@ -1,5 +1,3 @@
-typedef int (*Callback0) (void);
+typedef int (*Callback0)(void);
 
-int exec(Callback0 f) {
-  return f();
-}
+int exec(Callback0 f) { return f(); }

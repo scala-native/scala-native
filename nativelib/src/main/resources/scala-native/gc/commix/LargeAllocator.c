@@ -55,7 +55,7 @@ Chunk *LargeAllocator_freeListPopOnlyThread(FreeList *freeList) {
     if (head == NULL) {
         return NULL;
     }
-    freeList->head = (word_t) head->next;
+    freeList->head = (word_t)head->next;
 
     return head;
 }
@@ -112,13 +112,14 @@ static inline Chunk *LargeAllocator_getChunkForSize(LargeAllocator *allocator,
     return NULL;
 }
 
-static inline Chunk *LargeAllocator_getChunkForSizeOnlyThread(LargeAllocator *allocator,
-                                                              size_t requiredChunkSize) {
+static inline Chunk *
+LargeAllocator_getChunkForSizeOnlyThread(LargeAllocator *allocator,
+                                         size_t requiredChunkSize) {
     for (int listIndex =
              LargeAllocator_sizeToLinkedListIndex(requiredChunkSize);
          listIndex < FREE_LIST_COUNT; listIndex++) {
-        Chunk *chunk =
-            LargeAllocator_freeListPopOnlyThread(&allocator->freeLists[listIndex]);
+        Chunk *chunk = LargeAllocator_freeListPopOnlyThread(
+            &allocator->freeLists[listIndex]);
         if (chunk != NULL) {
             return chunk;
         }
@@ -137,8 +138,8 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
         if (allocator->blockAllocator->concurrent) {
             chunk = LargeAllocator_getChunkForSize(allocator, actualBlockSize);
         } else {
-            chunk = LargeAllocator_getChunkForSizeOnlyThread(allocator, actualBlockSize);
-
+            chunk = LargeAllocator_getChunkForSizeOnlyThread(allocator,
+                                                             actualBlockSize);
         }
     }
 

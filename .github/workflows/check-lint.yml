@@ -10,3 +10,5 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: ./scripts/check-lint.sh
+        env:
+          CLANG_FORMAT_PATH: "/usr/lib/llvm-6.0/bin/clang-format"
