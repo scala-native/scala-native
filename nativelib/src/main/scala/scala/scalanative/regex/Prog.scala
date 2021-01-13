@@ -159,13 +159,13 @@ class Prog {
     val out = new StringBuilder()
     var pc  = 0
     while (pc < inst.size()) {
-      val len = out.length()
+      val len = out.length
       out.append(pc)
       if (pc == start) {
         out.append('*')
       }
       out
-        .append("        ".substring(out.length() - len))
+        .append("        ".substring(out.length - len))
         .append(inst.get(pc))
         .append('\n')
       pc += 1
