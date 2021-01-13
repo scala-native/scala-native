@@ -3,7 +3,7 @@ package junit.java.lang
 import org.junit.Assert._
 import org.junit.Test
 
-class StringSuiteJDK11 {
+class StringTestJDK11 {
   @Test def stripTest(): Unit = {
     assertEquals("", "".strip())
     assertEquals("hallo", "   hallo".stripLeading())
