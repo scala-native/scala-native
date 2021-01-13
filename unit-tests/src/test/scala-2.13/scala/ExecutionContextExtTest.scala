@@ -11,7 +11,8 @@ class ExecutionContextExtTest {
 
   @Test
   def testOpportunisticTest(): Unit = {
-    implicit val opportunistic: ExecutionContext = ExecutionContext.opportunistic
+    implicit val opportunistic: ExecutionContext =
+      ExecutionContext.opportunistic
 
     assertNotNull(opportunistic)
     assertEquals(ExecutionContext.global, opportunistic)
@@ -20,7 +21,8 @@ class ExecutionContextExtTest {
     Future {
       x = 90
     }
-    assertEquals(0, x) // always true, logic in Future would be executed after this Runnable ends
+    // always true, logic in Future would be executed after this Runnable ends
+    assertEquals(0, x)
     x = 40
     assertEquals(40, x)
   }
@@ -36,7 +38,8 @@ class ExecutionContextExtTest {
     Future {
       x = 90
     }
-    assertEquals(90, x) // always true, logic in Future would be executed in this thread before continuing
+    // always true, logic in Future would be executed in this thread before continuing
+    assertEquals(90, x)
     x = 40
     assertEquals(40, x)
   }
