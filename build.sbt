@@ -14,13 +14,6 @@ def projectName(project: sbt.ResolvedProject): String = {
   convertCamelKebab(project.id)
 }
 
-def matchesScalaVersion(versionString: String)(
-    pred: (Int, Int, Int) => Boolean): Boolean = {
-  val (mainVersion, suffix)             = versionString.span(c => c.isDigit || c == '.')
-  val Array(scalaVersion, major, minor) = mainVersion.split('.').map(_.toInt)
-  pred(scalaVersion, major, minor)
-}
-
 // Provide consistent project name pattern.
 lazy val nameSettings: Seq[Setting[_]] = Seq(
   name := projectName(thisProject.value) // Maven <name>
@@ -521,17 +514,17 @@ lazy val scalalib =
       scalacOptions += "-language:implicitConversions",
       scalacOptions += "-language:higherKinds",
       /* Used to disable fatal warnings due to problems with compilation of `@nowarn` annotation */
-      scalacOptions := Def.task {
-        val prev = scalacOptions.value
-        val shouldSkipFatalWarnings = {
-          matchesScalaVersion(scalaVersion.value) {
-            case (2, 12, minor) => minor >= 13
-            case _              => false
-          }
+      scalacOptions --= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 12))
+              if scalaVersion.value
+                .stripPrefix("2.12.")
+                .takeWhile(_.isDigit)
+                .toInt >= 13 =>
+            Seq("-Xfatal-warnings")
+          case _ => Nil
         }
-        if (shouldSkipFatalWarnings) prev.filter(_ != "-Xfatal-warnings")
-        else prev
-      }.value
+      }
     )
     .settings(mavenPublishSettings)
     .settings(disabledDocsSettings)
