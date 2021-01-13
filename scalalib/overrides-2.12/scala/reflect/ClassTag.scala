@@ -53,7 +53,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   @transient private[scala] lazy val emptyArray: Array[T] =
     newArray(0)
 
-    @transient private[scala] lazy val emptyWrappedArray: mutable.WrappedArray[T] =
+  @transient private[scala] lazy val emptyWrappedArray: mutable.WrappedArray[T] =
     mutable.WrappedArray.make[T](emptyArray)
 
   // please, don't add any APIs here, like it was with `newWrappedArray` and `newArrayBuilder`
