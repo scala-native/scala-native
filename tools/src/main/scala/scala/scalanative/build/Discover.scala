@@ -27,17 +27,17 @@ object Discover {
   def GC(): GC =
     getenv("SCALANATIVE_GC").map(build.GC(_)).getOrElse(build.GC.default)
 
-  /** Find the newest compatible clang binary. */
+  /** Use the clang binary on the path or via CLANG_PATH env var. */
   def clang(): Path = {
-    val path = discover("clang", clangVersions)
-    checkThatClangIsRecentEnough(path)
+    val path = discover("clang", "CLANG_PATH")
+    checkClangVersion(path)
     path
   }
 
-  /** Find the newest compatible clang++ binary. */
+  /** Use the clang++ binary on the path or via CLANGPP_PATH env var. */
   def clangpp(): Path = {
-    val path = discover("clang++", clangVersions)
-    checkThatClangIsRecentEnough(path)
+    val path = discover("clang++", "CLANGPP_PATH")
+    checkClangVersion(path)
     path
   }
 
@@ -79,91 +79,71 @@ object Discover {
     libs
   }
 
-  /** Tests whether the clang compiler is recent enough.
-   *  It is determined through looking up a built-in #define which
-   *  is more reliable than testing for a specific version.
+  /** Tests whether the clang compiler is greater or equal to the
+   *  minumum version required.
    */
-  private[scalanative] def checkThatClangIsRecentEnough(
-      pathToClangBinary: Path): Unit = {
-    def maybePath(p: Path) = p match {
-      case path if Files.exists(path) => Some(path.abs)
-      case none                       => None
+  private[scalanative] def checkClangVersion(pathToClangBinary: Path): Unit = {
+    def versionMajorFull(clang: String): (Int, String) = {
+      val versionCommand = s"$clang --version"
+      val versionString = Process(versionCommand)
+        .lineStream_!(silentLogger())
+        .headOption
+        .getOrElse {
+          throw new BuildException(
+            s"""Problem running '$versionCommand'. Please check clang setup.
+                 |Refer to ($docSetup)""".stripMargin)
+        }
+      // Apple macOS clang is different vs brew installed or Linux
+      // Apple LLVM version 10.0.1 (clang-1001.0.46.4)
+      // clang version 11.0.0
+      try {
+        val versionArray = versionString.split(" ")
+        val versionIndex = versionArray.indexWhere(_.equals("version"))
+        val version      = versionArray(versionIndex + 1)
+        val majorVersion = version.split("\\.").head
+        (majorVersion.toInt, version)
+      } catch {
+        case t: Throwable =>
+          throw new BuildException(s"""Output from '$versionCommand' unexpected.
+                 |Was expecting '... version n.n.n ...'.
+                 |Got '$versionString'.
+                 |Cause: ${t}""".stripMargin)
+      }
     }
 
-    def definesBuiltIn(
-        pathToClangBinary: Option[String]): Option[Seq[String]] = {
-      def commandLineToListBuiltInDefines(clang: String) =
-        Process(Seq("echo", "")) #| Process(Seq(clang, "-dM", "-E", "-"))
-      def splitIntoLines(s: String): Array[String] =
-        s.split(f"%n")
-      def removeLeadingDefine(s: String): String =
-        s.substring(s.indexOf(' ') + 1)
+    val (majorVersion, version) = versionMajorFull(pathToClangBinary.abs)
 
-      for {
-        clang <- pathToClangBinary
-        output = commandLineToListBuiltInDefines(clang).!!
-        lines  = splitIntoLines(output)
-      } yield lines map removeLeadingDefine
-    }
-
-    val clang                = maybePath(pathToClangBinary)
-    val defines: Seq[String] = definesBuiltIn(clang).to[Seq].flatten
-    val clangIsRecentEnough =
-      defines.contains("__DECIMAL_DIG__ __LDBL_DECIMAL_DIG__")
-
-    if (!clangIsRecentEnough) {
+    if (majorVersion < clangMinVersion) {
       throw new BuildException(
-        s"No recent installation of clang found " +
-          s"at $pathToClangBinary.\nSee http://scala-native.readthedocs.io" +
-          s"/en/latest/user/setup.html for details.")
+        s"""Minimum version of clang is '$clangMinVersion'.
+             |Discovered version '$version'.
+             |Please refer to ($docSetup)""".stripMargin)
     }
   }
 
-  /** Versions of clang which are known to work with Scala Native. */
-  private[scalanative] val clangVersions =
-    Seq(
-      ("11", ""),
-      ("10", ""),
-      ("9", ""),
-      ("8", ""),
-      ("7", ""),
-      ("6", "0"),
-      ("5", "0")
-    )
+  /** Minimum version of clang */
+  private[scalanative] final val clangMinVersion = 6
 
-  /** Discover concrete binary path using command name and
-   *  a sequence of potential supported versions.
+  /** Link to setup documentation */
+  private[scalanative] val docSetup =
+    "http://www.scala-native.org/en/latest/user/setup.html"
+
+  /** Discover the binary path using environment
+   *  variables or the command from the path.
    */
-  private[scalanative] def discover(
-      binaryName: String,
-      binaryVersions: Seq[(String, String)]): Path = {
-    val docSetup =
-      "http://www.scala-native.org/en/latest/user/setup.html"
-
-    val envName =
-      if (binaryName == "clang") "CLANG"
-      else if (binaryName == "clang++") "CLANGPP"
-      else binaryName
-
-    sys.env.get(s"${envName}_PATH") match {
-      case Some(path) => Paths.get(path)
-      case None => {
-        val binaryNames = binaryVersions.flatMap {
-          case (major, minor) =>
-            val sep = if (minor == "") "" else "."
-            Seq(s"$binaryName$major$minor", s"$binaryName-$major${sep}$minor")
-        } :+ binaryName
-
-        Process("which" +: binaryNames)
-          .lineStream_!(silentLogger())
-          .map(Paths.get(_))
-          .headOption
-          .getOrElse {
-            throw new BuildException(
-              s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang ($docSetup)")
-          }
+  private[scalanative] def discover(binaryName: String,
+                                    envPath: String): Path = {
+    val binaryNameOrPath = sys.env.get(envPath).getOrElse(binaryName)
+    val path = Process(s"which $binaryNameOrPath")
+      .lineStream_!(silentLogger())
+      .map { p => Paths.get(p) }
+      .headOption
+      .getOrElse {
+        throw new BuildException(
+          s"""No '$binaryNameOrPath' found in PATH or via '$envPath' environment variable.
+             |Please refer to ($docSetup)""".stripMargin)
       }
-    }
+    path
   }
 
   private def silentLogger(): ProcessLogger =

@@ -53,7 +53,10 @@ Native has been used with:
     $ brew install llvm
     $ brew install bdw-gc # optional
 
-*Note:* A version of zlib that is sufficiently recent comes with the
+*Note 1:* Xcode should work as an alternative if preferred: 
+https://apps.apple.com/us/app/xcode/id497799835
+
+*Note 2:* A version of zlib that is sufficiently recent comes with the
 installation of macOS.
 
 **Ubuntu**
