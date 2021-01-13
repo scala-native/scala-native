@@ -26,13 +26,10 @@ private[testinterface] class NativeRPC(clientSocket: Socket) extends RPCCore {
         inStream.readInt()
       } catch {
         case _: EOFException => 0 // leave loop
-        case throwable: Throwable =>
-          System.err.println(s"NativeRPC loop failed: $throwable")
-          -1
       }
 
     if (msgLength <= 0) {
-      msgLength
+      0 // Always 0, all errors reported by Exception.
     } else {
       val msg = Array.fill(msgLength)(inStream.readChar).mkString
       handleMessage(msg)
