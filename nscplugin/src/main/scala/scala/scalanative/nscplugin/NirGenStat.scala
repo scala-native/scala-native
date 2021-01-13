@@ -114,7 +114,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       implicit val pos: nir.Position = cd.pos
       genReflectiveInstantiation(cd)
-      genClassFields(sym)
+      genClassFields(cd)
       genMethods(cd)
 
       buf += {
@@ -162,15 +162,17 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genTypeName(psym)
       }
 
-    def genClassFields(sym: Symbol)(implicit pos: nir.Position): Unit = {
+    def genClassFields(cd: ClassDef): Unit = {
+      val sym   = cd.symbol
       val attrs = nir.Attrs(isExtern = sym.isExternModule)
 
       for (f <- sym.info.decls
            if !f.isMethod && f.isTerm && !f.isModule) {
-        val ty   = genType(f.tpe)
-        val name = genFieldName(f)
+        val ty                = genType(f.tpe)
+        val name              = genFieldName(f)
+        val pos: nir.Position = f.pos
 
-        buf += Defn.Var(attrs, name, ty, Val.Zero(ty))
+        buf += Defn.Var(attrs, name, ty, Val.Zero(ty))(pos)
       }
     }
 
