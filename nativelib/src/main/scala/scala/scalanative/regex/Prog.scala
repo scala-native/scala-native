@@ -164,7 +164,7 @@ class Prog {
         out.append('*')
       }
       out
-        .append("        ".substring(out.length - len))
+        .append("        ".substring(out.length() - len))
         .append(inst.get(pc))
         .append('\n')
       pc += 1
