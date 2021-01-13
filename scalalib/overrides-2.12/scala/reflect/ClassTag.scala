@@ -14,6 +14,7 @@ package scala
 package reflect
 
 import java.lang.{ Class => jClass }
+import scala.collection.mutable
 
 /* Override for default scala ClassTag due to missing caching using java.lang.Value.ClassValue */
 
@@ -48,6 +49,13 @@ import java.lang.{ Class => jClass }
  */
 @scala.annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
 trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serializable {
+
+  @transient private[scala] lazy val emptyArray: Array[T] =
+    newArray(0)
+
+    @transient private[scala] lazy val emptyWrappedArray: mutable.WrappedArray[T] =
+    mutable.WrappedArray.make[T](emptyArray)
+
   // please, don't add any APIs here, like it was with `newWrappedArray` and `newArrayBuilder`
   // class tags, and all tags in general, should be as minimalistic as possible
 
