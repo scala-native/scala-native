@@ -168,17 +168,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       for (f <- sym.info.decls
            if !f.isMethod && f.isTerm && !f.isModule) {
-        val ty   = genType(f.tpe)
-        val name = genFieldName(f)
-        val pos: nir.Position = {
-          // In 2.12+ ValDef containing field f would always be contained in ClassDef even if it is defined in other class/file
-          // In 2.11 we use field symbol position
-          cd.find(_.symbol == f)
-            .map(_.pos)
-            .filter(_ != NoPosition)
-            .map(toNirPosition)
-            .getOrElse(f.pos)
-        }
+        val ty                = genType(f.tpe)
+        val name              = genFieldName(f)
+        val pos: nir.Position = f.pos
 
         buf += Defn.Var(attrs, name, ty, Val.Zero(ty))(pos)
       }
