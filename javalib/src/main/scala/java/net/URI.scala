@@ -943,7 +943,7 @@ final class URI private () extends Comparable[URI] with Serializable {
     }
     if (!path.endsWith("/") && seglist.length > 0 &&
         include(seglist.length - 1)) {
-      newpath.deleteCharAt(newpath.length - 1)
+      newpath.deleteCharAt(newpath.size - 1)
     }
     var result: String = newpath.toString
     // prepend "./" to normalize
