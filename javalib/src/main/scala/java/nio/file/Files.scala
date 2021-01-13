@@ -456,7 +456,7 @@ object Files {
       if (read == -1) throw UnixException(path.toString, errno.errno)
       bytes.asInstanceOf[Array[Byte]]
     } finally {
-      fcntl.close(fd)
+      unistd.close(fd)
     }
   }
 
