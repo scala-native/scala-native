@@ -512,7 +512,19 @@ lazy val scalalib =
       scalacOptions += "-language:postfixOps",
       // The option below is needed since Scala 2.13.0.
       scalacOptions += "-language:implicitConversions",
-      scalacOptions += "-language:higherKinds"
+      scalacOptions += "-language:higherKinds",
+      /* Used to disable fatal warnings due to problems with compilation of `@nowarn` annotation */
+      scalacOptions --= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 12))
+              if scalaVersion.value
+                .stripPrefix("2.12.")
+                .takeWhile(_.isDigit)
+                .toInt >= 13 =>
+            Seq("-Xfatal-warnings")
+          case _ => Nil
+        }
+      }
     )
     .settings(mavenPublishSettings)
     .settings(disabledDocsSettings)
