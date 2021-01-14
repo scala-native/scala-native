@@ -96,11 +96,6 @@ def main(
   os.write(pathToReleaseNotes, releaseNotes)
 }
 
-def todayString: String = {
-  val formatter = new SimpleDateFormat("M dd, yyyy");
-  formatter.format(new Date());
-}
-
 def today: String = {
   val formatter = new SimpleDateFormat("yyyy-MM-dd");
   formatter.format(new Date());
@@ -115,7 +110,7 @@ def template(
     contributos: List[String]
 ) = {
   s"""|
-      |# Release $lastTag ($todayString)
+      |# Release $lastTag ($today)
       |
       |We're happy to announce the release of Scala Native $lastTag, which
       |
