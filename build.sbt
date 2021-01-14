@@ -740,6 +740,25 @@ lazy val testingCompiler =
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
       ),
+      unmanagedSourceDirectories in Compile ++= {
+        val oldCompat: File = baseDirectory.value / "src/main/compat-old"
+        val newCompat: File = baseDirectory.value / "src/main/compat-new"
+        CrossVersion
+          .partialVersion(scalaVersion.value)
+          .collect {
+            case (2, 11) => oldCompat
+            case (2, 12) =>
+              val revision =
+                scalaVersion.value
+                  .stripPrefix("2.12.")
+                  .takeWhile(_.isDigit)
+                  .toInt
+              if (revision < 13) oldCompat
+              else newCompat
+            case (2, 13) => newCompat
+          }
+          .toSeq
+      },
       exportJars := true
     )
     .dependsOn(testingCompilerInterface)
