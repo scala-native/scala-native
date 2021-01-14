@@ -139,17 +139,6 @@ def template(
       |</tbody>
       |</table>
       |
-      |Scala Native is an optimizing ahead-of-time compiler and lightweight managed runtime designed specifically for Scala.
-      |
-      |Scala Native is developed at the [Scala Center](https://scala.epfl.ch/) and with the help from [VirtusLab](https://virtuslab.com)
-      |along with contributors from the community.
-      |
-      |## TL;DR
-      |
-      |Check out the documentation at [https://scala-native.readthedocs.io/](https://scala-native.readthedocs.io/en/latest)
-      |
-      |-
-      |
       |## Contributors
       |
       |Big thanks to everybody who contributed to this release or reported an issue!
