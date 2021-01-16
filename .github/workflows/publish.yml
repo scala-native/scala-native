@@ -1,0 +1,56 @@
+name: Release
+on:
+  # This workflow starts after completion of all tests in master branch.
+  # It would only occur after merging PR or directly pushing to master
+  workflow_run:
+    workflows: ["Run Tests"]
+    branches: [master]
+    types:
+      - completed
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 0
+
+        # Get latest results for test CI in branch master. First one in array is array.
+        # Check if result SHA matches current commit SHA. If its not probably there was new push to master and we do not want to publish
+        # If Run Tests workflow completed successfully conclusion would be set to "success"
+        # This allows us to not rerun tests and be sure that release would be published without known errors.
+        # We are storing output in the file to reuse it.
+        # We cannot store it in variable as it lead to errors when testing locally
+      - name: Check CI status
+        run: |
+          resultFile="/tmp/test_results.json"
+          curl -sSL -X GET -G \
+            -H 'Accept: application/vnd.github.v3+json' \
+            -d 'branch=master' \
+            -d 'event=push' \
+            -o ${resultFile} \
+            https://api.github.com/repos/scala-native/scala-native/actions/workflows/run-tests.yml/runs
+
+          testStatus=$(cat ${resultFile} | jq -r '.workflow_runs[0] | "\(.conclusion)"')
+          commitSHA="$(cat ${resultFile} | jq -r '.workflow_runs[0] | "\(.head_sha)"')"
+          echo "::set-output name=status::${testStatus}"
+          echo "::set-output name=sha::${commitSHA}
+        id: check
+
+      - name: Abort if CI not successful
+        if: steps.check.outputs.status != 'success' || steps.check.outputs.sha != ${{ github.sha }}
+        run: |
+          echo "${{ steps.check.outputs.status }}"
+          echo "${{ steps.check.outputs.sha }} != ${{ github.sha }}"
+          exit 1
+
+      # This secrets needs to be set up in ScalaNative repo settings
+      - uses: olafurpg/setup-scala@v10
+      - uses: olafurpg/setup-gpg@v3
+      - run: sbt ci-release
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
