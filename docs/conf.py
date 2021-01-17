@@ -20,6 +20,12 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+from datetime import date
+
+def generateScalaNativeCurrentYear():
+    ## encode/decode ugliness is to handle both python 2.7 and 3.n
+    return str(date.today().year).encode("utf-8").decode("utf-8")
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -52,7 +58,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Scala Native'
-copyright = u'2016-2020, EPFL'
+copyright = u'2016-' + generateScalaNativeCurrentYear() + u', EPFL'
 
 # author must be defined to keep "make latexpdf" happy but the definition
 # # in 'latex_documents' section below appears to be the one actively used.
