@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Scala Native'
-copyright = u'2016-2020, EPFL'
+copyright = u'2016-2021, EPFL'
 
 # author must be defined to keep "make latexpdf" happy but the definition
 # # in 'latex_documents' section below appears to be the one actively used.
