@@ -658,6 +658,8 @@ lazy val scalalib =
             !path.endsWith(".class")
         }
       },
+      // Sources in scalalib are only internal overrides, we don't include them in the resulting sources jar
+      Compile / packageSrc / mappings := Seq.empty,
       exportJars := true
     )
     .dependsOn(nscplugin % "plugin", auxlib, nativelib, javalib)
