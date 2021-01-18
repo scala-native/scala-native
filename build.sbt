@@ -658,14 +658,8 @@ lazy val scalalib =
             !path.endsWith(".class")
         }
       },
-      Compile / packageSrc / mappings := {
-        // Filter out overrides with duplicate names, mappings should include only used sources
-        val previous    = (Compile / packageSrc / mappings).value
-        val usedSources = (Compile / sources).value
-        previous.filter {
-          case (file, _) => usedSources.contains(file)
-        }
-      },
+      // Sources in scalalib are only internal overrides, we don't include them in the resulting sources jar
+      Compile / packageSrc / mappings := Seq.empty,
       exportJars := true
     )
     .dependsOn(nscplugin % "plugin", auxlib, nativelib, javalib)
