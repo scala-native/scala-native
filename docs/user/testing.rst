@@ -13,6 +13,9 @@ To enable JUnit support, add the following lines to your `build.sbt` file:
 ..       allows this file to reference the Single Point of Truth in
 ..       docs/config.py for the Scala Version. That is a big reduction
 ..       in the likelihood of version skew.
+..       A user can "cut & paste" from the output but the SN Release Manager
+..       need not change this source.
+..
 ..       parsed-literal does not allow scala highlighting, so there is a
 ..       slight visual change in the output. Can you even detect it?
 
