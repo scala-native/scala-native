@@ -16,17 +16,17 @@ This generates the following files:
 
 * ``project/plugins.sbt`` to add a plugin dependency::
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.0-M2")
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.0")
 
 * ``project/build.properties`` to specify the sbt version::
 
-    sbt.version = 1.4.1
+    sbt.version = 1.4.5
 
 * ``build.sbt`` to enable the plugin and specify Scala version::
 
     enablePlugins(ScalaNativePlugin)
 
-    scalaVersion := "2.11.12"
+    scalaVersion := "2.13.4"
 
 * ``src/main/scala/Main.scala`` with minimal application::
 
