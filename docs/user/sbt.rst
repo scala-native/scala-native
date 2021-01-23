@@ -33,7 +33,8 @@ output! Please refer to the :ref:`faq` if you encounter any problems.
 
 The generated project is an easy starting point. After the first run, you
 should review the software versions in the generated files and, possibly,
-update or customize them.
+update or customize them. `Scaladex <https://index.scala-lang.org/>`_
+is a useful resource for software versions.
 
 Scala versions
 --------------
