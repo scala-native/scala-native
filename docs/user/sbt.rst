@@ -8,25 +8,18 @@ If you have reached this section you probably have a system that is now able to 
 Minimal sbt project
 -------------------
 
-The easiest way to make a fresh project is to use our official gitter8 template::
+The easiest way to make a fresh project is to use our official gitter8
+template.  In an empty working directory, execute::
 
     sbt new scala-native/scala-native.g8
 
-This generates the following files:
+This generates a basic project containing the following files:
 
-* ``project/plugins.sbt`` to add a plugin dependency::
+* ``project/plugins.sbt`` to add a plugin dependency and version.
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.0-M2")
+* ``project/build.properties`` to specify the sbt version.
 
-* ``project/build.properties`` to specify the sbt version::
-
-    sbt.version = 1.4.1
-
-* ``build.sbt`` to enable the plugin and specify Scala version::
-
-    enablePlugins(ScalaNativePlugin)
-
-    scalaVersion := "2.11.12"
+* ``build.sbt`` to enable the plugin and specify Scala version.
 
 * ``src/main/scala/Main.scala`` with minimal application::
 
@@ -35,8 +28,12 @@ This generates the following files:
         println("Hello, world!")
     }
 
-Now, simply run ``sbt run`` to get everything compiled and have the expected
+Now, run ``sbt run`` to get everything compiled and have the expected
 output! Please refer to the :ref:`faq` if you encounter any problems.
+
+The generated project is an easy starting point. After the first run, you
+should review the software versions in the generated files and, possibly,
+update or customize them.
 
 Scala versions
 --------------
