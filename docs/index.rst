@@ -2,6 +2,8 @@
 Scala Native
 ============
 
+Version |release| 
+
 Scala Native is an optimizing ahead-of-time compiler and lightweight managed
 runtime designed specifically for Scala. It features:
 
