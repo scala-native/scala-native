@@ -13,16 +13,30 @@ template.  In an empty working directory, execute::
 
     sbt new scala-native/scala-native.g8
 
-This generates a basic project containing the following files:
+This will start sbt, prompt for a project name, and then
+use the `.g8 template
+<https://github.com/scala-native/scala-native.g8/tree/master/src/main/g8>`_.
+to generate a basic project.
+First a sub-directory with the project name will be created.
+Then the contents at these template links will be copied to
+the corresponding location in this new project.
 
-* ``project/plugins.sbt`` to add a plugin dependency and version.
+* `project/plugins.sbt
+  <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/plugins.sbt>`_
+  adds the Scala Native plugin dependency and its version.
 
-* ``project/build.properties`` to specify the sbt version.
+* `project/build.properties
+  <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/build.properties>`_
+  specifies the sbt version.
 
-* ``build.sbt`` to enable the plugin and specify Scala version.
+* `build.sbt
+  <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/build.sbt>`_
+  enables the plugin and specifies the Scala version.
 
-* ``src/main/scala/Main.scala`` with minimal application::
-
+* `src/main/scala/Main.scala
+  <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/src/main/scala/Main.scala>`_
+  is a minimal application::
+  
     object Main {
       def main(args: Array[String]): Unit =
         println("Hello, world!")
