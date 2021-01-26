@@ -121,7 +121,7 @@ object Type {
 
   def isPtrBox(ty: Type): Boolean = ty match {
     case refty: Type.RefKind =>
-      box.get(Type.Ref(refty.className)).contains(Type.Ptr)
+      unbox.get(Type.Ref(refty.className)).contains(Type.Ptr)
     case _ =>
       false
   }
