@@ -13,40 +13,58 @@ template.  In an empty working directory, execute::
 
     sbt new scala-native/scala-native.g8
 
-This will start sbt, prompt for a project name, and then
-use the `.g8 template
-<https://github.com/scala-native/scala-native.g8/tree/master/src/main/g8>`_.
-to generate a basic project.
-First a sub-directory with the project name will be created.
-Then the contents at these template links will be copied to
-the corresponding location in this new project.
+This will:
 
-* `project/plugins.sbt
-  <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/plugins.sbt>`_
-  adds the Scala Native plugin dependency and its version.
+* start sbt.
 
-* `project/build.properties
-  <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/build.properties>`_
-  specifies the sbt version.
+* prompt for a project name
 
-* `build.sbt
-  <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/build.sbt>`_
-  enables the plugin and specifies the Scala version.
+* use the `.g8 template
+  <https://github.com/scala-native/scala-native.g8/tree/master/src/main/g8>`_.
+  to generate a basic project with that name.
 
-* `src/main/scala/Main.scala
-  <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/src/main/scala/Main.scala>`_
-  is a minimal application.
-  ::
+* create a project sub-directory with the project name.
+
+* copy the contents at these template links to the corresponding location
+  in this new project sub-directory.
+
+  * `project/plugins.sbt
+    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/plugins.sbt>`_
+    adds the Scala Native plugin dependency and its version.
+
+  * `project/build.properties
+    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/build.properties>`_
+    specifies the sbt version.
+
+  * `build.sbt
+    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/build.sbt>`_
+    enables the plugin and specifies the Scala version.
+
+  * `src/main/scala/Main.scala
+    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/src/main/scala/Main.scala>`_
+    is a minimal application.
+    ::
      
-    object Main {
-      def main(args: Array[String]): Unit =
-        println("Hello, world!")
-    }
+      object Main {
+        def main(args: Array[String]): Unit =
+          println("Hello, world!")
+      }
+      
 
-Now, run ``sbt run`` to get everything compiled and have the expected
-output! Please refer to the :ref:`faq` if you encounter any problems.
+To use the new project:
 
-The generated project is an easy starting point. After the first run, you
+* Change the current working directory to the new project directory.
+
+   - For example, on linux with a project named AnswerToProjectNamePrompt,
+     type ``cd AnswerToProjectNamePrompt``.
+
+* Type ``sbt run``.
+
+This will get everything compiled and should have the expected output!
+
+Please refer to the :ref:`faq` if you encounter any problems.
+
+The generated project is a starting point. After the first run, you
 should review the software versions in the generated files and, possibly,
 update or customize them. `Scaladex <https://index.scala-lang.org/>`_
 is a useful resource for software versions.
