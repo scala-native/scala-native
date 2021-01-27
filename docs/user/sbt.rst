@@ -35,8 +35,9 @@ the corresponding location in this new project.
 
 * `src/main/scala/Main.scala
   <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/src/main/scala/Main.scala>`_
-  is a minimal application::
-  
+  is a minimal application.
+  ::
+     
     object Main {
       def main(args: Array[String]): Unit =
         println("Hello, world!")
