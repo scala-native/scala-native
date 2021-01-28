@@ -31,6 +31,11 @@ trait Log { self: Interflow =>
       println(("  " * contextDepth()) + msg)
     }
 
+  def withLogger(f: (String => Unit) => Unit): Unit =
+    if (show) {
+      f(x => log(x))
+    }
+
   def debug[T](msg: String)(f: => T): T = {
     log(s"computing $msg")
     val res = f
