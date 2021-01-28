@@ -101,8 +101,8 @@ final class MergeProcessor(insts: Array[Inst],
           def mergeLocal(local: Local, value: Val): Unit = {
             val values = mutable.UnrolledBuffer.empty[Val]
             states.foreach { s =>
-              if (s.locals.contains(local)) {
-                values += s.locals(local)
+              s.locals.get(local).foreach { l =>
+                values += l
               }
             }
             if (states.size == values.size) {
