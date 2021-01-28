@@ -31,6 +31,8 @@ trait Log { self: Interflow =>
       println(("  " * contextDepth()) + msg)
     }
 
+  /* Performance Note: Useful to wrap large functions that are used only for
+   * logging, as the code is not executed when show is false. */
   def withLogger(f: (String => Unit) => Unit): Unit =
     if (show) {
       f(x => log(x))
