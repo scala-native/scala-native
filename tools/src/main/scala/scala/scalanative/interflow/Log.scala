@@ -6,18 +6,17 @@ trait Log { self: Interflow =>
     false
 
   def in[T](msg: String)(f: => T): T = {
-    if (show) {
-      log(msg)
-    }
+    log(msg)
     pushContext(msg)
     try {
-      val start = System.nanoTime
-      val res   = f
-      val end   = System.nanoTime
       if (show) {
+        val start = System.nanoTime
+        val res   = f
+        val end   = System.nanoTime
         log(s"done $msg (${(end - start) / 1000000D})")
+        res
       }
-      res
+      else f
     } catch {
       case e: Throwable =>
         log("unwinding " + msg + " due to: " + e.toString)
@@ -27,7 +26,7 @@ trait Log { self: Interflow =>
     }
   }
 
-  def log(msg: String): Unit =
+  def log(msg: => String): Unit =
     if (show) {
       println(("  " * contextDepth()) + msg)
     }
