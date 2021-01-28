@@ -129,9 +129,6 @@ private[scalanative] object LLVM {
         Files.delete(opath)
     }
 
-    val fltoOpt   = flto(config)
-    val targetOpt = target(config)
-
     // generate .o files for all included source files in parallel
     includePaths.par.map { path =>
       val opath   = path + oExt
@@ -140,14 +137,17 @@ private[scalanative] object LLVM {
         val isCpp    = path.endsWith(cppExt)
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
-        val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
-        val compilec =
-          Seq(compiler) ++ fltoOpt ++ flags ++ targetOpt ++
+        val flags    = Seq(stdflag, "-fvisibility=hidden") ++ config.compileOptions
+        val compilec: Seq[String] = {
+          Seq(compiler) ++
+            buildCompileOpts(config) ++ target(config) ++ flags ++
             Seq("-c", path, "-o", opath)
+        }
 
         config.logger.running(compilec)
-        val result = Process(compilec, config.workdir.toFile) ! Logger
-          .toProcessLogger(config.logger)
+        val result = Process(compilec, config.workdir.toFile) !
+          Logger.toProcessLogger(config.logger)
+
         if (result != 0) {
           sys.error("Failed to compile native library runtime code.")
         }
@@ -171,17 +171,18 @@ private[scalanative] object LLVM {
         case Mode.ReleaseFull => "-O3"
       }
 
-    val opts    = Seq(optimizationOpt) ++ target(config) ++ config.compileOptions
-    val fltoOpt = flto(config)
+    val opts =
+      Seq(optimizationOpt) ++ buildCompileOpts(config) ++ target(config) ++ config.compileOptions
 
     llPaths.par.map { ll =>
       val apppath = ll.abs
       val outpath = apppath + oExt
-      val compile =
-        Seq(config.clang.abs) ++ fltoOpt ++ Seq("-c", apppath, "-o", outpath) ++ opts
+      val compile: Seq[String] =
+        config.clang.abs +: opts ++: Seq("-c", apppath, "-o", outpath)
+
       config.logger.running(compile)
-      Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
-        config.logger)
+      Process(compile, config.workdir.toFile) !
+        Logger.toProcessLogger(config.logger)
       Paths.get(outpath)
     }.seq
   }
@@ -201,27 +202,36 @@ private[scalanative] object LLVM {
            linkerResult: linker.Result,
            objectsPaths: Seq[Path],
            outpath: Path): Path = {
-    val workdir = config.workdir
-    val links = {
-      val srclinks = linkerResult.links.map(_.name)
-      val gclinks  = config.gc.links
-      // We need extra linking dependencies for:
-      // * libdl for our vendored libunwind implementation.
-      // * libpthread for process APIs and parallel garbage collection.
-      "pthread" +: "dl" +: srclinks ++: gclinks
+
+    val inputs = objectsPaths.map(_.abs)
+    val output = Seq("-o", outpath.abs)
+
+    val command = {
+      val cmd: Seq[String] = config.compilerConfig.buildTarget match {
+        case BuildTarget.Application =>
+          val links = {
+            val srclinks = linkerResult.links.map(_.name)
+            val gclinks  = config.gc.links
+            // We need extra linking dependencies for:
+            // * libdl for our vendored libunwind implementation.
+            // * libpthread for process APIs and parallel garbage collection.
+            "pthread" +: "dl" +: srclinks ++: gclinks
+          }.map("-l" + _)
+
+          config.clangPP.abs +: flto(config) ++: links :+ "-rdynamic"
+
+        case BuildTarget.SharedLibrary =>
+          config.clangPP.abs :: "-shared" :: Nil
+      }
+      cmd ++ output ++ target(config) ++ config.linkingOptions ++ inputs
     }
-    val linkopts = config.linkingOptions ++ links.map("-l" + _)
-    val flags =
-      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ target(config)
-    val paths   = objectsPaths.map(_.abs)
-    val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
     val ltoName = lto(config).getOrElse("none")
 
     config.logger.time(
-      s"Linking native code (${config.gc.name} gc, $ltoName lto)") {
-      config.logger.running(compile)
-      Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
-        config.logger)
+      s"Linking native code (${config.compilerConfig.buildTarget}, ${config.gc.name} gc, $ltoName lto)") {
+      config.logger.running(command)
+      Process(command, config.workdir.toFile) !
+        Logger.toProcessLogger(config.logger)
     }
     outpath
   }
@@ -242,5 +252,11 @@ private[scalanative] object LLVM {
     config.compilerConfig.targetTriple match {
       case Some(tt) => Seq("-target", tt)
       case None     => Seq("-Wno-override-module")
+    }
+
+  private def buildCompileOpts(config: Config): Seq[String] =
+    config.compilerConfig.buildTarget match {
+      case BuildTarget.Application   => flto(config)
+      case BuildTarget.SharedLibrary => "-fPIC" :: Nil
     }
 }

@@ -16,11 +16,11 @@ private[scalanative] object ScalaNative {
    *  based on given configuration.
    */
   def entries(config: Config): Seq[Global] = {
-    val mainClass = Global.Top(config.mainClass)
-    val entry =
-      mainClass.member(
-        Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
-    entry +: CodeGen.depends
+    val mainClass = config.mainClass
+      .map(Global.Top)
+      .map(_.member(Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit))))
+
+    mainClass ++: CodeGen.depends
   }
 
   /** Given the classpath and main entry point, link under closed-world
