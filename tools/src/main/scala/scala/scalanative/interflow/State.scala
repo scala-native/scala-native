@@ -9,10 +9,10 @@ import scalanative.codegen.Lower
 
 final class State(block: Local) {
   var fresh   = Fresh(block.id)
-  var heap    = mutable.Map.empty[Addr, Instance]
+  var heap    = mutable.LongMap.empty[Instance]
   var locals  = mutable.Map.empty[Local, Val]
-  var delayed = mutable.Map.empty[Op, Val]
-  var emitted = mutable.Map.empty[Op, Val]
+  var delayed = mutable.AnyRefMap.empty[Op, Val]
+  var emitted = mutable.AnyRefMap.empty[Op, Val]
   var emit    = new nir.Buffer()(fresh)
 
   private def alloc(kind: Kind, cls: Class, values: Array[Val]): Addr = {
@@ -209,7 +209,7 @@ final class State(block: Local) {
   }
   def fullClone(block: Local): State = {
     val newstate = new State(block)
-    newstate.heap = heap.map { case (k, v) => (k, v.clone()) }
+    newstate.heap = heap.mapValuesNow(_.clone())
     newstate.locals = locals.clone()
     newstate.delayed = delayed.clone()
     newstate.emitted = emitted.clone()

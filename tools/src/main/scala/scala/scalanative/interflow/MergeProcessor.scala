@@ -69,10 +69,10 @@ final class MergeProcessor(insts: Array[Inst],
 
         var mergeFresh   = Fresh(merge.id)
         val mergeLocals  = mutable.Map.empty[Local, Val]
-        val mergeHeap    = mutable.Map.empty[Addr, Instance]
+        val mergeHeap    = mutable.LongMap.empty[Instance]
         val mergePhis    = mutable.UnrolledBuffer.empty[MergePhi]
-        val mergeDelayed = mutable.Map.empty[Op, Val]
-        val mergeEmitted = mutable.Map.empty[Op, Val]
+        val mergeDelayed = mutable.AnyRefMap.empty[Op, Val]
+        val mergeEmitted = mutable.AnyRefMap.empty[Op, Val]
         val newEscapes   = mutable.Set.empty[Addr]
 
         def mergePhi(values: Seq[Val], bound: Option[Type]): Val = {
