@@ -75,7 +75,8 @@ private[scalanative] object LLVM {
     val flags = opt(config) +: "-fvisibility=hidden" +:
       stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
     val compilec =
-      Seq(compiler) ++ flto(config) ++ flags ++
+      Seq(compiler) ++
+            buildCompileOpts(config) ++ flags ++
         asan(config) ++ target(config) ++
         Seq("-c", inpath, "-o", outpath)
 
@@ -114,40 +115,49 @@ private[scalanative] object LLVM {
     // don't link if no changes
     if (!needsLinking(objectsPaths, outpath)) return outpath
 
-    val links = {
-      val srclinks = linkerResult.links.collect {
-        case Link("z") if config.targetsWindows => "zlib"
-        case Link(name)                         => name
-      }
-      val gclinks = config.gc.links
-      // We need extra linking dependencies for:
-      // * libdl for our vendored libunwind implementation.
-      // * libpthread for process APIs and parallel garbage collection.
-      // * Dbghelp for windows implementation of unwind libunwind API
-      val platformsLinks =
-        if (config.targetsWindows) Seq("Dbghelp")
-        else Seq("pthread", "dl")
-      platformsLinks ++ srclinks ++ gclinks
-    }
-    val linkopts = config.linkingOptions ++ links.map("-l" + _)
-    val flags = {
-      val platformFlags =
-        if (config.targetsWindows) {
-          // https://github.com/scala-native/scala-native/issues/2372
-          // When using LTO make sure to use lld linker instead of default one
-          // LLD might find some duplicated symbols defined in both C and C++,
-          // runtime libraries (libUCRT, libCPMT), we ignore this warnings.
-          val ltoSupport = config.compilerConfig.lto match {
-            case LTO.None => Nil
-            case _        => Seq("-fuse-ld=lld", "-Wl,/force:multiple")
+    val targetFlags = config.compilerConfig.buildTarget match {
+      case BuildTarget.Application =>
+        val links = {
+          val srclinks = linkerResult.links.collect {
+            case Link("z") if config.targetsWindows => "zlib"
+            case Link(name) => name
           }
-          Seq("-g") ++ ltoSupport
-        } else Seq("-rdynamic")
-      flto(config) ++ platformFlags ++
-        Seq("-o", outpath.abs) ++
-        asan(config) ++ target(config)
+          val gclinks = config.gc.links
+          // We need extra linking dependencies for:
+          // * libdl for our vendored libunwind implementation.
+          // * libpthread for process APIs and parallel garbage collection.
+          // * Dbghelp for windows implementation of unwind libunwind API
+          val platformsLinks =
+          if (config.targetsWindows) Seq("Dbghelp")
+          else Seq("pthread", "dl")
+          platformsLinks ++ srclinks ++ gclinks
+        }
+        val linkopts = config.linkingOptions ++ links.map("-l" + _)
+        val flags = {
+          val platformFlags =
+            if (config.targetsWindows) {
+              // https://github.com/scala-native/scala-native/issues/2372
+              // When using LTO make sure to use lld linker instead of default one
+              // LLD might find some duplicated symbols defined in both C and C++,
+              // runtime libraries (libUCRT, libCPMT), we ignore this warnings.
+              val ltoSupport = config.compilerConfig.lto match {
+                case LTO.None => Nil
+                case _ => Seq("-fuse-ld=lld", "-Wl,/force:multiple")
+              }
+              Seq("-g") ++ ltoSupport
+            } else Seq("-rdynamic")
+          flto(config) ++ platformFlags ++
+            Seq("-o", outpath.abs) ++
+            asan(config) ++ target(config)
+        }
+        val paths = objectsPaths.map(_.abs)
+
+      case BuildTarget.SharedLibrary =>
+        Seq("-shared") ++
+          target(config) ++
+          inputs ++ output ++
+          config.linkingOptions
     }
-    val paths = objectsPaths.map(_.abs)
     // it's a fix for passing too many file paths to the clang compiler,
     // If too many packages are compiled and the platform is windows, windows
     // terminal doesn't support too many characters, which will cause an error.
@@ -231,5 +241,11 @@ private[scalanative] object LLVM {
       case Mode.Debug       => "-O0"
       case Mode.ReleaseFast => "-O2"
       case Mode.ReleaseFull => "-O3"
+    }
+
+  private def buildCompileOpts(config: Config): Seq[String] =
+    config.compilerConfig.buildTarget match {
+      case BuildTarget.Application   => flto(config)
+      case BuildTarget.SharedLibrary => "-fPIC" :: Nil
     }
 }

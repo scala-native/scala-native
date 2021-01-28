@@ -8,7 +8,7 @@ import sbt._
 import sbt.complete.DefaultParsers._
 import scala.annotation.tailrec
 import scala.scalanative.util.Scope
-import scala.scalanative.build.{Build, BuildException, Config, Discover}
+import scala.scalanative.build.{Build, BuildException, BuildTarget, Config, Discover}
 import scala.scalanative.linker.LinkingException
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
   ScalaNativeCrossVersion => _,
@@ -123,8 +123,12 @@ object ScalaNativePluginInternal {
     },
     nativeLink := {
       val classpath = fullClasspath.value.map(_.data.toPath)
-      val mainClass = selectMainClass.value.getOrElse {
-        throw new MessageOnlyException("No main class detected.")
+      val mainClass = nativeConfig.value.buildTarget match {
+        case BuildTarget.Application =>
+          selectMainClass.value.orElse {
+              throw new MessageOnlyException("No main class detected.")
+            }
+        case _ => None
       }
       val logger = streams.value.log.toLogger
 
