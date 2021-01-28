@@ -68,7 +68,7 @@ final class MergeProcessor(insts: Array[Inst],
         val headState = states.head
 
         var mergeFresh   = Fresh(merge.id)
-        val mergeLocals  = mutable.Map.empty[Local, Val]
+        val mergeLocals  = mutable.OpenHashMap.empty[Local, Val]
         val mergeHeap    = mutable.LongMap.empty[Instance]
         val mergePhis    = mutable.UnrolledBuffer.empty[MergePhi]
         val mergeDelayed = mutable.AnyRefMap.empty[Op, Val]

@@ -10,7 +10,7 @@ import scalanative.codegen.Lower
 final class State(block: Local) {
   var fresh   = Fresh(block.id)
   var heap    = mutable.LongMap.empty[Instance]
-  var locals  = mutable.Map.empty[Local, Val]
+  var locals  = mutable.OpenHashMap.empty[Local, Val]
   var delayed = mutable.AnyRefMap.empty[Op, Val]
   var emitted = mutable.AnyRefMap.empty[Op, Val]
   var emit    = new nir.Buffer()(fresh)
