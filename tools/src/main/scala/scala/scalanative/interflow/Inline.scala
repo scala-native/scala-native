@@ -20,17 +20,17 @@ trait Inline { self: Interflow =>
       .fold[Boolean] {
         false
       } { defn =>
-        lazy val isCtor = originalName(name) match {
+        def isCtor = originalName(name) match {
           case Global.Member(_, sig) if sig.isCtor || sig.isImplCtor =>
             true
           case _ =>
             false
         }
-        lazy val isSmall =
+        def isSmall =
           defn.insts.size <= 8
         val isExtern =
           defn.attrs.isExtern
-        lazy val hasVirtualArgs =
+        def hasVirtualArgs =
           args.exists(_.isInstanceOf[Val.Virtual])
         val noOpt =
           defn.attrs.opt == Attr.NoOpt
@@ -40,15 +40,15 @@ trait Inline { self: Interflow =>
           defn.attrs.inlineHint == Attr.AlwaysInline
         val hintInline =
           defn.attrs.inlineHint == Attr.InlineHint
-        lazy val isRecursive =
+        def isRecursive =
           hasContext(s"inlining ${name.show}")
-        lazy val isBlacklisted =
+        def isBlacklisted =
           this.isBlacklisted(name)
-        lazy val calleeTooBig =
+        def calleeTooBig =
           defn.insts.size > 8192
-        lazy val callerTooBig =
+        def callerTooBig =
           mergeProcessor.currentSize() > 8192
-        lazy val hasUnwind = defn.insts.exists {
+        def hasUnwind = defn.insts.exists {
           case Inst.Let(_, _, unwind)   => unwind ne Next.None
           case Inst.Throw(_, unwind)    => unwind ne Next.None
           case Inst.Unreachable(unwind) => unwind ne Next.None
