@@ -15,8 +15,7 @@ trait Log { self: Interflow =>
         val end   = System.nanoTime
         log(s"done $msg (${(end - start) / 1000000D})")
         res
-      }
-      else f
+      } else f
     } catch {
       case e: Throwable =>
         log("unwinding " + msg + " due to: " + e.toString)

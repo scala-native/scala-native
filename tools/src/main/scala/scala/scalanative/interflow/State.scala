@@ -8,7 +8,7 @@ import scalanative.linker._
 import scalanative.codegen.Lower
 
 final class State(block: Local) {
-  var fresh   = Fresh(block.id)
+  var fresh = Fresh(block.id)
   /* Performance Note: OpenHashMap/LongMap/AnyRefMap have a faster clone()
    * operation. This really makes a difference on fullClone() */
   var heap    = mutable.LongMap.empty[Instance]
