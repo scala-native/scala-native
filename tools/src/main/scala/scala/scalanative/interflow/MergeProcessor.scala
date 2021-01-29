@@ -101,9 +101,7 @@ final class MergeProcessor(insts: Array[Inst],
           def mergeLocal(local: Local, value: Val): Unit = {
             val values = mutable.UnrolledBuffer.empty[Val]
             states.foreach { s =>
-              s.locals.get(local).foreach { l =>
-                values += l
-              }
+              s.locals.get(local).foreach(values += _ )
             }
             if (states.size == values.size) {
               mergeLocals(local) = mergePhi(values, Some(value.ty))
