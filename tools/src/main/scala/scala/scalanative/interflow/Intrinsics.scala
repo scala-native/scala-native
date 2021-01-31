@@ -15,7 +15,7 @@ trait Intrinsics { self: Interflow =>
     arrayApplyIntrinsics ++ arrayUpdateIntrinsics + arrayLengthIntrinsic
 
   val intrinsics = Set[Global](
-    Rt.GetRawTypeName,
+    Global.Member(Global.Top("java.lang.Object"), Rt.GetClassSig),
     Global.Member(Global.Top("java.lang.Class"), Rt.IsArraySig),
     Global.Member(Global.Top("java.lang.Class"), Rt.IsAssignableFromSig),
     Global.Member(Global.Top("java.lang.Class"), Rt.GetNameSig),
@@ -43,18 +43,18 @@ trait Intrinsics { self: Interflow =>
         Op.Call(ty, Val.Global(name, Type.Ptr), args.map(state.materialize(_))))
 
     sig match {
-      case Rt.GetRawTypeSig =>
+      case Rt.GetClassSig =>
         args match {
-          case Seq(_, VirtualRef(_, cls, _)) =>
-            Some(Val.Global(cls.name, Type.Ptr))
-          case Seq(_, value) =>
+          case Seq(VirtualRef(_, cls, _)) =>
+            Some(Val.Global(cls.name, Rt.Class))
+          case Seq(value) =>
             val ty = value match {
               case InstanceRef(ty) => ty
               case _               => value.ty
             }
             ty match {
               case refty: Type.RefKind if refty.isExact =>
-                Some(Val.Global(refty.className, Type.Ptr))
+                Some(Val.Global(refty.className, Rt.Class))
               case _ =>
                 Some(emit)
             }
@@ -63,22 +63,23 @@ trait Intrinsics { self: Interflow =>
         }
       case Rt.IsArraySig =>
         args match {
-          case Seq(VirtualRef(_, _, Array(Val.Global(clsName, _)))) =>
+          case Seq(Val.Global(clsName, ty)) if ty == Rt.Class =>
             Some(Val.Bool(Type.isArray(clsName)))
           case _ =>
             None
         }
       case Rt.IsAssignableFromSig =>
         args match {
-          case Seq(VirtualRef(_, _, Array(Val.Global(ScopeRef(linfo), _))),
-                   VirtualRef(_, _, Array(Val.Global(ScopeRef(rinfo), _)))) =>
+          case Seq(Val.Global(ScopeRef(linfo), lty),
+                   Val.Global(ScopeRef(rinfo), rty))
+              if lty == Rt.Class && rty == Rt.Class =>
             Some(Val.Bool(rinfo.is(linfo)))
           case _ =>
             None
         }
       case Rt.GetNameSig =>
         args match {
-          case Seq(VirtualRef(_, _, Array(Val.Global(name: Global.Top, _)))) =>
+          case Seq(Val.Global(name: Global.Top, ty)) if ty == Rt.Class =>
             Some(eval(Val.String(name.id)))
           case _ =>
             None

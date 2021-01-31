@@ -17,7 +17,11 @@ class _Object {
   @inline def __toString(): String =
     getClass.getName + "@" + Integer.toHexString(hashCode)
 
-  @inline def __getClass(): _Class[_] = toClass(getRawType(this))
+  @inline def __getClass(): _Class[_] = {
+    val ptr  = castObjectToRawPtr(this)
+    val rtti = loadRawPtr(ptr)
+    castRawPtrToObject(rtti).asInstanceOf[_Class[_]]
+  }
 
   @inline def __notify(): Unit =
     getMonitor(this)._notify()
@@ -50,9 +54,9 @@ class _Object {
   }
 
   protected def __clone(): _Object = {
-    val rawty = getRawType(this)
-    val size  = loadInt(elemRawPtr(rawty, sizeof[Type].toLong)).toULong
-    val clone = GC.alloc(rawty, size)
+    val cls   = __getClass()
+    val size  = cls.size.toULong
+    val clone = GC.alloc(cls.asInstanceOf[Class[_]], size)
     val src   = castObjectToRawPtr(this)
     libc.memcpy(clone, src, size)
     castRawPtrToObject(clone).asInstanceOf[_Object]

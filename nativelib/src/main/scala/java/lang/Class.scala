@@ -19,10 +19,12 @@ object rtti {
 }
 import rtti._
 
-/** @param rawty - Pointer with underlying Rt.Type info */
-final class _Class[A](val rawty: RawPtr) {
-  @alwaysinline private def ty: Ptr[Type] =
-    fromRawPtr[Type](rawty)
+final class _Class[A] {
+  var id: Int           = _
+  var traitId: Int      = _
+  var name: String      = _
+  var size: Int         = _
+  var idRangeUntil: Int = _
 
   def cast(obj: Object): A =
     obj.asInstanceOf[A]
@@ -40,7 +42,7 @@ final class _Class[A](val rawty: RawPtr) {
   }
 
   def getName(): String =
-    ty.name
+    name
 
   def getSimpleName(): String =
     getName().split('.').last.split('$').last
@@ -57,30 +59,29 @@ final class _Class[A](val rawty: RawPtr) {
       is(classOf[ObjectArray])
 
   def isAssignableFrom(that: Class[_]): scala.Boolean =
-    is(that.asInstanceOf[_Class[_]].ty, ty)
+    is(that.asInstanceOf[_Class[_]], this)
 
   def isInstance(obj: Object): scala.Boolean =
-    is(obj.getClass.asInstanceOf[_Class[_]].ty, ty)
+    is(obj.getClass.asInstanceOf[_Class[_]], this)
 
   @alwaysinline private def is(cls: Class[_]): Boolean =
     this eq cls.asInstanceOf[_Class[A]]
 
-  private def is(left: Ptr[Type], right: Ptr[Type]): Boolean =
+  private def is(left: _Class[_], right: _Class[_]): Boolean =
     // This replicates the logic of the compiler-generated instance check
     // that you would normally get if you do (obj: L).isInstanceOf[R],
     // where rtti for L and R are `left` and `right`.
-    if (left.isClass) {
-      if (right.isClass) {
-        val rightCls  = right.asInstanceOf[Ptr[ClassType]]
-        val rightFrom = rightCls.id
-        val rightTo   = rightCls.idRangeUntil
+    if (!left.isInterface()) {
+      if (!right.isInterface()) {
+        val rightFrom = right.id
+        val rightTo   = right.idRangeUntil
         val leftId    = left.id
         leftId >= rightFrom && leftId <= rightTo
       } else {
         __check_class_has_trait(left.id, -right.id - 1)
       }
     } else {
-      if (right.isClass) {
+      if (!right.isInterface()) {
         false
       } else {
         __check_trait_has_trait(-left.id - 1, -right.id - 1)
@@ -88,7 +89,7 @@ final class _Class[A](val rawty: RawPtr) {
     }
 
   def isInterface(): scala.Boolean =
-    !ty.isClass
+    id < 0
 
   def isPrimitive(): scala.Boolean =
     is(classOf[PrimitiveBoolean]) ||
@@ -104,17 +105,17 @@ final class _Class[A](val rawty: RawPtr) {
   @inline override def equals(other: Any): scala.Boolean =
     other match {
       case other: _Class[_] =>
-        rawty == other.rawty
+        this eq other
       case _ =>
         false
     }
 
   @inline override def hashCode: Int =
-    Intrinsics.castRawPtrToLong(rawty).##
+    Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(this)).##
 
   override def toString = {
     val name   = getName()
-    val prefix = if (ty.isClass) "class " else "interface "
+    val prefix = if (isInterface()) "interface " else "class "
     prefix + name
   }
 

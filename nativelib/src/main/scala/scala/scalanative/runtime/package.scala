@@ -6,48 +6,8 @@ import scalanative.runtime.Intrinsics._
 
 package object runtime {
 
-  /** Runtime Type Information. */
-  type Type = CStruct3[Int, String, Class[Any]]
-
-  implicit class TypeOps(val self: Ptr[Type]) extends AnyVal {
-    @alwaysinline def id: Int          = self._1
-    @alwaysinline def name: String     = self._2
-    @alwaysinline def isClass: Boolean = id >= 0
-  }
-
-  /** Class runtime type information. */
-  type ClassType = CStruct3[Type, Int, Int]
-
-  implicit class ClassTypeOps(val self: Ptr[ClassType]) extends AnyVal {
-    @alwaysinline def id: Int            = self._1._1
-    @alwaysinline def name: String       = self._1._2
-    @alwaysinline def size: Int          = self._2
-    @alwaysinline def idRangeUntil: Long = self._3
-  }
-
   /** Used as a stub right hand of intrinsified methods. */
   def intrinsic: Nothing = throwUndefined()
-
-  def toClass(rtti: RawPtr): _Class[_] = {
-    val clsPtr = elemRawPtr(rtti, 16)
-
-    if (loadRawPtr(clsPtr) == null) {
-      val newClass = new _Class[Any](rtti)
-      storeObject(clsPtr, newClass)
-      ClassInstancesRegistry.add(newClass)
-    } else {
-      loadObject(clsPtr).asInstanceOf[_Class[_]]
-    }
-  }
-
-  @alwaysinline def toRawType(cls: Class[_]): RawPtr =
-    cls.asInstanceOf[java.lang._Class[_]].rawty
-
-  /** Read type information of given object. */
-  @alwaysinline def getRawType(obj: Object): RawPtr = {
-    val rawptr = Intrinsics.castObjectToRawPtr(obj)
-    Intrinsics.loadRawPtr(rawptr)
-  }
 
   /** Get monitor for given object. */
   @alwaysinline def getMonitor(obj: Object): Monitor = Monitor.dummy
@@ -88,8 +48,8 @@ package object runtime {
 
   /** Called by the generated code in case of incorrect class cast. */
   @noinline def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
-    val fromName = loadObject(elemRawPtr(from, 8))
-    val toName   = loadObject(elemRawPtr(to, 8))
+    val fromName = loadObject(elemRawPtr(from, 16))
+    val toName   = loadObject(elemRawPtr(to, 16))
     throw new java.lang.ClassCastException(
       s"$fromName cannot be cast to $toName")
   }

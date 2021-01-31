@@ -18,7 +18,7 @@ class RuntimeTypeInformation(meta: Metadata, info: ScopeInfo) {
         }
       Type.StructValue(
         Seq(
-          Rt.Type,
+          meta.Rtti,
           Type.Int, // size
           Type.Int, // idRangeUntil
           meta.layout(cls).referenceOffsetsTy
@@ -27,7 +27,7 @@ class RuntimeTypeInformation(meta: Metadata, info: ScopeInfo) {
         )
       )
     case _ =>
-      Rt.Type
+      meta.Rtti
   }
   val value: Val.StructValue = {
     val typeId = Val.Int(info match {
@@ -41,8 +41,10 @@ class RuntimeTypeInformation(meta: Metadata, info: ScopeInfo) {
       case _ =>
         -1
     })
+    val classConst =
+      Val.Global(Rt.Class.name.member(Sig.Generated("type")), Type.Ptr)
     val base = Val.StructValue(
-      Seq(typeId, traitId, typeStr, Val.Null)
+      Seq(classConst, typeId, traitId, typeStr)
     )
     info match {
       case cls: Class =>
