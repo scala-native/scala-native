@@ -389,13 +389,17 @@ private[net] class PlainSocketImpl extends SocketImpl {
     val bytesNum = socket
       .recv(fd.fd, buffer.asInstanceOf[ByteArray].at(offset), count.toUInt, 0)
       .toInt
-    if (bytesNum <= 0) {
-      if (errno.errno == EAGAIN || errno.errno == EWOULDBLOCK) {
-        throw new SocketTimeoutException("Socket timeout while reading data")
-      }
-      -1
-    } else {
-      bytesNum
+
+    bytesNum match {
+      case _ if (bytesNum > 0)  => bytesNum
+      case _ if (bytesNum == 0) => if (count == 0) 0 else -1
+      case _ =>
+        val exc = if (errno.errno == EAGAIN || errno.errno == EWOULDBLOCK) {
+          new SocketTimeoutException("Socket timeout while reading data")
+        } else {
+          new SocketException(s"read failed, errno: ${errno.errno}")
+        }
+        throw exc
     }
   }
 
