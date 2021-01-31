@@ -82,7 +82,7 @@ Since Name                     Type             Description
 0.1   ``nativeCompileOptions`` ``Seq[String]``  Extra options passed to clang verbatim during compilation
 0.1   ``nativeLinkingOptions`` ``Seq[String]``  Extra options passed to clang verbatim during linking
 0.1   ``nativeMode``           ``String``       One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
-0.2   ``nativeGC``             ``String``       One of ``"none"``, ``"boehm"`` or ``"immix"`` (3)
+0.2   ``nativeGC``             ``String``       One of ``"none"``, ``"boehm"``, ``"immix"`` or ``"commix"`` (3)
 0.3.3 ``nativeLinkStubs``      ``Boolean``      Whether to link ``@stub`` definitions, or to ignore them
 0.4.0 ``nativeConfig``         ``NativeConfig`` Configuration of the Scala Native plugin
 0.4.0 ``nativeLTO``            ``String``       One of ``"none"``, ``"full"`` or ``"thin"`` (4)
