@@ -62,10 +62,18 @@ private[scalanative] object LLVM {
             buildCompileOpts(config) ++ flags ++ target(config) ++
             Seq("-c", inpath, "-o", outpath)
 
-        config.logger.running(compilec)
-        val result = Process(compilec, config.workdir.toFile) !
+        val cmd: Seq[String] = {
+          compiler ++
+            input ++ output ++
+            target(config) ++
+            flto(config) ++
+            Seq("-fvisibility=hidden") ++
+            buildCompileOpts(config) ++
+            config.compileOptions
+        }
+        config.logger.running(cmd)
+        val result = Process(cmd, config.workdir.toFile) !
           Logger.toProcessLogger(config.logger)
-
         if (result != 0) {
           sys.error(s"Failed to compile ${inpath}")
         }
@@ -93,8 +101,7 @@ private[scalanative] object LLVM {
       config: Config,
       linkerResult: linker.Result,
       objectsPaths: Seq[Path],
-      outpath: Path
-  ): Path = {
+           outpath: Path): Path = {
     val inputs = objectsPaths.map(_.abs)
     val output = Seq("-o", outpath.abs)
     val links = {
@@ -169,7 +176,13 @@ private[scalanative] object LLVM {
 
   private def buildCompileOpts(config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {
-      case BuildTarget.Application   => flto(config)
-      case BuildTarget.SharedLibrary => "-fPIC" :: Nil
+      case BuildTarget.Application   => Seq()
+      case BuildTarget.SharedLibrary => Seq("-fPIC")
+    }
+
+  private def buildLinkOpts(config: Config): Seq[String] =
+    config.compilerConfig.buildTarget match {
+      case BuildTarget.Application   => Seq()
+      case BuildTarget.SharedLibrary => Seq("-shared")
     }
 }
