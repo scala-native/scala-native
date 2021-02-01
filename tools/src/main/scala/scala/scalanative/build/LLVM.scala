@@ -134,20 +134,25 @@ private[scalanative] object LLVM {
       val opath   = path + oExt
       val objPath = Paths.get(opath)
       if (!Files.exists(objPath)) {
-        val isCpp    = path.endsWith(cppExt)
-        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
-        val flags    = Seq(stdflag, "-fvisibility=hidden") ++ config.compileOptions
-        val compilec: Seq[String] = {
-          Seq(compiler) ++
-            buildCompileOpts(config) ++ target(config) ++ flags ++
-            Seq("-c", path, "-o", opath)
+        val isCpp = path.endsWith(cppExt)
+        val compiler =
+          if (isCpp) Seq(config.clangPP.abs, "-std=c++11")
+          else Seq(config.clang.abs, "-std=gnu11")
+        val input  = Seq("-c", path)
+        val output = Seq("-o", opath)
+
+        val cmd: Seq[String] = {
+          compiler ++
+            input ++ output ++
+            target(config) ++
+            flto(config) ++
+            Seq("-fvisibility=hidden") ++
+            buildCompileOpts(config) ++
+            config.compileOptions
         }
-
-        config.logger.running(compilec)
-        val result = Process(compilec, config.workdir.toFile) !
+        config.logger.running(cmd)
+        val result = Process(cmd, config.workdir.toFile) !
           Logger.toProcessLogger(config.logger)
-
         if (result != 0) {
           sys.error("Failed to compile native library runtime code.")
         }
@@ -161,7 +166,7 @@ private[scalanative] object LLVM {
    *
    * @param config  The configuration of the toolchain.
    * @param llPaths The directory paths containing `.ll` files.
-   * @return        The paths of the `.o` files.
+   * @return The paths of the `.o` files.
    */
   def compile(config: Config, llPaths: Seq[Path]): Seq[Path] = {
     val optimizationOpt =
@@ -171,17 +176,21 @@ private[scalanative] object LLVM {
         case Mode.ReleaseFull => "-O3"
       }
 
-    val opts =
-      Seq(optimizationOpt) ++ buildCompileOpts(config) ++ target(config) ++ config.compileOptions
-
     llPaths.par.map { ll =>
       val apppath = ll.abs
       val outpath = apppath + oExt
-      val compile: Seq[String] =
-        config.clang.abs +: opts ++: Seq("-c", apppath, "-o", outpath)
+      val input   = Seq("-c", apppath)
+      val output  = Seq("-o", outpath)
+      val cmd: Seq[String] =
+        Seq(config.clang.abs, optimizationOpt) ++
+          input ++ output ++
+          target(config) ++
+          flto(config) ++
+          buildCompileOpts(config) ++
+          config.compileOptions
 
-      config.logger.running(compile)
-      Process(compile, config.workdir.toFile) !
+      config.logger.running(cmd)
+      Process(cmd, config.workdir.toFile) !
         Logger.toProcessLogger(config.logger)
       Paths.get(outpath)
     }.seq
@@ -202,7 +211,6 @@ private[scalanative] object LLVM {
            linkerResult: linker.Result,
            objectsPaths: Seq[Path],
            outpath: Path): Path = {
-
     val inputs = objectsPaths.map(_.abs)
     val output = Seq("-o", outpath.abs)
 
@@ -216,14 +224,14 @@ private[scalanative] object LLVM {
         "pthread" +: "dl" +: srclinks ++: gclinks
       }.map("-l" + _)
 
-      val cmd: Seq[String] = config.compilerConfig.buildTarget match {
-        case BuildTarget.Application =>
-          Seq(config.clangPP.abs, "-rdynamic") ++ flto(config) ++ links
-
-        case BuildTarget.SharedLibrary =>
-          Seq(config.clangPP.abs, "-shared") ++ links
-      }
-      cmd ++ output ++ target(config) ++ config.linkingOptions ++ inputs
+      Seq(config.clangPP.abs, "-rdynamic") ++
+        output ++
+        target(config) ++
+        flto(config) ++
+        links ++
+        buildLinkOpts(config) ++
+        config.linkingOptions ++
+        inputs
     }
     val ltoName = lto(config).getOrElse("none")
 
@@ -256,7 +264,13 @@ private[scalanative] object LLVM {
 
   private def buildCompileOpts(config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {
-      case BuildTarget.Application   => flto(config)
-      case BuildTarget.SharedLibrary => "-fPIC" :: Nil
+      case BuildTarget.Application   => Seq()
+      case BuildTarget.SharedLibrary => Seq("-fPIC")
+    }
+
+  private def buildLinkOpts(config: Config): Seq[String] =
+    config.compilerConfig.buildTarget match {
+      case BuildTarget.Application   => Seq()
+      case BuildTarget.SharedLibrary => Seq("-shared")
     }
 }
