@@ -30,6 +30,7 @@ trait NirDefinitions {
     lazy val ExternClass = getRequiredClass(
       "scala.scalanative.unsafe.package$extern"
     )
+    lazy val ExportClass = getRequiredClass("scala.scalanative.unsafe.export")
     lazy val StubClass = getRequiredClass("scala.scalanative.annotation.stub")
 
     lazy val AlwaysInlineClass = getRequiredClass(

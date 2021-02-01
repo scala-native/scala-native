@@ -10,7 +10,7 @@ import scala.scalanative.build.Logger
 object Generate {
   import Impl._
 
-  def apply(entry: Global.Top, defns: Seq[Defn])(implicit
+  def apply(entry: Option[Global.Top], defns: Seq[Defn])(implicit
       meta: Metadata
   ): Seq[Defn] =
     (new Impl(entry, defns)).generate()
@@ -19,7 +19,7 @@ object Generate {
     meta.linked
   private implicit val pos: Position = Position.NoPosition
 
-  private class Impl(entry: Global.Top, defns: Seq[Defn])(implicit
+  private class Impl(entry: Option[Global.Top], defns: Seq[Defn])(implicit
       meta: Metadata
   ) {
     val buf = mutable.UnrolledBuffer.empty[Defn]
@@ -27,7 +27,7 @@ object Generate {
     def generate(): Seq[Defn] = {
       genDefnsExcludingGenerated()
       genInjects()
-      genMain()
+      entry.fold(genLibraryInit())(genMain)
       genClassMetadata()
       genClassHasTrait()
       genTraitMetadata()
@@ -128,34 +128,93 @@ object Generate {
       )
     }
 
-    def genMain(): Unit = {
-      validateMainEntry()
-
-      implicit val fresh = Fresh()
-      val entryMainTy = Type.Function(Seq(ObjectArray), Type.Unit)
-      val entryMainMethod = Val.Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
-
-      val stackBottom = Val.Local(fresh(), Type.Ptr)
-      val argc = Val.Local(fresh(), Type.Int)
-      val argv = Val.Local(fresh(), Type.Ptr)
-      val rt = Val.Local(fresh(), Runtime)
-      val arr = Val.Local(fresh(), ObjectArray)
-      val exc = Val.Local(fresh(), nir.Rt.Object)
+    /* Generate set of instructions using common exception handling, generate method
+     * would return 0 if would execute successfully exception and 1 in otherwise */
+    private def withExceptionHandler(body: (() => Next.Unwind) => Seq[Inst])(
+        implicit fresh: Fresh): Seq[Inst] = {
+      val exc     = Val.Local(fresh(), nir.Rt.Object)
       val handler = fresh()
-      def unwind = {
+
+      def unwind: Next.Unwind = {
         val exc = Val.Local(fresh(), nir.Rt.Object)
         Next.Unwind(exc, Next.Label(handler, Seq(exc)))
       }
 
+      body(() => unwind) ++ Seq(
+        Inst.Ret(Val.Int(0)),
+        Inst.Label(handler, Seq(exc)),
+        Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
+                 Next.None),
+        Inst.Ret(Val.Int(1))
+      )
+    }
+
+    /* Generate class initializers to handle class instantiated using reflection */
+    private def withClassInitializers(unwind: () => Next)(
+        body: Seq[Inst] => Seq[Inst])(implicit fresh: Fresh): Seq[Inst] = {
+      val classInitializers = defns.collect {
+        case Defn.Define(_, name: Global.Member, _, _) if name.sig.isClinit =>
+          Inst.Let(Op.Call(Type.Function(Seq(), Type.Unit),
+                           Val.Global(name, Type.Ref(name)),
+                           Seq()),
+                   unwind())
+      }
+      body(classInitializers)
+    }
+
+    /* Injects definition of library initializers that needs to be called, when using Scala Native as shared library.
+     * Injects basic handling of exceptions, prints stack trace and returns non-zero value on exception or 0 otherwise */
+    def genLibraryInit(): Unit = {
+      implicit val fresh: Fresh = Fresh()
+
+      buf += Defn.Define(
+        Attrs(isExported = true),
+        LibraryInitName,
+        LibraryInitSig,
+        withExceptionHandler { unwindFn =>
+          withClassInitializers(unwindFn) { initializers =>
+            def unwind: Next = unwindFn()
+
+            Inst.Label(fresh(), Seq()) +:
+              initializers :+
+              Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
+          }
+        }
+      )
+    }
+
+    /* Injects definition of program main loop, delegating to user defined method upon successful initialization.
+     * After execution of main loop runs remaining Runnables in ExecutionContext loop
+     * Injects basic handling of exceptions, prints stack trace and returns non-zero value of exception or 0 otherwise */
+    def genMain(entry: Global.Top): Unit = {
+      validateMainEntry()implicit val fresh: Fresh = Fresh()
       buf += Defn.Define(
         Attrs.None,
         MainName,
         MainSig,
-        Seq(
-          Inst.Label(fresh(), Seq(argc, argv)),
-          Inst.Let(
+        withExceptionHandler { unwindFn =>
+          withClassInitializers(unwindFn) {
+            initializers =>
+              def unwind: Next = unwindFn()
+
+              val entryMainTy =
+                Type.Function(Seq( ObjectArray), Type.Unit)
+              val entryMainMethod = Val.
+                Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
+              val stackBottom = Val.Local(fresh(), Type.Ptr)
+
+              val argc   = Val.Local(fresh(), Type.Int)
+              val argv   = Val.Local(fresh(), Type.Ptr)
+
+              val rt     = Val.Local(fresh(), Runtime)
+              val arr    = Val.Local(fresh(), ObjectArray)
+
+              Seq(
+                Inst.Label(fresh(), Seq(argc, argv)),
+                // init stack bottom
+                Inst.Let(
             stackBottom.name,
-            Op.Stackalloc(Type.Ptr, Val.Size(0)),
+                         Op.Stackalloc(Type.Ptr, Val.Size(0)),
             unwind
           ),
           Inst.Let(
@@ -446,6 +505,9 @@ object Generate {
       Runtime.name.member(Sig.Method("loop", Seq(Type.Unit)))
     val RuntimeLoop =
       Val.Global(RuntimeLoopName, Type.Ptr)
+
+    val LibraryInitName = extern("ScalaNativeInit")
+    val LibraryInitSig  = Type.Function(Seq(), Type.Int)
 
     val MainName = extern("main")
     val MainSig = Type.Function(Seq(Type.Int, Type.Ptr), Type.Int)

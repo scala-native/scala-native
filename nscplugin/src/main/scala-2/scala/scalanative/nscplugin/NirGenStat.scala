@@ -791,7 +791,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case ann if ann.symbol == NoSpecializeClass => Attr.NoSpecialize
         }
 
-      Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs)
+      val externAttrs =
+        if (sym.isExported) Seq(Attr.Export)
+        else Nil
+
+      Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs ++ externAttrs)
     }
 
     def genMethodBody(
@@ -801,8 +805,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val fresh = curFresh.get
       val buf = new ExprBuffer()(fresh)
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
-      val isStatic = dd.symbol.isStaticInNIR || isImplClass(dd.symbol.owner)
-      val isExtern = dd.symbol.owner.isExternModule
+      val isStatic = dd.symbol.isStaticInNIR || isImplClass(dd.symbol.owner) ||
+        dd.symbolsym.isExternallyKnown
+      val isExtern = dd.symbol.owner.isExternModule || dd.attrs.isExported
 
       implicit val pos: nir.Position = bodyp.pos
 
