@@ -114,25 +114,25 @@ private[scalanative] object LLVM {
 
     // don't link if no changes
     if (!needsLinking(objectsPaths, outpath)) return outpath
+    val links = {
+      val srclinks = linkerResult.links.collect {
+        case Link("z") if config.targetsWindows => "zlib"
+        case Link(name) => name
+      }
+      val gclinks = config.gc.links
+      // We need extra linking dependencies for:
+      // * libdl for our vendored libunwind implementation.
+      // * libpthread for process APIs and parallel garbage collection.
+      // * Dbghelp for windows implementation of unwind libunwind API
+      val platformsLinks =
+      if (config.targetsWindows) Seq("Dbghelp")
+      else Seq("pthread", "dl")
+      platformsLinks ++ srclinks ++ gclinks
+    }
+    val linkopts = config.linkingOptions ++ links.map("-l" + _)
 
     val targetFlags = config.compilerConfig.buildTarget match {
       case BuildTarget.Application =>
-        val links = {
-          val srclinks = linkerResult.links.collect {
-            case Link("z") if config.targetsWindows => "zlib"
-            case Link(name) => name
-          }
-          val gclinks = config.gc.links
-          // We need extra linking dependencies for:
-          // * libdl for our vendored libunwind implementation.
-          // * libpthread for process APIs and parallel garbage collection.
-          // * Dbghelp for windows implementation of unwind libunwind API
-          val platformsLinks =
-          if (config.targetsWindows) Seq("Dbghelp")
-          else Seq("pthread", "dl")
-          platformsLinks ++ srclinks ++ gclinks
-        }
-        val linkopts = config.linkingOptions ++ links.map("-l" + _)
         val flags = {
           val platformFlags =
             if (config.targetsWindows) {
@@ -153,10 +153,10 @@ private[scalanative] object LLVM {
         val paths = objectsPaths.map(_.abs)
 
       case BuildTarget.SharedLibrary =>
-        Seq("-shared") ++
+        "-shared" +:
           target(config) ++
           inputs ++ output ++
-          config.linkingOptions
+          linkopts
     }
     // it's a fix for passing too many file paths to the clang compiler,
     // If too many packages are compiled and the platform is windows, windows
