@@ -108,7 +108,7 @@ private[scalanative] object LLVM {
       config: Config,
       linkerResult: linker.Result,
       objectsPaths: Seq[Path]
-  ): Path = {
+           ): Path = {
     val outpath = config.artifactPath
     val workdir = config.workdir
 
@@ -245,7 +245,13 @@ private[scalanative] object LLVM {
 
   private def buildCompileOpts(config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {
-      case BuildTarget.Application   => flto(config)
-      case BuildTarget.SharedLibrary => "-fPIC" :: Nil
+      case BuildTarget.Application   => Seq()
+      case BuildTarget.SharedLibrary => Seq("-fPIC")
+    }
+
+  private def buildLinkOpts(config: Config): Seq[String] =
+    config.compilerConfig.buildTarget match {
+      case BuildTarget.Application   => Seq()
+      case BuildTarget.SharedLibrary => Seq("-shared")
     }
 }
