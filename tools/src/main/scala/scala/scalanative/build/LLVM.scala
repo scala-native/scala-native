@@ -207,21 +207,21 @@ private[scalanative] object LLVM {
     val output = Seq("-o", outpath.abs)
 
     val command = {
+      val links = {
+        val srclinks = linkerResult.links.map(_.name)
+        val gclinks  = config.gc.links
+        // We need extra linking dependencies for:
+        // * libdl for our vendored libunwind implementation.
+        // * libpthread for process APIs and parallel garbage collection.
+        "pthread" +: "dl" +: srclinks ++: gclinks
+      }.map("-l" + _)
+
       val cmd: Seq[String] = config.compilerConfig.buildTarget match {
         case BuildTarget.Application =>
-          val links = {
-            val srclinks = linkerResult.links.map(_.name)
-            val gclinks  = config.gc.links
-            // We need extra linking dependencies for:
-            // * libdl for our vendored libunwind implementation.
-            // * libpthread for process APIs and parallel garbage collection.
-            "pthread" +: "dl" +: srclinks ++: gclinks
-          }.map("-l" + _)
-
-          config.clangPP.abs +: flto(config) ++: links :+ "-rdynamic"
+          Seq(config.clangPP.abs, "-rdynamic") ++ flto(config) ++ links
 
         case BuildTarget.SharedLibrary =>
-          config.clangPP.abs :: "-shared" :: Nil
+          Seq(config.clangPP.abs, "-shared") ++ links
       }
       cmd ++ output ++ target(config) ++ config.linkingOptions ++ inputs
     }
