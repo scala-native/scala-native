@@ -30,12 +30,14 @@ object Attr {
   final case object Extern            extends Attr
   final case class Link(name: String) extends Attr
   final case object Abstract          extends Attr
+  final case object Export            extends Attr
 }
 
 final case class Attrs(inlineHint: Inline = MayInline,
                        specialize: Specialize = MaySpecialize,
                        opt: Opt = UnOpt,
                        isExtern: Boolean = false,
+                       isExported: Boolean = false,
                        isDyn: Boolean = false,
                        isStub: Boolean = false,
                        isAbstract: Boolean = false,
@@ -47,6 +49,7 @@ final case class Attrs(inlineHint: Inline = MayInline,
     if (specialize != MaySpecialize) out += specialize
     if (opt != UnOpt) out += opt
     if (isExtern) out += Extern
+    if (isExported) out += Export
     if (isDyn) out += Dyn
     if (isStub) out += Stub
     if (isAbstract) out += Abstract
@@ -63,6 +66,7 @@ object Attrs {
     var specialize = None.specialize
     var opt        = None.opt
     var isExtern   = false
+    var isExported = false
     var isDyn      = false
     var isStub     = false
     var isAbstract = false
@@ -73,19 +77,21 @@ object Attrs {
       case attr: Specialize => specialize = attr
       case attr: Opt        => opt = attr
       case Extern           => isExtern = true
+      case Export           => isExported = true
       case Dyn              => isDyn = true
       case Stub             => isStub = true
       case link: Attr.Link  => links += link
       case Abstract         => isAbstract = true
     }
 
-    new Attrs(inline,
-              specialize,
-              opt,
-              isExtern,
-              isDyn,
-              isStub,
-              isAbstract,
-              links.result())
+    new Attrs(inlineHint = inline,
+              specialize = specialize,
+              opt = opt,
+              isExtern = isExtern,
+              isExported = isExported,
+              isDyn = isDyn,
+              isStub = isStub,
+              isAbstract = isAbstract,
+              links = links.result())
   }
 }

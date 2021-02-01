@@ -572,7 +572,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val attrs    = genMethodAttrs(sym)
         val name     = genMethodName(sym)
         val sig      = genMethodSig(sym)
-        val isStatic = owner.isExternModule || isImplClass(owner)
+        val isStatic = sym.isExternallyKnown || isImplClass(owner)
 
         dd.rhs match {
           case EmptyTree
@@ -610,8 +610,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             scoped(
               curMethodSig := sig
             ) {
-              val body = genMethodBody(dd, rhs, isStatic, isExtern = false)
-              buf += Defn.Define(attrs, name, sig, body)
+              val body =
+                genMethodBody(dd, rhs, isStatic, isExtern = attrs.isExported)
+              val methodSig =
+                if (attrs.isExported) genExternMethodSig(sym) else sig
+              buf += Defn.Define(attrs, name, methodSig, body)
             }
         }
       }
@@ -677,7 +680,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case ann if ann.symbol == NoSpecializeClass => Attr.NoSpecialize
         }
 
-      Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs)
+      val externAttrs =
+        if (sym.isExported) Seq(Attr.Export)
+        else Nil
+
+      Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs ++ externAttrs)
     }
 
     def genMethodBody(dd: DefDef,
@@ -708,7 +715,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
         if (isExtern) {
           paramSyms.zip(params).foreach {
-            case (Some(sym), param) if isExtern =>
+            case (Some(sym), param) =>
               val ty    = genType(sym.tpe)
               val value = buf.fromExtern(ty, param)
               curMethodEnv.enter(sym, value)
