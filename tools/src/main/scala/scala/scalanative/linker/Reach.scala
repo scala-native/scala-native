@@ -32,7 +32,10 @@ class Reach(
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
   entries.foreach(reachEntry)
-  loader.classesWithEntryPoints.foreach(reachClinit)
+  loader.classesWithEntryPoints.foreach { clsName =>
+    reachClinit(clsName)
+    reachExported(clsName)
+  }
 
   def result(): Result = {
     reportMissing()
@@ -212,6 +215,14 @@ class Reach(
         reachGlobal(clinit)
       }
     }
+  }
+
+  def reachExported(name: Global): Unit = {
+    reachGlobalNow(name)
+    for {
+      cls          <- infos.get(name)
+      (name, defn) <- loaded(cls.name) if defn.attrs.isExported
+    } reachGlobal(name)
   }
 
   def reachGlobal(name: Global): Unit =
