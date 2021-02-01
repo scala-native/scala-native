@@ -97,25 +97,25 @@ private[scalanative] object LLVM {
   ): Path = {
     val inputs = objectsPaths.map(_.abs)
     val output = Seq("-o", outpath.abs)
+    val links = {
+      val srclinks = linkerResult.links.collect {
+        case Link("z") if config.targetsWindows => "zlib"
+        case Link(name)                         => name
+      }
+      val gclinks  = config.gc.links
+      // We need extra linking dependencies for:
+      // * libdl for our vendored libunwind implementation.
+      // * libpthread for process APIs and parallel garbage collection.
+      // * Dbghelp for windows implementation of unwind libunwind API
+      val platformsLinks =
+      if (config.targetsWindows) Seq("Dbghelp")
+      else Seq("pthread", "dl")
+      platformsLinks ++ srclinks ++ gclinks
+    }
+    val linkopts = config.linkingOptions ++ links.map("-l" + _)
 
     val linkCmd = config.compilerConfig.buildTarget match {
         case BuildTarget.Application =>
-          val links = {
-            val srclinks = linkerResult.links.collect {
-              case Link("z") if config.targetsWindows => "zlib"
-              case Link(name)                         => name
-            }
-            val gclinks = config.gc.links
-            // We need extra linking dependencies for:
-            // * libdl for our vendored libunwind implementation.
-            // * libpthread for process APIs and parallel garbage collection.
-            // * Dbghelp for windows implementation of unwind libunwind API
-            val platformsLinks =
-            if (config.targetsWindows) Seq("Dbghelp")
-            else Seq("pthread", "dl")
-            platformsLinks ++ srclinks ++ gclinks
-          }
-          val linkopts = config.linkingOptions ++ links.map("-l" + _)
           val flags = {
             val platformFlags =
               if (config.targetsWindows) Seq("-g")
@@ -130,10 +130,11 @@ private[scalanative] object LLVM {
             linkopts
 
         case BuildTarget.SharedLibrary =>
-          Seq(config.clangPP.abs, "-shared") ++
+          config.clangPP.abs +:
+            "-shared" +:
             target(config) ++
             inputs ++ output ++
-            config.linkingOptions
+            linkopts
       }
 
     config.logger.time(
