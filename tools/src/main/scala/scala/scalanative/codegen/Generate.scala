@@ -172,12 +172,27 @@ object Generate {
         LibraryInitName,
         LibraryInitSig,
         withExceptionHandler { unwindFn =>
-          withClassInitializers(unwindFn) { initializers =>
-            def unwind: Next = unwindFn()
+          withClassInitializers(unwindFn) {
+            initializers =>
+              def unwind: Next = unwindFn()
 
-            Inst.Label(fresh(), Seq()) +:
-              initializers :+
-              Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
+              val stackBottom = Val.Local(fresh(), Type.Ptr)
+
+              Seq(
+                Inst.Label(fresh(), Seq()),
+                // init stack bottom needed by immix/commix
+                Inst.Let(stackBottom.name,
+                         Op.Stackalloc(Type.Ptr, Val.Long(0)),
+                         unwind),
+                Inst.Let(Op.Store(Type.Ptr,
+                                  Val.Global(stackBottomName, Type.Ptr),
+                                  stackBottom),
+                         unwind)
+              ) ++
+                initializers ++
+                Seq(
+                  Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
+                )
           }
         }
       )
