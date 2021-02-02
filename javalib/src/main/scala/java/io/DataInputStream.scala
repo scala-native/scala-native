@@ -1,6 +1,9 @@
 package java.io
 
 import java.nio.ByteBuffer
+
+import scala.annotation.tailrec
+
 import scalanative.unsafe.sizeof
 
 class DataInputStream(in: InputStream)
@@ -20,9 +23,35 @@ class DataInputStream(in: InputStream)
   private final val outBasket = ByteBuffer.wrap(inBasket) // default: BigEndian
 
   private final def rebuffer(n: Int): ByteBuffer = {
-    if (in.read(inBasket, 0, n) < n)
-      throw new java.io.EOFException
-    outBasket.clear() // tricky here: contents preserved, bookkeeping reset.
+    @tailrec
+    def rebufferImpl(n: Int, runningTotal: Int): Int = {
+      in.read(inBasket, 0, n) match {
+        case nRead if (nRead == n) => nRead
+
+        case nRead if (nRead == -1) => throw new java.io.EOFException()
+
+        case nRead if (nRead == 0) =>
+          // Much ado about nothing. In a correct system, this case
+          // should never happen, yet here we are.
+          //
+          // rebuffer() is private, so all its possible callers are known
+          // In that closed world, it should always be called with n > 0.
+          // The specification states that, given a positive count
+          // a read from the underlying stream should return either at
+          // least 1 byte or throw an Exception.
+          //
+          // Any nRead == 0, either from n == 0 passed in or from a short read
+          // of the underlying stream is a blivet.
+          throw new java.io.IOException(
+            s"error in rebuffer: expected to read ${n} > 0 bytes, got: 0")
+
+        case nRead =>
+          rebufferImpl(n - nRead, runningTotal + nRead)
+      }
+    }
+
+    rebufferImpl(n, 0) // 3rd arg is something other than 0.
+    outBasket.clear()  // tricky here: contents preserved, bookkeeping reset.
   }
 
   // Notes on End of File (EOF) handling.
