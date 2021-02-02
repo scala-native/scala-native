@@ -68,11 +68,11 @@ final class MergeProcessor(insts: Array[Inst],
         val headState = states.head
 
         var mergeFresh   = Fresh(merge.id)
-        val mergeLocals  = mutable.Map.empty[Local, Val]
-        val mergeHeap    = mutable.Map.empty[Addr, Instance]
+        val mergeLocals  = mutable.OpenHashMap.empty[Local, Val]
+        val mergeHeap    = mutable.LongMap.empty[Instance]
         val mergePhis    = mutable.UnrolledBuffer.empty[MergePhi]
-        val mergeDelayed = mutable.Map.empty[Op, Val]
-        val mergeEmitted = mutable.Map.empty[Op, Val]
+        val mergeDelayed = mutable.AnyRefMap.empty[Op, Val]
+        val mergeEmitted = mutable.AnyRefMap.empty[Op, Val]
         val newEscapes   = mutable.Set.empty[Addr]
 
         def mergePhi(values: Seq[Val], bound: Option[Type]): Val = {
@@ -100,11 +100,7 @@ final class MergeProcessor(insts: Array[Inst],
 
           def mergeLocal(local: Local, value: Val): Unit = {
             val values = mutable.UnrolledBuffer.empty[Val]
-            states.foreach { s =>
-              if (s.locals.contains(local)) {
-                values += s.locals(local)
-              }
-            }
+            states.foreach { s => s.locals.get(local).foreach(values += _) }
             if (states.size == values.size) {
               mergeLocals(local) = mergePhi(values, Some(value.ty))
             }
