@@ -391,15 +391,15 @@ private[net] class PlainSocketImpl extends SocketImpl {
       .toInt
 
     bytesNum match {
-      case _ if (bytesNum > 0)  => bytesNum
+      case _ if (bytesNum > 0) => bytesNum
+
       case _ if (bytesNum == 0) => if (count == 0) 0 else -1
+
+      case _ if ((errno.errno == EAGAIN) || (errno.errno == EWOULDBLOCK)) =>
+        throw new SocketTimeoutException("Socket timeout while reading data")
+
       case _ =>
-        val exc = if (errno.errno == EAGAIN || errno.errno == EWOULDBLOCK) {
-          new SocketTimeoutException("Socket timeout while reading data")
-        } else {
-          new SocketException(s"read failed, errno: ${errno.errno}")
-        }
-        throw exc
+        throw new SocketException(s"read failed, errno: ${errno.errno}")
     }
   }
 
