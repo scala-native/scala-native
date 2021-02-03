@@ -6,7 +6,8 @@ object libtest {
 
   @export
   def sayHello(): Unit = {
-    println(s"""
+    println(
+      s"""
          |==============================
          |Hello Scala Native from library
          |==============================
@@ -15,7 +16,7 @@ object libtest {
   }
 
   @export
-  def addLongs(l: Long, r:Long): Long = l + r
+  def addLongs(l: Long, r: Long): Long = l + r
 
   @export
   def retStructPtr(): Ptr[Foo] = {
@@ -36,11 +37,16 @@ object libtest {
 
   @noinline
   def updateInternally(ptr: Ptr[Foo]): Unit = {
-    ptr._2 = 2021
+    ptr._2 = addLongs(2020, 1).toInt
   }
 
   @export
   def fail(): Unit = {
     throw new RuntimeException("Exception from ScalaNative")
   }
+
+  @export
+  @name("sn_runGC")
+  @noinline
+  def enforceGC(): Unit = System.gc()
 }
