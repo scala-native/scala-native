@@ -18,8 +18,12 @@ struct Foo {
 
 int counter;
 
-extern "C" void sayHello(void);
-extern "C" long addLongs(long l, long r);
-extern "C" struct Foo* retStructPtr(void);
-extern "C" void updateStruct(struct Foo* p);
-extern "C" void fail(void);
+extern "C" {
+	void sayHello(void);
+	void sayHello(void);
+	long addLongs(long l, long r);
+	struct Foo* retStructPtr(void);
+	void updateStruct(struct Foo* p);
+	void fail();
+	void sn_runGC(void);
+}

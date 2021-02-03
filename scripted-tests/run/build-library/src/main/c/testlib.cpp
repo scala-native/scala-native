@@ -27,7 +27,10 @@ int main(){
 	assert(p -> arg3 == 27);
 	assert(p -> arg4 == 14.4556);
 	assert(strcmp(p -> arg5, "ScalaNativeRocks!") == 0);
+
 	free(p);
+
+	sn_runGC();
 
 	bool exceptionCaught = false;
 	try{
