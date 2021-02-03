@@ -1,3 +1,15 @@
 > nativeLink
 > testC
 > testCpp
+
+$ copy-file changes/exportedExtern.scala src/main/scala/change.scala
+-> nativeLink
+
+$ copy-file changes/valuesNotAllowed.scala src/main/scala/change.scala
+-> nativeLink
+
+$ copy-file changes/variablesNotAllowed.scala src/main/scala/change.scala
+-> nativeLink
+
+$ copy-file changes/ExportInClass.scala src/main/scala/change.scala
+-> nativeLink
