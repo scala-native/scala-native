@@ -155,6 +155,48 @@ And then call it just like a regular Scala function:
 
    myprintf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
 
+Exported methods
+----------------
+
+When linking Scala Native as library, you can mark its entry point functions with ``@export`` annotation,
+to make these definition C ABI compatible. Name of resulting function would match name of the method or it can be enforced
+using ``@name`` annotation.
+
+`int ScalaNativeInit(void);` function is special exported function that needs to be called before invoking any code defined
+in Scala Native. It returns `0` on successful initialization and non-zero value in the otherwise.
+
+.. code-block:: scala
+
+    import scala.scalanative.unsafe._
+
+    object myLib{
+      @export
+      def addLongs(l: Long, r: Long): Long = l + r
+
+      @export
+      @name("mylib_addInts")
+      def addInts(l: Int, r: Int): Int = l + r
+    }
+
+.. code-block:: c
+
+    # libmylib.h
+    int ScalaNativeInit(void);
+    long addLongs(long l, long r);
+    int addInts(int l, int r);
+
+    # test.c
+    #include "libmylib.h"
+    #include <assert.h>
+
+    int main(int argc, char** argv){
+      # This function needs to be called before invoking any methods defined in Scala Native.
+      assert(ScalaNativeInit() == 0);
+      addLongs(0L, 4L);
+      mylib_addInts(4, 0);
+      ...
+    }
+
 Pointer types
 -------------
 
