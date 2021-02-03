@@ -153,12 +153,13 @@ private[scalanative] object LLVM {
         val paths = objectsPaths.map(_.abs)
 
       case BuildTarget.SharedLibrary =>
-        "-shared" +:
-          target(config) ++
-          inputs ++ output ++
-          linkopts
-    }
-    // it's a fix for passing too many file paths to the clang compiler,
+
+            "-shared" +:
+            target(config) ++
+        flto(config) ++
+        inputs ++ output ++
+        linkopts
+      }// it's a fix for passing too many file paths to the clang compiler,
     // If too many packages are compiled and the platform is windows, windows
     // terminal doesn't support too many characters, which will cause an error.
     val llvmLinkInfo = flags ++ paths ++ linkopts
