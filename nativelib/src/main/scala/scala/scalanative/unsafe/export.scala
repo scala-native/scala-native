@@ -1,6 +1,4 @@
 package scala.scalanative.unsafe
 
-/** An annotation that is used to mark fields and methods that
- *  should be available in the linked library
- */
+/** An annotation that is used to mark methods that should be treated as library entry point */
 final class export extends scala.annotation.StaticAnnotation
