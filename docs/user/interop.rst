@@ -159,7 +159,7 @@ Exported methods
 ----------------
 
 When linking Scala Native as library, you can mark its entry point functions with ``@export`` annotation,
-to make these definition C ABI compatible. Name of resulting function would match name of the method or it can be enforced
+to make these definitions C ABI compatible. Name of resulting function would match name of the method or it can be enforced
 using ``@name`` annotation.
 
 `int ScalaNativeInit(void);` function is special exported function that needs to be called before invoking any code defined
