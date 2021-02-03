@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <exception>
 
-extern "C" int ScalaNativeInit(); // needs to be called before first SN heap allocation (GC)
-
 namespace scalanative{
 	class ExceptionWrapper : std::exception {};
 }
@@ -16,9 +14,8 @@ struct Foo {
 	char* arg5;
 };
 
-int counter;
-
 extern "C" {
+	int ScalaNativeInit(); // needs to be called before first SN heap allocation (GC)
 	void sayHello(void);
 	void sayHello(void);
 	long addLongs(long l, long r);

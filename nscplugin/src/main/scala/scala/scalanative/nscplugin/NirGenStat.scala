@@ -172,6 +172,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val name = genFieldName(f)
         val pos: nir.Position = f.pos
 
+        if (f.isExported) {
+          reporter.error(f.pos, "Exporting variables and values is not allowed")
+        }
+
         buf += Defn.Var(attrs, name, ty, Val.Zero(ty))(pos)
       }
     }
@@ -637,8 +641,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             ()
 
           case rhs if owner.isExternModule =>
-            checkExplicitReturnTypeAnnotation(dd, "extern method")
-            genExternMethod(attrs, name, sig, rhs)
+            if (attrs.isExported) {
+              reporter.error(
+                sym.pos,
+                "Method cannot be both declared as extern and exported")
+            } else {
+              checkExplicitReturnTypeAnnotation(dd, "extern method")
+              genExternMethod(attrs, name, sig, rhs)
+            }
 
           case rhs
               if (isScala211 &&
@@ -650,15 +660,32 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case _ if sym.hasAnnotation(ResolvedAtLinktimeClass) =>
             genLinktimeResolved(dd, name)
 
+          case rhs if attrs.isExported =>
+            scoped(
+              curMethodSig := sig
+            ) {
+              if (!owner.isScalaModule) {
+                reporter.error(
+                  sym.pos,
+                  "Exported methods needs to be statically accessible")
+              } else {
+                buf += Defn.Define(
+                  attrs,
+                  name,
+                  genExternMethodSig(sym),
+                  genMethodBody(dd, rhs, isStatic, isExtern = true))
+              }
+            }
+
           case rhs =>
             scoped(
               curMethodSig := sig
             ) {
-              val body =
-                genMethodBody(dd, rhs, isStatic, isExtern = attrs.isExported)
-              val methodSig =
-                if (attrs.isExported) genExternMethodSig(sym) else sig
-              buf += Defn.Define(attrs, name, methodSig, body)
+              buf += Defn.Define(
+                attrs,
+                name,
+                sig,
+                genMethodBody(dd, rhs, isStatic, isExtern = false))
             }
         }
       }
@@ -781,9 +808,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case ann if ann.symbol == NoSpecializeClass => Attr.NoSpecialize
         }
 
-      val externAttrs =
-        if (sym.isExported) Seq(Attr.Export)
-        else Nil
+      val externAttrs = sym.annotations.collect {
+        case ann if ann.symbol == ExportClass => Attr.Export
+      }
 
       Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs ++ externAttrs)
     }
