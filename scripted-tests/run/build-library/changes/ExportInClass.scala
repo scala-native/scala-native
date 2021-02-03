@@ -4,4 +4,3 @@ class ExportInClass() {
   @export
   def foo(l: Int): Int = l
 }
-
