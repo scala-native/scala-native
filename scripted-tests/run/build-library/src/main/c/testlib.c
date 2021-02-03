@@ -30,5 +30,7 @@ int main(){
 
 	free(p);
 
+	sn_runGC();
+
 	return 0;
 }
