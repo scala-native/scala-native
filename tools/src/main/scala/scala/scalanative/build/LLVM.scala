@@ -143,11 +143,11 @@ private[scalanative] object LLVM {
 
         val cmd: Seq[String] = {
           compiler ++
-            input ++ output ++
-            target(config) ++
-            flto(config) ++
-            Seq("-fvisibility=hidden") ++
             buildCompileOpts(config) ++
+            flto(config) ++
+            target(config) ++
+            Seq("-fvisibility=hidden") ++
+            input ++ output ++
             config.compileOptions
         }
         config.logger.running(cmd)
@@ -183,10 +183,10 @@ private[scalanative] object LLVM {
       val output  = Seq("-o", outpath)
       val cmd: Seq[String] =
         Seq(config.clang.abs, optimizationOpt) ++
-          input ++ output ++
-          target(config) ++
-          flto(config) ++
           buildCompileOpts(config) ++
+          flto(config) ++
+          target(config) ++
+          input ++ output ++
           config.compileOptions
 
       config.logger.running(cmd)
@@ -225,13 +225,13 @@ private[scalanative] object LLVM {
       }.map("-l" + _)
 
       Seq(config.clangPP.abs, "-rdynamic") ++
-        output ++
+        buildLinkOpts(config) ++
         target(config) ++
         flto(config) ++
-        links ++
-        buildLinkOpts(config) ++
+        output ++
         config.linkingOptions ++
-        inputs
+        inputs ++
+        links
     }
     val ltoName = lto(config).getOrElse("none")
 
