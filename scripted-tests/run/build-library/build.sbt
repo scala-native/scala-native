@@ -17,8 +17,38 @@ nativeConfig := {
   val outPath = crossTarget.value / "libtest.so"
 
   prev
-    .withBuildTarget(scalanative.build.BuildTarget.sharedLibrary)
+    .withBuildTarget(scalanative.build.BuildTarget.libraryDynamic)
     .withLinkingOptions(Seq("-o", outPath.absolutePath))
+}
+
+lazy val testC = taskKey[Unit]("Build test application using SN library for C")
+testC := {
+  discover("clang", "CLANG_PATH").fold {
+    sLog.value.info("clang not found, skipping test")
+  } {
+    compileAndTest(
+      _,
+      libPath = crossTarget.value,
+      sourcePath = baseDirectory.value / "src" / "main" / "c" / "testlib.c",
+      outFile = baseDirectory.value / "testC.out"
+    )
+  }
+}
+
+lazy val testCpp =
+  taskKey[Unit]("Build test application using SN library for C++")
+testCpp := {
+  discover("clang++", "CLANGPP_PATH").fold {
+    sLog.value.info("clang not found, skipping test")
+  } {
+
+    compileAndTest(
+      _,
+      libPath = crossTarget.value,
+      sourcePath = baseDirectory.value / "src" / "main" / "c" / "testlib.cpp",
+      outFile = baseDirectory.value / "testCpp.out"
+    )
+  }
 }
 
 def discover(binaryName: String, envPath: String): Option[Path] = {
@@ -53,34 +83,4 @@ def compileAndTest(clangPath: Path,
     Process(outFile.absolutePath, libPath, ("LD_LIBRARY_PATH", ldPath)).!
 
   assert(testRes == 0, s"tests in ${outFile} failed")
-}
-
-lazy val testC = taskKey[Unit]("Build test application using SN library for C")
-testC := {
-  discover("clang", "CLANG_PATH").fold {
-    sLog.value.info("clang not found, skipping test")
-  } {
-    compileAndTest(
-      _,
-      libPath = crossTarget.value,
-      sourcePath = baseDirectory.value / "src" / "main" / "c" / "testlib.c",
-      outFile = baseDirectory.value / "testC.out"
-    )
-  }
-}
-
-lazy val testCpp =
-  taskKey[Unit]("Build test application using SN library for C++")
-testCpp := {
-  discover("clang++", "CLANGPP_PATH").fold {
-    sLog.value.info("clang not found, skipping test")
-  } {
-
-    compileAndTest(
-      _,
-      libPath = crossTarget.value,
-      sourcePath = baseDirectory.value / "src" / "main" / "c" / "testlib.cpp",
-      outFile = baseDirectory.value / "testCpp.out"
-    )
-  }
 }
