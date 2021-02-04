@@ -393,7 +393,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     bytesNum match {
       case _ if (bytesNum > 0) => bytesNum
 
-      case _ if (bytesNum == 0) => if (count == 0) 0 else -1
+      case 0 => if (count == 0) 0 else -1
 
       case _ if ((errno.errno == EAGAIN) || (errno.errno == EWOULDBLOCK)) =>
         throw new SocketTimeoutException("Socket timeout while reading data")
