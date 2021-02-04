@@ -248,7 +248,7 @@ class Socket protected (private[net] val impl: SocketImpl,
     val value = if (on) {
       if (linger > 65535) 65535 else linger
     } else {
-      -1
+      0
     }
 
     impl.setOption(SocketOptions.SO_LINGER, Integer.valueOf(value))
