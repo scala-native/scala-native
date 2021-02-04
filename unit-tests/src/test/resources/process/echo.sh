@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 while IFS='$\n' read -r line || true; do
   if [[ $line == "quit" ]]; then

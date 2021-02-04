@@ -106,7 +106,7 @@ class ProcessTest {
 
   @Test def inputStreamWritesToFile(): Unit = {
     val pb = new ProcessBuilder("echo.sh")
-    pb.environment.put("PATH", resourceDir)
+    pb.environment.put("PATH", (resourceDir :: bashExtraPaths).mkString(":"))
     val file = File.createTempFile("istest", ".tmp", new File("/tmp"))
     pb.redirectOutput(file)
 
@@ -127,7 +127,7 @@ class ProcessTest {
 
   @Test def outputStreamReadsFromFile(): Unit = {
     val pb = new ProcessBuilder("echo.sh")
-    pb.environment.put("PATH", resourceDir)
+    pb.environment.put("PATH", (resourceDir :: bashExtraPaths).mkString(":"))
     val file = File.createTempFile("istest", ".tmp", new File("/tmp"))
     pb.redirectInput(file)
 
