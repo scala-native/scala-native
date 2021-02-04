@@ -844,12 +844,15 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               targetTree.symbol.tpe.resultType
             }
 
-          val boxedRes = ensureBoxed(
-            res,
-            resTyEnteringPosterasure,
-            callTree.tpe
-          )(buf, callTree.pos)
-          buf.ret(boxedRes)
+          buf.ret {
+            if (retType == res.ty) res
+            else {
+              ensureBoxed(res, resTyEnteringPosterasure, callTree.tpe)(
+                buf,
+                callTree.pos
+              )
+            }
+          }
           buf.toSeq
         }
 
