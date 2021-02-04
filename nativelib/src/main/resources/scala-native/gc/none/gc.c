@@ -13,7 +13,11 @@
 // Allow read and write
 #define DUMMY_GC_PROT (PROT_READ | PROT_WRITE)
 // Map private anonymous memory, and prevent from reserving swap
+#ifdef MAP_NORESERVE
 #define DUMMY_GC_FLAGS (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
+#else
+#define DUMMY_GC_FLAGS (MAP_PRIVATE | MAP_ANONYMOUS)
+#endif
 // Map anonymous memory (not a file)
 #define DUMMY_GC_FD -1
 #define DUMMY_GC_FD_OFFSET 0
