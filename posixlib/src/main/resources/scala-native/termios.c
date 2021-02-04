@@ -1,4 +1,12 @@
 #include <termios.h>
+#if defined(__FreeBSD__)
+#define COMPAT_43TTY
+#include <sys/ioctl_compat.h>
+#define NLDLY NLDELAY
+#define CRDLY CRDELAY
+#define BSDLY BSDELAY
+#define VTDLY VTDELAY
+#endif
 
 // symbolic constants for use as subscripts for the array c_cc
 
@@ -37,8 +45,16 @@ int scalanative_termios_onlcr() { return ONLCR; }
 int scalanative_termios_ocrnl() { return OCRNL; }
 int scalanative_termios_onocr() { return ONOCR; }
 int scalanative_termios_onlret() { return ONLRET; }
+#ifdef OFDEL
 int scalanative_termios_ofdel() { return OFDEL; }
+#else
+int scalanative_termios_ofdel() { return 0; }
+#endif
+#ifdef OFILL
 int scalanative_termios_ofill() { return OFILL; }
+#else
+int scalanative_termios_ofill() { return 0; }
+#endif
 // Masks - Linux [requires _BSD_SOURCE or _SVID_SOURCE or _XOPEN_SOURCE]
 int scalanative_termios_nldly() { return NLDLY; }
 int scalanative_termios_nl0() { return NL0; }
@@ -57,9 +73,21 @@ int scalanative_termios_bsdly() { return BSDLY; }
 int scalanative_termios_bs0() { return BS0; }
 int scalanative_termios_bs1() { return BS1; }
 int scalanative_termios_vtdly() { return VTDLY; }
+#ifdef VT0
 int scalanative_termios_vt0() { return VT0; }
+#else
+int scalanative_termios_vt0() { return 0; }
+#endif
+#ifdef VT1
 int scalanative_termios_vt1() { return VT1; }
+#else
+int scalanative_termios_vt1() { return 0; }
+#endif
+#ifdef FFDLY
 int scalanative_termios_ffdly() { return FFDLY; }
+#else
+int scalanative_termios_ffdly() { return 0; }
+#endif
 int scalanative_termios_ff0() { return FF0; }
 int scalanative_termios_ff1() { return FF1; }
 
