@@ -26,17 +26,17 @@ class DataInputStream(in: InputStream)
     @tailrec
     def rebufferImpl(n: Int, runningTotal: Int): Int = {
       in.read(inBasket, 0, n) match {
-        case nRead if (nRead == n) => nRead
+        case `n` => n
 
-        case nRead if (nRead == -1) => throw new java.io.EOFException()
+        case -1 => throw new java.io.EOFException()
 
-        case nRead if (nRead == 0) =>
+        case 0 =>
           // Much ado about nothing. In a correct system, this case
           // should never happen, yet here we are.
           //
           // rebuffer() is private, so all its possible callers are known
           // In that closed world, it should always be called with n > 0.
-          // The specification states that, given a positive count
+          // The specification states that, given a positive count,
           // a read from the underlying stream should return either at
           // least 1 byte or throw an Exception.
           //
