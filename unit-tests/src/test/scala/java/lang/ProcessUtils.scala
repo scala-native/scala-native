@@ -10,5 +10,5 @@ object ProcessUtils {
   val resourceDir =
     s"${System.getProperty("user.dir")}/unit-tests/src/test/resources/process"
 
-  val bashExtraPaths = List("/usr/local/bin")
+  val bashExtraPaths = List("/bin", "/usr/bin", "/usr/local/bin")
 }
