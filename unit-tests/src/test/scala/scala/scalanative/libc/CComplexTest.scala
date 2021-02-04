@@ -170,7 +170,7 @@ class CComplexTest {
   @Test def testCpowf(): Unit = {
     Zone { implicit z =>
       assertEqualsComplexF(cpowf(tf, tf, buff),
-                           res(toFloat(0x3e8c441e), toFloat(0x3f156d6a)))
+                           res(toFloat(0x3e8c4420), toFloat(0x3f156d6a)))
     }
   }
 
