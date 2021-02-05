@@ -524,10 +524,14 @@ private[net] class PlainSocketImpl extends SocketImpl {
         val ptr    = stackalloc[socket.linger]
         val linger = value.asInstanceOf[Int]
 
-        if (linger == -1) ptr.l_onoff = 0
-        else ptr.l_onoff = 1
+        if (linger == -1) {
+          ptr.l_onoff = 0
+          ptr.l_linger = 0
+        } else {
+          ptr.l_onoff = 1
+          ptr.l_linger = linger
+        }
 
-        ptr.l_linger = linger
         ptr.asInstanceOf[Ptr[Byte]]
       case SocketOptions.SO_TIMEOUT =>
         val ptr      = stackalloc[timeval]
