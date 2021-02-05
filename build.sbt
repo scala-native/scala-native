@@ -908,3 +908,115 @@ lazy val junitAsyncJVM =
       nameSettings,
       publishArtifact := false
     )
+
+val shouldPartest = settingKey[Boolean](
+  "Whether we should partest the current scala version (and fail if we can't)")
+
+def shouldPartestSetting(partestSuite: LocalProject) = Def.settings(
+  shouldPartest := {
+    val testListDir = (
+      (resourceDirectory in (partestSuite, Test)).value / "scala"
+        / "tools" / "partest" / "scalanative" / scalaVersion.value
+    )
+    testListDir.exists
+  }
+)
+
+lazy val partest = project
+  .in(file("partest"))
+  .settings(
+    nameSettings,
+    resolvers += Resolver.typesafeIvyRepo("releases"),
+    artifactPath in fetchScalaSource :=
+      baseDirectory.value / "fetchedSources" / scalaVersion.value,
+    shouldPartest := true,
+    fetchScalaSource := {
+      import org.eclipse.jgit.api._
+
+      val s      = streams.value
+      val ver    = scalaVersion.value
+      val trgDir = (artifactPath in fetchScalaSource).value
+
+      if (!trgDir.exists) {
+        s.log.info(s"Fetching Scala source version $ver")
+
+        // Make parent dirs and stuff
+        IO.createDirectory(trgDir)
+
+        // Clone scala source code
+        new CloneCommand()
+          .setDirectory(trgDir)
+          .setURI("https://github.com/scala/scala.git")
+          .call()
+      }
+
+      // Checkout proper ref. We do this anyway so we fail if
+      // something is wrong
+      val git = Git.open(trgDir)
+      s.log.info(s"Checking out Scala source version $ver")
+      git.checkout().setName(s"v$ver").call()
+
+      trgDir
+    },
+    libraryDependencies += "com.google.jimfs" % "jimfs" % "1.2",
+    libraryDependencies ++= {
+      if (shouldPartest.value) {
+        Seq(
+          "org.scala-sbt" % "test-interface" % "1.0", {
+            val v = scalaVersion.value
+            if (v.startsWith("2.11."))
+              "org.scala-lang.modules" %% "scala-partest" % "1.0.16"
+            else
+              "org.scala-lang.modules" %% "scala-partest" % "1.1.4"
+          }
+        )
+      } else {
+        Seq()
+      }
+    },
+    sources in Compile := {
+      val s = (sources in Compile).value
+      if (shouldPartest.value) s else Nil
+    }
+  )
+  .dependsOn(nscplugin, tools)
+
+lazy val partestSuite: Project = project
+  .in(file("partest-suite"))
+  .settings(
+    nameSettings,
+    fork in Test := true,
+    javaOptions in Test += "-Xmx1G",
+    shouldPartest := true,
+    // Override the dependency of partest - see #1889
+    dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value % "test",
+    testFrameworks ++= {
+      if (shouldPartest.value)
+        Seq(new TestFramework("scala.tools.partest.scalanative.Framework"))
+      else Seq()
+    },
+    definedTests in Test ++= Def
+      .taskDyn[Seq[sbt.TestDefinition]] {
+        if (shouldPartest.value) Def.task {
+          val _ = (fetchScalaSource in partest).value
+          Seq(
+            new sbt.TestDefinition(
+              s"partest-${scalaVersion.value}",
+              // marker fingerprint since there are no test classes
+              // to be discovered by sbt:
+              new sbt.testing.AnnotatedFingerprint {
+                def isModule       = true
+                def annotationName = "partest"
+              },
+              true,
+              Array()
+            ))
+        }
+        else {
+          Def.task(Seq())
+        }
+      }
+      .value
+//    shouldPartestSetting(LocalProject("partestSuite"))
+  )
+  .dependsOn(partest % "test", javalib)
