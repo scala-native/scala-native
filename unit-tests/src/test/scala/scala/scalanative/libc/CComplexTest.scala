@@ -169,6 +169,8 @@ class CComplexTest {
 
   @Test def testCpowf(): Unit = {
     Zone { implicit z =>
+      // macOS values:   0x3e8c441e, 0x3f156d6a
+      // FreeBSD values: 0x3e8c4421, 0x3f156d69
       assertEqualsComplexF(cpowf(tf, tf, buff),
                            res(toFloat(0x3e8c4420), toFloat(0x3f156d6a)))
     }
