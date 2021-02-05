@@ -6,6 +6,8 @@ import org.junit.Assume._
 
 import java.io.IOException
 
+import org.scalanative.testsuite.utils.Platform
+
 import scalanative.libc.{errno => libcErrno, string}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -46,7 +48,7 @@ class TimeTest {
   @Test def localtimeShouldTransformTheEpochToLocaltime(): Unit = {
     assumeFalse(
       "Skipping localtime test since FreeBSD hasn't the 'timezone' variable",
-      System.getProperty("os.name").equals("FreeBSD"))
+      Platform.isFreeBSD)
     val time_ptr = stackalloc[time_t]
     !time_ptr = epoch + timezone
     val time: Ptr[tm] = localtime(time_ptr)
@@ -58,8 +60,8 @@ class TimeTest {
 
   @Test def localtime_rShouldTransformTheEpochToLocaltime(): Unit = {
     assumeFalse(
-      "Skipping localtime test since FreeBSD hasn't the 'timezone' variable",
-      System.getProperty("os.name").equals("FreeBSD"))
+      "Skipping localtime_r test since FreeBSD hasn't the 'timezone' variable",
+      Platform.isFreeBSD)
     Zone { implicit z =>
       val time_ptr = stackalloc[time_t]
       !time_ptr = epoch + timezone
