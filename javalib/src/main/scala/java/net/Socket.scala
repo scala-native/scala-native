@@ -245,6 +245,8 @@ class Socket protected (private[net] val impl: SocketImpl,
     }
 
     val value = if (on) {
+      // the maximum timeout value is platform specific,
+      // but most implementations limit it to USHORT_MAX
       if (linger > 65535) 65535 else linger
     } else {
       -1
