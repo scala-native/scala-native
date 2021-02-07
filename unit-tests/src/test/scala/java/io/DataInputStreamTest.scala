@@ -683,10 +683,10 @@ class DataInputStreamTest {
     // Do not use DataOutputStream#writeUTF to avoid matched and compensating
     // errors in implementation.
 
-    // Try to break readUTF8:
+    // Try to break readUTF:
     //   Dollar Sign expands to 1 byte in Java modified UTF-8
     //   Pound Sign (\u00a3) expands to 2 bytes.
-    //   Euro Sign (\u20ac) expands to 2 bytes.
+    //   Euro Sign (\u20ac) expands to 3 bytes.
     //   OxFFFF (valid Unicode but not defined as a character) is three
     //       bytes of devilry to push high bound & break things.
 
@@ -730,10 +730,10 @@ class DataInputStreamTest {
     // Do not use DataOutputStream#writeUTF to avoid matched and compensating
     // errors in implementation.
 
-    // Try to break readUTF8:
+    // Try to break readUTF:
     //   Dollar Sign expands to 1 byte in Java modified UTF-8
     //   Pound Sign (\u00a3) expands to 2 bytes.
-    //   Euro Sign (\u20ac) expands to 2 bytes.
+    //   Euro Sign (\u20ac) expands to 3 bytes.
     //   OxFFFF (valid Unicode but not defined as a character) is three
     //       bytes of devilry to push high bound & break things.
 
