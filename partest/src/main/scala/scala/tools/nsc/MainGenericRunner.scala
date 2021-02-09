@@ -15,7 +15,8 @@ package scala.tools.nsc
 /* Super hacky overriding of the MainGenericRunner used by partest */
 
 import java.nio.file._
-import java.util.Comparator
+import java.util.function.BinaryOperator
+import java.util.{Comparator, function}
 import scala.scalanative.build._
 import scala.scalanative.util.Scope
 import scala.tools.nsc.GenericRunnerCommand._
@@ -73,11 +74,11 @@ class MainGenericRunner {
             .withCompileOptions(Discover.compileOptions())
         )
         .withClassPath {
-          command.settings.classpathURLs.map(urlToPath) ++ Seq(
-            "/home/wmazur/projects/scalacenter/scala-native/scala-native/scalalib/target/scala-2.12/scalalib_native0.4.1-SNAPSHOT_2.12-0.4.1-SNAPSHOT.jar",
-            "/home/wmazur/projects/scalacenter/scala-native/scala-native/auxlib/target/scala-2.12/auxlib_native0.4.1-SNAPSHOT_2.12-0.4.1-SNAPSHOT.jar",
-            "/home/wmazur/projects/scalacenter/scala-native/scala-native/javalib/target/scala-2.12/javalib_native0.4.1-SNAPSHOT_2.12-0.4.1-SNAPSHOT.jar"
-          ).map(Paths.get(_))
+          val nativeClasspath = loadSetting("nativeCp", Seq.empty[Path]) {
+            _.split(":")
+              .map(Paths.get(_))
+          }
+          command.settings.classpathURLs.map(urlToPath) ++ nativeClasspath
         }
         .withMainClass(command.thingToRun + "$")
         .withLogger(logger)
@@ -91,11 +92,19 @@ class MainGenericRunner {
       sys.process.Process(cmd, dir.toFile).run().exitValue() == 0
     }
 
+    val deleteFn = new function.Function[Path, Boolean] {
+      override def apply(path: Path): Boolean = path.toFile.delete()
+    }
+
+    val reduceBool = new BinaryOperator[Boolean] {
+      override def apply(l: Boolean, r: Boolean): Boolean = l && r
+    }
+
     Files
       .walk(dir)
       .sorted(Comparator.reverseOrder[Path]())
-      .map[Boolean](_.toFile.delete())
-      .reduce(true, (l: Boolean, r: Boolean) => l && r) &&
+      .map[Boolean](deleteFn)
+      .reduce(true, reduceBool) &&
     Files.deleteIfExists(dir)
 
     res

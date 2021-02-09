@@ -93,6 +93,13 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
     val runnerClass =
       Class.forName("scala.tools.partest.scalanative.ScalaNativeSBTRunner")
 
+    // The test root for partest is read out through the system properties,
+    // not passed as an argument
+    System.setProperty("partest.root", testRoot.getAbsolutePath())
+
+    // Partests take at least 5h. We double, just to be sure. (default is 4 hours)
+    System.setProperty("partest.timeout", "10 hours")
+
     runnerClass.getConstructors.head
       .newInstance(partestFingerprint,
                    eventHandler,

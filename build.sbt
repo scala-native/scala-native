@@ -909,27 +909,26 @@ lazy val junitAsyncJVM =
       publishArtifact := false
     )
 
-val shouldPartest = settingKey[Boolean](
-  "Whether we should partest the current scala version (and fail if we can't)")
+lazy val shouldPartest = settingKey[Boolean](
+  "Whether we should partest the current scala version (or skip if we can't)")
 
-def shouldPartestSetting(partestSuite: LocalProject) = Def.settings(
-  shouldPartest := {
-    val testListDir = (
-      (resourceDirectory in (partestSuite, Test)).value / "scala"
-        / "tools" / "partest" / "scalanative" / scalaVersion.value
-    )
-    testListDir.exists
-  }
-)
+def shouldPartestSetting: Seq[Def.Setting[_]] = {
+  Def.settings(
+    shouldPartest := {
+      baseDirectory.value.getParentFile / "partest-suite" / "src" / "test" / "resources" /
+        "scala" / "tools" / "partest" / "scalanative" / scalaVersion.value
+    }.exists()
+  )
+}
 
 lazy val partest = project
   .in(file("partest"))
   .settings(
     nameSettings,
+    shouldPartestSetting,
     resolvers += Resolver.typesafeIvyRepo("releases"),
     artifactPath in fetchScalaSource :=
       baseDirectory.value / "fetchedSources" / scalaVersion.value,
-    shouldPartest := true,
     fetchScalaSource := {
       import org.eclipse.jgit.api._
 
@@ -958,25 +957,31 @@ lazy val partest = project
 
       trgDir
     },
-    libraryDependencies += "com.google.jimfs" % "jimfs" % "1.2",
-    libraryDependencies ++= {
-      if (shouldPartest.value) {
-        Seq(
-          "org.scala-sbt" % "test-interface" % "1.0", {
-            val v = scalaVersion.value
-            if (v.startsWith("2.11."))
-              "org.scala-lang.modules" %% "scala-partest" % "1.0.16"
-            else
-              "org.scala-lang.modules" %% "scala-partest" % "1.1.4"
-          }
-        )
-      } else {
-        Seq()
+    unmanagedSourceDirectories in Compile ++= {
+      if (!shouldPartest.value) Nil
+      else {
+        Seq(CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11)) =>
+            sourceDirectory.value / "main" / "legacy-partest"
+          case _ => sourceDirectory.value / "main" / "new-partest"
+        })
       }
     },
+    libraryDependencies ++= {
+      if (!shouldPartest.value) Nil
+      else
+        Seq(
+          "org.scala-sbt" % "test-interface" % "1.0",
+          CrossVersion.partialVersion(scalaVersion.value) match {
+            case Some((2, 11)) =>
+              "org.scala-lang.modules" %% "scala-partest" % "1.0.16"
+            case _ => "org.scala-lang" % "scala-partest" % scalaVersion.value
+          }
+        )
+    },
     sources in Compile := {
-      val s = (sources in Compile).value
-      if (shouldPartest.value) s else Nil
+      if (!shouldPartest.value) Nil
+      else (sources in Compile).value
     }
   )
   .dependsOn(nscplugin, tools)
@@ -985,16 +990,9 @@ lazy val partestSuite: Project = project
   .in(file("partest-suite"))
   .settings(
     nameSettings,
+    shouldPartestSetting,
     fork in Test := true,
     javaOptions in Test += "-Xmx1G",
-    shouldPartest := true,
-    // Override the dependency of partest - see #1889
-    dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value % "test",
-    testFrameworks ++= {
-      if (shouldPartest.value)
-        Seq(new TestFramework("scala.tools.partest.scalanative.Framework"))
-      else Seq()
-    },
     definedTests in Test ++= Def
       .taskDyn[Seq[sbt.TestDefinition]] {
         if (shouldPartest.value) Def.task {
@@ -1016,7 +1014,21 @@ lazy val partestSuite: Project = project
           Def.task(Seq())
         }
       }
-      .value
-//    shouldPartestSetting(LocalProject("partestSuite"))
+      .value,
+    testOptions += {
+      val nativeCp = Seq(
+        (auxlib / Compile / packageBin).value,
+        (scalalib / Compile / packageBin).value
+      ).map(_.absolutePath).mkString(":")
+
+      Tests.Argument(s"--nativeClasspath=$nativeCp")
+    },
+    // Override the dependency of partest - see Scala.js issue #1889
+    dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value % "test",
+    testFrameworks ++= {
+      if (shouldPartest.value)
+        Seq(new TestFramework("scala.tools.partest.scalanative.Framework"))
+      else Seq()
+    }
   )
   .dependsOn(partest % "test", javalib)

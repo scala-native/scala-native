@@ -11,10 +11,12 @@
  */
 
 package scala.tools.partest.scalanative
+import java.nio.file.{Path, Paths}
 import scalanative.build
 
 class ScalaNativePartestOptions private (
     val testFilter: ScalaNativePartestOptions.TestFilter,
+    val nativeClasspath: Seq[Path],
     val showDiff: Boolean,
     val optimize: Boolean,
     val buildMode: build.Mode,
@@ -50,6 +52,7 @@ object ScalaNativePartestOptions {
     var gc: build.GC               = build.GC.default
     var lto: build.LTO             = build.LTO.default
     var optimize: Boolean          = true
+    val nativeClassPath            = Seq.newBuilder[Path]
 
     def error(msg: String) = {
       failed = true
@@ -97,13 +100,19 @@ object ScalaNativePartestOptions {
       case Argument("mode", value) => mode = build.Mode(value)
       case Argument("gc", value)   => gc = build.GC(value)
       case Argument("lto", value)  => lto = build.LTO(value)
-      case _                       => setFilter(SomeTests(arg :: Nil))
+      case Argument("nativeClasspath", classpath) =>
+        classpath
+          .split(":")
+          .map(Paths.get(_))
+          .foreach(nativeClassPath += _)
+      case _ => setFilter(SomeTests(arg :: Nil))
     }
 
     if (failed) None
     else
       Some {
         new ScalaNativePartestOptions(filter.getOrElse(WhitelistedTests),
+                                      nativeClassPath.result(),
                                       showDiff = showDiff,
                                       optimize = optimize,
                                       buildMode = mode,
