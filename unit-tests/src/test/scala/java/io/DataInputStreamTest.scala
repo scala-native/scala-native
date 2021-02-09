@@ -1,799 +1,327 @@
+// Ported from Scala.js commit: cbf86bb dated: 2020-10-23
+//
+// Porting Note:
+//   New test staticReadUTF() added for ScalaNative.
+//   DataInputStream.readUTF() does not have that static method.
+
 package java.io
 
-import org.junit.Test
+import scala.scalanative.junit.utils.AssertThrows._
+import org.scalanative.testsuite.utils.Platform.executingInJVM
+
+import org.junit._
 import org.junit.Assert._
+import org.junit.Assume._
 
-import scalanative.junit.utils.AssertThrows._
+trait DataInputStreamTest {
 
-import scalanative.unsafe.sizeof
+  protected def inFromBytes(bytes: Seq[Byte]): InputStream
 
-class DataInputStreamTest {
-  // read() is inherited from the underlying InputStream. It is not a method
-  // implemented in DIS. Since the internals of DIS use in.read(), test
-  // the method here. Detect defects as close to the cause as feasible.
+  private def newStream(data: Int*) =
+    new DataInputStream(inFromBytes(data.map(_.toByte)))
 
-  @Test def readNoArgEndOfFile(): Unit = {
-    val expected   = 98 // ASCII 'b'
-    val inputArray = Array[Byte](expected.toByte)
-    val iaLength   = 0
+  @Test def readBoolean(): Unit = {
+    val data   = Seq(0x00, 0x01, 0xF1, 0x00, 0x01)
+    val stream = newStream(data: _*)
 
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
+    for (d <- data)
+      assertEquals(d != 0, stream.readBoolean())
 
-    val buffer = new Array[Byte](inputArray.length)
-
-    assertEquals(-1, dis.read())
-  }
-
-  @Test def readNoArgByte255(): Unit = {
-    val expected   = 255 // ASCII nbsp, particularly troublesome
-    val inputArray = Array[Byte](expected.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    // 255 is ASCII nbsp, a particularly troublesome case.
-    assertEquals(255, dis.read())
-  }
-
-  // read(b)
-
-  @Test def readBufEndOfFile(): Unit = {
-    val expected = 99.toByte // ASCII 'c'
-
-    val inputArray = Array[Byte](expected)
-    val iaLength   = 0
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    val buffer = new Array[Byte](inputArray.length)
-
-    assertEquals(-1, dis.read(buffer))
-  }
-
-  @Test def readBuf(): Unit = {
-    val expected       = "Blue eyes crying in the rain".getBytes
-    val expectedLength = expected.length
-
-    val arrayIn = new ByteArrayInputStream(expected, 0, expectedLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    val buffer = new Array[Byte](expectedLength)
-
-    assertEquals(expectedLength, dis.read(buffer))
-
-    for (i <- 0 until expectedLength) {
-      assertEquals(expected(i), buffer(i))
-    }
-  }
-
-  // read(b, off, len)
-
-  @Test def readBufOffLenEndOfFile(): Unit = {
-    val expected   = 100 // ASCII 'd'
-    val inputArray = Array[Byte](expected.toByte)
-    val iaLength   = 0
-
-    val buffer = new Array[Byte](inputArray.length)
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(-1, dis.read(buffer, 0, 1))
-  }
-
-  @Test def readBufOffLen(): Unit = {
-    val off = 10
-    val len = 3
-
-    val text       = "Fido is a cat, not a goat!"
-    val textBytes  = text.getBytes
-    val textLength = textBytes.length
-
-    val dog       = "dog"
-    val dogBytes  = dog.getBytes
-    val dogLength = dogBytes.length
-
-    val expected       = text.replace("cat", "dog")
-    val expectedBytes  = expected.getBytes
-    val expectedLength = expectedBytes.length
-
-    val arrayIn = new ByteArrayInputStream(dogBytes, 0, dogLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    val buffer = textBytes
-
-    assertEquals(len, dis.read(buffer, off, len))
-
-    for (i <- 0 until expectedLength) {
-      assertEquals(expectedBytes(i), buffer(i))
-    }
-  }
-
-  // readByte
-
-  @Test def readByteEOF(): Unit = {
-    val expected   = 101.toByte // ASCII 'e'
-    val inputArray = Array[Byte](expected)
-    val iaLength   = 0
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[EOFException], dis.readByte())
+    assertThrows(classOf[EOFException], stream.readBoolean())
   }
 
   @Test def readByte(): Unit = {
-    val expected   = 102.toByte // ASCII 'f'
-    val inputArray = Array[Byte](expected)
-    val iaLength   = inputArray.length
+    val data   = Seq(0x00, 0x01, 0xF1, 0x7D, 0x35)
+    val stream = newStream(data: _*)
 
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
+    for (d <- data)
+      assertEquals(d.toByte, stream.readByte())
 
-    assertEquals(expected, dis.readByte())
-  }
-
-  // readBoolean
-
-  @Test def readBooleanEOF(): Unit = {
-    val expected   = 0.toByte
-    val inputArray = Array[Byte](expected)
-    val iaLength   = 0
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[EOFException], dis.readBoolean())
-  }
-
-  @Test def readBooleanFalse(): Unit = {
-    val inputArray = Array[Byte](0.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(false, dis.readBoolean())
-  }
-
-  @Test def readBooleanTrue(): Unit = {
-    val inputArray = Array[Byte](1.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(true, dis.readBoolean())
-  }
-
-  // readUnsignedByte
-
-  @Test def readUnsignedByteEndOfFile(): Unit = {
-    val expected   = 255.toByte // ASCII nbsp
-    val inputArray = Array[Byte](expected)
-    val iaLength   = 0
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[EOFException], dis.readUnsignedByte())
-  }
-
-  @Test def readUnsignedByteByte255(): Unit = {
-    // Broken implementations of readUnsignedByte will report character
-    // 255 as -1, high bytes set, not required 255, high bytes clear.
-    val expected   = 255 // ASCII nbsp
-    val inputArray = Array[Byte](expected.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(expected, dis.readUnsignedByte())
-  }
-
-  // readChar
-
-  @Test def readCharEOF(): Unit = {
-    // readChar expects to read 2 bytes, cause EOF by providing only 1.
-    val inputArray = Array[Byte](0x97.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[EOFException], dis.readChar())
+    assertThrows(classOf[EOFException], stream.readBoolean())
   }
 
   @Test def readChar(): Unit = {
-    // Java is reading Big Endian (high byte first) UTF-16.
-    //
-    // Beware: The attractive Character.getBytes apparently returns
-    // modified UTF-8.
-    //
-    // Helpful Unicode URL: https://unicode-table.com/en/03D5/
+    val stream = newStream(
+      0x00, 0x48, // H
+      0x00, 0xF6, // ö
+      0x00, 0x6C, // l
+      0x00, 0x6C, // l
+      0x00, 0xF6, // ö
+      0x00, 0x20, // [space]
+      0x00, 0x57, // W
+      0x01, 0x03, // ă
+      0x00, 0x72, // r
+      0x02, 0x34, // ȴ
+      0x01, 0x11, // đ
+      0x56        // dangling
+    )
+    var res = ""
 
-    // Greek phi symbol U+03D5 is a Java Character which is 2
-    // bytes in modified UTF-8 and has with bits set in both upper &
-    // lower bytes. It is also both non-ASCII & easy to recognize on screen.
-    // UTF-16BE: decimal:   981, hex: 03 D5,  dec bytes:  3 213
+    for (i <- 1 to 11)
+      res += stream.readChar()
 
-    val expected = '\u03d5'
+    assertEquals("Höllö Wărȴđ", res)
 
-    val inputArray = Array[Byte](0x03.toByte, 0xd5.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(expected, dis.readChar())
-  }
-
-  // readDouble
-
-  @Test def readDoubleEOF(): Unit = {
-    // readDouble expects to read 8 bytes, cause EOF by providing only 3.
-    val inputArray = Array[Byte](0x03.toByte, 0xd5.toByte, 0xFF.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[EOFException], dis.readDouble())
+    assertThrows(classOf[EOFException], stream.readChar()) // Dangling + EOF
   }
 
   @Test def readDouble(): Unit = {
-    val expected = -0.0 // Negative zero is a common troublemaker.
+    val stream = newStream(
+      0x3f, 0xe6, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x41, 0x15, 0x19, 0x20,
+      0x45, 0x8d, 0x9b, 0x5f, 0xc0, 0xab, 0x20, 0x22, 0x75, 0x25, 0x46, 0x0b,
+      0x7f, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7f, 0xf0, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0xc0, 0x1c, 0x0d, 0xca, 0x65, 0xea, 0x3f, 0xa4,
+      0xff, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 // dangling
+    )
 
-    var bits = java.lang.Double.doubleToLongBits(expected)
-
-    val nBytes = sizeof[Long].toInt
-    val data   = new Array[Byte](nBytes)
-
-    for (i <- (nBytes - 1) to 0 by -1) {
-      data(i) = bits.toByte
-      bits >>>= 8
-    }
-
-    val inputArray = Array[Byte](data: _*)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(expected, dis.readDouble(), 0.0001)
-  }
-
-  // readFloat
-
-  @Test def readFloatEOF(): Unit = {
-    // readFloat expects to read 4 bytes, cause EOF by providing only 3.
-    val inputArray = Array[Byte](0x03.toByte, 0xd5.toByte, 0xFF.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[EOFException], dis.readFloat())
+    assertEquals(0.7, stream.readDouble(), 0.0)
+    assertEquals(345672.067923, stream.readDouble(), 0.0)
+    assertEquals(-3472.0673, stream.readDouble(), 0.0)
+    assertTrue(stream.readDouble().isNaN)
+    assertEquals(Double.PositiveInfinity, stream.readDouble(), 0.0)
+    assertEquals(-7.0134674, stream.readDouble(), 0.0)
+    assertEquals(Double.NegativeInfinity, stream.readDouble(), 0.0)
+    assertEquals(0.0, stream.readDouble(), 0.0)
+    assertThrows(classOf[EOFException], stream.readDouble())
   }
 
   @Test def readFloat(): Unit = {
-    val expected = Float.MinPositiveValue
+    val stream = newStream(
+      0xbf, 0x80, 0x00, 0x00, 0x45, 0x8e, 0x9c, 0x83, 0x80, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x7f, 0xc0, 0x00, 0x00, 0x7f, 0x80, 0x00, 0x00,
+      0xbb, 0x03, 0x12, 0x6f, 0xff, 0x80, 0x00, 0x00, 0xff // dangling
+    )
 
-    var bits = java.lang.Float.floatToIntBits(expected)
-
-    val nBytes = sizeof[Int].toInt
-    val data   = new Array[Byte](nBytes)
-
-    for (i <- (nBytes - 1) to 0 by -1) {
-      data(i) = bits.toByte
-      bits >>>= 8
-    }
-
-    val inputArray = Array[Byte](data: _*)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(expected, dis.readFloat(), 0.0001)
-  }
-
-  // readFully
-
-  @Test def readFullyBufOffLenNullBuffer(): Unit = {
-    val inputArray =
-      List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
-    val iaLength = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[NullPointerException],
-                 dis.readFully(null.asInstanceOf[Array[Byte]], 0, 1))
-  }
-
-  @Test def readFullyBufOffLenInvalidOffsetArgument(): Unit = {
-    val inputArray =
-      List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
-    val iaLength = inputArray.length
-
-    val arrayIn     = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis         = new DataInputStream(arrayIn)
-    val outputArray = new Array[Byte](iaLength)
-
-    assertThrows(classOf[IndexOutOfBoundsException],
-                 dis.readFully(outputArray, -1, 1))
-  }
-
-  @Test def readFullyBufOffLenInvalidLengthArgument(): Unit = {
-    val inputArray =
-      List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
-    val iaLength = inputArray.length
-
-    val arrayIn     = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis         = new DataInputStream(arrayIn)
-    val outputArray = new Array[Byte](iaLength)
-
-    assertThrows(classOf[IndexOutOfBoundsException],
-                 dis.readFully(outputArray, 0, -1))
-  }
-
-  @Test def readFullyBufOffLenInvalidOffsetPlusLengthArguments(): Unit = {
-    val inputArray =
-      List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
-    val iaLength = inputArray.length
-
-    val arrayIn     = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis         = new DataInputStream(arrayIn)
-    val outputArray = new Array[Byte](iaLength)
-
-    assertThrows(classOf[IndexOutOfBoundsException],
-                 dis.readFully(outputArray, 1, outputArray.length))
-  }
-
-  @Test def readFullyBufOffLenMinusLen0(): Unit = {
-    val inputArray = Array.tabulate[Byte](256)(i => i.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    val marker      = 255.toByte
-    val outputArray = Array.fill[Byte](iaLength)(marker.toByte)
-
-    dis.readFully(outputArray, 10, 0)
-
-    val index = outputArray.indexWhere(e => e != marker)
-
-    if (index >= 0) {
-      val result   = outputArray(index) & 0xFF // want to print 0-255
-      val expected = marker & 0xFF
-
-      assertTrue(s"byte at index ${index}: ${result} != expected: ${expected}",
-                 false)
-    }
-  }
-
-  @Test def readFullyBufOffLenMinusLenEqualsLength(): Unit = {
-    val inputArray = Array.tabulate[Byte](256)(i => i.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    val outputArray = Array.fill[Byte](iaLength)(0.toByte)
-    outputArray(0) = 255.toByte
-
-    dis.readFully(outputArray, 0, outputArray.length)
-
-    val zipped = outputArray.zip(inputArray)
-    val index  = zipped.indexWhere(x => x._1 != x._2)
-
-    if (index >= 0) {
-      val result   = outputArray(index) & 0xFF // want to print 0-255
-      val expected = inputArray(index) & 0xFF
-
-      assertTrue(s"byte at index ${index}: ${result} != expected: ${expected}",
-                 false)
-    }
-  }
-
-  @Test def readFullyBufOffLenPatchMiddleOfBuffer(): Unit = {
-    val inputArray = Array.tabulate[Byte](10)(i => (i + 20).toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    val outputArray = Array.fill[Byte](20)(1.toByte)
-
-    val expectedArray = Array.fill[Byte](outputArray.length)(outputArray(0))
-
-    for (j <- 0 until iaLength) {
-      expectedArray(10 + j) = inputArray(j)
-    }
-
-    dis.readFully(outputArray, 10, inputArray.length)
-
-    val zipped = outputArray.zip(expectedArray)
-    val index  = zipped.indexWhere(x => x._1 != x._2)
-
-    if (index >= 0) {
-      val result   = outputArray(index) & 0xFF // want to print 0-255
-      val expected = inputArray(index) & 0xFF
-
-      assertTrue(s"byte at index ${index}: ${result} != expected: ${expected}",
-                 false)
-    }
-  }
-
-  @Test def readFullyBufOffLenUnexpectedEndOfFile(): Unit = {
-    val inputArray = Array.tabulate[Byte](128)(i => i.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    val outputArray = Array.fill[Byte](iaLength + 1)(0.toByte)
-
-    assertThrows(classOf[EOFException],
-                 dis.readFully(outputArray, 0, outputArray.length))
-  }
-
-  @Test def readFullyBufNullBuffer(): Unit = {
-    val inputArray =
-      List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
-    val iaLength = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[NullPointerException],
-                 dis.readFully(null.asInstanceOf[Array[Byte]]))
-  }
-
-  @Test def readFullyBuf(): Unit = {
-    val inputArray = Array.tabulate[Byte](256)(i => i.toByte).reverse
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    val outputArray = Array.fill[Byte](iaLength)(0.toByte)
-
-    dis.readFully(outputArray)
-
-    val zipped = outputArray.zip(inputArray)
-    val index  = zipped.indexWhere(x => x._1 != x._2)
-
-    if (index >= 0) {
-      val result   = outputArray(index) & 0xFF // want to print 0-255
-      val expected = inputArray(index) & 0xFF
-
-      assertTrue(s"byte at index ${index}: ${result} != expected: ${expected}",
-                 false)
-    }
-  }
-
-  // readInt
-
-  @Test def readIntEndOfFile(): Unit = {
-    // readInt expects to read 4 bytes, cause EOF by providing only 2.
-    val inputArray = Array[Byte](0x03.toByte, 0xFF.toByte)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[EOFException], dis.readInt())
+    assertEquals(-1.0f, stream.readFloat(), 1e-6f)
+    assertEquals(4563.564f, stream.readFloat(), 1e-6f)
+    assertEquals(-0.0f, stream.readFloat(), 1e-6f)
+    assertEquals(0.0f, stream.readFloat(), 1e-6f)
+    assertTrue(stream.readFloat().isNaN)
+    assertEquals(Float.PositiveInfinity, stream.readFloat(), 0.0f)
+    assertEquals(-0.002f, stream.readFloat(), 1e-6f)
+    assertEquals(Float.NegativeInfinity, stream.readFloat(), 0.0f)
+    assertThrows(classOf[EOFException], stream.readFloat())
   }
 
   @Test def readInt(): Unit = {
-    val expected = -2019
+    val stream = newStream(0x00, 0x00, 0x00, 0x00, 0x7f, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xfc, 0x00, 0x00, 0x00, 0x53, 0x00, 0x00, 0x89, 0xa2, 0xff,
+      0xfe, 0x82, 0xfd, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01)
 
-    var bits = expected
-
-    val nBytes = sizeof[Int].toInt
-    val data   = new Array[Byte](nBytes)
-
-    for (i <- (nBytes - 1) to 0 by -1) {
-      data(i) = bits.toByte
-      bits >>>= 8
-    }
-
-    val inputArray = Array[Byte](data: _*)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(expected, dis.readInt())
-  }
-
-  // readLine has been deprecated since Java JDK 1.1.
-  // Test it anyway, help prevent headstrong people from falling into
-  // infinite loops. If it exists, someone if bound to try it.
-
-  // readLine
-
-  @Test def readLineEndOfFile(): Unit = {
-    val inputArray = "These are the times that try people's souls.\n".getBytes
-    val iaLength   = 0
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertNull(dis.readLine())
-  }
-
-  @Test def readLineTermLf(): Unit = {
-    val expected = "These are the times that try people's souls."
-
-    val inputArray = s"${expected}\n".getBytes
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(expected, dis.readLine())
-  }
-
-  @Test def readLineTermNone(): Unit = {
-    val expected = "These are the times that try people's souls."
-
-    val inputArray = expected.getBytes
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(expected, dis.readLine())
-  }
-
-  // readLong
-
-  @Test def readLongEndOfFile(): Unit = {
-    // readLong expects to read 8 bytes, cause EOF by providing only 5.
-    val inputArray = List(0x03, 0xFF, 0x100, 0x101, 0x102)
-      .map(_.toByte)
-      .toArray[Byte]
-
-    val iaLength = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[EOFException], dis.readLong())
+    assertEquals(0, stream.readInt())
+    assertEquals(Int.MaxValue, stream.readInt())
+    assertEquals(-4, stream.readInt())
+    assertEquals(83, stream.readInt())
+    assertEquals(35234, stream.readInt())
+    assertEquals(-97539, stream.readInt())
+    assertEquals(Int.MinValue, stream.readInt())
+    assertEquals(1, stream.readInt())
+    assertThrows(classOf[EOFException], stream.readInt())
   }
 
   @Test def readLong(): Unit = {
-    val expected = Long.MaxValue
+    val stream = newStream(0x00, 0x01, 0xf0, 0xec, 0x59, 0x0c, 0x70, 0x9a, 0xff,
+      0xff, 0xff, 0xff, 0xfe, 0x10, 0xd5, 0x5e, 0x7f, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x80, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x79, 0x24, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2f)
 
-    var bits = expected
-
-    val nBytes = sizeof[Long].toInt
-    val data   = new Array[Byte](nBytes)
-
-    for (i <- (nBytes - 1) to 0 by -1) {
-      data(i) = bits.toByte
-      bits >>>= 8
-    }
-
-    val inputArray = Array[Byte](data: _*)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(expected, dis.readLong())
-  }
-
-  // readShort
-
-  @Test def readShortEndOfFile(): Unit = {
-    // readShort expects to read 2 bytes, cause EOF by providing zero.
-    val inputArray = Array[Byte](0x97.toByte)
-    val iaLength   = 0
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[EOFException], dis.readShort())
+    assertEquals(546372873646234L, stream.readLong())
+    assertEquals(-32451234L, stream.readLong())
+    assertEquals(Long.MaxValue, stream.readLong())
+    assertEquals(0L, stream.readLong())
+    assertEquals(-1L, stream.readLong())
+    assertEquals(Long.MinValue, stream.readLong())
+    assertEquals(-34524L, stream.readLong())
+    assertEquals(47L, stream.readLong())
+    assertThrows(classOf[EOFException], stream.readLong())
   }
 
   @Test def readShort(): Unit = {
-    val expected = -1984
+    val stream = newStream(
+      0x01, 0xc5, 0xff, 0xd5, 0x7f, 0xff, 0x18, 0xb0, 0x00, 0x00, 0x80, 0x00,
+      0xfe, 0xa6, 0x00, 0x22, 0x01 // dangling
+    )
 
-    var bits = expected
-
-    val nBytes = sizeof[Short].toInt
-    val data   = new Array[Byte](nBytes)
-
-    for (i <- (nBytes - 1) to 0 by -1) {
-      data(i) = bits.toByte
-      bits >>>= 8
-    }
-
-    val inputArray = Array[Byte](data: _*)
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertEquals(expected, dis.readShort())
+    assertEquals(453, stream.readShort())
+    assertEquals(-43, stream.readShort())
+    assertEquals(Short.MaxValue, stream.readShort())
+    assertEquals(6320, stream.readShort())
+    assertEquals(0, stream.readShort())
+    assertEquals(Short.MinValue, stream.readShort())
+    assertEquals(-346, stream.readShort())
+    assertEquals(34, stream.readShort())
+    assertThrows(classOf[EOFException], stream.readDouble())
   }
 
-  // readUnsignedShort
-  @Test def readUnsignedShortEndOfFile(): Unit = {
-    // readUnsignedShort expects to read 2 bytes, cause EOF by providing 1.
-    val inputArray = Array[Byte](0x97.toByte)
-    val iaLength   = inputArray.length
+  @Test def readUnsignedByte(): Unit = {
+    val data   = Seq(0x00, 0x01, 0xF1, 0x7D, 0x35)
+    val stream = newStream(data: _*)
 
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
+    for (d <- data)
+      assertEquals(d, stream.readUnsignedByte())
 
-    assertThrows(classOf[EOFException], dis.readUnsignedShort())
+    assertThrows(classOf[EOFException], stream.readBoolean()) // EOF
   }
 
   @Test def readUnsignedShort(): Unit = {
-    val expected = 0xFEEB
+    val stream = newStream(
+      0xfe, 0x4c, 0x00, 0x00, 0x18, 0xee, 0x0d, 0xed, 0x00, 0x2b, 0x01, 0xce,
+      0x01, 0x56, 0x64, 0x2b, 0x01 // dangling
+    )
 
-    var bits = expected
+    assertEquals(65100, stream.readUnsignedShort())
+    assertEquals(0, stream.readUnsignedShort())
+    assertEquals(6382, stream.readUnsignedShort())
+    assertEquals(3565, stream.readUnsignedShort())
+    assertEquals(43, stream.readUnsignedShort())
+    assertEquals(462, stream.readUnsignedShort())
+    assertEquals(342, stream.readUnsignedShort())
+    assertEquals(25643, stream.readUnsignedShort())
+    assertThrows(classOf[EOFException], stream.readDouble())
+  }
 
-    val nBytes = sizeof[Short].toInt
-    val data   = new Array[Byte](nBytes)
+  @Test def readFullyOneArgThreeArg(): Unit = {
+    val stream = newStream(-100 to 99: _*)
+    val buf    = new Array[Byte](50)
 
-    for (i <- (nBytes - 1) to 0 by -1) {
-      data(i) = bits.toByte
-      bits >>>= 8
+    stream.readFully(buf)
+    assertArrayEquals(toByteArray(-100 to -51), buf)
+
+    assertThrows(classOf[Exception], stream.readFully(null))
+
+    stream.readFully(buf, 40, 10)
+    assertArrayEquals(toByteArray((-100 to -61) ++ (-50 to -41)), buf)
+
+    assertThrows(classOf[Exception], stream.readFully(buf, 70, 1))
+    assertThrows(classOf[Exception], stream.readFully(buf, 10, 100))
+    assertThrows(classOf[Exception], stream.readFully(buf, -1, 2))
+    assertThrows(classOf[Exception], stream.readFully(buf, 0, -1))
+
+    stream.readFully(buf, 0, 50)
+    assertArrayEquals(toByteArray(-40 to 9), buf)
+
+    stream.readFully(buf, 0, 50)
+    assertArrayEquals(toByteArray(10 to 59), buf)
+
+    assertThrows(classOf[Exception], stream.readFully(buf))
+  }
+
+  @Test def readFullyForBurstyStreams(): Unit = {
+    class BurstyStream(length: Int, burst: Int) extends InputStream {
+      private var i: Int = 0
+      def read(): Int =
+        if (i < length) { i += 1; i }
+        else -1
+      override def read(buf: Array[Byte], off: Int, reqLen: Int): Int = {
+        val len = Math.min(Math.min(reqLen, burst), length - i)
+        if (reqLen == 0) 0
+        else if (len == 0) -1
+        else {
+          var j: Int = 0
+          while (j < len) {
+            buf(off + j) = read().toByte
+            j += 1
+          }
+          len
+        }
+      }
     }
 
-    val inputArray = Array[Byte](data: _*)
-    val iaLength   = inputArray.length
+    val stream = new DataInputStream(new BurstyStream(100, 5))
+    val buf    = new Array[Byte](50)
 
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
+    stream.readFully(buf)
+    assertArrayEquals(toByteArray(1 to 50), buf)
 
-    assertEquals(expected, dis.readUnsignedShort())
+    stream.readFully(buf, 40, 10)
+    assertArrayEquals(toByteArray((1 to 40) ++ (51 to 60)), buf)
+
+    assertThrows(classOf[EOFException], stream.readFully(buf))
   }
 
-  // readUTF
+  @Test def readUTF(): Unit = {
+    val stream = newStream(0x00, 0x10, 0x48, 0xc3, 0xb6, 0x6c, 0x6c, 0xc3, 0xb6,
+      0x20, 0x57, 0xc4, 0x83, 0x72, 0xc8, 0xb4, 0xc4, 0x91, 0x00, 0x0d, 0x70,
+      0x6f, 0x6f, 0x20, 0x2d, 0x3e, 0x20, 0xed, 0xa0, 0xbd, 0xed, 0xb2, 0xa9,
+      0x00, 0x03, 0xe6, 0x84, 0x9b)
 
-  @Test def readUtfEndOfFile(): Unit = {
-    // This is a deliberately mis-configured Java modified UTF-8 file.
-    // A length (first unsigned short, 16 bits) is given, but not
-    // that many following bytes. This is to trigger EOF.
+    assertEquals("Höllö Wărȴđ", stream.readUTF)
+    assertEquals("poo -> 💩", stream.readUTF)
+    assertEquals("愛", stream.readUTF)
 
-    val expected = 103 // ASCII 'g'
-    val inputArray =
-      List(1, 5, 20, 50).map(_.toByte).toArray[Byte]
-    val iaLength = 0
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[EOFException], dis.readUTF())
+    val badStream = newStream(0x00, 0x01, 0xC0, 0x82)
+    assertThrows(classOf[UTFDataFormatException], badStream.readUTF)
   }
 
-  @Test def readUtf(): Unit = {
-    // Do not use DataOutputStream#writeUTF to avoid matched and compensating
-    // errors in implementation.
+  @Test def staticReadUTF(): Unit = {
+    val stream = newStream(0x00, 0x10, 0x48, 0xc3, 0xb6, 0x6c, 0x6c, 0xc3, 0xb6,
+      0x20, 0x57, 0xc4, 0x83, 0x72, 0xc8, 0xb4, 0xc4, 0x91, 0x00, 0x0d, 0x70,
+      0x6f, 0x6f, 0x20, 0x2d, 0x3e, 0x20, 0xed, 0xa0, 0xbd, 0xed, 0xb2, 0xa9,
+      0x00, 0x03, 0xe6, 0x84, 0x9b)
 
-    // Try to break readUTF8:
-    //   Dollar Sign expands to 1 byte in Java modified UTF-8
-    //   Pound Sign (\u00a3) expands to 2 bytes.
-    //   Euro Sign (\u20ac) expands to 2 bytes.
-    //   OxFFFF (valid Unicode but not defined as a character) is three
-    //       bytes of devilry to push high bound & break things.
+    assertEquals("Höllö Wărȴđ", DataInputStream.readUTF(stream))
+    assertEquals("poo -> 💩", stream.readUTF)
+    assertEquals("愛", stream.readUTF)
 
-    val expected       = "$\u00a3\u20ac\uFFFF"
-    val expectedLength = expected.length
-
-    val dataBytes  = expected.getBytes
-    val dataLength = dataBytes.length
-    val highB      = ((dataLength & 0xFFFF0000) >>> 8).toByte
-    val lowB       = dataLength.toByte
-
-    val inputArray = Array(highB, lowB) ++ dataBytes
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    val result = dis.readUTF()
-
-    assertEquals(expectedLength, result.length)
-    assertEquals(expected, result)
+    val badStream = newStream(0x00, 0x01, 0xC0, 0x82)
+    assertThrows(classOf[UTFDataFormatException], badStream.readUTF)
   }
 
-  @Test def readUtfOneArgEndOfFile(): Unit = {
-    // This is deliberately mis-configured Java modified UTF-8 file.
-    // A length (first unsigned short, 16 bits) is given, but not
-    // that many following bytes. This is to trigger EOF.
+  @Test def readUTFWithVeryLongString(): Unit = {
+    val length     = 40000
+    val inputBytes = new Array[Byte](2 + length)
+    inputBytes(0) = (length >> 8).toByte
+    inputBytes(1) = length.toByte
+    for (i <- 2 until (2 + length))
+      inputBytes(i) = 'a'.toByte
 
-    val expected = 103 // ASCII 'g'
-    val inputArray =
-      List(44, 0, 43, 12, 87).map(_.toByte).toArray[Byte]
-    val iaLength = 0
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    assertThrows(classOf[EOFException], DataInputStream.readUTF(dis))
+    val stream = new DataInputStream(new ByteArrayInputStream(inputBytes))
+    val result = stream.readUTF()
+    assertEquals(length, result.length)
+    assertTrue(result.forall(_ == 'a'))
+    assertEquals(-1, stream.read())
   }
 
-  @Test def readUtfOneArg(): Unit = {
-    // Do not use DataOutputStream#writeUTF to avoid matched and compensating
-    // errors in implementation.
+  @Test def readLine(): Unit = {
+    val stream = newStream(
+      "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt): _*)
 
-    // Try to break readUTF8:
-    //   Dollar Sign expands to 1 byte in Java modified UTF-8
-    //   Pound Sign (\u00a3) expands to 2 bytes.
-    //   Euro Sign (\u20ac) expands to 2 bytes.
-    //   OxFFFF (valid Unicode but not defined as a character) is three
-    //       bytes of devilry to push high bound & break things.
-
-    val expected       = "$\u00a3\u20ac\uFFFF"
-    val expectedLength = expected.length
-
-    val dataBytes  = expected.getBytes
-    val dataLength = dataBytes.length
-    val highB      = ((dataLength & 0xFFFF0000) >>> 8).toByte
-    val lowB       = dataLength.toByte
-
-    val inputArray = Array(highB, lowB) ++ dataBytes
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    val result = DataInputStream.readUTF(dis)
-
-    assertEquals(expectedLength, result.length)
-    assertEquals(expected, result)
+    assertEquals("Hello World", stream.readLine())
+    assertEquals("UNIX", stream.readLine())
+    assertEquals("Windows", stream.readLine())
+    assertEquals("Mac (old)", stream.readLine())
+    assertEquals("Stuff", stream.readLine())
+    assertEquals(null, stream.readLine())
   }
 
-  // skipBytes
+  @Test def markReadLinePushBack(): Unit = {
+    assumeFalse("Not supported on JDK", executingInJVM)
 
-  @Test def skipBytesEndOfFile(): Unit = {
-    val chars = 'b' to 'q'
+    val stream = newStream(
+      "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt): _*)
 
-    val inputArray = chars.map(_.toByte).toArray[Byte]
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    // Do something unusual, start someplace other than 0 and an odd boundary.
-    dis.readLong()
-    dis.readByte()
-
-    val expected = iaLength - (sizeof[Long] + sizeof[Byte]).toInt
-
-    // skipBytes does not throw EOFException, returns short count read instead.
-    assertEquals(expected, dis.skipBytes(iaLength))
+    assertEquals("Hello World", stream.readLine())
+    stream.mark(1000)
+    assertEquals("UNIX", stream.readLine())
+    stream.reset()
+    assertEquals("UNIX", stream.readLine())
+    assertEquals("Windows", stream.readLine())
+    assertEquals("Mac (old)", stream.readLine())
+    stream.mark(1000)
+    assertEquals("Stuff", stream.readLine())
+    stream.reset()
+    assertEquals("Stuff", stream.readLine())
+    assertNull(stream.readLine())
   }
 
-  @Test def skipBytes(): Unit = {
-    val chars = 'a' to 'z'
+  private def toByteArray(range: Iterable[Int]): Array[Byte] =
+    range.toArray.map(_.asInstanceOf[Byte])
+}
 
-    val inputArray = chars.map(_.toByte).toArray[Byte]
-    val iaLength   = inputArray.length
-
-    val arrayIn = new ByteArrayInputStream(inputArray, 0, iaLength)
-    val dis     = new DataInputStream(arrayIn)
-
-    // Do something unusual, start someplace other than 0 and an odd boundary.
-    dis.readInt()
-    dis.readByte()
-
-    // Test going up to just before EOF, but not triggering it.
-    val expected = iaLength - (sizeof[Int] + sizeof[Byte]).toInt
-
-    assertEquals(expected, dis.skipBytes(expected))
-  }
+class DataInputStreamGenericTest extends DataInputStreamTest {
+  protected def inFromBytes(bytes: Seq[Byte]): InputStream =
+    new ByteArrayInputStream(bytes.toArray)
 }
