@@ -56,7 +56,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
         javaCmd = null,
         javacCmd = null,
         scalacArgs = Array.empty[String],
-        args = Array("run", "pos", "neg"),
+        args = Array("neg"), //,"pos",  "run"),
         options = options,
         scalaVersion = scalaVersion
       )

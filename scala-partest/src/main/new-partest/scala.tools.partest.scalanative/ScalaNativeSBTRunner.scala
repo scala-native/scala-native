@@ -77,7 +77,7 @@ class ScalaNativeSBTRunner(
   override def runTest(testFile: File): TestState = {
     // Mostly copy-pasted from SuiteRunner.runTest(), unfortunately :-(
     val start                           = System.nanoTime()
-    val info                            = TestInfo(testFile)
+    val info                            = new NativeTestInfo(testFile, listDir)
     val runner                          = new ScalaNativeRunner(info, this, options)
     var stopwatchDuration: Option[Long] = None
 

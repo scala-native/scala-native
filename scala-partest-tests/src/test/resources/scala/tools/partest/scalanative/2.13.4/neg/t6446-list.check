@@ -1,2 +1,2 @@
 ploogin - A sample plugin for testing.
-scalajs - Compile to JavaScript
+nir - Compile to Scala Native IR (NIR)
