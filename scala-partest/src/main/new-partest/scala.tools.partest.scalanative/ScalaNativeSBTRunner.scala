@@ -1,14 +1,4 @@
-/*
- * Scala.js (https://www.scala-js.org/)
- *
- * Copyright EPFL.
- *
- * Licensed under Apache License 2.0
- * (https://www.apache.org/licenses/LICENSE-2.0).
- *
- * See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
- */
+// Ported from Scala.js commit: 060c3397 dated: 2021-02-09
 
 package scala.tools.partest
 package scalanative
@@ -20,8 +10,8 @@ import java.util.concurrent.TimeUnit
 import scala.tools.partest.nest._
 import scala.tools.partest.sbt.SBTRunner
 
-/* Pre-mixin ScalaJSSuiteRunner in SBTRunner, because this is looked up
- * via reflection from the sbt partest interface of Scala.js
+/* Pre-mixin ScalaNativeSuiteRunner in SBTRunner, because this is looked up
+ * via reflection from the sbt partest interface of Scala Native
  */
 class ScalaNativeSBTRunner(
     partestFingerprint: Fingerprint,

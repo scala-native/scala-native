@@ -1,14 +1,4 @@
-/*
- * Scala.js (https://www.scala-js.org/)
- *
- * Copyright EPFL.
- *
- * Licensed under Apache License 2.0
- * (https://www.apache.org/licenses/LICENSE-2.0).
- *
- * See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
- */
+// Ported from Scala.js commit: 060c3397 dated: 2021-02-09
 
 package scala.tools.nsc
 
@@ -43,7 +33,7 @@ class MainGenericRunner {
     else if (command.shouldStopWithInfo) return errorFn("shouldStopWithInfo")
 
     if (command.howToRun != AsObject)
-      return errorFn("Scala.js runner can only run an object")
+      return errorFn("Scala Native runner can only run an object")
 
     val logger = Logger(traceFn = _ => (),
                         debugFn = _ => (),

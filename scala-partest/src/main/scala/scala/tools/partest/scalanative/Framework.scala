@@ -1,3 +1,5 @@
+// Ported from Scala.js commit: 060c3397 dated: 2021-02-09
+
 package scala.tools.partest.scalanative
 
 import sbt.testing.{AnnotatedFingerprint, Fingerprint}
