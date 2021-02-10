@@ -125,7 +125,8 @@ addCommandAlias(
     "tests/test",
     "testsExt/test",
     "junitTestOutputsJVM/test",
-    "junitTestOutputsNative/test"
+    "junitTestOutputsNative/test",
+    "scalaJunitTests/test"
   ).mkString(";")
 )
 
