@@ -51,12 +51,12 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
         partestFingerprint = Framework.fingerprint,
         eventHandler = eventHandler,
         loggers = loggers,
-        testRoot = new File(s"../partest/fetchedSources/${scalaVersion}"),
+        testRoot = new File(s"../scala-partest/fetchedSources/${scalaVersion}"),
         testClassLoader = classLoader,
         javaCmd = null,
         javacCmd = null,
         scalacArgs = Array.empty[String],
-        args = Array("run"), //, "pos", "neg"),
+        args = Array("run", "pos", "neg"),
         options = options,
         scalaVersion = scalaVersion
       )

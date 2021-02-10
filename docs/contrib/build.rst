@@ -204,6 +204,31 @@ The build has roughly five groups of sub-projects as follows:
 
     - ``(scripted-tests)`` (JVM project)
 
+6. External tests and its dependencies. Sources of these tests are not stored
+   in this project, but fetched from external sources, e.g.: Scala compiler repository.
+   Sources in this project define interface used by Scala Native and tests filters.
+
+    - ``scalaPartestTests (scala-partest-tests)`` (JVM project)
+
+		- ``scalaPartest (scala-partest)`` (JVM project, uses Scala Native artifacts)
+
+    - ``scalaJunitTests (scala-junit-tests)`` (Scala Native project)
+
+7. JUnit plugin, its tests and dependencies. Following sources define JUnit compiler
+   for Scala Native and its runtime, as well as compliance tests and internal stubs.
+
+    - ``junitPlugin (junit-plugin) ``
+
+    - ``junitRuntime (junit-runtime)``
+
+    - ``junitTestOutputsJVM (junit-test/output-jvm)``
+
+		- ``junitTestOutputsNative (junit-test/output-native)``
+
+    - ``junitAsyncJVM (junit-async/jvm)``
+
+		- ``junitAsyncNative (junit-async/native)``
+
 Apart from those mentioned sub-projects it is possible to notice project-like directory ``testInterfaceCommon (test-interface-common)``.
 Its content is shared as unmanaged source dependency between JVM and Native sides of test interface.
 

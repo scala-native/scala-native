@@ -915,14 +915,14 @@ lazy val shouldPartest = settingKey[Boolean](
 def shouldPartestSetting: Seq[Def.Setting[_]] = {
   Def.settings(
     shouldPartest := {
-      baseDirectory.value.getParentFile / "partest-suite" / "src" / "test" / "resources" /
+      baseDirectory.value.getParentFile / "scala-partest-tests" / "src" / "test" / "resources" /
         "scala" / "tools" / "partest" / "scalanative" / scalaVersion.value
     }.exists()
   )
 }
 
-lazy val partest = project
-  .in(file("partest"))
+lazy val scalaPartest = project
+  .in(file("scala-partest"))
   .settings(
     nameSettings,
     shouldPartestSetting,
@@ -986,8 +986,8 @@ lazy val partest = project
   )
   .dependsOn(nscplugin, tools)
 
-lazy val partestSuite: Project = project
-  .in(file("partest-suite"))
+lazy val scalaPartestTests: Project = project
+  .in(file("scala-partest-tests"))
   .settings(
     nameSettings,
     shouldPartestSetting,
@@ -996,7 +996,7 @@ lazy val partestSuite: Project = project
     definedTests in Test ++= Def
       .taskDyn[Seq[sbt.TestDefinition]] {
         if (shouldPartest.value) Def.task {
-          val _ = (fetchScalaSource in partest).value
+          val _ = (fetchScalaSource in scalaPartest).value
           Seq(
             new sbt.TestDefinition(
               s"partest-${scalaVersion.value}",
@@ -1031,10 +1031,10 @@ lazy val partestSuite: Project = project
       else Seq()
     }
   )
-  .dependsOn(partest % "test", javalib)
+  .dependsOn(scalaPartest % "test", javalib)
 
-lazy val scalaTestSuite = project
-  .in(file("scala-test-suite"))
+lazy val scalaJunitTests = project
+  .in(file("scala-junit-tests"))
   .enablePlugins(MyScalaNativePlugin)
   .settings(
     noPublishSettings,
@@ -1046,7 +1046,7 @@ lazy val scalaTestSuite = project
     ),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
     unmanagedSources in Compile ++= {
-      val upstreamSrcDir = (fetchScalaSource in partest).value
+      val upstreamSrcDir = (fetchScalaSource in scalaPartest).value
 
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 11 | 12)) => Nil
@@ -1068,7 +1068,7 @@ lazy val scalaTestSuite = project
       }
 
       val jUnitTestsPath =
-        (fetchScalaSource in partest).value / "test" / "junit"
+        (fetchScalaSource in scalaPartest).value / "test" / "junit"
 
       val scalaScalaJUnitSources = {
         (jUnitTestsPath ** "*.scala").get.flatMap { file =>
