@@ -17,7 +17,6 @@ addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.6.1")
 addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.9.0")
 
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "5.10.0.202012080955-r"
-libraryDependencies += "com.google.jimfs" % "jimfs"                % "1.2"
 
 // scalacOptions used to bootstrap to sbt prompt.
 // In particular, no "-Xfatal-warnings"

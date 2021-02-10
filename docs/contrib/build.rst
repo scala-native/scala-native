@@ -210,7 +210,7 @@ The build has roughly five groups of sub-projects as follows:
 
     - ``scalaPartestTests (scala-partest-tests)`` (JVM project)
 
-		- ``scalaPartest (scala-partest)`` (JVM project, uses Scala Native artifacts)
+    - ``scalaPartest (scala-partest)`` (JVM project, uses Scala Native artifacts)
 
     - ``scalaJunitTests (scala-junit-tests)`` (Scala Native project)
 
@@ -223,11 +223,11 @@ The build has roughly five groups of sub-projects as follows:
 
     - ``junitTestOutputsJVM (junit-test/output-jvm)``
 
-		- ``junitTestOutputsNative (junit-test/output-native)``
+    - ``junitTestOutputsNative (junit-test/output-native)``
 
     - ``junitAsyncJVM (junit-async/jvm)``
 
-		- ``junitAsyncNative (junit-async/native)``
+    - ``junitAsyncNative (junit-async/native)``
 
 Apart from those mentioned sub-projects it is possible to notice project-like directory ``testInterfaceCommon (test-interface-common)``.
 Its content is shared as unmanaged source dependency between JVM and Native sides of test interface.
