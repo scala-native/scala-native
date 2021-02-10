@@ -1,3 +1,5 @@
+# Ported from Scala.js, might not be exhaustive enough (some blacklisted tests may actually work in SN)
+
 #
 # POS
 #
@@ -89,9 +91,6 @@ run/hashhash.scala
 run/is-valid-num.scala
 run/stringinterpolation_macro-run.scala
 
-# Documented semantic difference on String.split(x: Array[Char])
-run/t0325.scala
-
 # Using Threads
 run/t6969.scala
 run/inner-obj-auto.scala
@@ -108,29 +107,6 @@ run/t9841.scala
 # Tries to catch java.lang.OutOfMemoryError
 run/t7880.scala
 
-# Taking too much time, because JavaScript is not as fast as the JVM
-
-run/t3822.scala
-run/collections.scala
-run/t3989.scala
-run/adding-growing-set.scala
-run/t3242.scala
-run/hashCodeDistribution.scala
-run/t408.scala
-run/t6584.scala
-run/t6853.scala
-run/UnrolledBuffer.scala
-run/t6253a.scala
-run/t6253b.scala
-run/t6253c.scala
-run/numbereq.scala
-run/t4658.scala
-
-# Crashes Rhino
-
-run/bridges.scala
-run/patmat-exprs.scala
-
 # Using partest properties
 
 run/tailcalls.scala
@@ -145,10 +121,6 @@ run/t6988.scala
 # Object{Output|Input}Streams
 run/t6935.scala
 run/t8188.scala
-
-# Using System.getProperties
-
-run/t4426.scala
 
 # Using sys.exit / System.exit
 
@@ -637,14 +609,6 @@ run/enums.scala
 run/t3719.scala
 run/t8611b.scala
 
-# Exceptions that become JavaScriptException
-
-run/pf-catch.scala
-run/exceptions-2.scala
-run/exceptions-nest.scala
-run/t8601c.scala
-run/t8601b.scala
-
 # Expecting unsupported exceptions (e.g. ArrayIndexOutOfBounds)
 run/optimizer-array-load.scala
 run/t8601.scala
@@ -920,7 +884,6 @@ run/t8608-no-format.scala
 run/repl-javap-lambdas.scala
 
 # Using .java source files
-
 run/t4317
 run/t4238
 run/t2296c
@@ -973,9 +936,6 @@ run/scalapInvokedynamic.scala
 
 # Using scala-script
 run/t7791-script-linenums.scala
-
-# Suffers from bug in Node.js (https://github.com/joyent/node/issues/7528)
-run/range-unit.scala
 
 # Using Manifests (which use Class.getInterfaces)
 run/valueclasses-manifest-existential.scala

@@ -1,3 +1,5 @@
+# Ported from Scala.js, might not be exhaustive enough (some blacklisted tests may actually work in SN)
+
 #
 # POS
 #
@@ -1062,9 +1064,6 @@ run/t8928
 
 # Using scala-script
 run/t7791-script-linenums.scala
-
-# Suffers from bug in Node.js (https://github.com/joyent/node/issues/7528)
-run/range-unit.scala
 
 # Using scalap
 run/scalapInvokedynamic.scala
