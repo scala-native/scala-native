@@ -1032,3 +1032,67 @@ lazy val partestSuite: Project = project
     }
   )
   .dependsOn(partest % "test", javalib)
+
+lazy val scalaTestSuite = project
+  .in(file("scala-test-suite"))
+  .enablePlugins(MyScalaNativePlugin)
+  .settings(
+    noPublishSettings,
+    scalacOptions ++= Seq(
+      "-language:higherKinds"
+    ),
+    scalacOptions --= Seq(
+      "-Xfatal-warnings"
+    ),
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
+    unmanagedSources in Compile ++= {
+      val upstreamSrcDir = (fetchScalaSource in partest).value
+
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 11 | 12)) => Nil
+        case _ =>
+          List(
+            upstreamSrcDir / "src/testkit/scala/tools/testkit/AssertUtil.scala"
+          )
+      }
+    },
+    unmanagedSources in Test ++= {
+      val blacklist: Set[String] = {
+        val file =
+          (resourceDirectory in Test).value / scalaVersion.value / "BlacklistedTests.txt"
+        scala.io.Source
+          .fromFile(file)
+          .getLines()
+          .filter(l => l.nonEmpty && !l.startsWith("#"))
+          .toSet
+      }
+
+      val jUnitTestsPath =
+        (fetchScalaSource in partest).value / "test" / "junit"
+
+      val scalaScalaJUnitSources = {
+        (jUnitTestsPath ** "*.scala").get.flatMap { file =>
+          file.relativeTo(jUnitTestsPath) match {
+            case Some(rel) => List((rel.toString.replace('\\', '/'), file))
+            case None      => Nil
+          }
+        }
+      }
+
+      // Check the coherence of the lists against the files found.
+      val allClasses             = scalaScalaJUnitSources.map(_._1).toSet
+      val nonexistentBlacklisted = blacklist.diff(allClasses)
+      if (nonexistentBlacklisted.nonEmpty) {
+        throw new AssertionError(
+          s"Sources not found for blacklisted tests:\n$nonexistentBlacklisted")
+      }
+
+      scalaScalaJUnitSources.collect {
+        case (rel, file) if !blacklist.contains(rel) => file
+      }
+    }
+  )
+  .dependsOn(nscplugin   % "plugin",
+             junitPlugin % "plugin",
+             junitRuntime,
+             testInterface % "test")
