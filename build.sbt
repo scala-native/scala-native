@@ -925,7 +925,7 @@ def shouldPartestSetting: Seq[Def.Setting[_]] = {
 lazy val scalaPartest = project
   .in(file("scala-partest"))
   .settings(
-    nameSettings,
+    noPublishSettings,
     shouldPartestSetting,
     resolvers += Resolver.typesafeIvyRepo("releases"),
     artifactPath in fetchScalaSource :=
@@ -990,7 +990,7 @@ lazy val scalaPartest = project
 lazy val scalaPartestTests: Project = project
   .in(file("scala-partest-tests"))
   .settings(
-    nameSettings,
+    noPublishSettings,
     shouldPartestSetting,
     fork in Test := true,
     javaOptions in Test += "-Xmx1G",
