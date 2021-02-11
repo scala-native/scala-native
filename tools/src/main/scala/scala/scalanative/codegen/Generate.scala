@@ -36,7 +36,7 @@ object Generate {
       genArrayIds()
       genStackBottom()
 
-      buf
+      buf.toSeq
     }
 
     def genDefnsExcludingGenerated(): Unit = {

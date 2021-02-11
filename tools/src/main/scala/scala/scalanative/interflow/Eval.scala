@@ -423,6 +423,7 @@ trait Eval { self: Interflow =>
         val Val.Local(local, _) = eval(slot)
         state.storeVar(local, eval(value))
         Val.Unit
+      case _ => util.unreachable
     }
   }
 

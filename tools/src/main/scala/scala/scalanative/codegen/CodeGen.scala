@@ -38,7 +38,7 @@ object CodeGen {
       .seq
       .foreach { defns => buf ++= defns }
 
-    buf
+    buf.toSeq
   }
 
   /** Generate code for given assembly. */
@@ -373,7 +373,7 @@ object CodeGen {
             str(" = phi ")
             genType(ty)
             str(" ")
-            rep(block.inEdges, sep = ", ") { edge =>
+            rep(block.inEdges.toSeq, sep = ", ") { edge =>
               def genRegularEdge(next: Next.Label): Unit = {
                 val Next.Label(_, vals) = next
                 genJustVal(vals(n))
@@ -1062,6 +1062,6 @@ object CodeGen {
     buf += Rt.Object.name member Rt.ScalaHashCodeSig
     buf += Rt.Object.name member Rt.JavaEqualsSig
     buf += Rt.Object.name member Rt.JavaHashCodeSig
-    buf
+    buf.toSeq
   }
 }

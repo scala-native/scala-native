@@ -71,7 +71,7 @@ object Lower {
           buf += onDefn(defn)
       }
 
-      buf
+      buf.toSeq
     }
 
     override def onDefn(defn: Defn): Defn = defn match {
@@ -521,6 +521,7 @@ object Lower {
                 genClassVirtualLookup(Object)
               case TraitRef(trt) =>
                 genTraitVirtualLookup(trt)
+              case _ => util.unreachable
             }
         }
       }
@@ -996,6 +997,7 @@ object Lower {
             n,
             Op.Call(sig, Val.Global(func, Type.Ptr), Seq(module, len, init)),
             unwind)
+        case _ => util.unreachable
       }
     }
 
@@ -1293,7 +1295,7 @@ object Lower {
     buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)
     buf += Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig)
     buf += Defn.Declare(Attrs.None, throwName, throwSig)
-    buf
+    buf.toSeq
   }
 
   val depends: Seq[Global] = {
@@ -1325,6 +1327,6 @@ object Lower {
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
     buf += toClassVal.name
-    buf
+    buf.toSeq
   }
 }

@@ -58,7 +58,7 @@ private[scalanative] object IO {
                        EnumSet.of(FileVisitOption.FOLLOW_LINKS),
                        Int.MaxValue,
                        visitor)
-    out
+    out.toSeq
   }
 
   /** Does a `pattern` match starting at base */

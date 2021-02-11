@@ -52,7 +52,7 @@ object UseDef {
   private def collect(inst: Inst): Seq[Local] = {
     val collector = new CollectLocalValDeps
     collector.onInst(inst)
-    collector.deps.distinct
+    collector.deps.distinct.toSeq
   }
 
   private def isPure(inst: Inst) = inst match {

@@ -176,7 +176,7 @@ trait Inline { self: Interflow =>
           }
 
         case first +: rest =>
-          emit ++= first.toInsts.tail
+          emit ++= first.toInsts().tail
 
           rest.foreach { block =>
             block.cf match {
@@ -184,10 +184,10 @@ trait Inline { self: Interflow =>
                 ()
               case Inst.Throw(value, unwind) =>
                 val excv = block.end.materialize(value)
-                emit ++= block.toInsts.init
+                emit ++= block.toInsts().init
                 emit.raise(excv, unwind)
               case _ =>
-                emit ++= block.toInsts
+                emit ++= block.toInsts()
             }
           }
 
@@ -195,7 +195,7 @@ trait Inline { self: Interflow =>
             .collectFirst {
               case block if block.cf.isInstanceOf[Inst.Ret] =>
                 val Inst.Ret(value) = block.cf
-                emit ++= block.toInsts.init
+                emit ++= block.toInsts().init
                 (value, block.end)
             }
             .getOrElse {

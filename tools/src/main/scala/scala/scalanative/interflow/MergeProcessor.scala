@@ -102,7 +102,7 @@ final class MergeProcessor(insts: Array[Inst],
             val values = mutable.UnrolledBuffer.empty[Val]
             states.foreach { s => s.locals.get(local).foreach(values += _) }
             if (states.size == values.size) {
-              mergeLocals(local) = mergePhi(values, Some(value.ty))
+              mergeLocals(local) = mergePhi(values.toSeq, Some(value.ty))
             }
           }
           headState.locals.foreach((mergeLocal _).tupled)
@@ -150,6 +150,7 @@ final class MergeProcessor(insts: Array[Inst],
                   assert(
                     states.forall(s => s.derefDelayed(addr).delayedOp == op))
                   mergeHeap(addr) = DelayedInstance(op)
+                case _ => util.unreachable
               }
             }
             out
@@ -227,7 +228,7 @@ final class MergeProcessor(insts: Array[Inst],
         mergeState.delayed = mergeDelayed
         mergeState.emitted = mergeEmitted
 
-        (mergePhis, mergeState)
+        (mergePhis.toSeq, mergeState)
     }
   }
 
@@ -450,7 +451,7 @@ final class MergeProcessor(insts: Array[Inst],
     }
 
     orderedBlocks ++= sortedBlocks.filter(isExceptional)
-    orderedBlocks
+    orderedBlocks.toSeq
   }
 }
 

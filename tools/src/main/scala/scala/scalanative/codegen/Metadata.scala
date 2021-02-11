@@ -56,7 +56,7 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
 
     loop(linked.infos(Rt.Object.name).asInstanceOf[Class])
 
-    out
+    out.toSeq
   }
 
   def initClassMetadata(): Unit = {
