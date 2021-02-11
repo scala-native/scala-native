@@ -419,7 +419,7 @@ final class MergeProcessor(insts: Array[Inst],
       // Create synthetic label and block where all returning blocks
       // are going tojump to. Synthetics names must be fresh relative
       // to the source instructions, not relative to generated ones.
-      val syntheticFresh = Fresh(insts)
+      val syntheticFresh = Fresh(insts.toSeq)
       val syntheticParam =
         Val.Local(syntheticFresh(), Sub.lub(tys, Some(retTy)))
       val syntheticLabel =

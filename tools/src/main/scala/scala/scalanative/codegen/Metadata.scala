@@ -29,7 +29,7 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
     val traits =
       linked.infos.valuesIterator
         .collect { case info: Trait => info }
-        .toArray
+        .toIndexedSeq
         .sortBy(_.name.show)
     traits.zipWithIndex.foreach {
       case (node, id) =>

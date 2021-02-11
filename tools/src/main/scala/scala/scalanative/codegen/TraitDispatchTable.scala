@@ -88,7 +88,7 @@ class TraitDispatchTable(meta: Metadata) {
 
     val (compressed, offsets) = compressTable(table, mins, sizes)
 
-    val value = Val.ArrayValue(Type.Ptr, compressed)
+    val value = Val.ArrayValue(Type.Ptr, compressed.toSeq)
 
     dispatchOffset = offsets
     dispatchTy = Type.Ptr
