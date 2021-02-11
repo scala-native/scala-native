@@ -233,8 +233,6 @@ lazy val noPublishSettings: Seq[Setting[_]] = Seq(
 
 lazy val toolSettings: Seq[Setting[_]] =
   Def.settings(
-    sbtVersion := sbt10Version,
-    crossScalaVersions := Seq(sbt10ScalaVersion),
     javacOptions ++= Seq("-encoding", "utf8")
   )
 
@@ -414,9 +412,16 @@ lazy val sbtScalaNative =
             testRunner / publishLocal
           )
           .value
-      }
+      },
+      // Depending on projects defining `crossScalaVersion` other then this `scalaVersion` would result in build failure
+      unmanagedSourceDirectories in Compile ++= Seq(
+        (testRunner / Compile / scalaSource).value,
+        (tools / Compile / scalaSource).value,
+        (nir / Compile / scalaSource).value,
+        (util / Compile / scalaSource).value,
+        baseDirectory.value.getParentFile / "test-interface-common/src/main/scala"
+      )
     )
-    .dependsOn(tools, testRunner)
 
 lazy val nativelib =
   project
