@@ -8,9 +8,10 @@ import scala.scalanative.util.ShowBuilder.FileShowBuilder
 import scalanative.util.{Scope, ShowBuilder, partitionBy, procs, unsupported}
 import scalanative.io.VirtualDirectory
 import scalanative.nir._
-import scalanative.nir.ControlFlow.{Block, Edge, Graph => CFG}
+import scalanative.nir.ControlFlow.{Block, Graph => CFG}
 import scalanative.util.unreachable
 import scalanative.build.ScalaNative.dumpDefns
+import scalanative.compat.CompatParColls.Converters._
 
 object CodeGen {
 

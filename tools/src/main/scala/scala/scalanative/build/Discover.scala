@@ -2,7 +2,8 @@ package scala.scalanative
 package build
 
 import java.io.File
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Path, Paths}
+import scala.annotation.nowarn
 import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath
@@ -10,6 +11,7 @@ import scalanative.build.IO.RichPath
 /** Utilities for discovery of command-line tools and settings required
  *  to build Scala Native applications.
  */
+@nowarn("msg=method lineStream_!")
 object Discover {
 
   /** Compilation mode name from SCALANATIVE_MODE env var or default. */

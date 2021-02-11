@@ -5,6 +5,7 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.linker._
 import scalanative.util.partitionBy
+import scalanative.compat.CompatParColls.Converters._
 
 final class Check(implicit linked: linker.Result) {
   val errors = mutable.UnrolledBuffer.empty[Check.Error]

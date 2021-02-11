@@ -328,6 +328,14 @@ lazy val tools =
             allCoreLibsCp.map(_.getAbsolutePath).mkString(pathSeparator)
         )
       },
+      libraryDependencies ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11 | 12)) => Nil
+          case _ =>
+            List(
+              "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.0")
+        }
+      },
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
       Test / parallelExecution := false,
       mimaSettings
