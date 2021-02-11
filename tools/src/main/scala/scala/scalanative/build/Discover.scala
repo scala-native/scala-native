@@ -11,7 +11,6 @@ import scalanative.build.IO.RichPath
 /** Utilities for discovery of command-line tools and settings required
  *  to build Scala Native applications.
  */
-@nowarn("msg=method lineStream_!")
 object Discover {
 
   /** Compilation mode name from SCALANATIVE_MODE env var or default. */

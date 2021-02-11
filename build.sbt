@@ -328,6 +328,22 @@ lazy val tools =
             allCoreLibsCp.map(_.getAbsolutePath).mkString(pathSeparator)
         )
       },
+      scalacOptions ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11 | 12)) => Nil
+          case _                  =>
+            // 2.13 and 2.11 tools are only used in partest.
+            // It looks like it's impossible to provide alternative sources - it fails to compile plugin sources,
+            // before attaching them to other build projects. We disable unsolvable fatal-warnings with filters below
+            Seq(
+              // In 2.13 lineStream_! was replaced with lazyList_!.
+              "-Wconf:cat=deprecation&msg=lineStream_!:s",
+              // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
+              // Should not be replaced with HashMap due to performance reasons.
+              "-Wconf:cat=deprecation&msg=OpenHashMap:s"
+            )
+        }
+      },
       libraryDependencies ++= {
         CrossVersion.partialVersion(scalaVersion.value) match {
           case Some((2, 11 | 12)) => Nil
@@ -783,7 +799,6 @@ lazy val testInterfaceSbtDefs =
 lazy val testRunner =
   project
     .in(file("test-runner"))
-    .settings(toolSettings)
     .settings(mavenPublishSettings)
     .settings(testInterfaceCommonSourcesSettings)
     .settings(
@@ -812,7 +827,6 @@ lazy val junitPlugin =
     .in(file("junit-plugin"))
     .settings(mavenPublishSettings)
     .settings(
-      crossScalaVersions := libCrossScalaVersions,
       crossVersion := CrossVersion.full,
       libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       exportJars := true
@@ -856,7 +870,6 @@ lazy val junitTestOutputsJVM =
     .in(file("junit-test/output-jvm"))
     .settings(
       commonJUnitTestOutputsSettings,
-      crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.11" % "test"
       )
@@ -877,7 +890,6 @@ lazy val junitAsyncJVM =
   project
     .in(file("junit-async/jvm"))
     .settings(
-      crossScalaVersions := Seq(sbt10ScalaVersion),
       nameSettings,
       publishArtifact := false
     )
