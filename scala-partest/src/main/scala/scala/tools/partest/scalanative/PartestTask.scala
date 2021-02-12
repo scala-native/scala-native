@@ -38,7 +38,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
 
     maybeOptions foreach { options =>
       val runner = SBTRunner(
-        partestFingerprint = Framework.fingerprint,
+        partestFingerprint = scala.tools.partest.sbt.Framework.fingerprint,
         eventHandler = eventHandler,
         loggers = loggers,
         testRoot = new File(s"../scala-partest/fetchedSources/${scalaVersion}"),
@@ -46,7 +46,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
         javaCmd = null,
         javacCmd = null,
         scalacArgs = Array.empty[String],
-        args = Array("neg"), //,"pos",  "run"),
+        args = Array("neg" ,"pos",  "run"),
         options = options,
         scalaVersion = scalaVersion
       )

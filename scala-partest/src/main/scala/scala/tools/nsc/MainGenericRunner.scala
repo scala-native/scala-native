@@ -66,6 +66,7 @@ class MainGenericRunner {
         .withClassPath {
           val nativeClasspath = loadSetting("nativeCp", Seq.empty[Path]) {
             _.split(":")
+              .toSeq
               .map(Paths.get(_))
           }
           command.settings.classpathURLs.map(urlToPath) ++ nativeClasspath

@@ -21,7 +21,7 @@ superaccessors   6  add super accessors in traits and nested classes
   constructors  19  move field definitions into constructors
        flatten  20  eliminate inner classes
          mixin  21  mixin composition
-           nir  22
+           nir  22  
        cleanup  23  platform-specific cleanups, generate reflective calls
     delambdafy  24  remove lambdas
            jvm  25  generate JVM bytecode

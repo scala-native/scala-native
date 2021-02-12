@@ -19,20 +19,16 @@ neg/t7494-right-after-before
 neg/t7622-multi-followers
 neg/t7622-cyclic-dependency
 
-# Spurious failures
-neg/inlineMaxSize.scala
-
-# Uses .java files
-run/t9200
-run/noInlineUnknownIndy
+# Does not create tasty.jar
+neg/t12134
 
 #
 # RUN
 #
 
-# Tests that ClassTags are cached, which we do not do in Scala.js
-# (our ClassTags are better stack-allocated than cached)
-run/classtags-cached.scala
+# Uses .java files
+run/t9200
+run/noInlineUnknownIndy
 
 # Relies on the exact toString() representation of Floats/Doubles
 run/t2378.scala
@@ -55,7 +51,6 @@ run/shutdownhooks.scala
 run/t5590.scala
 run/t3895b.scala
 run/t5974.scala
-run/hashset.scala
 run/t5262.scala
 run/serialize-stream.scala
 run/sysprops.scala
@@ -70,9 +65,6 @@ run/t3199b.scala
 run/t8690.scala
 run/t10488.scala
 run/various-flat-classpath-types.scala
-
-# Uses java.util.Collections
-run/t2250.scala
 
 # Uses java.math.BigDecimal / BigInteger : but failures not due to them
 run/hashhash.scala
@@ -96,9 +88,6 @@ run/t6154.scala
 # Tries to catch java.lang.OutOfMemoryError
 run/t7880.scala
 
-# Requires too much memory (on the JVM, extra memory is given to this test)
-run/t11272.scala
-
 # Taking too much time, because JavaScript is not as fast as the JVM
 
 run/collections.scala
@@ -109,9 +98,6 @@ run/hashCodeDistribution.scala
 run/t408.scala
 run/t6584.scala
 run/UnrolledBuffer.scala
-run/t6253a.scala
-run/t6253b.scala
-run/t6253c.scala
 run/numbereq.scala
 run/t4658.scala
 
@@ -336,7 +322,6 @@ run/t1167.scala
 run/t2577.scala
 run/t2873.scala
 run/t2886.scala
-run/t2251b.scala
 run/t3346j.scala
 run/t3507-new.scala
 run/t3569.scala
@@ -366,7 +351,6 @@ run/t5334_1.scala
 run/t5334_2.scala
 run/t5415.scala
 run/t5418.scala
-run/t5676.scala
 run/t5704.scala
 run/t5710-1.scala
 run/t5710-2.scala
@@ -477,10 +461,7 @@ run/mirror_symbolof_x.scala
 run/t8196.scala
 run/t8549b.scala
 run/t8574.scala
-run/t8549.scala
 run/t8637.scala
-run/t8253.scala
-run/t9027.scala
 run/t6622.scala
 run/toolbox_expand_macro.scala
 run/toolbox-varargs
@@ -555,14 +536,12 @@ run/reify_nested_inner_refers_to_global.scala
 run/reify_newimpl_02.scala
 run/reify_newimpl_01.scala
 run/reify_fors_newpatmat.scala
-run/reify_classfileann_a.scala
 run/reify_nested_outer_refers_to_local.scala
 run/reify_newimpl_13.scala
 run/reify_closure5a.scala
 run/reify_inner4.scala
 run/reify_sort.scala
 run/reify_ann1a.scala
-run/reify_classfileann_b.scala
 run/reify_closure4a.scala
 run/reify_newimpl_33.scala
 run/reify_sort1.scala
@@ -693,34 +672,6 @@ run/classfile-format-52.scala
 # has too much stuff implemented in *.java, so no support
 run/triemap-hash.scala
 
-# Using parallel collections
-
-run/t5375.scala
-run/t4894.scala
-run/ctries-new
-run/collection-conversions.scala
-run/concurrent-map-conversions.scala
-run/t4761.scala
-run/t7498.scala
-run/t6448.scala
-run/ctries-old
-run/map_java_conversions.scala
-run/parmap-ops.scala
-run/pc-conversions.scala
-run/t4459.scala
-run/t4608.scala
-run/t4723.scala
-run/t4895.scala
-run/t6052.scala
-run/t6410.scala
-run/t6467.scala
-run/t6908.scala
-run/t8955.scala
-
-# Using scala.xml
-
-run/t4124.scala
-
 # Using Swing
 
 run/t3613.scala
@@ -765,7 +716,6 @@ run/repl-class-based-escaping-reads.scala
 
 # Using the Repl (scala.tools.partest.ReplTest)
 run/class-symbol-contravariant.scala
-run/lub-visibility.scala
 run/macro-bundle-repl.scala
 run/macro-repl-basic.scala
 run/macro-repl-dontexpand.scala
@@ -897,13 +847,6 @@ run/t7852.scala
 run/t7817-tree-gen.scala
 run/t7825.scala
 
-# partest.ParserTest
-run/t3368.scala
-run/t3368-b.scala
-run/t3368-c.scala
-run/t3368-d.scala
-run/t9944.scala
-
 # partest.DirectTest
 run/maxerrs.scala
 run/t6288.scala
@@ -920,7 +863,6 @@ run/t4841-isolate-plugins
 run/large_code.scala
 run/macroPlugins-namerHooks.scala
 run/t4841-no-plugin.scala
-run/t4332.scala
 run/t8029.scala
 run/t8046
 run/t5905-features.scala
@@ -1052,7 +994,6 @@ run/sd304
 run/t10450
 run/t10042
 run/t10699
-run/t11109
 run/t9529
 run/t9529-types
 run/t10490

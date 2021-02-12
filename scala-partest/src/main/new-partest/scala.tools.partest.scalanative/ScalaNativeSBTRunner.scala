@@ -118,7 +118,7 @@ class ScalaNativeSBTRunner(
       .fromURL(getClass.getResource(s"$listDir/BlacklistedTests.txt"))
 
     val files = for {
-      line <- source.getLines
+      line <- source.getLines()
       trimmed = line.trim
       if trimmed != "" && !trimmed.startsWith("#")
     } yield {
