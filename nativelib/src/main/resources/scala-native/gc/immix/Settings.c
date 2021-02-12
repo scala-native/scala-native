@@ -53,6 +53,7 @@ size_t Settings_MinHeapSize() {
     if (minHeapSizeStr != NULL) {
         return Settings_parseSizeStr(minHeapSizeStr);
     } else {
+        printf("DEFAULT_MIN_HEAP_SIZE=%lu\n", DEFAULT_MIN_HEAP_SIZE);
         return DEFAULT_MIN_HEAP_SIZE;
     }
 }
