@@ -1,0 +1,46 @@
+.. _runtime:
+
+Runtime Settings
+================
+
+Scala Native comes with some ability to change the runtime
+characteristics.
+
+Immix Heap Size Settings
+------------------------
+
+* Change the minimum heap size by setting the SCALANATIVE_MIN_HEAP_SIZE environment variable.
+* Change the maximum heap size by setting the SCALANATIVE_MAX_HEAP_SIZE environment variable.
+* They can go as low as 1 MB and as high as your system memory up to about 512 GB.
+* The size is specified in bytes. Suffixes can be used to specify kilobytes(k), megabytes(m) or gigabytes(g). Both upper and lower case is accepted.
+
+export SCALANATIVE_MIN_SIZE=64k; export SCALANATIVE_MAX_SIZE=512k; sandbox/target/scala-2.12/sandbox-out
+SCALANATIVE_MAX_HEAP_SIZE too small to initialize heap.
+Minimum required: 1m 
+
+export SCALANATIVE_MIN_SIZE=2m; export SCALANATIVE_MAX_SIZE=1m; sandbox/target/scala-2.12/sandbox-out
+SCALANATIVE_MAX_HEAP_SIZE should be at least SCALANATIVE_MIN_HEAP_SIZE
+
+MIN_SIZE seems to be ignored
+
+#define MIN_HEAP_SIZE (1 * 1024 * 1024UL)
+#define DEFAULT_MIN_HEAP_SIZE (128 * SPACE_USED_PER_BLOCK)
+#define UNLIMITED_HEAP_SIZE (~((size_t)0))
+
+Commix Heap Size Settings
+-------------------------
+
+In addition to the environment variable setting described above, Commix
+also adds a few more.
+
+SCALANATIVE_GC_THREADS
+SCALANATIVE_TIME_RATIO
+SCALANATIVE_FREE_RATIO
+
+To enable JUnit support, add the following lines to your `build.sbt` file:
+
+.. code-block:: shell
+
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+
+Then, add your tests, for example in the `src/test/scala/` directory:
