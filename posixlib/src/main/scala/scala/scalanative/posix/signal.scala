@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native._
+import scala.scalanative.unsafe._
 
 /**
  * Some of the functionality described on this reference page extends the ISO C standard.
@@ -17,14 +17,14 @@ object signal {
   // that have a type compatible with the second argument to, and the return value of, the signal() function,
   // and whose values shall compare unequal to the address of any declarable function.
   @name("scalanative_sig_dfl")
-  def SIG_DFL: CFunctionPtr1[CInt, Unit] = extern
+  def SIG_DFL: CFuncPtr1[CInt, Unit] = extern
   @name("scalanative_sig_err")
-  def SIG_ERR: CFunctionPtr1[CInt, Unit] = extern
+  def SIG_ERR: CFuncPtr1[CInt, Unit] = extern
   // Note 1: Linux
 //  @name("scalanative_sig_hold")
 //  def SIG_HOLD: CFunctionPtr1[CInt, Unit] = extern
   @name("scalanative_sig_ign")
-  def SIG_IGN: CFunctionPtr1[CInt, Unit] = extern
+  def SIG_IGN: CFuncPtr1[CInt, Unit] = extern
 
   import sys.types
   // pthread_t, size_t, and uid_t types as described in <sys/types.h>
@@ -50,7 +50,7 @@ object signal {
     CInt, // sigev_notify Notification type
     CInt, // sigev_signo Signal number
     Ptr[sigval], // sigev_value Signal value (Ptr instead of value)
-    CFunctionPtr1[Ptr[sigval], Unit], // sigev_notify_function Notification function (Ptr instead of value for sigval)
+    CFuncPtr1[Ptr[sigval], Unit], // sigev_notify_function Notification function (Ptr instead of value for sigval)
     Ptr[pthread_attr_t] // sigev_notify_attributes Notification attributes
   ]
   // define the following symbolic constants for the values of sigev_notify:
@@ -126,10 +126,10 @@ object signal {
   // The storage occupied by sa_handler and sa_sigaction may overlap,
   // and a conforming application shall not use both simultaneously.
   type sigaction = CStruct4[
-    CFunctionPtr1[CInt, Unit], // sa_handler Ptr to a signal-catching function or one of the SIG_IGN or SIG_DFL
+    CFuncPtr1[CInt, Unit], // sa_handler Ptr to a signal-catching function or one of the SIG_IGN or SIG_DFL
     sigset_t, // sa_mask Set of signals to be blocked during execution of the signal handling func
     CInt, // sa_flags Special flags
-    CFunctionPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit] // sa_sigaction Pointer to a signal-catching function
+    CFuncPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit] // sa_sigaction Pointer to a signal-catching function
   ]
 
   // define the following macros which shall expand to integer constant expressions
@@ -301,14 +301,14 @@ object signal {
   def siginterrupt(p0: CInt, p1: CInt): CInt                            = extern
   def sigismember(p0: Ptr[sigset_t], p1: CInt): CInt                    = extern
   def signal(p0: CInt,
-             p1: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit]  = extern
+             p1: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit]  = extern
   def sigpause(p0: CInt): CInt                                          = extern
   def sigpending(p0: Ptr[sigset_t]): CInt                               = extern
   def sigprocmask(p0: CInt, p1: Ptr[sigset_t], p2: Ptr[sigset_t]): CInt = extern
   def sigqueue(p0: pid_t, p1: CInt, p2: Ptr[sigval]): CInt              = extern
   def sigrelse(p0: CInt): CInt                                          = extern
   def sigset(p0: CInt,
-             p1: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit] = extern
+             p1: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit] = extern
   def sigsuspend(p0: Ptr[sigset_t]): CInt                              = extern
   def sigtimedwait(p0: Ptr[sigset_t],
                    p1: Ptr[siginfo_t],
@@ -321,27 +321,27 @@ object signalOps {
   import signal._
 
   implicit class sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
-    def sigev_notify: CInt                                      = !p._1
-    def sigev_notify_=(value: CInt): Unit                       = !p._1 = value
-    def sigev_signo: CInt                                       = !p._2
-    def sigev_signo_=(value: CInt): Unit                        = !p._2 = value
-    def sigev_value: Ptr[sigval]                                = !p._3
-    def sigev_value_=(value: Ptr[sigval]): Unit                 = !p._3 = value
-    def sigev_notify_function: CFunctionPtr1[Ptr[sigval], Unit] = !p._4
-    def sigev_notify_function_=(value: CFunctionPtr1[Ptr[sigval], Unit]): Unit =
-      !p._4 = value
-    def sigev_notify_attributes: Ptr[pthread_attr_t] = !p._5
+    def sigev_notify: CInt                                      = p._1
+    def sigev_notify_=(value: CInt): Unit                       = p._1 = value
+    def sigev_signo: CInt                                       = p._2
+    def sigev_signo_=(value: CInt): Unit                        = p._2 = value
+    def sigev_value: Ptr[sigval]                                = p._3
+    def sigev_value_=(value: Ptr[sigval]): Unit                 = p._3 = value
+    def sigev_notify_function: CFuncPtr1[Ptr[sigval], Unit] = p._4
+    def sigev_notify_function_=(value: CFuncPtr1[Ptr[sigval], Unit]): Unit =
+      p._4 = value
+    def sigev_notify_attributes: Ptr[pthread_attr_t] = p._5
     def sigev_notify_attributes_=(value: Ptr[pthread_attr_t]): Unit =
-      !p._5 = value
+      p._5 = value
   }
 
   def struct_sigevent()(implicit z: Zone): Ptr[sigevent] = alloc[sigevent]
 
   implicit class sigval_ops(val p: Ptr[sigval]) extends AnyVal {
-    def sival_int: Ptr[CInt]                = p.cast[Ptr[CInt]]
-    def sival_int_=(value: CInt): Unit      = !p.cast[Ptr[CInt]] = value
-    def sival_ptr: Ptr[Ptr[Byte]]           = p.cast[Ptr[Ptr[Byte]]]
-    def sival_ptr_=(value: Ptr[Byte]): Unit = !p.cast[Ptr[Ptr[Byte]]] = value
+    def sival_int: Ptr[CInt]                = p.asInstanceOf[Ptr[CInt]]
+    def sival_int_=(value: CInt): Unit      = !p.asInstanceOf[Ptr[CInt]] = value
+    def sival_ptr: Ptr[Ptr[Byte]]           = p.asInstanceOf[Ptr[Ptr[Byte]]]
+    def sival_ptr_=(value: Ptr[Byte]): Unit = !p.asInstanceOf[Ptr[Ptr[Byte]]] = value
   }
 
   def union_sigval()(implicit z: Zone): Ptr[sigval] = alloc[sigval]
