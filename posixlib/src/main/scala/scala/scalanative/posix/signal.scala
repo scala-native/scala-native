@@ -449,13 +449,6 @@ object signalOps {
 //    def _mbstateL_=(value: CLongLong): Unit = !p.cast[Ptr[CLongLong]] = value
 //  }
 //
-//  implicit class union_sigval_pos(val p: Ptr[sigval]) extends AnyVal {
-//    def sival_int: Ptr[CInt]                = p.cast[Ptr[CInt]]
-//    def sival_int_=(value: CInt): Unit      = !p.cast[Ptr[CInt]] = value
-//    def sival_ptr: Ptr[Ptr[Byte]]           = p.cast[Ptr[Ptr[Byte]]]
-//    def sival_ptr_=(value: Ptr[Byte]): Unit = !p.cast[Ptr[Ptr[Byte]]] = value
-//  }
-//
 //  implicit class union___sigaction_u_pos(val p: Ptr[union___sigaction_u])
 //      extends AnyVal {
 //    def __sa_handler: Ptr[CFunctionPtr1[CInt, Unit]] =
