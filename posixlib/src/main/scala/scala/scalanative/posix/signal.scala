@@ -351,31 +351,30 @@ object signalOps {
   }
 
   def union_sigval()(implicit z: Zone): Ptr[sigval] = alloc[sigval]
-//
-//  implicit class siginfo_ops(val p: Ptr[siginfo_t]) extends AnyVal {
-//    def si_signo: CInt                                      = !p._1
-//    def si_signo_=(value: CInt): Unit                       = !p._1 = value
-//    def si_errno: CInt                                      = !p._2
-//    def si_errno_=(value: CInt): Unit                       = !p._2 = value
-//    def si_code: CInt                                       = !p._3
-//    def si_code_=(value: CInt): Unit                        = !p._3 = value
-//    def si_pid: pid_t                                       = !p._4
-//    def si_pid_=(value: pid_t): Unit                        = !p._4 = value
-//    def si_uid: uid_t                                       = !p._5
-//    def si_uid_=(value: uid_t): Unit                        = !p._5 = value
-//    def si_status: CInt                                     = !p._6
-//    def si_status_=(value: CInt): Unit                      = !p._6 = value
-//    def si_addr: Ptr[Byte]                                  = !p._7
-//    def si_addr_=(value: Ptr[Byte]): Unit                   = !p._7 = value
-//    def si_value: sigval                                    = !p._8
-//    def si_value_=(value: sigval): Unit                     = !p._8 = value
-//    def si_band: CLong                                      = !p._9
-//    def si_band_=(value: CLong): Unit                       = !p._9 = value
-//    def __pad: CArray[CUnsignedLong, Nat._7]                = !p._10
-//    def __pad_=(value: CArray[CUnsignedLong, Nat._7]): Unit = !p._10 = value
-//  }
-//
-//  def struct_siginfo()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]
+
+  implicit class siginfo_ops(val p: Ptr[siginfo_t]) extends AnyVal {
+    def si_signo: CInt                    = p._1
+    def si_signo_=(value: CInt): Unit     = p._1 = value
+    def si_errno: CInt                    = p._2
+    def si_errno_=(value: CInt): Unit     = p._2 = value
+    def si_code: CInt                     = p._3
+    def si_code_=(value: CInt): Unit      = p._3 = value
+    def si_pid: pid_t                     = p._4
+    def si_pid_=(value: pid_t): Unit      = p._4 = value
+    def si_uid: uid_t                     = p._5
+    def si_uid_=(value: uid_t): Unit      = p._5 = value
+    def si_addr: Ptr[Byte]                = p._6
+    def si_addr_=(value: Ptr[Byte]): Unit = p._6 = value
+    def si_status: CInt                   = p._7
+    def si_status_=(value: CInt): Unit    = p._7 = value
+    def si_band: CLong                    = p._8
+    def si_band_=(value: CLong): Unit     = p._8 = value
+    def si_value: sigval                  = p._9
+    def si_value_=(value: sigval): Unit =
+      !p._9.asInstanceOf[Ptr[CArray[Byte, Nat._8]]] = value
+  }
+
+  def struct_siginfo()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]
 //
 //  implicit class struct___sigaction_ops(val p: Ptr[struct___sigaction])
 //      extends AnyVal {
