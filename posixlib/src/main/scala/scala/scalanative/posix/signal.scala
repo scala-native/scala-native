@@ -352,7 +352,7 @@ object signalOps {
 
   def union_sigval()(implicit z: Zone): Ptr[sigval] = alloc[sigval]
 
-  implicit class siginfo_ops(val p: Ptr[siginfo_t]) extends AnyVal {
+  implicit class siginfo_t_ops(val p: Ptr[siginfo_t]) extends AnyVal {
     def si_signo: CInt                    = p._1
     def si_signo_=(value: CInt): Unit     = p._1 = value
     def si_errno: CInt                    = p._2
@@ -374,7 +374,7 @@ object signalOps {
       !p._9.asInstanceOf[Ptr[CArray[Byte, Nat._8]]] = value
   }
 
-  def struct_siginfo()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]
+  def struct_siginfo_t()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]
 //
 //  implicit class struct___sigaction_ops(val p: Ptr[struct___sigaction])
 //      extends AnyVal {
