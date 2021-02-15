@@ -47,11 +47,11 @@ object signal {
   type pthread_attr_t = types.pthread_attr_t
 
   type sigevent = CStruct5[
-    CInt, // sigev_notify Notification type
-    CInt, // sigev_signo Signal number
-    Ptr[sigval], // sigev_value Signal value (Ptr instead of value)
+    CInt,                         // sigev_notify Notification type
+    CInt,                         // sigev_signo Signal number
+    Ptr[sigval],                  // sigev_value Signal value (Ptr instead of value)
     CFuncPtr1[Ptr[sigval], Unit], // sigev_notify_function Notification function (Ptr instead of value for sigval)
-    Ptr[pthread_attr_t] // sigev_notify_attributes Notification attributes
+    Ptr[pthread_attr_t]           // sigev_notify_attributes Notification attributes
   ]
   // define the following symbolic constants for the values of sigev_notify:
   @name("scalanative_sigev_none")
@@ -127,9 +127,12 @@ object signal {
   // and a conforming application shall not use both simultaneously.
   type sigaction = CStruct4[
     CFuncPtr1[CInt, Unit], // sa_handler Ptr to a signal-catching function or one of the SIG_IGN or SIG_DFL
-    sigset_t, // sa_mask Set of signals to be blocked during execution of the signal handling func
-    CInt, // sa_flags Special flags
-    CFuncPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit] // sa_sigaction Pointer to a signal-catching function
+    sigset_t,              // sa_mask Set of signals to be blocked during execution of the signal handling func
+    CInt,                  // sa_flags Special flags
+    CFuncPtr3[CInt,
+              Ptr[siginfo_t],
+              Ptr[Byte],
+              Unit] // sa_sigaction Pointer to a signal-catching function
   ]
 
   // define the following macros which shall expand to integer constant expressions
@@ -172,26 +175,28 @@ object signal {
 
   type ucontext_t = CStruct4[
     Ptr[Byte], // ucontext_t *uc_link Ptr to the context that is resumed when this context returns (Ptr instead)
-    sigset_t, // c_sigmask The set of signals that are blocked when this context is active
-    Ptr[stack_t], // uc_stack The stack used by this context (Ptr instead of value)
+    sigset_t,  // c_sigmask The set of signals that are blocked when this context is active
+    Ptr[
+      stack_t
+    ],         // uc_stack The stack used by this context (Ptr instead of value)
     mcontext_t // uc_mcontext A machine-specific representation of the saved context
   ]
 
   type stack_t = CStruct3[
     Ptr[Byte], // void *ss_sp Stack base or pointer
-    size_t, // ss_size Stack size
-    CInt // ss_flags Flags
+    size_t,    // ss_size Stack size
+    CInt       // ss_flags Flags
   ]
 
   type siginfo_t = CStruct9[
-    CInt, // si_signo Signal number
-    CInt, // si_code Signal code
-    CInt, // si_errno If non-zero, an errno value associated with this signal, as described in <errno.h>
-    pid_t, // si_pid Sending process ID
-    uid_t, // si_uid Real user ID of sending process
-    Ptr[Byte], // void *si_addr Address of faulting instruction (Ptr instead - is void * a fcn?)
-    CInt, // si_status Exit value or signal
-    CLong, // si_band Band event for SIGPOLL
+    CInt,       // si_signo Signal number
+    CInt,       // si_code Signal code
+    CInt,       // si_errno If non-zero, an errno value associated with this signal, as described in <errno.h>
+    pid_t,      // si_pid Sending process ID
+    uid_t,      // si_uid Real user ID of sending process
+    Ptr[Byte],  // void *si_addr Address of faulting instruction (Ptr instead - is void * a fcn?)
+    CInt,       // si_status Exit value or signal
+    CLong,      // si_band Band event for SIGPOLL
     Ptr[sigval] // si_value Signal value (Ptr instead of value)
   ]
 
@@ -300,16 +305,16 @@ object signal {
   def sigignore(p0: CInt): CInt                                         = extern
   def siginterrupt(p0: CInt, p1: CInt): CInt                            = extern
   def sigismember(p0: Ptr[sigset_t], p1: CInt): CInt                    = extern
-  def signal(p0: CInt,
-             p1: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit]  = extern
+  def signal(p0: CInt, p1: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit] =
+    extern
   def sigpause(p0: CInt): CInt                                          = extern
   def sigpending(p0: Ptr[sigset_t]): CInt                               = extern
   def sigprocmask(p0: CInt, p1: Ptr[sigset_t], p2: Ptr[sigset_t]): CInt = extern
   def sigqueue(p0: pid_t, p1: CInt, p2: Ptr[sigval]): CInt              = extern
   def sigrelse(p0: CInt): CInt                                          = extern
-  def sigset(p0: CInt,
-             p1: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit] = extern
-  def sigsuspend(p0: Ptr[sigset_t]): CInt                              = extern
+  def sigset(p0: CInt, p1: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit] =
+    extern
+  def sigsuspend(p0: Ptr[sigset_t]): CInt = extern
   def sigtimedwait(p0: Ptr[sigset_t],
                    p1: Ptr[siginfo_t],
                    p2: Ptr[timespec]): CInt                    = extern
@@ -321,12 +326,12 @@ object signalOps {
   import signal._
 
   implicit class sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
-    def sigev_notify: CInt                                      = p._1
-    def sigev_notify_=(value: CInt): Unit                       = p._1 = value
-    def sigev_signo: CInt                                       = p._2
-    def sigev_signo_=(value: CInt): Unit                        = p._2 = value
-    def sigev_value: Ptr[sigval]                                = p._3
-    def sigev_value_=(value: Ptr[sigval]): Unit                 = p._3 = value
+    def sigev_notify: CInt                                  = p._1
+    def sigev_notify_=(value: CInt): Unit                   = p._1 = value
+    def sigev_signo: CInt                                   = p._2
+    def sigev_signo_=(value: CInt): Unit                    = p._2 = value
+    def sigev_value: Ptr[sigval]                            = p._3
+    def sigev_value_=(value: Ptr[sigval]): Unit             = p._3 = value
     def sigev_notify_function: CFuncPtr1[Ptr[sigval], Unit] = p._4
     def sigev_notify_function_=(value: CFuncPtr1[Ptr[sigval], Unit]): Unit =
       p._4 = value
@@ -338,10 +343,11 @@ object signalOps {
   def struct_sigevent()(implicit z: Zone): Ptr[sigevent] = alloc[sigevent]
 
   implicit class sigval_ops(val p: Ptr[sigval]) extends AnyVal {
-    def sival_int: Ptr[CInt]                = p.asInstanceOf[Ptr[CInt]]
-    def sival_int_=(value: CInt): Unit      = !p.asInstanceOf[Ptr[CInt]] = value
-    def sival_ptr: Ptr[Ptr[Byte]]           = p.asInstanceOf[Ptr[Ptr[Byte]]]
-    def sival_ptr_=(value: Ptr[Byte]): Unit = !p.asInstanceOf[Ptr[Ptr[Byte]]] = value
+    def sival_int: Ptr[CInt]           = p.asInstanceOf[Ptr[CInt]]
+    def sival_int_=(value: CInt): Unit = !p.asInstanceOf[Ptr[CInt]] = value
+    def sival_ptr: Ptr[Ptr[Byte]]      = p.asInstanceOf[Ptr[Ptr[Byte]]]
+    def sival_ptr_=(value: Ptr[Byte]): Unit =
+      !p.asInstanceOf[Ptr[Ptr[Byte]]] = value
   }
 
   def union_sigval()(implicit z: Zone): Ptr[sigval] = alloc[sigval]

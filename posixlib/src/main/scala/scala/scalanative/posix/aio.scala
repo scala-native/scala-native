@@ -12,13 +12,13 @@ object aio {
 
   // header shall define the aiocb structure, which shall include at least the following members
   type aiocb = CStruct7[
-    CInt, // aio_fildes     File descriptor
-    off_t, // aio_offset     File offset
-    Ptr[Byte], // aio_buf        Location of buffer
-    size_t, // aio_nbytes     Length of transfer
-    CInt, // aio_reqprio    Request priority offset
+    CInt,          // aio_fildes     File descriptor
+    off_t,         // aio_offset     File offset
+    Ptr[Byte],     // aio_buf        Location of buffer
+    size_t,        // aio_nbytes     Length of transfer
+    CInt,          // aio_reqprio    Request priority offset
     Ptr[sigevent], // aio_sigevent   Signal number and value
-    CInt // aio_lio_opcode Operation to be performed
+    CInt           // aio_lio_opcode Operation to be performed
   ]
 
   // types as described in <sys/types.h>
@@ -83,12 +83,12 @@ object aioOps {
 
   // TODO: move to signal
   implicit class sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
-    def sigev_notify: CInt                                      = p._1
-    def sigev_notify_=(value: CInt): Unit                       = p._1 = value
-    def sigev_signo: CInt                                       = p._2
-    def sigev_signo_=(value: CInt): Unit                        = p._2 = value
-    def sigev_value: Ptr[sigval]                                = p._3
-    def sigev_value_=(value: Ptr[sigval]): Unit                 = p._3 = value
+    def sigev_notify: CInt                                  = p._1
+    def sigev_notify_=(value: CInt): Unit                   = p._1 = value
+    def sigev_signo: CInt                                   = p._2
+    def sigev_signo_=(value: CInt): Unit                    = p._2 = value
+    def sigev_value: Ptr[sigval]                            = p._3
+    def sigev_value_=(value: Ptr[sigval]): Unit             = p._3 = value
     def sigev_notify_function: CFuncPtr1[Ptr[sigval], Unit] = p._4
     def sigev_notify_function_=(value: CFuncPtr1[Ptr[sigval], Unit]): Unit =
       p._4 = value
@@ -117,10 +117,11 @@ object aioOps {
 
   // TODO: move to signal
   implicit class sigval_ops(val p: Ptr[sigval]) extends AnyVal {
-    def sival_int: Ptr[CInt]                = p.asInstanceOf[Ptr[CInt]]
-    def sival_int_=(value: CInt): Unit      = !p.asInstanceOf[Ptr[CInt]] = value
-    def sival_ptr: Ptr[Ptr[Byte]]           = p.asInstanceOf[Ptr[Ptr[Byte]]]
-    def sival_ptr_=(value: Ptr[Byte]): Unit = !p.asInstanceOf[Ptr[Ptr[Byte]]] = value
+    def sival_int: Ptr[CInt]           = p.asInstanceOf[Ptr[CInt]]
+    def sival_int_=(value: CInt): Unit = !p.asInstanceOf[Ptr[CInt]] = value
+    def sival_ptr: Ptr[Ptr[Byte]]      = p.asInstanceOf[Ptr[Ptr[Byte]]]
+    def sival_ptr_=(value: Ptr[Byte]): Unit =
+      !p.asInstanceOf[Ptr[Ptr[Byte]]] = value
   }
 
 }
