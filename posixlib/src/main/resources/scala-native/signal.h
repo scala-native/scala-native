@@ -2,7 +2,7 @@
 #define SIGNAL_H
 
 // aio uses sigevent and sigval
-//struct scalanative_sigval {
+// struct scalanative_sigval {
 //
 //};
 

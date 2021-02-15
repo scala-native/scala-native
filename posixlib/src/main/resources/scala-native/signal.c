@@ -76,8 +76,8 @@ int scalanative_segv_accerr() { return SEGV_ACCERR; }
 int scalanative_bus_adraln() { return BUS_ADRALN; }
 int scalanative_bus_adrerr() { return BUS_ADRERR; }
 int scalanative_bus_objerr() { return BUS_OBJERR; }
-//int scalanative_trap_brkpt() { return TRAP_BRKPT; }
-//int scalanative_trap_trace() { return TRAP_TRACE; }
+// int scalanative_trap_brkpt() { return TRAP_BRKPT; }
+// int scalanative_trap_trace() { return TRAP_TRACE; }
 int scalanative_cld_exited() { return CLD_EXITED; }
 int scalanative_cld_killed() { return CLD_KILLED; }
 int scalanative_cld_dumped() { return CLD_DUMPED; }
