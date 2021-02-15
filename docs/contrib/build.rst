@@ -186,8 +186,6 @@ The build has roughly five groups of sub-projects as follows:
 
     - ``nir``, ``util``
 
-    - ``nirparser``
-
     - ``testRunner (test-runner)``
 
 4.  The Scala Native test interface and its dependencies. The sbt plugin adds

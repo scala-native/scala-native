@@ -122,7 +122,6 @@ addCommandAlias(
     "testRunner/test",
     "testInterface/test",
     "tools/test",
-    "nirparser/test",
     "tools/mimaReportBinaryIssues"
   ).mkString(";")
 )
@@ -302,24 +301,6 @@ lazy val nir =
     .settings(mavenPublishSettings)
     .dependsOn(util)
 
-lazy val scalacheckDep = "org.scalacheck" %% "scalacheck" % "1.14.3" % "test"
-lazy val scalatestDep  = "org.scalatest"  %% "scalatest"  % "3.1.1"  % "test"
-
-lazy val nirparser =
-  project
-    .in(file("nirparser"))
-    .settings(toolSettings)
-    .settings(noPublishSettings)
-    .settings(
-      libraryDependencies ++= Seq(
-        "com.lihaoyi" %% "fastparse"  % "1.0.0",
-        "com.lihaoyi" %% "scalaparse" % "1.0.0",
-        scalacheckDep,
-        scalatestDep
-      )
-    )
-    .dependsOn(nir)
-
 lazy val tools =
   project
     .in(file("tools"))
@@ -329,8 +310,8 @@ lazy val tools =
     .settings(buildInfoSettings)
     .settings(
       libraryDependencies ++= Seq(
-        scalacheckDep,
-        scalatestDep
+        "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
+        "org.scalatest"  %% "scalatest"  % "3.1.1"  % "test"
       ),
       Test / fork := true,
       Test / javaOptions ++= {
