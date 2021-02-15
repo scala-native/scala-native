@@ -83,44 +83,44 @@ object aioOps {
 
   // TODO: move to signal
   implicit class sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
-    def sigev_notify: CInt                                      = !p._1
-    def sigev_notify_=(value: CInt): Unit                       = !p._1 = value
-    def sigev_signo: CInt                                       = !p._2
-    def sigev_signo_=(value: CInt): Unit                        = !p._2 = value
-    def sigev_value: Ptr[sigval]                                = !p._3
-    def sigev_value_=(value: Ptr[sigval]): Unit                 = !p._3 = value
-    def sigev_notify_function: CFunctionPtr1[Ptr[sigval], Unit] = !p._4
-    def sigev_notify_function_=(value: CFunctionPtr1[Ptr[sigval], Unit]): Unit =
-      !p._4 = value
-    def sigev_notify_attributes: Ptr[pthread_attr_t] = !p._5
+    def sigev_notify: CInt                                      = p._1
+    def sigev_notify_=(value: CInt): Unit                       = p._1 = value
+    def sigev_signo: CInt                                       = p._2
+    def sigev_signo_=(value: CInt): Unit                        = p._2 = value
+    def sigev_value: Ptr[sigval]                                = p._3
+    def sigev_value_=(value: Ptr[sigval]): Unit                 = p._3 = value
+    def sigev_notify_function: CFuncPtr1[Ptr[sigval], Unit] = p._4
+    def sigev_notify_function_=(value: CFuncPtr1[Ptr[sigval], Unit]): Unit =
+      p._4 = value
+    def sigev_notify_attributes: Ptr[pthread_attr_t] = p._5
     def sigev_notify_attributes_=(value: Ptr[pthread_attr_t]): Unit =
-      !p._5 = value
+      p._5 = value
   }
 
   implicit class aiocb_ops(val p: Ptr[aiocb]) extends AnyVal {
-    def aio_fildes: CInt                  = !p._1
-    def aio_fildes_=(value: CInt): Unit   = !p._1 = value
-    def aio_offset: off_t                 = !p._2
-    def aio_offset_=(value: off_t): Unit  = !p._2 = value
-    def aio_buf: Ptr[Byte]                = !p._3
-    def aio_buf_=(value: Ptr[Byte]): Unit = !p._3 = value
-    def aio_nbytes: size_t                = !p._4
-    def aio_nbytes_=(value: size_t): Unit = !p._4 = value
-    def aio_reqprio: CInt                 = !p._5
-    def aio_reqprio_=(value: CInt): Unit  = !p._5 = value
-    def aio_sigevent: Ptr[sigevent]       = !p._6
+    def aio_fildes: CInt                  = p._1
+    def aio_fildes_=(value: CInt): Unit   = p._1 = value
+    def aio_offset: off_t                 = p._2
+    def aio_offset_=(value: off_t): Unit  = p._2 = value
+    def aio_buf: Ptr[Byte]                = p._3
+    def aio_buf_=(value: Ptr[Byte]): Unit = p._3 = value
+    def aio_nbytes: size_t                = p._4
+    def aio_nbytes_=(value: size_t): Unit = p._4 = value
+    def aio_reqprio: CInt                 = p._5
+    def aio_reqprio_=(value: CInt): Unit  = p._5 = value
+    def aio_sigevent: Ptr[sigevent]       = p._6
     def aio_sigevent_=(value: Ptr[sigevent]): Unit =
-      !p._6 = value
-    def aio_lio_opcode: CInt                = !p._7
-    def aio_lio_opcode_=(value: CInt): Unit = !p._7 = value
+      p._6 = value
+    def aio_lio_opcode: CInt                = p._7
+    def aio_lio_opcode_=(value: CInt): Unit = p._7 = value
   }
 
   // TODO: move to signal
   implicit class sigval_ops(val p: Ptr[sigval]) extends AnyVal {
-    def sival_int: Ptr[CInt]                = p.cast[Ptr[CInt]]
-    def sival_int_=(value: CInt): Unit      = !p.cast[Ptr[CInt]] = value
-    def sival_ptr: Ptr[Ptr[Byte]]           = p.cast[Ptr[Ptr[Byte]]]
-    def sival_ptr_=(value: Ptr[Byte]): Unit = !p.cast[Ptr[Ptr[Byte]]] = value
+    def sival_int: Ptr[CInt]                = p.asInstanceOf[Ptr[CInt]]
+    def sival_int_=(value: CInt): Unit      = !p.asInstanceOf[Ptr[CInt]] = value
+    def sival_ptr: Ptr[Ptr[Byte]]           = p.asInstanceOf[Ptr[Ptr[Byte]]]
+    def sival_ptr_=(value: Ptr[Byte]): Unit = !p.asInstanceOf[Ptr[Ptr[Byte]]] = value
   }
 
 }
