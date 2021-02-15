@@ -369,6 +369,7 @@ lazy val sbtPluginSettings: Seq[Setting[_]] =
   toolSettings ++
     bintrayPublishSettings ++
     Seq(
+      sbtVersion := sbt10Version,
       scriptedLaunchOpts := {
         scriptedLaunchOpts.value ++
           Seq("-Xmx1024M",
