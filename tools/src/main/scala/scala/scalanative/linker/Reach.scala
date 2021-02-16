@@ -23,6 +23,9 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val dynsigs       = mutable.Set.empty[Sig]
   val dynimpls      = mutable.Set.empty[Global]
 
+  private case class DeleyedMethod(owner: Global.Top, sig: Sig, pos: Position)
+  private val delayedMethods = mutable.Set.empty[DeleyedMethod]
+
   entries.foreach(reachEntry)
   loader.classesWithEntryPoints.foreach(reachClinit)
 
@@ -98,6 +101,24 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         reachDefn(name)
       }
     }
+  def processDelayed(): Unit = {
+    delayedMethods.foreach {
+      case DeleyedMethod(top, sig, position) =>
+        scopeInfo(top).foreach { info =>
+          val wasAllocated = info match {
+            case value: Trait => value.implementors.exists(_.allocated)
+            case clazz: Class => clazz.allocated
+          }
+          val targets = info.targets(sig)
+          if (targets.isEmpty && wasAllocated) {
+            addMissing(top.member(sig), position)
+          } else {
+            todo ++= targets
+          }
+        }
+    }
+    process()
+  }
 
   def reachDefn(name: Global): Unit = {
     stack ::= name
@@ -668,19 +689,26 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       ()
   }
 
-  def reachMethodTargets(ty: Type, sig: Sig): Unit = ty match {
-    case Type.Array(ty, _) =>
-      reachMethodTargets(Type.Ref(Type.toArrayClass(ty)), sig)
-    case Type.Ref(name, _, _) =>
-      scopeInfo(name).foreach { scope =>
-        if (!scope.calls.contains(sig)) {
-          scope.calls += sig
-          scope.targets(sig).foreach(reachGlobal)
+  def reachMethodTargets(ty: Type, sig: Sig)(implicit pos: Position): Unit =
+    ty match {
+      case Type.Array(ty, _) =>
+        reachMethodTargets(Type.Ref(Type.toArrayClass(ty)), sig)
+      case Type.Ref(name, _, _) =>
+        scopeInfo(name).foreach { scope =>
+          if (!scope.calls.contains(sig)) {
+            scope.calls += sig
+            val targets = scope.targets(sig)
+            if (targets.nonEmpty) targets.foreach(reachGlobal)
+            else {
+              // At this stage we cannot tell if method target is not defined or not yet reached
+              // We're delaying resolving targets to the end of Reach phase to check if this method is never defined in NIR
+              delayedMethods += DeleyedMethod(name.top, sig, pos)
+            }
+          }
         }
-      }
-    case _ =>
-      ()
-  }
+      case _ =>
+        ()
+    }
 
   def reachDynamicMethodTargets(dynsig: Sig) = {
     if (!dynsigs.contains(dynsig)) {
@@ -749,7 +777,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       log.error(s"Found ${missing.size} missing definitions while linking")
       missing.foreach {
         case (global, positions) =>
-          log.error(s"Not found $global")
+          log.error(s"Not found ${global.mangle}")
           positions.toList
             .sortBy(p => (p.path, p.line))
             .foreach { pos =>
@@ -768,6 +796,7 @@ object Reach {
             loader: ClassLoader): Result = {
     val reachability = new Reach(config, entries, loader)
     reachability.process()
+    reachability.processDelayed()
     reachability.result()
   }
 
