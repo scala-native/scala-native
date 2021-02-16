@@ -104,14 +104,14 @@ int scalanative_getaddrinfo(char *name, char *service,
     return status;
 }
 
-int scalanative_AI_NUMERICHOST() { return AI_NUMERICHOST; }
+int scalanative_ai_numerichost() { return AI_NUMERICHOST; }
 
-int scalanative_AI_PASSIVE() { return AI_PASSIVE; }
+int scalanative_ai_passive() { return AI_PASSIVE; }
 
-int scalanative_AI_NUMERICSERV() { return AI_NUMERICSERV; }
+int scalanative_ai_numericserv() { return AI_NUMERICSERV; }
 
-int scalanative_AI_ADDRCONFIG() { return AI_ADDRCONFIG; }
+int scalanative_ai_addrconfig() { return AI_ADDRCONFIG; }
 
-int scalanative_AI_V4MAPPED() { return AI_V4MAPPED; }
+int scalanative_ai_v4mapped() { return AI_V4MAPPED; }
 
-int scalanative_AI_CANONNAME() { return AI_CANONNAME; }
+int scalanative_ai_canonname() { return AI_CANONNAME; }

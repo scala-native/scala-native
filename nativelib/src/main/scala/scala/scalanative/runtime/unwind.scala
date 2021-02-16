@@ -21,6 +21,6 @@ object unwind {
               reg: CInt,
               valp: Ptr[CUnsignedLongLong]): CInt = extern
 
-  @name("scalanative_UNW_REG_IP")
+  @name("scalanative_unw_reg_ip")
   def UNW_REG_IP: CInt = extern
 }

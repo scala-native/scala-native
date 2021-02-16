@@ -23,4 +23,4 @@ int scalanative_unwind_get_reg(void *cursor, int regnum,
     return unw_get_reg((unw_cursor_t *)cursor, regnum, (unw_word_t *)valp);
 }
 
-int scalanative_UNW_REG_IP() { return UNW_REG_IP; }
+int scalanative_unw_reg_ip() { return UNW_REG_IP; }

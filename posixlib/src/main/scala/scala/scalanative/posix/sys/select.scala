@@ -55,19 +55,19 @@ object select {
              exceptfds: Ptr[fd_set],
              timeout: Ptr[time.timeval]): CInt = extern
 
-  @name("scalanative_FD_SETSIZE")
+  @name("scalanative_fd_setsize")
   def FD_SETSIZE: CInt = extern
 
-  @name("scalanative_FD_CLR")
+  @name("scalanative_fd_clr")
   def FD_CLR(fd: CInt, set: Ptr[fd_set]): Unit = extern
 
-  @name("scalanative_FD_ISSET")
+  @name("scalanative_fd_isset")
   def FD_ISSET(fd: CInt, set: Ptr[fd_set]): CInt = extern
 
-  @name("scalanative_FD_SET")
+  @name("scalanative_fd_set")
   def FD_SET(fd: CInt, set: Ptr[fd_set]): Unit = extern
 
-  @name("scalanative_FD_ZERO")
+  @name("scalanative_fd_zero")
   def FD_ZERO(set: Ptr[fd_set]): Unit = extern
 
 }

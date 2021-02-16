@@ -34,7 +34,7 @@ struct scalanative_fd_set {
     long fd_bits[FD_SETSIZE / FDBITS];
 };
 
-int scalanative_FD_SETSIZE() { return FD_SETSIZE; }
+int scalanative_fd_setsize() { return FD_SETSIZE; }
 
 void convert_scalanative_timeval(struct scalanative_timeval *in,
                                  struct timeval *out) {
@@ -42,19 +42,19 @@ void convert_scalanative_timeval(struct scalanative_timeval *in,
     out->tv_usec = in->tv_usec;
 }
 
-void scalanative_FD_ZERO(struct scalanative_fd_set *set) {
+void scalanative_fd_zero(struct scalanative_fd_set *set) {
     FD_ZERO((fd_set *)set);
 }
 
-void scalanative_FD_CLR(int fd, struct scalanative_fd_set *set) {
+void scalanative_fd_clr(int fd, struct scalanative_fd_set *set) {
     FD_CLR(fd, (fd_set *)set);
 }
 
-void scalanative_FD_SET(int fd, struct scalanative_fd_set *set) {
+void scalanative_fd_set(int fd, struct scalanative_fd_set *set) {
     FD_SET(fd, (fd_set *)set);
 }
 
-int scalanative_FD_ISSET(int fd, struct scalanative_fd_set *set) {
+int scalanative_fd_isset(int fd, struct scalanative_fd_set *set) {
     return FD_ISSET(fd, (fd_set *)set);
 }
 
