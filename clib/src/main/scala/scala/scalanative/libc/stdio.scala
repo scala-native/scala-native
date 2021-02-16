@@ -93,34 +93,34 @@ object stdio {
 
   // Macros
 
-  @name("scalanative_libc_stdin")
+  @name("scalanative_stdin")
   def stdin: Ptr[FILE] = extern
-  @name("scalanative_libc_stdout")
+  @name("scalanative_stdout")
   def stdout: Ptr[FILE] = extern
-  @name("scalanative_libc_stderr")
+  @name("scalanative_stderr")
   def stderr: Ptr[FILE] = extern
-  @name("scalanative_libc_eof")
+  @name("scalanative_eof")
   def EOF: CInt = extern
-  @name("scalanative_libc_fopen_max")
+  @name("scalanative_fopen_max")
   def FOPEN_MAX: CUnsignedInt = extern
-  @name("scalanative_libc_filename_max")
+  @name("scalanative_filename_max")
   def FILENAME_MAX: CUnsignedInt = extern
-  @name("scalanative_libc_bufsiz")
+  @name("scalanative_bufsiz")
   def BUFSIZ: CUnsignedInt = extern
-  @name("scalanative_libc_iofbf")
+  @name("scalanative_iofbf")
   def _IOFBF: CInt = extern
-  @name("scalanative_libc_iolbf")
+  @name("scalanative_iolbf")
   def _IOLBF: CInt = extern
-  @name("scalanative_libc_ionbf")
+  @name("scalanative_ionbf")
   def _IONBF: CInt = extern
-  @name("scalanative_libc_seek_set")
+  @name("scalanative_seek_set")
   def SEEK_SET: CInt = extern
-  @name("scalanative_libc_seek_cur")
+  @name("scalanative_seek_cur")
   def SEEK_CUR: CInt = extern
-  @name("scalanative_libc_seek_end")
+  @name("scalanative_seek_end")
   def SEEK_END: CInt = extern
-  @name("scalanative_libc_tmp_max")
+  @name("scalanative_tmp_max")
   def TMP_MAX: CUnsignedInt = extern
-  @name("scalanative_libc_l_tmpnam")
+  @name("scalanative_l_tmpnam")
   def L_tmpnam: CUnsignedInt = extern
 }
