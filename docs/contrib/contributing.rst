@@ -65,6 +65,42 @@ the environment variable to your shell startup file for convenience:
 The script `./scripts/clangfmt` will use the `.clang-format` file
 at the root of the project for settings used in formatting.
 
+C / POSIX Libraries
+-------------------
+
+Both the `clib` and `posixlib` have coding styles that are unique
+compared to normal Scala coding style. Normal C code is written in
+lowercase snake case for function names and uppercase snake case for
+macro or pre-processor constants. Here is an example for Scala:
+
+.. code-block:: scala
+
+    @extern
+    object cpio {
+      @name("scalanative_c_issock")
+      def C_ISSOCK: CUnsignedShort = extern
+
+      @name("scalanative_c_islnk")
+      def C_ISLNK: CUnsignedShort = extern
+
+The following is the corresponding C file:
+
+.. code-block:: C
+
+    #include <cpio.h>
+
+    unsigned short scalanative_c_issock() { return C_ISSOCK; }
+    unsigned short scalanative_c_islnk() { return C_ISLNK; }
+
+Since C has a flat namespace most libraries have prefixes and
+in general cannot use the same symbol names so there is no
+need to add additional prefixes. For Scala Native we use
+`scalanative_` as a prefix for functions.
+
+This is the reason C++ added namespaces so that library designer
+could have a bit more freedom. The developer, however, still has to
+de-conflict duplicate symbols by using the defined namespaces.
+
 General workflow
 ----------------
 
