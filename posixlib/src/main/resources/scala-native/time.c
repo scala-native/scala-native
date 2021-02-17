@@ -45,22 +45,10 @@ static void tm_init(struct tm *tm, struct scalanative_tm *scala_tm) {
     tm->tm_wday = scala_tm->tm_wday;
     tm->tm_yday = scala_tm->tm_yday;
     tm->tm_isdst = scala_tm->tm_isdst;
-
-    if (sizeof(struct tm) > sizeof(struct scalanative_tm)) {
-        // The operating system struct tm can be larger than
-        // the scalanative tm.  On 64 bit GNU or _BSD_SOURCE Linux this
-        // usually is true and beyond easy control.
-        //
-        // Clear any fields not known to scalanative, such as tm_zone,
-        // so they are zero/NULL, not J-Random garbage.
-        // strftime() in Scala Native release mode is particularly sensitive
-        // to garbage beyond the end of the scalanative tm.
-        // Assume all excess size is at bottom of C tm, not internal padding.
-
-        char *start = (char *)tm + sizeof(struct scalanative_tm);
-        size_t count = sizeof(struct tm) - sizeof(struct scalanative_tm);
-        memset(start, 0, count);
-    }
+    // On BSD-like systems or with glibc sizeof(tm) is greater than
+    // sizeof(scalanative_tm), so contents of rest of tm is left undefined.
+    // asctime, asctime_r, mktime, gmtime, & gmtime_r are robust to this.
+    // strftime is _NOT_ and must zero the excess fields itself.
 }
 
 char *scalanative_asctime_r(struct scalanative_tm *scala_tm, char *buf) {
@@ -107,7 +95,20 @@ time_t scalanative_mktime(struct scalanative_tm *result) {
 
 size_t scalanative_strftime(char *buf, size_t maxsize, const char *format,
                             struct scalanative_tm *scala_tm) {
-    struct tm tm;
+
+    // The operating system struct tm can be larger than
+    // the scalanative tm.  On 64 bit GNU or _BSD_SOURCE Linux this
+    // usually is true and beyond easy control.
+    //
+    // Clear any fields not known to scalanative, such as tm_zone,
+    // so they are zero/NULL, not J-Random garbage.
+    // strftime() in Scala Native release mode is particularly sensitive
+    // to garbage beyond the end of the scalanative tm.
+
+    // Initializing all of tm when part of it will be immediately overwritten
+    // is _slightly_ inefficient but short, simple, and easy to get right.
+
+    struct tm tm = {0};
     tm_init(&tm, scala_tm);
     return strftime(buf, maxsize, format, &tm);
 }
