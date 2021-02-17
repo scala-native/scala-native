@@ -101,7 +101,11 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         reachDefn(name)
       }
     }
+
   def processDelayed(): Unit = {
+    /*  Check methods that were marked to not have any defined targets yet when processing loop.
+     *  At this stage they should define at least 1 target, or should be marked as a missing symbol.
+     */
     delayedMethods.foreach {
       case DeleyedMethod(top, sig, position) =>
         scopeInfo(top).foreach { info =>
@@ -777,7 +781,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       log.error(s"Found ${missing.size} missing definitions while linking")
       missing.foreach {
         case (global, positions) =>
-          log.error(s"Not found ${global.mangle}")
+          log.error(s"Not found $global")
           positions.toList
             .sortBy(p => (p.path, p.line))
             .foreach { pos =>
