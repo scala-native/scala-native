@@ -720,10 +720,13 @@ object Lower {
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
-      buf.let(
-        n,
-        Op.Call(allocSig, allocMethod, Seq(rtti(cls).const, Val.Long(size))),
-        unwind)
+      val module = genModuleOp(buf, fresh(), Op.Module(allocSmallName.owner))
+
+      buf.let(n,
+              Op.Call(allocSig,
+                      allocMethod,
+                      Seq(module, rtti(cls).const, Val.Long(size))),
+              unwind)
     }
 
     def genConvOp(buf: Buffer, n: Local, op: Op.Conv)(
@@ -1091,13 +1094,22 @@ object Lower {
 
   val LARGE_OBJECT_MIN_SIZE = 8192
 
-  val allocSig = Type.Function(Seq(Type.Ptr, Type.Long), Type.Ptr)
+  val allocSig = Type.Function(
+    Seq(Type.Ref(Global.Top("scla.scalanative.runtime.GC$")),
+        Type.Ptr,
+        Type.Long),
+    Type.Ptr)
 
-  val allocSmallName = extern("scalanative_alloc_small")
-  val alloc          = Val.Global(allocSmallName, allocSig)
+  val allocSmallName = Global.Member(
+    Global.Top("scala.scalanative.runtime.GC$"),
+    Sig.Method("alloc_small", Seq(Type.Ptr, Type.Long, Type.Ptr)))
 
-  val largeAllocName = extern("scalanative_alloc_large")
-  val largeAlloc     = Val.Global(largeAllocName, allocSig)
+  val alloc = Val.Global(allocSmallName, Type.Ptr)
+
+  val largeAllocName = Global.Member(
+    Global.Top("scala.scalanative.runtime.GC$"),
+    Sig.Method("alloc_large", Seq(Type.Ptr, Type.Long, Type.Ptr)))
+  val largeAlloc = Val.Global(largeAllocName, Type.Ptr)
 
   val dyndispatchName = extern("scalanative_dyndispatch")
   val dyndispatchSig =
@@ -1289,8 +1301,8 @@ object Lower {
   val injects: Seq[Defn] = {
     implicit val pos = Position.NoPosition
     val buf          = mutable.UnrolledBuffer.empty[Defn]
-    buf += Defn.Declare(Attrs.None, allocSmallName, allocSig)
-    buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)
+    // buf += Defn.Declare(Attrs.None, alloc.name, allocSig)
+    // buf += Defn.Declare(Attrs.None, largeAlloc.name, allocSig)
     buf += Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig)
     buf += Defn.Declare(Attrs.None, throwName, throwSig)
     buf
@@ -1309,6 +1321,10 @@ object Lower {
     buf += unitName
     buf ++= BoxTo.values
     buf ++= UnboxTo.values
+    buf += Global.Member(Global.Top("scala.scalanative.runtime.GC$"),
+                         Sig.Method("init", Seq(Type.Unit)))
+    buf += allocSmallName
+    buf += largeAllocName
     buf += arrayLength
     buf ++= arrayAlloc.values
     buf ++= arraySnapshot.values

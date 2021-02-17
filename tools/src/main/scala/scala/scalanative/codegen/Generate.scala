@@ -359,8 +359,10 @@ object Generate {
     val PrintStackTrace =
       Val.Global(PrintStackTraceName, Type.Ptr)
 
-    val InitSig  = Type.Function(Seq(), Type.Unit)
-    val Init     = Val.Global(extern("scalanative_init"), Type.Ptr)
+    val InitSig = Type.Function(Seq(), Type.Unit)
+    val GCInit = Global.Member(Global.Top("scala.scalanative.runtime.GC$"),
+                               Sig.Method("init", Seq(Type.Unit)))
+    val Init     = Val.Global(GCInit, Type.Ptr)
     val InitDecl = Defn.Declare(Attrs.None, Init.name, InitSig)
 
     val stackBottomName     = extern("__stack_bottom")

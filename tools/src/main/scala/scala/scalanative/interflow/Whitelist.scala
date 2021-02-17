@@ -33,6 +33,7 @@ object Whitelist {
     out += Global.Top("scala.scalanative.unsafe.Tag$Nat7$")
     out += Global.Top("scala.scalanative.unsafe.Tag$Nat8$")
     out += Global.Top("scala.scalanative.unsafe.Tag$Nat9$")
+    out += Global.Top("scala.scalanative.runtime.GC$")
     out += Global.Top("java.lang.Math$")
     out
   }

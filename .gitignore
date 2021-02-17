@@ -25,6 +25,7 @@ bin/
 /.bloop/
 /.metals/
 /project/**/metals.sbt
+/project/**/.bloop
 
 # Build Server Protocol, used by sbt
 /.bsp/
