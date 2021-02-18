@@ -70,10 +70,10 @@ object stdlib {
 
   // Macros
 
-  @name("scalanative_libc_exit_success")
+  @name("scalanative_exit_success")
   def EXIT_SUCCESS: CInt = extern
-  @name("scalanative_libc_exit_failure")
+  @name("scalanative_exit_failure")
   def EXIT_FAILURE: CInt = extern
-  @name("scalanative_libc_rand_max")
+  @name("scalanative_rand_max")
   def RAND_MAX: CInt = extern
 }

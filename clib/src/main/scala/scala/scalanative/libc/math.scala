@@ -145,18 +145,18 @@ object math {
 
   // Macros
 
-  @name("scalanative_libc_huge_valf")
+  @name("scalanative_huge_valf")
   def HUGE_VALF: CFloat = extern
-  @name("scalanative_libc_huge_val")
+  @name("scalanative_huge_val")
   def HUGE_VAL: CDouble = extern
-  @name("scalanative_libc_infinity")
+  @name("scalanative_infinity")
   def INFINITY: CFloat = extern
-  @name("scalanative_libc_nan")
+  @name("scalanative_nan")
   def NAN: CFloat = extern
-  @name("scalanative_libc_math_errhandling")
+  @name("scalanative_math_errhandling")
   def math_errhandling: CInt = extern
-  @name("scalanative_libc_math_errno")
+  @name("scalanative_math_errno")
   def MATH_ERRNO: CInt = extern
-  @name("scalanative_libc_math_errexcept")
+  @name("scalanative_math_errexcept")
   def MATH_ERREXCEPT: CInt = extern
 }

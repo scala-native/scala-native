@@ -27,109 +27,109 @@ object socket {
   type linger = CStruct2[CInt, // l_onoff
                          CInt] // l_linger
 
-  @name("scalanative_SCM_RIGHTS")
+  @name("scalanative_scm_rights")
   def SCM_RIGHTS: CInt = extern
 
-  @name("scalanative_SOCK_DGRAM")
+  @name("scalanative_sock_dgram")
   def SOCK_DGRAM: CInt = extern
 
-  @name("scalanative_SOCK_RAW")
+  @name("scalanative_sock_raw")
   def SOCK_RAW: CInt = extern
 
-  @name("scalanative_SOCK_SEQPACKET")
+  @name("scalanative_sock_seqpacket")
   def SOCK_SEQPACKET: CInt = extern
 
-  @name("scalanative_SOCK_STREAM")
+  @name("scalanative_sock_stream")
   def SOCK_STREAM: CInt = extern
 
-  @name("scalanative_SOL_SOCKET")
+  @name("scalanative_sol_socket")
   def SOL_SOCKET: CInt = extern
 
-  @name("scalanative_SO_ACCEPTCONN")
+  @name("scalanative_so_acceptconn")
   def SO_ACCEPTCONN: CInt = extern
 
-  @name("scalanative_SO_BROADCAST")
+  @name("scalanative_so_broadcast")
   def SO_BROADCAST: CInt = extern
 
-  @name("scalanative_SO_DEBUG")
+  @name("scalanative_so_debug")
   def SO_DEBUG: CInt = extern
 
-  @name("scalanative_SO_DONTROUTE")
+  @name("scalanative_so_dontroute")
   def SO_DONTROUTE: CInt = extern
 
-  @name("scalanative_SO_ERROR")
+  @name("scalanative_so_error")
   def SO_ERROR: CInt = extern
 
-  @name("scalanative_SO_KEEPALIVE")
+  @name("scalanative_so_keepalive")
   def SO_KEEPALIVE: CInt = extern
 
-  @name("scalanative_SO_LINGER")
+  @name("scalanative_so_linger")
   def SO_LINGER: CInt = extern
 
-  @name("scalanative_SO_OOBINLINE")
+  @name("scalanative_so_oobinline")
   def SO_OOBINLINE: CInt = extern
 
-  @name("scalanative_SO_RCVBUF")
+  @name("scalanative_so_rcvbuf")
   def SO_RCVBUF: CInt = extern
 
-  @name("scalanative_SO_RCVLOWAT")
+  @name("scalanative_so_rcvlowat")
   def SO_RCVLOWAT: CInt = extern
 
-  @name("scalanative_SO_RCVTIMEO")
+  @name("scalanative_so_rcvtimeo")
   def SO_RCVTIMEO: CInt = extern
 
-  @name("scalanative_SO_REUSEADDR")
+  @name("scalanative_so_reuseaddr")
   def SO_REUSEADDR: CInt = extern
 
-  @name("scalanative_SO_SNDBUF")
+  @name("scalanative_so_sndbuf")
   def SO_SNDBUF: CInt = extern
 
-  @name("scalanative_SO_SNDLOWAT")
+  @name("scalanative_so_sndlowat")
   def SO_SNDLOWAT: CInt = extern
 
-  @name("scalanative_SO_SNDTIMEO")
+  @name("scalanative_so_sndtimeo")
   def SO_SNDTIMEO: CInt = extern
 
-  @name("scalanative_SO_TYPE")
+  @name("scalanative_so_type")
   def SO_TYPE: CInt = extern
 
-  @name("scalanative_SOMAXCONN")
+  @name("scalanative_somaxconn")
   def SOMAXCONN: CInt = extern
 
-  @name("scalanative_MSG_CTRUNC")
+  @name("scalanative_msg_ctrunc")
   def MSG_CTRUNC: CInt = extern
 
-  @name("scalanative_MSG_DONTROUTE")
+  @name("scalanative_msg_dontroute")
   def MSG_DONTROUTE: CInt = extern
 
-  @name("scalanative_MSG_EOR")
+  @name("scalanative_msg_eor")
   def MSG_EOR: CInt = extern
 
-  @name("scalanative_MSG_OOB")
+  @name("scalanative_msg_oob")
   def MSG_OOB: CInt = extern
 
-  @name("scalanative_MSG_NOSIGNAL")
+  @name("scalanative_msg_nosignal")
   def MSG_NOSIGNAL: CInt = extern // returns 0 on macOS
 
-  @name("scalanative_MSG_PEEK")
+  @name("scalanative_msg_peek")
   def MSG_PEEK: CInt = extern
 
-  @name("scalanative_MSG_TRUNC")
+  @name("scalanative_msg_trunc")
   def MSG_TRUNC: CInt = extern
 
-  @name("scalanative_MSG_WAITALL")
+  @name("scalanative_msg_waitall")
   def MSG_WAITALL: CInt = extern
 
-  @name("scalanative_AF_INET")
+  @name("scalanative_af_inet")
   def AF_INET: CInt = extern
 
-  @name("scalanative_AF_INET6")
+  @name("scalanative_af_inet6")
   def AF_INET6: CInt = extern
 
-  @name("scalanative_AF_UNIX")
+  @name("scalanative_af_unix")
   def AF_UNIX: CInt = extern
 
-  @name("scalanative_AF_UNSPEC")
+  @name("scalanative_af_unspec")
   def AF_UNSPEC: CInt = extern
 
   @name("scalanative_getsockname")
