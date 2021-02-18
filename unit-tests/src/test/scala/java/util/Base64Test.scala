@@ -2,11 +2,15 @@ package java.util
 
 // Ported from Scala.js
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
+import java.io.{
+  ByteArrayInputStream,
+  ByteArrayOutputStream,
+  IOException,
+  InputStream
+}
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.ISO_8859_1
 import java.util.Base64.Decoder
-
 import org.junit.Test
 import org.junit.Assert._
 
@@ -230,6 +234,13 @@ class Base64Test {
       val bb = Base64.getMimeDecoder.decode(ByteBuffer.wrap(input.getBytes))
       assertEquals(0, bb.limit())
     }
+  }
+
+  @Test def decodeInputStreamFirstEOF(): Unit = {
+    val emptyInputStream = new InputStream {
+      override def read(): Int = -1
+    }
+    assertEquals(-1, Base64.getDecoder.wrap(emptyInputStream).read())
   }
 
   private def decodeInputStream(decoder: Decoder,
