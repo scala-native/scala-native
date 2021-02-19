@@ -2,6 +2,7 @@ package scala.scalanative.posix
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import java.io.IOException
 
@@ -76,48 +77,50 @@ class TimeTest {
 
   @Test def strftimeDoesNotReadMemoryOutsideStructTm(): Unit = {
     Zone { implicit z =>
-      if (sizeof[tm] < 56.toULong) {
-        val ttPtr = alloc[time_t]
-        !ttPtr = 1490986064740L / 1000L // Fri Mar 31 14:47:44 EDT 2017
+      // Review logic of this test thoroughly if size of "tm" changes.
+      // This test may no longer be needed or need updating.
+      assumeTrue("Assumes 36 byte Scala Native struct tm",
+                 (sizeof[tm] == 36.toULong))
 
-        // This code is testing for reading past the end of a "short"
-        // Scala Native tm, so the linux 56 byte form is necessary here.
-        val tmBufCount = 7.toULong
+      val ttPtr = alloc[time_t]
+      !ttPtr = 1490986064740L / 1000L // Fri Mar 31 14:47:44 EDT 2017
 
-        // alloc will zero/clear all bytes
-        val tmBuf = alloc[Ptr[Byte]](tmBufCount)
-        val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
+      // This code is testing for reading past the end of a "short"
+      // Scala Native tm, so the linux 56 byte form is necessary here.
+      val tmBufCount = 7.toULong
 
-        if (localtime_r(ttPtr, tmPtr) == null) {
-          throw new IOException(fromCString(string.strerror(libcErrno.errno)))
-        } else {
-          val unexpected = "BOGUS"
+      // alloc will zero/clear all bytes
+      val tmBuf = alloc[Ptr[Byte]](tmBufCount)
+      val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
-          // With the "short" 36 byte SN struct tm tmBuf(6) is
-          // is BSD linux tm_zone, and outside the posix minimal required
-          // range. strftime() should not read it.
+      if (localtime_r(ttPtr, tmPtr) == null) {
+        throw new IOException(fromCString(string.strerror(libcErrno.errno)))
+      } else {
+        val unexpected = "BOGUS"
 
-          tmBuf(6) = toCString(unexpected)
+        // With the "short" 36 byte SN struct tm tmBuf(6) is
+        // is BSD linux tm_zone, and outside the posix minimal required
+        // range. strftime() should not read it.
+        tmBuf(6) = toCString(unexpected)
 
-          // grossly over-provision rather than chase fencepost bugs.
-          val bufSize = 70.toULong
-          val buf     = alloc[Byte](bufSize) // will zero/clear all bytes
-          val n       = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
+        // grossly over-provision rather than chase fencepost bugs.
+        val bufSize = 70.toULong
+        val buf     = alloc[Byte](bufSize) // will zero/clear all bytes
+        val n       = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 
-          // strftime does not set errno on error
-          assertNotEquals("unexpected zero from strftime", n, 0)
+        // strftime does not set errno on error
+        assertNotEquals("unexpected zero from strftime", n, 0)
 
-          val result = fromCString(buf)
-          val len    = "Fri Mar 31 14:47:44 ".length
+        val result = fromCString(buf)
+        val len    = "Fri Mar 31 14:47:44 ".length
 
-          assertEquals("strftime failed", result.indexOf(unexpected, len), -1)
+        assertEquals("strftime failed", result.indexOf(unexpected, len), -1)
 
-          val regex = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
-            "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 20[1-3]\\d"
+        val regex = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
+          "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 20[1-3]\\d"
 
-          assertTrue(s"result: '${result}' does not match regex: '${regex}'",
-                     result.matches(regex))
-        }
+        assertTrue(s"result: '${result}' does not match regex: '${regex}'",
+                   result.matches(regex))
       }
     }
   }
@@ -192,6 +195,12 @@ class TimeTest {
       // Key to magic numbers 56 & 36.
       // Linux _BSD_Source uses at least 56 Bytes.
       // Posix specifies 36 but allows more.
+
+      // Review logic of this test thoroughly if size of "tm" changes.
+      // This test may no longer be needed or need updating.
+      assumeTrue("Assumes 36 byte Scala Native struct tm",
+                 (sizeof[tm] == 36.toULong))
+
       val tmBufSize = 56.toULong
       val tmBuf     = alloc[Byte](tmBufSize) // will zero/clear all bytes
       val tmPtr     = tmBuf.asInstanceOf[Ptr[tm]]
