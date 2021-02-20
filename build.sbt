@@ -1,4 +1,8 @@
 import java.io.File.pathSeparator
+import scala.io.Source.fromFile
+import java.io.FileWriter
+import java.util.LinkedList
+import com.github.difflib.UnifiedDiffUtils.parseUnifiedDiff
 import scala.collection.mutable
 import scala.util.Try
 import build.ScalaVersions._
@@ -681,18 +685,47 @@ lazy val scalalib =
         for {
           srcDir <- sourceDirectories
           normSrcDir = normPath(srcDir)
-          src <- (srcDir ** "*.scala").get
+          scalaGlob  = srcDir.toGlob / ** / "*.scala"
+          patchGlob  = srcDir.toGlob / ** / "*.scala.patch"
+
+          (sourcePath, _) <- fileTreeView.value.list(Seq(scalaGlob, patchGlob))
+          path = normPath(sourcePath.toFile).substring(normSrcDir.length)
         } {
-          val normSrc = normPath(src)
-          val path = normSrc.substring(normSrcDir.length)
-          val useless =
-            path.contains("/scala/collection/parallel/") ||
-              path.contains("/scala/util/parsing/")
-          if (!useless) {
+          def addSource(path: String, source: File): Unit = {
             if (paths.add(path))
-              sources += src
+              sources += source
             else
-              s.log.debug(s"not including $src")
+              s.log.debug(s"not including $path")
+          }
+
+          if (patchGlob.matches(sourcePath)) {
+            val sourceName      = path.stripSuffix(".patch")
+            val scalaSourcePath = scalaSrcDir / sourceName
+            val outputFile      = scalaSrcDir / (sourceName + ".patched")
+
+            def jFileLines(path: File) = {
+              val list   = new LinkedList[String]()
+              val source = fromFile(path)
+              try {
+                source.getLines().foreach(list.add)
+              } finally source.close()
+              list
+            }
+
+            val writter = new FileWriter(outputFile)
+            try {
+              parseUnifiedDiff(jFileLines(sourcePath.toFile))
+                .applyTo(jFileLines(scalaSourcePath))
+                .forEach(line => writter.write(line + '\n'))
+            } finally writter.close()
+            addSource(sourceName, outputFile)
+          } else {
+            val useless =
+              path.contains("/scala/collection/parallel/") ||
+                path.contains("/scala/util/parsing/")
+            if (!useless) {
+              addSource(path, sourcePath.toFile)
+            }
           }
         }
 
