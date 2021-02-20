@@ -1,0 +1,12 @@
+--- scalalib/target/scalaSources/2.11.12/scala/compat/Platform.scala	2017-11-03 00:26:48.000000000 +0100
++++ scalalib/overrides-2.11/scala/compat/Platform.scala	2021-02-20 14:32:59.473192508 +0100
+@@ -106,7 +106,5 @@
+    *
+-   * On the JVM, this is equivalent to calling the method:
+-   * `System.getProperty("line.separator")`
+-   * with a default value of "\n".
++   * On the Scala Native, this is always "\n".
+    */
+-  val EOL = scala.util.Properties.lineSeparator
++  val EOL = "\n"
+ 
