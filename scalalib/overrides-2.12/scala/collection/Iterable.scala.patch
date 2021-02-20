@@ -1,0 +1,16 @@
+--- scalalib/target/scalaSources/2.12.13/scala/collection/Iterable.scala	2021-01-12 14:37:36.000000000 +0100
++++ scalalib/overrides-2.12/scala/collection/Iterable.scala	2021-02-19 18:54:20.522914399 +0100
+@@ -47,7 +47,10 @@
+ object Iterable extends TraversableFactory[Iterable] {
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+ 
+   /** $genericCanBuildFromInfo */
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-
+-  def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
+ }

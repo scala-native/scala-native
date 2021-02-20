@@ -1,0 +1,24 @@
+--- scalalib/target/scalaSources/2.12.13/scala/collection/immutable/List.scala	2021-01-12 14:37:36.000000000 +0100
++++ scalalib/overrides-2.12/scala/collection/immutable/List.scala	2021-02-19 18:54:20.586914495 +0100
+@@ -496,11 +496,17 @@
+ object List extends SeqFactory[List] {
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
+   /** $genericCanBuildFromInfo */
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] =
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] =
+     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+ 
+-  def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
++  @inline def newBuilder[A]: Builder[A, List[A]] =
++    new ListBuffer[A]
+ 
+-  override def empty[A]: List[A] = Nil
++  @inline override def empty[A]: List[A] = Nil
+ 
+-  override def apply[A](xs: A*): List[A] = xs.toList
++  @inline override def apply[A](xs: A*): List[A] = xs.toList
+ 
