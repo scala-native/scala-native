@@ -1,0 +1,16 @@
+--- scalalib/target/scalaSources/2.12.13/scala/collection/immutable/Set.scala	2021-01-12 14:37:36.000000000 +0100
++++ scalalib/overrides-2.12/scala/collection/immutable/Set.scala	2021-02-19 18:54:20.590914501 +0100
+@@ -65,6 +65,6 @@
+ object Set extends ImmutableSetFactory[Set] {
+-  override def newBuilder[A]: mutable.Builder[A, Set[A]] = new SetBuilderImpl[A]
++  @inline override def newBuilder[A]: mutable.Builder[A, Set[A]] = new SetBuilderImpl[A]
+ 
+   /** $setCanBuildFromInfo */
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] =
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] =
+     ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Set[A]]]
+@@ -72,2 +72,4 @@
+ 
++  @inline override def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]
++
+   /** An optimized representation for immutable empty sets */
