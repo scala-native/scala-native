@@ -16,6 +16,8 @@ addSbtPlugin("org.foundweekends"  % "sbt-bintray"       % "0.5.4")
 addSbtPlugin("com.typesafe"       % "sbt-mima-plugin"   % "0.6.1")
 addSbtPlugin("com.eed3si9n"       % "sbt-buildinfo"     % "0.9.0")
 
+libraryDependencies += "io.github.java-diff-utils" % "java-diff-utils" % "4.9"
+
 // scalacOptions used to bootstrap to sbt prompt.
 // In particular, no "-Xfatal-warnings"
 // A stricter set of Options is used in the project root build.sbt.
