@@ -1,0 +1,19 @@
+--- scalalib/target/scalaSources/2.11.12/scala/collection/mutable/LinkedList.scala	2017-11-03 00:26:48.000000000 +0100
++++ scalalib/overrides-2.11/scala/collection/mutable/LinkedList.scala	2021-02-20 13:54:41.619200355 +0100
+@@ -118,6 +118,13 @@
+ object LinkedList extends SeqFactory[LinkedList] {
+-  override def empty[A]: LinkedList[A] = new LinkedList[A]
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+ 
+-  def newBuilder[A]: Builder[A, LinkedList[A]] =
++  @inline override def empty[A]: LinkedList[A] =
++    new LinkedList[A]
++
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++
++  @inline def newBuilder[A]: Builder[A, LinkedList[A]] =
+     (new MutableList) mapResult ((l: MutableList[A]) => l.toLinkedList)

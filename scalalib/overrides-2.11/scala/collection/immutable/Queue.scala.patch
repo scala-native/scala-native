@@ -1,0 +1,19 @@
+--- scalalib/target/scalaSources/2.11.12/scala/collection/immutable/Queue.scala	2017-11-03 00:26:48.000000000 +0100
++++ scalalib/overrides-2.11/scala/collection/immutable/Queue.scala	2021-02-20 13:54:41.655200154 +0100
+@@ -157,7 +157,12 @@
+ object Queue extends SeqFactory[Queue] {
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
+   /** $genericCanBuildFromInfo */
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
+-  override def empty[A]: Queue[A] = EmptyQueue.asInstanceOf[Queue[A]]
+-  override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
++  @inline override def empty[A]: Queue[A] = EmptyQueue.asInstanceOf[Queue[A]]
++  @inline override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)
+ 

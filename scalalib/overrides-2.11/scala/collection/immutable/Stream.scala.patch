@@ -1,0 +1,27 @@
+--- scalalib/target/scalaSources/2.11.12/scala/collection/immutable/Stream.scala	2017-11-03 00:26:48.000000000 +0100
++++ scalalib/overrides-2.11/scala/collection/immutable/Stream.scala	2021-02-20 13:54:41.579200576 +0100
+@@ -1138,2 +1138,6 @@
+ object Stream extends SeqFactory[Stream] {
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+ 
+@@ -1149,6 +1153,6 @@
+ 
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] = new StreamCanBuildFrom[A]
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] = new StreamCanBuildFrom[A]
+ 
+   /** Creates a new builder for a stream */
+-  def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
++  @inline def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
+ 
+@@ -1173,6 +1177,6 @@
+   /** The empty stream */
+-  override def empty[A]: Stream[A] = Empty
++  @inline override def empty[A]: Stream[A] = Empty
+ 
+   /** A stream consisting of given elements */
+-  override def apply[A](xs: A*): Stream[A] = xs.toStream
++  @inline override def apply[A](xs: A*): Stream[A] = xs.toStream
+ 

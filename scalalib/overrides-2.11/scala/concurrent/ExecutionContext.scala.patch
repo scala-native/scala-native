@@ -1,0 +1,8 @@
+--- scalalib/target/scalaSources/2.11.12/scala/concurrent/ExecutionContext.scala	2017-11-03 00:26:48.000000000 +0100
++++ scalalib/overrides-2.11/scala/concurrent/ExecutionContext.scala	2021-02-20 14:32:59.473192508 +0100
+@@ -129,3 +129,4 @@
+      */
+-    implicit lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.fromExecutor(null: Executor)
++    implicit lazy val global: ExecutionContextExecutor =
++      scala.scalanative.runtime.ExecutionContext.global
+   }

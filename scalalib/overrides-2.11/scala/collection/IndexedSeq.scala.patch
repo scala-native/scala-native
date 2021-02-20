@@ -1,0 +1,16 @@
+--- scalalib/target/scalaSources/2.11.12/scala/collection/IndexedSeq.scala	2017-11-03 00:26:48.000000000 +0100
++++ scalalib/overrides-2.11/scala/collection/IndexedSeq.scala	2021-02-20 13:54:41.591200510 +0100
+@@ -32,7 +32,9 @@
+   // an indexed collection type.
+-  override val ReusableCBF: GenericCanBuildFrom[Nothing] = new GenericCanBuildFrom[Nothing] {
+-    override def apply() = newBuilder[Nothing]
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
+   }
+-  def newBuilder[A]: Builder[A, IndexedSeq[A]] = immutable.IndexedSeq.newBuilder[A]
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] =
++
++  @inline def newBuilder[A]: Builder[A, IndexedSeq[A]] = immutable.IndexedSeq.newBuilder[A]
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] =
+     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

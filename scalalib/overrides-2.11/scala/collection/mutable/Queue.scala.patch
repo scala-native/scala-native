@@ -1,0 +1,15 @@
+--- scalalib/target/scalaSources/2.11.12/scala/collection/mutable/Queue.scala	2017-11-03 00:26:48.000000000 +0100
++++ scalalib/overrides-2.11/scala/collection/mutable/Queue.scala	2021-02-20 13:54:41.519200909 +0100
+@@ -193,5 +193,10 @@
+ object Queue extends SeqFactory[Queue] {
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+ 
+-  def newBuilder[A]: Builder[A, Queue[A]] = new MutableList[A] mapResult { _.toQueue }
++  @inline def newBuilder[A]: Builder[A, Queue[A]] = new MutableList[A] mapResult { _.toQueue }
+ }

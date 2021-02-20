@@ -1,0 +1,19 @@
+--- scalalib/target/scalaSources/2.11.12/scala/collection/mutable/Stack.scala	2017-11-03 00:26:48.000000000 +0100
++++ scalalib/overrides-2.11/scala/collection/mutable/Stack.scala	2021-02-20 13:54:41.775199488 +0100
+@@ -26,2 +26,7 @@
+ object Stack extends SeqFactory[Stack] {
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
+   class StackBuilder[A] extends Builder[A, Stack[A]] {
+@@ -33,5 +38,5 @@
+ 
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Stack[A]] = new StackBuilder[A]
+-  val empty: Stack[Nothing] = new Stack(Nil)
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Stack[A]] = new StackBuilder[A]
++  @inline val empty: Stack[Nothing] = new Stack(Nil)
+ }
