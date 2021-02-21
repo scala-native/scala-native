@@ -1,7 +1,11 @@
+#include <chrono>
+#include <condition_variable>
+#include <ctime>
 #include <memory>
-#include <pthread.h>
-#include <sys/wait.h>
+#include <mutex>
 #include <sys/time.h>
+#include <sys/wait.h>
+#include <thread>
 #include <unordered_map>
 
 #define RETURN_ON_ERROR(f)                                                     \
@@ -13,27 +17,21 @@
 
 struct Monitor {
   public:
-    pthread_cond_t *cond;
+    std::unique_ptr<std::condition_variable> cond;
     int *res;
-    Monitor(int *res) : res(res) {
-        cond = new pthread_cond_t;
-        pthread_cond_init(cond, NULL);
-    }
-    ~Monitor() {
-        pthread_cond_destroy(cond);
-        delete cond;
-    }
+    Monitor(int *res) : res(res), cond(new std::condition_variable()) {}
+    ~Monitor() {}
 };
-static pthread_mutex_t shared_mutex;
+static std::mutex shared_mutex;
 static std::unordered_map<int, std::shared_ptr<Monitor>> waiting_procs;
 static std::unordered_map<int, int> finished_procs;
 
-static void *wait_loop(void *arg) {
+static void wait_loop() {
     while (1) {
         int status;
         const int pid = waitpid(-1, &status, 0);
         if (pid != -1) {
-            pthread_mutex_lock(&shared_mutex);
+            std::unique_lock<std::mutex> lck(shared_mutex);
             const int last_result =
                 WIFSIGNALED(status) ? 0x80 + status : status;
             const auto monitor = waiting_procs.find(pid);
@@ -41,19 +39,30 @@ static void *wait_loop(void *arg) {
                 waiting_procs.erase(monitor);
                 auto m = monitor->second;
                 *m->res = last_result;
-                pthread_cond_broadcast(m->cond);
+                m->cond->notify_all();
             } else {
                 finished_procs[pid] = last_result;
             }
-            pthread_mutex_unlock(&shared_mutex);
         }
     }
     // should be unreachable
-    return NULL;
+    return;
+}
+
+static std::chrono::time_point<std::chrono::system_clock,
+                               std::chrono::nanoseconds>
+timespec_to_time_point(timespec ts, std::mutex *lock) {
+    auto d =
+        std::chrono::seconds{ts.tv_sec} + std::chrono::nanoseconds{ts.tv_nsec};
+
+    return std::chrono::time_point<std::chrono::system_clock,
+                                   std::chrono::nanoseconds>{
+        std::chrono::duration_cast<std::chrono::system_clock::duration>(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(d))};
 }
 
 // The shared lock must be passed into this function for thread-safety.
-static int check_result(const int pid, pthread_mutex_t *lock) {
+static int check_result(const int pid, std::mutex *lock) {
     const auto result = finished_procs.find(pid);
     if (result != finished_procs.end()) {
         finished_procs.erase(result);
@@ -64,19 +73,17 @@ static int check_result(const int pid, pthread_mutex_t *lock) {
 
 extern "C" {
 int scalanative_process_monitor_check_result(const int pid) {
-    pthread_mutex_lock(&shared_mutex);
+    std::unique_lock<std::mutex> lck(shared_mutex);
     const int res = check_result(pid, &shared_mutex);
-    pthread_mutex_unlock(&shared_mutex);
     return res;
 }
 
 int scalanative_process_monitor_wait_for_pid(const int pid, timespec *ts,
                                              int *proc_res) {
-    pthread_mutex_lock(&shared_mutex);
+    std::unique_lock<std::mutex> lck(shared_mutex);
     const int result = check_result(pid, &shared_mutex);
     if (result != -1) {
         *proc_res = result;
-        pthread_mutex_unlock(&shared_mutex);
         return 0;
     }
     const auto it = waiting_procs.find(pid);
@@ -86,17 +93,21 @@ int scalanative_process_monitor_wait_for_pid(const int pid, timespec *ts,
     if (it == waiting_procs.end()) {
         waiting_procs.insert(std::make_pair(pid, monitor));
     }
-    const int res =
-        ts ? pthread_cond_timedwait(monitor->cond, &shared_mutex, ts)
-           : pthread_cond_wait(monitor->cond, &shared_mutex);
-    pthread_mutex_unlock(&shared_mutex);
-    return res;
+    if (ts) {
+        auto res = monitor->cond->wait_until(
+            lck, timespec_to_time_point(*ts, &shared_mutex));
+        return (int)res;
+    } else {
+        monitor->cond->wait(lck);
+        return 0;
+    }
 }
 
 void scalanative_process_monitor_init() {
-    pthread_t thread;
-    pthread_mutex_init(&shared_mutex, NULL);
-    pthread_create(&thread, NULL, wait_loop, NULL);
-    pthread_detach(thread);
+    std::thread thread(wait_loop);
+    thread.detach();
 }
+
+int scalanative_no_timeout = (int)std::cv_status::no_timeout;
+int scalanative_timeout = (int)std::cv_status::timeout;
 }

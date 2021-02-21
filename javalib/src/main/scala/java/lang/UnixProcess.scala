@@ -76,7 +76,8 @@ private[lang] class UnixProcess private (
 
   @inline private def waitImpl(f: () => Int) = {
     var res = 1
-    do res = f() while (if (res == 0) _exitValue == -1 else res != ETIMEDOUT)
+    do res = f() while (if (res == 0) _exitValue == -1
+                        else res != UnixProcess.ProcessMonitor.timeout)
     res
   }
 
@@ -112,13 +113,15 @@ private[lang] class UnixProcess private (
 object UnixProcess {
   @link("pthread")
   @extern
-  private[this] object ProcessMonitor {
+  private object ProcessMonitor {
     @name("scalanative_process_monitor_check_result")
     def checkResult(pid: Int): CInt = extern
     @name("scalanative_process_monitor_init")
     def init(): Unit = extern
     @name("scalanative_process_monitor_wait_for_pid")
     def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt = extern
+    @name("scalanative_timeout")
+    val timeout: CInt = extern
   }
   ProcessMonitor.init()
 
