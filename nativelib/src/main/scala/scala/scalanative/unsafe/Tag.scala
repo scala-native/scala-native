@@ -17,7 +17,7 @@ import scalanative.unsigned._
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
 
-sealed abstract class Tag[T] {
+abstract class Tag[T] {
   def size: CSize
   def alignment: CSize
   @noinline def offset(idx: CSize): CSize                 = throwUndefined()

@@ -2,9 +2,12 @@ package scala.scalanative
 package libc
 
 import scalanative.unsafe._
+import scala.scalanative.unsigned.ULong
 
 @extern
 object stdlib {
+
+  type size_t = ULong
 
   // Memory management
 
