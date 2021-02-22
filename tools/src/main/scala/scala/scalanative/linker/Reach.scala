@@ -23,8 +23,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val dynsigs       = mutable.Set.empty[Sig]
   val dynimpls      = mutable.Set.empty[Global]
 
-  private case class DeleyedMethod(owner: Global.Top, sig: Sig, pos: Position)
-  private val delayedMethods = mutable.Set.empty[DeleyedMethod]
+  private case class DelayedMethod(owner: Global.Top, sig: Sig, pos: Position)
+  private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
   entries.foreach(reachEntry)
   loader.classesWithEntryPoints.foreach(reachClinit)
@@ -107,7 +107,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
      *  At this stage they should define at least 1 target, or should be marked as a missing symbol.
      */
     delayedMethods.foreach {
-      case DeleyedMethod(top, sig, position) =>
+      case DelayedMethod(top, sig, position) =>
         scopeInfo(top).foreach { info =>
           val wasAllocated = info match {
             case value: Trait => value.implementors.exists(_.allocated)
@@ -706,7 +706,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
             else {
               // At this stage we cannot tell if method target is not defined or not yet reached
               // We're delaying resolving targets to the end of Reach phase to check if this method is never defined in NIR
-              delayedMethods += DeleyedMethod(name.top, sig, pos)
+              delayedMethods += DelayedMethod(name.top, sig, pos)
             }
           }
         }
