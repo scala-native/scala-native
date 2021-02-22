@@ -2,29 +2,32 @@ import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops._, mainargs._
 import java.io.File
 
 val blacklisted = {
-  val scala   = os.rel / "scala"
+  val scala = os.rel / "scala"
 
   Set[RelPath](
     scala / "package.scala",
     scala / "Array.scala",
     scala / "Enumeration.scala",
     scala / "Predef.scala",
-    scala / "Symbol.scala",
+    scala / "Symbol.scala"
   )
 }
 
-@main(doc =
-  """Helper tool created for working with scalalib overrides / patches.
+@main(
+  doc = """Helper tool created for working with scalalib overrides / patches.
      Accepts one of following commands:
      - create   - Create diffs of Scala sources based on version in $overridesDir and fetched Scala sources
      - recreate - Create override files based on created diffs and fetched Scala sources
      - prune    - Remove override files having associated .patch file""")
-def main(@arg(doc = "Command to run")
-         cmd: Command,
+def main(
+    @arg(doc = "Command to run")
+    cmd: Command,
     @arg(doc = "Scala version used for fetching sources")
-         scalaVersion: String,
-    @arg(doc = "Path to directory containing overrides, defaults to scalalib/overrides-$scalaBinaryVersion")
-         overridesDir: Option[os.Path] = None) = {
+    scalaVersion: String,
+    @arg(
+      doc =
+        "Path to directory containing overrides, defaults to scalalib/overrides-$scalaBinaryVersion")
+    overridesDir: Option[os.Path] = None) = {
   val Array(vMajor, vMinor, _) = scalaVersion.split('.')
 
   implicit val wd: os.Path = pwd
@@ -33,8 +36,7 @@ def main(@arg(doc = "Command to run")
   val overridedPath =
     overridesDir.getOrElse(pwd / 'scalalib / s"overrides-$vMajor.$vMinor")
 
-  println(
-    s"""
+  println(s"""
        |Attempting to $cmd with config:
        |Scala version: $scalaVersion
        |Overrides dir: $overridedPath
@@ -55,16 +57,18 @@ def main(@arg(doc = "Command to run")
         relativePath = overridePath relativeTo overridedPath
         if !blacklisted.contains(relativePath)
         sourcePath = sourcesDir / relativePath if exists ! sourcePath
-        patchPath = overridePath / up / s"${overridePath.last}.patch"
-        _ = if (exists ! patchPath) rm ! patchPath
+        patchPath  = overridePath / up / s"${overridePath.last}.patch"
+        _          = if (exists ! patchPath) rm ! patchPath
 
         diffCmd = sys.process.Process(
-          command = Seq("diff",
+          command = Seq(
+            "diff",
             "-u1", // When setting 0 patch might be applied in wrong place
             "--ignore-all-space",
             "--ignore-blank-lines",
             (sourcePath relativeTo pwd).toString,
-            (overridePath relativeTo pwd).toString),
+            (overridePath relativeTo pwd).toString
+          ),
           cwd = new File(pwd.toString)
         ) #> new File(patchPath.toString)
       } {
@@ -92,11 +96,12 @@ def main(@arg(doc = "Command to run")
 
         _ = if (exists(overridePath)) rm ! overridePath
         _ = %("patch",
-          "-u", "-N",
-          sourcePath.toString,
-          patchPath.toString,
-          "-o",
-          overridePath.toString)
+              "-u",
+              "-N",
+              sourcePath.toString,
+              patchPath.toString,
+              "-o",
+              overridePath.toString)
       } {}
 
     // Walk overrides dir and remove all `.scala` sources which has defined `.scala.patch` sibling
