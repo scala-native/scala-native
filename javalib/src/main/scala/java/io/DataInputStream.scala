@@ -150,8 +150,77 @@ class DataInputStream(in: InputStream)
   override final def readUnsignedShort(): Int =
     rebuffer(sizeof[Short].toInt).getShort() & 0xFFFF
 
-  override final def readUTF(): String =
-    DataInputStream.readUTF(this)
+  // Retain Scala.js formatting.
+  // The Scala.js original uses  long (> 80 char) lines as the
+  // argument for badFormat(). scalafmt inserts line breaks at odd places,
+  // and makes the code unreadable.
+  //
+  // format: off
+
+  def readUTF(): String = {
+    // Ported from Scala.js commit: 1337656 dated: 2020-06-04
+
+    val length = readUnsignedShort()
+    var res    = ""
+    var i      = 0
+
+    def hex(x: Int): String =
+      (if (x < 0x10) "0" else "") + Integer.toHexString(x)
+
+    def badFormat(msg: String) = throw new UTFDataFormatException(msg)
+
+    while (i < length) {
+      val a = read()
+
+      if (a == -1)
+        badFormat("Unexpected EOF: " + (length - i) + " bytes to go")
+
+      i += 1
+
+      val char = {
+        if ((a & 0x80) == 0x00) { // 0xxxxxxx
+          a.toChar
+        } else if ((a & 0xE0) == 0xC0 && i < length) { // 110xxxxx
+          val b = read()
+          i += 1
+
+          if (b == -1)
+            badFormat("Expected 2 bytes, found: EOF (init: " + hex(a) + ")")
+          if ((b & 0xC0) != 0x80) // 10xxxxxx
+            badFormat("Expected 2 bytes, found: " + hex(b) + " (init: " + hex(a) + ")")
+
+          (((a & 0x1F) << 6) | (b & 0x3F)).toChar
+        } else if ((a & 0xF0) == 0xE0 && i < length - 1) { // 1110xxxx
+          val b = read()
+          val c = read()
+          i += 2
+
+          if (b == -1)
+            badFormat("Expected 3 bytes, found: EOF (init: " + hex(a) + ")")
+
+          if ((b & 0xC0) != 0x80)   // 10xxxxxx
+            badFormat("Expected 3 bytes, found: " + hex(b) + " (init: " + hex(a) + ")")
+
+          if (c == -1)
+            badFormat("Expected 3 bytes, found: " + hex(b) + ", EOF (init: " + hex(a) + ")")
+
+          if ((c & 0xC0) != 0x80)   // 10xxxxxx
+            badFormat("Expected 3 bytes, found: " + hex(b) + ", " + hex(c) + " (init: " + hex(a) + ")")
+
+          (((a & 0x0F) << 12) | ((b & 0x3F) << 6) | (c & 0x3F)).toChar
+        } else {
+          val rem = length - i
+          badFormat("Unexpected start of char: " + hex(a) + " (" + rem + " bytes to go)")
+        }
+      }
+
+      res += char
+    }
+
+    res
+  }
+
+  // format: on
 
   override def skipBytes(n: Int): Int =
     in.skip(n.toLong).toInt
@@ -159,34 +228,6 @@ class DataInputStream(in: InputStream)
 
 object DataInputStream {
   def readUTF(in: DataInput): String = {
-    val nbBytes  = in.readUnsignedShort()
-    val utfBytes = new Array[Byte](nbBytes)
-    in.readFully(utfBytes)
-    fromModifiedUTF(utfBytes)
-  }
-
-  private def fromModifiedUTF(b: Array[Byte]): String = {
-    val builder = new StringBuilder
-    var i       = 0
-    while (i < b.length) {
-      if ((b(i) & 0x80) == 0) {
-        builder.append(b(i).toChar)
-        i += 1
-      } else if ((b(i) & 0xE0) == 0xC0) {
-        val b1 = (b(i) & 0x1F) << 6
-        val b2 = (b(i + 1) & 0x3F)
-        val c  = (b1 | b2).toChar
-        builder.append(c)
-        i += 2
-      } else {
-        val b1 = (b(i) & 0x0F) << 12
-        val b2 = (b(i + 1) & 0x3F) << 6
-        val b3 = (b(i + 2) & 0x3F)
-        val c  = (b1 | b2 | b3).toChar
-        builder.append(c)
-        i += 3
-      }
-    }
-    builder.toString
+    (new DataInputStream(in.asInstanceOf[DataInputStream])).readUTF()
   }
 }
