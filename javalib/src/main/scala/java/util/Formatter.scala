@@ -1399,7 +1399,7 @@ object Formatter {
 
           case ParserStateMachine.StartConversion =>
             loop {
-              if (Character.isDigit(currentChar)) {
+              if (isAsciiDigit(currentChar)) {
                 val position       = format.position() - 1
                 val number         = getPositiveInt(format)
                 var nextChar: Char = 0
@@ -1439,7 +1439,7 @@ object Formatter {
           case ParserStateMachine.ApplyFlags =>
             loop {
               if (token.setFlag(currentChar)) state
-              else if (Character.isDigit(currentChar)) {
+              else if (isAsciiDigit(currentChar)) {
                 token.width = getPositiveInt(format)
                 ApplyWidth
               } else if ('.' == currentChar) {
@@ -1461,7 +1461,7 @@ object Formatter {
             }
 
           case ParserStateMachine.ApplyPrecision =>
-            if (Character.isDigit(currentChar)) {
+            if (isAsciiDigit(currentChar)) {
               token.precision = getPositiveInt(format)
             } else {
               // the precision is required but not given by the format string.
@@ -1518,7 +1518,7 @@ object Formatter {
 
     private def getPositiveInt(buffer: CharBuffer): Int = {
       def loop(): Int = {
-        if (buffer.hasRemaining() && Character.isDigit(buffer.get())) {
+        if (buffer.hasRemaining() && isAsciiDigit(buffer.get())) {
           loop()
         } else buffer.position() - 1
       }
@@ -1537,6 +1537,9 @@ object Formatter {
           FormatToken.Unset
       }
     }
+
+    @inline
+    private def isAsciiDigit(c: Char) = c >= '0' && c <= '9'
   }
 
   private object ParserStateMachine {
