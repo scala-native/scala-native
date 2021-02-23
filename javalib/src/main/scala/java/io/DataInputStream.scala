@@ -157,10 +157,26 @@ class DataInputStream(in: InputStream)
   //
   // format: off
 
-  def readUTF(): String = {
-    // Ported from Scala.js commit: 1337656 dated: 2020-06-04
+  def readUTF(): String =
+    DataInputStream.readUTF(this)
 
-    val length = readUnsignedShort()
+  override def skipBytes(n: Int): Int =
+    in.skip(n.toLong).toInt
+}
+
+object DataInputStream {
+  // Retain Scala.js formatting for readUTF().
+  // The Scala.js original uses  long (> 80 char) lines as the
+  // argument for badFormat(). scalafmt inserts line breaks at odd places,
+  // and makes the code unreadable.
+  //
+  // format: off
+
+  def readUTF(in: DataInput): String = {
+    // Ported from Scala.js commit: 1337656 dated: 2020-06-04
+    // Then modified to operate as a static, not class, method.
+
+    val length = in.readUnsignedShort()
     var res    = ""
     var i      = 0
 
@@ -169,8 +185,15 @@ class DataInputStream(in: InputStream)
 
     def badFormat(msg: String) = throw new UTFDataFormatException(msg)
 
+    def getUnsignedByte(): Int =
+    try {
+    in.readUnsignedByte()
+    } catch {
+      case _: EOFException => -1
+    }
+
     while (i < length) {
-      val a = read()
+      val a = getUnsignedByte()
 
       if (a == -1)
         badFormat("Unexpected EOF: " + (length - i) + " bytes to go")
@@ -181,7 +204,7 @@ class DataInputStream(in: InputStream)
         if ((a & 0x80) == 0x00) { // 0xxxxxxx
           a.toChar
         } else if ((a & 0xE0) == 0xC0 && i < length) { // 110xxxxx
-          val b = read()
+          val b = getUnsignedByte()
           i += 1
 
           if (b == -1)
@@ -191,8 +214,8 @@ class DataInputStream(in: InputStream)
 
           (((a & 0x1F) << 6) | (b & 0x3F)).toChar
         } else if ((a & 0xF0) == 0xE0 && i < length - 1) { // 1110xxxx
-          val b = read()
-          val c = read()
+          val b = getUnsignedByte()
+          val c = getUnsignedByte()
           i += 2
 
           if (b == -1)
@@ -219,15 +242,5 @@ class DataInputStream(in: InputStream)
 
     res
   }
-
   // format: on
-
-  override def skipBytes(n: Int): Int =
-    in.skip(n.toLong).toInt
-}
-
-object DataInputStream {
-  def readUTF(in: DataInput): String = {
-    (new DataInputStream(in.asInstanceOf[DataInputStream])).readUTF()
-  }
 }
