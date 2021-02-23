@@ -154,7 +154,7 @@ final class Formatter private (private var dest: Appendable,
 
     var lastImplicitArgIndex: Int = 0
     var lastArgIndex: Int         = 0 // required for < flag
-    while (formatBuffer.hasRemaining) {
+    while (formatBuffer.hasRemaining()) {
       val token      = parser.nextFormatToken()
       val flags      = token.getFlags()
       val conversion = token.conversion
@@ -1403,7 +1403,7 @@ object Formatter {
                 val position       = format.position() - 1
                 val number         = getPositiveInt(format)
                 var nextChar: Char = 0
-                if (format.hasRemaining) {
+                if (format.hasRemaining()) {
                   nextChar = format.get()
                 }
 
@@ -1503,7 +1503,7 @@ object Formatter {
     }
 
     private def getNextFormatChar(): Char = {
-      if (format.hasRemaining) format.get()
+      if (format.hasRemaining()) format.get()
       else EOS.toChar
     }
 
@@ -1518,7 +1518,7 @@ object Formatter {
 
     private def getPositiveInt(buffer: CharBuffer): Int = {
       def loop(): Int = {
-        if (buffer.hasRemaining && Character.isDigit(buffer.get())) {
+        if (buffer.hasRemaining() && Character.isDigit(buffer.get())) {
           loop()
         } else buffer.position() - 1
       }
