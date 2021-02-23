@@ -773,7 +773,7 @@ final class Formatter private (private var dest: Appendable,
 
     val len   = s.length
     var index = 0
-    while (index != len && { val c = s.charAt(index); c >= '0' && c <= '9' }) {
+    while (index != len && isAsciiDigit(s.charAt(index))) {
       index += 1
     }
 
@@ -1345,11 +1345,11 @@ object Formatter {
       import Defaults._
       while (i != len) {
         result += (str.charAt(i) match {
-          case c if c >= '0' && c <= '9' => (c + digitOffset).toChar
-          case `decimalSeparator`        => formatSymbols.getDecimalSeparator()
-          case `groupingSeparator`       => formatSymbols.getGroupingSeparator()
-          case `lineSeparator`           => System.lineSeparator()
-          case c                         => c
+          case c if isAsciiDigit(c) => (c + digitOffset).toChar
+          case `decimalSeparator`   => formatSymbols.getDecimalSeparator()
+          case `groupingSeparator`  => formatSymbols.getGroupingSeparator()
+          case `lineSeparator`      => System.lineSeparator()
+          case c                    => c
         })
         i += 1
       }
@@ -1538,8 +1538,6 @@ object Formatter {
       }
     }
 
-    @inline
-    private def isAsciiDigit(c: Char) = c >= '0' && c <= '9'
   }
 
   private object ParserStateMachine {
@@ -1601,4 +1599,7 @@ object Formatter {
     final val LastArgumentIndex   = -2
     final val ParsedValueTooLarge = -3
   }
+
+  @inline
+  private def isAsciiDigit(c: Char) = c >= '0' && c <= '9'
 }
