@@ -34,6 +34,17 @@ trait NirCompat[G <: Global with Singleton] { self: NirPhase[G] =>
     def synthCls: Symbol = NoSymbol
   }
 
+  implicit final class TyperCompatOps(self: NirCompat.this.global.typer.type) {
+    def checkClassTypeOrModule(tpt: Tree): Boolean = {
+      import typer._
+      checkClassType(tpt)
+    }
+
+    object typer {
+      def checkClassType(tpt: Tree): Boolean = infiniteLoop()
+    }
+  }
+
   implicit final class SymbolCompat(self: Symbol) {
     def originalOwner: Symbol =
       global.originalOwner.getOrElse(self, self.rawowner)

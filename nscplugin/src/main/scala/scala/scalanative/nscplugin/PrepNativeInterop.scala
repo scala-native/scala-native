@@ -96,7 +96,7 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
         case TypeApply(classOfTree @ Select(predef, nme.classOf), List(tpeArg))
             if predef.symbol == PredefModule =>
           // Replace call by literal constant containing type
-          if (typer.checkClassType(tpeArg)) {
+          if (typer.checkClassTypeOrModule(tpeArg)) {
             val widenedTpe = tpeArg.tpe.dealias.widen
             println("rewriting class of for" + widenedTpe)
             typer.typed { Literal(Constant(widenedTpe)) }
