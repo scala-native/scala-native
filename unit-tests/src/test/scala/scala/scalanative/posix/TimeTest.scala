@@ -2,7 +2,6 @@ package scala.scalanative.posix
 
 import org.junit.Test
 import org.junit.Assert._
-import org.junit.Assume._
 
 import java.io.IOException
 
@@ -77,10 +76,29 @@ class TimeTest {
 
   @Test def strftimeDoesNotReadMemoryOutsideStructTm(): Unit = {
     Zone { implicit z =>
-      // Review logic of this test thoroughly if size of "tm" changes.
+      // The purpose of this test is to check two closely related conditions.
+      // These conditions not a concern when the size of the C structure
+      // is the same as the Scala Native structure and the order of the
+      // fields match. They are necessary on BSD or glibc derived systems
+      // where the Operating System libc uses 56 bytes, where the "extra"
+      // have a time-honored, specified meaning.
+      //
+      //   1) Did time.scala strftime() have "@name" to ensure that structure
+      //      copy-in/copy-out happened? Failure case is if 36 byte
+      //      Scala Native tm got passed as-is to C strftime on a BSD/glibc
+      //      system.
+      //
+      //   2) Did time.c strftime() zero any "excess" bytes if the C structure
+      //      is larger than the Scala Native one? Failure case is that the
+      //      timezone name in the output fails to match the expected regex.
+      //      Often the mismatch consists of invisible, non-printing
+      //      characters.
+      //
+      // Review the logic of this test thoroughly if size of "tm" changes.
       // This test may no longer be needed or need updating.
-      assumeTrue("Assumes 36 byte Scala Native struct tm",
-                 (sizeof[tm] == 36.toULong))
+      assertEquals("Review test! sizeof[Scala Native struct tm] changed",
+                   sizeof[tm],
+                   36.toULong)
 
       val ttPtr = alloc[time_t]
       !ttPtr = 1490986064740L / 1000L // Fri Mar 31 14:47:44 EDT 2017
@@ -89,8 +107,11 @@ class TimeTest {
       // Scala Native tm, so the linux 56 byte form is necessary here.
       val tmBufCount = 7.toULong
 
-      // alloc will zero/clear all bytes
       val tmBuf = alloc[Ptr[Byte]](tmBufCount)
+      string.memset(tmBuf.asInstanceOf[Ptr[Byte]],
+                    0,
+                    tmBufCount * sizeof[Ptr[Byte]])
+
       val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
       if (localtime_r(ttPtr, tmPtr) == null) {
@@ -99,14 +120,16 @@ class TimeTest {
         val unexpected = "BOGUS"
 
         // With the "short" 36 byte SN struct tm tmBuf(6) is
-        // is BSD linux tm_zone, and outside the posix minimal required
+        // BSD linux tm_zone, and outside the posix minimal required
         // range. strftime() should not read it.
         tmBuf(6) = toCString(unexpected)
 
         // grossly over-provision rather than chase fencepost bugs.
         val bufSize = 70.toULong
-        val buf     = alloc[Byte](bufSize) // will zero/clear all bytes
-        val n       = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
+        val buf     = alloc[Byte](bufSize)
+        string.memset(buf, 0, bufSize)
+
+        val n = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 
         // strftime does not set errno on error
         assertNotEquals("unexpected zero from strftime", n, 0)
@@ -114,11 +137,13 @@ class TimeTest {
         val result = fromCString(buf)
         val len    = "Fri Mar 31 14:47:44 ".length
 
+        // time.scala @name caused structure copy-in/copy-out.
         assertEquals("strftime failed", result.indexOf(unexpected, len), -1)
 
         val regex = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
-          "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 20[1-3]\\d"
+          "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 2017"
 
+        // time.c strftime() zeroed excess bytes in BSD/glibc struct tm.
         assertTrue(s"result: '${result}' does not match regex: '${regex}'",
                    result.matches(regex))
       }
@@ -192,21 +217,38 @@ class TimeTest {
 
   @Test def strptimeDoesNotWriteMemoryOutsideStructTm(): Unit = {
     Zone { implicit z =>
+      // The purpose of this test is to check two closely related conditions.
+      // These conditions not a concern when the size of the C structure
+      // is the same as the Scala Native structure and the order of the
+      // fields match. They are necessary on BSD or glibc derived systems
+      // where the Operating System libc uses 56 bytes, where the "extra"
+      // have a time-honored, specified meaning.
+      //
+      //   1) Did time.scala stptime() have "@name" to ensure that structure
+      //      copy-in/copy-out happened? Failure case is if 36 byte
+      //      Scala Native tm got passed as-is to C strptime on a BSD/glibc
+      //      system; see the tm_gmtoff & tm_zone handling below
+      //
+      //   2) Did time.c strptime() zero clear the tm_isdst field?
+      //
       // Key to magic numbers 56 & 36.
       // Linux _BSD_Source uses at least 56 Bytes.
       // Posix specifies 36 but allows more.
 
       // Review logic of this test thoroughly if size of "tm" changes.
       // This test may no longer be needed or need updating.
-      assumeTrue("Assumes 36 byte Scala Native struct tm",
-                 (sizeof[tm] == 36.toULong))
+      assertEquals("Review test! sizeof[Scala Native struct tm] changed",
+                   sizeof[tm],
+                   36.toULong)
 
       val tmBufSize = 56.toULong
-      val tmBuf     = alloc[Byte](tmBufSize) // will zero/clear all bytes
-      val tmPtr     = tmBuf.asInstanceOf[Ptr[tm]]
+      val tmBuf     = alloc[Byte](tmBufSize)
+      string.memset(tmBuf, 0, tmBufSize)
+
+      val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
       // C strptime() parses %Z but does not set corresponding field.
-      // Initialize tm_isdate to something other than 0 to ensure
+      // Initialize tm_isdst to something other than 0 to ensure
       // Scala Native strptime() is clearing it.
       // Change in this initial condition is checked in a test below.
       tmPtr.tm_isdst = Int.MinValue
