@@ -1420,7 +1420,7 @@ object Formatter {
                     // do not get the next char.
                     format.position(format.position() - 1)
                     token.width = number
-                    ApplyWidth
+                    AfterWidth
                   }
                 }
                 currentChar = nextChar
@@ -1441,7 +1441,7 @@ object Formatter {
               if (token.setFlag(currentChar)) state
               else if (isAsciiDigit(currentChar)) {
                 token.width = getPositiveInt(format)
-                ApplyWidth
+                AfterWidth
               } else if ('.' == currentChar) {
                 ApplyPrecision
               } else {
@@ -1451,7 +1451,7 @@ object Formatter {
               }
             }
 
-          case ParserStateMachine.ApplyWidth =>
+          case ParserStateMachine.AfterWidth =>
             loop {
               if ('.' == currentChar) ApplyPrecision
               else {
@@ -1548,7 +1548,7 @@ object Formatter {
     final val Entry               = 1
     final val StartConversion     = 2
     final val ApplyFlags          = 3
-    final val ApplyWidth          = 4
+    final val AfterWidth          = 4
     final val ApplyPrecision      = 5
     final val ApplyConversionType = 6
     final val ApplySuffix         = 7
