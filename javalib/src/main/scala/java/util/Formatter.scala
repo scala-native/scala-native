@@ -161,7 +161,7 @@ final class Formatter private (private var dest: Appendable,
       val plainText  = token.plainText
 
       // Process a portion without '%'
-      if (conversion == FormatToken.Unset.toChar) {
+      if (conversion == FormatToken.UnsetChar) {
         sendToDest(plainText)
         return this
       }
@@ -1367,7 +1367,7 @@ object Formatter {
     import ParserStateMachine._
 
     def nextFormatToken(): FormatToken = {
-      var currentChar = FormatToken.Unset.asInstanceOf[Char]
+      var currentChar = FormatToken.UnsetChar
       val token       = new FormatToken(format.position())
 
       @tailrec
@@ -1543,7 +1543,7 @@ object Formatter {
   }
 
   private object ParserStateMachine {
-    final val EOS                 = -1.asInstanceOf[Char]
+    final val EOS                 = -1.toChar
     final val Exit                = 0
     final val Entry               = 1
     final val StartConversion     = 2
@@ -1563,7 +1563,7 @@ object Formatter {
     var argIndex: Int             = Unset
     var width: Int                = Unset
     var precision: Int            = Unset
-    var conversion: Char          = Unset.asInstanceOf[Char]
+    var conversion: Char          = UnsetChar
 
     def getFlags(): Flags = new Flags(flags)
 
@@ -1597,6 +1597,7 @@ object Formatter {
 
   private object FormatToken {
     final val Unset               = -1
+    final val UnsetChar           = '\u0000'
     final val LastArgumentIndex   = -2
     final val ParsedValueTooLarge = -3
   }
