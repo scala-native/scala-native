@@ -1363,6 +1363,7 @@ object Formatter {
    * Used instead of regexp due to performance issues
    */
   private class ParserStateMachine(format: CharBuffer) {
+
     import ParserStateMachine._
 
     def nextFormatToken(): FormatToken = {
@@ -1526,10 +1527,9 @@ object Formatter {
       val end   = loop().min(buffer.limit())
       buffer.position(0)
       val intStr = buffer.subSequence(start, end).toString
-
       buffer.position(end)
       try {
-        val value = JDouble.parseDouble(intStr)
+        val value = java.lang.Long.parseLong(intStr)
         if (value <= Int.MaxValue) value.toInt
         else FormatToken.ParsedValueTooLarge
       } catch {
