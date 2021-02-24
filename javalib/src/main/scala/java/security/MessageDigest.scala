@@ -25,13 +25,15 @@ object MessageDigest {
 
   def getInstance(algorithm: String): MessageDigest = {
     val impl = algorithm.toUpperCase() match {
-      case "MD5" => MD5Impl
-      case "SHA-1" => SHA1Impl
+      case "MD5"     => MD5Impl
+      case "SHA-1"   => SHA1Impl
       case "SHA-224" => SHA224Impl
       case "SHA-256" => SHA256Impl
       case "SHA-384" => SHA384Impl
       case "SHA-512" => SHA512Impl
-      case _ => throw new NoSuchAlgorithmException(s"$algorithm MessageDigest not available")
+      case _ =>
+        throw new NoSuchAlgorithmException(
+          s"$algorithm MessageDigest not available")
     }
     new CryptoMessageDigest(algorithm, impl)
   }
@@ -74,51 +76,64 @@ private abstract class AlgoImpl {
 }
 private object MD5Impl extends AlgoImpl {
   override def Init(c: Ptr[Byte]): CInt = crypto.MD5_Init(c)
-  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.MD5_Update(c,data,len)
-  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.MD5_Final(res, c)
-  override def CTXSize: Int = 92
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt =
+    crypto.MD5_Update(c, data, len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt =
+    crypto.MD5_Final(res, c)
+  override def CTXSize: Int      = 92
   override def digestLength: Int = 16
 }
 private object SHA1Impl extends AlgoImpl {
   override def Init(c: Ptr[Byte]): CInt = crypto.SHA1_Init(c)
-  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.SHA1_Update(c,data,len)
-  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.SHA1_Final(res, c)
-  override def CTXSize: Int = 96
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt =
+    crypto.SHA1_Update(c, data, len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt =
+    crypto.SHA1_Final(res, c)
+  override def CTXSize: Int      = 96
   override def digestLength: Int = 20
 }
 private object SHA224Impl extends AlgoImpl {
   override def Init(c: Ptr[Byte]): CInt = crypto.SHA224_Init(c)
-  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.SHA224_Update(c,data,len)
-  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.SHA224_Final(res, c)
-  override def CTXSize: Int = 112
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt =
+    crypto.SHA224_Update(c, data, len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt =
+    crypto.SHA224_Final(res, c)
+  override def CTXSize: Int      = 112
   override def digestLength: Int = 28
 }
 private object SHA256Impl extends AlgoImpl {
   override def Init(c: Ptr[Byte]): CInt = crypto.SHA256_Init(c)
-  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.SHA256_Update(c,data,len)
-  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.SHA256_Final(res, c)
-  override def CTXSize: Int = 112
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt =
+    crypto.SHA256_Update(c, data, len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt =
+    crypto.SHA256_Final(res, c)
+  override def CTXSize: Int      = 112
   override def digestLength: Int = 32
 }
 private object SHA384Impl extends AlgoImpl {
   override def Init(c: Ptr[Byte]): CInt = crypto.SHA384_Init(c)
-  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.SHA384_Update(c,data,len)
-  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.SHA384_Final(res, c)
-  override def CTXSize: Int = 216
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt =
+    crypto.SHA384_Update(c, data, len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt =
+    crypto.SHA384_Final(res, c)
+  override def CTXSize: Int      = 216
   override def digestLength: Int = 48
 }
 private object SHA512Impl extends AlgoImpl {
   override def Init(c: Ptr[Byte]): CInt = crypto.SHA512_Init(c)
-  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.SHA512_Update(c,data,len)
-  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.SHA512_Final(res, c)
-  override def CTXSize: Int = 216
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt =
+    crypto.SHA512_Update(c, data, len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt =
+    crypto.SHA512_Final(res, c)
+  override def CTXSize: Int      = 216
   override def digestLength: Int = 64
 }
 
 private final class CryptoMessageDigest(algorithm: String, algoImpl: AlgoImpl)
     extends MessageDigest(algorithm) {
   // Array with length equals to sizeof(Algo_CTX)
-  private val c = new Array[Byte](algoImpl.CTXSize).asInstanceOf[ByteArray].at(0)
+  private val c =
+    new Array[Byte](algoImpl.CTXSize).asInstanceOf[ByteArray].at(0)
   engineReset()
 
   override def engineGetDigestLength(): Int = algoImpl.digestLength
