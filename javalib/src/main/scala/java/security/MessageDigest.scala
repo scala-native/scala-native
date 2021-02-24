@@ -23,22 +23,17 @@ object MessageDigest {
   def isEqual(digestA: Array[Byte], digestB: Array[Byte]): Boolean =
     true
 
-  def getInstance(algorithm: String): MessageDigest =
-    if (algorithm.equalsIgnoreCase("MD5")) {
-      new Md5MessageDigest(algorithm)
-    } else {
-      new DummyMessageDigest(algorithm)
+  def getInstance(algorithm: String): MessageDigest = {
+    val impl = algorithm.toUpperCase() match {
+      case "MD5" => MD5Impl
+      case "SHA-1" => SHA1Impl
+      case "SHA-256" => SHA256Impl
+      case "SHA-384" => SHA384Impl
+      case "SHA-512" => SHA512Impl
+      case _ => throw new NoSuchAlgorithmException(s"$algorithm MessageDigest not available")
     }
-}
-
-private class DummyMessageDigest(algorithm: String)
-    extends MessageDigest(algorithm) {
-  override protected def engineDigest(): Array[Byte]     = Array.empty
-  override protected def engineReset(): Unit             = ()
-  override protected def engineUpdate(input: Byte): Unit = ()
-  override protected def engineUpdate(input: Array[Byte],
-                                      offset: Int,
-                                      len: Int): Unit = ()
+    new CryptoMessageDigest(algorithm, impl)
+  }
 }
 
 @link("crypto")
@@ -47,37 +42,94 @@ private object crypto {
   def MD5_Init(c: Ptr[Byte]): CInt                                = extern
   def MD5_Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = extern
   def MD5_Final(md: CString, c: Ptr[Byte]): CInt                  = extern
+
+  def SHA1_Init(c: Ptr[Byte]): CInt                                = extern
+  def SHA1_Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = extern
+  def SHA1_Final(md: CString, c: Ptr[Byte]): CInt                  = extern
+
+  def SHA256_Init(c: Ptr[Byte]): CInt                                = extern
+  def SHA256_Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = extern
+  def SHA256_Final(md: CString, c: Ptr[Byte]): CInt                  = extern
+
+  def SHA384_Init(c: Ptr[Byte]): CInt                                = extern
+  def SHA384_Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = extern
+  def SHA384_Final(md: CString, c: Ptr[Byte]): CInt                  = extern
+
+  def SHA512_Init(c: Ptr[Byte]): CInt                                = extern
+  def SHA512_Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = extern
+  def SHA512_Final(md: CString, c: Ptr[Byte]): CInt                  = extern
 }
 
-private final class Md5MessageDigest(algorithm: String)
-    extends MessageDigest(algorithm) {
-  import crypto._
+private abstract class AlgoImpl {
+  def Init(c: Ptr[Byte]): CInt
+  def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = extern
+  def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt
+  def CTXSize: Int
+  def digestLength: Int
+}
+private object MD5Impl extends AlgoImpl {
+  override def Init(c: Ptr[Byte]): CInt = crypto.MD5_Init(c)
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.MD5_Update(c,data,len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.MD5_Final(res, c)
+  override def CTXSize: Int = 92
+  override def digestLength: Int = 16
+}
+private object SHA1Impl extends AlgoImpl {
+  override def Init(c: Ptr[Byte]): CInt = crypto.SHA1_Init(c)
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.SHA1_Update(c,data,len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.SHA1_Final(res, c)
+  override def CTXSize: Int = 96
+  override def digestLength: Int = 20
+}
+private object SHA256Impl extends AlgoImpl {
+  override def Init(c: Ptr[Byte]): CInt = crypto.SHA256_Init(c)
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.SHA256_Update(c,data,len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.SHA256_Final(res, c)
+  override def CTXSize: Int = 112
+  override def digestLength: Int = 32
+}
+private object SHA384Impl extends AlgoImpl {
+  override def Init(c: Ptr[Byte]): CInt = crypto.SHA384_Init(c)
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.SHA384_Update(c,data,len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.SHA384_Final(res, c)
+  override def CTXSize: Int = 216
+  override def digestLength: Int = 48
+}
+private object SHA512Impl extends AlgoImpl {
+  override def Init(c: Ptr[Byte]): CInt = crypto.SHA512_Init(c)
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.SHA512_Update(c,data,len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.SHA512_Final(res, c)
+  override def CTXSize: Int = 216
+  override def digestLength: Int = 64
+}
 
-  // Array with length equals to sizeof(MD5_CTX)
-  private val c = new Array[Byte](92).asInstanceOf[ByteArray].at(0)
+private final class CryptoMessageDigest(algorithm: String, algoImpl: AlgoImpl)
+    extends MessageDigest(algorithm) {
+  // Array with length equals to sizeof(Algo_CTX)
+  private val c = new Array[Byte](algoImpl.CTXSize).asInstanceOf[ByteArray].at(0)
   engineReset()
 
-  override def engineGetDigestLength(): Int = 16
+  override def engineGetDigestLength(): Int = algoImpl.digestLength
   override def engineDigest(): Array[Byte] = {
-    val result = new Array[Byte](16)
-    MD5_Final(result.asInstanceOf[ByteArray].at(0), c)
+    val result = new Array[Byte](algoImpl.digestLength)
+    algoImpl.Final(result.asInstanceOf[ByteArray].at(0), c)
     engineReset()
     result
   }
   override def engineReset(): Unit = {
-    MD5_Init(c)
+    algoImpl.Init(c)
   }
   override def engineUpdate(input: Byte): Unit = {
     val buf = stackalloc[Byte]
     !buf = input
-    MD5_Update(c, buf, 1.toULong)
+    algoImpl.Update(c, buf, 1.toULong)
   }
   override def engineUpdate(input: Array[Byte], offset: Int, len: Int): Unit = {
     if (offset < 0 || len < 0 || offset + len > input.length) {
       throw new IndexOutOfBoundsException
     }
     if (len > 0) {
-      MD5_Update(c, input.asInstanceOf[ByteArray].at(offset), len.toULong)
+      algoImpl.Update(c, input.asInstanceOf[ByteArray].at(offset), len.toULong)
     }
   }
 }
