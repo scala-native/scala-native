@@ -27,6 +27,7 @@ object MessageDigest {
     val impl = algorithm.toUpperCase() match {
       case "MD5" => MD5Impl
       case "SHA-1" => SHA1Impl
+      case "SHA-224" => SHA224Impl
       case "SHA-256" => SHA256Impl
       case "SHA-384" => SHA384Impl
       case "SHA-512" => SHA512Impl
@@ -46,6 +47,10 @@ private object crypto {
   def SHA1_Init(c: Ptr[Byte]): CInt                                = extern
   def SHA1_Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = extern
   def SHA1_Final(md: CString, c: Ptr[Byte]): CInt                  = extern
+
+  def SHA224_Init(c: Ptr[Byte]): CInt                                = extern
+  def SHA224_Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = extern
+  def SHA224_Final(md: CString, c: Ptr[Byte]): CInt                  = extern
 
   def SHA256_Init(c: Ptr[Byte]): CInt                                = extern
   def SHA256_Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = extern
@@ -80,6 +85,13 @@ private object SHA1Impl extends AlgoImpl {
   override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.SHA1_Final(res, c)
   override def CTXSize: Int = 96
   override def digestLength: Int = 20
+}
+private object SHA224Impl extends AlgoImpl {
+  override def Init(c: Ptr[Byte]): CInt = crypto.SHA224_Init(c)
+  override def Update(c: Ptr[Byte], data: Ptr[Byte], len: CSize): CInt = crypto.SHA224_Update(c,data,len)
+  override def Final(res: Ptr[Byte], c: Ptr[Byte]): CInt = crypto.SHA224_Final(res, c)
+  override def CTXSize: Int = 112
+  override def digestLength: Int = 28
 }
 private object SHA256Impl extends AlgoImpl {
   override def Init(c: Ptr[Byte]): CInt = crypto.SHA256_Init(c)

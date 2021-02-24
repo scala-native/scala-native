@@ -42,6 +42,16 @@ class MessageDigestTest {
                         33, 35, -123, -22, 121, 112, -108, 71, 88, 2))
   }
 
+  @Test def basicSHA224Digest(): Unit = {
+    checkStringResult("SHA-224",
+                      "Hello world!",
+                      Array[Byte](
+                        126, -127, -21, -23, -26, 4, -96, -55, 127, -17, 14, 76,
+                        -2, 113, -7, -70, 14, -53, -95, 51, 50, -67, -23, 83,
+                        -83, 28, 102, -28
+                      ))
+  }
+
   @Test def basicSHA256Digest(): Unit = {
     checkStringResult("SHA-256",
                       "Hello world!",
