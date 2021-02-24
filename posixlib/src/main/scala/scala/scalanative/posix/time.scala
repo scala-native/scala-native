@@ -4,6 +4,9 @@ package posix
 import scala.scalanative.unsafe._
 import scala.scalanative.posix.sys.types, types._
 
+// XSI comment before method indicates it is defined in
+// extended POSIX X/Open System Interfaces, not base POSIX.
+
 @extern
 object time {
 
@@ -12,36 +15,67 @@ object time {
   type timespec = CStruct2[time_t, CLong]
   type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
 
+  // Some methods here have a @name annotation and some do not.
+  // Methods where a @name extern "glue" layer would simply pass through
+  // the arguments or return value do not need that layer & its
+  // annotation.
+  //
+  // time_t is a simple type, not a structure, so it does not need to be
+  // transformed.
+  //
+  // Structures, such as timespec or tm, are subject to differing total
+  // sizes(tail padding), ordering of elements, and intervening padding.
+  // Expect an @name annotation and "glue" layer implementation to handle
+  // them.
+
   @name("scalanative_asctime")
   def asctime(time_ptr: Ptr[tm]): CString = extern
+
   @name("scalanative_asctime_r")
   def asctime_r(time_ptr: Ptr[tm], buf: Ptr[CChar]): CString = extern
-  def clock(): clock_t                                       = extern
-  def ctime(time: Ptr[time_t]): CString                      = extern
-  def ctime_r(time: Ptr[time_t], buf: Ptr[CChar]): CString   = extern
-  def difftime(time_end: CLong, time_beg: CLong): CDouble    = extern
+
+  def clock(): clock_t                                     = extern
+  def ctime(time: Ptr[time_t]): CString                    = extern
+  def ctime_r(time: Ptr[time_t], buf: Ptr[CChar]): CString = extern
+  def difftime(time_end: CLong, time_beg: CLong): CDouble  = extern
+
   @name("scalanative_gmtime")
   def gmtime(time: Ptr[time_t]): Ptr[tm] = extern
+
   @name("scalanative_gmtime_r")
   def gmtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
+
   @name("scalanative_localtime")
   def localtime(time: Ptr[time_t]): Ptr[tm] = extern
+
   @name("scalanative_localtime_r")
   def localtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
+
   @name("scalanative_mktime")
   def mktime(time: Ptr[tm]): time_t = extern
+
+  @name("scalanative_strftime")
   def strftime(str: Ptr[CChar],
                count: CSize,
                format: CString,
                time: Ptr[tm]): CSize = extern
+
+  // XSI
+  @name("scalanative_strptime")
   def strptime(str: Ptr[CChar], format: CString, time: Ptr[tm]): CString =
     extern
+
   def time(arg: Ptr[time_t]): time_t = extern
   def tzset(): Unit                  = extern
+
   @name("scalanative_daylight")
   def daylight(): CInt = extern
+
+  // XSI
   @name("scalanative_timezone")
   def timezone(): CLong = extern
+
+  // XSI
   @name("scalanative_tzname")
   def tzname(): Ptr[CStruct2[CString, CString]] = extern
 }

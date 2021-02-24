@@ -1,4 +1,9 @@
-#include <stdio.h>
+// X/Open System Interfaces (XSI), also sets _POSIX_C_SOURCE.
+// Partial, but useful, implementation of X/Open 7, incorporating Posix 2008.
+
+#define _XOPEN_SOURCE 700
+
+#include <string.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -40,6 +45,10 @@ static void tm_init(struct tm *tm, struct scalanative_tm *scala_tm) {
     tm->tm_wday = scala_tm->tm_wday;
     tm->tm_yday = scala_tm->tm_yday;
     tm->tm_isdst = scala_tm->tm_isdst;
+    // On BSD-like systems or with glibc sizeof(tm) is greater than
+    // sizeof(scalanative_tm), so contents of rest of tm is left undefined.
+    // asctime, asctime_r, mktime, gmtime, & gmtime_r are robust to this.
+    // strftime is _NOT_ and must zero the excess fields itself.
 }
 
 char *scalanative_asctime_r(struct scalanative_tm *scala_tm, char *buf) {
@@ -86,13 +95,42 @@ time_t scalanative_mktime(struct scalanative_tm *result) {
 
 size_t scalanative_strftime(char *buf, size_t maxsize, const char *format,
                             struct scalanative_tm *scala_tm) {
-    struct tm tm;
+
+    // The operating system struct tm can be larger than
+    // the scalanative tm.  On 64 bit GNU or _BSD_SOURCE Linux this
+    // usually is true and beyond easy control.
+    //
+    // Clear any fields not known to scalanative, such as tm_zone,
+    // so they are zero/NULL, not J-Random garbage.
+    // strftime() in Scala Native release mode is particularly sensitive
+    // to garbage beyond the end of the scalanative tm.
+
+    // Initializing all of tm when part of it will be immediately overwritten
+    // is _slightly_ inefficient but short, simple, and easy to get right.
+
+    struct tm tm = {0};
     tm_init(&tm, scala_tm);
     return strftime(buf, maxsize, format, &tm);
 }
 
+// XSI
+char *scalanative_strptime(const char *s, const char *format,
+                           struct scalanative_tm *scala_tm) {
+    // strptime is known to not set is_dst field for %Z format.
+    // Take runtime hit of clearing entire structure to be robust
+    // to that and undiscovered corner cases where strptime does not fill
+    // a field under some condition.
+    struct tm tm = {0};
+
+    char *result = strptime(s, format, &tm);
+    scalanative_tm_init(scala_tm, &tm);
+    return result;
+}
+
 char **scalanative_tzname() { return tzname; }
 
+// XSI
 long scalanative_timezone() { return timezone; }
 
+// XSI
 int scalanative_daylight() { return daylight; }
