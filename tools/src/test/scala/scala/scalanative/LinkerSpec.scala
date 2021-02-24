@@ -54,7 +54,7 @@ abstract class LinkerSpec extends AnyFlatSpec {
     Config.empty
       .withWorkdir(outDir)
       .withClassPath(classpath)
-      .withMainClass(entry)
+      .withMainClass(Some(entry))
       .withCompilerConfig(_.withLinkStubs(linkStubs))
   }
 
