@@ -150,13 +150,6 @@ class DataInputStream(in: InputStream)
   override final def readUnsignedShort(): Int =
     rebuffer(sizeof[Short].toInt).getShort() & 0xFFFF
 
-  // Retain Scala.js formatting.
-  // The Scala.js original uses  long (> 80 char) lines as the
-  // argument for badFormat(). scalafmt inserts line breaks at odd places,
-  // and makes the code unreadable.
-  //
-  // format: off
-
   def readUTF(): String =
     DataInputStream.readUTF(this)
 
@@ -185,15 +178,17 @@ object DataInputStream {
 
     def badFormat(msg: String) = throw new UTFDataFormatException(msg)
 
-    def getUnsignedByte(): Int =
-    try {
-    in.readUnsignedByte()
-    } catch {
-      case _: EOFException => -1
-    }
+    // Minimize changes to ported code by using "EOF returns -1" contract of
+    // InputStream not the "EOFException" of provided DataInput 'in' argument.
+    def read(): Int =
+      try {
+        in.readUnsignedByte()
+      } catch {
+        case _: EOFException => -1
+      }
 
     while (i < length) {
-      val a = getUnsignedByte()
+      val a = read()
 
       if (a == -1)
         badFormat("Unexpected EOF: " + (length - i) + " bytes to go")
@@ -204,7 +199,7 @@ object DataInputStream {
         if ((a & 0x80) == 0x00) { // 0xxxxxxx
           a.toChar
         } else if ((a & 0xE0) == 0xC0 && i < length) { // 110xxxxx
-          val b = getUnsignedByte()
+          val b = read()
           i += 1
 
           if (b == -1)
@@ -214,8 +209,8 @@ object DataInputStream {
 
           (((a & 0x1F) << 6) | (b & 0x3F)).toChar
         } else if ((a & 0xF0) == 0xE0 && i < length - 1) { // 1110xxxx
-          val b = getUnsignedByte()
-          val c = getUnsignedByte()
+          val b = read()
+          val c = read()
           i += 2
 
           if (b == -1)
