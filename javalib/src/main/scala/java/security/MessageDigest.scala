@@ -25,12 +25,12 @@ object MessageDigest {
 
   def getInstance(algorithm: String): MessageDigest = {
     val impl = algorithm.toUpperCase() match {
-      case "MD5"     => MD5Impl
-      case "SHA-1"   => SHA1Impl
-      case "SHA-224" => SHA224Impl
-      case "SHA-256" => SHA256Impl
-      case "SHA-384" => SHA384Impl
-      case "SHA-512" => SHA512Impl
+      case "MD5"                    => MD5Impl
+      case "SHA-1" | "SHA" | "SHA1" => SHA1Impl
+      case "SHA-224"                => SHA224Impl
+      case "SHA-256"                => SHA256Impl
+      case "SHA-384"                => SHA384Impl
+      case "SHA-512"                => SHA512Impl
       case _ =>
         throw new NoSuchAlgorithmException(
           s"$algorithm MessageDigest not available")
