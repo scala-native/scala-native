@@ -12,33 +12,12 @@ pos/t533.scala
 pos/functions.scala
 pos/MailBox.scala
 
-# Spuriously fails too often, and causes other subsequent tests to fail too
-# Note that this test, by design, stress-tests type checking
-pos/t6367.scala
-
-# Kills our IR serializer, it's an artificially super-deep if/else if
-pos/t9181.scala
-
 #
 # NEG
 #
 
-# Screws up, but not really our problem (error: None.get instead of
-# phase ordering error)
-neg/t7494-multi-right-after
-neg/t7494-right-after-before
-neg/t7622-multi-followers
-neg/t7622-cyclic-dependency
-
 # Uses some strange macro cross compile mechanism.
 neg/macro-incompatible-macro-engine-c.scala
-
-# Spurious failures
-neg/inlineMaxSize.scala
-neg/patmatexhaust-huge.scala
-
-# Uses .java files
-neg/t6289
 
 #
 # RUN
@@ -57,7 +36,6 @@ run/t5857.scala
 
 run/t5018.scala
 run/t2417.scala
-run/t4813.scala
 run/lazy-concurrent.scala
 run/t3667.scala
 run/t3038d.scala
@@ -68,26 +46,17 @@ run/t5974.scala
 run/hashset.scala
 run/t5262.scala
 run/serialize-stream.scala
-run/sysprops.scala
 run/lambda-serialization-gc.scala
 
 run/t2849.scala
-run/t1360.scala
-run/t6114.scala
-run/t3199b.scala
-run/t8690.scala
 
 run/various-flat-classpath-types.scala
-
-# Uses java.util.Collections
-run/t2250.scala
 
 # Used java.io.ObjectInputStream
 run/t9365.scala
 run/t9375.scala
 
 # Uses java.math.BigDecimal / BigInteger : but failures not due to them
-run/hashhash.scala
 run/is-valid-num.scala
 run/stringinterpolation_macro-run.scala
 
@@ -110,8 +79,8 @@ run/t7880.scala
 # Using partest properties
 
 run/tailcalls.scala
-run/t4294.scala
 run/t6331b.scala
+run/t4294.scala
 
 # Using IO
 
@@ -609,10 +578,6 @@ run/enums.scala
 run/t3719.scala
 run/t8611b.scala
 
-# Expecting unsupported exceptions (e.g. ArrayIndexOutOfBounds)
-run/optimizer-array-load.scala
-run/t8601.scala
-
 # Playing with classfile format
 
 run/classfile-format-51.scala
@@ -808,6 +773,7 @@ run/t7569.scala
 run/t7852.scala
 run/t7817-tree-gen.scala
 run/t7825.scala
+run/t4426.scala
 
 # partest.ParserTest
 run/t3368.scala
@@ -956,10 +922,39 @@ run/t3493.scala
 # Using Class.forName
 run/private-inline.scala
 
-# Suffers from #3180
-run/t3877.scala
-run/t6272.scala
-
 ###  Incorrect partests  ###
 # Badly uses constract of Console.print (no flush)
 run/t429.scala
+
+### Bugs
+## Compiler
+run/structural.scala
+run/t6443.scala
+run/t8888.scala
+run/t8017
+run/t8601b.scala
+run/t8601d.scala
+
+## JVM compliance
+run/t5680.scala
+run/t6253a.scala
+run/t6253b.scala
+run/t6253c.scala
+run/try-catch-unify.scala
+run/t2755.scala
+run/java-erasure.scala
+
+
+## Fails
+run/number-parsing.scala
+run/t0325.scala
+
+## Check not passing
+run/delambdafy-dependent-on-param-subst.scala
+
+
+## Not implemented
+# Class.superClass
+run/delambdafy-specialized.scala
+
+run/richs.scala
