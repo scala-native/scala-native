@@ -10,9 +10,9 @@ import java.lang.{
   StringBuilder => JStringBuilder
 }
 import java.math.{BigDecimal, BigInteger, MathContext, RoundingMode}
+import java.nio.CharBuffer
 import java.nio.charset.Charset
-import scala.annotation.switch
-import scala.scalanative.regex.Pattern
+import scala.annotation.{switch, tailrec}
 
 final class Formatter private (private var dest: Appendable,
                                formatterLocaleInfo: Formatter.LocaleInfo)
@@ -149,50 +149,26 @@ final class Formatter private (private var dest: Appendable,
     // scalastyle:off return
     checkNotClosed()
 
+    val formatBuffer = CharBuffer.wrap(format)
+    val parser       = new ParserStateMachine(formatBuffer)
+
     var lastImplicitArgIndex: Int = 0
     var lastArgIndex: Int         = 0 // required for < flag
+    while (formatBuffer.hasRemaining()) {
+      val token      = parser.nextFormatToken()
+      val flags      = token.getFlags()
+      val conversion = token.conversion
+      val plainText  = token.plainText
 
-    val fmtLength     = format.length
-    var fmtIndex: Int = 0
-
-    while (fmtIndex != fmtLength) {
       // Process a portion without '%'
-      val nextPercentIndex = format.indexOf("%", fmtIndex)
-      if (nextPercentIndex < 0) {
-        // No more '%'
-        sendToDest(format.substring(fmtIndex))
+      if (conversion == FormatToken.UnsetChar) {
+        sendToDest(plainText)
         return this
       }
 
-      sendToDest(format.substring(fmtIndex, nextPercentIndex))
+      sendToDest(plainText.substring(0, token.formatSpecifierIndex - 1))
       // Process one '%'
-      val formatSpecifierIndex = nextPercentIndex + 1
-      val matcher              = FormatSpecifier.matcher(format)
-
-      if (!matcher.find(formatSpecifierIndex) ||
-          matcher.start() != formatSpecifierIndex) {
-        /* Could not parse a valid format specifier. The reported unknown
-         * conversion is the character directly following the '%', or '%'
-         * itself if this is a trailing '%'. This mimics the behavior of the
-         * JVM.
-         */
-        val conversion =
-          if (formatSpecifierIndex == fmtLength) "%"
-          else format.substring(formatSpecifierIndex, formatSpecifierIndex + 1)
-        throw new UnknownFormatConversionException(conversion)
-      }
-
-      fmtIndex = matcher.end() // position at the end of the match
-
-      def optGroup(groupId: Int): Option[String] =
-        Option(matcher.group(groupId))
-
-      val conversion = format.charAt(fmtIndex - 1)
-      val flags      = parseFlags(matcher.group(2), conversion)
-      val width      = parsePositiveIntSilent(optGroup(3), default = -1)
-      val precision  = parsePositiveIntSilent(optGroup(4), default = -1)
-
-      val arg = if (conversion == '%' || conversion == 'n') {
+      val arg = if (!token.requireArgument()) {
         /* No argument. Make sure not to bump `lastImplicitArgIndex` nor to
          * affect `lastArgIndex`.
          */
@@ -203,8 +179,8 @@ final class Formatter private (private var dest: Appendable,
           // Explicitly use the last index
           lastArgIndex
         } else {
-          val i = parsePositiveIntSilent(optGroup(1), default = 0)
-          if (i == 0) {
+          val i = token.argIndex
+          if (i == FormatToken.Unset || i == 0) {
             // Either there is no explicit index, or the explicit index is 0
             lastImplicitArgIndex += 1
             lastImplicitArgIndex
@@ -217,25 +193,28 @@ final class Formatter private (private var dest: Appendable,
           }
         }
 
-        val conversionStr = conversion.toString
-        if ("bBhHsScCdoxXaAeEgGfn%".indexOf(conversionStr) < 0)
-          throw new UnknownFormatConversionException(conversionStr)
-
         if (argIndex <= 0 || argIndex > args.length) {
-          throw new MissingFormatArgumentException("%" + matcher.group())
+          throw new MissingFormatArgumentException(plainText)
         }
 
-        if (width < 0 &&
+        if (token.width < 0 &&
             (isNumericConversion(conversion) && flags.zeroPad ||
             flags.leftAlign)) {
-          throw new MissingFormatWidthException("%" + matcher.group())
+          // Dropping head for JVM compliance
+          throw new MissingFormatWidthException(
+            plainText.substring(token.formatSpecifierIndex - 1))
         }
 
         lastArgIndex = argIndex
         args(argIndex - 1)
       }
 
-      formatArg(localeInfo, arg, conversion, flags, width, precision)
+      formatArg(localeInfo,
+                arg,
+                conversion,
+                flags,
+                token.width,
+                token.precision)
     }
     this
     // scalastyle:on return
@@ -243,48 +222,6 @@ final class Formatter private (private var dest: Appendable,
 
   private def isNumericConversion(conversion: Char) =
     !"bBhHsScC%n".contains(conversion)
-
-  /* Should in theory be a method of `object Flags`. See the comment on that
-   * object about why we keep it here.
-   */
-  private def parseFlags(flags: String, conversion: Char): Flags = {
-    var bits = if (conversion <= 'Z') UpperCase else 0
-
-    val len = flags.length
-    var i   = 0
-    while (i != len) {
-      val f = flags.charAt(i)
-      val bit = (f: @switch) match {
-        case '-' => LeftAlign
-        case '#' => AltFormat
-        case '+' => PositivePlus
-        case ' ' => PositiveSpace
-        case '0' => ZeroPad
-        case ',' => UseGroupingSeps
-        case '(' => NegativeParen
-        case '<' => UseLastIndex
-      }
-
-      if ((bits & bit) != 0)
-        throw new DuplicateFormatFlagsException(f.toString)
-
-      bits |= bit
-      i += 1
-    }
-
-    new Flags(bits)
-  }
-
-  private def parsePositiveIntSilent(capture: Option[String],
-                                     default: Int): Int = {
-    capture.fold {
-      default
-    } { s =>
-      val x = JDouble.parseDouble(s)
-      if (x <= Int.MaxValue) x.toInt
-      else -1 // Silently ignore and return -1
-    }
-  }
 
   private def formatArg(localeInfo: LocaleInfo,
                         arg: Any,
@@ -836,7 +773,7 @@ final class Formatter private (private var dest: Appendable,
 
     val len   = s.length
     var index = 0
-    while (index != len && { val c = s.charAt(index); c >= '0' && c <= '9' }) {
+    while (index != len && isAsciiDigit(s.charAt(index))) {
       index += 1
     }
 
@@ -968,9 +905,6 @@ object Formatter {
 
     def values(): Array[BigDecimalLayoutForm] = _values.clone()
   }
-
-  private val FormatSpecifier =
-    Pattern.compile("""(?:(\d+)\$)?([-#+ 0,\(<]*)(\d+)?(?:\.(\d+))?[%A-Za-z]""")
 
   /* This class is never used in a place where it would box, so it will
    * completely disappear at link-time. Make sure to keep it that way.
@@ -1411,11 +1345,11 @@ object Formatter {
       import Defaults._
       while (i != len) {
         result += (str.charAt(i) match {
-          case c if c >= '0' && c <= '9' => (c + digitOffset).toChar
-          case `decimalSeparator`        => formatSymbols.getDecimalSeparator()
-          case `groupingSeparator`       => formatSymbols.getGroupingSeparator()
-          case `lineSeparator`           => System.lineSeparator()
-          case c                         => c
+          case c if isAsciiDigit(c) => (c + digitOffset).toChar
+          case `decimalSeparator`   => formatSymbols.getDecimalSeparator()
+          case `groupingSeparator`  => formatSymbols.getGroupingSeparator()
+          case `lineSeparator`      => System.lineSeparator()
+          case c                    => c
         })
         i += 1
       }
@@ -1425,4 +1359,247 @@ object Formatter {
     def toUpperCase(str: String): String = str.toUpperCase(actualLocale)
   }
 
+  /* ParserStateMachine ported from Apache Harmony,
+   * Used instead of regexp due to performance issues
+   */
+  private class ParserStateMachine(format: CharBuffer) {
+
+    import ParserStateMachine._
+
+    def nextFormatToken(): FormatToken = {
+      var currentChar = FormatToken.UnsetChar
+      val token       = new FormatToken(format.position())
+
+      @tailrec
+      def loop(state: Int): FormatToken = {
+        // FINITE STATE MACHINE
+        val prevChar = currentChar
+        if (ParserStateMachine.Exit != state) {
+          // exit state does not need to get next char
+          currentChar = getNextFormatChar()
+          if (EOS == currentChar && ParserStateMachine.Entry != state) {
+            throw new UnknownFormatConversionException("%")
+          }
+        }
+
+        (state: @switch) match {
+          case ParserStateMachine.Exit =>
+            token.plainText = getFormatString(token)
+            token
+
+          case ParserStateMachine.Entry =>
+            loop {
+              if (EOS == currentChar) ParserStateMachine.Exit
+              else if ('%' == currentChar) {
+                token.formatSpecifierIndex =
+                  format.position() - token.formatStringStartIndex
+                StartConversion
+              } else state
+            }
+
+          case ParserStateMachine.StartConversion =>
+            loop {
+              if (isAsciiDigit(currentChar)) {
+                val position       = format.position() - 1
+                val number         = getPositiveInt(format)
+                var nextChar: Char = 0
+                if (format.hasRemaining()) {
+                  nextChar = format.get()
+                }
+
+                val newState = if ('$' == nextChar) {
+                  token.argIndex = number
+                  ApplyFlags
+                } else {
+                  // the digital zero stands for one format flag.
+                  if ('0' == currentChar) {
+                    format.position(position)
+                    ApplyFlags
+                  } else {
+                    // the digital sequence stands for the width.
+                    // do not get the next char.
+                    format.position(format.position() - 1)
+                    token.width = number
+                    AfterWidth
+                  }
+                }
+                currentChar = nextChar
+                newState
+              } else {
+                if ('<' == currentChar) {
+                  token.argIndex = FormatToken.LastArgumentIndex
+                } else {
+                  // do not get the next char.
+                  format.position(format.position() - 1)
+                }
+                ApplyFlags
+              }
+            }
+
+          case ParserStateMachine.ApplyFlags =>
+            loop {
+              if (token.setFlag(currentChar)) state
+              else if (isAsciiDigit(currentChar)) {
+                token.width = getPositiveInt(format)
+                AfterWidth
+              } else if ('.' == currentChar) {
+                ApplyPrecision
+              } else {
+                // do not get the next char.
+                format.position(format.position() - 1)
+                ApplyConversionType
+              }
+            }
+
+          case ParserStateMachine.AfterWidth =>
+            loop {
+              if ('.' == currentChar) ApplyPrecision
+              else {
+                format.position(format.position() - 1)
+                ApplyConversionType
+              }
+            }
+
+          case ParserStateMachine.ApplyPrecision =>
+            if (isAsciiDigit(currentChar)) {
+              token.precision = getPositiveInt(format)
+            } else {
+              // the precision is required but not given by the format string.
+              throw new UnknownFormatConversionException(getFormatString(token))
+            }
+            loop(ApplyConversionType)
+
+          case ParserStateMachine.ApplyConversionType =>
+            token.conversion = currentChar
+            if ("bBhHsScCdoxXaAeEgGfn%".indexOf(currentChar) < 0) {
+              val hasArgIdx = token.argIndex != FormatToken.Unset
+              val noWidthOrPrecision = token.width == FormatToken.Unset ||
+                token.precision == FormatToken.Unset
+              /* In Scala.js we used regex matching to determinate if format specifier
+               * is valid, but it's not possible when using current parser.
+               * We provide estimation about the root of problem which should be compliant
+               * with JVM. Checking for EndOfString is done in parser loop.
+               * Based on test cases of `FormatterTest.unknownFormatConversion`
+               */
+              val causedBy = {
+                if (hasArgIdx && noWidthOrPrecision) token.argIndex.toString
+                else token.conversion.toString
+              }
+
+              throw new UnknownFormatConversionException(causedBy)
+            }
+            if (currentChar <= 'Z') {
+              token.setFlag(Flags.UpperCase)
+            }
+            loop(Exit)
+
+          case ParserStateMachine.ApplySuffix =>
+            // Todo `t` | `T` support
+            loop(Exit)
+        }
+      }
+
+      loop(Entry)
+    }
+
+    private def getNextFormatChar(): Char = {
+      if (format.hasRemaining()) format.get()
+      else EOS.toChar
+    }
+
+    private def getFormatString(token: FormatToken): String = {
+      val end = format.position()
+      format.rewind()
+      val formatString =
+        format.subSequence(token.formatStringStartIndex, end).toString
+      format.position(end)
+      formatString
+    }
+
+    private def getPositiveInt(buffer: CharBuffer): Int = {
+      def loop(): Int = {
+        if (buffer.hasRemaining() && isAsciiDigit(buffer.get())) {
+          loop()
+        } else buffer.position() - 1
+      }
+
+      val start = buffer.position() - 1
+      val end   = loop().min(buffer.limit())
+      buffer.position(0)
+      val intStr = buffer.subSequence(start, end).toString
+      buffer.position(end)
+      try {
+        val value = java.lang.Long.parseLong(intStr)
+        if (value <= Int.MaxValue) value.toInt
+        else FormatToken.ParsedValueTooLarge
+      } catch {
+        case _: NumberFormatException =>
+          FormatToken.Unset
+      }
+    }
+
+  }
+
+  private object ParserStateMachine {
+    final val EOS                 = -1.toChar
+    final val Exit                = 0
+    final val Entry               = 1
+    final val StartConversion     = 2
+    final val ApplyFlags          = 3
+    final val AfterWidth          = 4
+    final val ApplyPrecision      = 5
+    final val ApplyConversionType = 6
+    final val ApplySuffix         = 7
+  }
+
+  private class FormatToken(val formatStringStartIndex: Int) {
+    import FormatToken._
+
+    var formatSpecifierIndex: Int = _
+    var plainText: String         = _
+    private var flags: Int        = 0
+    var argIndex: Int             = Unset
+    var width: Int                = Unset
+    var precision: Int            = Unset
+    var conversion: Char          = UnsetChar
+
+    def getFlags(): Flags = new Flags(flags)
+
+    def setFlag(flag: Int): Unit = flags |= flag
+
+    def setFlag(c: Char): Boolean = {
+      import Flags._
+      val flag = (c: @switch) match {
+        case '-' => LeftAlign
+        case '#' => AltFormat
+        case '+' => PositivePlus
+        case ' ' => PositiveSpace
+        case '0' => ZeroPad
+        case ',' => UseGroupingSeps
+        case '(' => NegativeParen
+        case '<' => UseLastIndex
+        case _   => return false
+      }
+
+      if ((flags & flag) != 0)
+        throw new DuplicateFormatFlagsException(c.toString)
+
+      flags |= flag
+      true
+    }
+
+    @inline
+    def requireArgument(): Boolean =
+      conversion != '%' && conversion != 'n'
+  }
+
+  private object FormatToken {
+    final val Unset               = -1
+    final val UnsetChar           = '\u0000'
+    final val LastArgumentIndex   = -2
+    final val ParsedValueTooLarge = -3
+  }
+
+  @inline
+  private def isAsciiDigit(c: Char) = c >= '0' && c <= '9'
 }
