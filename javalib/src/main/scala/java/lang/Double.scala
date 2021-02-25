@@ -225,8 +225,9 @@ object Double {
     (v ^ (v >>> 32)).toInt
   }
 
+  // Ported from Scala.js commit: 217f3a3 dated: 2021-02-19
   @inline def isFinite(d: scala.Double): scala.Boolean =
-    !isInfinite(d)
+    !isNaN(d) && !isInfinite(d)
 
   @inline def isInfinite(v: scala.Double): scala.Boolean =
     v == POSITIVE_INFINITY || v == NEGATIVE_INFINITY

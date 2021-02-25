@@ -1,5 +1,18 @@
 package java.lang
 
+// Three tests ported from Scala.js javalib/lang/DoubleTest.scala
+// commit: 0f25c8c dated: 2021-02-17
+//   isFinite()
+//   isInfinite()
+//   isNanTest()
+
+// Because this test is the java.lang package, an unqualified Double
+// is a java.lang.Double. Prior art used unqualified Double freely,
+// with that intent. Scala.js JDouble is introduced to minimize changes
+// in ported Scala.js tests. Existing usages of unqualified Double
+// are not changed. Joys of blending code bases.
+import java.lang.{Double => JDouble}
+
 import java.lang.Double.{
   doubleToLongBits,
   doubleToRawLongBits,
@@ -322,4 +335,44 @@ class DoubleTest {
     assertTrue(java.lang.Double.toHexString(-31.0).equals("-0x1.fp4"))
   }
 
+  @Test def isFinite(): Unit = {
+    assertFalse(JDouble.isFinite(scala.Double.PositiveInfinity))
+    assertFalse(JDouble.isFinite(scala.Double.NegativeInfinity))
+    assertFalse(JDouble.isFinite(scala.Double.NaN))
+    assertFalse(JDouble.isFinite(1d / 0))
+    assertFalse(JDouble.isFinite(-1d / 0))
+
+    assertTrue(JDouble.isFinite(0d))
+    assertTrue(JDouble.isFinite(1d))
+    assertTrue(JDouble.isFinite(123456d))
+    assertTrue(JDouble.isFinite(scala.Double.MinValue))
+    assertTrue(JDouble.isFinite(scala.Double.MaxValue))
+    assertTrue(JDouble.isFinite(scala.Double.MinPositiveValue))
+  }
+
+  // Scala.js Issue 515
+  @Test def isInfinite(): Unit = {
+    assertTrue(scala.Double.PositiveInfinity.isInfinite)
+    assertTrue(scala.Double.NegativeInfinity.isInfinite)
+    assertTrue((1.0 / 0).isInfinite)
+    assertTrue((-1.0 / 0).isInfinite)
+    assertFalse((0.0).isInfinite)
+  }
+
+  @Test def isNaNTest(): Unit = {
+    def f(v: Double): Boolean = {
+      var v2 = v // do not inline
+      v2.isNaN
+    }
+
+    assertTrue(f(Double.NaN))
+
+    assertFalse(f(scala.Double.PositiveInfinity))
+    assertFalse(f(scala.Double.NegativeInfinity))
+    assertFalse(f(1.0 / 0))
+    assertFalse(f(-1.0 / 0))
+    assertFalse(f(0.0))
+    assertFalse(f(3.0))
+    assertFalse(f(-1.5))
+  }
 }
