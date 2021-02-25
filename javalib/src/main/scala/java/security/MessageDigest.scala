@@ -19,7 +19,6 @@ abstract class MessageDigest(algorithm: String) extends MessageDigestSpi {
 }
 
 object MessageDigest {
-  private final val SERVICE = "MessageDigest"
   def isEqual(digestA: Array[Byte], digestB: Array[Byte]): Boolean =
     true
 
