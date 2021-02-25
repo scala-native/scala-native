@@ -14,6 +14,7 @@ import scala.language.reflectiveCalls
 import _root_.sbt.testing._
 import java.net.URLClassLoader
 import java.io.File
+import scala.scalanative.build.Build
 
 /** Run partest in this VM. Assumes we're running in a forked VM! */
 case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
@@ -25,8 +26,8 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
   def execute(eventHandler: EventHandler,
               loggers: Array[Logger]): Array[Task] = {
     val forkedCp = scala.util.Properties.javaClassPath
-    val classLoader = new URLClassLoader(
-      forkedCp.split(java.io.File.pathSeparator).map(new File(_).toURI.toURL))
+      .split(java.io.File.pathSeparator)
+    val classLoader = new URLClassLoader(forkedCp.map(new File(_).toURI.toURL))
 
     if (Runtime.getRuntime().maxMemory() / (1024 * 1024) < 800)
       loggers foreach (_.warn(s"""Low heap size detected (~ ${Runtime
@@ -35,6 +36,13 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
 
     val maybeOptions =
       ScalaNativePartestOptions(args, str => loggers.foreach(_.error(str)))
+        .map { opts =>
+          if (opts.shouldPrecompileLibraries) {
+            val forkedClasspath = forkedCp.map(java.nio.file.Paths.get(_))
+            val paths           = precompileLibs(opts, forkedClasspath)
+            opts.copy(precompiledLibrariesPaths = paths)
+          } else opts
+        }
 
     maybeOptions foreach { options =>
       val runner = SBTRunner(
@@ -107,4 +115,19 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
 
   /** A possibly zero-length array of string tags associated with this task. */
   def tags: Array[String] = Array()
+
+  def precompileLibs(
+      options: ScalaNativePartestOptions,
+      forkedClasspath: Seq[java.nio.file.Path]): Seq[java.nio.file.Path] = {
+    val config = Defaults.config
+      .withWorkdir(Defaults.workdir())
+      .withClassPath(options.nativeClasspath ++ forkedClasspath)
+      .withCompilerConfig {
+        _.withLTO(options.lto)
+          .withMode(options.buildMode)
+          .withGC(options.gc)
+          .withOptimize(options.optimize)
+      }
+    Build.fetchAndCompileNativeSources(config, Defaults.links)
+  }
 }

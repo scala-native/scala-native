@@ -10,17 +10,11 @@ import java.util.{Comparator, function}
 import scala.scalanative.build._
 import scala.scalanative.util.Scope
 import scala.tools.nsc.GenericRunnerCommand._
+import scala.tools.partest.scalanative.Defaults
 import scala.tools.nsc.Properties.{copyrightString, versionString}
 
 class MainGenericRunner {
-  def errorFn(ex: Throwable): Boolean = {
-    ex.printStackTrace()
-    false
-  }
-  def errorFn(str: String): Boolean = {
-    scala.Console.err println str
-    false
-  }
+  private def errorFn(str: String) = Defaults.errorFn(str)
 
   def process(args: Array[String]): Boolean = {
     val command =
@@ -35,38 +29,32 @@ class MainGenericRunner {
     if (command.howToRun != AsObject)
       return errorFn("Scala Native runner can only run an object")
 
-    val logger = Logger(traceFn = _ => (),
-                        debugFn = _ => (),
-                        infoFn = _ => (),
-                        warnFn = errorFn(_),
-                        errorFn = errorFn(_))
-
     def loadSetting[T](name: String, default: => T)(fn: String => T) =
       Option(System.getProperty(s"scalanative.partest.$name")).fold(default)(fn)
 
-    val dir = Files.createTempDirectory("partest-")
+    val dir = Defaults.workdir()
     val execPath: Path = {
-      val config = Config.empty
-        .withCompilerConfig(
-          NativeConfig.empty
-            .withClang(Discover.clang())
-            .withClangPP(Discover.clangpp())
-            .withCheck(true)
-            .withLinkStubs(false)
-            .withDump(false)
-            .withOptimize(
-              loadSetting("optimize", Discover.optimize())(_.toBoolean))
-            .withMode(loadSetting("mode", Discover.mode())(
-              scalanative.build.Mode(_)))
+      val config = Defaults.config
+        .withCompilerConfig {
+          _.withOptimize(
+            loadSetting("optimize", Discover.optimize())(_.toBoolean))
+            .withMode(
+              loadSetting("mode", Discover.mode())(scalanative.build.Mode(_)))
             .withGC(loadSetting("gc", Discover.GC())(GC.apply))
             .withLTO(loadSetting("lto", Discover.LTO())(LTO(_)))
-            .withLinkingOptions(Discover.linkingOptions())
-            .withCompileOptions(Discover.compileOptions())
-        )
+            .withLinkingOptions {
+              // If we precompile libs we need to make sure, that we link libraries needed by Scala Native
+              Defaults.config.linkingOptions ++
+                Option(System.getProperty("scalanative.build.paths.libObj"))
+                  .filter(_.nonEmpty)
+                  .fold(Seq.empty[String]) { _ =>
+                    Defaults.links.map(_.name).map("-l" + _)
+                  }
+            }
+        }
         .withClassPath {
           val nativeClasspath = loadSetting("nativeCp", Seq.empty[Path]) {
-            _.split(":")
-              .toSeq
+            _.split(java.io.File.pathSeparatorChar).toSeq
               .map(Paths.get(_))
           }
 
@@ -79,7 +67,6 @@ class MainGenericRunner {
           commandClasspath ++ nativeClasspath
         }
         .withMainClass(command.thingToRun + "$")
-        .withLogger(logger)
         .withWorkdir(dir)
 
       Scope { implicit s => Build.build(config, dir.resolve("output")) }

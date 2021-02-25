@@ -4,14 +4,16 @@ package scala.tools.partest.scalanative
 import java.nio.file.{Path, Paths}
 import scalanative.build
 
-class ScalaNativePartestOptions private (
-    val testFilter: ScalaNativePartestOptions.TestFilter,
-    val nativeClasspath: Seq[Path],
-    val showDiff: Boolean,
-    val optimize: Boolean,
-    val buildMode: build.Mode,
-    val gc: build.GC,
-    val lto: build.LTO
+case class ScalaNativePartestOptions private (
+    testFilter: ScalaNativePartestOptions.TestFilter,
+    nativeClasspath: Seq[Path],
+    precompiledLibrariesPaths: Seq[Path],
+    shouldPrecompileLibraries: Boolean,
+    showDiff: Boolean,
+    optimize: Boolean,
+    buildMode: build.Mode,
+    gc: build.GC,
+    lto: build.LTO
 )
 
 object ScalaNativePartestOptions {
@@ -42,6 +44,7 @@ object ScalaNativePartestOptions {
     var gc: build.GC               = build.GC.default
     var lto: build.LTO             = build.LTO.default
     var optimize: Boolean          = true
+    var precompileLibs: Boolean    = true
     val nativeClassPath            = Seq.newBuilder[Path]
 
     def error(msg: String) = {
@@ -83,16 +86,17 @@ object ScalaNativePartestOptions {
     }
 
     for (arg <- args) arg match {
-      case Switch("blacklisted")   => setFilter(BlacklistedTests)
-      case Switch("whitelisted")   => setFilter(WhitelistedTests)
-      case Switch("showDiff")      => showDiff = true
-      case Switch("noOptimize")    => optimize = false
-      case Argument("mode", value) => mode = build.Mode(value)
-      case Argument("gc", value)   => gc = build.GC(value)
-      case Argument("lto", value)  => lto = build.LTO(value)
+      case Switch("blacklisted")      => setFilter(BlacklistedTests)
+      case Switch("whitelisted")      => setFilter(WhitelistedTests)
+      case Switch("showDiff")         => showDiff = true
+      case Switch("noOptimize")       => optimize = false
+      case Switch("noPrecompileLibs") => precompileLibs = false
+      case Argument("mode", value)    => mode = build.Mode(value)
+      case Argument("gc", value)      => gc = build.GC(value)
+      case Argument("lto", value)     => lto = build.LTO(value)
       case Argument("nativeClasspath", classpath) =>
         classpath
-          .split(":")
+          .split(java.io.File.pathSeparatorChar)
           .map(Paths.get(_))
           .foreach(nativeClassPath += _)
       case _ => setFilter(SomeTests(arg :: Nil))
@@ -106,6 +110,9 @@ object ScalaNativePartestOptions {
                                       showDiff = showDiff,
                                       optimize = optimize,
                                       buildMode = mode,
+                                      shouldPrecompileLibraries =
+                                        precompileLibs,
+                                      precompiledLibrariesPaths = Seq(),
                                       gc = gc,
                                       lto = lto)
       }
