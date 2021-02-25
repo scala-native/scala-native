@@ -701,7 +701,11 @@ lazy val scalalib =
           if (patchGlob.matches(sourcePath)) {
             val sourceName      = path.stripSuffix(".patch")
             val scalaSourcePath = scalaSrcDir / sourceName
-            val outputFile      = scalaSrcDir / (sourceName + ".patched")
+            val outputFile      = crossTarget.value / "patched" / sourceName
+            val outputDir       = outputFile.getParentFile
+            if (!outputDir.exists()) {
+              IO.createDirectory(outputDir)
+            }
 
             def jFileLines(path: File) = {
               val list   = new LinkedList[String]()
