@@ -38,7 +38,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       ScalaNativePartestOptions(args, str => loggers.foreach(_.error(str)))
         .map { opts =>
           if (opts.shouldPrecompileLibraries) {
-            val forkedClasspath = forkedCp.map(java.nio.file.Paths.get(_))
+            val forkedClasspath = forkedCp.map(java.nio.file.Paths.get(_)).toSeq
             val paths           = precompileLibs(opts, forkedClasspath)
             opts.copy(precompiledLibrariesPaths = paths)
           } else opts
