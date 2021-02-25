@@ -210,7 +210,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.4, 2.12.13, 2.11.12]
+        scala: [2.12.13]
     steps:
       - uses: actions/checkout@v2
       - name: Calculate binary version

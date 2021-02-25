@@ -413,16 +413,9 @@ lazy val sbtScalaNative =
             testRunner / publishLocal
           )
           .value
-      },
-      // Depending on projects defining `crossScalaVersion` other then this `scalaVersion` would result in build failure
-      unmanagedSourceDirectories in Compile ++= Seq(
-        (testRunner / Compile / scalaSource).value,
-        (tools / Compile / scalaSource).value,
-        (nir / Compile / scalaSource).value,
-        (util / Compile / scalaSource).value,
-        baseDirectory.value.getParentFile / "test-interface-common/src/main/scala"
-      )
+      }
     )
+    .dependsOn(testRunner, tools)
 
 lazy val nativelib =
   project
