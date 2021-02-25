@@ -54,7 +54,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
         javaCmd = null,
         javacCmd = null,
         scalacArgs = Array.empty[String],
-        args = Array("neg" ,"pos",  "run"),
+        args = Array("neg", "pos", "run"),
         options = options,
         scalaVersion = scalaVersion
       )
@@ -94,6 +94,10 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
     // The test root for partest is read out through the system properties,
     // not passed as an argument
     System.setProperty("partest.root", testRoot.getAbsolutePath())
+
+    options.parallelism.foreach { n =>
+      System.setProperty("partest.threads", n.toString)
+    }
 
     // Partests take at least 5h. We double, just to be sure. (default is 4 hours)
     System.setProperty("partest.timeout", "10 hours")

@@ -8,6 +8,7 @@ case class ScalaNativePartestOptions private (
     testFilter: ScalaNativePartestOptions.TestFilter,
     nativeClasspath: Seq[Path],
     precompiledLibrariesPaths: Seq[Path],
+    parallelism: Option[Int],
     shouldPrecompileLibraries: Boolean,
     showDiff: Boolean,
     optimize: Boolean,
@@ -33,6 +34,7 @@ case class ScalaNativePartestOptions private (
        |- showDiff:        $showDiff
        |- testFilter:      ${testFilter.descr}
        |- precompile libs: $shouldPrecompileLibraries
+       |- parallel tests:  ${parallelism.getOrElse("default")}
        |""".stripMargin
 }
 
@@ -60,6 +62,7 @@ object ScalaNativePartestOptions {
     var failed                     = false
     var filter: Option[TestFilter] = None
     var showDiff: Boolean          = false
+    var parallelism: Option[Int]   = None
     var mode: build.Mode           = build.Mode.default
     var gc: build.GC               = build.GC.default
     var lto: build.LTO             = build.LTO.default
@@ -111,9 +114,11 @@ object ScalaNativePartestOptions {
       case Switch("showDiff")         => showDiff = true
       case Switch("noOptimize")       => optimize = false
       case Switch("noPrecompileLibs") => precompileLibs = false
-      case Argument("mode", value)    => mode = build.Mode(value)
-      case Argument("gc", value)      => gc = build.GC(value)
-      case Argument("lto", value)     => lto = build.LTO(value)
+      case Argument("parallelism", value) =>
+        parallelism = util.Try(Integer.parseInt(value)).filter(_ > 0).toOption
+      case Argument("mode", value) => mode = build.Mode(value)
+      case Argument("gc", value)   => gc = build.GC(value)
+      case Argument("lto", value)  => lto = build.LTO(value)
       case Argument("nativeClasspath", classpath) =>
         classpath
           .split(java.io.File.pathSeparatorChar)
@@ -128,6 +133,7 @@ object ScalaNativePartestOptions {
         new ScalaNativePartestOptions(filter.getOrElse(WhitelistedTests),
                                       nativeClassPath.result(),
                                       showDiff = showDiff,
+                                      parallelism = parallelism,
                                       optimize = optimize,
                                       buildMode = mode,
                                       shouldPrecompileLibraries =
