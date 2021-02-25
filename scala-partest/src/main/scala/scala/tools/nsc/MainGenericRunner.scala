@@ -69,7 +69,14 @@ class MainGenericRunner {
               .toSeq
               .map(Paths.get(_))
           }
-          command.settings.classpathURLs.map(urlToPath) ++ nativeClasspath
+
+          // Classpaths may contain "/" as first element after invalid conversion from URL `jrt:/`
+          // This can create significant overhead in Classloader
+          val commandClasspath = command.settings.classpathURLs
+            .map(urlToPath)
+            .filterNot(_.getNameCount == 0)
+
+          commandClasspath ++ nativeClasspath
         }
         .withMainClass(command.thingToRun + "$")
         .withLogger(logger)
