@@ -126,7 +126,7 @@ addCommandAlias(
     "testsExt/test",
     "junitTestOutputsJVM/test",
     "junitTestOutputsNative/test",
-    "scalaJunitTests/test"
+    "scalaPartestJunitTests/test"
   ).mkString(";")
 )
 
@@ -1034,8 +1034,8 @@ lazy val scalaPartestTests: Project = project
   )
   .dependsOn(scalaPartest % "test", javalib)
 
-lazy val scalaJunitTests = project
-  .in(file("scala-junit-tests"))
+lazy val scalaPartestJunitTests = project
+  .in(file("scala-partest-junit-tests"))
   .enablePlugins(MyScalaNativePlugin)
   .settings(
     noPublishSettings,
