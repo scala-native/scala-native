@@ -1046,50 +1046,56 @@ lazy val scalaJunitTests = project
       "-Xfatal-warnings"
     ),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
+    shouldPartest := {
+      (resourceDirectory in Test).value / scalaVersion.value
+    }.exists(),
     unmanagedSources in Compile ++= {
-      val upstreamSrcDir = (fetchScalaSource in scalaPartest).value
-
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 11 | 12)) => Nil
-        case _ =>
-          List(
-            upstreamSrcDir / "src/testkit/scala/tools/testkit/AssertUtil.scala"
-          )
+      if (!shouldPartest.value) Nil
+      else {
+        val upstreamDir = (fetchScalaSource in scalaPartest).value
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11 | 12)) => Seq.empty[File]
+          case _ =>
+            Seq(
+              upstreamDir / "src/testkit/scala/tools/testkit/AssertUtil.scala"
+            )
+        }
       }
     },
     unmanagedSources in Test ++= {
-      val blacklist: Set[String] = {
-        val file =
-          (resourceDirectory in Test).value / scalaVersion.value / "BlacklistedTests.txt"
-        scala.io.Source
-          .fromFile(file)
-          .getLines()
-          .filter(l => l.nonEmpty && !l.startsWith("#"))
-          .toSet
-      }
+      if (!shouldPartest.value) Nil
+      else {
+        val blacklist: Set[String] = {
+          val file =
+            (resourceDirectory in Test).value / scalaVersion.value / "BlacklistedTests.txt"
+          IO.readLines(file)
+            .filter(l => l.nonEmpty && !l.startsWith("#"))
+            .toSet
+        }
 
-      val jUnitTestsPath =
-        (fetchScalaSource in scalaPartest).value / "test" / "junit"
+        val jUnitTestsPath =
+          (fetchScalaSource in scalaPartest).value / "test" / "junit"
 
-      val scalaScalaJUnitSources = {
-        (jUnitTestsPath ** "*.scala").get.flatMap { file =>
-          file.relativeTo(jUnitTestsPath) match {
-            case Some(rel) => List((rel.toString.replace('\\', '/'), file))
-            case None      => Nil
+        val scalaScalaJUnitSources = {
+          (jUnitTestsPath ** "*.scala").get.flatMap { file =>
+            file.relativeTo(jUnitTestsPath) match {
+              case Some(rel) => List((rel.toString.replace('\\', '/'), file))
+              case None      => Nil
+            }
           }
         }
-      }
 
-      // Check the coherence of the lists against the files found.
-      val allClasses             = scalaScalaJUnitSources.map(_._1).toSet
-      val nonexistentBlacklisted = blacklist.diff(allClasses)
-      if (nonexistentBlacklisted.nonEmpty) {
-        throw new AssertionError(
-          s"Sources not found for blacklisted tests:\n$nonexistentBlacklisted")
-      }
+        // Check the coherence of the lists against the files found.
+        val allClasses             = scalaScalaJUnitSources.map(_._1).toSet
+        val nonexistentBlacklisted = blacklist.diff(allClasses)
+        if (nonexistentBlacklisted.nonEmpty) {
+          throw new AssertionError(
+            s"Sources not found for blacklisted tests:\n$nonexistentBlacklisted")
+        }
 
-      scalaScalaJUnitSources.collect {
-        case (rel, file) if !blacklist.contains(rel) => file
+        scalaScalaJUnitSources.collect {
+          case (rel, file) if !blacklist.contains(rel) => file
+        }
       }
     }
   )
