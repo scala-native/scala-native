@@ -50,8 +50,8 @@ class MessageDigestTest {
     instance.update('w'.toByte)
     instance.update('o'.toByte)
     val result = instance.digest("rld!".getBytes("UTF-8"))
-    val expected = Array[Byte](-45, 72, 106, -23, 19, 110, 120, 86, -68, 66,
-                        33, 35, -123, -22, 121, 112, -108, 71, 88, 2)
+    val expected = Array[Byte](-45, 72, 106, -23, 19, 110, 120, 86, -68, 66, 33,
+      35, -123, -22, 121, 112, -108, 71, 88, 2)
 
     assertTrue(result.sameElements(expected))
   }
@@ -59,13 +59,13 @@ class MessageDigestTest {
   @Test def digestWithResultBuffer(): Unit = {
     val instance = MessageDigest.getInstance("SHA")
     instance.update("***Hello world!***".getBytes("UTF-8"), 3, 12)
-    val buf = new Array[Byte](30)
+    val buf          = new Array[Byte](30)
     val digestLength = instance.digest(buf, 5, 25)
     assertEquals(digestLength, 20)
     val result = buf.slice(5, 25)
 
-    val expected = Array[Byte](-45, 72, 106, -23, 19, 110, 120, 86, -68, 66,
-                        33, 35, -123, -22, 121, 112, -108, 71, 88, 2)
+    val expected = Array[Byte](-45, 72, 106, -23, 19, 110, 120, 86, -68, 66, 33,
+      35, -123, -22, 121, 112, -108, 71, 88, 2)
     assertTrue(result.sameElements(expected))
   }
 

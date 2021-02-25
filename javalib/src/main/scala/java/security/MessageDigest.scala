@@ -144,21 +144,21 @@ private final class CryptoMessageDigest(algorithm: String, algoImpl: AlgoImpl)
   override def engineGetDigestLength(): Int = algoImpl.digestLength
   override def engineDigest(): Array[Byte] = {
     val result = new Array[Byte](algoImpl.digestLength)
-    if(algoImpl.Final(result.asInstanceOf[ByteArray].at(0), c) != 1) {
+    if (algoImpl.Final(result.asInstanceOf[ByteArray].at(0), c) != 1) {
       throw new DigestException("Failed to finalize digest")
     }
     engineReset()
     result
   }
   override def engineReset(): Unit = {
-    if(algoImpl.Init(c) != 1) {
+    if (algoImpl.Init(c) != 1) {
       throw new DigestException("Failed to initialize digest")
     }
   }
   override def engineUpdate(input: Byte): Unit = {
     val buf = stackalloc[Byte]
     !buf = input
-    if(algoImpl.Update(c, buf, 1.toULong) != 1) {
+    if (algoImpl.Update(c, buf, 1.toULong) != 1) {
       throw new DigestException("Failed to update digest")
     }
   }
@@ -167,7 +167,9 @@ private final class CryptoMessageDigest(algorithm: String, algoImpl: AlgoImpl)
       throw new IndexOutOfBoundsException
     }
     if (len > 0) {
-      if(algoImpl.Update(c, input.asInstanceOf[ByteArray].at(offset), len.toULong) != 1) {
+      if (algoImpl.Update(c,
+                          input.asInstanceOf[ByteArray].at(offset),
+                          len.toULong) != 1) {
         throw new DigestException("Failed to update digest")
       }
     }
