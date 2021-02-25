@@ -54,13 +54,7 @@ class ScalaNativeSBTRunner(
 
     super.banner.trim + s"""
    |Scala Native version is: $currentVersion
-   |Scala Native options are:
-   |- optimized:           ${options.optimize}
-   |- mode:                ${options.buildMode}
-   |- gc:                  ${options.gc}
-   |- lto:                 ${options.lto}
-   |- showDiff:            ${options.showDiff}
-   |- testFilter:          ${options.testFilter.descr}
+   |${options.show}
    |""".stripMargin
   }
 

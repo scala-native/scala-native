@@ -14,7 +14,27 @@ case class ScalaNativePartestOptions private (
     buildMode: build.Mode,
     gc: build.GC,
     lto: build.LTO
-)
+) {
+  def javaOptions: Seq[String] = Seq(
+    s"-Dscalanative.partest.optimize=$optimize",
+    s"-Dscalanative.partest.mode=${buildMode.name}",
+    s"-Dscalanative.partest.gc=${gc.name}",
+    s"-Dscalanative.partest.lto=${lto.name}",
+    s"-Dscalanative.partest.nativeCp=${nativeClasspath.mkString(":")}",
+    s"-Dscalanative.build.paths.libObj=${precompiledLibrariesPaths.mkString(":")}"
+  )
+
+  def show: String =
+    s"""Scala Native options are:
+       |- optimized:       $optimize
+       |- mode:            $buildMode
+       |- gc:              $gc
+       |- lto:             $lto
+       |- showDiff:        $showDiff
+       |- testFilter:      ${testFilter.descr}
+       |- precompile libs: $shouldPrecompileLibraries
+       |""".stripMargin
+}
 
 object ScalaNativePartestOptions {
 
