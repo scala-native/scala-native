@@ -11,9 +11,15 @@ abstract class MessageDigest(algorithm: String) extends MessageDigestSpi {
     engineUpdate(input, 0, input.length)
     engineDigest()
   }
+  def digest(buf: Array[Byte], offset: Int, len: Int): Int = {
+    engineDigest(buf, offset, len)
+  }
   def getAlgorithm(): String = algorithm
+  def getDigestLength(): Int = engineGetDigestLength()
   def update(input: Array[Byte], offset: Int, len: Int): Unit =
     engineUpdate(input, offset, len)
+  def update(input: Array[Byte]): Unit =
+    engineUpdate(input, 0, input.length)
   def update(input: Byte): Unit = engineUpdate(input)
   def reset(): Unit             = engineReset()
 }
