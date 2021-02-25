@@ -38,9 +38,13 @@ jobs:
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
+      # Pre-compile and cache results for the most time consuming projects and it dependencies too speed up execution in next phases
+      # We cannot use `compile` because sbtScalaNative does not crossCompile
       - name: Compile
-        run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" compile
-
+        run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" \
+          "tools/Test/compile" \
+          "tests/Test/compile" "testsExt/Test/compile" \
+          "junitTestOutputsNative/Test/compile" "junitTestOutputsJVM/Test/compile"
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" test-tools
 
