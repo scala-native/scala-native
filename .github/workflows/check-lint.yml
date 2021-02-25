@@ -6,7 +6,7 @@ on:
       - master
 jobs:
   check-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
       - run: ./scripts/check-lint.sh
