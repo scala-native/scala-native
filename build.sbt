@@ -415,7 +415,7 @@ lazy val sbtScalaNative =
           .value
       }
     )
-    .dependsOn(testRunner, tools)
+    .dependsOn(tools, testRunner)
 
 lazy val nativelib =
   project
