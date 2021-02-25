@@ -38,7 +38,7 @@ if [ -n "${CLANG_FORMAT_PATH:-}" ]; then
         "CLANG_FORMAT_PATH points to $CLANG_FORMAT_PATH"
   clang_format="$CLANG_FORMAT_PATH"
 else
-  if check_clang_format_version clang-format; then
+  if [ check_clang_format_version clang-format ]; then
     clang_format=clang-format
   fi
 fi
