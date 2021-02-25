@@ -163,7 +163,7 @@ private final class CryptoMessageDigest(algorithm: String, algoImpl: AlgoImpl)
     }
   }
   override def engineUpdate(input: Array[Byte], offset: Int, len: Int): Unit = {
-    if (offset < 0 || len < 0 || offset + len > input.length) {
+    if (offset < 0 || len < 0 || len > input.length - offset) {
       throw new IndexOutOfBoundsException
     }
     if (len > 0) {
