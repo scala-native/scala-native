@@ -17,8 +17,6 @@ addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.9.0")
 
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "5.10.0.202012080955-r"
 
-libraryDependencies += "io.github.java-diff-utils" % "java-diff-utils" % "4.9"
-
 // scalacOptions used to bootstrap to sbt prompt.
 // In particular, no "-Xfatal-warnings"
 // A stricter set of Options is used in the project root build.sbt.

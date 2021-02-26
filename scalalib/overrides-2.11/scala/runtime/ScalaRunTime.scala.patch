@@ -1,6 +1,8 @@
 --- scalalib/target/scalaSources/2.11.12/scala/runtime/ScalaRunTime.scala	2017-11-03 00:26:48.000000000 +0100
-+++ scalalib/overrides-2.11/scala/runtime/ScalaRunTime.scala	2021-02-20 14:33:14.601311127 +0100
-@@ -71,15 +71,7 @@
++++ scalalib/overrides-2.11/scala/runtime/ScalaRunTime.scala	2021-02-26 19:45:05.553638523 +0100
+@@ -69,66 +69,38 @@
+     classTag[T].runtimeClass.asInstanceOf[jClass[T]]
+ 
    /** Retrieve generic array element */
 -  def array_apply(xs: AnyRef, idx: Int): Any = {
 -    xs match {
@@ -21,7 +23,8 @@
 +    } else {
 +      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].apply(idx)
      }
-@@ -88,15 +80,7 @@
+   }
+ 
    /** update generic array element */
 -  def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
 -    xs match {
@@ -42,7 +45,8 @@
 +    } else {
 +      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].update(idx, value)
      }
-@@ -105,28 +89,16 @@
+   }
+ 
    /** Get generic array length */
 -  def array_length(xs: AnyRef): Int = xs match {
 -    case x: Array[AnyRef]  => x.length
@@ -83,3 +87,5 @@
 +      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].clone()
 +    }
    }
+ 
+   /** Convert an array to an object array.

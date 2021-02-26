@@ -63,7 +63,7 @@ def main(
         diffCmd = sys.process.Process(
           command = Seq(
             "diff",
-            "-u1", // When setting 0 patch might be applied in wrong place
+            "-u",
             "--ignore-all-space",
             "--ignore-blank-lines",
             (sourcePath relativeTo pwd).toString,

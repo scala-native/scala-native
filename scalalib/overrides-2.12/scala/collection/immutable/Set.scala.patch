@@ -1,6 +1,8 @@
 --- scalalib/target/scalaSources/2.12.13/scala/collection/immutable/Set.scala	2021-01-12 14:37:36.000000000 +0100
-+++ scalalib/overrides-2.12/scala/collection/immutable/Set.scala	2021-02-19 18:54:20.590914501 +0100
-@@ -65,6 +65,6 @@
++++ scalalib/overrides-2.12/scala/collection/immutable/Set.scala	2021-02-26 16:43:39.134508255 +0100
+@@ -63,13 +63,15 @@
+  *  @define coll immutable set
+  */
  object Set extends ImmutableSetFactory[Set] {
 -  override def newBuilder[A]: mutable.Builder[A, Set[A]] = new SetBuilderImpl[A]
 +  @inline override def newBuilder[A]: mutable.Builder[A, Set[A]] = new SetBuilderImpl[A]
@@ -9,8 +11,10 @@
 -  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] =
 +  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] =
      ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Set[A]]]
-@@ -72,2 +72,4 @@
+   private[this] val ReusableCBF = setCanBuildFrom[Any]
  
 +  @inline override def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]
 +
    /** An optimized representation for immutable empty sets */
+   @SerialVersionUID(-2443710944435909512L)
+   private object EmptySet extends AbstractSet[Any] with Set[Any] with Serializable {

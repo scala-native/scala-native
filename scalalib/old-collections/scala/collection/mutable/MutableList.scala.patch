@@ -1,0 +1,19 @@
+--- scalalib/target/scalaSources/2.12.13/scala/collection/mutable/MutableList.scala	2021-01-12 14:37:36.000000000 +0100
++++ scalalib/overrides-2.12/scala/collection/mutable/MutableList.scala	2021-02-26 16:43:39.142508342 +0100
+@@ -168,8 +168,14 @@
+ }
+ 
+ object MutableList extends SeqFactory[MutableList] {
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, MutableList[A]] =
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, MutableList[A]] =
+     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+ 
+-  def newBuilder[A]: Builder[A, MutableList[A]] = new MutableList[A]
++  @inline def newBuilder[A]: Builder[A, MutableList[A]] =
++    new MutableList[A]
+ }

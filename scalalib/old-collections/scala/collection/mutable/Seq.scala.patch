@@ -1,0 +1,21 @@
+--- scalalib/target/scalaSources/2.12.13/scala/collection/mutable/Seq.scala	2021-01-12 14:37:36.000000000 +0100
++++ scalalib/overrides-2.12/scala/collection/mutable/Seq.scala	2021-02-26 16:43:39.146508386 +0100
+@@ -42,8 +42,16 @@
+  *  @define Coll `mutable.Seq`
+  */
+ object Seq extends SeqFactory[Seq] {
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Seq[A]] = new ArrayBuffer
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] =
++    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++
++  @inline def newBuilder[A]: Builder[A, Seq[A]] =
++    new ArrayBuffer
+ }
+ 
+ /** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */

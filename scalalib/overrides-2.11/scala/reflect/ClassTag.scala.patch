@@ -1,6 +1,8 @@
 --- scalalib/target/scalaSources/2.11.12/scala/reflect/ClassTag.scala	2017-11-03 00:26:48.000000000 +0100
-+++ scalalib/overrides-2.11/scala/reflect/ClassTag.scala	2021-02-20 13:48:42.967395337 +0100
-@@ -117,23 +117,19 @@
++++ scalalib/overrides-2.11/scala/reflect/ClassTag.scala	2021-02-26 19:45:05.553638523 +0100
+@@ -115,27 +115,23 @@
+  * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
+  */
  object ClassTag {
 -  private val ObjectTYPE = classOf[java.lang.Object]
 -  private val NothingTYPE = classOf[scala.runtime.Nothing$]
@@ -40,7 +42,11 @@
 -  def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
 +  @inline def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
      runtimeClass1 match {
-@@ -148,9 +144,16 @@
+       case java.lang.Byte.TYPE      => ClassTag.Byte.asInstanceOf[ClassTag[T]]
+       case java.lang.Short.TYPE     => ClassTag.Short.asInstanceOf[ClassTag[T]]
+@@ -146,11 +142,18 @@
+       case java.lang.Double.TYPE    => ClassTag.Double.asInstanceOf[ClassTag[T]]
+       case java.lang.Boolean.TYPE   => ClassTag.Boolean.asInstanceOf[ClassTag[T]]
        case java.lang.Void.TYPE      => ClassTag.Unit.asInstanceOf[ClassTag[T]]
 -      case ObjectTYPE               => ClassTag.Object.asInstanceOf[ClassTag[T]]
 -      case NothingTYPE              => ClassTag.Nothing.asInstanceOf[ClassTag[T]]

@@ -660,8 +660,14 @@ lazy val scalalib =
         }
         def dirStr(v: String) =
           if (v.isEmpty) "overrides" else s"overrides-$v"
-        val dirs = verList.map(base / dirStr(_)).filter(_.exists)
-        dirs.toSeq // most specific shadow less specific
+        val dirs = verList.map(base / dirStr(_))
+        val collectionsDir = CrossVersion.partialVersion(ver) match {
+          case Some((2, 11 | 12)) => baseDirectory.value / "old-collections"
+          case _                  => baseDirectory.value / "new-collections"
+        }
+        // most specific shadow less specific and special dirs
+        (dirs.toSeq :+ collectionsDir)
+          .filter(_.exists)
       },
       // Compute sources
       // Files in earlier src dirs shadow files in later dirs
