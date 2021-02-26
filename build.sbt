@@ -1,8 +1,4 @@
 import java.io.File.pathSeparator
-import scala.io.Source.fromFile
-import java.io.FileWriter
-import java.util.LinkedList
-import com.github.difflib.UnifiedDiffUtils.parseUnifiedDiff
 import scala.collection.mutable
 import scala.util.Try
 import build.ScalaVersions._
@@ -713,22 +709,15 @@ lazy val scalalib =
               IO.createDirectory(outputDir)
             }
 
-            def jFileLines(path: File) = {
-              val list   = new LinkedList[String]()
-              val source = fromFile(path)
-              try {
-                source.getLines().foreach(list.add)
-              } finally source.close()
-              list
+            import scala.sys.process._
+            val logger = ProcessLogger(_ => (), sLog.value.error(_))
+            s"patch $scalaSourcePath $sourcePath -o $outputFile" ! logger match {
+              case 0 => addSource(sourceName, outputFile)
+              case n =>
+                val path =
+                  sourcePath.toFile.relativeTo(srcDir.getParentFile).get
+                s.log.error(s"Cannot apply patch for $path, exit code $n")
             }
-
-            val writter = new FileWriter(outputFile)
-            try {
-              parseUnifiedDiff(jFileLines(sourcePath.toFile))
-                .applyTo(jFileLines(scalaSourcePath))
-                .forEach(line => writter.write(line + '\n'))
-            } finally writter.close()
-            addSource(sourceName, outputFile)
           } else {
             val useless =
               path.contains("/scala/collection/parallel/") ||
