@@ -140,7 +140,8 @@ addCommandAlias(
 addCommandAlias(
   "test-scripted",
   Seq(
-    "sbtScalaNative/scripted"
+    "+ sbtScalaNative/publishLocal",
+    "scriptedTests/scripted"
   ).mkString(";")
 )
 
@@ -357,14 +358,7 @@ lazy val sbtPluginSettings: Seq[Setting[_]] =
   toolSettings ++
     bintrayPublishSettings ++
     Seq(
-      scriptedLaunchOpts := {
-        scriptedLaunchOpts.value ++
-          Seq("-Xmx1024M",
-              "-XX:MaxMetaspaceSize=256M",
-              "-Dplugin.version=" + version.value,
-              "-Dscala.version=" + (nativelib / scalaVersion).value) ++
-          ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq
-      }
+      sbtVersion := sbt10Version
     )
 
 lazy val sbtScalaNative =
@@ -374,33 +368,7 @@ lazy val sbtScalaNative =
     .settings(sbtPluginSettings)
     .settings(
       crossScalaVersions := Seq(sbt10ScalaVersion),
-      addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
-      sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
-      // publish the other projects before running scripted tests.
-      scriptedDependencies := {
-        scriptedDependencies
-          .dependsOn(
-            // Compiler plugins
-            nscplugin / publishLocal,
-            junitPlugin / publishLocal,
-            // Scala Native libraries
-            nativelib / publishLocal,
-            clib / publishLocal,
-            posixlib / publishLocal,
-            javalib / publishLocal,
-            auxlib / publishLocal,
-            scalalib / publishLocal,
-            testInterfaceSbtDefs / publishLocal,
-            testInterface / publishLocal,
-            junitRuntime / publishLocal,
-            // JVM libraries
-            util / publishLocal,
-            nir / publishLocal,
-            tools / publishLocal,
-            testRunner / publishLocal
-          )
-          .value
-      }
+      addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0")
     )
     .dependsOn(tools, testRunner)
 
@@ -695,6 +663,58 @@ lazy val testsExt = project
              tests,
              junitRuntime,
              javalibExtDummies)
+
+lazy val scriptedTests = project
+  .in(file("scripted-tests"))
+  .enablePlugins(ScriptedPlugin)
+  .settings(toolSettings)
+  .settings(noPublishSettings)
+  .settings(
+    // Force sbt plugin version to allow usage of ScriptedPlugin
+    scalaVersion := sbt10ScalaVersion,
+    // Enforce usage of sbt10Version, some of 1.1.6+ versions has problems with
+    // with dynamic addition of files in project/* needed for java-io-file-n tests
+    sbtVersion := sbt10Version,
+    scriptedLaunchOpts := {
+      scriptedLaunchOpts.value ++
+        Seq(
+          "-Xmx1024M",
+          "-XX:MaxMetaspaceSize=256M",
+          "-Dplugin.version=" + version.value,
+          // Use version of cross build projects, version for this project must
+          // be overriden to allow for build
+          "-Dscala.version=" + (nativelib / scalaVersion).value
+        ) ++
+        ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq
+    },
+    // sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
+    // Publish the other projects before running scripted tests.
+    // They would use Scala version defined in ThisBuild
+    scriptedDependencies := {
+      scriptedDependencies
+        .dependsOn(
+          // Compiler plugins
+          nscplugin / publishLocal,
+          junitPlugin / publishLocal,
+          // Scala Native libraries
+          nativelib / publishLocal,
+          clib / publishLocal,
+          posixlib / publishLocal,
+          javalib / publishLocal,
+          auxlib / publishLocal,
+          scalalib / publishLocal,
+          testInterfaceSbtDefs / publishLocal,
+          testInterface / publishLocal,
+          junitRuntime / publishLocal,
+          // JVM libraries
+          util / publishLocal,
+          nir / publishLocal,
+          tools / publishLocal,
+          testRunner / publishLocal
+        )
+        .value
+    }
+  )
 
 lazy val sandbox =
   project
