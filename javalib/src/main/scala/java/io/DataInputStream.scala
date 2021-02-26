@@ -150,17 +150,26 @@ class DataInputStream(in: InputStream)
   override final def readUnsignedShort(): Int =
     rebuffer(sizeof[Short].toInt).getShort() & 0xFFFF
 
-  // Retain Scala.js formatting.
+  def readUTF(): String =
+    DataInputStream.readUTF(this)
+
+  override def skipBytes(n: Int): Int =
+    in.skip(n.toLong).toInt
+}
+
+object DataInputStream {
+  // Retain Scala.js formatting for readUTF().
   // The Scala.js original uses  long (> 80 char) lines as the
   // argument for badFormat(). scalafmt inserts line breaks at odd places,
   // and makes the code unreadable.
   //
   // format: off
 
-  def readUTF(): String = {
+  def readUTF(in: DataInput): String = {
     // Ported from Scala.js commit: 1337656 dated: 2020-06-04
+    // Then modified to operate as a static, not class, method.
 
-    val length = readUnsignedShort()
+    val length = in.readUnsignedShort()
     var res    = ""
     var i      = 0
 
@@ -168,6 +177,15 @@ class DataInputStream(in: InputStream)
       (if (x < 0x10) "0" else "") + Integer.toHexString(x)
 
     def badFormat(msg: String) = throw new UTFDataFormatException(msg)
+
+    // Minimize changes to ported code by using "EOF returns -1" contract of
+    // InputStream not the "EOFException" of provided DataInput 'in' argument.
+    def read(): Int =
+      try {
+        in.readUnsignedByte()
+      } catch {
+        case _: EOFException => -1
+      }
 
     while (i < length) {
       val a = read()
@@ -219,15 +237,5 @@ class DataInputStream(in: InputStream)
 
     res
   }
-
   // format: on
-
-  override def skipBytes(n: Int): Int =
-    in.skip(n.toLong).toInt
-}
-
-object DataInputStream {
-  def readUTF(in: DataInput): String = {
-    (new DataInputStream(in.asInstanceOf[DataInputStream])).readUTF()
-  }
 }
