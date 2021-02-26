@@ -127,6 +127,6 @@ object GenerateReflectiveProxies {
       case _ =>
         ()
     }
-    result
+    result.toSeq
   }
 }

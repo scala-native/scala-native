@@ -1,11 +1,12 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Files, Path, Paths, StandardCopyOption}
+import java.nio.file.{Files, Path, Paths}
 import java.util.Arrays
 import scala.sys.process._
 import scalanative.build.IO.RichPath
 import scalanative.build.NativeLib._
+import scalanative.compat.CompatParColls.Converters._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {

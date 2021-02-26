@@ -35,7 +35,7 @@ class HasTraitTables(meta: Metadata) {
     val columns = meta.classes.map { cls =>
       val row = new Array[Boolean](meta.traits.length)
       markTraits(row, cls)
-      Val.ArrayValue(Type.Bool, row.map(Val.Bool))
+      Val.ArrayValue(Type.Bool, row.toSeq.map(Val.Bool))
     }
     val table =
       Val.ArrayValue(Type.ArrayValue(Type.Bool, meta.traits.length), columns)
@@ -50,7 +50,7 @@ class HasTraitTables(meta: Metadata) {
       val row = new Array[Boolean](meta.traits.length)
       markTraits(row, left)
       row(meta.ids(left)) = true
-      Val.ArrayValue(Type.Bool, row.map(Val.Bool))
+      Val.ArrayValue(Type.Bool, row.toSeq.map(Val.Bool))
     }
     val table =
       Val.ArrayValue(Type.ArrayValue(Type.Bool, meta.traits.length), columns)

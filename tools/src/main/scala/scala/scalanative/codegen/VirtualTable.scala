@@ -34,7 +34,7 @@ class VirtualTable(meta: Metadata, cls: linker.Class) {
     }
   }
   val value: Val =
-    Val.ArrayValue(Type.Ptr, slots.map(impls))
+    Val.ArrayValue(Type.Ptr, slots.map(impls).toSeq)
   val ty =
     value.ty
   def index(sig: Sig): Int =

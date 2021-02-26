@@ -74,6 +74,6 @@ object MemoryLayout {
 
     val alignment = if (tys.isEmpty) 1 else tys.map(alignmentOf).max
 
-    MemoryLayout(align(offset, alignment), pos)
+    MemoryLayout(align(offset, alignment), pos.toSeq)
   }
 }

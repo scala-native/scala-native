@@ -3,7 +3,7 @@ package interflow
 
 import scalanative.nir._
 import scalanative.linker._
-import scalanative.interflow.UseDef.eliminateDeadCode
+import scalanative.compat.CompatParColls.Converters._
 
 trait Visit { self: Interflow =>
   def shallVisit(name: Global): Boolean = {

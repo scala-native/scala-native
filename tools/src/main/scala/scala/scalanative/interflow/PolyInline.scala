@@ -29,7 +29,7 @@ trait PolyInline { self: Interflow =>
             cls.resolve(sig).foreach { g => targets += ((cls, g)) }
           }
         }
-        targets
+        targets.toSeq
       case _ =>
         Seq.empty
     }
@@ -118,7 +118,7 @@ trait PolyInline { self: Interflow =>
         emit.jump(Next.Label(mergeLabel, Seq(res)))
     }
 
-    val result = Val.Local(fresh(), Sub.lub(rettys, Some(op.resty)))
+    val result = Val.Local(fresh(), Sub.lub(rettys.toSeq, Some(op.resty)))
     emit.label(mergeLabel, Seq(result))
 
     result

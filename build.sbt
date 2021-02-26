@@ -79,14 +79,6 @@ lazy val mimaSettings: Seq[Setting[_]] = Seq(
   }
 )
 
-// Sbt 1.4.0 introduced mandatory key linting.
-// The val crossSbtVersions is used in toolsSettings below.
-// toolsSettings are used by nir, test-runner, util, etc.
-// but Sbt 1.4.0 still complained about crossSbtVersions.
-// Disable the linting for it, rather than upsetting the apple cart by
-// deleting the probably essential crossSbeVersions. Minimal change.
-Global / excludeLintKeys += crossSbtVersions
-
 // Common start but individual sub-projects may add or remove scalacOptions.
 // project/build.sbt uses a less stringent set to bootstrap.
 inThisBuild(
@@ -241,9 +233,6 @@ lazy val noPublishSettings: Seq[Setting[_]] = Seq(
 
 lazy val toolSettings: Seq[Setting[_]] =
   Def.settings(
-    sbtVersion := sbt10Version,
-    crossSbtVersions := List(sbt10Version),
-    crossScalaVersions := Seq(sbt10ScalaVersion),
     javacOptions ++= Seq("-encoding", "utf8")
   )
 
@@ -328,6 +317,30 @@ lazy val tools =
             allCoreLibsCp.map(_.getAbsolutePath).mkString(pathSeparator)
         )
       },
+      scalacOptions ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11 | 12)) => Nil
+          case _                  =>
+            // 2.13 and 2.11 tools are only used in partest.
+            // It looks like it's impossible to provide alternative sources - it fails to compile plugin sources,
+            // before attaching them to other build projects. We disable unsolvable fatal-warnings with filters below
+            Seq(
+              // In 2.13 lineStream_! was replaced with lazyList_!.
+              "-Wconf:cat=deprecation&msg=lineStream_!:s",
+              // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
+              // Should not be replaced with HashMap due to performance reasons.
+              "-Wconf:cat=deprecation&msg=OpenHashMap:s"
+            )
+        }
+      },
+      libraryDependencies ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11 | 12)) => Nil
+          case _ =>
+            List(
+              "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.0")
+        }
+      },
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
       Test / parallelExecution := false,
       mimaSettings
@@ -339,7 +352,6 @@ lazy val nscplugin =
     .in(file("nscplugin"))
     .settings(mavenPublishSettings)
     .settings(
-      crossScalaVersions := libCrossScalaVersions,
       crossVersion := CrossVersion.full,
       Compile / unmanagedSourceDirectories ++= Seq(
         (nir / Compile / scalaSource).value,
@@ -357,6 +369,7 @@ lazy val sbtPluginSettings: Seq[Setting[_]] =
   toolSettings ++
     bintrayPublishSettings ++
     Seq(
+      sbtVersion := sbt10Version,
       scriptedLaunchOpts := {
         scriptedLaunchOpts.value ++
           Seq("-Xmx1024M",
@@ -775,7 +788,6 @@ lazy val testInterfaceSbtDefs =
 lazy val testRunner =
   project
     .in(file("test-runner"))
-    .settings(toolSettings)
     .settings(mavenPublishSettings)
     .settings(testInterfaceCommonSourcesSettings)
     .settings(
@@ -804,7 +816,6 @@ lazy val junitPlugin =
     .in(file("junit-plugin"))
     .settings(mavenPublishSettings)
     .settings(
-      crossScalaVersions := libCrossScalaVersions,
       crossVersion := CrossVersion.full,
       libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       exportJars := true
@@ -848,7 +859,6 @@ lazy val junitTestOutputsJVM =
     .in(file("junit-test/output-jvm"))
     .settings(
       commonJUnitTestOutputsSettings,
-      crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.11" % "test"
       )
@@ -869,7 +879,6 @@ lazy val junitAsyncJVM =
   project
     .in(file("junit-async/jvm"))
     .settings(
-      crossScalaVersions := Seq(sbt10ScalaVersion),
       nameSettings,
       publishArtifact := false
     )

@@ -46,7 +46,7 @@ sealed abstract class ScopeInfo extends Info {
     }
 
     loop(this)
-    overwrite(out)
+    overwrite(out.toSeq)
   }
 }
 
@@ -116,7 +116,7 @@ final class Class(val attrs: Attrs,
       }
     }
     add(this)
-    out
+    out.toSeq
   }
 
   val ty: Type =

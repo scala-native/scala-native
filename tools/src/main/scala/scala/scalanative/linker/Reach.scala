@@ -41,7 +41,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
                unavailable.toSeq,
                from,
                links.toSeq,
-               defns,
+               defns.toSeq,
                dynsigs.toSeq,
                dynimpls.toSeq)
   }

@@ -2,7 +2,7 @@ package scala.scalanative
 package build
 
 import java.io.File
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Path, Paths}
 import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath

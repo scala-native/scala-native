@@ -5,8 +5,6 @@ import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 import scalanative.util.{ShowBuilder, unreachable}
-import java.util.stream.{Stream => JStream}
-import java.util.function.{Function => JFunction, Consumer => JConsumer}
 
 object Show {
   def newBuilder: NirShowBuilder = new NirShowBuilder(new InMemoryShowBuilder)
@@ -123,6 +121,7 @@ object Show {
         str("(")
         rep(args, sep = ", ")(val_)
         str(")")
+      case Next.None => ()
     }
 
     def inst_(inst: Inst): Unit = inst match {

@@ -245,7 +245,7 @@ final class State(block: Local) {
             && values.exists(v => !v.isZero))
         val init =
           if (canConstantInit) {
-            Val.ArrayValue(elemty, values)
+            Val.ArrayValue(elemty, values.toSeq)
           } else {
             Val.Int(values.length)
           }
