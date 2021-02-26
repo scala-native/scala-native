@@ -239,7 +239,8 @@ word_t *Allocator_lazySweep(Heap *heap, uint32_t size) {
     return object;
 }
 
-NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
+NOINLINE word_t *Allocator_allocSlow(ThreadManager *threadManager, Heap *heap,
+                                     uint32_t size) {
     word_t *object = Allocator_tryAlloc(&allocator, size);
 
     if (object != NULL) {
@@ -262,7 +263,7 @@ NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
             goto done;
     }
 
-    Heap_Collect(heap);
+    Heap_Collect(threadManager, heap);
     object = Allocator_tryAlloc(&allocator, size);
 
     if (object != NULL)
@@ -283,7 +284,8 @@ NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
     goto done;
 }
 
-INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
+INLINE word_t *Allocator_Alloc(ThreadManager *threadManager, Heap *heap,
+                               uint32_t size) {
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size < MIN_BLOCK_SIZE);
 
@@ -292,7 +294,7 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
 
     // Checks if the end of the block overlaps with the limit
     if (end > allocator.limit) {
-        return Allocator_allocSlow(heap, size);
+        return Allocator_allocSlow(threadManager, heap, size);
     }
 
     allocator.cursor = end;

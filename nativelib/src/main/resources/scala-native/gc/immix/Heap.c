@@ -151,7 +151,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
  * If allocation fails, because there is not enough memory available, it will
  * trigger a collection of both the small and the large heap.
  */
-word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
+word_t *Heap_AllocLarge(ThreadManager *threadManager, Heap *heap,
+                        uint32_t size) {
 
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size >= MIN_BLOCK_SIZE);
@@ -163,7 +164,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
         return (word_t *)object;
     } else {
         // Otherwise collect
-        Heap_Collect(heap, &stack);
+        Heap_Collect(threadManager, heap, &stack);
 
         // After collection, try to alloc again, if it fails, grow the heap by
         // at least the size of the object we want to alloc
@@ -184,14 +185,15 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
     }
 }
 
-NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
+NOINLINE word_t *Heap_allocSmallSlow(ThreadManager *threadManager, Heap *heap,
+                                     uint32_t size) {
     Object *object;
     object = (Object *)Allocator_Alloc(&allocator, size);
 
     if (object != NULL)
         goto done;
 
-    Heap_Collect(heap, &stack);
+    Heap_Collect(threadManager, heap, &stack);
     object = (Object *)Allocator_Alloc(&allocator, size);
 
     if (object != NULL)
@@ -210,7 +212,8 @@ done:
     return (word_t *)object;
 }
 
-INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
+INLINE word_t *Heap_AllocSmall(ThreadManager *threadManager, Heap *heap,
+                               uint32_t size) {
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size < MIN_BLOCK_SIZE);
 
@@ -219,7 +222,7 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
 
     // Checks if the end of the block overlaps with the limit
     if (end >= allocator.limit) {
-        return Heap_allocSmallSlow(heap, size);
+        return Heap_allocSmallSlow(threadManager, heap, size);
     }
 
     allocator.cursor = end;
@@ -236,17 +239,18 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
     return (word_t *)object;
 }
 
-word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
+word_t *Heap_Alloc(ThreadManager *threadManager, Heap *heap,
+                   uint32_t objectSize) {
     assert(objectSize % ALLOCATION_ALIGNMENT == 0);
 
     if (objectSize >= LARGE_BLOCK_SIZE) {
-        return Heap_AllocLarge(heap, objectSize);
+        return Heap_AllocLarge(threadManager, heap, objectSize);
     } else {
-        return Heap_AllocSmall(heap, objectSize);
+        return Heap_AllocSmall(threadManager, heap, objectSize);
     }
 }
 
-void Heap_Collect(Heap *heap, Stack *stack) {
+void Heap_Collect(ThreadManager *threadManager, Heap *heap, Stack *stack) {
     uint64_t start_ns, sweep_start_ns, end_ns;
     Stats *stats = heap->stats;
 #ifdef DEBUG_PRINT
@@ -256,7 +260,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     if (stats != NULL) {
         start_ns = scalanative_nano_time();
     }
-    Marker_MarkRoots(heap, stack);
+    Marker_MarkRoots(threadManager, heap, stack);
     if (stats != NULL) {
         sweep_start_ns = scalanative_nano_time();
     }

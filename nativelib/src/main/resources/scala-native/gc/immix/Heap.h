@@ -8,6 +8,7 @@
 #include "datastructures/Bytemap.h"
 #include "metadata/LineMeta.h"
 #include "Stats.h"
+#include "ThreadManager.h"
 #include <stdio.h>
 
 typedef struct {
@@ -42,11 +43,14 @@ static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
 }
 
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
-word_t *Heap_Alloc(Heap *heap, uint32_t objectSize);
-word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize);
-word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize);
+word_t *Heap_Alloc(ThreadManager *threadManager, Heap *heap,
+                   uint32_t objectSize);
+word_t *Heap_AllocSmall(ThreadManager *threadManager, Heap *heap,
+                        uint32_t objectSize);
+word_t *Heap_AllocLarge(ThreadManager *threadManager, Heap *heap,
+                        uint32_t objectSize);
 
-void Heap_Collect(Heap *heap, Stack *stack);
+void Heap_Collect(ThreadManager *threadManager, Heap *heap, Stack *stack);
 
 void Heap_Recycle(Heap *heap);
 void Heap_Grow(Heap *heap, uint32_t increment);

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <setjmp.h>
+#include <sched.h>
 #include "Marker.h"
 #include "Object.h"
 #include "Log.h"
@@ -7,7 +8,7 @@
 #include "headers/ObjectHeader.h"
 #include "datastructures/GreyPacket.h"
 #include "GCThread.h"
-#include <sched.h>
+#include "ThreadManager.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -364,22 +365,25 @@ void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
     }
 }
 
-void Marker_markProgramStack(Heap *heap, Stats *stats, GreyPacket **outHolder) {
+void Marker_markProgramStack(ThreadManager *threadManager, Heap *heap,
+                             Stats *stats, GreyPacket **outHolder) {
     // Dumps registers into 'regs' which is on stack
     jmp_buf regs;
     setjmp(regs);
     word_t *dummy;
+    for (ThreadList *tl = threadManager->threadList; tl != NULL;
+         tl = tl->next) {
+        word_t **stackBottom = tl->stackBottom;
+        word_t **current =
+            pthread_equal(pthread_self(), tl->thread) ? &dummy : tl->stackTop;
 
-    word_t **current = &dummy;
-    word_t **stackBottom = __stack_bottom;
-
-    while (current <= stackBottom) {
-
-        word_t *stackObject = *current;
-        if (Heap_IsWordInHeap(heap, stackObject)) {
-            Marker_markConservative(heap, stats, outHolder, stackObject);
+        while (current <= stackBottom) {
+            word_t *stackObject = *current;
+            if (Heap_IsWordInHeap(heap, stackObject)) {
+                Marker_markConservative(heap, stats, outHolder, stackObject);
+            }
+            current += 1;
         }
-        current += 1;
     }
 }
 
@@ -401,9 +405,9 @@ void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder) {
     }
 }
 
-void Marker_MarkRoots(Heap *heap, Stats *stats) {
+void Marker_MarkRoots(ThreadManager *threadManager, Heap *heap, Stats *stats) {
     GreyPacket *out = Marker_takeEmptyPacket(heap, stats);
-    Marker_markProgramStack(heap, stats, &out);
+    Marker_markProgramStack(threadManager, heap, stats, &out);
     Marker_markModules(heap, stats, &out);
     Marker_giveFullPacket(heap, stats, out);
 }
