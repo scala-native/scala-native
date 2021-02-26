@@ -25,7 +25,7 @@ ENV PATH "/usr/lib/jvm/java-8-openjdk-$HOST_ARCHITECTURE/bin:$PATH"
 
 ENV SBT_LAUNCHER_VERSION 1.3.7
 
-RUN apt-get install -y curl
+RUN apt-get install -y curl patch
 
 # Install sbt
 RUN \
