@@ -1,6 +1,8 @@
---- scalalib/target/scalaSources/2.12.13/scala/reflect/ClassTag.scala	2021-02-20 19:51:39.333018444 +0100
-+++ scalalib/overrides-2.12/scala/reflect/ClassTag.scala	2021-02-01 18:02:23.029750912 +0100
-@@ -16,6 +16,5 @@
+--- scalalib/target/scalaSources/2.12.13/scala/reflect/ClassTag.scala	2021-01-12 14:37:36.000000000 +0100
++++ scalalib/overrides-2.12/scala/reflect/ClassTag.scala	2021-02-26 16:43:39.126508168 +0100
+@@ -14,10 +14,9 @@
+ package reflect
+ 
  import java.lang.{ Class => jClass }
 -import java.lang.ref.{WeakReference => jWeakReference}
 -
@@ -9,7 +11,11 @@
 +
 +/* Override for default scala ClassTag due to missing caching using java.lang.Value.ClassValue */
  
-@@ -53,7 +52,5 @@
+ /**
+  *
+@@ -51,11 +50,9 @@
+ @scala.annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
+ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serializable {
  
 -  @transient private[scala] lazy val emptyArray       : Array[T]                = {
 -    val componentType =
@@ -20,18 +26,30 @@
 +    newArray(0)
 +
    @transient private[scala] lazy val emptyWrappedArray: mutable.WrappedArray[T] =
-@@ -74,3 +71,2 @@
+     mutable.WrappedArray.make[T](emptyArray)
+ 
+@@ -72,7 +69,6 @@
+ 
+   /** Produces a new array with element type `T` and length `len` */
    override def newArray(len: Int): Array[T] = {
 -    if (runtimeClass.isPrimitive) {
        runtimeClass match {
-@@ -85,5 +81,3 @@
+         case java.lang.Integer.TYPE   => new Array[Int](len).asInstanceOf[Array[T]]
+         case java.lang.Double.TYPE    => new Array[Double](len).asInstanceOf[Array[T]]
+@@ -83,9 +79,7 @@
+         case java.lang.Short.TYPE     => new Array[Short](len).asInstanceOf[Array[T]]
+         case java.lang.Boolean.TYPE   => new Array[Boolean](len).asInstanceOf[Array[T]]
          case java.lang.Void.TYPE      => new Array[Unit](len).asInstanceOf[Array[T]]
 -      }
 -    } else {
 -      java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
 +      case _                        => java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
      }
-@@ -119,68 +113,38 @@
+   }
+ 
+@@ -117,74 +111,45 @@
+  * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
+  */
  object ClassTag {
 -  private val ObjectTYPE = classOf[java.lang.Object]
 -  private val NothingTYPE = classOf[scala.runtime.Nothing$]
@@ -135,7 +153,7 @@
 -      tag
 +          new ClassTag[T]{ def runtimeClass = runtimeClass1 }
      }
-@@ -188,3 +152,4 @@
+   }
  
 -  def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
 +  @inline def unapply[T](ctag: ClassTag[T]): Option[Class[_]] =

@@ -1,13 +1,19 @@
 --- scalalib/target/scalaSources/2.12.13/scala/collection/immutable/Stream.scala	2021-01-12 14:37:36.000000000 +0100
-+++ scalalib/overrides-2.12/scala/collection/immutable/Stream.scala	2021-02-19 18:54:20.610914530 +0100
-@@ -1078,2 +1078,6 @@
++++ scalalib/overrides-2.12/scala/collection/immutable/Stream.scala	2021-02-26 16:43:39.134508255 +0100
+@@ -1076,6 +1076,10 @@
+  * @since   2.8
+  */
  object Stream extends SeqFactory[Stream] {
 +  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
 +  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
 +    @inline override def apply() = newBuilder[Nothing]
 +  }
  
-@@ -1089,8 +1093,8 @@
+   /** The factory for streams.
+    *  @note Methods such as map/flatMap will not invoke the `Builder` factory,
+@@ -1087,12 +1091,12 @@
+    */
+   class StreamCanBuildFrom[A] extends GenericCanBuildFrom[A]
  
 -  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] =
 -    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Stream[A]]]
@@ -20,7 +26,11 @@
 +
 +  import scala.collection.{Iterable, Seq, IndexedSeq}
  
-@@ -1113,6 +1117,6 @@
+   /** A builder for streams
+    *  @note This builder is lazy only in the sense that it does not go downs the spine
+@@ -1111,10 +1115,10 @@
+   }
+ 
    /** The empty stream */
 -  override def empty[A]: Stream[A] = Empty
 +  @inline override def empty[A]: Stream[A] = Empty
@@ -29,3 +39,5 @@
 -  override def apply[A](xs: A*): Stream[A] = xs.toStream
 +  @inline override def apply[A](xs: A*): Stream[A] = xs.toStream
  
+   /** A wrapper class that adds `#::` for cons and `#:::` for concat as operations
+    *  to streams.
