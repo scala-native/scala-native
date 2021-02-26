@@ -2,7 +2,10 @@
 
 #
 # POS
-#
+
+# Spuriously fails too often, and causes other subsequent tests to fail too
+# Note that this test, by design, stress-tests type checking
+pos/t6367.scala
 
 # Using Jsoup, what's that?
 pos/cycle-jsoup.scala
@@ -29,9 +32,6 @@ run/t2378.scala
 # Uses ClassTags on existentials which are broken in Scala (see #251)
 run/valueclasses-classtag-existential.scala
 
-# Relies on a particular execution speed
-run/t5857.scala
-
 # Using parts of the javalib we don't plan to support
 
 run/t5018.scala
@@ -51,10 +51,6 @@ run/lambda-serialization-gc.scala
 run/t2849.scala
 
 run/various-flat-classpath-types.scala
-
-# Used java.io.ObjectInputStream
-run/t9365.scala
-run/t9375.scala
 
 # Uses java.math.BigDecimal / BigInteger : but failures not due to them
 run/is-valid-num.scala
@@ -90,6 +86,8 @@ run/t6988.scala
 # Object{Output|Input}Streams
 run/t6935.scala
 run/t8188.scala
+run/t9365.scala
+run/t9375.scala
 
 # Using sys.exit / System.exit
 
@@ -923,8 +921,6 @@ run/t3493.scala
 run/private-inline.scala
 
 ###  Incorrect partests  ###
-# Badly uses constract of Console.print (no flush)
-run/t429.scala
 
 ### Bugs
 ## Compiler
@@ -942,7 +938,6 @@ run/t6253b.scala
 run/t6253c.scala
 run/try-catch-unify.scala
 run/t2755.scala
-run/java-erasure.scala
 
 
 ## Fails

@@ -12,13 +12,6 @@ pos/t6367.scala
 # NEG
 #
 
-# Screws up, but not really our problem (error: None.get instead of
-# phase ordering error)
-neg/t7494-multi-right-after
-neg/t7494-right-after-before
-neg/t7622-multi-followers
-neg/t7622-cyclic-dependency
-
 # Does not create tasty.jar
 neg/t12134
 
@@ -27,23 +20,19 @@ neg/t12134
 #
 
 # Uses .java files
+run/t12195
 run/t9200
+run/t8348
 run/noInlineUnknownIndy
+run/specialize-functional-interface
 
 # Relies on the exact toString() representation of Floats/Doubles
 run/t2378.scala
-
-# Uses ClassTags on existentials which are broken in Scala (see #251)
-run/valueclasses-classtag-existential.scala
-
-# Relies on a particular execution speed
-run/t5857.scala
 
 # Using parts of the javalib we don't plan to support
 
 run/t5018.scala
 run/t2417.scala
-run/t4813.scala
 run/lazy-concurrent.scala
 run/t3667.scala
 run/t3038d.scala
@@ -53,21 +42,21 @@ run/t3895b.scala
 run/t5974.scala
 run/t5262.scala
 run/serialize-stream.scala
-run/sysprops.scala
 run/lambda-serialization-gc.scala
 run/t9390.scala
 run/t9390b.scala
 run/t9390c.scala
 run/trait-defaults-super.scala
 run/t2849.scala
-run/t1360.scala
-run/t3199b.scala
-run/t8690.scala
 run/t10488.scala
 run/various-flat-classpath-types.scala
 
+# Uses j.l.Class stubs
+run/t12002.scala
+run/BoxUnboxTest.scala
+run/module-serialization-proxy-class-unload.scala
+
 # Uses java.math.BigDecimal / BigInteger : but failures not due to them
-run/hashhash.scala
 run/is-valid-num.scala
 
 # Documented semantic difference on String.split(x: Array[Char])
@@ -88,29 +77,9 @@ run/t6154.scala
 # Tries to catch java.lang.OutOfMemoryError
 run/t7880.scala
 
-# Taking too much time, because JavaScript is not as fast as the JVM
-
-run/collections.scala
+# Taking too much time >60sec
+run/t10594.scala
 run/t3989.scala
-run/adding-growing-set.scala
-run/t3242.scala
-run/hashCodeDistribution.scala
-run/t408.scala
-run/t6584.scala
-run/UnrolledBuffer.scala
-run/numbereq.scala
-run/t4658.scala
-
-# Crashes Rhino
-
-run/bridges.scala
-run/patmat-exprs.scala
-
-# Using partest properties
-
-run/tailcalls.scala
-run/t4294.scala
-run/t6331b.scala
 
 # Using IO
 
@@ -118,6 +87,8 @@ run/t6488.scala
 run/t6988.scala
 
 # Object{Output|Input}Streams
+run/defaults-serizaliable-no-forwarders.scala
+run/defaults-serizaliable-with-forwarders.scala
 run/t6935.scala
 run/t8188.scala
 run/t9375.scala
@@ -136,10 +107,6 @@ run/transient-object.scala
 
 run/t4426.scala
 
-# Using sys.exit / System.exit
-
-run/verify-ctor.scala
-
 # Using Await
 
 run/t7336.scala
@@ -153,7 +120,10 @@ run/t6308.scala
 
 # Using reflection
 
+run/reflection-package-name-conflict
+run/sip23-toolbox-eval.scala
 run/t6063
+run/t9644.scala
 
 run/mixin-bridge-methods.scala
 run/t5125.scala
@@ -425,7 +395,6 @@ run/typecheck
 run/t8190.scala
 run/t8192
 run/t8177f.scala
-run/t8199.scala
 run/t7932.scala
 run/t7700.scala
 run/t7570c.scala
@@ -481,6 +450,9 @@ run/trait_fields_volatile.scala
 run/junitForwarders
 run/reflect-java-param-names
 
+run/reify_ann2b.scala
+run/reify_classfileann_a
+run/reify_classfileann_b
 run/reify_newimpl_29.scala
 run/reify_magicsymbols.scala
 run/reify_inheritance.scala
@@ -618,6 +590,7 @@ run/t10487.scala
 run/typetags_caching.scala
 run/type-tag-leak.scala
 run/t10856.scala
+run/module-static.scala
 
 # Uses reflection indirectly through
 # scala.runtime.ScalaRunTime.replStringOf
@@ -646,20 +619,6 @@ run/enums.scala
 run/t3719.scala
 run/t8611b.scala
 
-# Exceptions that become JavaScriptException
-
-run/pf-catch.scala
-run/exceptions-2.scala
-run/exceptions-nest.scala
-run/t8601c.scala
-run/t8601b.scala
-run/inlineHandlers.scala
-
-# Expecting unsupported exceptions (e.g. ArrayIndexOutOfBounds)
-run/optimizer-array-load.scala
-run/t6827.scala
-run/t8601.scala
-
 # Expecting exceptions that are linking errors in Scala.js (e.g. NoSuchMethodException)
 run/t10334.scala
 
@@ -678,6 +637,13 @@ run/t3613.scala
 
 # Using the REPL
 
+run/repl-type.scala
+run/repl-replay.scala
+run/repl-errors.scala
+run/repl-any-error.scala
+run/repl-paste-error.scala
+run/repl-previous-result.scala
+run/repl-trace-elided-more.scala
 run/t4285.scala
 run/constant-type.scala
 run/repl-bare-expr.scala
@@ -715,6 +681,14 @@ run/repl-class-based-outer-pointers.scala
 run/repl-class-based-escaping-reads.scala
 
 # Using the Repl (scala.tools.partest.ReplTest)
+run/t11991.scala
+run/t11915.scala
+run/t11899.scala
+run/t11897.scala
+run/t11838.scala
+run/t11402.scala
+run/t11064.scala
+run/t10768.scala
 run/class-symbol-contravariant.scala
 run/macro-bundle-repl.scala
 run/macro-repl-basic.scala
@@ -790,6 +764,7 @@ run/t9016.scala
 run/repl-completions.scala
 run/t10956.scala
 run/t11564.scala
+run/invalid-lubs.scala
 
 # Using Scala Script (partest.ScriptTest)
 
@@ -800,6 +775,10 @@ run/t4625b.scala
 
 # Using the compiler API
 
+run/nowarn.scala
+run/t9944.scala
+run/t3368.scala
+run/t3368-b.scala
 run/t2512.scala
 run/analyzerPlugins.scala
 run/compiler-asSeenFrom.scala
@@ -846,8 +825,21 @@ run/t7569.scala
 run/t7852.scala
 run/t7817-tree-gen.scala
 run/t7825.scala
+run/extend-global.scala
 
 # partest.DirectTest
+run/t12019
+run/t11815.scala
+run/t11746.scala
+run/t11731.scala
+run/t11385.scala
+run/t10819.scala
+run/t10751.scala
+run/t10641.scala
+run/t10344.scala
+run/t10203.scala
+run/string-switch-pos.scala
+run/patmat-seq.scala
 run/maxerrs.scala
 run/t6288.scala
 run/t6331.scala
@@ -891,6 +883,7 @@ run/sd187.scala
 run/patmat-origtp-switch.scala
 run/indyLambdaKinds
 run/t11802-pluginsdir
+run/literals-parsing.scala
 
 # Using partest.StoreReporterDirectTest
 run/t10171
@@ -1003,6 +996,11 @@ run/t3899
 run/t11373
 run/t8928
 
+
+# Using partest.Properties (nest.Runner)
+run/t4294.scala
+run/tailcalls.scala
+
 # Using scala-script
 run/t7791-script-linenums.scala
 
@@ -1021,6 +1019,7 @@ run/t3758-old.scala
 run/t4110-old.scala
 run/t6246.scala
 
+
 # Using ScalaRunTime.stringOf
 run/value-class-extractor-seq.scala
 run/t3493.scala
@@ -1029,10 +1028,43 @@ run/t3493.scala
 run/indy-via-macro
 run/indy-via-macro-with-dynamic-args
 
-# Crashes our optimizer because of artificially insane amount of inlining
-run/t10594.scala
+### Bugs
+## Compiler
+run/anyval-box-types.scala
+run/structural.scala
+run/t8017
+run/t8601b.scala
+run/t8601d.scala
+run/t10069b.scala
 
-###  Incorrect partests  ###
-# Badly uses constract of Console.print (no flush)
-run/t429.scala
-run/t6102.scala
+## JVM compliance
+run/t5680.scala
+run/try-catch-unify.scala
+run/t2755.scala
+run/java-erasure.scala
+
+
+## Fails
+run/productElementName-oob.scala
+run/t10290.scala
+run/t6827.scala
+
+#OutOfMemoryError
+run/stream-gc.scala
+
+## Check not passing
+run/t266.scala
+run/t4300.scala
+run/t8334.scala
+run/t8803.scala
+run/t9697.scala
+
+#Missing symbols
+run/t9400.scala
+
+## LLVM compilation fails
+run/t7269.scala
+
+## Other
+run/t10277.scala
+run/t10277b.scala

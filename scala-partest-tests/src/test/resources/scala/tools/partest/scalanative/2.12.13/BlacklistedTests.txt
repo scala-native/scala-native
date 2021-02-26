@@ -12,16 +12,6 @@ pos/t6367.scala
 # NEG
 #
 
-# Screws up, but not really our problem (error: None.get instead of
-# phase ordering error)
-neg/t7494-multi-right-after
-neg/t7494-right-after-before
-neg/t7622-multi-followers
-neg/t7622-cyclic-dependency
-
-# Spurious failures
-neg/inlineMaxSize.scala
-
 # Uses .java files
 run/t9200
 run/noInlineUnknownIndy
@@ -37,17 +27,10 @@ run/classtags-cached.scala
 # Relies on the exact toString() representation of Floats/Doubles
 run/t2378.scala
 
-# Uses ClassTags on existentials which are broken in Scala (see #251)
-run/valueclasses-classtag-existential.scala
-
-# Relies on a particular execution speed
-run/t5857.scala
-
 # Using parts of the javalib we don't plan to support
 
 run/t5018.scala
 run/t2417.scala
-run/t4813.scala
 run/lazy-concurrent.scala
 run/t3667.scala
 run/t3038d.scala
@@ -55,27 +38,21 @@ run/shutdownhooks.scala
 run/t5590.scala
 run/t3895b.scala
 run/t5974.scala
-run/hashset.scala
 run/t5262.scala
 run/serialize-stream.scala
-run/sysprops.scala
 run/lambda-serialization-gc.scala
 run/t9390.scala
 run/t9390b.scala
 run/t9390c.scala
 run/trait-defaults-super.scala
 run/t2849.scala
-run/t1360.scala
-run/t3199b.scala
-run/t8690.scala
 run/t10488.scala
 run/various-flat-classpath-types.scala
 
-# Uses java.util.Collections
-run/t2250.scala
+# Uses j.l.Class stubs
+run/t12002.scala
 
 # Uses java.math.BigDecimal / BigInteger : but failures not due to them
-run/hashhash.scala
 run/is-valid-num.scala
 
 # Documented semantic difference on String.split(x: Array[Char])
@@ -99,32 +76,17 @@ run/t7880.scala
 # Requires too much memory (on the JVM, extra memory is given to this test)
 run/t11272.scala
 
-# Taking too much time, because JavaScript is not as fast as the JVM
+# Taking too much time >60sec
 
-run/collections.scala
 run/t3989.scala
-run/adding-growing-set.scala
-run/t3242.scala
-run/hashCodeDistribution.scala
-run/t408.scala
-run/t6584.scala
-run/UnrolledBuffer.scala
 run/t6253a.scala
 run/t6253b.scala
 run/t6253c.scala
 run/numbereq.scala
-run/t4658.scala
-
-# Crashes Rhino
-
-run/bridges.scala
-run/patmat-exprs.scala
 
 # Using partest properties
-
 run/tailcalls.scala
 run/t4294.scala
-run/t6331b.scala
 
 # Using IO
 
@@ -132,6 +94,11 @@ run/t6488.scala
 run/t6988.scala
 
 # Object{Output|Input}Streams
+run/defaults-serizaliable-no-forwarders.scala
+run/defaults-serizaliable-with-forwarders.scala
+run/lambda-serialization-meth-ref.scala
+run/red-black-tree-serial
+run/red-black-tree-serial-new
 run/t6935.scala
 run/t8188.scala
 run/t9375.scala
@@ -149,10 +116,6 @@ run/transient-object.scala
 # Using System.getProperties
 
 run/t4426.scala
-
-# Using sys.exit / System.exit
-
-run/verify-ctor.scala
 
 # Using Await
 
@@ -336,7 +299,6 @@ run/t1167.scala
 run/t2577.scala
 run/t2873.scala
 run/t2886.scala
-run/t2251b.scala
 run/t3346j.scala
 run/t3507-new.scala
 run/t3569.scala
@@ -366,7 +328,6 @@ run/t5334_1.scala
 run/t5334_2.scala
 run/t5415.scala
 run/t5418.scala
-run/t5676.scala
 run/t5704.scala
 run/t5710-1.scala
 run/t5710-2.scala
@@ -441,7 +402,6 @@ run/typecheck
 run/t8190.scala
 run/t8192
 run/t8177f.scala
-run/t8199.scala
 run/t7932.scala
 run/t7700.scala
 run/t7570c.scala
@@ -477,10 +437,7 @@ run/mirror_symbolof_x.scala
 run/t8196.scala
 run/t8549b.scala
 run/t8574.scala
-run/t8549.scala
 run/t8637.scala
-run/t8253.scala
-run/t9027.scala
 run/t6622.scala
 run/toolbox_expand_macro.scala
 run/toolbox-varargs
@@ -499,7 +456,13 @@ run/trait_fields_bytecode.scala
 run/trait_fields_volatile.scala
 run/junitForwarders
 run/reflect-java-param-names
+run/t2251b.scala
+run/5676.scala
+run/t8253.scala
+run/t9027.scala
 
+run/reify_classfileann_a.scala
+run/reify_classfileann_b.scala
 run/reify_newimpl_29.scala
 run/reify_magicsymbols.scala
 run/reify_inheritance.scala
@@ -555,14 +518,12 @@ run/reify_nested_inner_refers_to_global.scala
 run/reify_newimpl_02.scala
 run/reify_newimpl_01.scala
 run/reify_fors_newpatmat.scala
-run/reify_classfileann_a.scala
 run/reify_nested_outer_refers_to_local.scala
 run/reify_newimpl_13.scala
 run/reify_closure5a.scala
 run/reify_inner4.scala
 run/reify_sort.scala
 run/reify_ann1a.scala
-run/reify_classfileann_b.scala
 run/reify_closure4a.scala
 run/reify_newimpl_33.scala
 run/reify_sort1.scala
@@ -667,20 +628,6 @@ run/enums.scala
 run/t3719.scala
 run/t8611b.scala
 
-# Exceptions that become JavaScriptException
-
-run/pf-catch.scala
-run/exceptions-2.scala
-run/exceptions-nest.scala
-run/t8601c.scala
-run/t8601b.scala
-run/inlineHandlers.scala
-
-# Expecting unsupported exceptions (e.g. ArrayIndexOutOfBounds)
-run/optimizer-array-load.scala
-run/t6827.scala
-run/t8601.scala
-
 # Expecting exceptions that are linking errors in Scala.js (e.g. NoSuchMethodException)
 run/t10334.scala
 
@@ -694,7 +641,8 @@ run/classfile-format-52.scala
 run/triemap-hash.scala
 
 # Using parallel collections
-
+run/hashset.scala
+run/t8549.scala
 run/t5375.scala
 run/t4894.scala
 run/ctries-new
@@ -840,6 +788,7 @@ run/t9016.scala
 run/repl-completions.scala
 run/t10956.scala
 run/t11564.scala
+run/t11402.scala
 
 # Using Scala Script (partest.ScriptTest)
 
@@ -966,6 +915,7 @@ run/StubErrorTypeDef.scala
 
 # partest.CompilerTest
 run/t8852a.scala
+run/t12062.scala
 
 # partest.ASMConverters
 run/t9403
@@ -1061,6 +1011,7 @@ run/t10889
 run/t3899
 run/t11373
 run/t8928
+run/indy-meth-refs-j
 
 # Using scala-script
 run/t7791-script-linenums.scala
@@ -1088,10 +1039,40 @@ run/t3493.scala
 run/indy-via-macro
 run/indy-via-macro-with-dynamic-args
 
-# Crashes our optimizer because of artificially insane amount of inlining
-run/t10594.scala
+### Bugs
+## Compiler
+run/anyval-box-types.scala
+run/structural.scala
+run/t266.scala
+run/t8601b.scala
+run/t8601d.scala
+run/t10069b.scala
 
-###  Incorrect partests  ###
-# Badly uses constract of Console.print (no flush)
-run/t429.scala
-run/t6102.scala
+## JVM compliance
+run/try-catch-unify.scala
+run/t2755.scala
+run/java-erasure.scala
+
+
+## Fails
+run/t5680.scala
+run/t5914.scala
+
+## Build mode dependent
+run/t6443.scala
+run/t8888.scala
+run/delambdafy-dependent-on-param-subst.scala
+run/lisp.scala
+run/number-parsing.scala
+
+## Check not passing
+run/t4300.scala
+run/t3361.scala
+run/t8017
+run/t8334.scala
+run/t8803.scala
+run/t9697.scala
+run/t10290.scala
+
+## Other
+run/richs.scala
