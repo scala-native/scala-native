@@ -1019,7 +1019,8 @@ lazy val scalaPartestTests: Project = project
     testOptions += {
       val nativeCp = Seq(
         (auxlib / Compile / packageBin).value,
-        (scalalib / Compile / packageBin).value
+        (scalalib / Compile / packageBin).value,
+        (scalaPartestRuntime / Compile / packageBin).value
       ).map(_.absolutePath).mkString(":")
 
       Tests.Argument(s"--nativeClasspath=$nativeCp")
@@ -1033,6 +1034,37 @@ lazy val scalaPartestTests: Project = project
     }
   )
   .dependsOn(scalaPartest % "test", javalib)
+
+lazy val scalaPartestRuntime = project
+  .in(file("scala-partest-runtime"))
+  .enablePlugins(MyScalaNativePlugin)
+  .settings(noPublishSettings)
+  .settings(
+    unmanagedSources in Compile ++= {
+      if (!(shouldPartest in scalaPartest).value) Nil
+      else {
+        val upstreamDir = (fetchScalaSource in scalaPartest).value
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11 | 12)) => Seq.empty[File]
+          case _ =>
+            val testkit = upstreamDir / "src/testkit/scala/tools/testkit"
+            val partest = upstreamDir / "src/partest/scala/tools/partest"
+            Seq(
+              testkit / "AssertUtil.scala",
+              partest / "Util.scala"
+            )
+        }
+      }
+    },
+    unmanagedSourceDirectories in Compile ++= {
+      if (!(shouldPartest in scalaPartest).value) Nil
+      else
+        Seq(
+          (junitRuntime / Compile / scalaSource).value / "org"
+        )
+    }
+  )
+  .dependsOn(nscplugin % "plugin", scalalib)
 
 lazy val scalaPartestJunitTests = project
   .in(file("scala-partest-junit-tests"))
