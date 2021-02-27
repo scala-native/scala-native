@@ -7,7 +7,6 @@ object Rt {
   val Object  = Ref(Global.Top("java.lang.Object"))
   val Class   = Ref(Global.Top("java.lang.Class"))
   val String  = Ref(Global.Top("java.lang.String"))
-  val Type    = StructValue(Seq(Int, Int, Ptr, Ptr))
   val Runtime = Ref(Global.Top("scala.scalanative.runtime.package$"))
 
   val BoxedPtr        = Ref(Global.Top("scala.scalanative.unsafe.Ptr"))
@@ -15,7 +14,7 @@ object Rt {
   val BoxedUnit       = Ref(Global.Top("scala.runtime.BoxedUnit"))
   val BoxedUnitModule = Ref(Global.Top("scala.scalanative.runtime.BoxedUnit$"))
 
-  val GetRawTypeSig    = Sig.Method("getRawType", Seq(Rt.Object, Ptr)).mangled
+  val GetClassSig      = Sig.Method("getClass", Seq(Rt.Class)).mangled
   val JavaEqualsSig    = Sig.Method("equals", Seq(Object, Bool)).mangled
   val JavaHashCodeSig  = Sig.Method("hashCode", Seq(Int)).mangled
   val ScalaEqualsSig   = Sig.Method("scala_==", Seq(Object, Bool)).mangled
@@ -36,9 +35,12 @@ object Rt {
   val FromRawPtrSig = Sig.Method("fromRawPtr", Seq(Ptr, BoxedPtr)).mangled
   val ToRawPtrSig   = Sig.Method("toRawPtr", Seq(BoxedPtr, Ptr)).mangled
 
-  val GetRawTypeTy   = Function(Seq(Runtime, Object), Ptr)
-  val GetRawTypeName = Global.Member(Runtime.name, GetRawTypeSig)
-  val GetRawType     = Val.Global(GetRawTypeName, Ptr)
+  val ClassName             = Class.name
+  val ClassIdName           = ClassName member Sig.Field("id")
+  val ClassTraitIdName      = ClassName member Sig.Field("traitId")
+  val ClassNameName         = ClassName member Sig.Field("name")
+  val ClassSizeName         = ClassName member Sig.Field("size")
+  val ClassIdRangeUntilName = ClassName member Sig.Field("idRangeUntil")
 
   val StringName               = String.name
   val StringValueName          = StringName member Sig.Field("value")
