@@ -22,12 +22,29 @@ die() {
   exit 1
 }
 
+## As a side effect, intentionally sets bash variable "version"
 check_clang_format_version() {
   cmd="$1"
-  [ -e "$(type -P "$cmd")" ] && \
-    version=$("$cmd" --version | cut -d" " -f3)
-    major=$(echo $version | cut -d. -f1)
+
+  if [ ! -e "$(type -P "$cmd")" ]; then
+    version="Unknown"
+    echo "Setting version to UNKNOWN"
+    return 0
+  else
+    # More elegant ways of extracting version exist, such as grep -P perl.
+    # This way has the minimal requirement of standard "grep" which is
+    # highly likely to be on any system actively used for development.  
+    version=$("$cmd" --version \
+      | grep -E -i -o " version [0-9]+.[0-9]+" \
+      | grep -E -i -o "[0-9]+.[0-9]+")
+
+    major=${version%%.*}
+    echo "Debug - major is ${major}"
+    ls -l $CLANG_FORMAT_PATH
+    echo "Debug "
+
     [ $major -eq $CLANG_FORMAT_VERSION ]
+  fi
 }
 
 clang_format=
