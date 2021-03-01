@@ -85,7 +85,8 @@ object Discover {
   private[scalanative] def checkClangVersion(pathToClangBinary: Path): Unit = {
     def versionMajorFull(clang: String): (Int, String) = {
       val versionCommand = s"$clang --version"
-      val versionString = Process(versionCommand)
+      // Pass command as seq of string to handle spaces in path
+      val versionString = Process(Seq(clang, "--version"))
         .lineStream_!(silentLogger())
         .headOption
         .getOrElse {
@@ -133,8 +134,9 @@ object Discover {
    */
   private[scalanative] def discover(binaryName: String,
                                     envPath: String): Path = {
-    val binaryNameOrPath = sys.env.get(envPath).getOrElse(binaryName)
-    val path = Process(s"which $binaryNameOrPath")
+    val binaryNameOrPath = sys.env.getOrElse(envPath, binaryName)
+    val locateCmd        = if (Platform.isWindows) "where" else "which"
+    val path = Process(s"$locateCmd $binaryNameOrPath")
       .lineStream_!(silentLogger())
       .map { p => Paths.get(p) }
       .headOption
