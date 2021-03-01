@@ -34,7 +34,8 @@ private[scalanative] object NativeLib {
   /** Used to find native source files in jar files */
   private val jarSrcRegex: String = {
     val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
-    s"""^${codeDir}${fileSep}(.+)${regexExtensions}$$"""
+    val escapedFileSep  = if (Platform.isWindows) "/" else raw"\\"
+    s"""^$codeDir$escapedFileSep(.+)$regexExtensions$$"""
   }
 
   private def srcPathPattern(path: Path): String =
