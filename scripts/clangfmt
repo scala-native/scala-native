@@ -26,27 +26,19 @@ version=
 
 check_clang_format_version() {
   cmd="$1"
-  # version can be in 3rd or 4th position
-  cv=$("$cmd" --version 2> /dev/null | cut -d" " -f1-4)
-  sel=1
-  for w in $cv; do
-    if [ $sel -eq 0 ]; then
-      version=$w
-      sel=1
-    fi
-    if [ "$w" == "version" ]; then
-      sel=0
-    fi
-  done
-  major=$(echo $version | cut -d. -f1)
+  # version can be in 3rd or 4th position after the word "version"
+  version=$("$cmd" --version \
+    | grep -E -i -o " version [0-9]+.[0-9]+" \
+    | grep -E -i -o "[0-9]+.[0-9]+")
+
+  major=${version%%.*}
   [ $major -eq $CLANG_FORMAT_VERSION ]
 }
 
 clang_format=
 
 if [ -n "${CLANG_FORMAT_PATH:-}" ]; then
-  # original used: -e "$(type -P "$cmd")"
-  if [ ! -x "$(command -v ${CLANG_FORMAT_PATH})" ]; then
+  if [ ! -e "$(type -P "${CLANG_FORMAT_PATH}")" ]; then
     echo "CLANG_FORMAT_PATH='$CLANG_FORMAT_PATH' does not exist or is not executable" >&2
   else
     if check_clang_format_version "$CLANG_FORMAT_PATH"; then
@@ -56,7 +48,7 @@ if [ -n "${CLANG_FORMAT_PATH:-}" ]; then
     fi
   fi
 else
-  if [ ! -x "$(command -v clang-format)" ]; then
+  if [ ! -e "$(type -P clang-format)" ]; then
     echo "clang-format is not installed or not in the PATH." >&2
   else
     check_clang_format_version "clang-format" && \
