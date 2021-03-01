@@ -22,10 +22,13 @@ die() {
   exit 1
 }
 
+# avoid unbound var
+version=
+
 check_clang_format_version() {
   cmd="$1"
   [ -e "$(type -P "$cmd")" ] && \
-    version=$("$cmd" --version | cut -d" " -f3)
+    version=$("$cmd" --version 2> /dev/null | cut -d" " -f3)
     major=$(echo $version | cut -d. -f1)
     [ $major -eq $CLANG_FORMAT_VERSION ]
 }
@@ -33,20 +36,28 @@ check_clang_format_version() {
 clang_format=
 
 if [ -n "${CLANG_FORMAT_PATH:-}" ]; then
-  check_clang_format_version "$CLANG_FORMAT_PATH" || \
-    die "CLANG_FORMAT_PATH must point to version $CLANG_FORMAT_VERSION" \
-        "CLANG_FORMAT_PATH points to $CLANG_FORMAT_PATH"
-  clang_format="$CLANG_FORMAT_PATH"
+  if [ ! -x "$(command -v ${CLANG_FORMAT_PATH})" ]; then
+    echo "CLANG_FORMAT_PATH='$CLANG_FORMAT_PATH' does not exist or is not executable" >&2
+  else
+    if check_clang_format_version "$CLANG_FORMAT_PATH"; then
+      clang_format="$CLANG_FORMAT_PATH"
+    else
+      echo "CLANG_FORMAT_PATH='$CLANG_FORMAT_PATH'" >&2
+    fi
+  fi
 else
-  if [ check_clang_format_version clang-format ]; then
-    clang_format=clang-format
+  if [ ! -x "$(command -v clang-format)" ]; then
+    echo "clang-format is not installed or not in the PATH." >&2
+  else
+    check_clang_format_version "clang-format" && \
+      clang_format=clang-format
   fi
 fi
 
 if [ -z "$clang_format" ]; then
-  die "clang-format version $CLANG_FORMAT_VERSION expected, but version $version found." \
-      "Install LLVM version $CLANG_FORMAT_VERSION and rerun." \
-      "Hint: export CLANG_FORMAT_PATH=/path/to/clang-format"
+  die "clang-format version '$CLANG_FORMAT_VERSION' expected, but version '$version' found." \
+      "Install LLVM version '$CLANG_FORMAT_VERSION' and rerun." \
+      "Hint: export CLANG_FORMAT_PATH='/path/to/clang-format'"
 fi
 
 test_mode=
