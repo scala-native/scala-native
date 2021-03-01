@@ -208,11 +208,13 @@ The build has roughly five groups of sub-projects as follows:
    in this project, but fetched from external sources, e.g.: Scala compiler repository.
    Sources in this project define interface used by Scala Native and tests filters.
 
-    - ``scalaPartestTests (scala-partest-tests)`` (JVM project)
-
     - ``scalaPartest (scala-partest)`` (JVM project, uses Scala Native artifacts)
 
-    - ``scalaJunitTests (scala-junit-tests)`` (Scala Native project)
+		- ``scalaPartestRuntime (scala-partest-runtime)`` (Scala native project)
+
+    - ``scalaPartestTests (scala-partest-tests)`` (JVM project)
+
+    - ``scalaPartestJunitTests (scala-partest-junit-tests)`` (Scala Native project)
 
 7. JUnit plugin, its tests and dependencies. Following sources define JUnit compiler
    for Scala Native and its runtime, as well as compliance tests and internal stubs.
