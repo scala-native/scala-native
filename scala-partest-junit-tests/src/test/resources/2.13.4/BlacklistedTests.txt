@@ -211,3 +211,4 @@ scala/collection/immutable/StreamTest.scala
 scala/collection/immutable/VectorTest.scala
 scala/math/EquivTest.scala
 scala/sys/process/ParserTest.scala
+scala/util/TryTest.scala
