@@ -18,7 +18,7 @@ sealed abstract class ScopeInfo extends Info {
   def isTrait: Boolean = this.isInstanceOf[Trait]
   def is(info: ScopeInfo): Boolean
   def targets(sig: Sig): mutable.Set[Global]
-  def implementors: mutable.Set[Class]
+  def implementors: mutable.SortedSet[Class]
 
   lazy val linearized: Seq[ScopeInfo] = {
     val out = mutable.UnrolledBuffer.empty[ScopeInfo]
@@ -65,7 +65,7 @@ final class Unavailable(val name: Global) extends Info {
 final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])(
     implicit val position: Position)
     extends ScopeInfo {
-  val implementors = mutable.Set.empty[Class]
+  val implementors = mutable.SortedSet.empty[Class]
   val subtraits    = mutable.Set.empty[Trait]
   val responds     = mutable.Map.empty[Sig, Global]
 
@@ -100,7 +100,7 @@ final class Class(val attrs: Attrs,
                   val traits: Seq[Trait],
                   val isModule: Boolean)(implicit val position: Position)
     extends ScopeInfo {
-  val implementors    = mutable.Set[Class](this)
+  val implementors    = mutable.SortedSet[Class](this)
   val subclasses      = mutable.Set.empty[Class]
   val responds        = mutable.Map.empty[Sig, Global]
   val defaultResponds = mutable.Map.empty[Sig, Global]
@@ -174,6 +174,13 @@ final class Class(val attrs: Attrs,
           false
       }
     }
+  }
+}
+
+object Class {
+  implicit val classOrdering: Ordering[Class] = new Ordering[Class] {
+    override def compare(x: Class, y: Class): Int =
+      Global.globalOrdering.compare(x.name, y.name)
   }
 }
 

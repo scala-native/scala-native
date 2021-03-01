@@ -34,7 +34,9 @@ trait PolyInline { self: Interflow =>
         Seq.empty
     }
 
-    res.sortBy(_._1.name)
+    // the only case when result won't be empty or one element seq is reading from `scop.implementors`
+    // scop.implementors are prestorted by the same way => I don't need sort here.
+    res
   }
 
   def shallPolyInline(op: Op.Method, args: Seq[Val])(
