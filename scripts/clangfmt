@@ -10,7 +10,6 @@
 # Set CLANG_FORMAT_PATH to configure path to clang-format.
 
 set -euo pipefail
-IFS=$'\n\t'
 
 # The required version of clang-format (matches minimum clang version) for CI
 CLANG_FORMAT_VERSION=6
@@ -22,31 +21,45 @@ die() {
   exit 1
 }
 
+# avoid unbound var
+version=
+
 check_clang_format_version() {
   cmd="$1"
-  [ -e "$(type -P "$cmd")" ] && \
-    version=$("$cmd" --version | cut -d" " -f3)
-    major=$(echo $version | cut -d. -f1)
-    [ $major -eq $CLANG_FORMAT_VERSION ]
+  # version can be in 3rd or 4th position after the word "version"
+  version=$("$cmd" --version \
+    | grep -E -i -o " version [0-9]+.[0-9]+" \
+    | grep -E -i -o "[0-9]+.[0-9]+")
+
+  major=${version%%.*}
+  [ $major -eq $CLANG_FORMAT_VERSION ]
 }
 
 clang_format=
 
 if [ -n "${CLANG_FORMAT_PATH:-}" ]; then
-  check_clang_format_version "$CLANG_FORMAT_PATH" || \
-    die "CLANG_FORMAT_PATH must point to version $CLANG_FORMAT_VERSION" \
-        "CLANG_FORMAT_PATH points to $CLANG_FORMAT_PATH"
-  clang_format="$CLANG_FORMAT_PATH"
+  if [ ! -e "$(type -P "${CLANG_FORMAT_PATH}")" ]; then
+    echo "CLANG_FORMAT_PATH='$CLANG_FORMAT_PATH' does not exist or is not executable" >&2
+  else
+    if check_clang_format_version "$CLANG_FORMAT_PATH"; then
+      clang_format="$CLANG_FORMAT_PATH"
+    else
+      echo "CLANG_FORMAT_PATH='$CLANG_FORMAT_PATH'" >&2
+    fi
+  fi
 else
-  if check_clang_format_version clang-format; then
-    clang_format=clang-format
+  if [ ! -e "$(type -P clang-format)" ]; then
+    echo "clang-format is not installed or not in the PATH." >&2
+  else
+    check_clang_format_version "clang-format" && \
+      clang_format=clang-format
   fi
 fi
 
 if [ -z "$clang_format" ]; then
-  die "clang-format version $CLANG_FORMAT_VERSION expected, but version $version found." \
-      "Install LLVM version $CLANG_FORMAT_VERSION and rerun." \
-      "Hint: export CLANG_FORMAT_PATH=/path/to/clang-format"
+  die "clang-format version '$CLANG_FORMAT_VERSION' expected, but version '$version' found." \
+      "Install LLVM version '$CLANG_FORMAT_VERSION' and rerun." \
+      "Hint: export CLANG_FORMAT_PATH='/path/to/clang-format'"
 fi
 
 test_mode=
