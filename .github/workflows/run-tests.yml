@@ -11,7 +11,7 @@ jobs:
   # Test tools, if any of them fails, further tests will not start.
   tests-tools:
     name: Compile & test tools
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
@@ -52,7 +52,7 @@ jobs:
   # Currently only Linux x64 is tested
   build-image:
     name: Build image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     outputs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
@@ -108,7 +108,7 @@ jobs:
   #It can be extended to test against different OS and Arch settings
   test-runtime:
     name: Test runtime
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [tests-tools, build-image]
     strategy:
       fail-fast: false
@@ -165,7 +165,7 @@ jobs:
   # Main difference is disabled optimization and fixed Immix GC
   test-runtime-no-opt:
     name: Test runtime no-opt
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [tests-tools, build-image]
     strategy:
       fail-fast: false
@@ -209,7 +209,7 @@ jobs:
   # Scripted tests take a long time to run, ~30 minutes, and should be limited and absolute minimum.
   test-scripted:
     name: Test scripted
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [tests-tools, build-image]
     strategy:
       fail-fast: false

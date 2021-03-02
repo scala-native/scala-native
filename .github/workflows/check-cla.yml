@@ -2,7 +2,7 @@ name: Check CLA
 on: [pull_request]
 jobs:
   check-cla:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
       - run: ./scripts/check-cla.sh
