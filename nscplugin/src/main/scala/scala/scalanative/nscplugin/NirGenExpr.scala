@@ -264,6 +264,35 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       def genIfsChain(): Val = {
+        /* Default label needs to be generated before any others and then added to
+         * current MethodEnv. It's label might be referenced in any of them in
+         * case of match with guards, eg.:
+         *
+         * "Hello, World!" match {
+         *  case "Hello" if cond1 => "foo"
+         *  case "World" if cond2 => "bar"
+         *  case _ if cond3 => "bar-baz"
+         *  case _ => "baz-bar"
+         * }
+         *
+         * might be translated to something like:
+         *
+         * val x1 = "Hello, World!"
+         * if(x1 == "Hello"){ if(cond1) "foo" else default4() }
+         * else if (x1 == "World"){ if(cond2) "bar" else default4() }
+         * else default4()
+         *
+         * def default4() = if(cond3) "bar-baz" else "baz-bar
+         *
+         * We need to make sure to only generate LabelDef at this stage.
+         * Generating other ASTs and mutating state might lead to unexpected
+         * runtime errors.
+         */
+        val optDefaultLabel = defaultp match {
+          case label: LabelDef => Some(genLabelDef(label))
+          case _               => None
+        }
+
         def loop(cases: List[Case]): Val = {
           cases match {
             case (_, caze, body, p) :: elsep =>
@@ -279,7 +308,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                         thenp = ContTree(() => genExpr(body)),
                         elsep = ContTree(() => loop(elsep)))
 
-            case Nil => genExpr(defaultp)
+            case Nil => optDefaultLabel.getOrElse(genExpr(defaultp))
           }
         }
         loop(caseps.toList)
