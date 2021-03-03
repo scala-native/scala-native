@@ -264,7 +264,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       def genIfsChain(): Val = {
-        /* Default needs to be generated before any others and then added to
+        /* Default label needs to be generated before any others and then added to
          * current MethodEnv. It's label might be referenced in any of them in
          * case of match with guards, eg.:
          *
@@ -283,13 +283,21 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
          * else default4()
          *
          * def default4() = if(cond3) "bar-baz" else "baz-bar
+         *
+         * We need to make sure to only generate LabelDef at this stage.
+         * Generating other ASTs and mutating state might lead to unexpected
+         * runtime errors.
          */
-        val defaultExpr = genExpr(defaultp)
+        val optDefaultLabel = defaultp match {
+          case label: LabelDef => Some(genLabelDef(label))
+          case _               => None
+        }
 
         def loop(cases: List[Case]): Val = {
           cases match {
             case (_, caze, body, p) :: elsep =>
               implicit val pos: nir.Position = p
+
               val cond =
                 buf.genClassEquality(leftp = ValTree(scrut),
                                      rightp = ValTree(caze),
@@ -300,7 +308,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                         thenp = ContTree(() => genExpr(body)),
                         elsep = ContTree(() => loop(elsep)))
 
-            case Nil => defaultExpr
+            case Nil => optDefaultLabel.getOrElse(genExpr(defaultp))
           }
         }
         loop(caseps.toList)
