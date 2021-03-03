@@ -51,10 +51,11 @@ class DateTest {
   }
 
   @Test def testToString(): Unit = {
-    val result = now.toString
-    // regex should match: "Fri Mar 31 14:47:44 EDT 2017"
+    val result = new Date().toString // actual time this test is run.
+    // regex should match, but not be: "Fri Mar 31 14:47:44 EDT 2020"
+    // Two decade year range in regex is coarse sanity check.
     val expected = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
-      "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 20[1-3]\\d"
+      "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 20[2-3]\\d"
 
     assertTrue(s"""Result "${result}" does not match regex "${expected}"""",
                result.matches(expected))
