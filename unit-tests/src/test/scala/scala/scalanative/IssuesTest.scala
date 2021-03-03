@@ -432,16 +432,16 @@ class IssuesTest {
     val args = List.empty[String]
     // In issue 2187 match with guards would not compile
     val res = "Hello, World!" match {
-      case "Hello" if args.isEmpty => "foo"
+      case "Hello" if args.isEmpty  => "foo"
       case "Hello" if args.nonEmpty => "foo2"
       // With next line it compiled because it was not referencing default case
       // case "Hello" => "foo3"
-      case "World" if args.nonEmpty => "bar"
+      case "World" if args.nonEmpty   => "bar"
       case "World" if args.length > 3 => "bar2"
-      case "World" if args.isEmpty => "bar3"
-      case "World" => "bar4"
-      case _ if args != null => "bar-baz"
-      case _ => "baz-bar"
+      case "World" if args.isEmpty    => "bar3"
+      case "World"                    => "bar4"
+      case _ if args != null          => "bar-baz"
+      case _                          => "baz-bar"
     }
     assertNotNull(res)
   }
