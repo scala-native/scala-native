@@ -264,7 +264,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       def genIfsChain(): Val = {
-        /* Default needs to be generated before any others and though added to
+        /* Default needs to be generated before any others and then added to
          * current MethodEnv. It's label might be referenced in any of them in
          * case of match with guards, eg.:
          *
