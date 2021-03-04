@@ -44,7 +44,7 @@ class Date(var milliseconds: Long)
 
   override def toString(): String = {
     val seconds = milliseconds / 1000L
-    val default = s"Date($milliseconds)"
+    def default = s"Date($milliseconds)"
     Date.secondsToString(seconds, default)
   }
 }
@@ -57,8 +57,8 @@ object Date {
 
   tzset()
 
-  private def secondsToString(seconds: Long, default: String): String = Zone {
-    implicit z =>
+  private def secondsToString(seconds: Long, default: => String): String =
+    Zone { implicit z =>
       val ttPtr = alloc[time_t]
       !ttPtr = seconds
 
@@ -76,7 +76,7 @@ object Date {
 
         if (n == 0) default else fromCString(buf)
       }
-  }
+    }
 
   def from(instant: Instant): Date = {
     try {
