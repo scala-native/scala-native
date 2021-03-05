@@ -65,7 +65,7 @@ C Header          Scala Native Module
 `sys/ipc.h`_      N/A
 `sys/mman.h`_     N/A
 `sys/msg.h`_      N/A
-`sys/resource.h`_ N/A
+`sys/resource.h`_ scala.scalanative.posix.sys.resource_
 `sys/select.h`_   scala.scalanative.posix.sys.select_
 `sys/sem.h`_      N/A
 `sys/shm.h`_      N/A
@@ -200,6 +200,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.regex: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/regex.scala
 .. _scala.scalanative.posix.sched: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sched.scala
 .. _scala.scalanative.posix.stdlib: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/stdlib.scala
+.. _scala.scalanative.posix.sys.resource: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/resource.scala
 .. _scala.scalanative.posix.sys.select: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/select.scala
 .. _scala.scalanative.posix.sys.socket: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/socket.scala
 .. _scala.scalanative.posix.sys.stat: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/stat.scala
