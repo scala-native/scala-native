@@ -1,15 +1,14 @@
 package java.util
 
-// Ported from Scala.js, commit: 00915e8, dated: 2020-09-29
+// Ported from Scala.js, commit: 0383e9f, dated: 2021-03-07
 
 import java.io._
 import java.lang.{
   Double => JDouble,
-  Float => JFloat,
   Boolean => JBoolean,
   StringBuilder => JStringBuilder
 }
-import java.math.{BigDecimal, BigInteger, MathContext, RoundingMode}
+import java.math.{BigDecimal, BigInteger}
 import java.nio.CharBuffer
 import java.nio.charset.Charset
 import scala.annotation.{switch, tailrec}
@@ -20,7 +19,6 @@ final class Formatter private (private var dest: Appendable,
     with Flushable {
 
   import Formatter._
-  import Defaults._
   import Flags._
 
   if (dest == null) {
@@ -155,8 +153,15 @@ final class Formatter private (private var dest: Appendable,
     var lastImplicitArgIndex: Int = 0
     var lastArgIndex: Int         = 0 // required for < flag
     while (formatBuffer.hasRemaining()) {
+      /* Parse a format specifier
+       *
+       * 1. DuplicateFormatFlagsException (in nextFormatToken())
+       */
+
       val token      = parser.nextFormatToken()
       val flags      = token.getFlags()
+      val width      = token.width
+      val precision  = token.precision
       val conversion = token.conversion
       val plainText  = token.plainText
 
@@ -167,13 +172,84 @@ final class Formatter private (private var dest: Appendable,
       }
 
       sendToDest(plainText.substring(0, token.formatSpecifierIndex - 1))
-      // Process one '%'
-      val arg = if (!token.requireArgument()) {
-        /* No argument. Make sure not to bump `lastImplicitArgIndex` nor to
-         * affect `lastArgIndex`.
-         */
-        null
+
+      // For error reporting
+      def fullFormatSpecifier: String =
+        plainText.substring(token.formatSpecifierIndex - 1)
+
+      /* At this point, we need to branch off for 'n', because it has a
+       * completely different error reporting spec. In particular, it must
+       * throw an IllegalFormatFlagsException if any flag is specified,
+       * although the regular mechanism would throw a
+       * FormatFlagsConversionMismatchException.
+       *
+       * It is also the only conversion that throws
+       * IllegalFormatWidthException, so we use this forced special path to
+       * also take care of that one.
+       *
+       * We also treat '%' specially. Although its spec suggests that its
+       * validation could be done in the generic way, experimentation suggests
+       * that it behaves differently. Anyway, once 'n' has its special path,
+       * '%' becomes the only one that does not take an argument, and so it
+       * would need a special path later. So we handle it here and get it out
+       * of the way. This further allows the generic path to only deal with
+       * ASCII letters, which is convenient.
+       */
+
+      if (conversion == 'n') {
+        if (precision != -1)
+          throwIllegalFormatPrecisionException(precision)
+        if (width != -1)
+          throwIllegalFormatWidthException(width)
+        if (flags.bits != 0)
+          throwIllegalFormatFlagsException(flags)
+
+        sendToDest(System.lineSeparator())
+      } else if (conversion == '%') {
+        if (precision != -1)
+          throwIllegalFormatPrecisionException(precision)
+        checkIllegalFormatFlags(flags)
+        if (flags.leftAlign && width == -1)
+          throwMissingFormatWidthException(fullFormatSpecifier)
+        checkFlagsConversionMismatch('%', flags, ~LeftAlign)
+
+        padAndSendToDestNoZeroPad(flags, width, "%")
       } else {
+        // 2. UnknownFormatConversionException
+
+        // Because of how we parse, we know that `conversion` is an ASCII letter
+        val conversionLower =
+          if (flags.upperCase) (conversion + ('a' - 'A')).toChar
+          else conversion
+        val illegalFlags = ConversionsIllegalFlags(conversionLower - 'a')
+        if (illegalFlags == -1 || (flags.bits & UpperCase & illegalFlags) != 0)
+          throwUnknownFormatConversionException(conversion)
+
+        // 3. MissingFormatWidthException
+
+        if (flags.hasAnyOf(LeftAlign | ZeroPad) && width == -1)
+          throwMissingFormatWidthException(fullFormatSpecifier)
+
+        // 4. IllegalFormatFlagsException
+
+        checkIllegalFormatFlags(flags)
+
+        // 5. IllegalFormatPrecisionException
+
+        if (precision != -1 && (illegalFlags & Precision) != 0)
+          throwIllegalFormatPrecisionException(precision)
+
+        // 6. FormatFlagsConversionMismatchException
+
+        checkFlagsConversionMismatch(conversionLower, flags, illegalFlags)
+
+        /* Finally, get the argument and format it.
+         *
+         * 7. MissingFormatArgumentException | IllegalFormatConversionException | IllegalFormatCodePointException
+         *
+         * The first one is handled here, while we extract the argument.
+         * The other two are handled in formatArg().
+         */
 
         val argIndex = if (flags.useLastIndex) {
           // Explicitly use the last index
@@ -193,102 +269,43 @@ final class Formatter private (private var dest: Appendable,
           }
         }
 
-        if (argIndex <= 0 || argIndex > args.length) {
-          throw new MissingFormatArgumentException(plainText)
-        }
-
-        if (token.width < 0 &&
-            (isNumericConversion(conversion) && flags.zeroPad ||
-            flags.leftAlign)) {
-          // Dropping head for JVM compliance
-          throw new MissingFormatWidthException(
-            plainText.substring(token.formatSpecifierIndex - 1))
-        }
+        if (argIndex <= 0 || argIndex > args.length)
+          throwMissingFormatArgumentException(fullFormatSpecifier)
 
         lastArgIndex = argIndex
-        args(argIndex - 1)
-      }
+        val arg = args(argIndex - 1)
 
-      formatArg(localeInfo,
-                arg,
-                conversion,
-                flags,
-                token.width,
-                token.precision)
+        // Format the arg. We handle `null` in a generic way, except for 'b'
+
+        if (arg == null && conversionLower != 'b' && conversionLower != 's') {
+          formatNonNumericString(RootLocaleInfo,
+                                 flags,
+                                 width,
+                                 precision,
+                                 "null")
+        } else {
+          formatArg(localeInfo, arg, conversionLower, flags, width, precision)
+        }
+      }
     }
+
     this
+
     // scalastyle:on return
   }
 
-  private def isNumericConversion(conversion: Char) =
-    !"bBhHsScC%n".contains(conversion)
-
   private def formatArg(localeInfo: LocaleInfo,
                         arg: Any,
-                        conversion: Char,
+                        conversionLower: Char,
                         flags: Flags,
                         width: Int,
                         precision: Int): Unit = {
-    @inline def rejectPrecision(): Unit = {
-      if (precision >= 0)
-        throw new IllegalFormatPrecisionException(precision)
-    }
 
-    def formatNullOrThrowIllegalFormatConversion(): Unit = {
-      if (arg == null)
-        formatNonNumericString(localeInfo, flags, width, precision, "null")
-      else {
-        throw new IllegalFormatConversionException(conversion, arg.getClass)
-      }
-    }
+    @inline def illegalFormatConversion(): Nothing =
+      throwIllegalFormatConversionException(conversionLower, arg)
 
-    @inline def precisionWithDefault =
-      if (precision >= 0) precision
-      else 6
-
-    @inline def efgCommon(notation: (Number, Int, Boolean) => String): Unit = {
-      def formatArg(arg: Number) = {
-        /* The alternative format # of 'e', 'f' and 'g' is to force a
-         * decimal separator.
-         */
-        val forceDecimalSep = flags.altFormat
-        formatNumericString(
-          localeInfo,
-          flags,
-          width,
-          notation(arg, precisionWithDefault, forceDecimalSep))
-      }
-
-      arg match {
-        case arg: Float =>
-          if (JFloat.isNaN(arg) || JFloat.isInfinite(arg)) {
-            formatNaNOrInfinite(flags, width, arg)
-          } else formatArg(arg)
-
-        case arg: Double =>
-          if (JDouble.isNaN(arg) || JDouble.isInfinite(arg)) {
-            formatNaNOrInfinite(flags, width, arg)
-          } else formatArg(arg)
-
-        case arg: BigDecimal =>
-          formatArg(arg)
-
-        case _ =>
-          formatNullOrThrowIllegalFormatConversion()
-      }
-    }
-
-    // On JVM list of invalid flags for 'o' and 'x' conversions is different for BigInteger and primitive types
-    // In case of null we won't be able correctly distinguish underlying type, so we're using wider set of allowed flags.
-    def invalidFlagsForOctalAndHex(arg: Any): Int =
-      if (arg == null || arg.isInstanceOf[BigInteger]) UseGroupingSeps
-      else InvalidFlagsForOctalAndHex
-
-    (conversion: @switch) match {
-      case 'b' | 'B' =>
-        validateFlags(flags,
-                      conversion,
-                      invalidFlags = NumericOnlyFlags | AltFormat)
+    (conversionLower: @switch) match {
+      case 'b' =>
         val str = arg match {
           case arg: JBoolean => arg.toString
           case null          => "false"
@@ -296,19 +313,13 @@ final class Formatter private (private var dest: Appendable,
         }
         formatNonNumericString(RootLocaleInfo, flags, width, precision, str)
 
-      case 'h' | 'H' =>
-        validateFlags(flags,
-                      conversion,
-                      invalidFlags = NumericOnlyFlags | AltFormat)
-        val str =
-          if (arg == null) "null"
-          else Integer.toHexString(arg.hashCode)
+      case 'h' =>
+        val str = Integer.toHexString(arg.hashCode)
         formatNonNumericString(RootLocaleInfo, flags, width, precision, str)
 
-      case 's' | 'S' =>
+      case 's' =>
         arg match {
           case formattable: Formattable =>
-            validateFlags(flags, conversion, invalidFlags = NumericOnlyFlags)
             val formattableFlags = {
               (if (flags.leftAlign) FormattableFlags.LEFT_JUSTIFY else 0) |
                 (if (flags.altFormat) FormattableFlags.ALTERNATE else 0) |
@@ -317,43 +328,34 @@ final class Formatter private (private var dest: Appendable,
             formattable.formatTo(this, formattableFlags, width, precision)
 
           case _ =>
-            validateFlags(flags,
-                          conversion,
-                          invalidFlags = NumericOnlyFlags | AltFormat)
+            /* The Formattable case accepts AltFormat, therefore it is not
+             * present in the generic `ConversionsIllegalFlags` table. However,
+             * it is illegal for any other value, so we must check it now.
+             */
+            checkFlagsConversionMismatch(conversionLower, flags, AltFormat)
+
             val str = String.valueOf(arg)
             formatNonNumericString(localeInfo, flags, width, precision, str)
         }
 
-      case 'c' | 'C' =>
-        validateFlags(flags,
-                      conversion,
-                      invalidFlags = NumericOnlyFlags | AltFormat)
-        rejectPrecision()
-
+      case 'c' =>
         def checkValidCodePoint(arg: Int): Unit = {
           if (!Character.isValidCodePoint(arg))
-            throw new IllegalFormatCodePointException(arg)
+            throwIllegalFormatCodePointException(arg)
         }
 
-        def formatCharString(charString: String) =
-          formatNonNumericString(localeInfo, flags, width, -1, charString)
-
-        arg match {
+        val str = arg match {
+          case arg: Char =>
+            arg.toString()
           case arg: Byte =>
             checkValidCodePoint(arg)
-            formatCharString(arg.toChar.toString)
-
-          case arg: Char =>
-            checkValidCodePoint(arg)
-            formatCharString(arg.toString)
-
+            arg.toChar.toString()
           case arg: Short =>
             checkValidCodePoint(arg)
-            formatCharString(arg.toChar.toString)
-
+            arg.toChar.toString()
           case arg: Int =>
             checkValidCodePoint(arg)
-            val str = if (arg < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
+            if (arg < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
               new String(Array(arg.toChar))
             } else {
               new String(
@@ -362,217 +364,152 @@ final class Formatter private (private var dest: Appendable,
                   (0xdc00 | (arg & 0x3ff)).toChar
                 ))
             }
-            formatCharString(str)
-
-          case _ => formatNullOrThrowIllegalFormatConversion()
+          case _ =>
+            illegalFormatConversion()
         }
+        formatNonNumericString(localeInfo, flags, width, -1, str)
 
       case 'd' =>
-        validateFlags(flags, conversion, invalidFlags = AltFormat)
-        rejectPrecision()
-        arg match {
-          case _: Byte | _: Short | _: Char | _: Int | _: Long |
-              _: BigInteger =>
-            formatNumericString(localeInfo, flags, width, arg.toString())
-          case _ =>
-            formatNullOrThrowIllegalFormatConversion()
+        val str = arg match {
+          case arg: Byte       => arg.toString()
+          case arg: Short      => arg.toString()
+          case arg: Int        => arg.toString()
+          case arg: Long       => arg.toString()
+          case arg: BigInteger => arg.toString()
+          case _               => illegalFormatConversion()
         }
+        formatNumericString(localeInfo, flags, width, str)
 
-      case 'o' =>
-        // Octal formatting is not localized
-        val prefix =
-          if (flags.altFormat) zeroDigitString
-          else ""
+      case 'o' | 'x' =>
+        // Octal/hex formatting is not localized
 
-        def padAndSendWithOctalInt(arg: Int): Unit = padAndSendToDest(
-          RootLocaleInfo,
-          flags,
-          width,
-          prefix,
-          java.lang.Integer.toOctalString(arg)
-        )
-
-        arg match {
-          case arg: Byte  => padAndSendWithOctalInt(arg & 0xFF)
-          case arg: Short => padAndSendWithOctalInt(arg & 0xFFFF)
-          case arg: Int   => padAndSendWithOctalInt(arg)
-          case arg: Long =>
-            padAndSendToDest(RootLocaleInfo,
-                             flags,
-                             width,
-                             prefix,
-                             java.lang.Long.toOctalString(arg))
-          case arg: BigInteger =>
-            formatNumericString(RootLocaleInfo,
-                                flags,
-                                width,
-                                arg.toString(8),
-                                prefix)
-          case _ =>
-            rejectPrecision() // used here to respect order of throwing exceptions in the JVM
-            formatNullOrThrowIllegalFormatConversion()
-        }
-
-        validateFlags(flags, conversion, invalidFlagsForOctalAndHex(arg))
-        rejectPrecision()
-
-      case 'x' | 'X' =>
-        // Hex formatting is not localized
-        rejectPrecision()
-
+        val isOctal = conversionLower == 'o'
         val prefix = {
           if (!flags.altFormat) ""
+          else if (isOctal) "0"
           else if (flags.upperCase) "0X"
           else "0x"
         }
 
-        def padAndSendWithHexInt(arg: Int): Unit = padAndSendToDest(
-          RootLocaleInfo,
-          flags,
-          width,
-          prefix,
-          applyNumberUpperCase(flags, java.lang.Integer.toHexString(arg))
-        )
-
         arg match {
-          case arg: Byte  => padAndSendWithHexInt(arg & 0xFF)
-          case arg: Short => padAndSendWithHexInt(arg & 0xFFFF)
-          case arg: Int   => padAndSendWithHexInt(arg)
-          case arg: Long =>
-            padAndSendToDest(
-              RootLocaleInfo,
-              flags,
-              width,
-              prefix,
-              applyNumberUpperCase(flags, java.lang.Long.toHexString(arg)))
           case arg: BigInteger =>
+            val radix = if (isOctal) 8 else 16
             formatNumericString(RootLocaleInfo,
                                 flags,
                                 width,
-                                arg.toString(16),
+                                arg.toString(radix),
                                 prefix)
+
           case _ =>
-            formatNullOrThrowIllegalFormatConversion()
-        }
+            def intToOctalOrHexString(arg: Int): String =
+              if (isOctal) java.lang.Integer.toOctalString(arg)
+              else java.lang.Integer.toHexString(arg)
 
-        validateFlags(flags, conversion, invalidFlagsForOctalAndHex(arg))
-
-      case 'a' | 'A' =>
-        validateFlags(flags,
-                      conversion,
-                      invalidFlags = NegativeParen | UseGroupingSeps)
-
-        def formatHex(hex: String) = {
-          val formatedHex =
-            if (precision < 0) hex
-            else {
-              raw"\.(.*)p".r.replaceSomeIn(
-                hex,
-                res => {
-                  val prev            = res.group(1)
-                  val actualPrecision = precision.max(1)
-                  val diff            = actualPrecision - prev.length
-                  if (diff == 0) None
-                  else {
-                    val replacement =
-                      if (diff > 0) prev + (zeroDigitString * diff)
-                      else prev.take(actualPrecision)
-
-                    Some(raw"\.${replacement}p")
-                  }
-                }
-              )
+            val str = arg match {
+              case arg: Byte =>
+                intToOctalOrHexString(arg & 0xff)
+              case arg: Short =>
+                intToOctalOrHexString(arg & 0xffff)
+              case arg: Int =>
+                intToOctalOrHexString(arg)
+              case arg: Long =>
+                if (isOctal) java.lang.Long.toOctalString(arg)
+                else java.lang.Long.toHexString(arg)
+              case _ =>
+                illegalFormatConversion()
             }
 
-          formatNumericString(RootLocaleInfo,
-                              flags,
-                              width,
-                              applyNumberUpperCase(flags, formatedHex))
+            /* The Int and Long conversions have extra illegal flags, which are
+             * not in the `ConversionsIllegalFlags` table because they are
+             * legal for BigIntegers. We must check them now.
+             */
+            checkFlagsConversionMismatch(
+              conversionLower,
+              flags,
+              PositivePlus | PositiveSpace | NegativeParen)
+
+            padAndSendToDest(RootLocaleInfo,
+                             flags,
+                             width,
+                             prefix,
+                             applyNumberUpperCase(flags, str))
+        }
+
+      case 'e' | 'f' | 'g' =>
+        def formatDecimal(x: Decimal): Unit = {
+          /* The alternative format # of 'e', 'f' and 'g' is to force a
+           * decimal separator.
+           */
+          val forceDecimalSep = flags.altFormat
+          val actualPrecision =
+            if (precision >= 0) precision
+            else 6
+
+          val notation = conversionLower match {
+            case 'e' =>
+              computerizedScientificNotation(x,
+                                             digitsAfterDot = actualPrecision,
+                                             forceDecimalSep)
+            case 'f' =>
+              decimalNotation(x, scale = actualPrecision, forceDecimalSep)
+            case _ =>
+              generalScientificNotation(x,
+                                        precision = actualPrecision,
+                                        forceDecimalSep)
+          }
+          formatNumericString(localeInfo, flags, width, notation)
+        }
+
+        def formatDouble(arg: Double): Unit = {
+          if (JDouble.isNaN(arg) || JDouble.isInfinite(arg))
+            formatNaNOrInfinite(flags, width, arg)
+          else
+            formatDecimal(numberToDecimal(arg))
         }
 
         arg match {
-          case f: Float =>
-            if (JFloat.isNaN(f) || JFloat.isInfinite(f)) {
-              formatNaNOrInfinite(flags, width, f)
-            } else formatHex(JFloat.toHexString(f))
-          case d: Double =>
-            if (JDouble.isNaN(d) || JDouble.isInfinite(d)) {
-              formatNaNOrInfinite(flags, width, d)
-            } else formatHex(JDouble.toHexString(d))
+          case arg: Float =>
+            formatDouble(arg.toDouble)
+          case arg: Double =>
+            formatDouble(arg)
+          case arg: BigDecimal =>
+            formatDecimal(bigDecimalToDecimal(arg))
           case _ =>
-            formatNullOrThrowIllegalFormatConversion()
+            illegalFormatConversion()
         }
 
-      case 'e' | 'E' =>
-        validateFlags(flags, conversion, invalidFlags = UseGroupingSeps)
-        efgCommon(computerizedScientificNotation _)
+      case 'a' =>
+        // Floating point hex formatting is not localized
+        arg match {
+          case arg: Float =>
+            formatHexFloatingPoint(flags, width, precision, arg.toDouble)
+          case arg: Double =>
+            formatHexFloatingPoint(flags, width, precision, arg)
+          case _ =>
+            illegalFormatConversion()
+        }
 
-      case 'g' | 'G' =>
-        validateFlags(flags, conversion, invalidFlags = AltFormat)
-        efgCommon(generalScientificNotation _)
-
-      case 'f' =>
-        validateFlags(flags, conversion, invalidFlags = 0)
-        efgCommon(decimalNotation _)
-
-      case '%' =>
-        validateFlagsForPercentAndNewline(flags,
-                                          conversion,
-                                          invalidFlags =
-                                            AllWrittenFlags & ~LeftAlign)
-        rejectPrecision()
-        if (flags.leftAlign && width < 0)
-          throw new MissingFormatWidthException("%-%")
-        padAndSendToDestNoZeroPad(flags, width, "%")
-
-      case 'n' =>
-        rejectPrecision()
-        if (width >= 0)
-          throw new IllegalFormatWidthException(width)
-        validateFlagsForPercentAndNewline(flags,
-                                          conversion,
-                                          invalidFlags = AllWrittenFlags)
-        sendToDest(lineSeparatorString)
-
-      // todo case 't' | 'T' => date/time
       case _ =>
-        throw new UnknownFormatConversionException(conversion.toString)
+        throw new AssertionError(
+          "Unknown conversion '" + conversionLower + "' was not rejected earlier")
     }
   }
 
-  @inline
-  private def validateFlags(flags: Flags,
-                            conversion: Char,
-                            invalidFlags: Int): Unit = {
-    @noinline def flagsConversionMismatch(): Nothing = {
-      throw new FormatFlagsConversionMismatchException(
-        flagsToString(new Flags(flags.bits & invalidFlags)),
-        conversion)
+  @inline private def checkIllegalFormatFlags(flags: Flags): Unit = {
+    if (flags.hasAllOf(LeftAlign | ZeroPad) ||
+        flags.hasAllOf(PositivePlus | PositiveSpace)) {
+      throwIllegalFormatFlagsException(flags)
     }
-    @noinline def illegalFlags(): Nothing =
-      throw new IllegalFormatFlagsException(flagsToString(flags))
-
-    val BadCombo1 = LeftAlign | ZeroPad
-    val BadCombo2 = PositivePlus | PositiveSpace
-
-    if (((flags.bits & BadCombo1) == BadCombo1) ||
-        (flags.bits & BadCombo2) == BadCombo2) {
-      illegalFlags()
-    }
-
-    if ((flags.bits & invalidFlags) != 0)
-      flagsConversionMismatch()
   }
 
-  @inline
-  private def validateFlagsForPercentAndNewline(flags: Flags,
-                                                conversion: Char,
-                                                invalidFlags: Int): Unit = {
-    @noinline def illegalFlags(): Nothing =
-      throw new IllegalFormatFlagsException(flagsToString(flags))
-
-    if ((flags.bits & invalidFlags) != 0)
-      illegalFlags()
+  @inline private def checkFlagsConversionMismatch(conversionLower: Char,
+                                                   flags: Flags,
+                                                   illegalFlags: Int): Unit = {
+    if (flags.hasAnyOf(illegalFlags)) {
+      throwFormatFlagsConversionMismatchException(conversionLower,
+                                                  flags,
+                                                  illegalFlags)
+    }
   }
 
   /* Should in theory be a method of `Flags`. See the comment on that class
@@ -590,91 +527,253 @@ final class Formatter private (private var dest: Appendable,
   }
 
   private def computerizedScientificNotation(
-      num: Number,
-      precision: Int,
+      x: Decimal,
+      digitsAfterDot: Int,
       forceDecimalSep: Boolean): String = {
 
-    val str = NumberFormatting
-      .formatScientific(num, precision)
-      .replace("E", "e+")
-      .replace("e+-", "e-")
+    val rounded = x.round(precision = 1 + digitsAfterDot)
 
-    // Finally, force the decimal separator, if requested
-    if (!forceDecimalSep || str.indexOf(decimalSeparator) >= 0) {
-      str
-    } else {
-      val pos = str.indexOf("e")
-      str.substring(0, pos) + decimalSeparator + str.substring(pos)
+    // Worst case: -d.<digitsAfterPos>e+2147483647
+    val builder = new JStringBuilder(15 + digitsAfterDot)
+
+    // Sign
+    if (rounded.negative)
+      builder.append('-')
+
+    val intStr               = rounded.unscaledValue
+    val dotPos               = 1
+    val fractionalDigitCount = intStr.length() - dotPos
+    val missingZeros         = digitsAfterDot - fractionalDigitCount
+
+    // Significand
+    builder.append(intStr, 0, dotPos)
+    if (fractionalDigitCount + missingZeros > 0 || forceDecimalSep) {
+      builder.append('.')
+      builder.append(intStr, dotPos, intStr.length())
+      appendZeros(builder, missingZeros)
     }
+
+    // Exponent
+    val exponent = fractionalDigitCount - rounded.scale
+    builder.append(if (exponent < 0) "e-" else "e+")
+    val exponentAbsStr = Math.abs(exponent).toString()
+    if (exponentAbsStr.length() == 1)
+      builder.append('0')
+    builder.append(exponentAbsStr)
+
+    builder.toString()
   }
 
-  private def generalScientificNotation(num: Number,
+  private def decimalNotation(x: Decimal,
+                              scale: Int,
+                              forceDecimalSep: Boolean): String = {
+
+    val rounded = x.setScale(scale)
+
+    val intStr    = rounded.unscaledValue
+    val intStrLen = intStr.length()
+
+    // Overapproximation of the worst case: -<intStr>.<scale 0's>
+    val builder = new JStringBuilder(2 + intStrLen + scale)
+
+    if (rounded.negative)
+      builder.append('-')
+
+    val minDigits = 1 + scale // 1 before the '.' plus `scale` after it
+    if (intStrLen > scale) {
+      // There is at least one digit of intStr before the '.'
+      // (we always take this branch when scale == 0)
+      val dotPos = intStrLen - scale
+      builder.append(intStr, 0, dotPos)
+      if (scale > 0 || forceDecimalSep) {
+        builder.append('.')
+        builder.append(intStr, dotPos, intStrLen)
+      }
+    } else {
+      // All the digits of intStr are to the right of the '.'
+      builder.append("0.")
+      appendZeros(builder, scale - intStrLen)
+      builder.append(intStr)
+    }
+
+    builder.toString()
+  }
+
+  private def generalScientificNotation(x: Decimal,
                                         precision: Int,
                                         forceDecimalSep: Boolean): String = {
     val p =
       if (precision == 0) 1
       else precision
 
-    /* Decisions about output format are based on BigDecimal rounding for compliance with JVM behaviour.
-     * It handles overflow corner cases tested in `DefaultFormatterTest.formatForFloatDoubleConversionType_gG_Overflow`
-     * eg. "%.0g", 0.000095 needs to be represented in decimal notation, but "%g", 0.00009 needs to use scientific notation
+    /* The JavaDoc says:
+     *
+     * > After rounding for the precision, the formatting of the resulting
+     * > magnitude m depends on its value.
+     *
+     * so we first round to `p` significant digits before deciding which
+     * notation to use, based on the order of magnitude of the result. The
+     * order of magnitude is an integer `n` such that
+     *
+     *   10^n <= abs(x) < 10^(n+1)
+     *
+     * (except if x is a zero value, in which case it is 0).
+     *
+     * We also pass `rounded` to the dedicated notation function. Both
+     * functions perform rounding of their own, but the rounding methods will
+     * detect that no further rounding is necessary, so it is worth it.
      */
-    val bigDecimalAbs: BigDecimal = num match {
-      case bd: BigDecimal => bd.abs(new MathContext(p))
-      case _: JFloat | _: JDouble =>
-        new BigDecimal(num.doubleValue().abs, new MathContext(p))
-    }
-
-    val shouldDisplayFixed: Boolean = {
-      val abs = bigDecimalAbs.doubleValue()
-      if (JDouble.isNaN(abs) || JDouble.isInfinite(abs)) false
-      else abs >= 1e-4 && abs < Math.pow(10, p)
-    }
-
-    def calcSignificantDigits: Int = {
-      /* First approximation of the smallest power of 10 that is >= m.
-       * Due to rounding errors in the event of an imprecise `log10`
-       * function, sig0 could actually be the smallest power of 10
-       * that is > m.
-       */
-      val sig0 = bigDecimalAbs
-        .round(new MathContext(1, RoundingMode.CEILING))
-        .scale() * -1
-
-      val isLessOrEqual = BigDecimal
-        .valueOf(Math.pow(10, sig0))
-        .compareTo(bigDecimalAbs) <= 0
-
-      /* Increment sig0 so that it is always the first power of 10
-       * that is > m.
-       */
-      if (isLessOrEqual) sig0 + 1
-      else sig0
-    }
-
-    def isZero = bigDecimalAbs.doubleValue() == 0.0
-
-    // between 1e-4 and 10e(p): display as fixed
-    if (shouldDisplayFixed) {
-      decimalNotation(num,
-                      Math.max(p - calcSignificantDigits, 0),
+    val rounded          = x.round(p)
+    val orderOfMagnitude = (rounded.precision - 1) - rounded.scale
+    if (orderOfMagnitude >= -4 && orderOfMagnitude < p) {
+      decimalNotation(rounded,
+                      scale = Math.max(0, p - orderOfMagnitude - 1),
                       forceDecimalSep)
-    } else if (isZero) {
-      // exact 0 should always be decimal
-      decimalNotation(num, Math.max(precision - 1, 0), forceDecimalSep)
     } else {
-      computerizedScientificNotation(num, p - 1, forceDecimalSep)
+      computerizedScientificNotation(rounded,
+                                     digitsAfterDot = p - 1,
+                                     forceDecimalSep)
     }
   }
 
-  private def decimalNotation(num: Number,
-                              precision: Int,
-                              forceDecimalSep: Boolean): String = {
-    val str = NumberFormatting.formatDecimal(num, precision)
-    // Finally, force the decimal separator, if requested
-    if (forceDecimalSep && str.indexOf(decimalSeparator) < 0) {
-      str + decimalSeparator
-    } else str
+  /** Format an argument for the 'a' conversion.
+   *
+   *  This conversion requires quite some code, compared to the others, and is
+   *  therefore extracted into separate functions.
+   *
+   *  There is some logic that is duplicated from
+   *  `java.lang.Double.toHexString()`. It cannot be factored out because:
+   *
+   *  - this method deals with subnormals in a very weird way when the
+   *    precision is set and is <= 12, and
+   *  - the handling of padding is fairly specific to `Formatter`, and would
+   *    not lend itself well to be factored with the more straightforward code
+   *    in `Double.toHexString()`.
+   */
+  private def formatHexFloatingPoint(flags: Flags,
+                                     width: Int,
+                                     precision: Int,
+                                     arg: Double): Unit = {
+
+    if (JDouble.isNaN(arg) || JDouble.isInfinite(arg)) {
+      formatNaNOrInfinite(flags, width, arg)
+    } else {
+      // Extract the raw bits from the argument
+
+      val ebits     = 11 // exponent size
+      val mbits     = 52 // mantissa size
+      val mbitsMask = ((1L << mbits) - 1L)
+      val bias      = (1 << (ebits - 1)) - 1
+
+      val bits           = JDouble.doubleToLongBits(arg)
+      val negative       = bits < 0
+      val explicitMBits  = bits & mbitsMask
+      val biasedExponent = (bits >>> mbits).toInt & ((1 << ebits) - 1)
+
+      // Compute the actual precision
+
+      val actualPrecision = {
+        if (precision == 0) 1       // apparently, this is how it behaves on the JVM
+        else if (precision > 12) -1 // important for subnormals
+        else precision
+      }
+
+      // Sign string
+
+      val signStr = {
+        if (negative) "-"
+        else if (flags.positivePlus) "+"
+        else if (flags.positiveSpace) " "
+        else ""
+      }
+
+      /* Extract the implicit bit, the mantissa, and the exponent.
+       * Also apply the artificial normalization of subnormals when the
+       * actualPrecision is in the interval [1, 12].
+       */
+
+      val (implicitBitStr, mantissa, exponent) = if (biasedExponent == 0) {
+        if (explicitMBits == 0L) {
+          // Zero
+          ("0", 0L, 0)
+        } else {
+          // Subnormal
+          if (actualPrecision == -1) {
+            ("0", explicitMBits, -1022)
+          } else {
+            // Artificial normalization, required by the 'a' conversion spec
+            val leadingZeros =
+              java.lang.Long.numberOfLeadingZeros(explicitMBits)
+            val shift              = (leadingZeros + 1) - (64 - mbits)
+            val normalizedMantissa = (explicitMBits << shift) & mbitsMask
+            val normalizedExponent = -1022 - shift
+            ("1", normalizedMantissa, normalizedExponent)
+          }
+        }
+      } else {
+        // Normalized
+        ("1", explicitMBits, biasedExponent - bias)
+      }
+
+      // Apply the rounding mandated by the precision
+
+      val roundedMantissa = if (actualPrecision == -1) {
+        mantissa
+      } else {
+        val roundingUnit =
+          1L << (mbits - (actualPrecision * 4)) // 4 bits per hex character
+        val droppedPartMask  = roundingUnit - 1
+        val halfRoundingUnit = roundingUnit >> 1
+
+        val truncated   = mantissa & ~droppedPartMask
+        val droppedPart = mantissa & droppedPartMask
+
+        /* The JavaDoc is not clear about what flavor of rounding should be
+         * used. We use round-half-to-even to mimic the behavior of the JVM.
+         */
+        if (droppedPart < halfRoundingUnit)
+          truncated
+        else if (droppedPart > halfRoundingUnit)
+          truncated + roundingUnit
+        else if ((truncated & roundingUnit) == 0L) // truncated is even
+          truncated
+        else
+          truncated + roundingUnit
+      }
+
+      // Mantissa string
+
+      val mantissaStr = {
+        val baseStr = java.lang.Long.toHexString(roundedMantissa)
+        val padded =
+          "0000000000000".substring(baseStr.length()) + baseStr // 13 zeros
+
+        assert(padded.length() == 13 && (13 * 4 == mbits),
+               "padded mantissa does not have the right number of bits")
+
+        // ~ padded.dropRightWhile(_ == '0') but keep at least minLength chars
+        val minLength = Math.max(1, actualPrecision)
+        var len       = padded.length
+        while (len > minLength && padded.charAt(len - 1) == '0')
+          len -= 1
+        padded.substring(0, len)
+      }
+
+      // Exponent string
+
+      val exponentStr = Integer.toString(exponent)
+
+      // Assemble, pad and send to dest
+
+      val prefix = signStr + (if (flags.upperCase) "0X" else "0x")
+      val rest   = implicitBitStr + "." + mantissaStr + "p" + exponentStr
+
+      padAndSendToDest(RootLocaleInfo,
+                       flags,
+                       width,
+                       prefix,
+                       applyNumberUpperCase(flags, rest))
+    }
   }
 
   private def formatNonNumericString(localeInfo: LocaleInfo,
@@ -682,9 +781,10 @@ final class Formatter private (private var dest: Appendable,
                                      width: Int,
                                      precision: Int,
                                      str: String): Unit = {
+
     val truncatedStr =
-      if (precision < 0) str
-      else str.substring(0, precision.min(str.length))
+      if (precision < 0 || precision >= str.length()) str
+      else str.substring(0, precision)
     padAndSendToDestNoZeroPad(flags,
                               width,
                               applyUpperCase(localeInfo, flags, truncatedStr))
@@ -826,6 +926,7 @@ final class Formatter private (private var dest: Appendable,
                                str: String): Unit = {
 
     val len = prefix.length + str.length
+
     if (len >= width)
       sendToDest(prefix, str)
     else if (flags.zeroPad)
@@ -870,20 +971,74 @@ final class Formatter private (private var dest: Appendable,
       throw new FormatterClosedException()
   }
 
+  /* Helpers to throw exceptions with all the right arguments.
+   *
+   * Some are direct forwarders, like `IllegalFormatPrecisionException`; they
+   * are here for consistency.
+   */
+
+  private def throwDuplicateFormatFlagsException(flag: Char): Nothing =
+    throw new DuplicateFormatFlagsException(flag.toString())
+
+  private def throwUnknownFormatConversionException(conversion: Char): Nothing =
+    throw new UnknownFormatConversionException(conversion.toString())
+
+  private def throwIllegalFormatPrecisionException(precision: Int): Nothing =
+    throw new IllegalFormatPrecisionException(precision)
+
+  private def throwIllegalFormatWidthException(width: Int): Nothing =
+    throw new IllegalFormatWidthException(width)
+
+  private def throwIllegalFormatFlagsException(flags: Flags): Nothing =
+    throw new IllegalFormatFlagsException(flagsToString(flags))
+
+  private def throwMissingFormatWidthException(
+      fullFormatSpecifier: String): Nothing =
+    throw new MissingFormatWidthException(fullFormatSpecifier)
+
+  private def throwFormatFlagsConversionMismatchException(
+      conversionLower: Char,
+      flags: Flags,
+      illegalFlags: Int): Nothing = {
+    throw new FormatFlagsConversionMismatchException(
+      flagsToString(new Flags(flags.bits & illegalFlags)),
+      conversionLower)
+  }
+
+  private def throwMissingFormatArgumentException(
+      fullFormatSpecifier: String): Nothing =
+    throw new MissingFormatArgumentException(fullFormatSpecifier)
+
+  private def throwIllegalFormatConversionException(conversionLower: Char,
+                                                    arg: Any): Nothing =
+    throw new IllegalFormatConversionException(conversionLower, arg.getClass)
+
+  private def throwIllegalFormatCodePointException(arg: Int): Nothing =
+    throw new IllegalFormatCodePointException(arg)
+
 }
 
 object Formatter {
 
-  object Defaults {
-    final val minusSign           = '-'
-    final val decimalSeparator    = '.'
-    final val groupingSeparator   = ','
-    final val zeroDigit           = '0'
-    final val lineSeparator       = '\n'
-    final val lineSeparatorString = lineSeparator.toString
-    final val minusSignString     = minusSign.toString
-    final val zeroDigitString     = zeroDigit.toString
-    final val roundingMode        = RoundingMode.HALF_UP
+  private def appendZeros(builder: JStringBuilder, count: Int): builder.type = {
+    val twentyZeros = "00000000000000000000"
+    if (count <= 20) {
+      builder.append(twentyZeros, 0, count)
+    } else {
+      var remaining = count
+      while (remaining > 20) {
+        builder.append(twentyZeros)
+        remaining -= 20
+      }
+      builder.append(twentyZeros, 0, remaining)
+    }
+    builder
+  }
+
+  @inline
+  private def assert(condition: Boolean, msg: => String): Unit = {
+    if (!condition)
+      throw new AssertionError(msg)
   }
 
   final class BigDecimalLayoutForm private (name: String, ordinal: Int)
@@ -914,28 +1069,21 @@ object Formatter {
    * not add non-inlineable methods in this class.
    */
   private final class Flags(val bits: Int) extends AnyVal {
-
     import Flags._
 
-    @inline def leftAlign: Boolean = (bits & LeftAlign) != 0
-
-    @inline def altFormat: Boolean = (bits & AltFormat) != 0
-
-    @inline def positivePlus: Boolean = (bits & PositivePlus) != 0
-
-    @inline def positiveSpace: Boolean = (bits & PositiveSpace) != 0
-
-    @inline def zeroPad: Boolean = (bits & ZeroPad) != 0
-
+    @inline def leftAlign: Boolean       = (bits & LeftAlign) != 0
+    @inline def altFormat: Boolean       = (bits & AltFormat) != 0
+    @inline def positivePlus: Boolean    = (bits & PositivePlus) != 0
+    @inline def positiveSpace: Boolean   = (bits & PositiveSpace) != 0
+    @inline def zeroPad: Boolean         = (bits & ZeroPad) != 0
     @inline def useGroupingSeps: Boolean = (bits & UseGroupingSeps) != 0
-
-    @inline def negativeParen: Boolean = (bits & NegativeParen) != 0
-
-    @inline def useLastIndex: Boolean = (bits & UseLastIndex) != 0
-
-    @inline def upperCase: Boolean = (bits & UpperCase) != 0
+    @inline def negativeParen: Boolean   = (bits & NegativeParen) != 0
+    @inline def useLastIndex: Boolean    = (bits & UseLastIndex) != 0
+    @inline def upperCase: Boolean       = (bits & UpperCase) != 0
 
     @inline def hasAnyOf(testBits: Int): Boolean = (bits & testBits) != 0
+
+    @inline def hasAllOf(testBits: Int): Boolean = (bits & testBits) == testBits
   }
 
   /* This object only contains `final val`s and (synthetic) `@inline`
@@ -952,321 +1100,248 @@ object Formatter {
     final val NegativeParen   = 0x040
     final val UseLastIndex    = 0x080
     final val UpperCase       = 0x100
+    final val Precision       = 0x200 // used in ConversionsIllegalFlags
+  }
 
-    final val InvalidFlagsForOctalAndHex =
-      PositivePlus | PositiveSpace | UseGroupingSeps | NegativeParen
+  private val ConversionsIllegalFlags: Array[Int] = {
+    import Flags._
 
-    final val NumericOnlyFlags =
+    val NumericOnlyFlags =
       PositivePlus | PositiveSpace | ZeroPad | UseGroupingSeps | NegativeParen
 
-    final val AllWrittenFlags =
-      LeftAlign | AltFormat | NumericOnlyFlags | UseLastIndex
+    // 'n' and '%' are not here because they have special paths in `format`
+
+    // format: off
+    Array(
+      UseGroupingSeps | NegativeParen,          // a
+      NumericOnlyFlags | AltFormat,             // b
+      NumericOnlyFlags | AltFormat | Precision, // c
+      AltFormat | UpperCase | Precision,        // d
+      UseGroupingSeps,                          // e
+      UpperCase,                                // f
+      AltFormat,                                // g
+      NumericOnlyFlags | AltFormat,             // h
+      -1, -1, -1, -1, -1, -1,                   // i -> n
+      UseGroupingSeps | UpperCase | Precision,  // o
+      -1, -1, -1,                               // p -> r
+      NumericOnlyFlags,                         // s
+      -1, -1, -1, -1,                           // t -> w
+      UseGroupingSeps | Precision,              // x
+      -1, -1                                    // y -> z
+    )
+    // format: on
   }
 
-  private trait NumberFormatting[A] {
+  /** Converts a `Double` into a `Decimal` that has as few digits as possible
+   *  while still uniquely identifying `x`.
+   *
+   *  We do this by converting the absolute value of the number into a string
+   *  using its built-in `toString()` conversion. By ECMAScript's spec, this
+   *  yields a decimal representation with as few significant digits as
+   *  possible, although it can be in fixed notation or in computerized
+   *  scientific notation.
+   *
+   *  We then parse that string to recover the integer part, the factional part
+   *  and the exponent; the latter two being optional.
+   *
+   *  From the parts, we construct a `Decimal`, making sure to create one that
+   *  does not have leading 0's (as it is forbidden by `Decimal`'s invariants).
+   */
+  private def numberToDecimal(x: Double): Decimal = {
+    if (x == 0.0) {
+      val negative = 1.0 / x < 0.0
+      Decimal.zero(negative)
+    } else {
+      val negative = x < 0.0
+      val s        = JDouble.toString(if (negative) -x else x)
 
-    import Defaults._
+      val ePos = s.indexOf('E')
+      val e =
+        if (ePos < 0) 0
+        else Integer.parseInt(s.substring(ePos + 1))
+      val significandEnd = if (ePos < 0) s.length() else ePos
 
-    // whole: "0" or [1-9]+[0-9]* (i.e. empty seqs and leading zeros are NOT allowed)
-    // frac: [0-9]* (i.e. empty seqs and leading zeros are allowed)
-    case class Digits(negative: Boolean, whole: Seq[Char], frac: Seq[Char])
-
-    def toDigits(number: A): Digits
-
-    def roundToInteger(digits: Digits): Digits
-
-    def padLeft(len: Int, elem: Char, str: Seq[Char]): Seq[Char] = {
-      val padnum = len - str.length
-      if (padnum > 0)
-        Seq.fill(padnum)(elem) ++ str
-      else
-        str
-    }
-
-    def roundAt(digits: Digits, afterDecimal: Int): Digits = {
-      val shifted = {
-        import digits._
-        val (newWhole, newFrac) = frac.splitAt(afterDecimal)
-        Digits(negative, whole ++ newWhole, newFrac)
+      val dotPos = s.indexOf('.')
+      if (dotPos < 0) {
+        // No '.'; there cannot be leading 0's (x == 0.0 was handled before)
+        val unscaledValue = s.substring(0, significandEnd)
+        val scale         = -e
+        new Decimal(negative, unscaledValue, scale)
+      } else {
+        // There is a '.'; there can be leading 0's, which we must remove
+        val digits =
+          s.substring(0, dotPos) + s.substring(dotPos + 1, significandEnd)
+        val digitsLen = digits.length()
+        var i         = 0
+        while (i < digitsLen && digits.charAt(i) == '0')
+          i += 1
+        val unscaledValue = digits.substring(i)
+        val scale         = -e + (significandEnd - (dotPos + 1))
+        new Decimal(negative, unscaledValue, scale)
       }
-      val rounded = roundToInteger(shifted)
-      // rounded.frac should be empty
-      val (rwholeEmpty, rfracZeros) = {
-        val paddedWhole =
-          padLeft(afterDecimal, zeroDigit, rounded.whole)
-        paddedWhole.splitAt(paddedWhole.length - afterDecimal)
-      }
-      val rwhole =
-        if (rwholeEmpty.isEmpty) Seq(zeroDigit) else rwholeEmpty
-      val rfrac =
-        if (rfracZeros.forall(_ == zeroDigit)) Seq.empty
-        else rfracZeros
-      Digits(digits.negative, rwhole, rfrac)
-    }
-
-    def formatFixedPoint(number: A, fractionDigits: Int): String = {
-      val digits = toDigits(number)
-
-      val Digits(negative, wholePart, fracPart0) = {
-        import digits._
-        if (frac.length > fractionDigits)
-          roundAt(digits, fractionDigits)
-        else
-          digits
-      }
-
-      val fracPart = fracPart0.padTo(fractionDigits, zeroDigit)
-      val dotPart =
-        if (fracPart.isEmpty && fractionDigits <= 0) Seq.empty
-        else Seq(decimalSeparator)
-      val signPart =
-        if (negative) Seq(minusSign)
-        else Seq.empty
-
-      (signPart ++ wholePart ++ dotPart ++ fracPart).mkString
-    }
-
-    def scaleDigits(unscaled: Digits): (Digits, Int) = {
-      val Digits(negative, wholeDigits, fracDigits) = unscaled
-      val allDigits                                 = (wholeDigits ++ fracDigits).dropWhile(_ == '0')
-      val wholeDigitNum                             = 1
-      val (wholePart, fracPartNotCutoff)            = allDigits.splitAt(wholeDigitNum)
-      val exp                                       = fracPartNotCutoff.length - fracDigits.length
-      (Digits(negative, wholePart, fracPartNotCutoff), exp)
-    }
-
-    def formatScientific(number: A, fractionDigits: Int): String = {
-      val (roundedDigits, exp) = {
-        val unscaledDigits                = toDigits(number)
-        val (scaledDigits, exp)           = scaleDigits(unscaledDigits)
-        val Digits(negative, whole, frac) = scaledDigits
-
-        if (frac.length > fractionDigits) {
-          val rounded = roundAt(scaledDigits, fractionDigits)
-          // check if carried
-          if (scaledDigits.whole.length != rounded.whole.length) {
-            val (newWhole, newPartZeros) =
-              rounded.whole.splitAt(scaledDigits.whole.length)
-            val newPart =
-              if (newPartZeros.forall(_ == zeroDigit)) Seq.empty
-              else newPartZeros
-            (Digits(rounded.negative, newWhole, newPart ++ rounded.frac),
-             exp + newPartZeros.length)
-          } else
-            (rounded, exp)
-        } else
-          (scaledDigits, exp)
-      }
-      val Digits(negative, wholePart, fracPart) = roundedDigits
-
-      val dotPart =
-        if (fracPart.isEmpty && fractionDigits <= 0) Seq.empty
-        else Seq(decimalSeparator)
-      val signPart =
-        if (negative) Seq(minusSign)
-        else Seq.empty
-
-      def padInt(len: Int, elem: Char, num: Int): Seq[Char] =
-        if (num < 0)
-          minusSign +: padLeft(len, elem, (-num).toString.toSeq)
-        else
-          padLeft(len, elem, num.toString.toSeq)
-
-      (
-        signPart ++
-          wholePart.padTo(1, zeroDigit) ++
-          dotPart ++
-          fracPart.padTo(fractionDigits, zeroDigit) ++
-          ('E' +: padInt(2, zeroDigit, exp))
-      ).mkString
     }
   }
 
-  object NumberFormatting {
+  /** Converts a `BigDecimal` into a `Decimal`.
+   *
+   *  Zero values are considered positive for the conversion.
+   *
+   *  All other values keep their sign, unscaled value and scale.
+   */
+  private def bigDecimalToDecimal(x: BigDecimal): Decimal = {
+    val unscaledValueWithSign = x.unscaledValue().toString()
 
-    import Defaults._
+    if (unscaledValueWithSign == "0") {
+      Decimal.zero(negative = false)
+    } else {
+      val negative = unscaledValueWithSign.charAt(0) == '-'
+      val unscaledValue =
+        if (negative) unscaledValueWithSign.substring(1)
+        else unscaledValueWithSign
+      val scale = x.scale()
+      new Decimal(negative, unscaledValue, scale)
+    }
+  }
 
-    implicit private object LongFormatting extends NumberFormatting[Long] {
-      def toDigits(number: Long): Digits = {
-        val numabs = number.abs
+  /** A decimal representation of a number.
+   *
+   *  An instance of this class represents the number whose absolute value is
+   *  `unscaledValue × 10^(-scale)`, and that is negative iff `negative` is
+   *  true.
+   *
+   *  The `unscaledValue` is stored as a String of decimal digits, i.e.,
+   *  characters in the range ['0', '9'], expressed in base 10. Leading 0's are
+   *  *not* valid.
+   *
+   *  As an exception, a zero value is represented by an `unscaledValue` of
+   *  `"0"`. The scale of zero value is always 0.
+   *
+   *  `Decimal` is similar to `BigDecimal`, with some differences:
+   *
+   *  - `Decimal` distinguishes +0 from -0.
+   *  - The unscaled value of `Decimal` is stored in base 10.
+   *
+   *  The methods it exposes have the same meaning as for BigDecimal, with the
+   *  only rounding mode being HALF_UP.
+   */
+  private final class Decimal(val negative: Boolean,
+                              val unscaledValue: String,
+                              val scale: Int) {
 
-        def toBeTruncated =
-          scala.Iterator(numabs) ++
-            scala.Iterator.iterate(numabs / 10)(_ / 10).takeWhile(_ > 0)
+    def isZero: Boolean = unscaledValue == "0"
 
-        def whole =
-          toBeTruncated
-            .map { i => (zeroDigit + (i % 10)).toChar }
-            .toList
-            .reverse
+    /** The number of digits in the unscaled value.
+     *
+     *  The precision of a zero value is 1.
+     */
+    def precision: Int = unscaledValue.length()
 
-        Digits(number < 0, whole, Seq.empty)
-      }
+    /** Rounds the number so that it has at most the given precision, i.e., at
+     *  most the given number of digits in its `unscaledValue`.
+     *
+     *  The given `precision` must be greater than 0.
+     */
+    def round(precision: Int): Decimal = {
+      assert(precision > 0,
+             "Decimal.round() called with non-positive precision")
 
-      def roundToInteger(digits: Digits): Digits = {
-        import digits._
-        toDigits {
-          val signum = if (negative) -1 else 1
-          // assuming Long can be represented by Double
-          val toBeRounded =
-            (whole.mkString.toDouble + ("0." + frac.mkString).toDouble) * signum
-          Math.round(toBeRounded)
-        }
+      roundAtPos(roundingPos = precision)
+    }
+
+    /** Returns a new Decimal instance with the same value, possibly rounded,
+     *  with the given scale.
+     *
+     *  If this is a zero value, the same value is returned (a zero value must
+     *  always have a 0 scale). Rounding may also cause the result to be a zero
+     *  value, in which case its scale must be 0 as well. Otherwise, the result
+     *  is non-zero and is guaranteed to have exactly the given new scale.
+     */
+    def setScale(newScale: Int): Decimal = {
+      val roundingPos = unscaledValue.length() + newScale - scale
+      val rounded     = roundAtPos(roundingPos)
+      assert(rounded.isZero || rounded.scale <= newScale,
+             "roundAtPos returned a non-zero value with a scale too large")
+
+      if (rounded.isZero || rounded.scale == newScale) {
+        rounded
+      } else {
+        val newUnscaledValueBuilder = new JStringBuilder(rounded.unscaledValue)
+        appendZeros(newUnscaledValueBuilder, newScale - rounded.scale)
+        new Decimal(negative, newUnscaledValueBuilder.toString(), newScale)
       }
     }
 
-    implicit private object DoubleFormatting extends NumberFormatting[Double] {
+    /** Rounds the number at the given position in its `unscaledValue`.
+     *
+     *  The `roundingPos` may be any integer value.
+     *
+     *  - If it is < 0, the result is always a zero value.
+     *  - If it is >= `unscaledValue.lenght()`, the result is always the same
+     *    value.
+     *  - Otherwise, the `unscaledValue` will be truncated at `roundingPos`,
+     *    and rounded up iff `unscaledValue.charAt(roundingPos) >= '5'`.
+     *
+     *  The value of `negative` is always preserved.
+     *
+     *  Unless the result is a zero value, the following guarantees apply:
+     *
+     *  - its scale is guaranteed to be at most
+     *    `scale - (unscaledValue.length() - roundingPos)`.
+     *  - its precision is guaranteed to be at most
+     *    `max(1, roundingPos)`.
+     */
+    private def roundAtPos(roundingPos: Int): Decimal = {
+      val digits    = this.unscaledValue // local copy
+      val digitsLen = digits.length()
 
-      import Defaults._
+      if (roundingPos < 0) {
+        Decimal.zero(negative)
+      } else if (roundingPos >= digitsLen) {
+        this // no rounding necessary
+      } else {
+        @inline def scaleAtPos(pos: Int): Int = scale - (digitsLen - pos)
 
-      case class DoubleDigits(whole: Seq[Char], frac: Seq[Char])
-
-      private[this] def getDoubleDigits(number: Double): DoubleDigits = {
-        // regular expressions (regex) are a good Computer Science candidate
-        // here but are not used.
-        // This is essential low level code. I doubt the current
-        // implementation of regex is either robust or perfomant enough.
-        // I do not have time to benchmark alternate implementations, so
-        // I go for an implementation I believe I can both do quickly
-        // and get correct.
-
-        val (wdPrefix, suffix) = number.toString.span(_ != '.')
-
-        val (fracDigits, expDigits) = suffix.tail.span(_ != 'E')
-
-        if (expDigits.isEmpty()) {
-          DoubleDigits(wdPrefix.toSeq, fracDigits.toSeq)
-        } else {
-          val exponentB10 = java.lang.Integer.parseInt(expDigits.tail)
-
-          if (exponentB10 > 0) {
-            val (wdSuffix, fd) = fracDigits.splitAt(Math.min(exponentB10, 16))
-            val wd =
-              (wdPrefix + wdSuffix).padTo(exponentB10 + 1, zeroDigit)
-
-            DoubleDigits(wd.toSeq, fd.toSeq)
-
+        if (digits.charAt(roundingPos) < '5') {
+          // Truncate at roundingPos
+          if (roundingPos == 0) {
+            Decimal.zero(negative)
           } else {
-            val fdSeq = padLeft(exponentB10.abs + fracDigits.length,
-                                zeroDigit,
-                                (wdPrefix + fracDigits).toSeq)
-
-            DoubleDigits(Seq(zeroDigit), fdSeq)
+            new Decimal(negative,
+                        digits.substring(0, roundingPos),
+                        scaleAtPos(roundingPos))
           }
-        }
-      }
+        } else {
+          // Truncate and increment at roundingPos
 
-      def toDigits(number: Double): Digits = {
-        val numabs                    = number.abs
-        val DoubleDigits(whole, frac) = getDoubleDigits(numabs)
-        val neg                       = number < 0 || number == -0.0
-        Digits(neg, whole, frac)
-      }
+          // Find the position of the last non-9 digit in the truncated digits (can be -1)
+          var lastNonNinePos = roundingPos - 1
+          while (lastNonNinePos >= 0 && digits.charAt(lastNonNinePos) == '9')
+            lastNonNinePos -= 1
 
-      def roundToInteger(digits: Digits): Digits = {
-        import digits._
-        toDigits {
-          val signum = if (negative) -1 else 1
-          val fracd =
-            try {
-              ("0." + frac.mkString).toDouble
-            } catch {
-              case e: NumberFormatException =>
-                // typically frac contains too many zeros
-                // consider other cases?
-                0.0
+          val newUnscaledValue = {
+            if (lastNonNinePos < 0) {
+              "1"
+            } else {
+              digits.substring(0, lastNonNinePos) +
+                (digits.charAt(lastNonNinePos) + 1).toChar
             }
-          val toBeRounded = (whole.mkString.toDouble + fracd) * signum
-          // Conversion to BigDecimal was used for JVM half-up rounding compliance
-          BigDecimal
-            .valueOf(toBeRounded)
-            .setScale(0, roundingMode)
-            .doubleValue()
-        }
-      }
+          }
 
-    }
+          val newScale = scaleAtPos(lastNonNinePos + 1)
 
-    implicit private object BigIntegerFormatting
-        extends NumberFormatting[BigInteger] {
-      def toDigits(number: BigInteger): Digits = {
-        val numabs = number.abs()
-        Digits(number.signum() < 0, numabs.toString.toSeq, Seq.empty)
-      }
-
-      def roundToInteger(digits: Digits): Digits = {
-        import digits._
-        toDigits {
-          val sign = if (negative) minusSignString else ""
-          val toBeRounded =
-            new BigDecimal(
-              sign + whole.mkString + decimalSeparator + frac.mkString)
-          toBeRounded
-            .setScale(0, roundingMode)
-            .toBigInteger()
+          new Decimal(negative, newUnscaledValue, newScale)
         }
       }
     }
 
-    implicit private object BigDecimalFormatting
-        extends NumberFormatting[BigDecimal] {
-      def toDigits(number: BigDecimal): Digits = {
-        val numabs = number.abs()
-        val s      = numabs.toPlainString()
-        val (whole, frac) = s.indexOf(decimalSeparator) match {
-          case -1 => (s, "")
-          case dp =>
-            val (whole, dotFrac) = s.splitAt(dp)
-            (whole, dotFrac.tail)
-        }
-        Digits(number.signum() < 0, whole.toSeq, frac.toSeq)
-      }
+    // for debugging only
+    override def toString(): String =
+      s"Decimal($negative, $unscaledValue, $scale)"
+  }
 
-      def roundToInteger(digits: Digits): Digits = {
-        import digits._
-        toDigits {
-          val sign = if (negative) minusSignString else ""
-          val toBeRounded =
-            new BigDecimal(
-              sign + whole.mkString + decimalSeparator + frac.mkString)
-          toBeRounded.setScale(0, roundingMode)
-        }
-      }
-    }
-
-    def formatDecimal(arg: Number, precision: Int): String =
-      format(f => f.formatFixedPoint(_, precision))(arg)
-
-    def formatScientific(arg: Number, precision: Int): String =
-      format(f => f.formatScientific(_, precision))(arg)
-
-    private def format(
-        formatWithNotation: NumberFormatting[Any] => Any => String)(
-        arg: Number): String = {
-
-      def formatImpl[A](arg: A)(implicit fmt: NumberFormatting[A]): String = {
-        formatWithNotation(fmt.asInstanceOf[NumberFormatting[Any]])(arg)
-      }
-
-      arg match {
-        case bi: BigInteger => formatImpl(bi)
-        case bd: BigDecimal => formatImpl(bd)
-        case num: Number =>
-          val l = num.longValue()
-          val d = num.doubleValue()
-          // type ascriptions are put to make sure the correct overload is called
-          if (num == l)
-            formatImpl(l: Long)
-          // special case, num.doubleValue would erase sign
-          else if (num == d)
-            formatImpl(d: Double)
-          else
-            throw new UnsupportedOperationException(
-              s"number $num cannot be represented by either of Long or Double, and class ${num.getClass.getName} is not supported"
-            )
-        case _ => throw new IllegalArgumentException
-      }
-    }
+  private object Decimal {
+    @inline def zero(negative: Boolean): Decimal =
+      new Decimal(negative, "0", 0)
   }
 
   /* A proxy for a `java.util.Locale` or for the root locale that provides
@@ -1308,7 +1383,7 @@ object Formatter {
 
     def groupingSize: Int = 3
 
-    def zeroDigit: Char = Defaults.zeroDigit
+    def zeroDigit: Char = '0'
 
     def localizeNumber(str: String): String = str
 
@@ -1338,17 +1413,15 @@ object Formatter {
 
     def localizeNumber(str: String): String = {
       val formatSymbols = decimalFormatSymbols
-      val digitOffset   = formatSymbols.getZeroDigit() - Defaults.zeroDigit
+      val digitOffset   = formatSymbols.getZeroDigit() - '0'
       var result        = ""
       val len           = str.length()
       var i             = 0
-      import Defaults._
       while (i != len) {
         result += (str.charAt(i) match {
           case c if isAsciiDigit(c) => (c + digitOffset).toChar
-          case `decimalSeparator`   => formatSymbols.getDecimalSeparator()
-          case `groupingSeparator`  => formatSymbols.getGroupingSeparator()
-          case `lineSeparator`      => System.lineSeparator()
+          case '.'                  => formatSymbols.getDecimalSeparator()
+          case ','                  => formatSymbols.getGroupingSeparator()
           case c                    => c
         })
         i += 1
@@ -1369,6 +1442,12 @@ object Formatter {
     def nextFormatToken(): FormatToken = {
       var currentChar = FormatToken.UnsetChar
       val token       = new FormatToken(format.position())
+
+      def parseError(): Nothing = {
+        val errorPos = token.formatStringStartIndex + token.formatSpecifierIndex
+        throw new UnknownFormatConversionException(
+          format.get(errorPos).toString())
+      }
 
       @tailrec
       def loop(state: Int): FormatToken = {
@@ -1419,7 +1498,7 @@ object Formatter {
                     // the digital sequence stands for the width.
                     // do not get the next char.
                     format.position(format.position() - 1)
-                    token.width = number
+                    token.width = if (number < 0) -1 else number
                     AfterWidth
                   }
                 }
@@ -1440,7 +1519,8 @@ object Formatter {
             loop {
               if (token.setFlag(currentChar)) state
               else if (isAsciiDigit(currentChar)) {
-                token.width = getPositiveInt(format)
+                val width = getPositiveInt(format)
+                token.width = if (width < 0) -1 else width
                 AfterWidth
               } else if ('.' == currentChar) {
                 ApplyPrecision
@@ -1462,34 +1542,24 @@ object Formatter {
 
           case ParserStateMachine.ApplyPrecision =>
             if (isAsciiDigit(currentChar)) {
-              token.precision = getPositiveInt(format)
+              val precision = getPositiveInt(format)
+              token.precision = if (precision < 0) -1 else precision
             } else {
               // the precision is required but not given by the format string.
-              throw new UnknownFormatConversionException(getFormatString(token))
+              parseError()
             }
             loop(ApplyConversionType)
 
           case ParserStateMachine.ApplyConversionType =>
             token.conversion = currentChar
-            if ("bBhHsScCdoxXaAeEgGfn%".indexOf(currentChar) < 0) {
-              val hasArgIdx = token.argIndex != FormatToken.Unset
-              val noWidthOrPrecision = token.width == FormatToken.Unset ||
-                token.precision == FormatToken.Unset
-              /* In Scala.js we used regex matching to determinate if format specifier
-               * is valid, but it's not possible when using current parser.
-               * We provide estimation about the root of problem which should be compliant
-               * with JVM. Checking for EndOfString is done in parser loop.
-               * Based on test cases of `FormatterTest.unknownFormatConversion`
-               */
-              val causedBy = {
-                if (hasArgIdx && noWidthOrPrecision) token.argIndex.toString
-                else token.conversion.toString
-              }
-
-              throw new UnknownFormatConversionException(causedBy)
-            }
-            if (currentChar <= 'Z') {
+            if (currentChar >= 'A' && currentChar <= 'Z') {
+              // OK; set UpperCase
               token.setFlag(Flags.UpperCase)
+            } else if ((currentChar >= 'a' && currentChar <= 'z') || currentChar == '%') {
+              // OK; nothing left to do
+            } else {
+              // Not OK; we could not parse a valid format specifier to completion
+              parseError()
             }
             loop(Exit)
 
@@ -1587,10 +1657,6 @@ object Formatter {
       flags |= flag
       true
     }
-
-    @inline
-    def requireArgument(): Boolean =
-      conversion != '%' && conversion != 'n'
   }
 
   private object FormatToken {
