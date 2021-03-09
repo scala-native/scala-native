@@ -24,6 +24,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val dynsigs       = mutable.Set.empty[Sig]
   val dynimpls      = mutable.Set.empty[Global]
 
+  val resolvedProperty = mutable.Map.empty[Global, Val]
+
   private case class DelayedMethod(owner: Global.Top, sig: Sig, pos: Position)
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
@@ -87,7 +89,12 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
           unavailable += owner
         } { defns =>
           val scope = mutable.Map.empty[Global, Defn]
-          defns.foreach { defn => scope(defn.name) = defn }
+          defns.foreach {
+            case defn @ Defn.Define(_, name, _, insts)
+                if insts.exists(_.isInstanceOf[Inst.LinktimeCf]) =>
+              scope(name) = resolveDefine(defn)
+            case defn => scope(defn.name) = defn
+          }
           loaded(owner) = scope
         }
     }
@@ -594,6 +601,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachNext(unwind)
     case Inst.Unreachable(unwind) =>
       reachNext(unwind)
+    case _: Inst.LinktimeIf =>
+      util.unreachable
   }
 
   def reachOp(op: Op)(implicit pos: Position): Unit = op match {
@@ -774,6 +783,99 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         }
       case _ =>
         lookupSig(cls, sig)
+    }
+  }
+
+  private def resolveDefine(defn: Defn.Define): Defn.Define = {
+    implicit def position: Position = defn.pos
+
+    def resolveCondition(cond: LinktimeCondition): Boolean = {
+      import LinktimeCondition._
+
+      def lookupLinktimeProperty(name: Global): Val = {
+        fieldInfo(name).fold[Val] {
+          addMissing(name, defn.pos);
+          Val.Null
+        } { field =>
+          require(field.isConst, "Linktime property was not const")
+          require(field.ty.isInstanceOf[Type.StructValue],
+                  "Linktime property was not struct")
+
+          val Type.StructValue(valType +: _) = field.ty
+          val Val.StructValue(Seq(defaultValue, propertyName, envName)) =
+            field.init
+
+          def stringOrNone(value: Val): Option[String] = value match {
+            case Val.String(str) => Some(str)
+            case _               => None
+          }
+
+          // {property, env}Name can be Val.Null given property should not be
+          // accessible through that channel
+          def propertyValue = stringOrNone(propertyName).flatMap(sys.props.get)
+          def envValue      = stringOrNone(envName).flatMap(sys.env.get)
+
+          propertyValue
+            .orElse(envValue)
+            .map { str =>
+              valType match {
+                case Type.Bool  => Val.Bool(java.lang.Boolean.parseBoolean(str))
+                case Type.Char  => Val.Char(str.head)
+                case Type.Byte  => Val.Byte(java.lang.Byte.parseByte(str))
+                case Type.Short => Val.Short(java.lang.Short.parseShort(str))
+                case Type.Int   => Val.Int(java.lang.Integer.parseInt(str))
+                case Type.Long  => Val.Long(java.lang.Long.parseLong(str))
+                case Type.Float => Val.Float(java.lang.Float.parseFloat(str))
+                case Type.Double =>
+                  Val.Double(java.lang.Double.parseDouble(str))
+                case Type.Ref(Rt.StringName, _, _) => Val.String(str)
+                case tpe =>
+                  util.unsupported(
+                    s"Unsupported type of linktime property: $tpe")
+              }
+            }
+            .getOrElse(defaultValue)
+        }
+      }
+
+      cond match {
+        case ComplexCondition(Bin.And, left, right) =>
+          resolveCondition(left) && resolveCondition(right)
+
+        case ComplexCondition(Bin.Or, left, right) =>
+          resolveCondition(left) || resolveCondition(right)
+
+        case SimpleCondition(name, comparison, condVal) =>
+          val resolvedValue =
+            resolvedProperty.getOrElseUpdate(name, lookupLinktimeProperty(name))
+          comparison match {
+            case Comp.Ieq => resolvedValue == condVal
+            case Comp.Ine => resolvedValue != condVal
+            case cmp =>
+              util.unsupported(s"Unsupported linktime comparsion type: $cmp")
+          }
+        case _ => util.unsupported(s"Unknown condition: $cond")
+      }
+    }
+
+    def resolveLinktimeIf(inst: Inst.LinktimeIf): Inst = {
+      val Inst.LinktimeIf(cond, thenp, elsep) = inst
+      val matchesCondition                    = resolveCondition(cond)
+
+      if (matchesCondition) Inst.Jump(thenp)
+      else Inst.Jump(elsep)
+    }
+
+    if (!defn.insts.exists(_.isInstanceOf[Inst.LinktimeCf])) defn
+    else {
+      val filteredInsts = ControlFlow.removeDeadBlocks {
+        defn.insts.map {
+          case inst: Inst.LinktimeIf => resolveLinktimeIf(inst)
+          case inst                  => inst
+        }
+      }
+
+      defn.copy(insts = filteredInsts)
     }
   }
 

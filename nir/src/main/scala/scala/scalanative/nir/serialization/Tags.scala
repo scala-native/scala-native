@@ -115,6 +115,7 @@ object Tags {
   final val SwitchInst      = 1 + IfInst
   final val ThrowInst       = 1 + SwitchInst
   final val UnreachableInst = 1 + ThrowInst
+  final val LinktimeIfInst  = 1 + UnreachableInst
 
   // Globals
 
@@ -229,4 +230,6 @@ object Tags {
   final val StringVal      = 1 + ConstVal
   final val VirtualVal     = 1 + StringVal
   final val ClassOfVal     = 1 + VirtualVal
+
+  final val LinktimeConditionVal = 1 + ClassOfVal
 }

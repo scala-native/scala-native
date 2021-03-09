@@ -574,6 +574,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val sig      = genMethodSig(sym)
         val isStatic = owner.isExternModule || isImplClass(owner)
 
+        lazy val linkTimeResolvedAnnotation =
+          sym.annotations.find(_.symbol == LinktimeResolvedClass)
+
         dd.rhs match {
           case EmptyTree
               if (isScala211 &&
@@ -606,6 +609,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           // Have a concrete method with JavaDefaultMethodAnnotation; a blivet.
           // Do not emit, not even as abstract.
 
+          case _ if linkTimeResolvedAnnotation.isDefined =>
+            genLinkTimeResolvedProperty(dd,
+                                        linkTimeResolvedAnnotation.get,
+                                        name)
+
           case rhs =>
             scoped(
               curMethodSig := sig
@@ -615,6 +623,52 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             }
         }
       }
+    }
+
+    def genLinkTimeResolvedProperty(dd: DefDef,
+                                    annotationInfo: AnnotationInfo,
+                                    name: Global): Unit = {
+      require(annotationInfo.symbol == LinktimeResolvedClass)
+
+      implicit val fresh: Fresh      = Fresh()
+      implicit val buf: ExprBuffer   = new ExprBuffer()
+      implicit val pos: nir.Position = dd.pos
+
+      def toLiteralOrFallback(tree: Tree)(fallback: => Val)(
+          implicit buf: ExprBuffer): Val =
+        tree match {
+          case literal @ Literal(Constant(_)) => buf.genLiteralValue(literal)
+          case _                              => fallback
+        }
+
+      def symbolName(delimiter: Char): String =
+        dd.symbol.fullName(delimiter).replace('$', delimiter)
+
+      val defaultValue = toLiteralOrFallback(dd.rhs) {
+        globalError(
+          dd.pos,
+          "Property resolved at link-time needs to be literal constant")
+        Val.Null
+      }
+      if (dd.symbol.isConstant) {
+        globalError(
+          dd.pos,
+          "Link-time property cannot be constant value, it would be inlined by scalac compiler")
+      }
+
+      val sysPropertyName = toLiteralOrFallback(annotationInfo.args.head) {
+        Val.String(symbolName('.').toLowerCase)
+      }
+
+      val envVariableName = toLiteralOrFallback(annotationInfo.args(1)) {
+        Val.String(symbolName('_').toUpperCase)
+      }
+
+      curStatBuffer.get += Defn.Const(
+        Attrs.None,
+        name,
+        Type.StructValue(Seq(defaultValue.ty, Rt.String, Rt.String)),
+        Val.StructValue(Seq(defaultValue, sysPropertyName, envVariableName)))
     }
 
     def genExternMethod(attrs: nir.Attrs,

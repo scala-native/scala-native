@@ -162,6 +162,12 @@ final class BinarySerializer {
         putNext(thenp)
         putNext(elsep)
 
+      case Inst.LinktimeIf(v, thenp, elsep) =>
+        putInt(T.LinktimeIfInst)
+        putLinktimeCondition(v)
+        putNext(thenp)
+        putNext(elsep)
+
       case Inst.Switch(v, default, cases) =>
         putInt(T.SwitchInst)
         putVal(v)
@@ -522,6 +528,20 @@ final class BinarySerializer {
       v.foreach(putChar(_))
     case Val.Virtual(v)   => putInt(T.VirtualVal); putLong(v)
     case Val.ClassOf(cls) => putInt(T.ClassOfVal); putGlobal(cls)
+  }
+
+  private def putLinktimeCondition(cond: LinktimeCondition): Unit = cond match {
+    case LinktimeCondition.SimpleCondition(name, comparison, value) =>
+      putInt(LinktimeCondition.Tag.SimpleCondition)
+      putGlobal(name)
+      putComp(comparison)
+      putVal(value)
+
+    case LinktimeCondition.ComplexCondition(op, left, right) =>
+      putInt(LinktimeCondition.Tag.ComplexCondition)
+      putBin(op)
+      putLinktimeCondition(left)
+      putLinktimeCondition(right)
   }
 
   // Ported from Scala.js

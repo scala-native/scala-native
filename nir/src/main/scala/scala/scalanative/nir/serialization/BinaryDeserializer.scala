@@ -113,6 +113,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
       case T.SwitchInst      => Inst.Switch(getVal(), getNext(), getNexts())
       case T.ThrowInst       => Inst.Throw(getVal(), getNext())
       case T.UnreachableInst => Inst.Unreachable(getNext())
+      case T.LinktimeIfInst =>
+        Inst.LinktimeIf(getLinktimeCondition(), getNext(), getNext())
     }
   }
 
@@ -294,6 +296,20 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
       }
     case T.VirtualVal => Val.Virtual(getLong)
     case T.ClassOfVal => Val.ClassOf(getGlobal())
+  }
+
+  private def getLinktimeCondition(): LinktimeCondition = getInt() match {
+    case LinktimeCondition.Tag.SimpleCondition =>
+      LinktimeCondition.SimpleCondition(name = getGlobal(),
+                                        comparison = getComp(),
+                                        value = getVal())
+
+    case LinktimeCondition.Tag.ComplexCondition =>
+      LinktimeCondition.ComplexCondition(op = getBin(),
+                                         left = getLinktimeCondition(),
+                                         right = getLinktimeCondition())
+
+    case n => util.unsupported(s"Unknown linktime condition tag: ${n}")
   }
 
   // Ported from Scala.js
