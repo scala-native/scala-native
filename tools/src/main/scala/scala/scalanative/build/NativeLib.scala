@@ -10,7 +10,6 @@ private[scalanative] case class NativeLib(src: Path, dest: Path)
 
 /** Utilities for dealing with native library code */
 private[scalanative] object NativeLib {
-  private val fileSep      = File.separator
   private val jarExtension = ".jar"
 
   /** Object file extension: ".o" */
@@ -34,11 +33,12 @@ private[scalanative] object NativeLib {
   /** Used to find native source files in jar files */
   private val jarSrcRegex: String = {
     val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
-    s"""^${codeDir}${fileSep}(.+)${regexExtensions}$$"""
+    // Paths in jars always contains '/' separator instead of OS specific one.
+    s"""^$codeDir/(.+)$regexExtensions$$"""
   }
 
   private def srcPathPattern(path: Path): String =
-    s"${path.toString()}${fileSep}${codeDir}${fileSep}"
+    makeDirPath(path, codeDir)
 
   /**
    * Used to create hash of the directory to copy
@@ -59,15 +59,9 @@ private[scalanative] object NativeLib {
    * @return the source pattern
    */
   def destSrcPatterns(workdir: Path, nativelibs: Seq[Path]): String = {
-    val pathPat = destPathPattern(workdir, nativelibs)
-    srcExtensions.mkString(s"glob:${pathPat}**{", ",", "}")
-  }
-
-  private def destPathPattern(workdir: Path, nativelibs: Seq[Path]): String = {
-    val workdirStr = workdir.toString()
-    val nativeDirs = nativelibs.map(_.getFileName().toString())
-    val dirPattern = nativeDirs.mkString("{", ",", "}")
-    s"${workdirStr}${fileSep}${dirPattern}${fileSep}${codeDir}${fileSep}"
+    val dirPattern = nativelibs.map(_.getFileName()).mkString("{", ",", "}")
+    val pathPat    = makeDirPath(workdir, dirPattern, codeDir)
+    srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
   }
 
   /** To positively identify nativelib */
@@ -80,7 +74,7 @@ private[scalanative] object NativeLib {
    * @return the search file pattern
    */
   private def dirMarkerFilePattern(path: Path): String =
-    s"glob:${path.toString()}${fileSep}${nativeLibMarkerFile}"
+    s"glob:${makeDirPath(path, nativeLibMarkerFile)}"
 
   /** Does this Path point to a jar file */
   def isJar(path: Path): Boolean = path.toString().endsWith(jarExtension)
@@ -184,4 +178,12 @@ private[scalanative] object NativeLib {
       case true  => Some(path)
       case false => None
     }
+
+  private def makeDirPath(path: Path, elems: String*): String = {
+    val pathSep = if (Platform.isWindows) raw"\\" else File.separator
+
+    (path.toString.replace(File.separator, pathSep) +: elems)
+      .mkString("", pathSep, pathSep)
+  }
+
 }
