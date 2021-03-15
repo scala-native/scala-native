@@ -84,15 +84,15 @@ object Discover {
    */
   private[scalanative] def checkClangVersion(pathToClangBinary: Path): Unit = {
     def versionMajorFull(clang: String): (Int, String) = {
-      val versionCommand = s"$clang --version"
-      // Pass command as seq of string to handle spaces in path
-      val versionString = Process(Seq(clang, "--version"))
+      val versionCommand = Seq(clang, "--version")
+      val versionString = Process(versionCommand)
         .lineStream_!(silentLogger())
         .headOption
         .getOrElse {
           throw new BuildException(
-            s"""Problem running '$versionCommand'. Please check clang setup.
-                 |Refer to ($docSetup)""".stripMargin)
+            s"""Problem running '${versionCommand
+                 .mkString(" ")}'. Please check clang setup.
+               |Refer to ($docSetup)""".stripMargin)
         }
       // Apple macOS clang is different vs brew installed or Linux
       // Apple LLVM version 10.0.1 (clang-1001.0.46.4)
@@ -136,7 +136,7 @@ object Discover {
                                     envPath: String): Path = {
     val binaryNameOrPath = sys.env.getOrElse(envPath, binaryName)
     val locateCmd        = if (Platform.isWindows) "where" else "which"
-    val path = Process(s"$locateCmd $binaryNameOrPath")
+    val path = Process(Seq(locateCmd, binaryNameOrPath))
       .lineStream_!(silentLogger())
       .map { p => Paths.get(p) }
       .headOption
