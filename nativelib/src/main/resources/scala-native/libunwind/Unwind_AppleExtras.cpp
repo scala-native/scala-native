@@ -74,7 +74,8 @@ struct libgcc_object_info {
     __attribute__((visibility("default"))) const char sym##_tmp6 = 0;
 #endif
 
-#if defined(_LIBUNWIND_BUILD_ZERO_COST_APIS)
+// Added __APPLE__ for Rasp PI 32bit
+#if defined(_LIBUNWIND_BUILD_ZERO_COST_APIS) && defined(__APPLE__)
 
 //
 // symbols in libSystem.dylib in 10.6 and later, but are in libgcc_s.dylib in
