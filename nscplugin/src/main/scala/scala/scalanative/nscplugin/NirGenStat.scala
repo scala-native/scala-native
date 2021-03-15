@@ -664,11 +664,27 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         Val.String(symbolName('_').toUpperCase)
       }
 
+      val propertyName = Linktime.nameToLinktimePropertyName(name)
+      val retty        = defaultValue.ty
       curStatBuffer.get += Defn.Const(
         Attrs.None,
-        name,
-        Type.StructValue(Seq(defaultValue.ty, Rt.String, Rt.String)),
+        propertyName,
+        Type.StructValue(Seq(retty, Rt.String, Rt.String)),
         Val.StructValue(Seq(defaultValue, sysPropertyName, envVariableName)))
+
+      buf.label(fresh())
+      val value = buf.call(Linktime.PropertyResolveFunctionTy(retty),
+                           Linktime.PropertyResolveFunction(retty),
+                           Seq(Val.Global(propertyName, retty)),
+                           Next.None)
+      buf.ret(value)
+
+      curStatBuffer.get += Defn.Define(
+        Attrs(inlineHint = Attr.AlwaysInline),
+        name,
+        Type.Function(Seq(), defaultValue.ty),
+        buf.toSeq
+      )
     }
 
     def genExternMethod(attrs: nir.Attrs,

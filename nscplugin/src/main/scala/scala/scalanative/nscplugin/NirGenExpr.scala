@@ -1143,14 +1143,17 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       condp match {
         case Apply(reciverp, List()) if isLinktimeProperty(reciverp) =>
           Some {
-            SimpleCondition(genName(reciverp.symbol), Comp.Ieq, Val.True)
+            val name         = genName(reciverp.symbol)
+            val propertyName = Linktime.nameToLinktimePropertyName(name)
+            SimpleCondition(propertyName, Comp.Ieq, Val.True)
           }
 
         case Apply(Select(reciverp, comp), List(arg @ Literal(Constant(_))))
             if isLinktimeProperty(reciverp) =>
           Some {
             val argValue = genLiteralValue(arg)
-            SimpleCondition(genName(reciverp.symbol),
+            val name     = genName(reciverp.symbol)
+            SimpleCondition(Linktime.nameToLinktimePropertyName(name),
                             genComparsion(comp, argValue),
                             argValue)
           }
