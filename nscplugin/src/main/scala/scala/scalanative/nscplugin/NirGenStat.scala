@@ -653,7 +653,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         dd: DefDef,
         annotationInfo: AnnotationInfo,
         name: Global): (Global.Member, nir.Type) = {
-      require(annotationInfo.symbol == LinktimeResolvedClass)
+      require(annotationInfo.symbol == LinktimeResolvedClass,
+              "Expected linktime property class")
 
       implicit val fresh: Fresh      = Fresh()
       implicit val buf: ExprBuffer   = new ExprBuffer()
