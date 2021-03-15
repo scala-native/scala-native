@@ -1158,6 +1158,18 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                             argValue)
           }
 
+        // Same as above, but for case when condition is additionally boxed, eg.: `prop != null`
+        case Apply(Select(Apply(_, List(Apply(reciverp, List()))), comp),
+                   List(arg @ Literal(Constant(_))))
+            if isLinktimeProperty(reciverp) =>
+          Some {
+            val argValue = genLiteralValue(arg)
+            val name     = genName(reciverp.symbol)
+            SimpleCondition(Linktime.nameToLinktimePropertyName(name),
+                            genComparsion(comp, argValue),
+                            argValue)
+          }
+
         case Apply(Select(cond1, op), List(cond2)) =>
           (getLinktimeCondition(cond1), getLinktimeCondition(cond2)) match {
             case (Some(c1), Some(c2)) =>
