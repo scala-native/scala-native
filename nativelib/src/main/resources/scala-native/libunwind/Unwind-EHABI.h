@@ -16,8 +16,6 @@
 #if defined(_LIBUNWIND_ARM_EHABI)
 
 #include <stdint.h>
-// #include <unwind.h>
-// Change from original, point to local header file
 #include "include-libunwind/unwind.h"
 
 // Unable to unwind in the ARM index table (section 5 EHABI).
