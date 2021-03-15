@@ -1,5 +1,6 @@
 package scala.scalanative.linker
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.scalanative.nir._
 import scala.scalanative.util
@@ -110,13 +111,28 @@ trait LinktimeValueResolver { self: Reach =>
 
       case SimpleCondition(name, comparison, condVal) =>
         val resolvedValue = resolveLinktimeProperty(name)
-        comparison match {
-          case Comp.Ieq => resolvedValue == condVal
-          case Comp.Ine => resolvedValue != condVal
-          case cmp =>
-            util.unsupported(s"Unsupported linktime comparsion type: $cmp")
+        if (resolvedValue.ty != condVal.ty) {
+          util.unsupported(
+            s"Cannot resolve linktime condition for different types ${resolvedValue.ty} and ${condVal.ty}")
         }
-      case _ => util.unsupported(s"Unknown condition: $cond")
+
+        (condVal, resolvedValue) match {
+          case ComperableValsTuple(ordering, condition, resolved) =>
+            val comparsionFn = comparison match {
+              case Comp.Ieq | Comp.Feq            => ordering.equiv _
+              case Comp.Ine | Comp.Fne            => !ordering.equiv(_: Any, _: Any)
+              case Comp.Sgt | Comp.Ugt | Comp.Fgt => ordering.gt _
+              case Comp.Sge | Comp.Uge | Comp.Fge => ordering.gteq _
+              case Comp.Slt | Comp.Ult | Comp.Flt => ordering.lt _
+              case Comp.Sle | Comp.Ule | Comp.Fle => ordering.lteq _
+            }
+            comparsionFn(resolved, condition)
+
+          case _ =>
+            util.unsupported(
+              s"Unsupported linktime comparison types: ${condVal.ty} and ${resolvedValue.ty}")
+        }
+      case _ => util.unsupported(s"Unknown linktime condition: $cond")
     }
   }
 
@@ -146,5 +162,52 @@ object LinktimeValueResolver {
         Some(propertyName)
       case _ => None
     }
+  }
+
+  object ComparableVal {
+    private def someAnyWithOrdering[T](v: T)(implicit ordering: Ordering[T]) =
+      Some(v, ordering).asInstanceOf[Option[(Any, Ordering[Any])]]
+
+    @tailrec
+    def unapply(v: Val): Option[(Any, Ordering[Any])] = v match {
+      case Val.Zero(_)       => unapply(v.canonicalize)
+      case Val.True          => someAnyWithOrdering(true)
+      case Val.False         => someAnyWithOrdering(false)
+      case Val.Char(value)   => someAnyWithOrdering(value)
+      case Val.Byte(value)   => someAnyWithOrdering(value)
+      case Val.Short(value)  => someAnyWithOrdering(value)
+      case Val.Int(value)    => someAnyWithOrdering(value)
+      case Val.Long(value)   => someAnyWithOrdering(value)
+      case Val.Float(value)  => someAnyWithOrdering(value)
+      case Val.Double(value) => someAnyWithOrdering(value)
+      case Val.String(value) => someAnyWithOrdering(value)
+      case _                 => None
+    }
+
+    def unapply(vals: (Val, Val)): Option[(Ordering[Any], Any, Any)] =
+      vals match {
+        case (ComparableVal(l, lOrdering), ComparableVal(r, rOrdering))
+            if lOrdering == rOrdering =>
+          Some(lOrdering, l, r)
+        case (ComparableVal(null, _), ComparableVal(r, rOrdering)) =>
+          Some(rOrdering, null, r)
+        case (ComparableVal(l, lOrdering), ComparableVal(null, _)) =>
+          Some(lOrdering, l, null)
+        case _ => None
+      }
+
+  }
+  object ComperableValsTuple {
+    def unapply(vals: (Val, Val)): Option[(Ordering[Any], Any, Any)] =
+      vals match {
+        case (ComparableVal(l, lOrdering), ComparableVal(r, rOrdering))
+            if lOrdering == rOrdering =>
+          Some(lOrdering, l, r)
+        case (ComparableVal(null, _), ComparableVal(r, rOrdering)) =>
+          Some(rOrdering, null, r)
+        case (ComparableVal(l, lOrdering), ComparableVal(null, _)) =>
+          Some(lOrdering, l, null)
+        case _ => None
+      }
   }
 }
