@@ -610,9 +610,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           // Do not emit, not even as abstract.
 
           case _ if linkTimeResolvedAnnotation.isDefined =>
-            genLinkTimeResolvedProperty(dd,
-                                        linkTimeResolvedAnnotation.get,
-                                        name)
+            val (propertyName, retty) =
+              genLinktimeResolvedProperty(dd,
+                                          linkTimeResolvedAnnotation.get,
+                                          name)
+            genLinktimeResolvedMethod(retty, propertyName, name)
 
           case rhs =>
             scoped(
@@ -625,9 +627,32 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
-    def genLinkTimeResolvedProperty(dd: DefDef,
-                                    annotationInfo: AnnotationInfo,
-                                    name: Global): Unit = {
+    def genLinktimeResolvedMethod(
+        retty: nir.Type,
+        propertyName: nir.Global,
+        methodName: nir.Global)(implicit pos: nir.Position): Unit = {
+      implicit val fresh: Fresh = Fresh()
+      val buf                   = new ExprBuffer()
+
+      buf.label(fresh())
+      val value = buf.call(Linktime.PropertyResolveFunctionTy(retty),
+                           Linktime.PropertyResolveFunction(retty),
+                           Seq(Val.Global(propertyName, retty)),
+                           Next.None)
+      buf.ret(value)
+
+      curStatBuffer.get += Defn.Define(
+        Attrs(inlineHint = Attr.AlwaysInline),
+        methodName,
+        Type.Function(Seq(), retty),
+        buf.toSeq
+      )
+    }
+
+    protected def genLinktimeResolvedProperty(
+        dd: DefDef,
+        annotationInfo: AnnotationInfo,
+        name: Global): (Global.Member, nir.Type) = {
       require(annotationInfo.symbol == LinktimeResolvedClass)
 
       implicit val fresh: Fresh      = Fresh()
@@ -672,19 +697,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         Type.StructValue(Seq(retty, Rt.String, Rt.String)),
         Val.StructValue(Seq(defaultValue, sysPropertyName, envVariableName)))
 
-      buf.label(fresh())
-      val value = buf.call(Linktime.PropertyResolveFunctionTy(retty),
-                           Linktime.PropertyResolveFunction(retty),
-                           Seq(Val.Global(propertyName, retty)),
-                           Next.None)
-      buf.ret(value)
-
-      curStatBuffer.get += Defn.Define(
-        Attrs(inlineHint = Attr.AlwaysInline),
-        name,
-        Type.Function(Seq(), defaultValue.ty),
-        buf.toSeq
-      )
+      (propertyName, retty)
     }
 
     def genExternMethod(attrs: nir.Attrs,
