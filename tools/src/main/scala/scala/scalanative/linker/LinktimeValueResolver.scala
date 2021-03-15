@@ -56,14 +56,20 @@ trait LinktimeValueResolver { self: Reach =>
         case _               => None
       }
 
-      // {property, env}Name can be Val.Null given property should not be
-      // accessible through that channel
-      def propertyValue = stringOrNone(propertyName).flatMap(sys.props.get)
-      def envValue      = stringOrNone(envName).flatMap(sys.env.get)
+      // {property, env}Name can be Val.Null, in such case given property
+      // should not be accessible through that channel
+      def propertyValue =
+        stringOrNone(propertyName)
+          .flatMap(sys.props.get)
+          .map(parseFromString(s"system property $propertyName"))
 
-      propertyValue
-        .orElse(envValue)
-        .map { str =>
+      def envValue =
+        stringOrNone(envName)
+          .flatMap(sys.env.get)
+          .map(parseFromString(s"env variable $envName"))
+
+      def parseFromString(context: => String)(str: String) =
+        try {
           valType match {
             case Type.Bool  => Val.Bool(java.lang.Boolean.parseBoolean(str))
             case Type.Char  => Val.Char(str.head)
@@ -78,7 +84,15 @@ trait LinktimeValueResolver { self: Reach =>
             case tpe =>
               util.unsupported(s"Unsupported type of linktime property: $tpe")
           }
+        } catch {
+          case exc: Throwable =>
+            throw new LinkingException(
+              s"Failed to parse `$str` from $context to value of $valType"
+            ).initCause(exc)
         }
+
+      propertyValue
+        .orElse(envValue)
         .getOrElse(defaultValue)
     }
   }
