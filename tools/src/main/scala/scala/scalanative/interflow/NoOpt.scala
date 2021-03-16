@@ -34,6 +34,8 @@ trait NoOpt { self: Interflow =>
       noOptNext(unwind)
     case Inst.Unreachable(unwind) =>
       noOptNext(unwind)
+    case _: Inst.LinktimeCf =>
+      util.unreachable
   }
 
   def noOptNext(next: Next): Unit = next match {
