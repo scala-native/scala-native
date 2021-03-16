@@ -180,11 +180,19 @@ class TimeTest {
     }
   }
 
-  @Test def strptimeDetectsInvalidFormat(): Unit = {
+  @Test def strptimeDetectsGrosslyInvalidFormat(): Unit = {
     Zone { implicit z =>
       val tmPtr = alloc[tm]
 
-      // %Q in format is invalid
+      // As described in the Scala Native time.c implementation,
+      // the format string is passed, unchecked, to the underlying
+      // libc. All(?) will reject %Q in format.
+      //
+      // Gnu, macOS, and possibly other libc implementations parse
+      // strftime specifiers such as %Z. As described in time.c, the
+      // implementation under test is slightly non-conforming because
+      // it does not reject specifiers accepted by the underlying libc.
+
       val result =
         strptime(c"December 31, 2016 23:59:60", c"%B %d, %Y %Q", tmPtr)
 
@@ -217,22 +225,21 @@ class TimeTest {
 
   @Test def strptimeDoesNotWriteMemoryOutsideStructTm(): Unit = {
     Zone { implicit z =>
-      // The purpose of this test is to check two closely related conditions.
-      // These conditions not a concern when the size of the C structure
+      // The purpose of this test is to check that time.scala method
+      // declaration had an "@name" annotation, so that structure
+      // copy-in/copy-out happened? Failure case is if 36 byte
+      // Scala Native tm got passed as-is to C strptime on a BSD/glibc
+      // or macOS system; see the tm_gmtoff & tm_zone handling below.
+
+      // This is not a concern when the size of the C structure
       // is the same as the Scala Native structure and the order of the
-      // fields match. They are necessary on BSD or glibc derived systems
-      // where the Operating System libc uses 56 bytes, where the "extra"
-      // have a time-honored, specified meaning.
-      //
-      //   1) Did time.scala stptime() have "@name" to ensure that structure
-      //      copy-in/copy-out happened? Failure case is if 36 byte
-      //      Scala Native tm got passed as-is to C strptime on a BSD/glibc
-      //      system; see the tm_gmtoff & tm_zone handling below
-      //
-      //   2) Did time.c strptime() zero clear the tm_isdst field?
+      // fields match. They are necessary on BSD, glibc derived, macOS,
+      // and possibly other systems where the Operating System libc
+      // uses 56 bytes, where the "extra" have a time-honored, specified
+      // meaning.
       //
       // Key to magic numbers 56 & 36.
-      // Linux _BSD_Source uses at least 56 Bytes.
+      // Linux _BSD_Source and macOS use at least 56 Bytes.
       // Posix specifies 36 but allows more.
 
       // Review logic of this test thoroughly if size of "tm" changes.
@@ -247,21 +254,28 @@ class TimeTest {
 
       val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
-      // C strptime() parses %Z but does not set corresponding field.
-      // Initialize tm_isdst to something other than 0 to ensure
-      // Scala Native strptime() is clearing it.
-      // Change in this initial condition is checked in a test below.
-      tmPtr.tm_isdst = Int.MinValue
-
       val gmtIndex = 36.toULong
 
-      // To detect the case where strptime() is writing tm_gmtoff
+      // To detect the case where SN strptime() is writing tm_gmtoff
       // use a value outside the known range of valid values.
+      // This can happen if "@name" annotation has gone missing.
+
       val expectedGmtOff = Long.MaxValue
       (tmBuf + gmtIndex).asInstanceOf[Ptr[CLong]](0) = expectedGmtOff
 
+      // %Z is not a supported posix conversion specification, but
+      // is useful here to detect a defect in the method-under-test.
+      //
+      // %Z is parsed by many/most libc. The Scala Native implementation
+      // of strptime() passes the format argument to libc without parsing &
+      // rejecting it for containing a non-posix conversion.
+      // Gnu libc will parse the specifier and set no field in the C struct.
+      // macOS will parse and accept "GMT" or the local timezone name
+      // and write to the corresponding fields in the C struct.
+      // "GMT" is used here to avoid local timezone handling.
+
       val cp =
-        strptime(c"Fri Mar 31 14:47:44 EDT 2017", c"%a %b %d %T %Z %Y", tmPtr)
+        strptime(c"Fri Mar 31 14:47:44 GMT 2017", c"%a %b %d %T %Z %Y", tmPtr)
 
       assertNotNull(s"strptime() returned unexpected null pointer", cp)
 
@@ -270,6 +284,7 @@ class TimeTest {
 
       // tm_gmtoff & tm_zone are outside the posix defined range.
       // Scala Native strftime() should never write to them.
+      //
       // Assume no leading or interior padding.
 
       val tm_gmtoff = (tmBuf + gmtIndex).asInstanceOf[Ptr[CLong]](0)
@@ -305,11 +320,7 @@ class TimeTest {
       val expectedYday = 89
       assertEquals("tm_yday", expectedYday, tmPtr.tm_yday)
 
-      // C strptime() parses %Z but does not set corresponding field.
-      // This and the initializaton at beginning of test
-      // ensures that Scala Native strptime() initializes that field to zero.
-      val expectedIsDst = 0
-      assertEquals("tm_isdst", expectedIsDst, tmPtr.tm_isdst)
+      // Per posix specification, contents of tm_isdst are not reliable.
     }
   }
 
@@ -347,9 +358,7 @@ class TimeTest {
       assertTrue(s"tm_sec: ${tmPtr.tm_sec} != expected: ${expectedSec}",
                  tmPtr.tm_sec == expectedSec)
 
-      val expectedIsdst = 0
-      assertTrue(s"tm_isdst: ${tmPtr.tm_isdst} != expected: ${expectedIsdst}",
-                 tmPtr.tm_isdst == expectedIsdst)
+    // Per posix specification, contents of tm_isdst are not reliable.
     }
   }
 

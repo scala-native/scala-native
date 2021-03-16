@@ -116,11 +116,42 @@ size_t scalanative_strftime(char *buf, size_t maxsize, const char *format,
 // XSI
 char *scalanative_strptime(const char *s, const char *format,
                            struct scalanative_tm *scala_tm) {
-    // strptime is known to not set is_dst field for %Z format.
-    // Take runtime hit of clearing entire structure to be robust
-    // to that and undiscovered corner cases where strptime does not fill
-    // a field under some condition.
-    struct tm tm = {0};
+    // Note Well:
+    //
+    // Reference: "The Open Group Base Specifications Issue 7, 2018 edition".
+    // A long comment for a deceptively complicated standard and implementation
+    // thereof.
+    //
+    // 1) Hazard Alert! Booby trap ahead.
+    //
+    //    Only the fields in the "scalanative_tm" argument with explicit
+    //    conversion specifiers in the format argument are reliably
+    //    and portably set. Other fields may or may not be written.
+    //
+    //    The "APPLICATION USAGE" section of the specification says
+    //    that the contents of a second call to this method with the
+    //    same "struct tm" are unspecified (implementation dependent).
+    //    The "struct tm" may be updated (leaving some fields untouched)
+    //    or completely overwritten. If the structure is overwritten,
+    //    the value used to overwrite fields not in the format is
+    //    also specified.
+    //
+    //    The implies, but does not state, that the value of fields
+    //    not in the format may stay the same or change.
+    //
+    //    There is no specifier for the is_dst field. The non-binding example
+    //    describes that field as not set by strptime(). This supports, but
+    //    does not specify, the idea that fields not in the format are
+    //    untouched. Caveat Utilitor (user beware)!
+    //
+    //
+    // 2) This implementation is slightly nonconforming, but useful,
+    //    in that the format argument is passed directly to the underlying
+    //    libc. This means that conversions specifiers such as "%Z"
+    //    supported by Posix strftime(), glibc, and macOS will will not
+    //    be reported as parse errors at this level.
+
+    struct tm tm;
 
     char *result = strptime(s, format, &tm);
     scalanative_tm_init(scala_tm, &tm);
