@@ -111,10 +111,6 @@ trait LinktimeValueResolver { self: Reach =>
 
       case SimpleCondition(name, comparison, condVal) =>
         val resolvedValue = resolveLinktimeProperty(name)
-        if (resolvedValue.ty != condVal.ty) {
-          util.unsupported(
-            s"Cannot resolve linktime condition for different types ${resolvedValue.ty} and ${condVal.ty}")
-        }
 
         (condVal, resolvedValue) match {
           case ComperableValsTuple(ordering, condition, resolved) =>
@@ -129,8 +125,13 @@ trait LinktimeValueResolver { self: Reach =>
             comparsionFn(resolved, condition)
 
           case _ =>
-            util.unsupported(
-              s"Unsupported linktime comparison types: ${condVal.ty} and ${resolvedValue.ty}")
+            comparison match {
+              case Comp.Ieq | Comp.Feq => resolvedValue == condVal
+              case Comp.Ine | Comp.Fne => resolvedValue != condVal
+              case _ =>
+                util.unsupported(
+                  s"Unsupported linktime comparison types: ${condVal.ty} and ${resolvedValue.ty}")
+            }
         }
       case _ => util.unsupported(s"Unknown linktime condition: $cond")
     }
@@ -165,6 +166,7 @@ object LinktimeValueResolver {
   }
 
   object ComparableVal {
+    type AnyOrderingWithValues = (Ordering[Any], Any, Any)
     private def someAnyWithOrdering[T](v: T)(implicit ordering: Ordering[T]) =
       Some(v, ordering).asInstanceOf[Option[(Any, Ordering[Any])]]
 
@@ -184,7 +186,7 @@ object LinktimeValueResolver {
       case _                 => None
     }
 
-    def unapply(vals: (Val, Val)): Option[(Ordering[Any], Any, Any)] =
+    def unapply(vals: (Val, Val)): Option[AnyOrderingWithValues] =
       vals match {
         case (ComparableVal(l, lOrdering), ComparableVal(r, rOrdering))
             if lOrdering == rOrdering =>
@@ -198,14 +200,18 @@ object LinktimeValueResolver {
 
   }
   object ComperableValsTuple {
-    def unapply(vals: (Val, Val)): Option[(Ordering[Any], Any, Any)] =
+    def unapply(vals: (Val, Val)): Option[AnyOrderingWithValues] =
       vals match {
         case (ComparableVal(l, lOrdering), ComparableVal(r, rOrdering))
             if lOrdering == rOrdering =>
           Some(lOrdering, l, r)
-        case (ComparableVal(null, _), ComparableVal(r, rOrdering)) =>
+
+        case (ComparableVal(l: Number, _), ComparableVal(r: Number, _)) =>
+          Some(Ordering[Double], l.doubleValue(), r.doubleValue())
+            .asInstanceOf[Option[AnyOrderingWithValues]]
+        case (ComparableVal(Val.Null, _), ComparableVal(r, rOrdering)) =>
           Some(rOrdering, null, r)
-        case (ComparableVal(l, lOrdering), ComparableVal(null, _)) =>
+        case (ComparableVal(l, lOrdering), ComparableVal(Val.Null, _)) =>
           Some(lOrdering, l, null)
         case _ => None
       }
