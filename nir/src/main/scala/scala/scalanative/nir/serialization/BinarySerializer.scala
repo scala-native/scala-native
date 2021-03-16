@@ -536,12 +536,14 @@ final class BinarySerializer {
       putGlobal(name)
       putComp(comparison)
       putVal(value)
+      putPosition(cond.position)
 
     case LinktimeCondition.ComplexCondition(op, left, right) =>
       putInt(LinktimeCondition.Tag.ComplexCondition)
       putBin(op)
       putLinktimeCondition(left)
       putLinktimeCondition(right)
+      putPosition(cond.position)
   }
 
   // Ported from Scala.js

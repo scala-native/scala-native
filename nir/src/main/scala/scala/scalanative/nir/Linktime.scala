@@ -1,21 +1,26 @@
 package scala.scalanative.nir
 
-sealed trait LinktimeCondition
+sealed trait LinktimeCondition {
+  def position: Position
+}
 
 object LinktimeCondition {
 
-  case class SimpleCondition(name: Global, comparison: Comp, value: Val)
+  case class SimpleCondition(name: Global, comparison: Comp, value: Val)(
+      implicit val position: Position)
       extends LinktimeCondition
 
-  case class ComplexCondition(op: Bin,
-                              left: LinktimeCondition,
-                              right: LinktimeCondition)
+  case class ComplexCondition(
+      op: Bin,
+      left: LinktimeCondition,
+      right: LinktimeCondition)(implicit val position: Position)
       extends LinktimeCondition
 
   object Tag {
     final val SimpleCondition  = 1
     final val ComplexCondition = 2
   }
+
 }
 
 object Linktime {

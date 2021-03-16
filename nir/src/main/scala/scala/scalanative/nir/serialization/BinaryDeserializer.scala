@@ -302,12 +302,13 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case LinktimeCondition.Tag.SimpleCondition =>
       LinktimeCondition.SimpleCondition(name = getGlobal(),
                                         comparison = getComp(),
-                                        value = getVal())
+                                        value = getVal())(getPosition())
 
     case LinktimeCondition.Tag.ComplexCondition =>
-      LinktimeCondition.ComplexCondition(op = getBin(),
-                                         left = getLinktimeCondition(),
-                                         right = getLinktimeCondition())
+      LinktimeCondition.ComplexCondition(
+        op = getBin(),
+        left = getLinktimeCondition(),
+        right = getLinktimeCondition())(getPosition())
 
     case n => util.unsupported(s"Unknown linktime condition tag: ${n}")
   }
