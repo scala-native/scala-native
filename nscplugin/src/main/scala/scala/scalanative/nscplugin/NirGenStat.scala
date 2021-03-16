@@ -660,35 +660,45 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       implicit val buf: ExprBuffer   = new ExprBuffer()
       implicit val pos: nir.Position = dd.pos
 
-      def toLiteralOrFallback(tree: Tree)(fallback: => Val)(
-          implicit buf: ExprBuffer): Val =
+      def toLiteralOrFallback(tree: Tree, allowNull: Boolean)(fallback: => Val)(
+          implicit buf: ExprBuffer): Val = {
         tree match {
-          case literal @ Literal(Constant(_)) => buf.genLiteralValue(literal)
-          case _                              => fallback
+          case literal @ Literal(Constant(_)) =>
+            literal.value.tag match {
+              case UnitTag               => fallback
+              case NullTag if !allowNull => fallback
+              case _                     => buf.genLiteralValue(literal)
+            }
+          case _ => fallback
         }
+      }
 
-      def symbolName(delimiter: Char): String =
+      def symbolName(delimiter: Char): String = {
         dd.symbol.fullName(delimiter).replace('$', delimiter)
+      }
 
-      val defaultValue = toLiteralOrFallback(dd.rhs) {
+      val defaultValue = toLiteralOrFallback(dd.rhs, allowNull = false) {
         globalError(
           dd.pos,
-          "Property resolved at link-time needs to be literal constant")
+          "Property resolved at link-time needs to be non-null literal constant")
         Val.Null
       }
+
       if (dd.symbol.isConstant) {
         globalError(
           dd.pos,
           "Link-time property cannot be constant value, it would be inlined by scalac compiler")
       }
 
-      val sysPropertyName = toLiteralOrFallback(annotationInfo.args.head) {
-        Val.String(symbolName('.').toLowerCase)
-      }
+      val sysPropertyName =
+        toLiteralOrFallback(annotationInfo.args.head, allowNull = true) {
+          Val.String(symbolName('.'))
+        }
 
-      val envVariableName = toLiteralOrFallback(annotationInfo.args(1)) {
-        Val.String(symbolName('_').toUpperCase)
-      }
+      val envVariableName =
+        toLiteralOrFallback(annotationInfo.args(1), allowNull = true) {
+          Val.String(symbolName('_').toUpperCase)
+        }
 
       val propertyName = Linktime.nameToLinktimePropertyName(name)
       val retty        = defaultValue.ty
