@@ -48,7 +48,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader)
                links.toSeq,
                defns.toSeq,
                dynsigs.toSeq,
-               dynimpls.toSeq)
+               dynimpls.toSeq,
+               resolvedValues)
   }
 
   def cleanup(): Unit = {

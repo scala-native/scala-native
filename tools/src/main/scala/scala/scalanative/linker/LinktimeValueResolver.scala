@@ -2,13 +2,14 @@ package scala.scalanative.linker
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.scalanative.linker.LinktimeValueResolver.ComparableVal.AnyOrderingWithValues
 import scala.scalanative.nir._
 import scala.scalanative.util
 
 trait LinktimeValueResolver { self: Reach =>
   import LinktimeValueResolver._
 
-  val resolvedProperties = mutable.Map.empty[Global, Val]
+  val resolvedValues = mutable.Map.empty[Global, Val]
 
   protected def resolveLinktimeDefine(defn: Defn.Define): Defn.Define = {
     implicit def position: Position = defn.pos
@@ -36,7 +37,7 @@ trait LinktimeValueResolver { self: Reach =>
 
   private def resolveLinktimeProperty(name: Global)(
       implicit pos: Position): Val =
-    resolvedProperties.getOrElseUpdate(name, lookupLinktimeProperty(name))
+    resolvedValues.getOrElseUpdate(name, lookupLinktimeProperty(name))
 
   private def lookupLinktimeProperty(name: Global)(
       implicit pos: Position): Val = {
