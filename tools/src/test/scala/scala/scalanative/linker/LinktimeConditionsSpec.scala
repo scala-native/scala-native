@@ -1,9 +1,10 @@
 package scala.scalanative.linker
 
+import org.scalatest.Assertions.assertThrows
 import org.scalatest.matchers.should.Matchers
 import scala.scalanative.LinkerSpec
 import scala.util.Properties.{clearProp, envOrNone, setProp}
-import scala.scalanative.nir.{Global, Sig, Val, Type}
+import scala.scalanative.nir.{Global, Sig, Type, Val}
 
 class LinktimeConditionsSpec extends LinkerSpec with Matchers {
   val entry = "Main$"
@@ -170,6 +171,20 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
     }
   }
 
+  it should "not allow to define property default to null" in {
+    assertThrows[scala.scalanative.api.CompilationFailedException] {
+      link(s"""
+              |object Main {
+              |   @scalanative.unsafe.linktimeResolved()
+              |   def linktimeProperty: Int = null
+              |   
+              |  def main(args: Array[String]): Unit = {
+              |    if(linktimeProperty) ??? 
+              |  }
+              |}""".stripMargin) { (_, _) => () }
+    }
+  }
+
   "Linktime conditions" should "resolve simple conditions" in {
     val pathsRange = 1.to(3)
     val compilationUnit = Map(
@@ -290,10 +305,10 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
                           |object Main {
                           |   @scalanative.unsafe.linktimeResolved(fromProperty = "prop.bool.1")
                           |   def $bool1 = false
-                          |   
+                          |
                           |   @scalanative.unsafe.linktimeResolved(fromProperty = "prop.bool.2")
                           |   def $bool2 = false
-                          |   
+                          |
                           |  ${pathStrings(pathsRange)}
                           |  def main(args: Array[String]): Unit = {
                           |    if($bool1 && $bool2 == true) path1()
@@ -312,6 +327,22 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
           result.unavailable should contain only pathForNumber(pathNumber)
         }
       }
+  }
+
+  it should "not allow to mix link-time and runtime conditions" in {
+    assertThrows[scala.scalanative.api.CompilationFailedException] {
+      link(s"""
+           |object Main {
+           |   @scalanative.unsafe.linktimeResolved()
+           |   def linktimeProperty = false
+           |   
+           |   def runtimeProperty = true
+           |   
+           |  def main(args: Array[String]): Unit = {
+           |    if(linktimeProperty || runtimeProperty) ??? 
+           |  }
+           |}""".stripMargin) { (_, _) => () }
+    }
   }
 
   private def shouldContainAll[T](expected: Iterable[T], given: Iterable[T]) = {
