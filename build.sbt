@@ -71,12 +71,22 @@ lazy val docsSettings: Seq[Setting[_]] = {
 }
 
 // The previous releases of Scala Native with which this version is binary compatible.
-val binCompatVersions = Set()
+val binCompatVersions = Set("0.4.0")
 
-lazy val mimaSettings: Seq[Setting[_]] = Seq(
-  mimaPreviousArtifacts := binCompatVersions.map { version =>
-    organization.value %% moduleName.value % version
-  }
+lazy val mimaSettings = Seq(
+  mimaPreviousArtifacts := Def.setting {
+    val nativePlugins = Seq(MyScalaNativePlugin, ScalaNativePlugin)
+    val isNativeProject = {
+      thisProject.value.autoPlugins.exists(nativePlugins.contains)
+    }
+    if (sbtPlugin.value) Set.empty[ModuleID]
+    else {
+      binCompatVersions.map { version =>
+        if (isNativeProject) organization.value %%% moduleName.value % version
+        else organization.value                 %% moduleName.value  % version
+      }
+    }
+  }.value
 )
 
 // Common start but individual sub-projects may add or remove scalacOptions.
@@ -104,7 +114,8 @@ addCommandAlias(
   Seq(
     "test-tools",
     "test-runtime",
-    "test-scripted"
+    "test-scripted",
+    "test-mima"
   ).mkString(";")
 )
 
@@ -114,7 +125,7 @@ addCommandAlias(
     "testRunner/test",
     "testInterface/test",
     "tools/test",
-    "tools/mimaReportBinaryIssues"
+    "test-mima"
   ).mkString(";")
 )
 
@@ -130,6 +141,15 @@ addCommandAlias(
     "junitTestOutputsNative/test",
     "scalaPartestJunitTests/test"
   ).mkString(";")
+)
+
+addCommandAlias(
+  "test-mima", {
+    Seq("util", "nir", "tools") ++
+      Seq("testRunner", "testInterface", "testInerfaceSbtDefs", "junitRuntime") ++
+      Seq("clib", "posixlib", "nativelib", "auxlib", "javalib")
+  }.map(_ + "/mimaReportBinaryIssues")
+    .mkString(";")
 )
 
 addCommandAlias(
@@ -226,7 +246,7 @@ lazy val publishSettings: Seq[Setting[_]] = Seq(
       <url>https://github.com/scala-native/scala-native/issues</url>
     </issueManagement>
   )
-) ++ nameSettings
+) ++ nameSettings ++ mimaSettings
 
 lazy val noPublishSettings: Seq[Setting[_]] = Seq(
   publishArtifact := false,
@@ -355,8 +375,7 @@ lazy val tools =
         }
       },
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
-      Test / parallelExecution := false,
-      mimaSettings
+      Test / parallelExecution := false
     )
     .dependsOn(nir, util, testingCompilerInterface % Test)
 
