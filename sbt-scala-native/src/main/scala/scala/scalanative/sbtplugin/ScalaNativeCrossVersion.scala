@@ -7,6 +7,8 @@ import sbt._
 import scala.scalanative.nir.Versions
 
 object ScalaNativeCrossVersion {
+  val currentBinaryVersion = CrossVersion.binaryScalaVersion(Versions.current)
+
   private[this] def crossVersionAddPlatformPart(
       cross: CrossVersion,
       part: String
