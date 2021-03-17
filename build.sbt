@@ -111,7 +111,6 @@ addCommandAlias(
 addCommandAlias(
   "test-tools",
   Seq(
-    "sbtScalaNative/test",
     "testRunner/test",
     "testInterface/test",
     "tools/test",
@@ -291,11 +290,6 @@ lazy val nir =
     .settings(mavenPublishSettings)
     .dependsOn(util)
 
-lazy val scalatestLib = Seq(
-  "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
-  "org.scalatest"  %% "scalatest"  % "3.1.1"  % "test"
-)
-
 lazy val tools =
   project
     .in(file("tools"))
@@ -304,7 +298,10 @@ lazy val tools =
     .enablePlugins(BuildInfoPlugin)
     .settings(buildInfoSettings)
     .settings(
-      libraryDependencies ++= scalatestLib,
+      libraryDependencies ++= Seq(
+        "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
+        "org.scalatest"  %% "scalatest"  % "3.1.1"  % "test"
+      ),
       Test / fork := true,
       Test / javaOptions ++= {
         val nscpluginjar = (nscplugin / Compile / Keys.`package`).value
@@ -416,8 +413,7 @@ lazy val sbtScalaNative =
             testRunner / publishLocal
           )
           .value
-      },
-      libraryDependencies ++= scalatestLib
+      }
     )
     .dependsOn(tools, testRunner)
 

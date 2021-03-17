@@ -1,12 +1,12 @@
-package scala.scalanative.sbtplugin
+package scala.scalanative.nir
 
-import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ScalaNativeCrossVersionSuite extends AnyFlatSpec with Matchers {
+class VersionsSuite extends AnyFlatSpec with Matchers {
   "ScalaNative cross versions" should "generate correct binary version" in {
     def test(full: String, cross: String): Unit = withClue(full) {
-      ScalaNativeCrossVersion.binaryVersion(full) shouldEqual cross
+      Versions.binaryVersion(full) shouldEqual cross
     }
     test("0.5.0-SNAPSHOT", "0.5.0-SNAPSHOT")
     test("0.5.0-M1", "0.5.0-M1")
