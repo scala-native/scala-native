@@ -343,10 +343,6 @@ lazy val tools =
       },
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
       Test / parallelExecution := false,
-      Test / envVars ++= Map(
-        "LINKTIME_MSG"              -> "scala-native",
-        "LINKTIME_DECIMALSEPARATOR" -> "_"
-      ),
       mimaSettings
     )
     .dependsOn(nir, util, testingCompilerInterface % Test)

@@ -6,7 +6,9 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scalanative.nir._
 
-class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader)
+class Reach(protected val config: build.Config,
+            entries: Seq[Global],
+            loader: ClassLoader)
     extends LinktimeValueResolver {
   import Reach._
 
@@ -49,7 +51,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader)
                defns.toSeq,
                dynsigs.toSeq,
                dynimpls.toSeq,
-               resolvedValues)
+               resolvedNirValues)
   }
 
   def cleanup(): Unit = {

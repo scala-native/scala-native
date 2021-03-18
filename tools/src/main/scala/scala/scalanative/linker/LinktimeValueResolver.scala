@@ -1,15 +1,17 @@
 package scala.scalanative.linker
 
-import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.scalanative.linker.LinktimeValueResolver.ComparableVal.AnyOrderingWithValues
+import scala.scalanative.build.BuildException
 import scala.scalanative.nir._
-import scala.scalanative.util
 
 trait LinktimeValueResolver { self: Reach =>
   import LinktimeValueResolver._
 
-  val resolvedValues = mutable.Map.empty[Global, Val]
+  private val resolvedValues = mutable.Map.empty[Global, LinktimeValue]
+  // For compat with 2.13 where mapValues is deprecated
+  def resolvedNirValues: mutable.Map[Global, Val] = resolvedValues.map {
+    case (k, v) => k -> v.nirValue
+  }
 
   protected def resolveLinktimeDefine(defn: Defn.Define): Defn.Define = {
     implicit def position: Position = defn.pos
@@ -36,66 +38,31 @@ trait LinktimeValueResolver { self: Reach =>
   }
 
   private def resolveLinktimeProperty(name: Global)(
-      implicit pos: Position): Val =
+      implicit pos: Position): LinktimeValue =
     resolvedValues.getOrElseUpdate(name, lookupLinktimeProperty(name))
 
   private def lookupLinktimeProperty(name: Global)(
-      implicit pos: Position): Val = {
-    fieldInfo(name).fold[Val] {
+      implicit pos: Position): LinktimeValue = {
+    fieldInfo(name).fold[LinktimeValue] {
       addMissing(name, pos)
-      Val.Null
+      ComparableVal(null, Val.Null).asAny
     } { field =>
       require(field.isConst, "Linktime property was not const")
       require(field.ty.isInstanceOf[Type.StructValue],
               "Linktime property was not struct")
 
-      val Type.StructValue(valType +: _) = field.ty
-      val Val.StructValue(Seq(defaultValue, propertyName, envName)) =
+      val Type.StructValue(defaultTy +: _) = field.ty
+      val Val.StructValue(Seq(default, Val.String(propertyName))) =
         field.init
 
-      def stringOrNone(value: Val): Option[String] = value match {
-        case Val.String(str) => Some(str)
-        case _               => None
-      }
+      def defaultValue = ComparableVal.fromNir(default)
 
-      // {property, env}Name can be Val.Null, in such case given property
-      // should not be accessible through that channel
       def propertyValue =
-        stringOrNone(propertyName)
-          .flatMap(sys.props.get)
-          .map(parseFromString(s"system property $propertyName"))
+        config.compilerConfig.linktimeProperties
+          .get(propertyName)
+          .map(ComparableVal.fromAny(_, defaultTy))
 
-      def envValue =
-        stringOrNone(envName)
-          .flatMap(sys.env.get)
-          .map(parseFromString(s"env variable $envName"))
-
-      def parseFromString(context: => String)(str: String) =
-        try {
-          valType match {
-            case Type.Bool  => Val.Bool(java.lang.Boolean.parseBoolean(str))
-            case Type.Char  => Val.Char(str.head)
-            case Type.Byte  => Val.Byte(java.lang.Byte.parseByte(str))
-            case Type.Short => Val.Short(java.lang.Short.parseShort(str))
-            case Type.Int   => Val.Int(java.lang.Integer.parseInt(str))
-            case Type.Long  => Val.Long(java.lang.Long.parseLong(str))
-            case Type.Float => Val.Float(java.lang.Float.parseFloat(str))
-            case Type.Double =>
-              Val.Double(java.lang.Double.parseDouble(str))
-            case Type.Ref(Rt.StringName, _, _) => Val.String(str)
-            case tpe =>
-              util.unsupported(s"Unsupported type of linktime property: $tpe")
-          }
-        } catch {
-          case exc: Throwable =>
-            throw new LinkingException(
-              s"Failed to parse `$str` from $context to value of $valType"
-            ).initCause(exc)
-        }
-
-      propertyValue
-        .orElse(envValue)
-        .getOrElse(defaultValue)
+      propertyValue.getOrElse(defaultValue).asAny
     }
   }
 
@@ -113,8 +80,8 @@ trait LinktimeValueResolver { self: Reach =>
       case SimpleCondition(name, comparison, condVal) =>
         val resolvedValue = resolveLinktimeProperty(name)
 
-        (condVal, resolvedValue) match {
-          case ComperableValsTuple(ordering, condition, resolved) =>
+        (ComparableVal.fromNir(condVal), resolvedValue) match {
+          case t @ ComparableTuple(ordering, condition, resolved) =>
             val comparsionFn = comparison match {
               case Comp.Ieq | Comp.Feq            => ordering.equiv _
               case Comp.Ine | Comp.Fne            => !ordering.equiv(_: Any, _: Any)
@@ -123,18 +90,20 @@ trait LinktimeValueResolver { self: Reach =>
               case Comp.Slt | Comp.Ult | Comp.Flt => ordering.lt _
               case Comp.Sle | Comp.Ule | Comp.Fle => ordering.lteq _
             }
-            comparsionFn(resolved, condition)
 
-          case _ =>
+            comparsionFn(resolved.value, condition.value)
+
+          // In case if we cannot get common Ordering that can be used, eg.: comparison with Null
+          case (ComparableVal(condition, _), ComparableVal(resolved, _)) =>
             comparison match {
-              case Comp.Ieq | Comp.Feq => resolvedValue == condVal
-              case Comp.Ine | Comp.Fne => resolvedValue != condVal
+              case Comp.Ieq | Comp.Feq => resolved == condition
+              case Comp.Ine | Comp.Fne => resolved != condition
               case _ =>
-                util.unsupported(
-                  s"Unsupported linktime comparison types: ${condVal.ty} and ${resolvedValue.ty}")
+                throw new BuildException(
+                  s"Unsupported link-time comparison types: ${condVal.ty} and ${resolvedValue.nirValue.ty}")
             }
         }
-      case _ => util.unsupported(s"Unknown linktime condition: $cond")
+      case _ => throw new BuildException(s"Unknown link-time condition: $cond")
     }
   }
 
@@ -150,12 +119,14 @@ trait LinktimeValueResolver { self: Reach =>
   private def resolveReferencedProperty(inst: Inst.Let, propertyName: Global)(
       implicit pos: Position): Inst = {
     reachGlobal(propertyName)
-    inst.copy(op = Op.Copy(resolveLinktimeProperty(propertyName)))
+    inst.copy(op = Op.Copy(resolveLinktimeProperty(propertyName).nirValue))
   }
 
 }
 
-object LinktimeValueResolver {
+private[linker] object LinktimeValueResolver {
+  type LinktimeValue = ComparableVal[Any]
+
   object ReferencedPropertyOp {
     def unapply(op: Op): Option[Global] = op match {
       case Op.Call(_,
@@ -166,55 +137,94 @@ object LinktimeValueResolver {
     }
   }
 
-  object ComparableVal {
-    type AnyOrderingWithValues = (Ordering[Any], Any, Any)
-    private def someAnyWithOrdering[T](v: T)(implicit ordering: Ordering[T]) =
-      Some(v, ordering).asInstanceOf[Option[(Any, Ordering[Any])]]
+  case class ComparableVal[T: Ordering](value: T, nirValue: Val)(
+      implicit val ordering: Ordering[T]) {
+    def asAny: ComparableVal[Any] = this.asInstanceOf[ComparableVal[Any]]
+  }
 
-    @tailrec
-    def unapply(v: Val): Option[(Any, Ordering[Any])] = v match {
-      case Val.Zero(_)       => unapply(v.canonicalize)
-      case Val.True          => someAnyWithOrdering(true)
-      case Val.False         => someAnyWithOrdering(false)
-      case Val.Char(value)   => someAnyWithOrdering(value)
-      case Val.Byte(value)   => someAnyWithOrdering(value)
-      case Val.Short(value)  => someAnyWithOrdering(value)
-      case Val.Int(value)    => someAnyWithOrdering(value)
-      case Val.Long(value)   => someAnyWithOrdering(value)
-      case Val.Float(value)  => someAnyWithOrdering(value)
-      case Val.Double(value) => someAnyWithOrdering(value)
-      case Val.String(value) => someAnyWithOrdering(value)
-      case _                 => None
+  object ComparableVal {
+    def fromAny(value: Any, expectedNirType: Type): ComparableVal[_] = {
+      def fromNumber[T: Ordering](number: Number, toConcrete: Number => T)(
+          toNir: T => Val) = {
+        val v = toConcrete(number)
+        ComparableVal(v, toNir(v))
+      }
+
+      def parseString(str: String) = {
+        val parsed = expectedNirType match {
+          case Type.Bool                 => java.lang.Boolean.parseBoolean(str)
+          case Type.Char if str.nonEmpty => str.head
+          case _: Type.I                 => java.lang.Long.parseLong(str)
+          case _: Type.F                 => java.lang.Double.parseDouble(str)
+          case _ =>
+            throw new BuildException(
+              s"Cannot parse `$str` to expected NIR type $expectedNirType")
+        }
+        fromAny(parsed, expectedNirType)
+      }
+
+      (value, expectedNirType) match {
+        case (v: Boolean, Type.Bool) =>
+          ComparableVal(v, if (v) Val.True else Val.False)
+        case (v: Char, Type.Char)   => ComparableVal(v, Val.Char(v))
+        case (v: Number, Type.Byte) => fromNumber(v, _.byteValue)(Val.Byte)
+        case (v: Number, Type.Char) =>
+          fromNumber(v, _.shortValue.toChar)(Val.Char)
+        case (v: Number, Type.Short) => fromNumber(v, _.shortValue)(Val.Short)
+        case (v: Number, Type.Int)   => fromNumber(v, _.intValue())(Val.Int)
+        case (v: Number, Type.Long)  => fromNumber(v, _.longValue())(Val.Long)
+        case (v: Number, Type.Float) => fromNumber(v, _.floatValue())(Val.Float)
+        case (v: Number, Type.Double) =>
+          fromNumber(v, _.doubleValue())(Val.Double)
+        case (v: String, Type.Ref(Rt.StringName, _, _)) =>
+          ComparableVal(v, Val.String(v))
+        case (v: String, _) => parseString(v)
+        case (got, expected) =>
+          throw new BuildException(
+            s"Unsupported type of linktime value, got $got, expected: $expected")
+      }
     }
 
-    def unapply(vals: (Val, Val)): Option[AnyOrderingWithValues] =
+    def fromNir(v: Val): LinktimeValue = {
+      v match {
+        case Val.String(value) => ComparableVal(value, v)
+        case Val.True          => ComparableVal(true, v)
+        case Val.False         => ComparableVal(false, v)
+        case Val.Byte(value)   => ComparableVal(value, v)
+        case Val.Char(value)   => ComparableVal(value, v)
+        case Val.Short(value)  => ComparableVal(value, v)
+        case Val.Int(value)    => ComparableVal(value, v)
+        case Val.Long(value)   => ComparableVal(value, v)
+        case Val.Float(value)  => ComparableVal(value, v)
+        case Val.Double(value) => ComparableVal(value, v)
+        case Val.Null          => ComparableVal(null, v)
+        case other =>
+          throw new BuildException(
+            s"Unsupported NIR value for link-time resolving: $other")
+      }
+    }.asAny
+  }
+
+  object ComparableTuple {
+    type ComparableTupleType =
+      (Ordering[Any], ComparableVal[Any], ComparableVal[Any])
+    def unapply(vals: (ComparableVal[_], ComparableVal[_])) = {
       vals match {
-        case (ComparableVal(l, lOrdering), ComparableVal(r, rOrdering))
-            if lOrdering == rOrdering =>
-          Some(lOrdering, l, r)
-        case (ComparableVal(null, _), ComparableVal(r, rOrdering)) =>
-          Some(rOrdering, null, r)
-        case (ComparableVal(l, lOrdering), ComparableVal(null, _)) =>
-          Some(lOrdering, l, null)
+        case (l: ComparableVal[_], r: ComparableVal[_])
+            if l.ordering == r.ordering =>
+          Some((l.ordering, l, r))
+
+        case (ComparableVal(lValue: Number, lNir),
+              ComparableVal(rValue: Number, rNir)) =>
+          Some {
+            (implicitly[Ordering[Double]],
+             ComparableVal(lValue.doubleValue(), lNir).asAny,
+             ComparableVal(rValue.doubleValue(), rNir))
+          }
+
         case _ => None
       }
-
+    }.map(_.asInstanceOf[ComparableTupleType])
   }
-  object ComperableValsTuple {
-    def unapply(vals: (Val, Val)): Option[AnyOrderingWithValues] =
-      vals match {
-        case (ComparableVal(l, lOrdering), ComparableVal(r, rOrdering))
-            if lOrdering == rOrdering =>
-          Some(lOrdering, l, r)
 
-        case (ComparableVal(l: Number, _), ComparableVal(r: Number, _)) =>
-          Some(Ordering[Double], l.doubleValue(), r.doubleValue())
-            .asInstanceOf[Option[AnyOrderingWithValues]]
-        case (ComparableVal(Val.Null, _), ComparableVal(r, rOrdering)) =>
-          Some(rOrdering, null, r)
-        case (ComparableVal(l, lOrdering), ComparableVal(Val.Null, _)) =>
-          Some(lOrdering, l, null)
-        case _ => None
-      }
-  }
 }

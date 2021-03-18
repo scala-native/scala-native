@@ -660,28 +660,28 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       implicit val buf: ExprBuffer   = new ExprBuffer()
       implicit val pos: nir.Position = dd.pos
 
-      def toLiteralOrFallback(tree: Tree, allowNull: Boolean)(fallback: => Val)(
+      def fromLiteralOrFallback(tree: Tree, checkedCase: String)(
+          fallback: PartialFunction[Tree, Val] = PartialFunction.empty)(
           implicit buf: ExprBuffer): Val = {
+
+        def isValidLiteral(lit: Literal) = {
+          lit.value.tag != UnitTag &&
+          lit.value.tag != NullTag
+        }
+
         tree match {
-          case literal @ Literal(Constant(_)) =>
-            literal.value.tag match {
-              case UnitTag               => fallback
-              case NullTag if !allowNull => fallback
-              case _                     => buf.genLiteralValue(literal)
-            }
-          case _ => fallback
+          case lit @ Literal(Constant(_)) if isValidLiteral(lit) =>
+            buf.genLiteralValue(lit)
+          case _ if fallback.isDefinedAt(tree) => fallback(tree)
+          case _ =>
+            globalError(dd.pos,
+                        s"$checkedCase needs to be non-null literal constant")
+            Val.Null
         }
       }
 
-      def symbolName(delimiter: Char): String = {
+      def normalizedSymbolName(delimiter: Char): String = {
         dd.symbol.fullName(delimiter).replace('$', delimiter)
-      }
-
-      val defaultValue = toLiteralOrFallback(dd.rhs, allowNull = false) {
-        globalError(
-          dd.pos,
-          "Property resolved at link-time needs to be non-null literal constant")
-        Val.Null
       }
 
       if (dd.symbol.isConstant) {
@@ -690,25 +690,25 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           "Link-time property cannot be constant value, it would be inlined by scalac compiler")
       }
 
-      val sysPropertyName =
-        toLiteralOrFallback(annotationInfo.args.head, allowNull = true) {
-          Val.String(symbolName('.'))
+      val defaultValue =
+        fromLiteralOrFallback(dd.rhs, "Default value of linktime property")()
+
+      val propertyName =
+        fromLiteralOrFallback(annotationInfo.args.head,
+                              "Name used to resolve linktime property") {
+          case tree if tree.symbol.isParamWithDefault =>
+            Val.String(normalizedSymbolName('.'))
         }
 
-      val envVariableName =
-        toLiteralOrFallback(annotationInfo.args(1), allowNull = true) {
-          Val.String(symbolName('_').toUpperCase)
-        }
-
-      val propertyName = Linktime.nameToLinktimePropertyName(name)
-      val retty        = defaultValue.ty
+      val globalPropertyName = Linktime.nameToLinktimePropertyName(name)
+      val retty              = defaultValue.ty
       curStatBuffer.get += Defn.Const(
         Attrs.None,
-        propertyName,
-        Type.StructValue(Seq(retty, Rt.String, Rt.String)),
-        Val.StructValue(Seq(defaultValue, sysPropertyName, envVariableName)))
+        globalPropertyName,
+        Type.StructValue(Seq(retty, Rt.String)),
+        Val.StructValue(Seq(defaultValue, propertyName)))
 
-      (propertyName, retty)
+      (globalPropertyName, retty)
     }
 
     def genExternMethod(attrs: nir.Attrs,
