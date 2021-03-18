@@ -1,8 +1,9 @@
 import java.io.File.pathSeparator
 import scala.collection.mutable
 import scala.util.Try
-
 import build.ScalaVersions._
+import build.BinaryIncompatibilities
+import com.typesafe.tools.mima.core.ProblemFilter
 
 // Convert "SomeName" to "some-name".
 def convertCamelKebab(name: String): String = {
@@ -73,7 +74,7 @@ lazy val docsSettings: Seq[Setting[_]] = {
 // The previous releases of Scala Native with which this version is binary compatible.
 val binCompatVersions = Set("0.4.0")
 
-lazy val mimaSettings = Seq(
+def mimaSettings(filters: Seq[ProblemFilter]) = Seq(
   mimaPreviousArtifacts := Def.setting {
     val nativePlugins = Seq(MyScalaNativePlugin, ScalaNativePlugin)
     val isNativeProject = {
@@ -86,7 +87,8 @@ lazy val mimaSettings = Seq(
         else organization.value                 %% moduleName.value  % version
       }
     }
-  }.value
+  }.value,
+  mimaBinaryIssueFilters ++= filters
 )
 
 // Common start but individual sub-projects may add or remove scalacOptions.
@@ -246,7 +248,7 @@ lazy val publishSettings: Seq[Setting[_]] = Seq(
       <url>https://github.com/scala-native/scala-native/issues</url>
     </issueManagement>
   )
-) ++ nameSettings ++ mimaSettings
+) ++ nameSettings
 
 lazy val noPublishSettings: Seq[Setting[_]] = Seq(
   publishArtifact := false,
@@ -460,7 +462,8 @@ lazy val nativelib =
     .settings(docsSettings)
     .settings(
       libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      exportJars := true
+      exportJars := true,
+      mimaSettings(BinaryIncompatibilities.NativeLib)
     )
     .dependsOn(nscplugin % "plugin")
 
