@@ -26,6 +26,9 @@ private[scalanative] object NativeLib {
    */
   val codeDir = "scala-native"
 
+  /** Prefix common for all native sources */
+  val nativeDirectoryPrefix = "native-code"
+
   /** Used to find native source files in directories */
   private def srcPatterns(path: Path): String =
     srcExtensions.mkString(s"glob:${srcPathPattern(path)}**{", ",", "}")
@@ -105,8 +108,9 @@ private[scalanative] object NativeLib {
             .getFileName()
             .toString()
             .stripSuffix(jarExtension)
+        val directoryName = s"$nativeDirectoryPrefix-$name-$index"
         NativeLib(src = path,
-                  dest = workdir.resolve(s"native-code-$name-$index"))
+                  dest = workdir.resolve(directoryName))
       }
 
     if (extractPaths.isEmpty)

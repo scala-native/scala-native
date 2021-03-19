@@ -90,38 +90,32 @@ private[scalanative] object LLVM {
    */
   def compileNativelibs(config: Config,
                         linkerResult: linker.Result,
-                        nativelibs: Seq[Path],
-                        nativelibPath: Path): Seq[Path] = {
+                        nativelibs: Seq[Path]): Seq[Path] = {
     val workdir = config.workdir
     // search starting at workdir `native` to find
     // code across all native component libraries
     // including the `nativelib`
     val srcPatterns = NativeLib.destSrcPatterns(workdir, nativelibs)
     val paths       = IO.getAll(workdir, srcPatterns).map(_.abs)
-    val libPath     = nativelibPath.resolve(NativeLib.codeDir)
-
-    // predicate to check if given file path shall be compiled
-    // we only include sources of the current gc and exclude
-    // all optional dependencies if they are not necessary
-    val optPath = libPath.resolve("optional").abs
-    val (gcPath, gcSelPath) = {
-      val gcPath    = libPath.resolve("gc")
-      val gcSelPath = gcPath.resolve(config.gc.name)
-      (gcPath.abs, gcSelPath.abs)
-    }
 
     def include(path: String) = {
-      if (path.contains(optPath)) {
-        val name = Paths.get(path).toFile.getName.split("\\.").head
+      import NativePathsExtractor._
+      path match {
+        case Platform("shared" :: _)              => true
+        case Platform("windows" :: _)             => config.targetsWindows
+        case Platform("posix" :: _) | PosixLib(_) => !config.targetsWindows
+
+        case GC("shared" :: _)        => true
+        case GC(name :: _)            => name == config.gc.name
+        case GC(SharedBy(impls) :: _) => impls.contains(config.gc.name)
+
+        case Optional(_ :+ File(name, _)) =>
         linkerResult.links.map(_.name).contains(name)
-      } else if (path.contains(gcPath)) {
-        path.contains(gcSelPath)
-      } else {
-        true
+        case _ => true
       }
     }
 
-    val (includePaths, excludePaths) = paths.partition(include(_))
+    val (includePaths, excludePaths) = paths.partition(include)
 
     // delete .o files for all excluded source files
     excludePaths.foreach { path =>
@@ -140,8 +134,12 @@ private[scalanative] object LLVM {
       if (!Files.exists(objPath)) {
         val isCpp    = path.endsWith(cppExt)
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
-        val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
+        val cppStd   = if (config.targetsWindows) "c++17" else "c++11"
+        val stdflag  = if (isCpp) s"-std=$cppStd" else "-std=gnu11"
+        val flags = Seq(stdflag,
+                        "-fvisibility=hidden",
+                        "-D_CRT_SECURE_NO_WARNINGS",
+                        "-Wdeprecated-declarations") ++ config.compileOptions
         val compilec =
           Seq(compiler) ++ fltoOpt ++ flags ++ targetOpt ++
             Seq("-c", path, "-o", opath)
