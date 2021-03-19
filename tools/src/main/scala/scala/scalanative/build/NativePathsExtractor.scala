@@ -1,4 +1,12 @@
-object NativePathsExtractors {
+package scala.scalanative.build
+
+import java.nio.file.Path
+import scalanative.build.IO.RichPath
+import scalanative.build.{Platform => BuildPlatform}
+
+
+object NativePathsExtractor {
+  private val dirSeparator       = java.io.File.separatorChar
   private val sharedDirSeparator = '-'
 
   object Platform extends SubpathExtractor("platform")
@@ -28,21 +36,22 @@ object NativePathsExtractors {
   }
 
   sealed abstract class SubpathExtractor(paths: String*) {
+    val regexPathSeparator = 
+      if (BuildPlatform.isWindows) raw"\\"
+      else dirSeparator.toString()
+
+    // Based on fact that all native sources end-up in directory with
+    // common pattern in /target/scala-*/native/native-code-*/scala-native/
+    val NativeSourcePattern = {
+      Seq(".*",
+        "native",
+        NativeLib.nativeDirectoryPrefix + "-.*",
+        NativeLib.codeDir) ++ paths :+ "(.*)"
+    }.mkString(regexPathSeparator).r
+
     def unapply(path: Path): Option[List[String]] = unapply(path.abs)
 
     def unapply(pathAbs: String): Option[List[String]] = {
-      val regexPathSeparator = if (build.Platform.isWindows) raw"\\"
-      else java.io.File.separator()
-      
-      // Based on fact that all native sources end-up in directory with
-      // common pattern in /target/scala-*/native/native-code-*/scala-native/
-      val NativeSourcePattern = {
-        Seq(".*",
-          "native",
-          NativeLib.nativeDirectoryPrefix + "-.*",
-          NativeLib.codeDir) ++ paths :+ "(.*)"
-      }.mkString(regexPathSeparator).r
-
       pathAbs match {
         case NativeSourcePattern(relativePath) =>
           Some(
