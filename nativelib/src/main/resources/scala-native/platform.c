@@ -4,6 +4,14 @@
 #include <sys/utsname.h>
 #endif
 
+int scalanative_platform_is_linux() {
+#ifdef __linux__
+    return 1;
+#else
+    return 0;
+#endif
+}
+
 int scalanative_platform_is_mac() {
 #ifdef __APPLE__
     return 1;
