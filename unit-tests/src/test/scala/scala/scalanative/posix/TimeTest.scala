@@ -282,8 +282,13 @@ class TimeTest {
       // macOS will parse and accept "GMT" or the local timezone name
       // and write to the corresponding fields in the C struct.
       // "GMT" is used here to avoid local timezone handling.
+      // FreeBSD fills the structure with values relative to the local
+      // time zone, so the check would fail if we parse a date with a
+      // different time zone.
 
-      val cp =
+      val cp = if (Platform.isFreeBSD)
+        strptime(c"Fri Mar 31 14:47:44 2017", c"%a %b %d %T %Y", tmPtr)
+      else
         strptime(c"Fri Mar 31 14:47:44 GMT 2017", c"%a %b %d %T %Z %Y", tmPtr)
 
       assertNotNull(s"strptime() returned unexpected null pointer", cp)
