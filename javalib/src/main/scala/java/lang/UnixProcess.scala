@@ -6,10 +6,17 @@ import java.util.concurrent.TimeUnit
 import java.util.ScalaOps._
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.{errno => err, signal => sig, _}
-import sig._
+import scala.scalanative.libc.{errno => err}
 import err.errno
-import scala.scalanative.posix.{fcntl, pthread, sys, time, unistd, errno => e}
+import scala.scalanative.posix.{
+  fcntl,
+  pthread,
+  signal,
+  sys,
+  time,
+  unistd,
+  errno => e
+}
 import time._
 import sys.time._
 import e.ETIMEDOUT
@@ -26,7 +33,7 @@ private[lang] class UnixProcess private (
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
 ) extends Process {
-  override def destroy(): Unit = kill(pid, 9)
+  override def destroy(): Unit = signal.kill(pid, 9)
 
   override def destroyForcibly(): Process = {
     destroy()
