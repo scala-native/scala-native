@@ -8,13 +8,13 @@
 
 void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     pid_t pid = getpid();
-    // size = static part + 10 digits (0xFFFFFFFC as maximum PID) + null char
-    int workerNameSize = 21 + 10 + 1;
-    int masterNameSize = 20 + 10 + 1;
+    // size = static part + 20 digits (maximum 64 bit number) + null char
+    int workerNameSize = 11 + 20 + 1;
+    int masterNameSize = 11 + 20 + 1;
     char startWorkersName[workerNameSize];
     char startMasterName[masterNameSize];
-    snprintf(startWorkersName, workerNameSize, "commix_startWorkers_%d", pid);
-    snprintf(startMasterName, masterNameSize, "commix_startMaster_%d", pid);
+    snprintf(startWorkersName, workerNameSize, "commix_mt_%d", pid);
+    snprintf(startMasterName, masterNameSize, "commix_wk_%d", pid);
     // only reason for using named semaphores here is for compatibility with
     // MacOs we do not share them across processes
     heap->gcThreads.startWorkers =
