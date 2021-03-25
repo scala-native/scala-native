@@ -19,11 +19,3 @@ int scalanative_sigint() { return SIGINT; }
 int scalanative_sigsegv() { return SIGSEGV; }
 
 int scalanative_sigterm() { return SIGTERM; }
-
-int scalanative_sigusr1() {
-#if defined(SIGUSR1)
-    return SIGUSR1;
-#else
-    return -1;
-#endif
-}

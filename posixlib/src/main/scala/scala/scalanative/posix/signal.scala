@@ -8,6 +8,8 @@ import scala.scalanative.unsafe._
  * Applications shall define the appropriate feature test macro (see XSH The Compilation Environment )
  * to enable the visibility of these symbols in this header.
  *
+ * Use clib macros and functions to get the full POSIX interface
+ *
  * Note 1: The functionality described may be removed in a future version of this volume of POSIX.1-2017
  * Note 2: The functionality is an option marked as XSI (X/Open System Interfaces)
  */
@@ -16,15 +18,10 @@ object signal {
   // define the following macros, which shall expand to constant expressions with distinct values
   // that have a type compatible with the second argument to, and the return value of, the signal() function,
   // and whose values shall compare unequal to the address of any declarable function.
-  @name("scalanative_sig_dfl")
-  def SIG_DFL: CFuncPtr1[CInt, Unit] = extern
-  @name("scalanative_sig_err")
-  def SIG_ERR: CFuncPtr1[CInt, Unit] = extern
+
   // Note 1: Linux
-//  @name("scalanative_sig_hold")
-//  def SIG_HOLD: CFunctionPtr1[CInt, Unit] = extern
-  @name("scalanative_sig_ign")
-  def SIG_IGN: CFuncPtr1[CInt, Unit] = extern
+  //  @name("scalanative_sig_hold")
+  //  def SIG_HOLD: CFunctionPtr1[CInt, Unit] = extern
 
   import sys.types
   // pthread_t, size_t, and uid_t types as described in <sys/types.h>
@@ -65,8 +62,6 @@ object signal {
   type sigval = CArray[Byte, Nat._8]
 
   // manditory signals
-  @name("scalanative_sigabrt")
-  def SIGABRT: CInt = extern
   @name("scalanative_sigalrm")
   def SIGALRM: CInt = extern
   @name("scalanative_sigbus")
@@ -75,26 +70,16 @@ object signal {
   def SIGCHLD: CInt = extern
   @name("scalanative_sigcont")
   def SIGCONT: CInt = extern
-  @name("scalanative_sigfpe")
-  def SIGFPE: CInt = extern
   @name("scalanative_sighup")
   def SIGHUP: CInt = extern
-  @name("scalanative_sigill")
-  def SIGILL: CInt = extern
-  @name("scalanative_sigint")
-  def SIGINT: CInt = extern
   @name("scalanative_sigkill")
   def SIGKILL: CInt = extern
   @name("scalanative_sigpipe")
   def SIGPIPE: CInt = extern
   @name("scalanative_sigquit")
   def SIGQUIT: CInt = extern
-  @name("scalanative_sigsegv")
-  def SIGSEGV: CInt = extern
   @name("scalanative_sigstop")
   def SIGSTOP: CInt = extern
-  @name("scalanative_sigterm")
-  def SIGTERM: CInt = extern
   @name("scalanative_sigtstp")
   def SIGTSTP: CInt = extern
   @name("scalanative_sigttin")
@@ -287,14 +272,13 @@ object signal {
   // The following shall be declared as functions and may also be defined as macros.
   // Function prototypes shall be provided
   // Note: sigset_t is already a pointer above
-  def kill(p0: pid_t, p1: CInt): CInt                 = extern
+  def kill(pid: pid_t, sig: CInt): CInt               = extern
   def killpg(p0: pid_t, p1: CInt): CInt               = extern
   def psiginfo(p0: Ptr[siginfo_t], p1: CString): Unit = extern
   def psignal(p0: CInt, p1: CString): Unit            = extern
   def pthread_kill(p0: pthread_t, p1: CInt): CInt     = extern
   def pthread_sigmask(p0: CInt, p1: Ptr[sigset_t], p2: Ptr[sigset_t]): CInt =
     extern
-  def raise(p0: CInt): CInt                                             = extern
   def sigaction(p0: CInt, p1: Ptr[sigaction], p2: Ptr[sigaction]): CInt = extern
   def sigaddset(p0: Ptr[sigset_t], p1: CInt): CInt                      = extern
   def sigaltstack(p0: Ptr[stack_t], p1: Ptr[stack_t]): CInt             = extern
@@ -305,8 +289,6 @@ object signal {
   def sigignore(p0: CInt): CInt                                         = extern
   def siginterrupt(p0: CInt, p1: CInt): CInt                            = extern
   def sigismember(p0: Ptr[sigset_t], p1: CInt): CInt                    = extern
-  def signal(p0: CInt, p1: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit] =
-    extern
   def sigpause(p0: CInt): CInt                                          = extern
   def sigpending(p0: Ptr[sigset_t]): CInt                               = extern
   def sigprocmask(p0: CInt, p1: Ptr[sigset_t], p2: Ptr[sigset_t]): CInt = extern
