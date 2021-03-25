@@ -286,10 +286,11 @@ class TimeTest {
       // time zone, so the check would fail if we parse a date with a
       // different time zone.
 
-      val cp = if (Platform.isFreeBSD)
-        strptime(c"Fri Mar 31 14:47:44 2017", c"%a %b %d %T %Y", tmPtr)
-      else
-        strptime(c"Fri Mar 31 14:47:44 GMT 2017", c"%a %b %d %T %Z %Y", tmPtr)
+      val cp =
+        if (Platform.isFreeBSD)
+          strptime(c"Fri Mar 31 14:47:44 2017", c"%a %b %d %T %Y", tmPtr)
+        else
+          strptime(c"Fri Mar 31 14:47:44 GMT 2017", c"%a %b %d %T %Z %Y", tmPtr)
 
       assertNotNull(s"strptime() returned unexpected null pointer", cp)
 
