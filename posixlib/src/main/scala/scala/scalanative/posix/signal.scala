@@ -272,36 +272,40 @@ object signal {
   // The following shall be declared as functions and may also be defined as macros.
   // Function prototypes shall be provided
   // Note: sigset_t is already a pointer above
-  def kill(pid: pid_t, sig: CInt): CInt               = extern
-  def killpg(p0: pid_t, p1: CInt): CInt               = extern
-  def psiginfo(p0: Ptr[siginfo_t], p1: CString): Unit = extern
-  def psignal(p0: CInt, p1: CString): Unit            = extern
-  def pthread_kill(p0: pthread_t, p1: CInt): CInt     = extern
-  def pthread_sigmask(p0: CInt, p1: Ptr[sigset_t], p2: Ptr[sigset_t]): CInt =
+  def kill(pid: pid_t, sig: CInt): CInt                  = extern
+  def killpg(pgrp: pid_t, sig: CInt): CInt               = extern
+  def psiginfo(info: Ptr[siginfo_t], msg: CString): Unit = extern
+  def psignal(sig: CInt, msg: CString): Unit             = extern
+  def pthread_kill(thread: pthread_t, sig: CInt): CInt   = extern
+  def pthread_sigmask(how: CInt,
+                      set: Ptr[sigset_t],
+                      oset: Ptr[sigset_t]): CInt =
     extern
-  def sigaction(p0: CInt, p1: Ptr[sigaction], p2: Ptr[sigaction]): CInt = extern
-  def sigaddset(p0: Ptr[sigset_t], p1: CInt): CInt                      = extern
-  def sigaltstack(p0: Ptr[stack_t], p1: Ptr[stack_t]): CInt             = extern
-  def sigdelset(p0: Ptr[sigset_t], p1: CInt): CInt                      = extern
-  def sigemptyset(p0: Ptr[sigset_t]): CInt                              = extern
-  def sigfillset(p0: Ptr[sigset_t]): CInt                               = extern
-  def sighold(p0: CInt): CInt                                           = extern
-  def sigignore(p0: CInt): CInt                                         = extern
-  def siginterrupt(p0: CInt, p1: CInt): CInt                            = extern
-  def sigismember(p0: Ptr[sigset_t], p1: CInt): CInt                    = extern
-  def sigpause(p0: CInt): CInt                                          = extern
-  def sigpending(p0: Ptr[sigset_t]): CInt                               = extern
-  def sigprocmask(p0: CInt, p1: Ptr[sigset_t], p2: Ptr[sigset_t]): CInt = extern
-  def sigqueue(p0: pid_t, p1: CInt, p2: Ptr[sigval]): CInt              = extern
-  def sigrelse(p0: CInt): CInt                                          = extern
-  def sigset(p0: CInt, p1: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit] =
+  def sigaction(sig: CInt, act: Ptr[sigaction], oact: Ptr[sigaction]): CInt =
     extern
-  def sigsuspend(p0: Ptr[sigset_t]): CInt = extern
-  def sigtimedwait(p0: Ptr[sigset_t],
-                   p1: Ptr[siginfo_t],
-                   p2: Ptr[timespec]): CInt                    = extern
-  def sigwait(p0: Ptr[sigset_t], p1: Ptr[CInt]): CInt          = extern
-  def sigwaitinfo(p0: Ptr[sigset_t], p1: Ptr[siginfo_t]): CInt = extern
+  def sigaddset(set: Ptr[sigset_t], signo: CInt): CInt       = extern
+  def sigaltstack(ss: Ptr[stack_t], oss: Ptr[stack_t]): CInt = extern
+  def sigdelset(set: Ptr[sigset_t], signo: CInt): CInt       = extern
+  def sigemptyset(set: Ptr[sigset_t]): CInt                  = extern
+  def sigfillset(set: Ptr[sigset_t]): CInt                   = extern
+  def sighold(sig: CInt): CInt                               = extern
+  def sigignore(sig: CInt): CInt                             = extern
+  def siginterrupt(sig: CInt, flag: CInt): CInt              = extern
+  def sigismember(set: Ptr[sigset_t], signo: CInt): CInt     = extern
+  def sigpause(sig: CInt): CInt                              = extern
+  def sigpending(set: Ptr[sigset_t]): CInt                   = extern
+  def sigprocmask(how: CInt, set: Ptr[sigset_t], oset: Ptr[sigset_t]): CInt =
+    extern
+  def sigqueue(pid: pid_t, signo: CInt, value: Ptr[sigval]): CInt = extern
+  def sigrelse(sig: CInt): CInt                                   = extern
+  def sigset(sig: CInt, disp: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit] =
+    extern
+  def sigsuspend(sigmask: Ptr[sigset_t]): CInt = extern
+  def sigtimedwait(set: Ptr[sigset_t],
+                   info: Ptr[siginfo_t],
+                   timeout: Ptr[timespec]): CInt                  = extern
+  def sigwait(set: Ptr[sigset_t], sig: Ptr[CInt]): CInt           = extern
+  def sigwaitinfo(set: Ptr[sigset_t], info: Ptr[siginfo_t]): CInt = extern
 }
 
 object signalOps {
