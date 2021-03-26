@@ -20,18 +20,19 @@ class FilesTest {
   @Test def filesCopyCanCopyToNonExistingFile(): Unit = {
     val targetFile = File.createTempFile("test", ".tmp")
     val target     = targetFile.toPath()
-    assertTrue(!targetFile.exists || targetFile.delete())
+    assertTrue("!exists || delete()", !targetFile.exists || targetFile.delete())
 
     val in = new ByteArrayInputStream(Array(1, 2, 3))
-    assertTrue(Files.copy(in, target) == 3)
-    assertTrue(targetFile.exists())
-    assertTrue(in.read == -1)
+    assertEquals("Files.copy()", 3, Files.copy(in, target))
+
+    assertTrue("exists()", targetFile.exists())
+    assertEquals("in.read", -1, in.read())
 
     val fromFile = new FileInputStream(targetFile)
-    assertTrue(fromFile.read() == 1)
-    assertTrue(fromFile.read() == 2)
-    assertTrue(fromFile.read() == 3)
-    assertTrue(fromFile.read() == -1)
+    assertEquals("fromFile.read", 1, fromFile.read())
+    assertEquals("fromFile.read", 2, fromFile.read())
+    assertEquals("fromFile.read", 3, fromFile.read())
+    assertEquals("fromFile.read", -1, fromFile.read())
   }
 
   @Test def filesCopyThrowsIfTargetExistsAndIsFile(): Unit = {
@@ -46,11 +47,12 @@ class FilesTest {
   @Test def filesCopyThrowsIfTargetExistsAndIsEmptyDir(): Unit = {
     val targetFile = File.createTempFile("test", ".tmp")
     val target     = targetFile.toPath()
-    assertTrue(targetFile.delete())
-    assertTrue(targetFile.mkdir())
-    assertTrue(
-      targetFile.exists() && targetFile
-        .isDirectory() && targetFile.list().isEmpty)
+    assertTrue("delete()", targetFile.delete())
+    assertTrue("mkdir()", targetFile.mkdir())
+    assertTrue("empty directory",
+               targetFile.exists() &&
+                 targetFile.isDirectory() &&
+                 targetFile.list().isEmpty)
 
     val in = new ByteArrayInputStream(Array(1, 2, 3))
     assertThrows(classOf[FileAlreadyExistsException], Files.copy(in, target))
@@ -60,32 +62,34 @@ class FilesTest {
       : Unit = {
     val targetFile = File.createTempFile("test", ".tmp")
     val target     = targetFile.toPath()
-    assertTrue(targetFile.delete())
-    assertTrue(targetFile.mkdir())
-    assertTrue(
-      targetFile.exists() && targetFile
-        .isDirectory() && targetFile.list().isEmpty)
+    assertTrue("delete()", targetFile.delete())
+    assertTrue("mkdir()", targetFile.mkdir())
+    assertTrue("empty directory",
+               targetFile.exists() &&
+                 targetFile.isDirectory() &&
+                 targetFile.list().isEmpty)
 
     val in = new ByteArrayInputStream(Array(1, 2, 3))
-    assertTrue(Files.copy(in, target, REPLACE_EXISTING) == 3)
-    assertTrue(targetFile.exists() && targetFile.isFile())
-    assertTrue(in.read() == -1)
+    assertEquals("Files.copy()", 3, Files.copy(in, target, REPLACE_EXISTING))
+
+    assertTrue("isFile()", targetFile.exists() && targetFile.isFile())
+    assertEquals("in.read", -1, in.read())
 
     val fromFile = new FileInputStream(targetFile)
-    assertTrue(fromFile.read() == 1)
-    assertTrue(fromFile.read() == 2)
-    assertTrue(fromFile.read() == 3)
-    assertTrue(fromFile.read() == -1)
+    assertEquals("fromFile.read", 1, fromFile.read())
+    assertEquals("fromFile.read", 2, fromFile.read())
+    assertEquals("fromFile.read", 3, fromFile.read())
+    assertEquals("fromFile.read", -1, fromFile.read())
   }
 
   @Test def filesCopyThrowsIfTheTargetExistsAndIsNonEmptyDir(): Unit = {
     val targetFile = File.createTempFile("test", ".tmp")
     val target     = targetFile.toPath()
-    assertTrue(targetFile.delete())
-    assertTrue(targetFile.mkdir())
-    assertTrue(targetFile.exists() && targetFile.isDirectory())
+    assertTrue("delete()", targetFile.delete())
+    assertTrue("mkdir()", targetFile.mkdir())
+    assertTrue("isDirectory()", targetFile.exists() && targetFile.isDirectory())
     File.createTempFile("test", ".tmp", targetFile)
-    assertTrue(targetFile.list().nonEmpty)
+    assertTrue("nonEmpty", targetFile.list().nonEmpty)
 
     val in = new ByteArrayInputStream(Array(1, 2, 3))
 
@@ -96,11 +100,11 @@ class FilesTest {
       : Unit = {
     val targetFile = File.createTempFile("test", ".tmp")
     val target     = targetFile.toPath()
-    assertTrue(targetFile.delete())
-    assertTrue(targetFile.mkdir())
-    assertTrue(targetFile.exists() && targetFile.isDirectory())
+    assertTrue("delete()", targetFile.delete())
+    assertTrue("mkdir()", targetFile.mkdir())
+    assertTrue("isDirectory()", targetFile.exists() && targetFile.isDirectory())
     File.createTempFile("test", ".tmp", targetFile)
-    assertTrue(targetFile.list().nonEmpty)
+    assertTrue("nonEmpty", targetFile.list().nonEmpty)
 
     val in = new ByteArrayInputStream(Array(1, 2, 3))
 
@@ -112,17 +116,17 @@ class FilesTest {
       : Unit = {
     val targetFile = File.createTempFile("test", ".tmp")
     val target     = targetFile.toPath()
-    assertTrue(targetFile.exists() && targetFile.isFile())
+    assertTrue("isFile()", targetFile.exists() && targetFile.isFile())
 
     val in = new ByteArrayInputStream(Array(1, 2, 3))
-    assertTrue(Files.copy(in, target, REPLACE_EXISTING) == 3)
-    assertTrue(in.read() == -1)
+    assertEquals("Files.copy()", 3, Files.copy(in, target, REPLACE_EXISTING))
+    assertEquals("in.read", -1, in.read())
 
     val fromFile = new FileInputStream(targetFile)
-    assertTrue(fromFile.read() == 1)
-    assertTrue(fromFile.read() == 2)
-    assertTrue(fromFile.read() == 3)
-    assertTrue(fromFile.read() == -1)
+    assertEquals("fromFile.read", 1, fromFile.read())
+    assertEquals("fromFile.read", 2, fromFile.read())
+    assertEquals("fromFile.read", 3, fromFile.read())
+    assertEquals("fromFile.read", -1, fromFile.read())
   }
 
   @Test def filesCopyCreatesNewDirectory(): Unit = {
@@ -130,9 +134,9 @@ class FilesTest {
       val targetDir = File.createTempFile("test", "").toPath()
       Files.delete(targetDir)
       Files.copy(dirFile.toPath, targetDir)
-      assertTrue(Files.exists(targetDir))
-      assertTrue(Files.isDirectory(targetDir))
-      assertTrue(Files.deleteIfExists(targetDir))
+      assertTrue("exists()", Files.exists(targetDir))
+      assertTrue("isDirectory()", Files.isDirectory(targetDir))
+      assertTrue("deleteIfExists()", Files.deleteIfExists(targetDir))
     }
   }
 
@@ -149,9 +153,9 @@ class FilesTest {
       val targetDir = File.createTempFile("test", "").toPath()
       Files.delete(targetDir)
       Files.copy(dirFile.toPath, targetDir, REPLACE_EXISTING)
-      assertTrue(Files.exists(targetDir))
-      assertTrue(Files.isDirectory(targetDir))
-      assertTrue(Files.deleteIfExists(targetDir))
+      assertTrue("exists()", Files.exists(targetDir))
+      assertTrue("isDirectory()", Files.isDirectory(targetDir))
+      assertTrue("deleteIfExists()", Files.deleteIfExists(targetDir))
     }
   }
 
@@ -188,11 +192,16 @@ class FilesTest {
       val attrs = Files.readAttributes(foo, classOf[PosixFileAttributes])
       val copyAttrs =
         Files.readAttributes(fooCopy, classOf[PosixFileAttributes])
-      assertTrue(attrs.lastModifiedTime == copyAttrs.lastModifiedTime)
-      assertTrue(attrs.lastAccessTime == copyAttrs.lastAccessTime)
-      assertTrue(attrs.creationTime == copyAttrs.creationTime)
-      assertTrue(
-        attrs.permissions.toScalaSet == copyAttrs.permissions.toScalaSet)
+      assertEquals("lastModifiedTime",
+                   attrs.lastModifiedTime,
+                   copyAttrs.lastModifiedTime)
+      assertEquals("lastModifiedTime",
+                   attrs.lastAccessTime,
+                   copyAttrs.lastAccessTime)
+      assertEquals("creationTime", attrs.creationTime, copyAttrs.creationTime)
+      assertEquals("permissions",
+                   attrs.permissions.toScalaSet,
+                   copyAttrs.permissions.toScalaSet)
     }
   }
 
@@ -222,30 +231,29 @@ class FilesTest {
   @Test def filesExistsReportsExistingFilesAsExisting(): Unit = {
     val targetFile = File.createTempFile("test", ".tmp")
     val target     = targetFile.toPath()
-    assertTrue(targetFile.exists() && targetFile.isFile())
+    assertTrue("isFile()", targetFile.exists() && targetFile.isFile())
 
-    assertTrue(Files.exists(target))
-    assertTrue(Files.exists(target, LinkOption.NOFOLLOW_LINKS))
+    assertTrue("exists()", Files.exists(target))
+    assertTrue("NOFOLLOW", Files.exists(target, LinkOption.NOFOLLOW_LINKS))
   }
 
   @Test def filesExistsReportsExistingDirectoriesAsExisting(): Unit = {
     val targetFile = File.createTempFile("test", ".tmp")
     val target     = targetFile.toPath()
-    assertTrue(targetFile.delete())
-    assertTrue(targetFile.mkdir())
-    assertTrue(targetFile.exists() && targetFile.isDirectory())
-
-    assertTrue(Files.exists(target))
-    assertTrue(Files.exists(target, LinkOption.NOFOLLOW_LINKS))
+    assertTrue("delete()", targetFile.delete())
+    assertTrue("mkdir()", targetFile.mkdir())
+    assertTrue("isDirectory()", targetFile.exists() && targetFile.isDirectory())
+    assertTrue("exists()", Files.exists(target))
+    assertTrue("NOFOLLOW", Files.exists(target, LinkOption.NOFOLLOW_LINKS))
   }
 
   @Test def filesExistsReportsNonExistingFilesAsSuch(): Unit = {
     val targetFile = File.createTempFile("test", ".tmp")
     val target     = targetFile.toPath()
-    assertTrue(targetFile.delete())
-    assertFalse(targetFile.exists())
-    assertFalse(Files.exists(target))
-    assertFalse(Files.exists(target, LinkOption.NOFOLLOW_LINKS))
+    assertTrue("delete()", targetFile.delete())
+    assertFalse("exists()", targetFile.exists())
+    assertFalse("!exists()", Files.exists(target))
+    assertFalse("NOFOLLOW", Files.exists(target, LinkOption.NOFOLLOW_LINKS))
   }
 
   @Test def filesExistsHandlesSymlinks(): Unit = {
@@ -261,10 +269,12 @@ class FilesTest {
 
       Files.createSymbolicLink(brokenLink, nonexisting)
       Files.createSymbolicLink(correctLink, existing.toPath)
-      assertFalse(Files.exists(brokenLink))
-      assertTrue(Files.exists(brokenLink, LinkOption.NOFOLLOW_LINKS))
-      assertTrue(Files.exists(correctLink))
-      assertTrue(Files.exists(correctLink, LinkOption.NOFOLLOW_LINKS))
+      assertFalse("exists(broken)", Files.exists(brokenLink))
+      assertTrue("NOFOLLOW - broken",
+                 Files.exists(brokenLink, LinkOption.NOFOLLOW_LINKS))
+      assertTrue("exists(correct)", Files.exists(correctLink))
+      assertTrue("NOFOLLOW - correct",
+                 Files.exists(correctLink, LinkOption.NOFOLLOW_LINKS))
     }
   }
 
@@ -274,8 +284,8 @@ class FilesTest {
     assertTrue(targetFile.delete())
 
     Files.createDirectory(target)
-    assertTrue(targetFile.exists())
-    assertTrue(targetFile.isDirectory())
+    assertTrue("exists()", targetFile.exists())
+    assertTrue("isDirectory()", targetFile.isDirectory())
   }
 
   @Test def filesCreateDirectoryThrowsIfTheFileAlreadyExists(): Unit = {
@@ -294,12 +304,12 @@ class FilesTest {
       val p2  = p1.resolve("p2")
       val p3  = p2.resolve("p3")
 
-      assertFalse(Files.exists(p1))
-      assertFalse(Files.exists(p2))
-      assertFalse(Files.exists(p3))
+      assertFalse("!exists(p1)", Files.exists(p1))
+      assertFalse("!exists(p2)", Files.exists(p2))
+      assertFalse("!exists(p3)", Files.exists(p3))
 
       Files.createDirectories(p3)
-      assertTrue(Files.exists(p3))
+      assertTrue("exists(p3)", Files.exists(p3))
     }
   }
 
@@ -312,23 +322,23 @@ class FilesTest {
       val p3  = p2.resolve("p3")
       val p4  = p3.resolve("p4")
 
-      assertFalse(Files.exists(p1))
-      assertFalse(Files.exists(p2))
-      assertFalse(Files.exists(p3))
-      assertFalse(Files.exists(p4))
+      assertFalse("a1", Files.exists(p1))
+      assertFalse("a2", Files.exists(p2))
+      assertFalse("a3", Files.exists(p3))
+      assertFalse("a4", Files.exists(p4))
 
       Files.createDirectories(p2)
 
-      assertTrue(Files.exists(p1))
-      assertTrue(Files.exists(p2))
-      assertFalse(Files.exists(p3))
-      assertFalse(Files.exists(p4))
+      assertTrue("a5", Files.exists(p1))
+      assertTrue("a6", Files.exists(p2))
+      assertFalse("a7", Files.exists(p3))
+      assertFalse("a8", Files.exists(p4))
 
       Files.createDirectories(p4)
-      assertTrue(Files.exists(p1))
-      assertTrue(Files.exists(p2))
-      assertTrue(Files.exists(p3))
-      assertTrue(Files.exists(p4))
+      assertTrue("a9", Files.exists(p1))
+      assertTrue("a10", Files.exists(p2))
+      assertTrue("a11", Files.exists(p3))
+      assertTrue("a12", Files.exists(p4))
     }
   }
 
@@ -337,9 +347,9 @@ class FilesTest {
       val dir  = dirFile.toPath()
       val file = dir.resolve("file")
 
-      assertFalse(Files.exists(file))
+      assertFalse("!exists()", Files.exists(file))
       Files.createFile(file)
-      assertTrue(Files.exists(file))
+      assertTrue("exists()", Files.exists(file))
     }
   }
 
@@ -348,9 +358,9 @@ class FilesTest {
       val dir  = dirFile.toPath()
       val file = dir.resolve("file")
 
-      assertFalse(Files.exists(file))
+      assertFalse("!exists()", Files.exists(file))
       Files.createFile(file)
-      assertTrue(Files.exists(file))
+      assertTrue("exists()", Files.exists(file))
 
       assertThrows(classOf[FileAlreadyExistsException], Files.createFile(file))
     }
@@ -363,10 +373,10 @@ class FilesTest {
       val link = dir.resolve("link")
 
       Files.createFile(file)
-      assertTrue(Files.exists(file))
+      assertTrue("exists(file)", Files.exists(file))
 
       Files.createLink(link, file)
-      assertTrue(Files.exists(link))
+      assertTrue("exists(link)", Files.exists(link))
     }
   }
 
@@ -378,8 +388,8 @@ class FilesTest {
 
       Files.createFile(file)
       Files.createFile(link)
-      assertTrue(Files.exists(file))
-      assertTrue(Files.exists(link))
+      assertTrue("exists(file)", Files.exists(file))
+      assertTrue("exists(link)", Files.exists(link))
 
       assertThrows(classOf[FileAlreadyExistsException],
                    Files.createLink(link, file))
@@ -392,22 +402,22 @@ class FilesTest {
     assertTrue(Files.isDirectory(dir))
 
     val file = dir.resolve("file")
-    assertFalse(Files.exists(file))
+    assertFalse("!exists()", Files.exists(file))
     Files.createFile(file)
-    assertTrue(Files.exists(file))
+    assertTrue("exists()", Files.exists(file))
   }
 
   @Test def filesCreateTempDirectoryWorksWithParentDirectory(): Unit = {
     withTemporaryDirectory { parent =>
       val dir = Files.createTempDirectory(parent.toPath(), "tmp")
-      assertTrue(dir.getParent() == parent.toPath())
-      assertTrue(Files.exists(dir))
-      assertTrue(Files.isDirectory(dir))
+      assertTrue("a1", dir.getParent() == parent.toPath())
+      assertTrue("a2", Files.exists(dir))
+      assertTrue("a3", Files.isDirectory(dir))
 
       val file = dir.resolve("file")
-      assertFalse(Files.exists(file))
+      assertFalse("a4", Files.exists(file))
       Files.createFile(file)
-      assertTrue(Files.exists(file))
+      assertTrue("a5", Files.exists(file))
     }
   }
 
@@ -416,35 +426,38 @@ class FilesTest {
   @Test def filesCreateTempDirectoryWorksWithNullPrefix(): Unit = {
     val dir = Files.createTempDirectory(null)
     try {
-      assertTrue(tempFile.findFirstIn(dir.getFileName.toString).isDefined)
-      assertTrue(Files.exists(dir))
-      assertTrue(Files.isDirectory(dir))
+      assertTrue("a1", tempFile.findFirstIn(dir.getFileName.toString).isDefined)
+      assertTrue("a2", Files.exists(dir))
+      assertTrue("a3", Files.isDirectory(dir))
     } finally Files.delete(dir)
   }
 
   @Test def filesCreateTempDirectoryWorksWithShortPrefix(): Unit = {
     val dir = Files.createTempDirectory("a")
     try {
-      assertTrue(tempFile.findFirstIn(dir.getFileName.toString).isDefined)
-      assertTrue(Files.exists(dir))
-      assertTrue(Files.isDirectory(dir))
+      assertTrue("a1", tempFile.findFirstIn(dir.getFileName.toString).isDefined)
+      assertTrue("a2", Files.exists(dir))
+      assertTrue("a3", Files.isDirectory(dir))
     } finally Files.delete(dir)
   }
+
   @Test def filesCreateTempFileWorksWithNullPrefix(): Unit = {
     val file = Files.createTempFile(null, "txt")
     try {
-      assertTrue(tempFile.findFirstIn(file.getFileName.toString).isDefined)
-      assertTrue(Files.exists(file))
-      assertTrue(Files.isRegularFile(file))
+      assertTrue("a1",
+                 tempFile.findFirstIn(file.getFileName.toString).isDefined)
+      assertTrue("a2", Files.exists(file))
+      assertTrue("a3", Files.isRegularFile(file))
     } finally Files.delete(file)
   }
 
   @Test def filesCreateTempFileWorksWithShortPrefix(): Unit = {
     val file = Files.createTempFile("a", null)
     try {
-      assertTrue(tempFile.findFirstIn(file.getFileName.toString).isDefined)
-      assertTrue(Files.exists(file))
-      assertTrue(Files.isRegularFile(file))
+      assertTrue("a1",
+                 tempFile.findFirstIn(file.getFileName.toString).isDefined)
+      assertTrue("a2", Files.exists(file))
+      assertTrue("a3", Files.isRegularFile(file))
     } finally Files.delete(file)
   }
 
@@ -453,16 +466,16 @@ class FilesTest {
       val dir  = dirFile.toPath
       val file = dir.resolve("file")
       Files.createFile(file)
-      assertTrue(Files.exists(file))
-      assertTrue(Files.isRegularFile(file))
+      assertTrue("a1", Files.exists(file))
+      assertTrue("a2", Files.isRegularFile(file))
     }
   }
 
   @Test def filesIsRegularFileHandlesDirectories(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath
-      assertTrue(Files.exists(dir))
-      assertFalse(Files.isRegularFile(dir))
+      assertTrue("a1", Files.exists(dir))
+      assertFalse("a2", Files.isRegularFile(dir))
     }
   }
 
@@ -473,26 +486,26 @@ class FilesTest {
       val link = dir.resolve("link")
       Files.createFile(file)
       Files.createSymbolicLink(link, file)
-      assertTrue(Files.exists(file))
-      assertTrue(Files.isRegularFile(file))
-      assertTrue(Files.isSymbolicLink(link))
-      assertTrue(Files.isRegularFile(link))
-      assertFalse(Files.isRegularFile(link, LinkOption.NOFOLLOW_LINKS))
+      assertTrue("a1", Files.exists(file))
+      assertTrue("a2", Files.isRegularFile(file))
+      assertTrue("a3", Files.isSymbolicLink(link))
+      assertTrue("a4", Files.isRegularFile(link))
+      assertFalse("a5", Files.isRegularFile(link, LinkOption.NOFOLLOW_LINKS))
     }
   }
 
   @Test def filesCreateTempFileWorksWithoutParentDirectory(): Unit = {
     val tmp = Files.createTempFile("temp", ".tmp")
-    assertTrue(Files.exists(tmp))
-    assertTrue(Files.isRegularFile(tmp))
+    assertTrue("a1", Files.exists(tmp))
+    assertTrue("a2", Files.isRegularFile(tmp))
   }
 
   @Test def filesCreateTempFileWorksWithParentDirectory(): Unit = {
     withTemporaryDirectory { parent =>
       val tmp = Files.createTempFile(parent.toPath(), "temp", ".tmp")
-      assertTrue(tmp.getParent() == parent.toPath())
-      assertTrue(Files.exists(tmp))
-      assertTrue(Files.isRegularFile(tmp))
+      assertTrue("a1", tmp.getParent() == parent.toPath())
+      assertTrue("a2", Files.exists(tmp))
+      assertTrue("a3", Files.isRegularFile(tmp))
     }
   }
 
@@ -502,10 +515,10 @@ class FilesTest {
       val file = dir.resolve("file")
       Files.createFile(file)
 
-      assertTrue(Files.exists(file))
-      assertTrue(Files.isRegularFile(file))
+      assertTrue("a1", Files.exists(file))
+      assertTrue("a2", Files.isRegularFile(file))
       Files.delete(file)
-      assertFalse(Files.exists(file))
+      assertFalse("a3", Files.exists(file))
     }
   }
 
@@ -514,10 +527,10 @@ class FilesTest {
       val dir    = dirFile.toPath()
       val subdir = dir.resolve("subdir")
       Files.createDirectory(subdir)
-      assertTrue(Files.exists(subdir))
-      assertTrue(Files.isDirectory(subdir))
+      assertTrue("a1", Files.exists(subdir))
+      assertTrue("a2", Files.isDirectory(subdir))
       Files.delete(subdir)
-      assertFalse(Files.exists(subdir))
+      assertFalse("a3", Files.exists(subdir))
     }
   }
 
@@ -525,7 +538,7 @@ class FilesTest {
     withTemporaryDirectory { dirFile =>
       val dir         = dirFile.toPath()
       val nonexisting = dir.resolve("nonexisting")
-      assertFalse(Files.exists(nonexisting))
+      assertFalse("a1", Files.exists(nonexisting))
 
       assertThrows(classOf[NoSuchFileException], Files.delete(nonexisting))
     }
@@ -538,8 +551,8 @@ class FilesTest {
       val file   = subdir.resolve("file")
       Files.createDirectory(subdir)
       Files.createFile(file)
-      assertTrue(Files.exists(subdir))
-      assertTrue(Files.isDirectory(subdir))
+      assertTrue("a1", Files.exists(subdir))
+      assertTrue("a2", Files.isDirectory(subdir))
       assertThrows(classOf[IOException], Files.delete(subdir))
     }
   }
@@ -549,10 +562,10 @@ class FilesTest {
       val dir  = dirFile.toPath()
       val file = dir.resolve("file")
       Files.createFile(file)
-      assertTrue(Files.exists(file))
-      assertTrue(Files.isRegularFile(file))
-      assertTrue(Files.deleteIfExists(file))
-      assertFalse(Files.exists(file))
+      assertTrue("a1", Files.exists(file))
+      assertTrue("a2", Files.isRegularFile(file))
+      assertTrue("a3", Files.deleteIfExists(file))
+      assertFalse("a4", Files.exists(file))
     }
   }
 
@@ -560,9 +573,9 @@ class FilesTest {
     withTemporaryDirectory { dirFile =>
       val dir  = dirFile.toPath()
       val file = dir.resolve("file")
-      assertFalse(Files.exists(file))
-      assertFalse(Files.deleteIfExists(file))
-      assertFalse(Files.exists(file))
+      assertFalse("a1", Files.exists(file))
+      assertFalse("a2", Files.deleteIfExists(file))
+      assertFalse("a3", Files.exists(file))
     }
   }
 
@@ -578,20 +591,20 @@ class FilesTest {
       Files.createFile(f0)
       Files.createFile(f1)
       Files.createFile(f2)
-      assertTrue(Files.exists(d0) && Files.isDirectory(d0))
-      assertTrue(Files.exists(f0) && Files.isRegularFile(f0))
-      assertTrue(Files.exists(f1) && Files.isRegularFile(f1))
-      assertTrue(Files.exists(f2) && Files.isRegularFile(f2))
+      assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
+      assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
+      assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
+      assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
 
       val it    = Files.list(dir).iterator()
       val files = scala.collection.mutable.Set.empty[Path]
       while (it.hasNext()) {
         files += it.next()
       }
-      assertTrue(files.size == 3)
-      assertTrue(files contains d0)
-      assertTrue(files contains f0)
-      assertTrue(files contains f1)
+      assertTrue("a5", files.size == 3)
+      assertTrue("a6", files contains d0)
+      assertTrue("a7", files contains f0)
+      assertTrue("a8", files contains f1)
     }
   }
 
@@ -603,9 +616,9 @@ class FilesTest {
       Files.createFile(file)
       Files.createSymbolicLink(link, file)
 
-      assertTrue(Files.exists(file))
-      assertTrue(Files.exists(link))
-      assertTrue(Files.readSymbolicLink(link) == file)
+      assertTrue("a1", Files.exists(file))
+      assertTrue("a2", Files.exists(link))
+      assertTrue("a3", Files.readSymbolicLink(link) == file)
     }
   }
 
@@ -616,9 +629,9 @@ class FilesTest {
       val file       = dir.resolve("file")
       Files.createSymbolicLink(brokenLink, file)
 
-      assertFalse(Files.exists(file))
-      assertTrue(Files.exists(brokenLink, LinkOption.NOFOLLOW_LINKS))
-      assertTrue(Files.readSymbolicLink(brokenLink) == file)
+      assertFalse("a1", Files.exists(file))
+      assertTrue("a2", Files.exists(brokenLink, LinkOption.NOFOLLOW_LINKS))
+      assertTrue("a3", Files.readSymbolicLink(brokenLink) == file)
     }
   }
 
@@ -634,22 +647,22 @@ class FilesTest {
       Files.createFile(f0)
       Files.createFile(f1)
       Files.createFile(f2)
-      assertTrue(Files.exists(d0) && Files.isDirectory(d0))
-      assertTrue(Files.exists(f0) && Files.isRegularFile(f0))
-      assertTrue(Files.exists(f1) && Files.isRegularFile(f1))
-      assertTrue(Files.exists(f2) && Files.isRegularFile(f2))
+      assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
+      assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
+      assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
+      assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
 
       val it    = Files.walk(dir).iterator()
       val files = scala.collection.mutable.Set.empty[Path]
       while (it.hasNext()) {
         files += it.next()
       }
-      assertTrue(files.size == 5)
-      assertTrue(files contains dir)
-      assertTrue(files contains d0)
-      assertTrue(files contains f2)
-      assertTrue(files contains f0)
-      assertTrue(files contains f1)
+      assertTrue("a5", files.size == 5)
+      assertTrue("a6", files contains dir)
+      assertTrue("a7", files contains d0)
+      assertTrue("a8", files contains f2)
+      assertTrue("a9", files contains f0)
+      assertTrue("a10", files contains f1)
     }
   }
 
@@ -658,15 +671,15 @@ class FilesTest {
       val f0 = dirFile.toPath.resolve("f0")
 
       Files.createFile(f0)
-      assertTrue(Files.exists(f0) && Files.isRegularFile(f0))
+      assertTrue("a1", Files.exists(f0) && Files.isRegularFile(f0))
 
       val it    = Files.walk(f0).iterator()
       val files = scala.collection.mutable.Set.empty[Path]
       while (it.hasNext) {
         files += it.next()
       }
-      assertTrue(files.size == 1)
-      assertTrue(files contains f0)
+      assertTrue("a2", files.size == 1)
+      assertTrue("a3", files contains f0)
     }
   }
 
@@ -690,21 +703,21 @@ class FilesTest {
       Files.createDirectory(d1)
       Files.createFile(f2)
 
-      assertTrue(Files.exists(d0) && Files.isDirectory(d0))
-      assertTrue(Files.exists(f0) && Files.isRegularFile(f0))
-      assertTrue(Files.exists(f1) && Files.isRegularFile(f1))
-      assertTrue(Files.exists(f2) && Files.isRegularFile(f2))
+      assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
+      assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
+      assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
+      assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
 
       val it    = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
       val files = scala.collection.mutable.Set.empty[Path]
       while (it.hasNext()) {
         files += it.next()
       }
-      assertTrue(files.size == 5)
-      assertTrue(files contains d0)
-      assertTrue(files contains f0)
-      assertTrue(files contains f1)
-      assertTrue(files contains link)
+      assertEquals("files.size()", 5, files.size)
+      assertTrue("a5", files contains d0)
+      assertTrue("a6", files contains f0)
+      assertTrue("a7", files contains f1)
+      assertTrue("a8", files contains link)
     }
   }
 
@@ -722,8 +735,8 @@ class FilesTest {
 
       val it       = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
       val expected = Set(d0, d1)
-      assertTrue(expected contains it.next())
-      assertTrue(expected contains it.next())
+      assertTrue("a1", expected contains it.next())
+      assertTrue("a2", expected contains it.next())
       assertThrows(classOf[FileSystemLoopException], it.next())
     }
   }
@@ -740,10 +753,10 @@ class FilesTest {
       Files.createFile(f0)
       Files.createFile(f1)
       Files.createFile(f2)
-      assertTrue(Files.exists(d0) && Files.isDirectory(d0))
-      assertTrue(Files.exists(f0) && Files.isRegularFile(f0))
-      assertTrue(Files.exists(f1) && Files.isRegularFile(f1))
-      assertTrue(Files.exists(f2) && Files.isRegularFile(f2))
+      assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
+      assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
+      assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
+      assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
 
       val visitor = new QueueingVisitor
       Files.walkFileTree(dir, visitor)
@@ -754,7 +767,7 @@ class FilesTest {
         val count = result.getOrElse(f, 0)
         result(f) = count + 1
       }
-      assertTrue(result == expected)
+      assertEquals("a5", expected, result)
     }
   }
 
@@ -770,10 +783,10 @@ class FilesTest {
       Files.createFile(f0)
       Files.createFile(f1)
       Files.createFile(f2)
-      assertTrue(Files.exists(d0) && Files.isDirectory(d0))
-      assertTrue(Files.exists(f0) && Files.isRegularFile(f0))
-      assertTrue(Files.exists(f1) && Files.isRegularFile(f1))
-      assertTrue(Files.exists(f2) && Files.isRegularFile(f2))
+      assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
+      assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
+      assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
+      assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
 
       val visitor = new QueueingVisitor()
       val terminatingVisitor = new QueueingVisitor {
@@ -797,7 +810,7 @@ class FilesTest {
       while (!terminatingVisitor.isEmpty) {
         found += terminatingVisitor.dequeue()
       }
-      assertTrue(found == expected)
+      assertEquals("a5", expected, found)
     }
   }
 
@@ -813,10 +826,10 @@ class FilesTest {
       Files.createFile(f0)
       Files.createFile(f1)
       Files.createFile(f2)
-      assertTrue(Files.exists(d0) && Files.isDirectory(d0))
-      assertTrue(Files.exists(f0) && Files.isRegularFile(f0))
-      assertTrue(Files.exists(f1) && Files.isRegularFile(f1))
-      assertTrue(Files.exists(f2) && Files.isRegularFile(f2))
+      assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
+      assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
+      assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
+      assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
 
       val visitor = new QueueingVisitor {
         override def preVisitDirectory(
@@ -833,7 +846,7 @@ class FilesTest {
         val count = result.getOrElse(f, 0)
         result(f) = count + 1
       }
-      assertTrue(result == expected)
+      assertEquals("a5", expected, result)
     }
   }
 
@@ -849,10 +862,10 @@ class FilesTest {
       Files.createFile(f0)
       Files.createFile(f1)
       Files.createFile(f2)
-      assertTrue(Files.exists(d0) && Files.isDirectory(d0))
-      assertTrue(Files.exists(f0) && Files.isRegularFile(f0))
-      assertTrue(Files.exists(f1) && Files.isRegularFile(f1))
-      assertTrue(Files.exists(f2) && Files.isRegularFile(f2))
+      assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
+      assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
+      assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
+      assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
 
       val visitor  = new QueueingVisitor()
       val expected = scala.collection.mutable.Set.empty[Path]
@@ -877,7 +890,7 @@ class FilesTest {
       while (!skippingVisitor.isEmpty) {
         result += skippingVisitor.dequeue()
       }
-      assertTrue(result == expected)
+      assertEquals("a5", expected, result)
     }
   }
 
@@ -899,11 +912,8 @@ class FilesTest {
       val expectedFileNamesSet = context.expectedFollowFilesSet()
       val expectedLength       = expectedFileNamesSet.size
 
-      assertTrue(s"result length: $resultLength != expected: $expectedLength",
-                 resultLength == expectedLength)
-
-      assertTrue(s"result: ${resultSet} != expected: ${expectedFileNamesSet}",
-                 resultSet == expectedFileNamesSet)
+      assertEquals(s"result length:", expectedLength, resultLength)
+      assertEquals(s"result set:", expectedFileNamesSet, resultSet)
     }
   }
 
@@ -934,10 +944,10 @@ class FilesTest {
       Files.createFile(f0)
       Files.createFile(f1)
       Files.createFile(f2)
-      assertTrue(Files.exists(d0) && Files.isDirectory(d0))
-      assertTrue(Files.exists(f0) && Files.isRegularFile(f0))
-      assertTrue(Files.exists(f1) && Files.isRegularFile(f1))
-      assertTrue(Files.exists(f2) && Files.isRegularFile(f2))
+      assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
+      assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
+      assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
+      assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
 
       val predicate = new BiPredicate[Path, BasicFileAttributes] {
         override def test(path: Path, attrs: BasicFileAttributes): Boolean =
@@ -946,9 +956,9 @@ class FilesTest {
       val it       = Files.find(dir, 10, predicate).iterator
       val expected = Set(f0, f1, f2)
 
-      assertTrue(expected contains it.next())
-      assertTrue(expected contains it.next())
-      assertTrue(expected contains it.next())
+      assertTrue("a5", expected contains it.next())
+      assertTrue("a6", expected contains it.next())
+      assertTrue("a7", expected contains it.next())
     }
   }
 
@@ -961,7 +971,7 @@ class FilesTest {
     val dir = top.toPath()
     val d1  = dir.resolve("d1")
     Files.createDirectory(d1)
-    assertTrue(Files.exists(d1) && Files.isDirectory(d1))
+    assertTrue("a1", Files.exists(d1) && Files.isDirectory(d1))
 
     // f0 & f1 are just to give find() a bit more complicated case.
     val f0 = d1.resolve("f0")
@@ -971,19 +981,19 @@ class FilesTest {
 
     val d2 = dir.resolve("d2")
     Files.createDirectory(d2)
-    assertTrue(Files.exists(d2) && Files.isDirectory(d2))
+    assertTrue("a2", Files.exists(d2) && Files.isDirectory(d2))
 
     val symlinkTarget = d2
 
     val sought = d2.resolve(soughtName)
     Files.createFile(sought)
-    assertTrue(Files.exists(sought) && Files.isRegularFile(sought))
+    assertTrue("a3", Files.exists(sought) && Files.isRegularFile(sought))
 
     // Tricky bit here, symlink target is a directory, not a file.
     val symlink = d1.resolve("dirSymlink")
     Files.createSymbolicLink(symlink, symlinkTarget)
 
-    assertTrue(Files.exists(symlink) && Files.isSymbolicLink(symlink))
+    assertTrue("a4", Files.exists(symlink) && Files.isSymbolicLink(symlink))
 
     (dir, d1, d2, symlink)
   }
@@ -1009,15 +1019,16 @@ class FilesTest {
       val foundPath = itFollowGood.next
       val foundName = foundPath.getFileName.toString
 
-      assertTrue(s"found: |$foundName| != expected: |$soughtName|",
-                 foundName == soughtName)
+      assertEquals("found != sought", soughtName, foundName)
 
       // Test good symlink when not following links.
 
       val itNoFollowGood = Files.find(d1, 10, predicate).iterator
 
-      assertTrue(s"Should not have found anything when not following symlinks",
-                 itNoFollowGood.hasNext == false)
+      assertEquals(
+        s"Should not have found anything when not following symlinks",
+        false,
+        itNoFollowGood.hasNext)
     }
   }
 
@@ -1066,11 +1077,11 @@ class FilesTest {
       val f0  = dir.resolve("f0")
 
       Files.createFile(f0)
-      assertTrue(Files.exists(f0))
+      assertTrue("a1", Files.exists(f0))
 
       val referenceMs = f0.toFile().lastModified()
       val filetimeMs  = Files.getLastModifiedTime(f0).toMillis()
-      assertTrue(referenceMs == filetimeMs)
+      assertEquals("a2", referenceMs, filetimeMs)
     }
   }
 
@@ -1081,7 +1092,7 @@ class FilesTest {
       val f0 = d0.resolve("f0")
 
       Files.createFile(f0)
-      assertTrue(Files.exists(f0))
+      assertTrue("a1", Files.exists(f0))
 
       val d0mtime =
         Files.getAttribute(d0, "lastModifiedTime").asInstanceOf[FileTime]
@@ -1098,10 +1109,10 @@ class FilesTest {
       val d0isOth = Files.getAttribute(d0, "isOther").asInstanceOf[Boolean]
       val d0fkey  = Files.getAttribute(d0, "fileKey")
 
-      assertFalse(d0isReg)
-      assertTrue(d0isDir)
-      assertFalse(d0isSym)
-      assertFalse(d0isOth)
+      assertFalse("a2", d0isReg)
+      assertTrue("a3", d0isDir)
+      assertFalse("a4", d0isSym)
+      assertFalse("a5", d0isOth)
 
       val f0mtime =
         Files.getAttribute(f0, "lastModifiedTime").asInstanceOf[FileTime]
@@ -1118,12 +1129,12 @@ class FilesTest {
       val f0isOth = Files.getAttribute(f0, "isOther").asInstanceOf[Boolean]
       val f0fkey  = Files.getAttribute(f0, "fileKey")
 
-      assertTrue(f0mtime.toMillis() == f0.toFile().lastModified())
-      assertTrue(f0size == f0.toFile().length())
-      assertTrue(f0isReg)
-      assertFalse(f0isDir)
-      assertFalse(f0isSym)
-      assertFalse(f0isOth)
+      assertTrue("a6", f0mtime.toMillis() == f0.toFile().lastModified())
+      assertTrue("a7", f0size == f0.toFile().length())
+      assertTrue("a8", f0isReg)
+      assertFalse("a9", f0isDir)
+      assertFalse("a10", f0isSym)
+      assertFalse("a11", f0isOth)
     }
   }
 
@@ -1135,8 +1146,8 @@ class FilesTest {
 
       Files.createFile(f0)
       Files.createSymbolicLink(l0, f0)
-      assertTrue(Files.exists(f0))
-      assertTrue(Files.exists(l0))
+      assertTrue("a1", Files.exists(f0))
+      assertTrue("a2", Files.exists(l0))
 
       val normalL0IsReg =
         Files.getAttribute(l0, "isRegularFile").asInstanceOf[Boolean]
@@ -1149,10 +1160,10 @@ class FilesTest {
         .getAttribute(l0, "isSymbolicLink", LinkOption.NOFOLLOW_LINKS)
         .asInstanceOf[Boolean]
 
-      assertTrue(normalL0IsReg)
-      assertFalse(noFollowL0IsReg)
-      assertFalse(normalL0IsLink)
-      assertTrue(noFollowL0IsLink)
+      assertTrue("a3", normalL0IsReg)
+      assertFalse("a4", noFollowL0IsReg)
+      assertFalse("a5", normalL0IsLink)
+      assertTrue("a6", noFollowL0IsLink)
     }
   }
 
@@ -1189,9 +1200,9 @@ class FilesTest {
       val permissions = Files.getPosixFilePermissions(f0)
 
       import PosixFilePermission._
-      assertTrue(permissions.contains(OWNER_READ))
-      assertFalse(permissions.contains(OWNER_WRITE))
-      assertTrue(permissions.contains(OWNER_EXECUTE))
+      assertTrue("a1", permissions.contains(OWNER_READ))
+      assertFalse("a2", permissions.contains(OWNER_WRITE))
+      assertTrue("a3", permissions.contains(OWNER_EXECUTE))
     }
   }
 
@@ -1208,12 +1219,12 @@ class FilesTest {
       writer.flush()
       writer.close()
 
-      assertTrue(Files.exists(f0))
+      assertTrue("a1", Files.exists(f0))
 
       val it = Files.lines(f0).iterator()
-      assertTrue(it.next() == "first line")
-      assertTrue(it.next() == "second line")
-      assertFalse(it.hasNext())
+      assertTrue("a2", it.next() == "first line")
+      assertTrue("a3", it.next() == "second line")
+      assertFalse("a4", it.hasNext())
     }
   }
 
@@ -1226,9 +1237,9 @@ class FilesTest {
       Files.write(f0, lines)
 
       val it = Files.lines(f0).iterator()
-      assertTrue(it.next() == "first line")
-      assertTrue(it.next() == "second line")
-      assertFalse(it.hasNext())
+      assertTrue("a1", it.next() == "first line")
+      assertTrue("a2", it.next() == "second line")
+      assertFalse("a3", it.hasNext())
     }
   }
 
@@ -1240,16 +1251,16 @@ class FilesTest {
 
       val lines = new Iterable(Array("first line", "second line"))
       Files.write(f0, lines)
-      assertTrue(Files.exists(f0))
-      assertFalse(Files.exists(f1))
+      assertTrue("a1", Files.exists(f0))
+      assertFalse("a2", Files.exists(f1))
       Files.move(f0, f1)
-      assertFalse(Files.exists(f0))
-      assertTrue(Files.exists(f1))
+      assertFalse("a3", Files.exists(f0))
+      assertTrue("a4", Files.exists(f1))
 
       val it = Files.lines(f1).iterator
-      assertTrue(it.next() == "first line")
-      assertTrue(it.next() == "second line")
-      assertFalse(it.hasNext())
+      assertTrue("a5", it.next() == "first line")
+      assertTrue("a6", it.next() == "second line")
+      assertFalse("a7", it.hasNext())
     }
   }
 
@@ -1261,12 +1272,13 @@ class FilesTest {
       val target = Files.createTempDirectory(null)
       if (delete) assertTrue(Files.deleteIfExists(target))
       Files.move(dir, target, options: _*)
-      assertFalse(Files.exists(dir))
-      assertFalse(Files.exists(f0))
+      assertFalse("a1", Files.exists(dir))
+      assertFalse("a2", Files.exists(f0))
 
       val newF0 = target.resolve("f0")
-      assertTrue(Files.exists(newF0))
-      assertTrue(Files.lines(newF0).iterator().toScalaSeq.mkString == "foo")
+      assertTrue("a3", Files.exists(newF0))
+      assertTrue("a4",
+                 Files.lines(newF0).iterator().toScalaSeq.mkString == "foo")
     }
   }
   @Test def filesMoveDirectory(): Unit = {
@@ -1295,8 +1307,8 @@ class FilesTest {
       Files.setAttribute(f0, "lastModifiedTime", FileTime.fromMillis(1000))
       val time2 = Files.getAttribute(f0, "lastModifiedTime")
 
-      assertTrue(time0 != time2)
-      assertTrue(time1 == time2)
+      assertNotEquals("time0 != time2", time0, time2)
+      assertEquals("time1 -- time2", time1, time2)
     }
   }
 
@@ -1313,8 +1325,8 @@ class FilesTest {
       Files.setAttribute(f0, "lastAccessTime", time1)
       val time2 = Files.getAttribute(f0, "lastAccessTime")
 
-      assertTrue(time0 != time2)
-      assertTrue(time1 == time2)
+      assertNotEquals("time0 != time2", time0, time2)
+      assertEquals("time1 -- time2", time1, time2)
     }
   }
 
@@ -1331,8 +1343,8 @@ class FilesTest {
       Files.setAttribute(f0, "posix:permissions", perm1)
       val perm2 = Files.getAttribute(f0, "posix:permissions")
 
-      assertTrue(perm0 != perm2)
-      assertTrue(perm1 == perm2)
+      assertNotEquals("perm0 != perm2", perm0, perm2)
+      assertEquals("perm1 -- perm2", perm1, perm2)
     }
   }
 
@@ -1343,12 +1355,12 @@ class FilesTest {
 
       val lines = new Iterable(Array("first line", "second line"))
       Files.write(f0, lines)
-      assertTrue(Files.exists(f0))
+      assertTrue("exists()", Files.exists(f0))
 
       val list = Files.readAllLines(f0)
-      assertTrue(list.size() == 2)
-      assertTrue(list.get(0) == "first line")
-      assertTrue(list.get(1) == "second line")
+      assertEquals("list.size()", 2, list.size())
+      assertEquals("first line", list.get(0))
+      assertEquals("second line", list.get(1))
     }
   }
 
@@ -1358,13 +1370,13 @@ class FilesTest {
       val f0  = dir.resolve("f0")
       val in  = new ByteArrayInputStream(Array(1, 2, 3))
       Files.copy(in, f0)
-      assertTrue(Files.exists(f0))
-      assertTrue(Files.size(f0) == 3)
+      assertTrue("exists()", Files.exists(f0))
+      assertEquals("Files.size(f0)", 3, Files.size(f0))
 
       val bytes = Files.readAllBytes(f0)
-      assertTrue(bytes(0) == 1)
-      assertTrue(bytes(1) == 2)
-      assertTrue(bytes(2) == 3)
+      assertEquals("bytes(0)", 1, bytes(0))
+      assertEquals("bytes(1)", 2, bytes(1))
+      assertEquals("bytes(2)", 3, bytes(2))
     }
   }
 
@@ -1372,10 +1384,10 @@ class FilesTest {
     withTemporaryDirectory { dirFile =>
       val dir   = dirFile.toPath
       val attrs = Files.readAttributes(dir, classOf[PosixFileAttributes])
-      assertTrue(attrs.isDirectory())
-      assertFalse(attrs.isOther())
-      assertFalse(attrs.isRegularFile())
-      assertFalse(attrs.isSymbolicLink())
+      assertTrue("a1", attrs.isDirectory())
+      assertFalse("a2", attrs.isOther())
+      assertFalse("a3", attrs.isRegularFile())
+      assertFalse("a4", attrs.isSymbolicLink())
     }
   }
 
@@ -1383,9 +1395,9 @@ class FilesTest {
     withTemporaryDirectory { dirFile =>
       val dir   = dirFile.toPath
       val attrs = Files.readAttributes(dir, "posix:permissions,size")
-      assertTrue(attrs.size == 2)
-      assertTrue(attrs.containsKey("permissions"))
-      assertTrue(attrs.containsKey("size"))
+      assertEquals("attrs.size", 2, attrs.size)
+      assertTrue("a1", attrs.containsKey("permissions"))
+      assertTrue("a2", attrs.containsKey("size"))
     }
   }
 
@@ -1408,11 +1420,11 @@ class FilesTest {
       val read = channel.read(buffer)
       buffer.flip()
 
-      assertTrue(buffer.limit() == 3)
-      assertTrue(read == 3)
-      assertTrue(buffer.get(0) == 1)
-      assertTrue(buffer.get(1) == 2)
-      assertTrue(buffer.get(2) == 3)
+      assertEquals("buffer.limit()", 3, buffer.limit())
+      assertEquals("read", 3, read)
+      assertEquals("buffer.get(0)", 1, buffer.get(0))
+      assertEquals("buffer.get(1)", 2, buffer.get(1))
+      assertEquals("buffer.get(2)", 3, buffer.get(2))
     }
   }
 
@@ -1423,10 +1435,10 @@ class FilesTest {
       Files.write(f0, Array[Byte](1, 2, 3))
 
       val in = Files.newInputStream(f0)
-      assertTrue(in.read() == 1)
-      assertTrue(in.read() == 2)
-      assertTrue(in.read() == 3)
-      assertTrue(in.read() == -1)
+      assertEquals("read #1", 1, in.read())
+      assertEquals("read #2", 2, in.read())
+      assertEquals("read #3", 3, in.read())
+      assertEquals("read #4", -1, in.read())
     }
   }
 
@@ -1436,15 +1448,15 @@ class FilesTest {
       val f0  = dir.resolve("f0")
       val out = Files.newOutputStream(f0)
 
-      assertTrue(Files.exists(f0))
+      assertTrue("exists()", Files.exists(f0))
 
       out.write(Array[Byte](1, 2, 3))
 
       val in = Files.newInputStream(f0)
-      assertTrue(in.read() == 1)
-      assertTrue(in.read() == 2)
-      assertTrue(in.read() == 3)
-      assertTrue(in.read() == -1)
+      assertEquals("read #1", 1, in.read())
+      assertEquals("read #2", 2, in.read())
+      assertEquals("read #3", 3, in.read())
+      assertEquals("read #4", -1, in.read())
     }
   }
 
@@ -1462,7 +1474,7 @@ class FilesTest {
       out1.close()
 
       val in0 = Files.newInputStream(f0)
-      assertTrue(in0.read() == -1)
+      assertEquals("in0.read()", -1, in0.read())
 
       val f1 = dir.resolve("f1")
       Files.createFile(f1)
@@ -1531,8 +1543,8 @@ class FilesTest {
 object FilesTest {
   def makeTemporaryDir(): File = {
     val file = File.createTempFile("test", ".tmp")
-    assertTrue(file.delete())
-    assertTrue(file.mkdir())
+    assertTrue("delete()", file.delete())
+    assertTrue("mkdir()", file.mkdir())
     file
   }
 
