@@ -35,11 +35,10 @@ object FileHelpers {
             }
           }
           closedir(dir)
-          res match {
-            case e if e == EBADF || e == EFAULT || e == EIO =>
-              throw UnixException(path, res)
-            case _ => buffer.toArray
-          }
+          if (res == -1)
+            buffer.toArray
+          else
+            throw UnixException(path, res)
         }
       }
   }
