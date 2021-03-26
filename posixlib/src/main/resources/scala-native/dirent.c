@@ -31,6 +31,7 @@ void scalanative_dirent_init(struct dirent *dirent,
     my_dirent->d_type = dirent->d_type;
 }
 
+// returns 0 in case of success, -1 in case of empty dir, errno otherwise
 int scalanative_readdir(DIR *dirp, struct scalanative_dirent *buf) {
     errno = 0;
     struct dirent *orig_buf = readdir(dirp);
