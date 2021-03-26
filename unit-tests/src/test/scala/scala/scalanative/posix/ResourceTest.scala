@@ -7,6 +7,7 @@ import org.junit.Assert._
 
 import scalanative.libc.errno
 import scalanative.posix.errno._
+import scalanative.runtime.Platform
 import scalanative.unsafe.{CInt, Ptr, Zone, alloc}
 import scalanative.unsigned._
 
@@ -46,9 +47,19 @@ class ResourceTest {
   @Test def getpriorityInvalidArgWho {
     errno.errno = 0
 
-    getpriority(PRIO_PROCESS, -1.toUInt)
+    getpriority(PRIO_PROCESS, UInt.MaxValue)
 
-    assertEquals("unexpected errno", ESRCH, errno.errno)
+    // Most operating systems will return EINVAL. Handle corner cases here.
+    if (errno.errno != EINVAL) {
+      if (!Platform.isLinux()) {
+        assertEquals("unexpected errno", EINVAL, errno.errno)
+      } else if (errno.errno != 0) { // Linux
+        // A pid of UInt.MaxValue is highly unlikely but, by one reading,
+        // possible. If it exists and is found, it should not cause this test
+        // to fail, just to be specious (have false look of genuineness).
+        assertEquals("unexpected errno", ESRCH, errno.errno)
+      }
+    }
   }
 
   @Test def testGetpriority {
