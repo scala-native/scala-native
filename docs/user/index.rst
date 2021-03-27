@@ -11,3 +11,4 @@ User's Guide
   lang
   interop
   testing
+  profiling
