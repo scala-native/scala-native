@@ -65,7 +65,7 @@ A `flamegraph <http://www.brendangregg.com/flamegraphs.html>`_ is a visualizatio
     $ cd ~ && mkdir -p git/hub && cd git/hub/ 
     $ git clone git@github.com:brendangregg/FlameGraph.git
 
-* Then navigate to your Scala Native project and after building your binary, and you can create a flamegraph like so:
+* Then navigate to your Scala Native project and, after building your binary, you can create a flamegraph like so:
 
 .. code-block:: shell
 
