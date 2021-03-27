@@ -52,11 +52,11 @@ Creating Flamegraphs
 
 A `flamegraph <http://www.brendangregg.com/flamegraphs.html>`_ is a visualization of the most frequent code-paths of a program. You can use flamegraphs to see where your program spends most of its CPU time. Follow these steps:
 
-* You need to install the ``perf`` command like so:
+* You need to install the ``perf`` command if you haven't got it already:
 
 .. code-block:: shell
 
-    $sudo apt update && sudo apt install linux-tools-generic
+    $ sudo apt update && sudo apt install linux-tools-generic
 
 * Then clone the flamegraph repository into e.g. ``~/git/hub/``
 
