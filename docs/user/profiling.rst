@@ -5,8 +5,8 @@ Profiling
 
 In this section you can find some tips on how to profile your scala-native binary in Linux.
 
-Measuring execution time and memory consumption
------------------------------------------------
+Measuring execution time and memory
+-----------------------------------
 
 * With the ``time`` command you can measure execution time:
 
