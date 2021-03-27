@@ -14,8 +14,8 @@ object ExecutionContext {
 
   private val queue: ListBuffer[Runnable] = new ListBuffer
 
-  private[runtime] def loop(): Unit = {
-    while (queue.nonEmpty) {
+  private[runtime] def once(): Boolean = {
+    if (queue.nonEmpty) {
       val runnable = queue.remove(0)
       try {
         runnable.run()
@@ -24,5 +24,11 @@ object ExecutionContext {
           QueueExecutionContext.reportFailure(t)
       }
     }
+    queue.nonEmpty
   }
+
+  private[runtime] def loop(): Unit =
+    while ({
+      once()
+    }) ()
 }

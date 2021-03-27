@@ -42,6 +42,12 @@ package object runtime {
   @noinline def loop(): Unit =
     ExecutionContext.loop()
 
+  /** Run the runtime's event loop only once. The method is called from the
+   *  generated C-style event loop the application's main method.
+   */
+  @noinline def once(): Boolean =
+    ExecutionContext.once()
+
   /** Called by the generated code in case of division by zero. */
   @noinline def throwDivisionByZero(): Nothing =
     throw new java.lang.ArithmeticException("/ by zero")
