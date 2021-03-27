@@ -19,7 +19,7 @@ Measuring execution time and memory consumption
 
 * With the ``/usr/bin/time --verbose``  command you can also see memory consumption:
 
-.. code-block:: shell
+.. code-block:: 
 
     $ /usr/bin/time --verbose ./target/scala-2.13/scala-native-out 
     Command being timed: "./target/scala-2.13/scala-native-out"
