@@ -21,7 +21,7 @@ Measuring execution time and memory consumption
 
 .. code-block:: shell
 
-    $ /usr/bin/time ./target/scala-2.13/scala-native-out 
+    $ /usr/bin/time --verbose ./target/scala-2.13/scala-native-out 
     Command being timed: "./target/scala-2.13/scala-native-out"
     User time (seconds): 0.49
     System time (seconds): 0.23
