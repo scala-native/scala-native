@@ -25,24 +25,28 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     heap->gcThreads.startWorkers =
         sem_open(startWorkersName, O_CREAT | O_EXCL, 0644, 0);
     if (heap->gcThreads.startWorkers == SEM_FAILED) {
-        perror("Opening worker semaphore failed in commix Phase_Init");
+        fprintf(stderr,
+                "Opening worker semaphore failed in commix Phase_Init\n");
         exit(errno);
     }
 
     heap->gcThreads.startMaster =
         sem_open(startMasterName, O_CREAT | O_EXCL, 0644, 0);
     if (heap->gcThreads.startMaster == SEM_FAILED) {
-        perror("Opening master semaphore failed in commix Phase_Init");
+        fprintf(stderr,
+                "Opening master semaphore failed in commix Phase_Init\n");
         exit(errno);
     }
     // clean up when process closes
     // also prevents any other process from `sem_open`ing it
     if (sem_unlink(startWorkersName) != 0) {
-        perror("Unlinking worker semaphore failed in commix Phase_Init");
+        fprintf(stderr,
+                "Unlinking worker semaphore failed in commix Phase_Init\n");
         exit(errno);
     }
     if (sem_unlink(startMasterName) != 0) {
-        perror("Unlinking master semaphore failed in commix Phase_Init");
+        fprintf(stderr,
+                "Unlinking master semaphore failed in commix Phase_Init\n");
         exit(errno);
     }
 

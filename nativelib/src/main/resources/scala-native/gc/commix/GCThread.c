@@ -79,7 +79,8 @@ void *GCThread_loop(void *arg) {
     while (true) {
         thread->active = false;
         if (sem_wait(start) != 0) {
-            perror("Acquiring semaphore failed in commix GCThread_loop");
+            fprintf(stderr,
+                    "Acquiring semaphore failed in commix GCThread_loop\n");
             exit(errno);
         }
         // hard fence before proceeding with the next phase
@@ -112,7 +113,9 @@ void *GCThread_loopMaster(void *arg) {
     while (true) {
         thread->active = false;
         if (sem_wait(start) != 0) {
-            perror("Acquiring semaphore failed in commix GCThread_loopMaster");
+            fprintf(
+                stderr,
+                "Acquiring semaphore failed in commix GCThread_loopMaster\n");
             exit(errno);
         }
         // hard fence before proceeding with the next phase
@@ -178,7 +181,8 @@ int GCThread_ActiveCount(Heap *heap) {
 
 INLINE void GCThread_WakeMaster(Heap *heap) {
     if (sem_post(heap->gcThreads.startMaster) != 0) {
-        perror("Releasing semaphore failed in commix GCThread_WakeMaster");
+        fprintf(stderr,
+                "Releasing semaphore failed in commix GCThread_WakeMaster\n");
         exit(errno);
     }
 }
@@ -187,7 +191,9 @@ INLINE void GCThread_WakeWorkers(Heap *heap, int toWake) {
     sem_t *startWorkers = heap->gcThreads.startWorkers;
     for (int i = 0; i < toWake; i++) {
         if (sem_post(startWorkers) != 0) {
-            perror("Releasing semaphore failed in commix GCThread_WakeWorkers");
+            fprintf(
+                stderr,
+                "Releasing semaphore failed in commix GCThread_WakeWorkers\n");
             exit(errno);
         }
     }
