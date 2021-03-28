@@ -18,7 +18,6 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     char startMasterName[masterNameSize];
     snprintf(startWorkersName, workerNameSize, "commix_mt_%d", pid);
     snprintf(startMasterName, masterNameSize, "commix_wk_%d", pid);
-
     // only reason for using named semaphores here is for compatibility with
     // MacOs we do not share them across processes
     // We open the semaphores and try to check the call succeeded,

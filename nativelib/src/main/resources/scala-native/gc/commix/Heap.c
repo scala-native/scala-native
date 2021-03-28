@@ -27,7 +27,7 @@
 #define HEAP_MEM_FD_OFFSET 0
 
 void Heap_exitWithOutOfMemory() {
-    printf("Out of heap space\n");
+    fprintf(stderr, "Out of heap space\n");
     StackTrace_PrintStackTrace();
     exit(1);
 }
