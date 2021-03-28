@@ -5,6 +5,9 @@
 #include "BlockAllocator.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <limits.h>
+#include <errno.h>
+#include <stdlib.h>
 
 void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     pid_t pid = getpid();
@@ -15,16 +18,34 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     char startMasterName[masterNameSize];
     snprintf(startWorkersName, workerNameSize, "commix_mt_%d", pid);
     snprintf(startMasterName, masterNameSize, "commix_wk_%d", pid);
+
     // only reason for using named semaphores here is for compatibility with
     // MacOs we do not share them across processes
+    // We open the semaphores and try to check the call succeeded,
+    // if not, we exit the process
     heap->gcThreads.startWorkers =
         sem_open(startWorkersName, O_CREAT | O_EXCL, 0644, 0);
+    if (heap->gcThreads.startWorkers == SEM_FAILED) {
+        perror("Opening worker semaphore failed in commix Phase_Init");
+        exit(errno);
+    }
+
     heap->gcThreads.startMaster =
         sem_open(startMasterName, O_CREAT | O_EXCL, 0644, 0);
+    if (heap->gcThreads.startMaster == SEM_FAILED) {
+        perror("Opening master semaphore failed in commix Phase_Init");
+        exit(errno);
+    }
     // clean up when process closes
     // also prevents any other process from `sem_open`ing it
-    sem_unlink(startWorkersName);
-    sem_unlink(startMasterName);
+    if (sem_unlink(startWorkersName) != 0) {
+        perror("Unlinking worker semaphore failed in commix Phase_Init");
+        exit(errno);
+    }
+    if (sem_unlink(startMasterName) != 0) {
+        perror("Unlinking master semaphore failed in commix Phase_Init");
+        exit(errno);
+    }
 
     heap->sweep.cursor = initialBlockCount;
     heap->lazySweep.cursorDone = initialBlockCount;

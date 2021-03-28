@@ -4,6 +4,8 @@
 #include "Marker.h"
 #include "Phase.h"
 #include <semaphore.h>
+#include <errno.h>
+#include <stdlib.h>
 
 static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
     Stats_RecordTime(stats, start_ns);
@@ -76,7 +78,10 @@ void *GCThread_loop(void *arg) {
 
     while (true) {
         thread->active = false;
-        sem_wait(start);
+        if (sem_wait(start) != 0) {
+            perror("Acquiring semaphore failed in commix GCThread_loop");
+            exit(errno);
+        }
         // hard fence before proceeding with the next phase
         atomic_thread_fence(memory_order_seq_cst);
         thread->active = true;
@@ -106,7 +111,10 @@ void *GCThread_loopMaster(void *arg) {
     Stats *stats = Stats_OrNull(thread->stats);
     while (true) {
         thread->active = false;
-        sem_wait(start);
+        if (sem_wait(start) != 0) {
+            perror("Acquiring semaphore failed in commix GCThread_loopMaster");
+            exit(errno);
+        }
         // hard fence before proceeding with the next phase
         atomic_thread_fence(memory_order_seq_cst);
         thread->active = true;
@@ -169,13 +177,19 @@ int GCThread_ActiveCount(Heap *heap) {
 }
 
 INLINE void GCThread_WakeMaster(Heap *heap) {
-    sem_post(heap->gcThreads.startMaster);
+    if (sem_post(heap->gcThreads.startMaster) != 0) {
+        perror("Releasing semaphore failed in commix GCThread_WakeMaster");
+        exit(errno);
+    }
 }
 
 INLINE void GCThread_WakeWorkers(Heap *heap, int toWake) {
     sem_t *startWorkers = heap->gcThreads.startWorkers;
     for (int i = 0; i < toWake; i++) {
-        sem_post(startWorkers);
+        if (sem_post(startWorkers) != 0) {
+            perror("Releasing semaphore failed in commix GCThread_WakeWorkers");
+            exit(errno);
+        }
     }
 }
 
