@@ -3,7 +3,7 @@
 Profiling
 =========
 
-In this section you can find some tips on how to profile your scala-native binary in Linux.
+In this section you can find some tips on how to profile your Scala Native binary in Linux.
 
 Measuring execution time and memory
 -----------------------------------
