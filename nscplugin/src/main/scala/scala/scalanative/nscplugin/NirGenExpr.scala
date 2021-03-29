@@ -1140,39 +1140,34 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         tree.hasSymbolWhich(
           _.annotations.exists(_.symbol == ResolvedAtLinktimeClass))
 
-      def someBooleanProperty(reciverp: Tree,
-                              value: Val): Option[LinktimeCondition] = Some {
+      def simpleBooleanCondition(reciverp: Tree,
+                                 value: Val): Option[LinktimeCondition] = Some {
         val name         = genName(reciverp.symbol)
         val propertyName = Linktime.nameToLinktimePropertyName(name)
         SimpleCondition(propertyName, Comp.Ieq, value)(reciverp.pos)
       }
-      def someLiteralProperty(reciverp: Tree,
-                              comp: Name,
-                              arg: Literal): Option[LinktimeCondition] = Some {
-        val argValue = genLiteralValue(arg)
-        val name     = genName(reciverp.symbol)
-        SimpleCondition(Linktime.nameToLinktimePropertyName(name),
-                        genComparsion(comp, argValue),
-                        argValue)(reciverp.pos)
-      }
+      def simpleLiteralCondition(reciverp: Tree,
+                                 comp: Name,
+                                 arg: Literal): Option[LinktimeCondition] =
+        Some {
+          val argValue = genLiteralValue(arg)
+          val name     = genName(reciverp.symbol)
+          SimpleCondition(Linktime.nameToLinktimePropertyName(name),
+                          genComparsion(comp, argValue),
+                          argValue)(reciverp.pos)
+        }
 
       condp match {
         case Apply(reciverp, List()) if isLinktimeProperty(reciverp) =>
-          someBooleanProperty(reciverp, Val.True)
+          simpleBooleanCondition(reciverp, Val.True)
 
         case Apply(Select(Apply(reciverp, List()), nme.UNARY_!), List())
             if isLinktimeProperty(reciverp) =>
-          someBooleanProperty(reciverp, Val.False)
+          simpleBooleanCondition(reciverp, Val.False)
 
         case Apply(Select(reciverp, comp), List(arg @ Literal(Constant(_))))
             if isLinktimeProperty(reciverp) =>
-          someLiteralProperty(reciverp, comp, arg)
-
-        // Same as above, but for case when condition is additionally boxed, eg.: `prop != null`
-        case Apply(Select(Apply(_, List(Apply(reciverp, List()))), comp),
-                   List(arg @ Literal(Constant(_))))
-            if isLinktimeProperty(reciverp) =>
-          someLiteralProperty(reciverp, comp, arg)
+          simpleLiteralCondition(reciverp, comp, arg)
 
         case Apply(Select(cond1, op), List(cond2)) =>
           (getLinktimeCondition(cond1), getLinktimeCondition(cond2)) match {
