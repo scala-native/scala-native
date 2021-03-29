@@ -1,8 +1,8 @@
-package scala.scalanative.nio.fs
+package java.nio.file.attribute
 
 import java.util.{HashMap, HashSet, Set}
 import java.util.concurrent.TimeUnit
-import java.nio.file.{LinkOption, Path}
+import java.nio.file.{LinkOption, Path, PosixException}
 import java.nio.file.attribute._
 import java.io.IOException
 
@@ -12,11 +12,12 @@ import scalanative.libc._
 import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
 import scalanative.posix.sys.stat
 
-final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
+final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
     extends PosixFileAttributeView
     with FileOwnerAttributeView {
   private def throwIOException() =
-    throw UnixException(path.toString, errno.errno)
+    throw PosixException(path.toString, errno.errno)
+
   override val name: String = "posix"
 
   override def setTimes(lastModifiedTime: FileTime,
@@ -46,7 +47,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
   override def setPermissions(perms: Set[PosixFilePermission]): Unit =
     Zone { implicit z =>
       var mask = 0.toUInt
-      NativePosixFileAttributeView.permMap.foreach {
+      PosixFileAttributeViewImpl.permMap.foreach {
         case (flag, value) => if (perms.contains(value)) mask = mask | flag
       }
       if (stat.chmod(toCString(path.toString), mask) != 0) {
@@ -142,7 +143,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
       override def permissions() = {
         val set = new HashSet[PosixFilePermission]
-        NativePosixFileAttributeView.permMap.foreach {
+        PosixFileAttributeViewImpl.permMap.foreach {
           case (flag, value) =>
             if ((st_mode & flag).toInt != 0) set.add(value)
         }
@@ -234,9 +235,9 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     if (err == 0) buf
     else throwIOException()
   }
-
 }
-private object NativePosixFileAttributeView {
+
+private object PosixFileAttributeViewImpl {
   val permMap =
     List(
       (stat.S_IRUSR, PosixFilePermission.OWNER_READ),
