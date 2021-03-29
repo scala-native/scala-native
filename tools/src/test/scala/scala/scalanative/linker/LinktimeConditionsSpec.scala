@@ -112,10 +112,10 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
   }
 
   it should "not allow to define property without `resolved` as rhs value" in {
-    assertThrows[scala.scalanative.api.CompilationFailedException] {
+    val caught = intercept[scala.scalanative.api.CompilationFailedException] {
       linkWithProps(
         "props.scala" ->
-          """pakcage scala.scalanative
+          """package scala.scalanative
             |object props{
             |   @scalanative.unsafe.resolvedAtLinktime(withName = null)
             |   def linktimeProperty: Boolean = true
@@ -129,16 +129,17 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
             |}""".stripMargin
       )() { (_, _) => () }
     }
+    caught.getMessage shouldEqual "Link-time resolved property must have scala.scalanative.unsafe.resolved as body"
   }
 
   it should "not allow to define property with null rhs" in {
-    assertThrows[scala.scalanative.api.CompilationFailedException] {
+    val caught = intercept[scala.scalanative.api.CompilationFailedException] {
       linkWithProps(
         "props.scala" -> """
              |package scala.scalanative
              |object props{
              |   @scalanative.unsafe.resolvedAtLinktime()
-             |   def linktimeProperty: Int = null
+             |   def linktimeProperty: Boolean = null.asInstanceOf[Boolean]
              |}
              |""".stripMargin,
         "main.scala"  -> """
@@ -150,16 +151,17 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
             |}""".stripMargin
       )() { (_, _) => () }
     }
+    caught.getMessage shouldEqual "Link-time resolved property must have scala.scalanative.unsafe.resolved as body"
   }
 
   it should "not allow to define property resolved from property with null name" in {
-    assertThrows[scala.scalanative.api.CompilationFailedException] {
+    val caught = intercept[scala.scalanative.api.CompilationFailedException] {
       linkWithProps(
         "props.scala" ->
-          """pakcage scala.scalanative
+          """package scala.scalanative
             |object props{
-            |   @scalanative.unsafe.resolvedAtLinktime(withName = null)
-            |   def linktimeProperty: Int = scala.scalanative.unsafe.resolved
+            |   @scalanative.unsafe.resolvedAtLinktime(withName = null.asInstanceOf[String])
+            |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
             |}""".stripMargin,
         "main.scala" ->
           """import scala.scalanative.props._
@@ -170,13 +172,14 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
             |}""".stripMargin
       )() { (_, _) => () }
     }
+    caught.getMessage shouldEqual "Name used to resolve link-time property needs to be non-null literal constant"
   }
 
   it should "not allow to define property without explicit return type" in {
-    assertThrows[scala.scalanative.api.CompilationFailedException] {
+    val caught = intercept[scala.scalanative.api.CompilationFailedException] {
       linkWithProps(
         "props.scala" ->
-          """pakcage scala.scalanative
+          """package scala.scalanative
             |object props{
             |   @scalanative.unsafe.resolvedAtLinktime(withName = null)
             |   def linktimeProperty = scala.scalanative.unsafe.resolved
@@ -190,6 +193,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
             |}""".stripMargin
       )() { (_, _) => () }
     }
+    caught.getMessage shouldEqual "value resolved at link-time linktimeProperty needs result type"
   }
 
   "Linktime conditions" should "resolve simple conditions" in {
@@ -343,10 +347,10 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
   }
 
   it should "not allow to mix link-time and runtime conditions" in {
-    assertThrows[scala.scalanative.api.CompilationFailedException] {
+    val caught = intercept[scala.scalanative.api.CompilationFailedException] {
       linkWithProps(
         "props.scala" ->
-          """package scala.scalantive
+          """package scala.scalanative
             |
             |object props{
             |   @scalanative.unsafe.resolvedAtLinktime()
@@ -364,6 +368,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
            |}""".stripMargin
       )() { (_, _) => () }
     }
+    caught.getMessage shouldEqual "Mixing link-time and runtime conditions is not allowed"
   }
 
   private def shouldContainAll[T](expected: Iterable[T], given: Iterable[T]) = {

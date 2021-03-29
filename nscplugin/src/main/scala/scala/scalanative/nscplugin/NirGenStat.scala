@@ -682,7 +682,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val propertyName =
         fromLiteralOrFallback(annotationInfo.args.head,
-                              "Name used to resolve linktime property") {
+                              "Name used to resolve link-time property") {
           case tree if tree.symbol.isParamWithDefault =>
             Val.String(normalizedSymbolName('.'))
         }
