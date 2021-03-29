@@ -599,7 +599,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             ()
 
           case rhs if owner.isExternModule =>
-            checkExplicitReturnTypeAnnotation(dd)
+            checkExplicitReturnTypeAnnotation(dd, "extern method")
             genExternMethod(attrs, name, sig, rhs)
 
           case rhs
@@ -610,11 +610,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           // Do not emit, not even as abstract.
 
           case _ if resolvedAtLinktimeAnnotation.isDefined =>
-            val (propertyName, retty) =
-              genLinktimeResolvedProperty(dd,
-                                          resolvedAtLinktimeAnnotation.get,
-                                          name)
-            genLinktimeResolvedMethod(retty, propertyName, name)
+            genLinktimeResolved(dd, resolvedAtLinktimeAnnotation.get, name)
 
           case rhs =>
             scoped(
@@ -627,32 +623,26 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
-    def genLinktimeResolvedMethod(
-        retty: nir.Type,
-        propertyName: nir.Global,
-        methodName: nir.Global)(implicit pos: nir.Position): Unit = {
-      implicit val fresh: Fresh = Fresh()
-      val buf                   = new ExprBuffer()
-
-      buf.label(fresh())
-      val value = buf.call(Linktime.PropertyResolveFunctionTy(retty),
-                           Linktime.PropertyResolveFunction(retty),
-                           Seq(Val.Global(propertyName, retty)),
-                           Next.None)
-      buf.ret(value)
-
-      curStatBuffer.get += Defn.Define(
-        Attrs(inlineHint = Attr.AlwaysInline),
-        methodName,
-        Type.Function(Seq(), retty),
-        buf.toSeq
-      )
+    protected def genLinktimeResolved(
+        dd: DefDef,
+        annotation: AnnotationInfo,
+        name: Global)(implicit pos: nir.Position): Unit = {
+      dd.rhs.symbol match {
+        case ResolvedMethod =>
+          checkExplicitReturnTypeAnnotation(dd, "value resolved at link-time")
+          val retty        = genType(dd.tpt.tpe)
+          val propertyName = genLinktimeResolvedProperty(dd, annotation, name)
+          genLinktimeResolvedMethod(retty, propertyName, name)
+        case _ =>
+          globalError(
+            dd.pos,
+            s"Link-time resolved property must have ${ResolvedMethod.fullName} as body")
+      }
     }
 
-    protected def genLinktimeResolvedProperty(
-        dd: DefDef,
-        annotationInfo: AnnotationInfo,
-        name: Global): (Global.Member, nir.Type) = {
+    private def genLinktimeResolvedProperty(dd: DefDef,
+                                            annotationInfo: AnnotationInfo,
+                                            name: Global): Global.Member = {
       require(annotationInfo.symbol == ResolvedAtLinktimeClass,
               "Expected linktime property class")
 
@@ -690,9 +680,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           "Link-time property cannot be constant value, it would be inlined by scalac compiler")
       }
 
-      val defaultValue =
-        fromLiteralOrFallback(dd.rhs, "Default value of linktime property")()
-
       val propertyName =
         fromLiteralOrFallback(annotationInfo.args.head,
                               "Name used to resolve linktime property") {
@@ -701,14 +688,35 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
 
       val globalPropertyName = Linktime.nameToLinktimePropertyName(name)
-      val retty              = defaultValue.ty
-      curStatBuffer.get += Defn.Const(
-        Attrs.None,
-        globalPropertyName,
-        Type.StructValue(Seq(retty, Rt.String)),
-        Val.StructValue(Seq(defaultValue, propertyName)))
 
-      (globalPropertyName, retty)
+      curStatBuffer.get += Defn.Const(Attrs.None,
+                                      globalPropertyName,
+                                      Rt.String,
+                                      propertyName)
+
+      globalPropertyName
+    }
+
+    private def genLinktimeResolvedMethod(
+        retty: nir.Type,
+        propertyName: nir.Global,
+        methodName: nir.Global)(implicit pos: nir.Position): Unit = {
+      implicit val fresh: Fresh = Fresh()
+      val buf                   = new ExprBuffer()
+
+      buf.label(fresh())
+      val value = buf.call(Linktime.PropertyResolveFunctionTy(retty),
+                           Linktime.PropertyResolveFunction(retty),
+                           Seq(Val.Global(propertyName, retty)),
+                           Next.None)
+      buf.ret(value)
+
+      curStatBuffer.get += Defn.Define(
+        Attrs(inlineHint = Attr.AlwaysInline),
+        methodName,
+        Type.Function(Seq(), retty),
+        buf.toSeq
+      )
     }
 
     def genExternMethod(attrs: nir.Attrs,
@@ -881,14 +889,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
   }
 
-  private def checkExplicitReturnTypeAnnotation(
-      externMethodDd: DefDef): Unit = {
+  private def checkExplicitReturnTypeAnnotation(externMethodDd: DefDef,
+                                                methodKind: String): Unit = {
     externMethodDd.tpt match {
       case resultTypeTree: global.TypeTree if resultTypeTree.wasEmpty =>
         global.reporter.error(
           externMethodDd.pos,
-          "extern method " + externMethodDd.name + " needs result type")
-      case other =>
+          s"$methodKind ${externMethodDd.name} needs result type")
+      case _ => ()
     }
   }
 }

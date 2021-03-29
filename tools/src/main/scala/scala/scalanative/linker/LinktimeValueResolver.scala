@@ -48,21 +48,16 @@ trait LinktimeValueResolver { self: Reach =>
       ComparableVal(null, Val.Null).asAny
     } { field =>
       require(field.isConst, "Linktime property was not const")
-      require(field.ty.isInstanceOf[Type.StructValue],
-              "Linktime property was not struct")
+      require(field.ty == Rt.String, "Linktime property was a string")
 
-      val Type.StructValue(defaultTy +: _) = field.ty
-      val Val.StructValue(Seq(default, Val.String(propertyName))) =
-        field.init
+      val Val.String(propertyName) = field.init
 
-      def defaultValue = ComparableVal.fromNir(default)
-
-      def propertyValue =
-        config.compilerConfig.linktimeProperties
-          .get(propertyName)
-          .map(ComparableVal.fromAny(_, defaultTy))
-
-      propertyValue.getOrElse(defaultValue).asAny
+      config.compilerConfig.linktimeProperties
+        .get(propertyName)
+        .fold(throw new BuildException(
+          s"Link-time property $propertyName not defined in config")) {
+          ComparableVal.fromAny(_).asAny
+        }
     }
   }
 
@@ -81,7 +76,7 @@ trait LinktimeValueResolver { self: Reach =>
         val resolvedValue = resolveLinktimeProperty(name)
 
         (ComparableVal.fromNir(condVal), resolvedValue) match {
-          case t @ ComparableTuple(ordering, condition, resolved) =>
+          case ComparableTuple(ordering, condition, resolved) =>
             val comparsionFn = comparison match {
               case Comp.Ieq | Comp.Feq            => ordering.equiv _
               case Comp.Ine | Comp.Fne            => !ordering.equiv(_: Any, _: Any)
@@ -100,7 +95,7 @@ trait LinktimeValueResolver { self: Reach =>
               case Comp.Ine | Comp.Fne => resolved != condition
               case _ =>
                 throw new BuildException(
-                  s"Unsupported link-time comparison types: ${condVal.ty} and ${resolvedValue.nirValue.ty}")
+                  s"Unsupported link-time comparison ${comparison} between types ${condVal.ty} and ${resolvedValue.nirValue.ty}")
             }
         }
       case _ => throw new BuildException(s"Unknown link-time condition: $cond")
@@ -143,45 +138,17 @@ private[linker] object LinktimeValueResolver {
   }
 
   object ComparableVal {
-    def fromAny(value: Any, expectedNirType: Type): ComparableVal[_] = {
-      def fromNumber[T: Ordering](number: Number, toConcrete: Number => T)(
-          toNir: T => Val) = {
-        val v = toConcrete(number)
-        ComparableVal(v, toNir(v))
-      }
-
-      def parseString(str: String) = {
-        val parsed = expectedNirType match {
-          case Type.Bool                 => java.lang.Boolean.parseBoolean(str)
-          case Type.Char if str.nonEmpty => str.head
-          case _: Type.I                 => java.lang.Long.parseLong(str)
-          case _: Type.F                 => java.lang.Double.parseDouble(str)
-          case _ =>
-            throw new BuildException(
-              s"Cannot parse `$str` to expected NIR type $expectedNirType")
-        }
-        fromAny(parsed, expectedNirType)
-      }
-
-      (value, expectedNirType) match {
-        case (v: Boolean, Type.Bool) =>
-          ComparableVal(v, if (v) Val.True else Val.False)
-        case (v: Char, Type.Char)   => ComparableVal(v, Val.Char(v))
-        case (v: Number, Type.Byte) => fromNumber(v, _.byteValue)(Val.Byte)
-        case (v: Number, Type.Char) =>
-          fromNumber(v, _.shortValue.toChar)(Val.Char)
-        case (v: Number, Type.Short) => fromNumber(v, _.shortValue)(Val.Short)
-        case (v: Number, Type.Int)   => fromNumber(v, _.intValue())(Val.Int)
-        case (v: Number, Type.Long)  => fromNumber(v, _.longValue())(Val.Long)
-        case (v: Number, Type.Float) => fromNumber(v, _.floatValue())(Val.Float)
-        case (v: Number, Type.Double) =>
-          fromNumber(v, _.doubleValue())(Val.Double)
-        case (v: String, Type.Ref(Rt.StringName, _, _)) =>
-          ComparableVal(v, Val.String(v))
-        case (v: String, _) => parseString(v)
-        case (got, expected) =>
-          throw new BuildException(
-            s"Unsupported type of linktime value, got $got, expected: $expected")
+    def fromAny(value: Any): ComparableVal[_] = {
+      value match {
+        case v: Boolean => ComparableVal(v, if (v) Val.True else Val.False)
+        case v: Byte    => ComparableVal(v, Val.Byte(v))
+        case v: Char    => ComparableVal(v, Val.Char(v))
+        case v: Short   => ComparableVal(v, Val.Short(v))
+        case v: Int     => ComparableVal(v, Val.Int(v))
+        case v: Long    => ComparableVal(v, Val.Long(v))
+        case v: Float   => ComparableVal(v, Val.Float(v))
+        case v: Double  => ComparableVal(v, Val.Double(v))
+        case v: String  => ComparableVal(v, Val.String(v))
       }
     }
 

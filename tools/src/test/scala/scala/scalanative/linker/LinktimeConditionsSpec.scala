@@ -9,29 +9,29 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
   val entry = "Main$"
   private val props =
     s"""package scala.scalanative
-       |import scala.scalanative.unsafe.resolvedAtLinktime
+       |import scala.scalanative.unsafe.{resolvedAtLinktime, resolved}
        |
        |object linktime {
        |  @resolvedAtLinktime()
-       |  final def int = 1
+       |  final def int: Int = resolved
        |  
        |  @resolvedAtLinktime
-       |  final def bool = true
+       |  final def bool: Boolean = resolved
        |
        |  @resolvedAtLinktime
-       |  final def welcomeMessage = "Hello world"
+       |  final def welcomeMessage: String = resolved
        |  
        |  @resolvedAtLinktime()
-       |  def decimalSeparator = ','
+       |  def decimalSeparator: Char = resolved
        |  @resolvedAtLinktime()
-       |  def float = -1.0f
+       |  def float: Float = resolved
        |  
        |  object inner{
        |   @resolvedAtLinktime()
-       |   def countFrom = 2L
+       |   def countFrom: Long = resolved
        |   
        |   @resolvedAtLinktime("secret.performance.multiplier")
-       |   def performanceMultiplier = 1.0
+       |   def performanceMultiplier: Double = resolved
        |  }
        |}
        |""".stripMargin
@@ -48,16 +48,6 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
   val countFromProp      = innerModule.member(propName("countFrom"))
   val perfMultProp       = innerModule.member(propName("performanceMultiplier"))
 
-  val defaults = Map(
-    intProp            -> Val.Int(1),
-    boolProp           -> Val.True,
-    welcomeMessageProp -> Val.String("Hello world"),
-    floatProp          -> Val.Float(-1.0f),
-    decimalSepProp     -> Val.Char(','),
-    countFromProp      -> Val.Long(2),
-    perfMultProp       -> Val.Double(1.0)
-  )
-
   val allPropsUsage = s"""
                        |import scala.scalanative.linktime
                        |object Main {
@@ -72,65 +62,76 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
                        |  }
                        |}""".stripMargin
 
-  private val allPropsUsageUnit = Map(
-    "props.scala" -> props,
-    "main.scala"  -> allPropsUsage
+  case class Entry[T](propertyName: String,
+                      value: T,
+                      linktimeProp: Global.Member,
+                      lintimeValue: Val)
+
+  val defaultEntries = Seq(
+    Entry("scala.scalanative.linktime.int", 42, intProp, Val.Int(42)),
+    Entry("scala.scalanative.linktime.bool", false, boolProp, Val.False),
+    Entry("scala.scalanative.linktime.welcomeMessage",
+          "Hello native",
+          welcomeMessageProp,
+          Val.String("Hello native")),
+    Entry("scala.scalanative.linktime.float",
+          3.14f,
+          floatProp,
+          Val.Float(3.14f)),
+    Entry("scala.scalanative.linktime.decimalSeparator",
+          '-',
+          decimalSepProp,
+          Val.Char('-')),
+    Entry("scala.scalanative.linktime.inner.countFrom",
+          123456L,
+          countFromProp,
+          Val.Long(123456L)),
+    Entry("secret.performance.multiplier", 9.99, perfMultProp, Val.Double(9.99))
   )
+  val propertiesSet     = defaultEntries.map(_.linktimeProp).toSet
+  val defaultProperties = defaultEntries.map(e => e.propertyName -> e.value)
 
   "Linktime properties" should "exist in linking results" in {
-    link(entry, allPropsUsageUnit) { (_, result) =>
-      shouldContainAll(defaults.keySet, result.resolvedVals.keys)
+    linkWithProps(
+      "props.scala" -> props,
+      "main.scala"  -> allPropsUsage
+    )(defaultProperties: _*) { (_, result) =>
+      shouldContainAll(propertiesSet, result.resolvedVals.keys)
     }
   }
 
-  it should "resolve default values" in {
-    linkWithProps(
-      "props.scala" -> props,
-      "main.scala"  -> allPropsUsage
-    )() { (_, result) => shouldContainAll(defaults, result.resolvedVals) }
-  }
-
   it should "resolve values from native config" in {
-    case class Entry[T](propertyName: String,
-                        value: T,
-                        linktimeProp: Global.Member,
-                        lintimeValue: Val)
-
-    val entries = Seq(
-      Entry("scala.scalanative.linktime.int", 42, intProp, Val.Int(42)),
-      Entry("scala.scalanative.linktime.bool", false, boolProp, Val.False),
-      Entry("scala.scalanative.linktime.welcomeMessage",
-            "Hello native",
-            welcomeMessageProp,
-            Val.String("Hello native")),
-      Entry("scala.scalanative.linktime.float",
-            3.14f,
-            floatProp,
-            Val.Float(3.14f)),
-      Entry("scala.scalanative.linktime.decimalSeparator",
-            '-',
-            decimalSepProp,
-            Val.Char('-')),
-      Entry("scala.scalanative.linktime.inner.countFrom",
-            123456L,
-            countFromProp,
-            Val.Long(123456L)),
-      Entry("secret.performance.multiplier",
-            9.99,
-            perfMultProp,
-            Val.Double(9.99))
-    )
-
     linkWithProps(
       "props.scala" -> props,
       "main.scala"  -> allPropsUsage
-    )(entries.map(e => e.propertyName -> e.value): _*) { (_, result) =>
-      val expected = for (e <- entries) yield e.linktimeProp -> e.lintimeValue
+    )(defaultProperties: _*) { (_, result) =>
+      val expected =
+        for (e <- defaultEntries) yield e.linktimeProp -> e.lintimeValue
       shouldContainAll(expected, result.resolvedVals)
     }
   }
 
-  it should "not allow to define property default to null" in {
+  it should "not allow to define property without `resolved` as rhs value" in {
+    assertThrows[scala.scalanative.api.CompilationFailedException] {
+      linkWithProps(
+        "props.scala" ->
+          """pakcage scala.scalanative
+            |object props{
+            |   @scalanative.unsafe.resolvedAtLinktime(withName = null)
+            |   def linktimeProperty: Boolean = true
+            |}""".stripMargin,
+        "main.scala" ->
+          """import scala.scalanative.props._
+            |object Main {
+            |  def main(args: Array[String]): Unit = {
+            |    if(linktimeProperty) ???
+            |  }
+            |}""".stripMargin
+      )() { (_, _) => () }
+    }
+  }
+
+  it should "not allow to define property with null rhs" in {
     assertThrows[scala.scalanative.api.CompilationFailedException] {
       linkWithProps(
         "props.scala" -> """
@@ -151,14 +152,34 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
     }
   }
 
-  it should "not allow to define property resolved from null" in {
+  it should "not allow to define property resolved from property with null name" in {
     assertThrows[scala.scalanative.api.CompilationFailedException] {
       linkWithProps(
         "props.scala" ->
           """pakcage scala.scalanative
             |object props{
             |   @scalanative.unsafe.resolvedAtLinktime(withName = null)
-            |   def linktimeProperty: Int = 1
+            |   def linktimeProperty: Int = scala.scalanative.unsafe.resolved
+            |}""".stripMargin,
+        "main.scala" ->
+          """import scala.scalanative.props._
+            |object Main {
+            |  def main(args: Array[String]): Unit = {
+            |    if(linktimeProperty) ???
+            |  }
+            |}""".stripMargin
+      )() { (_, _) => () }
+    }
+  }
+
+  it should "not allow to define property without explicit return type" in {
+    assertThrows[scala.scalanative.api.CompilationFailedException] {
+      linkWithProps(
+        "props.scala" ->
+          """pakcage scala.scalanative
+            |object props{
+            |   @scalanative.unsafe.resolvedAtLinktime(withName = null)
+            |   def linktimeProperty = scala.scalanative.unsafe.resolved
             |}""".stripMargin,
         "main.scala" ->
           """import scala.scalanative.props._
@@ -220,7 +241,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
           |    } else path0()
           |  }
           |}""".stripMargin
-      )(property -> s"$n.0f") { (_, result) =>
+      )(property -> n.toFloat) { (_, result) =>
         result.unavailable should contain only pathForNumber(n)
       }
   }
@@ -236,7 +257,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
           |package scala.scalanative
           |object props2{
           |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.string")
-          |   def stringProp: String = "null"
+          |   def stringProp: String = scala.scalanative.unsafe.resolved
           |}
           |""".stripMargin,
       "main.scala" ->
@@ -293,10 +314,10 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
            |package scala.scalanative
            |object props{
            |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.bool.1")
-           |   def $bool1 = false
+           |   def $bool1: Boolean = scala.scalanative.unsafe.resolved
            |
            |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.bool.2")
-           |   def $bool2 = false
+           |   def $bool2: Boolean = scala.scalanative.unsafe.resolved
            |}""".stripMargin,
       "main.scala"  -> s"""
         |import scala.scalanative.props._
@@ -329,7 +350,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
             |
             |object props{
             |   @scalanative.unsafe.resolvedAtLinktime()
-            |   def linktimeProperty = false
+            |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
             |
             |   def runtimeProperty = true
             |}

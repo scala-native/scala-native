@@ -149,6 +149,9 @@ package object unsafe {
   /** Used as right hand side of external method and field declarations. */
   def extern: Nothing = intrinsic
 
+  /** Used as right hand side of values resolved at link-time. */
+  private[scalanative] def resolved: Nothing = intrinsic
+
   /** C-style string literal. */
   implicit class CQuote(val ctx: StringContext) {
     def c(): CString = intrinsic
