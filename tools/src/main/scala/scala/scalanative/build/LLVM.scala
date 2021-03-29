@@ -110,18 +110,13 @@ private[scalanative] object LLVM {
       }
 
       path match {
-        case Platform(_, "shared" :: _)  => true
-        case Platform(_, "windows" :: _) => targetsWindows
-        case Platform(_, "posix" :: _)   => !targetsWindows
-
+        case Platform(_, _) => true // currently only posix platform exists
+        case PosixLib(_, _) => true
         case GCShared(dirPath, sharedBy) =>
           withIncludesDir(dirPath) {
             sharedBy.forall(_.contains(gc.name))
           }
-        case GC(directory, name :: _) => name == gc.name
-
-        case PosixLib(_, _) => !targetsWindows
-
+        case GC(_, name :: _) => name == gc.name
         case Optional(_, _ :+ File(name, _)) =>
           linkerResult.links.map(_.name).contains(name)
         case _ => true
@@ -148,12 +143,8 @@ private[scalanative] object LLVM {
       if (!Files.exists(objPath)) {
         val isCpp    = path.endsWith(cppExt)
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val cppStd   = if (config.targetsWindows) "c++17" else "c++11"
-        val stdflag  = if (isCpp) s"-std=$cppStd" else "-std=gnu11"
-        val flags = Seq(stdflag,
-                        "-fvisibility=hidden",
-                        "-D_CRT_SECURE_NO_WARNINGS",
-                        "-Wdeprecated-declarations") ++ config.compileOptions
+        val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
+        val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
         val compilec =
           Seq(compiler) ++ fltoOpt ++ flags ++ targetOpt ++ sharedDirsIncludes ++
             Seq("-c", path, "-o", opath)
@@ -220,18 +211,11 @@ private[scalanative] object LLVM {
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.
       // * libpthread for process APIs and parallel garbage collection.
-      val platformsLinks =
-        if (config.targetsWindows) Seq("Dbghelp.lib")
-        else Seq("pthread", "dl")
-      platformsLinks ++ srclinks ++ gclinks
+      "pthread" +: "dl" +: srclinks ++: gclinks
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
-    val flags = {
-      val platformFlags =
-        if (config.targetsWindows) Seq()
-        else Seq("-rdynamic")
-      flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ target(config)
-    }
+    val flags =
+      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ target(config)
     val paths   = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
     val ltoName = lto(config).getOrElse("none")
