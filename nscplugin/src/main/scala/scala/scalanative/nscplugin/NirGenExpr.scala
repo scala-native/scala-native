@@ -1138,7 +1138,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       def isLinktimeProperty(tree: Tree): Boolean =
         tree.hasSymbolWhich(
-          _.annotations.exists(_.symbol == LinktimeResolvedClass))
+          _.annotations.exists(_.symbol == ResolvedAtLinktimeClass))
 
       def someBooleanProperty(reciverp: Tree,
                               value: Val): Option[LinktimeCondition] = Some {

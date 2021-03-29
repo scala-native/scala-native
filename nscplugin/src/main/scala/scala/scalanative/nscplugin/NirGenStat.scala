@@ -574,8 +574,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val sig      = genMethodSig(sym)
         val isStatic = owner.isExternModule || isImplClass(owner)
 
-        lazy val linkTimeResolvedAnnotation =
-          sym.annotations.find(_.symbol == LinktimeResolvedClass)
+        lazy val resolvedAtLinktimeAnnotation =
+          sym.annotations.find(_.symbol == ResolvedAtLinktimeClass)
 
         dd.rhs match {
           case EmptyTree
@@ -609,10 +609,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           // Have a concrete method with JavaDefaultMethodAnnotation; a blivet.
           // Do not emit, not even as abstract.
 
-          case _ if linkTimeResolvedAnnotation.isDefined =>
+          case _ if resolvedAtLinktimeAnnotation.isDefined =>
             val (propertyName, retty) =
               genLinktimeResolvedProperty(dd,
-                                          linkTimeResolvedAnnotation.get,
+                                          resolvedAtLinktimeAnnotation.get,
                                           name)
             genLinktimeResolvedMethod(retty, propertyName, name)
 
@@ -653,7 +653,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         dd: DefDef,
         annotationInfo: AnnotationInfo,
         name: Global): (Global.Member, nir.Type) = {
-      require(annotationInfo.symbol == LinktimeResolvedClass,
+      require(annotationInfo.symbol == ResolvedAtLinktimeClass,
               "Expected linktime property class")
 
       implicit val fresh: Fresh      = Fresh()

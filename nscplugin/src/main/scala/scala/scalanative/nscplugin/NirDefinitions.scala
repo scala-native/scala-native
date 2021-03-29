@@ -223,8 +223,8 @@ trait NirDefinitions {
           getMember(module, TermName(s"fromScalaFunction"))
       }
 
-    lazy val LinktimeResolvedClass = getRequiredClass(
-      "scala.scalanative.unsafe.linktimeResolved")
+    lazy val ResolvedAtLinktimeClass = getRequiredClass(
+      "scala.scalanative.unsafe.resolvedAtLinktime")
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
       'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),

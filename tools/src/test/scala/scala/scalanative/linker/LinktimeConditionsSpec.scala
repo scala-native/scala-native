@@ -8,28 +8,29 @@ import scala.scalanative.nir.{Global, Sig, Type, Val}
 class LinktimeConditionsSpec extends LinkerSpec with Matchers {
   val entry = "Main$"
   private val props =
-    s"""import scala.scalanative.unsafe.linktimeResolved
+    s"""package scala.scalanative
+       |import scala.scalanative.unsafe.resolvedAtLinktime
        |
        |object linktime {
-       |  @linktimeResolved()
+       |  @resolvedAtLinktime()
        |  final def int = 1
        |  
-       |  @linktimeResolved
+       |  @resolvedAtLinktime
        |  final def bool = true
        |
-       |  @linktimeResolved
+       |  @resolvedAtLinktime
        |  final def welcomeMessage = "Hello world"
        |  
-       |  @linktimeResolved()
+       |  @resolvedAtLinktime()
        |  def decimalSeparator = ','
-       |  @linktimeResolved()
+       |  @resolvedAtLinktime()
        |  def float = -1.0f
        |  
        |  object inner{
-       |   @linktimeResolved()
+       |   @resolvedAtLinktime()
        |   def countFrom = 2L
        |   
-       |   @linktimeResolved("secret.performance.multiplier")
+       |   @resolvedAtLinktime("secret.performance.multiplier")
        |   def performanceMultiplier = 1.0
        |  }
        |}
@@ -37,8 +38,8 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
 
   def propName(name: String) = Sig.Generated(name + "_property")
 
-  val linktimeModule     = Global.Top("linktime$")
-  val innerModule        = Global.Top("linktime$inner$")
+  val linktimeModule     = Global.Top("scala.scalanative.linktime$")
+  val innerModule        = Global.Top("scala.scalanative.linktime$inner$")
   val intProp            = linktimeModule.member(propName("int"))
   val boolProp           = linktimeModule.member(propName("bool"))
   val welcomeMessageProp = linktimeModule.member(propName("welcomeMessage"))
@@ -58,6 +59,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
   )
 
   val allPropsUsage = s"""
+                       |import scala.scalanative.linktime
                        |object Main {
                        |  def main(args: Array[String]): Unit = {
                        |    linktime.int
@@ -95,15 +97,21 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
                         lintimeValue: Val)
 
     val entries = Seq(
-      Entry("linktime.int", 42, intProp, Val.Int(42)),
-      Entry("linktime.bool", false, boolProp, Val.False),
-      Entry("linktime.welcomeMessage",
+      Entry("scala.scalanative.linktime.int", 42, intProp, Val.Int(42)),
+      Entry("scala.scalanative.linktime.bool", false, boolProp, Val.False),
+      Entry("scala.scalanative.linktime.welcomeMessage",
             "Hello native",
             welcomeMessageProp,
             Val.String("Hello native")),
-      Entry("linktime.float", 3.14f, floatProp, Val.Float(3.14f)),
-      Entry("linktime.decimalSeparator", '-', decimalSepProp, Val.Char('-')),
-      Entry("linktime.inner.countFrom",
+      Entry("scala.scalanative.linktime.float",
+            3.14f,
+            floatProp,
+            Val.Float(3.14f)),
+      Entry("scala.scalanative.linktime.decimalSeparator",
+            '-',
+            decimalSepProp,
+            Val.Char('-')),
+      Entry("scala.scalanative.linktime.inner.countFrom",
             123456L,
             countFromProp,
             Val.Long(123456L)),
@@ -124,29 +132,42 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
 
   it should "not allow to define property default to null" in {
     assertThrows[scala.scalanative.api.CompilationFailedException] {
-      link(s"""
-              |object Main {
-              |   @scalanative.unsafe.linktimeResolved()
-              |   def linktimeProperty: Int = null
-              |   
-              |  def main(args: Array[String]): Unit = {
-              |    if(linktimeProperty) ??? 
-              |  }
-              |}""".stripMargin) { (_, _) => () }
+      linkWithProps(
+        "props.scala" -> """
+             |package scala.scalanative
+             |object props{
+             |   @scalanative.unsafe.resolvedAtLinktime()
+             |   def linktimeProperty: Int = null
+             |}
+             |""".stripMargin,
+        "main.scala"  -> """
+            |import scala.scalanative.props._
+            |object Main {
+            |  def main(args: Array[String]): Unit = {
+            |    if(linktimeProperty) ???
+            |  }
+            |}""".stripMargin
+      )() { (_, _) => () }
     }
   }
 
   it should "not allow to define property resolved from null" in {
     assertThrows[scala.scalanative.api.CompilationFailedException] {
-      link(s"""
-           |object Main {
-           |   @scalanative.unsafe.linktimeResolved(withName = null)
-           |   def linktimeProperty: Int = 1
-           |   
-           |  def main(args: Array[String]): Unit = {
-           |    if(linktimeProperty) ??? 
-           |  }
-           |}""".stripMargin) { (_, _) => () }
+      linkWithProps(
+        "props.scala" ->
+          """pakcage scala.scalanative
+            |object props{
+            |   @scalanative.unsafe.resolvedAtLinktime(withName = null)
+            |   def linktimeProperty: Int = 1
+            |}""".stripMargin,
+        "main.scala" ->
+          """import scala.scalanative.props._
+            |object Main {
+            |  def main(args: Array[String]): Unit = {
+            |    if(linktimeProperty) ???
+            |  }
+            |}""".stripMargin
+      )() { (_, _) => () }
     }
   }
 
@@ -162,6 +183,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
       linkWithProps(
         "props.scala" -> props,
         "main.scala"  -> s"""
+                          |import scala.scalanative.linktime
                           |object Main {
                           |  ${pathStrings(pathsRange)}
                           |  
@@ -171,13 +193,13 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
                           |    else path3()
                           |  }
                           |}""".stripMargin
-      )("linktime.int" -> n) { (_, result) =>
+      )("scala.scalanative.linktime.int" -> n) { (_, result) =>
         result.unavailable should contain only pathForNumber(n)
       }
   }
 
   it should "allow to use inequality comparsion" in {
-    val property   = "linktime.float"
+    val property   = "scala.scalanative.linktime.float"
     val pathsRange = 0.until(6)
 
     for (n <- pathsRange.init)
@@ -185,6 +207,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
         "props.scala" -> props,
         "main.scala" ->
           s"""
+          |import scala.scalanative.linktime
           |object Main {
           |  ${pathStrings(pathsRange)}
           |  def main(args: Array[String]): Unit = {
@@ -208,13 +231,19 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
     val stringField = "stringProp"
     val pathsRange  = 1.to(6)
     val compilationUnit = Map(
-      "props.scala" -> props,
+      "props.scala"  -> props,
+      "props2.scala" -> """
+          |package scala.scalanative
+          |object props2{
+          |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.string")
+          |   def stringProp: String = "null"
+          |}
+          |""".stripMargin,
       "main.scala" ->
-        s"""
-           |object Main {
-           |   @scalanative.unsafe.linktimeResolved(withName = "prop.string")
-           |   def stringProp: String = "null"
+        s"""import scala.scalanative.props2._
+           |import scala.scalanative.linktime
            |
+           |object Main {
            |  ${pathStrings(pathsRange)}
            |  def main(args: Array[String]): Unit = {
            |    if($doubleField == -1.0 || $stringField == "one" || $longField == 1) path1()
@@ -240,9 +269,9 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
 
     for (((doubleValue, stringValue, longValue), pathNumber) <- cases)
       linkWithProps(compilationUnit.toSeq: _*)(
-        "secret.performance.multiplier" -> doubleValue,
-        "prop.string"                   -> stringValue,
-        "linktime.inner.countFrom"      -> longValue
+        "secret.performance.multiplier"              -> doubleValue,
+        "prop.string"                                -> stringValue,
+        "scala.scalanative.linktime.inner.countFrom" -> longValue
       ) { (_, result) =>
         result.unavailable should contain only pathForNumber(pathNumber)
       }
@@ -260,15 +289,18 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
     )
 
     val compilationUnit = Map(
-      "props.scala" -> props,
-      "main.scala" ->
-        s"""
+      "props.scala" -> s"""
+           |package scala.scalanative
+           |object props{
+           |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.bool.1")
+           |   def $bool1 = false
+           |
+           |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.bool.2")
+           |   def $bool2 = false
+           |}""".stripMargin,
+      "main.scala"  -> s"""
+        |import scala.scalanative.props._
         |object Main {
-        |   @scalanative.unsafe.linktimeResolved(withName = "prop.bool.1")
-        |   def $bool1 = false
-        |
-        |   @scalanative.unsafe.linktimeResolved(withName = "prop.bool.2")
-        |   def $bool2 = false
         |
         |  ${pathStrings(pathsRange)}
         |  def main(args: Array[String]): Unit = {
@@ -279,6 +311,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
         |  }
         |}""".stripMargin
     )
+
     for (((bool1, bool2), pathNumber) <- cases)
       linkWithProps(compilationUnit.toSeq: _*)(
         "prop.bool.1" -> bool1,
@@ -290,17 +323,25 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
 
   it should "not allow to mix link-time and runtime conditions" in {
     assertThrows[scala.scalanative.api.CompilationFailedException] {
-      link(s"""
+      linkWithProps(
+        "props.scala" ->
+          """package scala.scalantive
+            |
+            |object props{
+            |   @scalanative.unsafe.resolvedAtLinktime()
+            |   def linktimeProperty = false
+            |
+            |   def runtimeProperty = true
+            |}
+            |""".stripMargin,
+        "main.scala" -> """
+           |import scala.scalanative.props._
            |object Main {
-           |   @scalanative.unsafe.linktimeResolved()
-           |   def linktimeProperty = false
-           |   
-           |   def runtimeProperty = true
-           |   
            |  def main(args: Array[String]): Unit = {
            |    if(linktimeProperty || runtimeProperty) ??? 
            |  }
-           |}""".stripMargin) { (_, _) => () }
+           |}""".stripMargin
+      )() { (_, _) => () }
     }
   }
 
