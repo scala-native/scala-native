@@ -1,7 +1,6 @@
 package scala.scalanative.linker
 
 import scala.collection.mutable
-import scala.scalanative.build.BuildException
 import scala.scalanative.nir._
 
 trait LinktimeValueResolver { self: Reach =>
@@ -48,13 +47,20 @@ trait LinktimeValueResolver { self: Reach =>
       ComparableVal(null, Val.Null).asAny
     } { field =>
       require(field.isConst, "Linktime property was not const")
-      require(field.ty == Rt.String, "Linktime property was a string")
+      field.ty match {
+        case Type.Ref(Rt.StringName, _, _) => ()
+        case ty =>
+          throw new LinkingException(
+            s"Linktime property defined with wrong type $ty")
+      }
+
+      require(field.ty == Rt.String, "Linktime property was not a string")
 
       val Val.String(propertyName) = field.init
 
       config.compilerConfig.linktimeProperties
         .get(propertyName)
-        .fold(throw new BuildException(
+        .fold(throw new LinkingException(
           s"Link-time property $propertyName not defined in config")) {
           ComparableVal.fromAny(_).asAny
         }
@@ -94,11 +100,12 @@ trait LinktimeValueResolver { self: Reach =>
               case Comp.Ieq | Comp.Feq => resolved == condition
               case Comp.Ine | Comp.Fne => resolved != condition
               case _ =>
-                throw new BuildException(
-                  s"Unsupported link-time comparison ${comparison} between types ${condVal.ty} and ${resolvedValue.nirValue.ty}")
+                throw new LinkingException(
+                  s"Unsupported link-time comparison $comparison between types ${condVal.ty} and ${resolvedValue.nirValue.ty}")
             }
         }
-      case _ => throw new BuildException(s"Unknown link-time condition: $cond")
+      case _ =>
+        throw new LinkingException(s"Unknown link-time condition: $cond")
     }
   }
 
@@ -149,6 +156,9 @@ private[linker] object LinktimeValueResolver {
         case v: Float   => ComparableVal(v, Val.Float(v))
         case v: Double  => ComparableVal(v, Val.Double(v))
         case v: String  => ComparableVal(v, Val.String(v))
+        case other =>
+          throw new LinkingException(
+            s"Unsupported value for link-time resolving: $other")
       }
     }
 
@@ -166,7 +176,7 @@ private[linker] object LinktimeValueResolver {
         case Val.Double(value) => ComparableVal(value, v)
         case Val.Null          => ComparableVal(null, v)
         case other =>
-          throw new BuildException(
+          throw new LinkingException(
             s"Unsupported NIR value for link-time resolving: $other")
       }
     }.asAny
