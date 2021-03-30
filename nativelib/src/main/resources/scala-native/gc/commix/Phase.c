@@ -9,15 +9,30 @@
 #include <errno.h>
 #include <stdlib.h>
 
+/*
+If in OSX, sem_open cannot create a semaphore whose name is longer than
+PSEMNAMLEN characters. Else, we stick to POSIX compliance:
+
+  The length of the name argument cannot exceed {_POSIX_PATH_MAX} on systems
+  that do not support the XSI option or exceed {_XOPEN_PATH_MAX} on XSI systems.
+  We restrict to _POSIX_PATH_MAX, since it is the most restrictive and
+  _XOPEN_PATH_MAX does not seem to be available in all Linux distros
+
+The +1 accounts for the null char at the end of the name
+*/
+#ifdef __APPLE__
+#include <sys/posix_sem.h>
+#define SEM_MAX_LENGTH PSEMNAMLEN + 1
+#else
+#define SEM_MAX_LENGTH _POSIX_PATH_MAX + 1
+#endif
+
 void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     pid_t pid = getpid();
-    // size = static part + 20 digits (maximum 64 bit number) + null char
-    int workerNameSize = 11 + 20 + 1;
-    int masterNameSize = 11 + 20 + 1;
-    char startWorkersName[workerNameSize];
-    char startMasterName[masterNameSize];
-    snprintf(startWorkersName, workerNameSize, "commix_mt_%d", pid);
-    snprintf(startMasterName, masterNameSize, "commix_wk_%d", pid);
+    char startWorkersName[SEM_MAX_LENGTH];
+    char startMasterName[SEM_MAX_LENGTH];
+    snprintf(startWorkersName, SEM_MAX_LENGTH, "mt_%d_commix", pid);
+    snprintf(startMasterName, SEM_MAX_LENGTH, "wk_%d_commix", pid);
     // only reason for using named semaphores here is for compatibility with
     // MacOs we do not share them across processes
     // We open the semaphores and try to check the call succeeded,
