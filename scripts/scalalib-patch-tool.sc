@@ -5,16 +5,12 @@ import java.io.File
 
 val ignoredFiles = {
   val scala = os.rel / "scala"
-  val reflect = scala / "reflect"
 
   Set[RelPath](
     scala / "package.scala",
-    scala / "Array.scala",
     scala / "Enumeration.scala",
     scala / "Predef.scala",
-    scala / "Symbol.scala",
-    reflect / "ClassTag.scala",
-    reflect / "Manifest.scala"
+    scala / "Symbol.scala"
   )
 }
 
