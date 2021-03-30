@@ -1,5 +1,6 @@
 import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops._, mainargs._
-import $ivy.`org.bitbucket.cowwoc:diff-match-patch:1.2`, org.bitbucket.cowwoc.diffmatchpatch.DiffMatchPatch
+import $ivy.`org.bitbucket.cowwoc:diff-match-patch:1.2`,
+org.bitbucket.cowwoc.diffmatchpatch.DiffMatchPatch
 
 import java.io.File
 
@@ -62,9 +63,9 @@ def main(
         _          = if (exists ! patchPath) rm ! patchPath
 
       } {
-        val diff = new DiffMatchPatch()
+        val diff  = new DiffMatchPatch()
         val diffs = diff.diffMain(read(sourcePath), read(overridePath))
-        if(diffs.isEmpty) {
+        if (diffs.isEmpty) {
           System.err.println(
             s"File $relativePath has identical content as original source")
         } else {
@@ -91,10 +92,9 @@ def main(
       } {
         val Array(patched: String, results: Array[Boolean]) = {
           type PatchList = java.util.LinkedList[DiffMatchPatch.Patch]
-          val diff = new DiffMatchPatch()
+          val diff    = new DiffMatchPatch()
           val patches = diff.patchFromText(read(patchPath))
-          diff.patchApply(patches.asInstanceOf[PatchList],
-            read(sourcePath))
+          diff.patchApply(patches.asInstanceOf[PatchList], read(sourcePath))
         }
         if (results.forall(_ == true)) {
           println(s"Recreated $overridePath")
@@ -111,7 +111,8 @@ def main(
         overridePath = patchPath / up / patchPath.last.stripSuffix(".patch")
         relativePath = overridePath relativeTo overridesDirPath
 
-        shallPrune = exists(overridePath) && !ignoredFiles.contains(relativePath)
+        shallPrune = exists(overridePath) &&
+          !ignoredFiles.contains(relativePath)
       } {
         if (shallPrune) {
           rm ! overridePath
