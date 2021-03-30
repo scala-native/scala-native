@@ -1,0 +1,22 @@
+@@ -1718,17 +1718,16 @@
+ ext%60.%0A *
+- 
+ %0A * Then
+@@ -9147,62 +9147,57 @@
+ r = 
+-impl.ExecutionContextImpl.fromExecutor(null: Executor)
++scala.scalanative.runtime.ExecutionContext.global
+ %0A%0A  
+@@ -10044,17 +10044,16 @@
+ d%60.%0A   *
+- 
+ %0A   * Sy
+@@ -10726,20 +10726,16 @@
+ ecutor =
+- new
+  Executi
+@@ -10747,554 +10747,15 @@
+ text
+-Executor with BatchingExecutor %7B%0A    final override def submitForExecution(runnable: Runnable): Unit = global.execute(runnable)%0A%0A    final override def execute(runnable: Runnable): Unit =%0A      if ((!runnable.isInstanceOf%5Bimpl.Promise.Transformation%5B_,_%5D%5D %7C%7C runnable.asInstanceOf%5Bimpl.Promise.Transformation%5B_,_%5D%5D.benefitsFromBatching) && runnable.isInstanceOf%5BBatchable%5D)%0A        submitAsyncBatched(runnable)%0A      else%0A        submitForExecution(runnable)%0A%0A    override final def reportFailure(t: Throwable): Unit = global.reportFailure(t)%0A  %7D
++.global
+ %0A%0A  

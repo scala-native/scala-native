@@ -4,6 +4,7 @@ import scala.util.Try
 import build.ScalaVersions._
 import build.BinaryIncompatibilities
 import com.typesafe.tools.mima.core.ProblemFilter
+import org.bitbucket.cowwoc.diffmatchpatch.DiffMatchPatch
 
 // Convert "SomeName" to "some-name".
 def convertCamelKebab(name: String): String = {
@@ -693,15 +694,17 @@ lazy val scalalib =
           (sourcePath, _) <- fileTreeView.value.list(Seq(scalaGlob, patchGlob))
           path = normPath(sourcePath.toFile).substring(normSrcDir.length)
         } {
-          def addSource(path: String, source: File): Unit = {
-            if (paths.add(path))
-              sources += source
-            else
+          def addSource(path: String)(optSource: => Option[File]): Unit = {
+            if (!paths.contains(path)) {
+              optSource.foreach { source =>
+                paths += path
+                sources += source
+              }
+            } else
               s.log.debug(s"not including $path")
           }
 
-          if (patchGlob.matches(sourcePath)) {
-            val sourceName      = path.stripSuffix(".patch")
+          def tryApplyPatch(sourceName: String): Option[File] = {
             val scalaSourcePath = scalaSrcDir / sourceName
             val outputFile      = crossTarget.value / "patched" / sourceName
             val outputDir       = outputFile.getParentFile
@@ -709,21 +712,37 @@ lazy val scalalib =
               IO.createDirectory(outputDir)
             }
 
-            import scala.sys.process._
-            val logger = ProcessLogger(_ => (), sLog.value.error(_))
-            s"patch $scalaSourcePath $sourcePath -o $outputFile" ! logger match {
-              case 0 => addSource(sourceName, outputFile)
-              case n =>
-                val path =
-                  sourcePath.toFile.relativeTo(srcDir.getParentFile).get
-                s.log.error(s"Cannot apply patch for $path, exit code $n")
+            val Array(patched: String, results: Array[Boolean]) = {
+              type PatchList = java.util.LinkedList[DiffMatchPatch.Patch]
+              val diff    = new DiffMatchPatch()
+              val patches = diff.patchFromText(IO.read(sourcePath.toFile))
+              diff.patchApply(patches.asInstanceOf[PatchList],
+                              IO.read(scalaSourcePath))
             }
-          } else {
-            val useless =
-              path.contains("/scala/collection/parallel/") ||
-                path.contains("/scala/util/parsing/")
-            if (!useless) {
-              addSource(path, sourcePath.toFile)
+            if (results.forall(_ == true)) {
+              IO.write(outputFile, patched)
+              Some(outputFile)
+            } else {
+              val path = sourcePath.toFile.relativeTo(srcDir.getParentFile).get
+              sLog.value.warn(s"Cannot apply patch for $path")
+              None
+            }
+          }
+
+          val useless =
+            path.contains("/scala/collection/parallel/") ||
+              path.contains("/scala/util/parsing/")
+
+          if (!useless) {
+            if (patchGlob.matches(sourcePath)) {
+              val sourceName = path.stripSuffix(".patch")
+              addSource(sourceName) {
+                tryApplyPatch(sourceName)
+              }
+            } else {
+              addSource(path) {
+                Some(sourcePath.toFile)
+              }
             }
           }
         }

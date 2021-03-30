@@ -1,16 +1,5 @@
---- scalalib/target/scalaSources/2.11.12/scala/compat/Platform.scala	2017-11-03 00:26:48.000000000 +0100
-+++ scalalib/overrides-2.11/scala/compat/Platform.scala	2021-02-26 19:45:05.545638437 +0100
-@@ -104,11 +104,9 @@
- 
-   /** The default line separator.
-    *
--   * On the JVM, this is equivalent to calling the method:
--   * `System.getProperty("line.separator")`
--   * with a default value of "\n".
-+   * On the Scala Native, this is always "\n".
-    */
--  val EOL = scala.util.Properties.lineSeparator
-+  val EOL = "\n"
- 
-   /** The current time in milliseconds. The time is counted since 1 January 1970
-     * UTC.
+@@ -5742,187 +5742,65 @@
+ the 
+-JVM, this is equivalent to calling the method:%0A   * %60System.getProperty(%22line.separator%22)%60%0A   * with a default value of %22%5Cn%22.%0A   */%0A  val EOL = scala.util.Properties.lineSeparator
++Scala Native, this is always %22%5Cn%22.%0A   */%0A  val EOL = %22%5Cn%22
+ %0A%0A  

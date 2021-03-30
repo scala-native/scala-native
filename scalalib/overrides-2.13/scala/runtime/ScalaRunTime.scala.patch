@@ -1,0 +1,38 @@
+@@ -2126,32 +2126,40 @@
+ ay element */%0A  
++@inline 
+ def array_apply(
+@@ -2197,652 +2197,146 @@
+     
+-(xs: @unchecked) match %7B%0A      case x: Array%5BAnyRef%5D  =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BInt%5D     =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BDouble%5D  =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BLong%5D    =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BFloat%5D   =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BChar%5D    =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BByte%5D    =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BShort%5D   =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BBoolean%5D =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BUnit%5D    =%3E x(idx).asInstanceOf%5BAny%5D%0A      case null =%3E throw new NullPointerException
++if (xs == null) %7B%0A      throw new NullPointerException%0A    %7D else %7B%0A      xs.asInstanceOf%5Bscala.scalanative.runtime.Array%5BAny%5D%5D.apply(idx)
+ %0A   
+@@ -2379,24 +2379,32 @@
+ lement */%0A  
++@inline 
+ def array_up
+@@ -2460,1016 +2460,389 @@
+     
+-(xs: @unchecked) match %7B%0A      case x: Array%5BAnyRef%5D  =%3E x(idx) = value.asInstanceOf%5BAnyRef%5D
++if (xs == null) %7B%0A      throw new NullPointerException
+ %0A    
+-  case x: Array%5BInt%5D     =%3E x(idx) = value.asInstanceOf%5BInt%5D%0A      case x: Array%5BDouble%5D  =%3E x(idx) = value.asInstanceOf%5BDouble%5D%0A      case x: Array%5BLong%5D    =%3E x(idx) = value.asInstanceOf%5BLong%5D%0A      case x: Array%5BFloat%5D   =%3E x
++%7D else %7B%0A      xs.asInstanceOf%5Bscala.scalanative.runtime.Array%5BAny%5D%5D.update
+ (idx
+-) =
++,
+  value
+-.asInstanceOf%5BFloat%5D%0A      case x: Array%5BChar%5D    =%3E x(idx) = value.asInstanceOf%5BChar%5D%0A      case x: Array%5BByte%5D    =%3E x(idx) = value.asInstanceOf%5BByte%5D%0A      case x: Array%5BShort%5D   =%3E x(idx) = value.asInstanceOf%5BShort%5D%0A      case x: Array%5BBoolean%5D =%3E x(idx) = value.asInstanceOf%5BBoolean%5D%0A      case x: Array%5BUnit%5D    =%3E x(idx) = value.asInstanceOf%5BUnit%5D%0A      case null =%3E throw new NullPointerException%0A    %7D%0A  %7D%0A%0A  /** Get generic array length */%0A  @inline def array_length(xs: AnyRef): Int = java.lang.reflect.Array.getLength(xs)%0A%0A  // TODO: bytecode Object.clone() will in fact work here and avoids%0A  // the type switch. See Array_clone comment in BCodeBodyBuilder.
++)%0A    %7D%0A  %7D%0A%0A  /** Get generic array length */%0A  def array_length(xs: AnyRef): Int = %7B%0A    if (xs == null) %7B%0A      throw new NullPointerException%0A    %7D else %7B%0A      xs.asInstanceOf%5Bscala.scalanative.runtime.Array%5BAny%5D%5D.length%0A    %7D%0A  %7D%0A
+ %0A  d
+@@ -2882,440 +2882,155 @@
+ f = 
+-(xs: @unchecked) match %7B%0A    case x: Array%5BAnyRef%5D  =%3E x.clone()%0A    case x: Array%5BInt%5D     =%3E x.clone()%0A    case x: Array%5BDouble%5D  =%3E x.clone()%0A    case x: Array%5BLong%5D    =%3E x.clone()%0A    case x: Array%5BFloat%5D
++%7B%0A    if (xs == null) %7B%0A      throw new NullPointerException%0A    %7D else %7B%0A 
+    
+-=%3E x.clone()%0A    case x: Array%5BChar%5D    =%3E x.clone()%0A    case x: Array%5BByte%5D    =%3E x.clone()%0A    case x: Array%5BShort%5D   =%3E x.clone()%0A    case x: Array%5BBoolean%5D =%3E x.clone()%0A    case null =%3E throw new NullPointerException
++  xs.asInstanceOf%5Bscala.scalanative.runtime.Array%5BAny%5D%5D.clone()%0A    %7D
+ %0A  %7D
+@@ -11854,9 +11854,8 @@
+ e null%0A%7D
+-%0A

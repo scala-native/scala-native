@@ -1,20 +1,19 @@
---- scalalib/target/scalaSources/2.12.13/scala/concurrent/ExecutionContext.scala	2021-01-12 14:37:36.000000000 +0100
-+++ scalalib/overrides-2.12/scala/concurrent/ExecutionContext.scala	2021-02-26 16:43:39.126508168 +0100
-@@ -138,7 +138,7 @@
-    *
-    * @return the global `ExecutionContext`
-    */
--  def global: ExecutionContextExecutor = Implicits.global.asInstanceOf[ExecutionContextExecutor]
-+  def global: ExecutionContextExecutor = scala.scalanative.runtime.ExecutionContext.global
- 
-   object Implicits {
-     /**
-@@ -149,7 +149,7 @@
-      * the thread pool uses a target number of worker threads equal to the number of
-      * [[https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#availableProcessors-- available processors]].
-      */
--    implicit lazy val global: ExecutionContext = impl.ExecutionContextImpl.fromExecutor(null: Executor)
-+    implicit lazy val global: ExecutionContext = ExecutionContext.global
-   }
- 
-   /** Creates an `ExecutionContext` from the given `ExecutorService`.
+@@ -6144,38 +6144,34 @@
+ r = 
+-Implicits.global.asInstanceOf%5B
++scala.scalanative.runtime.
+ Exec
+@@ -6182,25 +6182,23 @@
+ nContext
+-Executor%5D
++.global
+ %0A%0A  obje
+@@ -6733,21 +6733,16 @@
+ ntext = 
+-impl.
+ Executio
+@@ -6753,41 +6753,15 @@
+ text
+-Impl.fromExecutor(null: Executor)
++.global
+ %0A  %7D
