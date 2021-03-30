@@ -1,19 +1,12 @@
---- scalalib/target/scalaSources/2.12.13/scala/collection/immutable/Stack.scala	2021-01-12 14:37:36.000000000 +0100
-+++ scalalib/overrides-2.12/scala/collection/immutable/Stack.scala	2021-02-26 16:43:39.134508255 +0100
-@@ -22,9 +22,14 @@
-  *  @define coll immutable stack
-  */
- object Stack extends SeqFactory[Stack] {
-+  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
-+  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
-+    @inline override def apply() = newBuilder[Nothing]
-+  }
-+
-   /** $genericCanBuildFromInfo */
--  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
--  def newBuilder[A]: Builder[A, Stack[A]] = new ArrayBuffer[A] mapResult (buf => new Stack(buf.toList))
-+  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-+  @inline def newBuilder[A]: Builder[A, Stack[A]] = new ArrayBuffer[A] mapResult (buf => new Stack(buf.toList))
- }
- 
- /** This class implements immutable stacks using a list-based data
+@@ -523,16 +523,239 @@
+ tack%5D %7B%0A
++  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A
+   /** $g
+@@ -782,16 +782,24 @@
+ fo */%0A  
++@inline 
+ implicit
+@@ -905,16 +905,24 @@
+ m%5BA%5D%5D%0A  
++@inline 
+ def newB

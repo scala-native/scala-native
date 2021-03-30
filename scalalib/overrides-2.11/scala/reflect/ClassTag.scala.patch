@@ -1,70 +1,124 @@
---- scalalib/target/scalaSources/2.11.12/scala/reflect/ClassTag.scala	2017-11-03 00:26:48.000000000 +0100
-+++ scalalib/overrides-2.11/scala/reflect/ClassTag.scala	2021-02-26 19:45:05.553638523 +0100
-@@ -115,27 +115,23 @@
-  * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
-  */
- object ClassTag {
--  private val ObjectTYPE = classOf[java.lang.Object]
--  private val NothingTYPE = classOf[scala.runtime.Nothing$]
--  private val NullTYPE = classOf[scala.runtime.Null$]
-+  @inline def Byte    : ClassTag[scala.Byte]       = Manifest.Byte
-+  @inline def Short   : ClassTag[scala.Short]      = Manifest.Short
-+  @inline def Char    : ClassTag[scala.Char]       = Manifest.Char
-+  @inline def Int     : ClassTag[scala.Int]        = Manifest.Int
-+  @inline def Long    : ClassTag[scala.Long]       = Manifest.Long
-+  @inline def Float   : ClassTag[scala.Float]      = Manifest.Float
-+  @inline def Double  : ClassTag[scala.Double]     = Manifest.Double
-+  @inline def Boolean : ClassTag[scala.Boolean]    = Manifest.Boolean
-+  @inline def Unit    : ClassTag[scala.Unit]       = Manifest.Unit
-+  @inline def Any     : ClassTag[scala.Any]        = Manifest.Any
-+  @inline def Object  : ClassTag[java.lang.Object] = Manifest.Object
-+  @inline def AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal
-+  @inline def AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
-+  @inline def Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
-+  @inline def Null    : ClassTag[scala.Null]       = Manifest.Null
- 
--  val Byte    : ClassTag[scala.Byte]       = Manifest.Byte
--  val Short   : ClassTag[scala.Short]      = Manifest.Short
--  val Char    : ClassTag[scala.Char]       = Manifest.Char
--  val Int     : ClassTag[scala.Int]        = Manifest.Int
--  val Long    : ClassTag[scala.Long]       = Manifest.Long
--  val Float   : ClassTag[scala.Float]      = Manifest.Float
--  val Double  : ClassTag[scala.Double]     = Manifest.Double
--  val Boolean : ClassTag[scala.Boolean]    = Manifest.Boolean
--  val Unit    : ClassTag[scala.Unit]       = Manifest.Unit
--  val Any     : ClassTag[scala.Any]        = Manifest.Any
--  val Object  : ClassTag[java.lang.Object] = Manifest.Object
--  val AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal
--  val AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
--  val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
--  val Null    : ClassTag[scala.Null]       = Manifest.Null
--
--  def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
-+  @inline def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
-     runtimeClass1 match {
-       case java.lang.Byte.TYPE      => ClassTag.Byte.asInstanceOf[ClassTag[T]]
-       case java.lang.Short.TYPE     => ClassTag.Short.asInstanceOf[ClassTag[T]]
-@@ -146,11 +142,18 @@
-       case java.lang.Double.TYPE    => ClassTag.Double.asInstanceOf[ClassTag[T]]
-       case java.lang.Boolean.TYPE   => ClassTag.Boolean.asInstanceOf[ClassTag[T]]
-       case java.lang.Void.TYPE      => ClassTag.Unit.asInstanceOf[ClassTag[T]]
--      case ObjectTYPE               => ClassTag.Object.asInstanceOf[ClassTag[T]]
--      case NothingTYPE              => ClassTag.Nothing.asInstanceOf[ClassTag[T]]
--      case NullTYPE                 => ClassTag.Null.asInstanceOf[ClassTag[T]]
--      case _                        => new ClassTag[T]{ def runtimeClass = runtimeClass1 }
-+      case _                        =>
-+        if (classOf[java.lang.Object] == runtimeClass1) {
-+          ClassTag.Object.asInstanceOf[ClassTag[T]]
-+        } else if (classOf[scala.runtime.Nothing$] == runtimeClass1) {
-+          ClassTag.Nothing.asInstanceOf[ClassTag[T]]
-+        } else if (classOf[scala.runtime.Null$] == runtimeClass1) {
-+          ClassTag.Null.asInstanceOf[ClassTag[T]]
-+        } else {
-+          new ClassTag[T]{ def runtimeClass = runtimeClass1 }
-+        }
-     }
- 
--  def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
-+  @inline def unapply[T](ctag: ClassTag[T]): Option[Class[_]] =
-+    Some(ctag.runtimeClass)
- }
+@@ -6008,179 +6008,19 @@
+ %7B%0A  
+-private val ObjectTYPE = classOf%5Bjava.lang.Object%5D%0A  private val NothingTYPE = classOf%5Bscala.runtime.Nothing$%5D%0A  private val NullTYPE = classOf%5Bscala.runtime.Null$%5D%0A%0A  val
++@inline def
+  Byt
+@@ -6071,19 +6071,27 @@
+ .Byte%0A  
+-val
++@inline def
+  Short  
+@@ -6139,19 +6139,27 @@
+ Short%0A  
+-val
++@inline def
+  Char   
+@@ -6206,19 +6206,27 @@
+ .Char%0A  
+-val
++@inline def
+  Int    
+@@ -6272,19 +6272,27 @@
+ t.Int%0A  
+-val
++@inline def
+  Long   
+@@ -6339,19 +6339,27 @@
+ .Long%0A  
+-val
++@inline def
+  Float  
+@@ -6407,19 +6407,27 @@
+ Float%0A  
+-val
++@inline def
+  Double 
+@@ -6476,19 +6476,27 @@
+ ouble%0A  
+-val
++@inline def
+  Boolean
+@@ -6546,19 +6546,27 @@
+ olean%0A  
+-val
++@inline def
+  Unit   
+@@ -6609,27 +6609,35 @@
+ fest.Unit%0A  
+-val
++@inline def
+  Any     : C
+@@ -6679,19 +6679,27 @@
+ t.Any%0A  
+-val
++@inline def
+  Object 
+@@ -6748,19 +6748,27 @@
+ bject%0A  
+-val
++@inline def
+  AnyVal 
+@@ -6817,19 +6817,27 @@
+ nyVal%0A  
+-val
++@inline def
+  AnyRef 
+@@ -6886,19 +6886,27 @@
+ nyRef%0A  
+-val
++@inline def
+  Nothing
+@@ -6960,11 +6960,19 @@
+ g%0A  
+-val
++@inline def
+  Nul
+@@ -7020,24 +7020,32 @@
+ est.Null%0A%0A  
++@inline 
+ def apply%5BT%5D
+@@ -7844,20 +7844,94 @@
+ ase 
+-ObjectTYPE  
++_                        =%3E%0A        if (classOf%5Bjava.lang.Object%5D == runtimeClass1) %7B%0A
+     
+@@ -7927,38 +7927,32 @@
+ ss1) %7B%0A         
+-    =%3E
+  ClassTag.Object
+@@ -7988,26 +7988,73 @@
+     
+-case NothingTYPE  
++  %7D else if (classOf%5Bscala.runtime.Nothing$%5D == runtimeClass1) %7B%0A
+     
+@@ -8050,37 +8050,32 @@
+ ss1) %7B%0A         
+-   =%3E
+  ClassTag.Nothin
+@@ -8112,28 +8112,70 @@
+     
+-case NullTYPE       
++  %7D else if (classOf%5Bscala.runtime.Null$%5D == runtimeClass1) %7B%0A
+     
+@@ -8175,27 +8175,24 @@
+  %7B%0A         
+- =%3E
+  ClassTag.Nu
+@@ -8226,34 +8226,27 @@
+ %5D%0A      
+-case _            
++  %7D else %7B%0A
+         
+@@ -8246,21 +8246,16 @@
+         
+-   =%3E
+  new Cla
+@@ -8303,20 +8303,38 @@
+ 1 %7D%0A    
+-%7D%0A%0A 
++    %7D%0A    %7D%0A%0A  @inline
+  def una
+@@ -8379,16 +8379,20 @@
+ ss%5B_%5D%5D =
++%0A   
+  Some(ct

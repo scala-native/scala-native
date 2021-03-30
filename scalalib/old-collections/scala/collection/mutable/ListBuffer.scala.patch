@@ -1,19 +1,18 @@
---- scalalib/target/scalaSources/2.12.13/scala/collection/mutable/ListBuffer.scala	2021-01-12 14:37:36.000000000 +0100
-+++ scalalib/overrides-2.12/scala/collection/mutable/ListBuffer.scala	2021-02-26 16:43:39.142508342 +0100
-@@ -478,6 +478,14 @@
-  *  @define coll list buffer
-  */
- object ListBuffer extends SeqFactory[ListBuffer] {
--  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListBuffer[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
--  def newBuilder[A]: Builder[A, ListBuffer[A]] = new GrowingBuilder(new ListBuffer[A])
-+  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
-+  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
-+    @inline override def apply() = newBuilder[Nothing]
-+  }
-+
-+  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListBuffer[A]] =
-+    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-+
-+  @inline def newBuilder[A]: Builder[A, ListBuffer[A]] =
-+    new GrowingBuilder(new ListBuffer[A])
- }
+@@ -14424,16 +14424,247 @@
+ er%5D %7B%0A  
++@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
+ implicit
+@@ -14723,16 +14723,20 @@
+ er%5BA%5D%5D =
++%0A   
+  Reusabl
+@@ -14777,18 +14777,27 @@
+ rom%5BA%5D%5D%0A
++%0A
+   
++@inline 
+ def newB
+@@ -14834,16 +14834,20 @@
+ er%5BA%5D%5D =
++%0A   
+  new Gro

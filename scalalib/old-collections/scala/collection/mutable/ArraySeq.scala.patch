@@ -1,19 +1,12 @@
---- scalalib/target/scalaSources/2.12.13/scala/collection/mutable/ArraySeq.scala	2021-01-12 14:37:36.000000000 +0100
-+++ scalalib/overrides-2.12/scala/collection/mutable/ArraySeq.scala	2021-02-26 16:43:39.138508299 +0100
-@@ -105,9 +105,14 @@
-  *  @define Coll `ArraySeq`
-  */
- object ArraySeq extends SeqFactory[ArraySeq] {
-+  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
-+  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
-+    @inline override def apply() = newBuilder[Nothing]
-+  }
-+
-   /** $genericCanBuildFromInfo */
--  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArraySeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
--  def newBuilder[A]: Builder[A, ArraySeq[A]] =
-+  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArraySeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-+  @inline def newBuilder[A]: Builder[A, ArraySeq[A]] =
-     new ArrayBuffer[A] mapResult { buf =>
-       val result = new ArraySeq[A](buf.length)
-       buf.copyToArray(result.array.asInstanceOf[Array[Any]], 0)
+@@ -3449,16 +3449,239 @@
+ ySeq%5D %7B%0A
++  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A
+   /** $g
+@@ -3708,16 +3708,24 @@
+ fo */%0A  
++@inline 
+ implicit
+@@ -3834,16 +3834,24 @@
+ m%5BA%5D%5D%0A  
++@inline 
+ def newB

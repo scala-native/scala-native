@@ -1,39 +1,20 @@
---- scalalib/target/scalaSources/2.11.12/scala/collection/immutable/Stream.scala	2017-11-03 00:26:48.000000000 +0100
-+++ scalalib/overrides-2.11/scala/collection/immutable/Stream.scala	2021-02-26 19:45:05.557638565 +0100
-@@ -1136,6 +1136,10 @@
-  * @since   2.8
-  */
- object Stream extends SeqFactory[Stream] {
-+  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
-+  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
-+    @inline override def apply() = newBuilder[Nothing]
-+  }
- 
-   /** The factory for streams.
-    *  @note Methods such as map/flatMap will not invoke the `Builder` factory,
-@@ -1147,10 +1151,10 @@
-    */
-   class StreamCanBuildFrom[A] extends GenericCanBuildFrom[A]
- 
--  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] = new StreamCanBuildFrom[A]
-+  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] = new StreamCanBuildFrom[A]
- 
-   /** Creates a new builder for a stream */
--  def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
-+  @inline def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
- 
-   import scala.collection.{Iterable, Seq, IndexedSeq}
- 
-@@ -1171,10 +1175,10 @@
-   }
- 
-   /** The empty stream */
--  override def empty[A]: Stream[A] = Empty
-+  @inline override def empty[A]: Stream[A] = Empty
- 
-   /** A stream consisting of given elements */
--  override def apply[A](xs: A*): Stream[A] = xs.toStream
-+  @inline override def apply[A](xs: A*): Stream[A] = xs.toStream
- 
-   /** A wrapper class that adds `#::` for cons and `#:::` for concat as operations
-    *  to streams.
+@@ -41458,16 +41458,238 @@
+ tream%5D %7B
++%0A  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D
+ %0A%0A  /** 
+@@ -42224,16 +42224,24 @@
+ m%5BA%5D%0A%0A  
++@inline 
+ implicit
+@@ -42366,24 +42366,32 @@
+ stream */%0A  
++@inline 
+ def newBuild
+@@ -43207,24 +43207,32 @@
+ stream */%0A  
++@inline 
+ override def
+@@ -43306,24 +43306,32 @@
+ ements */%0A  
++@inline 
+ override def
