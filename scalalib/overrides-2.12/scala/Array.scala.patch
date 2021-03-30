@@ -1,0 +1,295 @@
+@@ -514,16 +514,61 @@
+ update %7D
++%0Aimport scala.collection.mutable.WrappedArray
+ %0A%0A/** Co
+@@ -1777,22 +1777,29 @@
+ lding %7B%0A
+-%0A
+   
+-val
++@inline def
+  emptyBo
+@@ -1811,20 +1811,24 @@
+ Array = 
+-empt
++new Arra
+ y%5BBoolea
+@@ -1829,22 +1829,33 @@
+ Boolean%5D
+-%0A  val
++(0)%0A  @inline def
+  emptyBy
+@@ -1871,25 +1871,40 @@
+   = 
+-empty%5BByte%5D%0A  val
++new Array%5BByte%5D(0)%0A  @inline def
+  emp
+@@ -1924,25 +1924,40 @@
+   = 
+-empty%5BChar%5D%0A  val
++new Array%5BChar%5D(0)%0A  @inline def
+  emp
+@@ -1973,20 +1973,24 @@
+ rray  = 
+-empt
++new Arra
+ y%5BDouble
+@@ -1990,22 +1990,33 @@
+ %5BDouble%5D
+-%0A  val
++(0)%0A  @inline def
+  emptyFl
+@@ -2032,26 +2032,41 @@
+   = 
+-empty%5BFloat%5D%0A  val
++new Array%5BFloat%5D(0)%0A  @inline def
+  emp
+@@ -2086,24 +2086,39 @@
+   = 
+-empty%5BInt%5D%0A  val
++new Array%5BInt%5D(0)%0A  @inline def
+  emp
+@@ -2138,25 +2138,40 @@
+   = 
+-empty%5BLong%5D%0A  val
++new Array%5BLong%5D(0)%0A  @inline def
+  emp
+@@ -2191,23 +2191,38 @@
+   = 
+-empty%5BShort%5D%0A%0A 
++new Array%5BShort%5D(0)%0A%0A  @inline
+  pri
+@@ -2290,19 +2290,19 @@
+ ility%0A  
+-val
++def
+  emptyUn
+@@ -2314,20 +2314,24 @@
+ ay    = 
+-empt
++new Arra
+ y%5Bscala.
+@@ -2348,16 +2348,19 @@
+ xedUnit%5D
++(0)
+ .asInsta
+@@ -2380,19 +2380,27 @@
+ nit%5D%5D%0A  
+-val
++@inline def
+  emptyOb
+@@ -2412,20 +2412,24 @@
+ rray  = 
+-empt
++new Arra
+ y%5BObject
+@@ -2425,24 +2425,27 @@
+ rray%5BObject%5D
++(0)
+ %0A%0A  implicit
+@@ -3452,32 +3452,40 @@
+ Boolean%5D%5D %7B%0A    
++@inline 
+ def apply(from: 
+@@ -3525,24 +3525,32 @@
+ olean()%0A    
++@inline 
+ def apply() 
+@@ -3667,32 +3667,40 @@
+ ay%5BByte%5D%5D %7B%0A    
++@inline 
+ def apply(from: 
+@@ -3733,32 +3733,40 @@
+ er.ofByte()%0A    
++@inline 
+ def apply() = ne
+@@ -3876,32 +3876,40 @@
+ ay%5BChar%5D%5D %7B%0A    
++@inline 
+ def apply(from: 
+@@ -3946,24 +3946,32 @@
+ fChar()%0A    
++@inline 
+ def apply() 
+@@ -4089,32 +4089,40 @@
+ %5BDouble%5D%5D %7B%0A    
++@inline 
+ def apply(from: 
+@@ -4161,24 +4161,32 @@
+ ouble()%0A    
++@inline 
+ def apply() 
+@@ -4304,32 +4304,40 @@
+ y%5BFloat%5D%5D %7B%0A    
++@inline 
+ def apply(from: 
+@@ -4371,32 +4371,40 @@
+ r.ofFloat()%0A    
++@inline 
+ def apply() = ne
+@@ -4513,32 +4513,40 @@
+ ray%5BInt%5D%5D %7B%0A    
++@inline 
+ def apply(from: 
+@@ -4578,32 +4578,40 @@
+ der.ofInt()%0A    
++@inline 
+ def apply() = ne
+@@ -4720,32 +4720,40 @@
+ ay%5BLong%5D%5D %7B%0A    
++@inline 
+ def apply(from: 
+@@ -4790,24 +4790,32 @@
+ fLong()%0A    
++@inline 
+ def apply() 
+@@ -4931,32 +4931,40 @@
+ y%5BShort%5D%5D %7B%0A    
++@inline 
+ def apply(from: 
+@@ -4998,32 +4998,40 @@
+ r.ofShort()%0A    
++@inline 
+ def apply() = ne
+@@ -5146,24 +5146,32 @@
+ nit%5D%5D %7B%0A    
++@inline 
+ def apply(fr
+@@ -5212,24 +5212,32 @@
+ fUnit()%0A    
++@inline 
+ def apply() 
+@@ -5470,32 +5470,40 @@
+ ray%5BT%5D%5D %7B%0A      
++@inline 
+ def apply(from: 
+@@ -5547,24 +5547,32 @@
+ ()(t)%0A      
++@inline 
+ def apply() 
+@@ -7134,53 +7134,24 @@
+ %5D = 
+- %7B%0A    implicitly%5BClassTag%5BT%5D%5D.emptyArray%0A  %7D
++new Array%5BT%5D(0)%0A
+ %0A  /
+@@ -7488,50 +7488,1682 @@
+ %5D = 
+-%7B%0A    val array = new Array%5BT%5D(xs.length)%0A
++xs match %7B%0A    case xs: WrappedArray.ofBoolean =%3E%0A      val from = xs.array%0A      val array = new Array%5BBoolean%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofByte =%3E%0A      val from = xs.array%0A      val array = new Array%5BByte%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofShort =%3E%0A      val from = xs.array%0A      val array = new Array%5BShort%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofChar =%3E%0A      val from = xs.array%0A      val array = new Array%5BChar%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofInt =%3E%0A      val from = xs.array%0A      val array = new Array%5BInt%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofLong =%3E%0A      val from = xs.array%0A      val array = new Array%5BLong%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofFloat =%3E%0A      val from = xs.array%0A      val array = new Array%5BFloat%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofDouble =%3E%0A      val from = xs.array%0A      val array = new Array%5BDouble%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs =%3E%0A      val array = new Array%5BT%5D(xs.length)%0A  
+     
+@@ -9168,24 +9168,26 @@
+   var i = 0%0A
++  
+     for (x %3C
+@@ -9218,32 +9218,34 @@
+ ) = x; i += 1 %7D%0A
++  
+     array%0A  %7D%0A%0A 
+@@ -9470,32 +9470,174 @@
+    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofBoolean =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A  
+@@ -9626,32 +9626,36 @@
+       var i = 1%0A
++    
+     for (x %3C- xs
+@@ -9682,32 +9682,38 @@
+ ) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A 
+@@ -9923,32 +9923,171 @@
+    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofByte =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A  
+@@ -10076,32 +10076,36 @@
+       var i = 1%0A
++    
+     for (x %3C- xs
+@@ -10132,32 +10132,38 @@
+ ) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A 
+@@ -10378,32 +10378,172 @@
+    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofShort =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A  
+@@ -10532,32 +10532,36 @@
+       var i = 1%0A
++    
+     for (x %3C- xs
+@@ -10588,32 +10588,38 @@
+ ) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A 
+@@ -10829,32 +10829,171 @@
+    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofChar =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A  
+@@ -10982,32 +10982,36 @@
+       var i = 1%0A
++    
+     for (x %3C- xs
+@@ -11038,32 +11038,38 @@
+ ) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A 
+@@ -11274,32 +11274,170 @@
+    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofInt =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A  
+@@ -11426,32 +11426,36 @@
+       var i = 1%0A
++    
+     for (x %3C- xs
+@@ -11482,32 +11482,38 @@
+ ) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A 
+@@ -11723,32 +11723,171 @@
+    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofLong =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A  
+@@ -11876,32 +11876,36 @@
+       var i = 1%0A
++    
+     for (x %3C- xs
+@@ -11932,32 +11932,38 @@
+ ) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A 
+@@ -12178,32 +12178,172 @@
+    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofFloat =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A  
+@@ -12332,32 +12332,36 @@
+       var i = 1%0A
++    
+     for (x %3C- xs
+@@ -12388,32 +12388,38 @@
+ ) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A 
+@@ -12639,32 +12639,173 @@
+    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofDouble =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A  
+@@ -12794,32 +12794,36 @@
+       var i = 1%0A
++    
+     for (x %3C- xs
+@@ -12850,32 +12850,38 @@
+ ) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A 
+@@ -13032,24 +13032,163 @@
+ rray(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofUnit =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 
+@@ -13185,24 +13185,28 @@
+   var i = 1%0A
++    
+     for (x %3C
+@@ -13241,24 +13241,30 @@
+ x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  

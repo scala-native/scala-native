@@ -1,0 +1,85 @@
+@@ -2554,136 +2554,60 @@
+     
+-                   srcPos : Int,%0A                       dest : AnyRef,%0A                       destPos : Int,%0A                   
++srcPos : Int,%0A    dest : AnyRef,%0A    destPos : Int,%0A
+     
+@@ -3802,33 +3802,32 @@
+ t values (if%0A   
+- 
+ * necessary) so 
+@@ -3860,28 +3860,26 @@
+  length.%0A   
+- 
+ *%0A
+- 
+    * Equival
+@@ -3887,33 +3887,32 @@
+ nt to Java's%0A   
+- 
+ *   %60java.util.A
+@@ -3943,25 +3943,24 @@
+ ewLength)%60,%0A
+- 
+    * except 
+@@ -4023,33 +4023,32 @@
+ gle method.%0A
+- 
+    *%0A   
+  * @see %60jav
+@@ -4027,33 +4027,32 @@
+ method.%0A   *%0A   
+- 
+ * @see %60java.uti
+@@ -4060,33 +4060,32 @@
+ .Arrays#copyOf%60%0A
+- 
+    */%0A  def copy
+@@ -4166,28 +4166,105 @@
+ ed) match %7B%0A
+-    
++//  We cannot distinguish Array%5BBoxedUnit%5D from Array%5BObject%5D in Scala Native%0A//%09
+ case x: Arra
+@@ -5077,17 +5077,16 @@
+  (if%0A   
+- 
+ * necess
+@@ -5154,17 +5154,16 @@
+ have%0A   
+- 
+ * a diff
+@@ -5221,17 +5221,16 @@
+ ues are%0A
+- 
+    * ass
+@@ -5302,17 +5302,16 @@
+ ays,%0A   
+- 
+ * boxing
+@@ -5338,28 +5338,26 @@
+ pported.%0A   
+- 
+ *%0A
+- 
+    * Equival
+@@ -5373,17 +5373,16 @@
+ va's%0A   
+- 
+ *   %60jav
+@@ -5434,17 +5434,16 @@
+ Type)%60,%0A
+- 
+    * exc
+@@ -5514,17 +5514,16 @@
+  arrays%0A
+- 
+    * in 
+@@ -5542,20 +5542,18 @@
+ hod.%0A   
+- 
+ *%0A
+- 
+    * @se
+@@ -5580,17 +5580,16 @@
+ copyOf%60%0A
+- 
+    */%0A  
