@@ -3,9 +3,9 @@ import $ivy.`org.bitbucket.cowwoc:diff-match-patch:1.2`, org.bitbucket.cowwoc.di
 
 import java.io.File
 
-val blacklisted = {
+val ignoredFiles = {
   val scala = os.rel / "scala"
-  val reflect = scala "reflect"
+  val reflect = scala / "reflect"
 
   Set[RelPath](
     scala / "package.scala",
@@ -25,7 +25,7 @@ val blacklisted = {
      - recreate - Create override files based on created diffs and fetched Scala sources
      - prune    - Remove override files having associated .patch file""")
 def main(
-    @arg(doc = "Command to run")
+    @arg(doc = "Command to run [create, recreate, prune]")
     cmd: Command,
     @arg(doc = "Scala version used for fetching sources")
     scalaVersion: String,
@@ -47,7 +47,7 @@ def main(
        |Overrides dir: $overridesDirPath
        |Sources dir:   $sourcesDir
        |Blacklisted: 
-       | - ${blacklisted.mkString("\n - ")}
+       | - ${ignoredFiles.mkString("\n - ")}
        |""".stripMargin)
 
   assert(exists ! overridesDirPath, "Overrides dir does not exists")
@@ -60,7 +60,7 @@ def main(
       for {
         overridePath <- ls.rec ! overridesDirPath |? (_.ext == "scala")
         relativePath = overridePath relativeTo overridesDirPath
-        if !blacklisted.contains(relativePath)
+        if !ignoredFiles.contains(relativePath)
         sourcePath = sourcesDir / relativePath if exists ! sourcePath
         patchPath  = overridePath / up / s"${overridePath.last}.patch"
         _          = if (exists ! patchPath) rm ! patchPath
@@ -87,7 +87,7 @@ def main(
         patchPath <- ls.rec ! overridesDirPath |? (_.ext == "patch")
         overridePath = patchPath / up / patchPath.last.stripSuffix(".patch")
         relativePath = overridePath relativeTo overridesDirPath
-        if !blacklisted.contains(relativePath)
+        if !ignoredFiles.contains(relativePath)
         sourcePath = sourcesDir / relativePath
 
         _ = if (exists(overridePath)) rm ! overridePath
@@ -115,7 +115,7 @@ def main(
         overridePath = patchPath / up / patchPath.last.stripSuffix(".patch")
         relativePath = overridePath relativeTo overridesDirPath
 
-        shallPrune = exists(overridePath) && !blacklisted.contains(relativePath)
+        shallPrune = exists(overridePath) && !ignoredFiles.contains(relativePath)
       } {
         if (shallPrune) {
           rm ! overridePath
