@@ -18,6 +18,9 @@ private[scalanative] object NativeLib {
   /** C++ file extension: ".cpp" */
   val cppExt = ".cpp"
 
+  /** LLVM intermediate file extension: ".ll" */
+  val llExt = ".ll"
+
   /** List of source patterns used: ".c, .cpp, .S" */
   val srcExtensions = Seq(".c", cppExt, ".S")
 
@@ -44,7 +47,7 @@ private[scalanative] object NativeLib {
    * Used to create hash of the directory to copy
    *
    * @param path The classpath entry
-   * @return the file pattern
+   * @return The file pattern
    */
   def allFilesPattern(path: Path): String =
     s"glob:${srcPathPattern(path)}**"
@@ -54,12 +57,12 @@ private[scalanative] object NativeLib {
    * into the `native` directory and also in the `scala-native`
    * sub directory gets picked up for compilation.
    *
-   * @param workdir    The base working directory
-   * @param nativelibs The Paths to the native libs
-   * @return the source pattern
+   * @param workdir The base working directory
+   * @param destPath The dest Path to the native lib
+   * @return The source pattern
    */
-  def destSrcPatterns(workdir: Path, nativelibs: Seq[Path]): String = {
-    val dirPattern = nativelibs.map(_.getFileName()).mkString("{", ",", "}")
+  def destSrcPattern(workdir: Path, destPath: Path): String = {
+    val dirPattern = s"{${destPath.getFileName()}}"
     val pathPat    = makeDirPath(workdir, dirPattern, codeDir)
     srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
   }
@@ -88,9 +91,9 @@ private[scalanative] object NativeLib {
    * The method generates a unique directory for each classpath
    * entry that has native source.
    *
-   * @param classpath the classpath
-   * @param workdir the base working directory
-   * @return the Seq of NativeLib objects
+   * @param classpath The classpath
+   * @param workdir The base working directory
+   * @return The Seq of NativeLib objects
    */
   def findNativeLibs(classpath: Seq[Path], workdir: Path): Seq[NativeLib] = {
     val nativeLibPaths = classpath.flatMap { path =>
@@ -120,23 +123,34 @@ private[scalanative] object NativeLib {
    * Find the Scala Native `nativelib` from within all the
    * other libraries with native code.
    *
-   * @param nativeLibs - the Seq of discovered native libs
-   * @return the Scala Native `nativelib`
+   * @param nativeLibs The Seq of discovered native libs
+   * @return The Scala Native `nativelib`
    */
-  def findNativeLib(nativeLibs: Seq[NativeLib]): Path = {
-    val nativeLib = nativeLibs.find { nl =>
+  def findNativeLib(nativelibs: Seq[NativeLib]): NativeLib = {
+    val nativelib = nativelibs.find { nl =>
       val srcPath = nl.src
       if (isJar(srcPath))
         IO.existsInJar(srcPath, hasMarkerFileInJar)
       else
         IO.existsInDir(srcPath, dirMarkerFilePattern(srcPath))
     }
-    nativeLib match {
-      case Some(nl) => nl.dest
+    nativelib match {
+      case Some(nl) => nl
       case None =>
         throw new BuildException(
-          s"Native Library 'nativelib' not found: $nativeLibs")
+          s"Native Library 'nativelib' not found: $nativelibs")
     }
+  }
+
+  /**
+   * Find the native file paths for this native library
+   *
+   * @param destPath The native lib dest path
+   * @return All file paths to compile
+   */
+  def findNativePaths(workdir: Path, destPath: Path): Seq[Path] = {
+    val srcPatterns = NativeLib.destSrcPattern(workdir, destPath)
+    IO.getAll(workdir, srcPatterns)
   }
 
   /**
@@ -153,8 +167,8 @@ private[scalanative] object NativeLib {
    * on the classpath. Linking fails if the entries on the classpath are
    * not either jars or directories.
    *
-   * @param classpath - build tool classpath
-   * @return filtered classpath for Scala Native tools
+   * @param classpath Build tool classpath
+   * @return Filtered classpath for Scala Native tools
    */
   def filterClasspath(classpath: Seq[Path]): Seq[Path] =
     classpath.filter(p => Files.exists(p) && (isJar(p) || Files.isDirectory(p)))

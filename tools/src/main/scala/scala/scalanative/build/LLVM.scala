@@ -78,27 +78,19 @@ private[scalanative] object LLVM {
   }
 
   /**
-   * Compile all the native lib source files to `.o` files
-   * with special logic to select GC and optional components
-   * for the Scala Native `nativelib`.
+   * Filter the `nativelib` source files with special logic
+   * to select GC and optional components.
    *
-   * @param config        The configuration of the toolchain.
-   * @param linkerResult  The results from the linker.
-   * @param nativelibPath The generated location of the Scala Native nativelib.
-   * @param nativelibs    The paths to the native libraries.
-   * @return              The paths to the produced `.o` files.
+   * @param config The configuration of the toolchain.
+   * @param linkerResult The results from the linker.
+   * @param destPath The unpacked location of the Scala Native nativelib.
+   * @return The paths included to be compiled.
    */
-  def compileNativelibs(config: Config,
-                        linkerResult: linker.Result,
-                        nativelibs: Seq[Path],
-                        nativelibPath: Path): Seq[Path] = {
-    val workdir = config.workdir
-    // search starting at workdir `native` to find
-    // code across all native component libraries
-    // including the `nativelib`
-    val srcPatterns = NativeLib.destSrcPatterns(workdir, nativelibs)
-    val paths       = IO.getAll(workdir, srcPatterns).map(_.abs)
-    val libPath     = nativelibPath.resolve(NativeLib.codeDir)
+  def filterNativelib(config: Config,
+                      linkerResult: linker.Result,
+                      destPath: Path): Seq[Path] = {
+    val paths   = NativeLib.findNativePaths(config.workdir, destPath).map(_.abs)
+    val libPath = destPath.resolve(NativeLib.codeDir)
 
     // predicate to check if given file path shall be compiled
     // we only include sources of the current gc and exclude
@@ -138,39 +130,17 @@ private[scalanative] object LLVM {
     val fltoOpt    = flto(config)
     val targetOpt  = target(config)
     val includeOpt = gcIncludePaths.map("-I" + _)
-
-    // generate .o files for all included source files in parallel
-    includePaths.par.map { path =>
-      val opath   = path + oExt
-      val objPath = Paths.get(opath)
-      if (!Files.exists(objPath)) {
-        val isCpp    = path.endsWith(cppExt)
-        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
-        val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
-        val compilec =
-          Seq(compiler) ++ fltoOpt ++ flags ++ targetOpt ++ includeOpt ++
-            Seq("-c", path, "-o", opath)
-
-        config.logger.running(compilec)
-        val result = Process(compilec, config.workdir.toFile) ! Logger
-          .toProcessLogger(config.logger)
-        if (result != 0) {
-          sys.error("Failed to compile native library runtime code.")
-        }
-      }
-      objPath
-    }.seq
+    includePaths.map(Paths.get(_))
   }
 
   /**
-   * Compile the given ll files to object files
+   * Compile the given files to object files
    *
-   * @param config  The configuration of the toolchain.
-   * @param llPaths The directory paths containing `.ll` files.
-   * @return        The paths of the `.o` files.
+   * @param config The configuration of the toolchain.
+   * @param paths The directory paths containing native files to compile.
+   * @return The paths of the `.o` files.
    */
-  def compile(config: Config, llPaths: Seq[Path]): Seq[Path] = {
+  def compile(config: Config, paths: Seq[String]): Seq[Path] = {
     val optimizationOpt =
       config.mode match {
         case Mode.Debug       => "-O0"
@@ -178,18 +148,30 @@ private[scalanative] object LLVM {
         case Mode.ReleaseFull => "-O3"
       }
 
-    val opts    = Seq(optimizationOpt) ++ target(config) ++ config.compileOptions
-    val fltoOpt = flto(config)
+    // generate .o files for all included source files in parallel
+    paths.par.map { path =>
+      val opath   = path + oExt
+      val objPath = Paths.get(opath)
+      if (!Files.exists(objPath)) {
+        val isCpp    = path.endsWith(cppExt)
+        val isLl     = path.endsWith(llExt)
+        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
+        val stdflag =
+          if (isLl) "" else if (isCpp) "-std=c++11" else "-std=gnu11"
+        val flags = optimizationOpt +: stdflag +: "-fvisibility=hidden" +:
+          config.compileOptions
+        val compilec =
+          Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++ includeOpt ++
+            Seq("-c", path, "-o", opath)
 
-    llPaths.par.map { ll =>
-      val apppath = ll.abs
-      val outpath = apppath + oExt
-      val compile =
-        Seq(config.clang.abs) ++ fltoOpt ++ Seq("-c", apppath, "-o", outpath) ++ opts
-      config.logger.running(compile)
-      Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
-        config.logger)
-      Paths.get(outpath)
+        config.logger.running(compilec)
+        val result = Process(compilec, config.workdir.toFile) ! Logger
+          .toProcessLogger(config.logger)
+        if (result != 0) {
+          sys.error("Failed to compile ll or native code.")
+        }
+      }
+      objPath
     }.seq
   }
 
@@ -198,17 +180,16 @@ private[scalanative] object LLVM {
    * from the `nativelib`, other libaries, and the
    * application project into the native binary.
    *
-   * @param config       The configuration of the toolchain.
+   * @param config The configuration of the toolchain.
    * @param linkerResult The results from the linker.
-   * @param objectPaths  The paths to all the `.o` files.
-   * @param outpath      The path where to write the resulting binary.
+   * @param objectPaths The paths to all the `.o` files.
+   * @param outpath The path where to write the resulting binary.
    * @return `outpath`
    */
   def link(config: Config,
            linkerResult: linker.Result,
            objectsPaths: Seq[Path],
            outpath: Path): Path = {
-    val workdir = config.workdir
     val links = {
       val srclinks = linkerResult.links.map(_.name)
       val gclinks  = config.gc.links

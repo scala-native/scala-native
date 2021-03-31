@@ -3,6 +3,7 @@ package build
 
 import java.nio.file.{Files, Path}
 import scala.scalanative.util.Scope
+import scalanative.build.IO.RichPath // until reverted to Path
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -63,22 +64,32 @@ object Build {
       val optimized = ScalaNative.optimize(fconfig, linked)
       val generated = ScalaNative.codegen(fconfig, optimized)
 
-      // find and unpack native libs
-      val nativelibs   = NativeLib.findNativeLibs(fconfig.classPath, workdir)
-      val nativelib    = NativeLib.findNativeLib(nativelibs)
-      val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
+      // find native libs
+      val nativelibs = NativeLib.findNativeLibs(fconfig.classPath, workdir)
+      val nativelib  = NativeLib.findNativeLib(nativelibs)
+      val otherlibs  = nativelibs.filterNot(_ == nativelib)
 
       val objectPaths = config.logger.time("Compiling to native code") {
-        val nativelibConfig =
-          fconfig.withCompilerConfig(
-            _.withCompileOptions("-O2" +: fconfig.compileOptions))
-        val libObjectPaths =
-          LLVM.compileNativelibs(nativelibConfig,
-                                 linked,
-                                 unpackedLibs,
-                                 nativelib)
-        val llObjectPaths = LLVM.compile(fconfig, generated)
-        libObjectPaths ++ llObjectPaths
+
+        // compile all libs but nativelib
+        val libObjectPaths = otherlibs
+          .map(nl => LLVM.unpackNativeCode(nl))
+          .map(destPath => NativeLib.findNativePaths(workdir, destPath))
+          .map(paths => LLVM.compile(fconfig, paths.map(_.abs)))
+          .flatten
+
+        // compile nativelib
+        val nativelibObjectPaths = {
+          val nativelibPath = LLVM.unpackNativeCode(nativelib)
+          val nativelibPaths =
+            LLVM.filterNativelib(fconfig, linked, nativelibPath)
+          LLVM.compile(fconfig, nativelibPaths.map(_.abs))
+        }
+
+        // compile generated ll
+        val llObjectPaths = LLVM.compile(fconfig, generated.map(_.abs))
+
+        libObjectPaths ++ nativelibObjectPaths ++ llObjectPaths
       }
 
       LLVM.link(config, linked, objectPaths, outpath)
