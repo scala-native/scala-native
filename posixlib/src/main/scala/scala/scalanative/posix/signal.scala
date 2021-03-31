@@ -5,13 +5,17 @@ import scala.scalanative.unsafe._
 
 /**
  * Some of the functionality described on this reference page extends the ISO C standard.
- * Applications shall define the appropriate feature test macro (see XSH The Compilation Environment )
+ * Applications shall define the appropriate feature test macro (see XSH The Compilation Environment)
  * to enable the visibility of these symbols in this header.
  *
  * Use clib macros and functions to get the full POSIX interface
  *
  * Note 1: The functionality described may be removed in a future version of this volume of POSIX.1-2017
  * Note 2: The functionality is an option marked as XSI (X/Open System Interfaces)
+ *
+ * Note 1 or 2: followed by Linux or macOS means that the feature is not available on that platform with
+ * default compile options so the code is commented out. The code is commented out so the next developer
+ * that comes along will not have to rediscover these limitations.
  */
 @extern
 object signal {
@@ -20,8 +24,8 @@ object signal {
   // and whose values shall compare unequal to the address of any declarable function.
 
   // Note 1: Linux
-  //  @name("scalanative_sig_hold")
-  //  def SIG_HOLD: CFunctionPtr1[CInt, Unit] = extern
+  // @name("scalanative_sig_hold")
+  // def SIG_HOLD: CFunctionPtr1[CInt, Unit] = extern
 
   import sys.types
   // pthread_t, size_t, and uid_t types as described in <sys/types.h>
@@ -91,8 +95,8 @@ object signal {
   @name("scalanative_sigusr2")
   def SIGUSR2: CInt = extern
   // Note 1: macOS
-//  @name("scalanative_sigpoll")
-//  def SIGPOLL: CInt = extern
+  // @name("scalanative_sigpoll")
+  // def SIGPOLL: CInt = extern
   @name("scalanative_sigprof")
   def SIGPROF: CInt = extern
   @name("scalanative_sigsys")
@@ -230,10 +234,10 @@ object signal {
   @name("scalanative_bus_objerr")
   def BUS_OBJERR: CInt = extern
   // Note 2: Linux
-//  @name("scalanative_trap_brkpt")
-//  def TRAP_BRKPT: CInt = extern
-//  @name("scalanative_trap_trace")
-//  def TRAP_TRACE: CInt = extern
+  // @name("scalanative_trap_brkpt")
+  // def TRAP_BRKPT: CInt = extern
+  // @name("scalanative_trap_trace")
+  // def TRAP_TRACE: CInt = extern
   @name("scalanative_cld_exited")
   def CLD_EXITED: CInt = extern
   @name("scalanative_cld_killed")
