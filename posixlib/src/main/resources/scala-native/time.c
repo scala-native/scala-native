@@ -162,18 +162,18 @@ char **scalanative_tzname() { return tzname; }
 
 // XSI
 long scalanative_timezone() {
-#if !defined(__FreeBSD__)
-    return timezone;
-#else
+#if defined(__FreeBSD__)
     return 0;
+#else
+    return timezone;
 #endif
 }
 
 // XSI
 int scalanative_daylight() {
-#if !defined(__FreeBSD__)
-    return daylight;
-#else
+#if defined(__FreeBSD__)
     return 0;
+#else
+    return daylight;
 #endif
 }

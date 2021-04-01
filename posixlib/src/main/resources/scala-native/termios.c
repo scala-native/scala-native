@@ -45,16 +45,20 @@ int scalanative_termios_onlcr() { return ONLCR; }
 int scalanative_termios_ocrnl() { return OCRNL; }
 int scalanative_termios_onocr() { return ONOCR; }
 int scalanative_termios_onlret() { return ONLRET; }
+int scalanative_termios_ofdel() {
 #ifdef OFDEL
-int scalanative_termios_ofdel() { return OFDEL; }
+    return OFDEL;
 #else
-int scalanative_termios_ofdel() { return 0; }
+    return 0;
 #endif
+}
+int scalanative_termios_ofill() {
 #ifdef OFILL
-int scalanative_termios_ofill() { return OFILL; }
+    return OFILL;
 #else
-int scalanative_termios_ofill() { return 0; }
+    return 0;
 #endif
+}
 // Masks - Linux [requires _BSD_SOURCE or _SVID_SOURCE or _XOPEN_SOURCE]
 int scalanative_termios_nldly() { return NLDLY; }
 int scalanative_termios_nl0() { return NL0; }
@@ -73,21 +77,27 @@ int scalanative_termios_bsdly() { return BSDLY; }
 int scalanative_termios_bs0() { return BS0; }
 int scalanative_termios_bs1() { return BS1; }
 int scalanative_termios_vtdly() { return VTDLY; }
+int scalanative_termios_vt0() {
 #ifdef VT0
-int scalanative_termios_vt0() { return VT0; }
+    return VT0;
 #else
-int scalanative_termios_vt0() { return 0; }
+    return 0;
 #endif
+}
+int scalanative_termios_vt1() {
 #ifdef VT1
-int scalanative_termios_vt1() { return VT1; }
+    return VT1;
 #else
-int scalanative_termios_vt1() { return 0; }
+return 0;
 #endif
+}
+int scalanative_termios_ffdly() {
 #ifdef FFDLY
-int scalanative_termios_ffdly() { return FFDLY; }
+    return FFDLY;
 #else
-int scalanative_termios_ffdly() { return 0; }
+    return 0;
 #endif
+}
 int scalanative_termios_ff0() { return FF0; }
 int scalanative_termios_ff1() { return FF1; }
 

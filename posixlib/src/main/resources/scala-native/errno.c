@@ -79,11 +79,13 @@ int scalanative_enfile() { return ENFILE; }
 
 int scalanative_enobufs() { return ENOBUFS; }
 
+int scalanative_enodata() {
 #ifdef ENODATA
-int scalanative_enodata() { return ENODATA; }
+    return ENODATA;
 #else
-int scalanative_enodata() { return 0; }
+    return 0;
 #endif
+}
 
 int scalanative_enodev() { return ENODEV; }
 
@@ -103,17 +105,21 @@ int scalanative_enoprotoopt() { return ENOPROTOOPT; }
 
 int scalanative_enospc() { return ENOSPC; }
 
+int scalanative_enosr() {
 #ifdef ENOSR
-int scalanative_enosr() { return ENOSR; }
+    return ENOSR;
 #else
-int scalanative_enosr() { return 0; }
+    return 0;
 #endif
+}
 
+int scalanative_enostr() {
 #ifdef ENOSTR
-int scalanative_enostr() { return ENOSTR; }
+    return ENOSTR;
 #else
-int scalanative_enostr() { return 0; }
+    return 0;
 #endif
+}
 
 int scalanative_enosys() { return ENOSYS; }
 
@@ -157,11 +163,13 @@ int scalanative_esrch() { return ESRCH; }
 
 int scalanative_estale() { return ESTALE; }
 
+int scalanative_etime() {
 #ifdef ENOTIME
-int scalanative_etime() { return ETIME; }
+    return ETIME;
 #else
-int scalanative_etime() { return 0; }
+    return 0;
 #endif
+}
 
 int scalanative_etimedout() { return ETIMEDOUT; }
 
