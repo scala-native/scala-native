@@ -2,6 +2,7 @@ package scala.scalanative.posix
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume.assumeFalse
 
 import java.io.IOException
 
@@ -15,30 +16,22 @@ import timeOps.tmOps
 class TimeTest {
   tzset()
 
-  // timezone would give us an offset with respect to the standard time
-  // But if we are in daylight saving time (dst), timezone could be skewed,
-  // so we compute the current offset to UTC (GMT) by subtracting the current
-  // GMT time from the local time. e.g. If our dst is UTC+1, we would get -1
-  val gmtOffset: Long = {
-    Zone { implicit z =>
-      val gmt_time_ptr = stackalloc[time_t]
-      !gmt_time_ptr = now_time_t
-      val time_ptr = stackalloc[time_t]
-      !time_ptr = now_time_t
-
-      val gmtTime: Ptr[tm]   = gmtime(gmt_time_ptr)
-      val localtime: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
-
-      (gmtTime.tm_hour - localtime.tm_hour).toInt * 3600L +
-        (gmtTime.tm_min - localtime.tm_min).toInt * 60L +
-        (gmtTime.tm_sec - localtime.tm_sec).toInt
-    }
-  }
-
   // In 2.11/2.12 time was resolved to posix.time.type, in 2.13 to
   // posix.time.time method.
   val now_time_t: time_t = scala.scalanative.posix.time.time(null)
   val epoch: time_t      = 0L
+
+  // some of the tests (the ones that call localtime) need
+  // for the daylight saving time to not be in effect
+  val timeIsDst: Boolean = {
+    Zone { implicit z =>
+      val time_ptr = stackalloc[time_t]
+      !time_ptr = now_time_t
+      val localtime: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
+
+      localtime.tm_isdst != 0
+    }
+  }
 
   @Test def asctimeWithGivenKnownStateShouldMatchItsRepresentation(): Unit = {
     Zone { implicit z =>
@@ -62,8 +55,9 @@ class TimeTest {
     }
   }
   @Test def localtimeShouldTransformTheEpochToLocaltime(): Unit = {
+    assumeFalse("time is dst, test will not execute", timeIsDst)
     val time_ptr = stackalloc[time_t]
-    !time_ptr = epoch + gmtOffset
+    !time_ptr = epoch + timezone
     val time: Ptr[tm] = localtime(time_ptr)
     val cstr: CString = asctime(time)
     val str: String   = fromCString(cstr)
@@ -73,8 +67,9 @@ class TimeTest {
 
   @Test def localtime_rShouldTransformTheEpochToLocaltime(): Unit = {
     Zone { implicit z =>
+      assumeFalse("time is dst, test will not execute", timeIsDst)
       val time_ptr = stackalloc[time_t]
-      !time_ptr = epoch + gmtOffset
+      !time_ptr = epoch + timezone
       val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
       val cstr: CString = asctime_r(time, alloc[Byte](26))
       val str: String   = fromCString(cstr)
@@ -314,17 +309,15 @@ class TimeTest {
       assertNull("tm_zone", null)
 
       // Major concerning conditions passed. Sanity check the tm proper.
-      val expectedSec      = 44
-      val gmtOffsetHours   = gmtOffset / 3600
-      val gmtOffsetMinutes = gmtOffset % 3600 / 60
-      val gmtOffsetSeconds = gmtOffset % 3600 % 60
-      assertEquals("tm_sec", expectedSec, tmPtr.tm_sec + gmtOffsetSeconds)
+
+      val expectedSec = 44
+      assertEquals("tm_sec", expectedSec, tmPtr.tm_sec)
 
       val expectedMin = 47
-      assertEquals("tm_min", expectedMin, tmPtr.tm_min + gmtOffsetMinutes)
+      assertEquals("tm_min", expectedMin, tmPtr.tm_min)
 
       val expectedHour = 14
-      assertEquals("tm_hour", expectedHour, tmPtr.tm_hour + gmtOffsetHours)
+      assertEquals("tm_hour", expectedHour, tmPtr.tm_hour)
 
       val expectedMday = 31
       assertEquals("tm_mday", expectedMday, tmPtr.tm_mday)
