@@ -21,7 +21,7 @@ class TimeTest {
   val now_time_t: time_t = scala.scalanative.posix.time.time(null)
   val epoch: time_t      = 0L
 
-  // Come of the tests (the ones that call localtime) need
+  // Some of the tests (the ones that call localtime) need
   // for the standard time to be in effect. This is because
   // depending on the timezone, if daylight saving time is in
   // effect, we can get skewed time results. This is a best
@@ -60,7 +60,7 @@ class TimeTest {
     }
   }
   @Test def localtimeShouldTransformTheEpochToLocaltime(): Unit = {
-    assumeTrue("time is dst, test will not execute", timeIsStandard)
+    assumeTrue("time is not standard, test will not execute", timeIsStandard)
     val time_ptr = stackalloc[time_t]
     !time_ptr = epoch + timezone
     val time: Ptr[tm] = localtime(time_ptr)
@@ -72,7 +72,7 @@ class TimeTest {
 
   @Test def localtime_rShouldTransformTheEpochToLocaltime(): Unit = {
     Zone { implicit z =>
-      assumeTrue("time is dst, test will not execute", timeIsStandard)
+      assumeTrue("time is not standard, test will not execute", timeIsStandard)
       val time_ptr = stackalloc[time_t]
       !time_ptr = epoch + timezone
       val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
@@ -244,6 +244,7 @@ class TimeTest {
 
   @Test def strptimeDoesNotWriteMemoryOutsideStructTm(): Unit = {
     Zone { implicit z =>
+      assumeTrue("time is not standard, test will not execute", timeIsStandard)
       // The purpose of this test is to check that time.scala method
       // declaration had an "@name" annotation, so that structure
       // copy-in/copy-out happened? Failure case is if 36 byte
