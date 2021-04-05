@@ -39,9 +39,15 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
 
   override def setOwner(owner: UserPrincipal): Unit =
     Zone { implicit z =>
-      val passwd = getPasswd(toCString(owner.getName()))
-      if (unistd.chown(toCString(path.toString), passwd._2, -1.toUInt) != 0)
+      val uid = owner match {
+        case u: PosixUserPrincipal => u.uid
+
+        case _ =>
+          throw new IllegalArgumentException("unsupported UserPrincipal")
+      }
+      if (unistd.chown(toCString(path.toString), uid, -1.toUInt) != 0) {
         throwIOException()
+      }
     }
 
   override def setPermissions(perms: Set[PosixFilePermission]): Unit =
@@ -59,10 +65,14 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
 
   override def setGroup(group: GroupPrincipal): Unit =
     Zone { implicit z =>
-      val _group = getGroup(toCString(group.getName()))
-      val err    = unistd.chown(toCString(path.toString), -1.toUInt, _group._2)
+      val gid = group match {
+        case g: PosixGroupPrincipal => g.gid
 
-      if (err != 0) {
+        case _ =>
+          throw new IllegalArgumentException("unsupported GroupPrincipal")
+      }
+
+      if (unistd.chown(toCString(path.toString), -1.toUInt, gid) != 0) {
         throwIOException()
       }
     }
@@ -102,12 +112,6 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         st_mode = buf._13
       }
 
-      private def filePasswd()(implicit z: Zone) =
-        getPasswd(st_uid)
-
-      private def fileGroup()(implicit z: Zone) =
-        getGroup(st_gid)
-
       override def fileKey() = st_ino.asInstanceOf[Object]
 
       override lazy val isDirectory =
@@ -131,15 +135,9 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       override def creationTime() =
         FileTime.from(st_ctime, TimeUnit.SECONDS)
 
-      override def group() = new GroupPrincipal {
-        override val getName =
-          Zone { implicit z => fromCString(fileGroup()._1) }
-      }
+      override def group = PosixGroupPrincipal(st_gid)(None)
 
-      override def owner() = new UserPrincipal {
-        override val getName =
-          Zone { implicit z => fromCString(filePasswd()._1) }
-      }
+      override def owner = PosixUserPrincipal(st_uid)(None)
 
       override def permissions() = {
         val set = new HashSet[PosixFilePermission]
@@ -199,38 +197,6 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       } else {
         stat.stat(toCString(path.toString), buf)
       }
-
-    if (err == 0) buf
-    else throwIOException()
-  }
-
-  private def getGroup(name: CString)(implicit z: Zone): Ptr[grp.group] = {
-    val buf = alloc[grp.group]
-    val err = grp.getgrnam(name, buf)
-
-    if (err == 0) buf
-    else throwIOException()
-  }
-
-  private def getGroup(gid: stat.gid_t)(implicit z: Zone): Ptr[grp.group] = {
-    val buf = alloc[grp.group]
-    val err = grp.getgrgid(gid, buf)
-
-    if (err == 0) buf
-    else throwIOException()
-  }
-
-  private def getPasswd(name: CString)(implicit z: Zone): Ptr[pwd.passwd] = {
-    val buf = alloc[pwd.passwd]
-    val err = pwd.getpwnam(name, buf)
-
-    if (err == 0) buf
-    else throwIOException()
-  }
-
-  private def getPasswd(uid: stat.uid_t)(implicit z: Zone): Ptr[pwd.passwd] = {
-    val buf = alloc[pwd.passwd]
-    val err = pwd.getpwuid(uid, buf)
 
     if (err == 0) buf
     else throwIOException()

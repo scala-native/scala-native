@@ -12,6 +12,7 @@ import java.nio.file.{
 }
 import java.nio.file.spi.FileSystemProvider
 import java.nio.file.attribute.UserPrincipalLookupService
+import java.nio.file.attribute.PosixUserPrincipalLookupService
 import java.util.{LinkedList, Set}
 
 import scala.scalanative.unsafe.{
@@ -38,6 +39,9 @@ class UnixFileSystem(override val provider: FileSystemProvider,
 
   @stub
   override def getFileStores(): Iterable[FileStore] = ???
+
+  override def getUserPrincipalLookupService(): UserPrincipalLookupService =
+    PosixUserPrincipalLookupService
 
   override def getPath(first: String, more: Array[String]): Path =
     new UnixPath(this, (first +: more).mkString("/"))

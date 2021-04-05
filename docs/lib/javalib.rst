@@ -317,6 +317,7 @@ Here is the list of currently available classes:
 * ``java.nio.file.attribute.UserDefinedFileAttributeView``
 * ``java.nio.file.attribute.UserPrincipal``
 * ``java.nio.file.attribute.UserPrincipalLookupService``
+* ``java.nio.file.attribute.UserPrincipalNotFoundException``
 * ``java.nio.file.spi.FileSystemProvider``
 * ``java.rmi.Remote``
 * ``java.rmi.RemoteException``
