@@ -2,7 +2,7 @@ package scala.scalanative.posix
 
 import org.junit.Test
 import org.junit.Assert._
-import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 
 import java.io.IOException
 
@@ -21,15 +21,20 @@ class TimeTest {
   val now_time_t: time_t = scala.scalanative.posix.time.time(null)
   val epoch: time_t      = 0L
 
-  // some of the tests (the ones that call localtime) need
-  // for the daylight saving time to not be in effect
-  val timeIsDst: Boolean = {
+  // Come of the tests (the ones that call localtime) need
+  // for the standard time to be in effect. This is because
+  // depending on the timezone, if daylight saving time is in
+  // effect, we can get skewed time results. This is a best
+  // effort to make the tests more portable
+  //
+  // See discussion in https://github.com/scala-native/scala-native/issues/2237
+  val timeIsStandard: Boolean = {
     Zone { implicit z =>
       val time_ptr = stackalloc[time_t]
       !time_ptr = now_time_t
       val localtime: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
 
-      localtime.tm_isdst != 0
+      localtime.tm_isdst == 0
     }
   }
 
@@ -55,7 +60,7 @@ class TimeTest {
     }
   }
   @Test def localtimeShouldTransformTheEpochToLocaltime(): Unit = {
-    assumeFalse("time is dst, test will not execute", timeIsDst)
+    assumeTrue("time is dst, test will not execute", timeIsStandard)
     val time_ptr = stackalloc[time_t]
     !time_ptr = epoch + timezone
     val time: Ptr[tm] = localtime(time_ptr)
@@ -67,7 +72,7 @@ class TimeTest {
 
   @Test def localtime_rShouldTransformTheEpochToLocaltime(): Unit = {
     Zone { implicit z =>
-      assumeFalse("time is dst, test will not execute", timeIsDst)
+      assumeTrue("time is dst, test will not execute", timeIsStandard)
       val time_ptr = stackalloc[time_t]
       !time_ptr = epoch + timezone
       val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
