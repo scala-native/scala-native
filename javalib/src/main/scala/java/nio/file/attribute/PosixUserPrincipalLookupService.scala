@@ -9,14 +9,14 @@ import scala.scalanative.nio.fs.UnixException
 
 final case class PosixUserPrincipal(uid: stat.uid_t)(name: Option[String])
     extends UserPrincipal {
-  override def getName = {
+  override def getName() = {
     name getOrElse PosixUserPrincipalLookupService.getUsername(uid)
   }
 }
 
 final case class PosixGroupPrincipal(gid: stat.gid_t)(name: Option[String])
     extends GroupPrincipal {
-  override def getName: String = {
+  override def getName(): String = {
     name getOrElse PosixUserPrincipalLookupService.getGroupName(gid)
   }
 }
