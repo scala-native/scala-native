@@ -67,4 +67,21 @@ class ZoneTest {
                  zone.alloc(64.toUInt * sizeof[Int]))
     assertThrows(classOf[IllegalStateException], zone.close())
   }
+
+  /**
+   * Let me to be honest: a chance that this test is failed near to nil.
+   */
+  @Test def allocatedMemoryIsZeroed(): Unit = {
+    implicit val zone: Zone = Zone.open()
+
+    val ptrZoneAlloc = zone.alloc(1 * sizeof[Int]).asInstanceOf[Ptr[Int]]
+
+    val ptrAlloc = alloc[Int]
+
+    val ptrAllocArr = alloc[Int](1.toUInt)
+
+    assertEquals(0, ptrZoneAlloc(0))
+    assertEquals(0, ptrAlloc(0))
+    assertEquals(0, ptrAllocArr(0))
+  }
 }

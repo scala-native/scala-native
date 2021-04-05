@@ -54,6 +54,7 @@ object Zone {
       if (rawptr == null) {
         throw new OutOfMemoryError(s"Unable to allocate $size bytes")
       }
+      libc.memset(rawptr, 0, size)
       node = new Node(rawptr, node)
       fromRawPtr[Byte](rawptr)
     }
