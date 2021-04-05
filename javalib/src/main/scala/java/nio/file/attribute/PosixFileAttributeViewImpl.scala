@@ -135,9 +135,9 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       override def creationTime() =
         FileTime.from(st_ctime, TimeUnit.SECONDS)
 
-      override def group = PosixGroupPrincipal(st_gid)(None)
+      override def group() = PosixGroupPrincipal(st_gid)(None)
 
-      override def owner = PosixUserPrincipal(st_uid)(None)
+      override def owner() = PosixUserPrincipal(st_uid)(None)
 
       override def permissions() = {
         val set = new HashSet[PosixFilePermission]
