@@ -1,6 +1,8 @@
 package java.nio.file.attribute
 
+import java.{util => ju}
 import java.util.{HashMap, HashSet, Set}
+
 import java.util.concurrent.TimeUnit
 import java.nio.file.{LinkOption, Path, PosixException}
 import java.nio.file.attribute._
@@ -140,7 +142,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       override def owner() = PosixUserPrincipal(st_uid)(None)
 
       override def permissions() = {
-        val set = new HashSet[PosixFilePermission]
+        val set = new ju.HashSet[PosixFilePermission]
         PosixFileAttributeViewImpl.permMap.foreach {
           case (flag, value) =>
             if ((st_mode & flag).toInt != 0) set.add(value)
@@ -151,7 +153,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       override def size() = st_size
     }
 
-  override def asMap: HashMap[String, Object] = {
+  override def asMap: ju.HashMap[String, Object] = {
     val attrs = attributes
     val values =
       List(
@@ -168,7 +170,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         "group"            -> attrs.group()
       )
 
-    val map = new HashMap[String, Object]()
+    val map = new ju.HashMap[String, Object]()
     values.foreach { case (k, v) => map.put(k, v) }
     map
   }

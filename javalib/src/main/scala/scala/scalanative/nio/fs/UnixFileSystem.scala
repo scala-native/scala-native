@@ -13,7 +13,7 @@ import java.nio.file.{
 import java.nio.file.spi.FileSystemProvider
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.file.attribute.PosixUserPrincipalLookupService
-import java.util.{LinkedList, Set}
+import java.{util => ju}
 
 import scala.scalanative.unsafe.{
   CUnsignedLong,
@@ -50,7 +50,7 @@ class UnixFileSystem(override val provider: FileSystemProvider,
     PathMatcherImpl(syntaxAndPattern)
 
   override def getRootDirectories(): Iterable[Path] = {
-    val list = new LinkedList[Path]()
+    val list = new ju.LinkedList[Path]()
     list.add(getPath(root, Array.empty))
     list
   }
@@ -76,7 +76,7 @@ class UnixFileSystem(override val provider: FileSystemProvider,
   override def newWatchService(): WatchService =
     throw new UnsupportedOperationException()
 
-  override def supportedFileAttributeViews(): Set[String] = {
+  override def supportedFileAttributeViews(): ju.Set[String] = {
     val set = new java.util.HashSet[String]()
     set.add("basic")
     set.add("posix")
