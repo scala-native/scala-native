@@ -23,9 +23,11 @@ class TimeTest {
 
   // Some of the tests (the ones that call localtime) need
   // for the standard time to be in effect. This is because
-  // depending on the timezone, if daylight saving time is in
-  // effect, we can get skewed time results. This is a best
-  // effort to make the tests more portable
+  // depending on the timezone and or the underlying C stdlib
+  // (we observed differences in tm_isdt output when dst was
+  // in effect between macOS, Arch Linux and Ubuntu), if
+  // daylight saving time is in effect, we can get skewed time
+  // results. This is a best effort to make the tests more portable
   //
   // See discussion in https://github.com/scala-native/scala-native/issues/2237
   val timeIsStandard: Boolean = {
@@ -340,7 +342,7 @@ class TimeTest {
       val expectedYday = 89
       assertEquals("tm_yday", expectedYday, tmPtr.tm_yday)
 
-      // Per posix specification, contents of tm_isdst are not reliable.
+    // Per posix specification, contents of tm_isdst are not reliable.
     }
   }
 
