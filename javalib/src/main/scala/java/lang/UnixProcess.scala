@@ -33,7 +33,7 @@ private[lang] class UnixProcess private (
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
 ) extends Process {
-  override def destroy(): Unit = signal.kill(pid, 9)
+  override def destroy(): Unit = signal.kill(pid, signal.SIGKILL)
 
   override def destroyForcibly(): Process = {
     destroy()

@@ -13,7 +13,7 @@ import scala.scalanative.unsafe._
  * Note 1: The functionality described may be removed in a future version of this volume of POSIX.1-2017
  * Note 2: The functionality is an option marked as XSI (X/Open System Interfaces)
  *
- * Note 1 or 2: followed by Linux or macOS means that the feature is not available on that platform with
+ * Note 1 or 2 followed by Linux or macOS means that the feature is not available on that platform with
  * default compile options so the code is commented out. The code is commented out so the next developer
  * that comes along will not have to rediscover these limitations.
  */
@@ -183,7 +183,7 @@ object signal {
     CInt,       // si_errno If non-zero, an errno value associated with this signal, as described in <errno.h>
     pid_t,      // si_pid Sending process ID
     uid_t,      // si_uid Real user ID of sending process
-    Ptr[Byte],  // void *si_addr Address of faulting instruction (Ptr instead - is void * a fcn?)
+    Ptr[Byte],  // void *si_addr Address of faulting instruction
     CInt,       // si_status Exit value or signal
     CLong,      // si_band Band event for SIGPOLL
     Ptr[sigval] // si_value Signal value (Ptr instead of value)
