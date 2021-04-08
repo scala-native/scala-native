@@ -75,7 +75,7 @@ object Build {
         val libObjectPaths = otherlibs
           .map(nl => LLVM.unpackNativeCode(nl))
           .map(destPath => NativeLib.findNativePaths(workdir, destPath))
-          .map(paths => LLVM.compile(fconfig, paths.map(_.abs)))
+          .map(paths => LLVM.compile(fconfig, paths))
           .flatten
 
         // compile nativelib
@@ -83,11 +83,11 @@ object Build {
           val nativelibPath = LLVM.unpackNativeCode(nativelib)
           val nativelibPaths =
             LLVM.filterNativelib(fconfig, linked, nativelibPath)
-          LLVM.compile(fconfig, nativelibPaths.map(_.abs))
+          LLVM.compile(fconfig, nativelibPaths)
         }
 
         // compile generated ll
-        val llObjectPaths = LLVM.compile(fconfig, generated.map(_.abs))
+        val llObjectPaths = LLVM.compile(fconfig, generated)
 
         libObjectPaths ++ nativelibObjectPaths ++ llObjectPaths
       }

@@ -140,7 +140,7 @@ private[scalanative] object LLVM {
    * @param paths The directory paths containing native files to compile.
    * @return The paths of the `.o` files.
    */
-  def compile(config: Config, paths: Seq[String]): Seq[Path] = {
+  def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
     val optimizationOpt =
       config.mode match {
         case Mode.Debug       => "-O0"
@@ -150,11 +150,12 @@ private[scalanative] object LLVM {
 
     // generate .o files for all included source files in parallel
     paths.par.map { path =>
-      val opath   = path + oExt
-      val objPath = Paths.get(opath)
+      val inpath  = path.abs
+      val outpath = inpath + oExt
+      val isCpp   = inpath.endsWith(cppExt)
+      val isLl    = inpath.endsWith(llExt)
+      val objPath = Paths.get(outpath)
       if (!Files.exists(objPath)) {
-        val isCpp    = path.endsWith(cppExt)
-        val isLl     = path.endsWith(llExt)
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag =
           if (isLl) "" else if (isCpp) "-std=c++11" else "-std=gnu11"
