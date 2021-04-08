@@ -3,7 +3,6 @@ package build
 
 import java.nio.file.{Files, Path}
 import scala.scalanative.util.Scope
-import scalanative.build.IO.RichPath // until reverted to Path
 
 /** Utility methods for building code using Scala Native. */
 object Build {
