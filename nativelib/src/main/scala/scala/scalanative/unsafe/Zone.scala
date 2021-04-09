@@ -2,7 +2,20 @@ package scala.scalanative
 package unsafe
 
 import scala.annotation.implicitNotFound
-import scalanative.runtime.{libc, RawPtr, fromRawPtr}
+import scala.collection.mutable
+import scalanative.runtime.{RawPtr, fromRawPtr, libc}
+
+/** A handle that traces references counter to an object inside zone. */
+trait ZonedHandle[T] {
+  implicit val zone: Zone
+
+  // increase counters each time when object is created
+  zone.ref(that = this)
+
+  /** Mark that this object aren't used. */
+  def closeHandle(): Unit =
+    zone.unref(that = this)
+}
 
 /** Zone allocator which manages memory allocations. */
 @implicitNotFound("Given method requires an implicit zone.")
@@ -20,6 +33,13 @@ trait Zone {
   /** Return this zone allocator is closed or not. */
   def isClosed: Boolean
 
+  /** Increase reference counter for specified Handle.
+   * This method returns true when object was added to zone. */
+  def ref[T](that: ZonedHandle[T]): Boolean
+
+  /** Decrease reference counter for specified Handle.
+   *  This method returns true when object was removed. */
+  def unref[T](that: ZonedHandle[T]): Boolean
 }
 
 object Zone {
@@ -68,6 +88,32 @@ object Zone {
         node = node.tail
         libc.free(head)
       }
+      references.clear()
     }
+
+    private val references = new mutable.HashMap[ZonedHandle[_], Int]()
+
+    final def ref[T](that: ZonedHandle[T]): Boolean = {
+      references.get(that) match {
+        case None =>
+          references.put(that, 1)
+          true
+        case Some(counters) =>
+          references.put(that, counters + 1)
+          false
+      }
+    }
+
+    final def unref[T](that: ZonedHandle[T]): Boolean =
+      references.get(that) match {
+        case Some(counters) if counters <= 1 =>
+          references.remove(that)
+          true
+        case Some(counters) =>
+          references.put(that, counters - 1)
+          false
+        case None =>
+          true
+      }
   }
 }
