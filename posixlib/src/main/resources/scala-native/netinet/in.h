@@ -17,6 +17,8 @@ struct scalanative_sockaddr_in {
     scalanative_sa_family_t sin_family;
     in_port_t sin_port;
     struct scalanative_in_addr sin_addr;
+    // sin_zero makes sizeof(scalanative_sockaddr_in) == sizeof(sockaddr)
+    uint8_t _sin_zero[8]; // Posix allowed.
 };
 
 struct scalanative_sockaddr_in6 {
