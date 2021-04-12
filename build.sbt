@@ -467,13 +467,25 @@ lazy val javalibCommonSettings = Def.settings(
   exportJars := true
 )
 
+// can be used in aggregate
+lazy val javalibProjectRef = Seq[ProjectReference](posixlib, clib)
+
+lazy val javalibDepends = {
+  val base = Seq(ClasspathDependency(nscplugin, Some("plugin")),
+                 ClasspathDependency(clib, None))
+  if (!Util.isWindows)
+    base :+ ClasspathDependency(posixlib, None)
+  else
+    base
+}
+
 lazy val javalib =
   project
     .in(file("javalib"))
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
     .settings(javalibCommonSettings)
-    .dependsOn(nscplugin % "plugin", posixlib, clib)
+    .dependsOn(javalibDepends: _*)
 
 lazy val javalibExtDummies = project
   .in(file("javalib-ext-dummies"))
