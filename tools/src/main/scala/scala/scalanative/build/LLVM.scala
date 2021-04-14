@@ -148,7 +148,7 @@ private[scalanative] object LLVM {
       val isCpp   = inpath.endsWith(cppExt)
       val isLl    = inpath.endsWith(llExt)
       val objPath = Paths.get(outpath)
-      // always rebuild ll
+      // scripted tests fail if LL not rebuilt
       if (isLl || !Files.exists(objPath)) {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag =
