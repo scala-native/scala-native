@@ -141,13 +141,6 @@ private[scalanative] object LLVM {
    * @return The paths of the `.o` files.
    */
   def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
-    val optimizationOpt =
-      config.mode match {
-        case Mode.Debug       => "-O0"
-        case Mode.ReleaseFast => "-O2"
-        case Mode.ReleaseFull => "-O3"
-      }
-
     // generate .o files for all included source files in parallel
     paths.par.map { path =>
       val inpath  = path.abs
@@ -159,7 +152,7 @@ private[scalanative] object LLVM {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag =
           if (isLl) "" else if (isCpp) "-std=c++11" else "-std=gnu11"
-        val flags = optimizationOpt +: stdflag +: "-fvisibility=hidden" +:
+        val flags = opt(config) +: stdflag +: "-fvisibility=hidden" +:
           config.compileOptions
         val compilec =
           Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++ includeOpt ++
@@ -231,5 +224,12 @@ private[scalanative] object LLVM {
     config.compilerConfig.targetTriple match {
       case Some(tt) => Seq("-target", tt)
       case None     => Seq("-Wno-override-module")
+    }
+
+  private def opt(config: Config): String =
+    config.mode match {
+      case Mode.Debug       => "-O0"
+      case Mode.ReleaseFast => "-O2"
+      case Mode.ReleaseFull => "-O3"
     }
 }
