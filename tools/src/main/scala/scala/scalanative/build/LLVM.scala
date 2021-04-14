@@ -148,7 +148,8 @@ private[scalanative] object LLVM {
       val isCpp   = inpath.endsWith(cppExt)
       val isLl    = inpath.endsWith(llExt)
       val objPath = Paths.get(outpath)
-      if (!Files.exists(objPath)) {
+      // always rebuild ll
+      if (isLl || !Files.exists(objPath)) {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag =
           if (isLl) "" else if (isCpp) "-std=c++11" else "-std=gnu11"
