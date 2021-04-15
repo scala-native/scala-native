@@ -63,33 +63,24 @@ object Build {
       val optimized = ScalaNative.optimize(fconfig, linked)
       val generated = ScalaNative.codegen(fconfig, optimized)
 
-      // find native libs
-      val nativelibs = NativeLib.findNativeLibs(fconfig.classPath, workdir)
-      val nativelib  = NativeLib.findNativeLib(nativelibs)
-      val otherlibs  = nativelibs.filterNot(_ == nativelib)
-
       val objectPaths = config.logger.time("Compiling to native code") {
+        // find native libs
+        val nativelibs = NativeLib.findNativeLibs(fconfig.classPath, workdir)
 
-        // compile all libs but nativelib
-        val libObjectPaths = otherlibs
+        // compile all libs
+        val libObjectPaths = nativelibs
           .map(nl => LLVM.unpackNativeCode(nl))
-          .map(destPath => NativeLib.findNativePaths(workdir, destPath))
-          .map(paths => LLVM.compile(fconfig, paths))
-          .flatten
-
-        // compile nativelib
-        val nativelibObjectPaths = {
-          val destPath = LLVM.unpackNativeCode(nativelib)
-          val paths    = NativeLib.findNativePaths(workdir, destPath)
-          val nativelibPaths =
+          .map(destPath => {
+            val paths = NativeLib.findNativePaths(workdir, destPath)
             LLVM.filterNativelib(fconfig, linked, destPath, paths)
-          LLVM.compile(fconfig, nativelibPaths)
-        }
+          })
+          .map(filteredPaths => LLVM.compile(fconfig, filteredPaths))
+          .flatten
 
         // compile generated ll
         val llObjectPaths = LLVM.compile(fconfig, generated)
 
-        libObjectPaths ++ nativelibObjectPaths ++ llObjectPaths
+        libObjectPaths ++ llObjectPaths
       }
 
       LLVM.link(config, linked, objectPaths, outpath)
