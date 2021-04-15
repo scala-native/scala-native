@@ -70,6 +70,9 @@ private[scalanative] object NativeLib {
   /** To positively identify nativelib */
   private val nativeLibMarkerFile = "org_scala-native_nativelib.txt"
 
+  /** To find filter file */
+  private val filterProperties = s"${codeDir}-filter.properties"
+
   /**
    * Find the marker file in the directory.
    *
@@ -117,6 +120,19 @@ private[scalanative] object NativeLib {
         s"No Scala Native libraries were found: $classpath")
     else
       extractPaths
+  }
+
+  /**
+    * Check for a filtering properties file in destination
+    * native code directory.
+    *
+    * @param codePath The native code directory
+    * @return The optional path to the file or none
+    */
+  def findFilterProperties(codePath: Path): Option[Path] = {
+    val file = codePath.resolve(filterProperties)
+    if(Files.exists(file)) Some(file)
+    else None
   }
 
   /**

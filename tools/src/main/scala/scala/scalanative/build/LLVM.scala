@@ -87,50 +87,55 @@ private[scalanative] object LLVM {
    * @return The paths included to be compiled.
    */
   def filterNativelib(config: Config,
-                      linkerResult: linker.Result,
-                      destPath: Path): Seq[Path] = {
-    val paths   = NativeLib.findNativePaths(config.workdir, destPath).map(_.abs)
-    val libPath = destPath.resolve(NativeLib.codeDir)
+                      destPath: Path,
+                      allPaths: Seq[Path]): Seq[Path] = {
+    val codePath = destPath.resolve(NativeLib.codeDir)
+    // check if filtering is needed, o.w. return paths
+    NativeLib.findFilterProperties(codePath) match {
+      case None => allPaths
+      case Some(file) =>
+        val paths = allPaths.map(_.abs)
 
-    // predicate to check if given file path shall be compiled
-    // we only include sources of the current gc and exclude
-    // all optional dependencies if they are not necessary
-    val optPath = libPath.resolve("optional").abs
-    val (gcPath, gcIncludePaths, gcSelectedPaths) = {
-      val gcPath         = libPath.resolve("gc")
-      val gcIncludePaths = config.gc.include.map(gcPath.resolve(_).abs)
-      val selectedGC     = gcPath.resolve(config.gc.name).abs
-      val selectedGCPath = selectedGC +: gcIncludePaths
-      (gcPath.abs, gcIncludePaths, selectedGCPath)
+        // predicate to check if given file path shall be compiled
+        // we only include sources of the current gc and exclude
+        // all optional dependencies if they are not necessary
+        val optPath = codePath.resolve("optional").abs
+        val (gcPath, gcIncludePaths, gcSelectedPaths) = {
+          val gcPath         = codePath.resolve("gc")
+          val gcIncludePaths = config.gc.include.map(gcPath.resolve(_).abs)
+          val selectedGC     = gcPath.resolve(config.gc.name).abs
+          val selectedGCPath = selectedGC +: gcIncludePaths
+          (gcPath.abs, gcIncludePaths, selectedGCPath)
+        }
+
+        def include(path: String) = {
+          if (path.contains(optPath)) {
+            val name = Paths.get(path).toFile.getName.split("\\.").head
+            linkerResult.links.map(_.name).contains(name)
+          } else if (path.contains(gcPath)) {
+            gcSelectedPaths.exists(path.contains)
+          } else {
+            true
+          }
+        }
+
+        val (includePaths, excludePaths) = paths.partition(include(_))
+
+        // delete .o files for all excluded source files
+        // avoids deleting .o files except when changing
+        // optional or garbage collectors
+        excludePaths.foreach { path =>
+          val opath = Paths.get(path + oExt)
+          if (Files.exists(opath)) {
+            Files.delete(opath)
+          }
+        }
+
+        val fltoOpt    = flto(config)
+        val targetOpt  = target(config)
+        val includeOpt = gcIncludePaths.map("-I" + _)
+        includePaths.map(Paths.get(_))
     }
-
-    def include(path: String) = {
-      if (path.contains(optPath)) {
-        val name = Paths.get(path).toFile.getName.split("\\.").head
-        linkerResult.links.map(_.name).contains(name)
-      } else if (path.contains(gcPath)) {
-        gcSelectedPaths.exists(path.contains)
-      } else {
-        true
-      }
-    }
-
-    val (includePaths, excludePaths) = paths.partition(include(_))
-
-    // delete .o files for all excluded source files
-    // avoids deleting .o files except when changing
-    // optional or garbage collectors
-    excludePaths.foreach { path =>
-      val opath = Paths.get(path + oExt)
-      if (Files.exists(opath)) {
-        Files.delete(opath)
-      }
-    }
-
-    val fltoOpt    = flto(config)
-    val targetOpt  = target(config)
-    val includeOpt = gcIncludePaths.map("-I" + _)
-    includePaths.map(Paths.get(_))
   }
 
   /**
