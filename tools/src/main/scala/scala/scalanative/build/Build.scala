@@ -80,7 +80,7 @@ object Build {
         // compile nativelib
         val nativelibObjectPaths = {
           val destPath = LLVM.unpackNativeCode(nativelib)
-          val paths = NativeLib.findNativePaths(workdir, destPath)
+          val paths    = NativeLib.findNativePaths(workdir, destPath)
           val nativelibPaths =
             LLVM.filterNativelib(fconfig, linked, destPath, paths)
           LLVM.compile(fconfig, nativelibPaths)
