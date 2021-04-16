@@ -3,11 +3,12 @@ package build
 
 import java.nio.file.{Files, Path, Paths}
 import scalanative.build.IO.RichPath
+import scalanative.build.NativeLib._
 
 object Filter {
 
   /** To find filter file */
-  private val filterProperties = s"${NativeLib.codeDir}-filter.properties"
+  private val filterProperties = s"${codeDir}-filter.properties"
 
   /**
    * Filter the `nativelib` source files with special logic
@@ -23,7 +24,7 @@ object Filter {
                       linkerResult: linker.Result,
                       destPath: Path,
                       allPaths: Seq[Path]): Seq[Path] = {
-    val codePath = destPath.resolve(NativeLib.codeDir)
+    val codePath = destPath.resolve(codeDir)
     // check if filtering is needed, o.w. return all paths
     findFilterProperties(codePath) match {
       case None => allPaths
