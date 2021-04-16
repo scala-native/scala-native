@@ -72,7 +72,7 @@ object Build {
           .map(nl => NativeLib.unpackNativeCode(nl))
           .map(destPath => {
             val paths = NativeLib.findNativePaths(workdir, destPath)
-            LLVM.filterNativelib(fconfig, linked, destPath, paths)
+            Filter.filterNativelib(fconfig, linked, destPath, paths)
           })
           .map(filteredPaths => LLVM.compile(fconfig, filteredPaths))
           .flatten

@@ -70,9 +70,6 @@ private[scalanative] object NativeLib {
     srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
   }
 
-  /** To find filter file */
-  private val filterProperties = s"${codeDir}-filter.properties"
-
   /** Does this Path point to a jar file */
   private def isJar(path: Path): Boolean =
     path.toString().endsWith(jarExt)
@@ -112,19 +109,6 @@ private[scalanative] object NativeLib {
         s"No Scala Native libraries were found: $classpath")
     else
       extractPaths
-  }
-
-  /**
-   * Check for a filtering properties file in destination
-   * native code directory.
-   *
-   * @param codePath The native code directory
-   * @return The optional path to the file or none
-   */
-  def findFilterProperties(codePath: Path): Option[Path] = {
-    val file = codePath.resolve(filterProperties)
-    if (Files.exists(file)) Some(file)
-    else None
   }
 
   /**
