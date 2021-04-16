@@ -20,7 +20,7 @@ lazy val nameSettings: Seq[Setting[_]] = Seq(
 )
 
 lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
-  Compile / doc / sources := Nil
+  sources in (Compile, doc) := Nil
 )
 
 lazy val docsSettings: Seq[Setting[_]] = {
@@ -29,8 +29,8 @@ lazy val docsSettings: Seq[Setting[_]] = {
   Def.settings(
     autoAPIMappings := true,
     exportJars := true, // required so ScalaDoc linking works
-    Compile / doc / scalacOptions := {
-      val prev = (Compile / doc / scalacOptions).value
+    scalacOptions in (Compile, doc) := {
+      val prev = (scalacOptions in (Compile, doc)).value
       if (scalaVersion.value.startsWith("2.11."))
         prev.filter(_ != "-Xfatal-warnings")
       else prev
@@ -736,7 +736,7 @@ lazy val testingCompiler =
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
       ),
-      Compile / unmanagedSourceDirectories ++= {
+      unmanagedSourceDirectories in Compile ++= {
         val oldCompat: File = baseDirectory.value / "src/main/compat-old"
         val newCompat: File = baseDirectory.value / "src/main/compat-new"
         CrossVersion
@@ -760,8 +760,8 @@ lazy val testingCompiler =
     .dependsOn(testingCompilerInterface)
 
 lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = Seq(
-  Compile / unmanagedSourceDirectories += baseDirectory.value.getParentFile / "test-interface-common/src/main/scala",
-  Test / unmanagedSourceDirectories += baseDirectory.value.getParentFile / "test-interface-common/src/test/scala"
+  unmanagedSourceDirectories in Compile += baseDirectory.value.getParentFile / "test-interface-common/src/main/scala",
+  unmanagedSourceDirectories in Test += baseDirectory.value.getParentFile / "test-interface-common/src/test/scala"
 )
 
 lazy val testInterface =
