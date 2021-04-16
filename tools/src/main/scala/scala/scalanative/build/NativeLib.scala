@@ -11,7 +11,9 @@ private[scalanative] case class NativeLib(src: Path, dest: Path)
 
 /** Utilities for dealing with native library code */
 private[scalanative] object NativeLib {
-  private val jarExtension = ".jar"
+
+  /** Java Archive extension: ".jar" */
+  val jarExt = ".jar"
 
   /** Object file extension: ".o" */
   val oExt = ".o"
@@ -50,7 +52,7 @@ private[scalanative] object NativeLib {
    * @param path The classpath entry
    * @return The file pattern
    */
-  def allFilesPattern(path: Path): String =
+  private def allFilesPattern(path: Path): String =
     s"glob:${srcPathPattern(path)}**"
 
   /**
@@ -62,7 +64,7 @@ private[scalanative] object NativeLib {
    * @param destPath The dest Path to the native lib
    * @return The source pattern
    */
-  def destSrcPattern(workdir: Path, destPath: Path): String = {
+  private def destSrcPattern(workdir: Path, destPath: Path): String = {
     val dirPattern = s"{${destPath.getFileName()}}"
     val pathPat    = makeDirPath(workdir, dirPattern, codeDir)
     srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
@@ -72,10 +74,11 @@ private[scalanative] object NativeLib {
   private val filterProperties = s"${codeDir}-filter.properties"
 
   /** Does this Path point to a jar file */
-  def isJar(path: Path): Boolean = path.toString().endsWith(jarExtension)
+  private def isJar(path: Path): Boolean =
+    path.toString().endsWith(jarExt)
 
   /** Is this NativeLib in a jar file */
-  def isJar(nativelib: NativeLib): Boolean = isJar(nativelib.src)
+  private def isJar(nativelib: NativeLib): Boolean = isJar(nativelib.src)
 
   /**
    * Finds all the native libs on the classpath.
@@ -99,7 +102,7 @@ private[scalanative] object NativeLib {
           path
             .getFileName()
             .toString()
-            .stripSuffix(jarExtension)
+            .stripSuffix(jarExt)
         NativeLib(src = path,
                   dest = workdir.resolve(s"native-code-$name-$index"))
       }
@@ -131,7 +134,7 @@ private[scalanative] object NativeLib {
    * @return All file paths to compile
    */
   def findNativePaths(workdir: Path, destPath: Path): Seq[Path] = {
-    val srcPatterns = NativeLib.destSrcPattern(workdir, destPath)
+    val srcPatterns = destSrcPattern(workdir, destPath)
     IO.getAll(workdir, srcPatterns)
   }
 
@@ -162,7 +165,7 @@ private[scalanative] object NativeLib {
    * @return The destination path of the directory
    */
   def unpackNativeCode(nativelib: NativeLib): Path =
-    if (NativeLib.isJar(nativelib)) unpackNativeJar(nativelib)
+    if (isJar(nativelib)) unpackNativeJar(nativelib)
     else copyNativeDir(nativelib)
 
   /**
@@ -206,7 +209,7 @@ private[scalanative] object NativeLib {
   private def copyNativeDir(nativelib: NativeLib): Path = {
     val target        = nativelib.dest
     val source        = nativelib.src
-    val files         = IO.getAll(source, NativeLib.allFilesPattern(source))
+    val files         = IO.getAll(source, allFilesPattern(source))
     val fileshash     = IO.sha1files(files)
     val fileshashPath = target.resolve("fileshash")
     def copied =
