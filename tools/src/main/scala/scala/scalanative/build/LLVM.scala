@@ -84,13 +84,14 @@ private[scalanative] object LLVM {
    * @param config The configuration of the toolchain.
    * @param linkerResult The results from the linker.
    * @param destPath The unpacked location of the Scala Native nativelib.
-   * @return The paths included to be compiled.
+   * @param allPaths The native paths found for this library
+   * @return The paths filtered to be included in the compile.
    */
   def filterNativelib(config: Config,
                       destPath: Path,
                       allPaths: Seq[Path]): Seq[Path] = {
     val codePath = destPath.resolve(NativeLib.codeDir)
-    // check if filtering is needed, o.w. return paths
+    // check if filtering is needed, o.w. return all paths
     NativeLib.findFilterProperties(codePath) match {
       case None => allPaths
       case Some(file) =>
