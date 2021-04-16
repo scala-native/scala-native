@@ -67,20 +67,8 @@ private[scalanative] object NativeLib {
     srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
   }
 
-  /** To positively identify nativelib */
-  private val nativeLibMarkerFile = "org_scala-native_nativelib.txt"
-
   /** To find filter file */
   private val filterProperties = s"${codeDir}-filter.properties"
-
-  /**
-   * Find the marker file in the directory.
-   *
-   * @param path The path we are searching
-   * @return the search file pattern
-   */
-  private def dirMarkerFilePattern(path: Path): String =
-    s"glob:${makeDirPath(path, nativeLibMarkerFile)}"
 
   /** Does this Path point to a jar file */
   def isJar(path: Path): Boolean = path.toString().endsWith(jarExtension)
@@ -136,29 +124,6 @@ private[scalanative] object NativeLib {
   }
 
   /**
-   * Find the Scala Native `nativelib` from within all the
-   * other libraries with native code.
-   *
-   * @param nativeLibs The Seq of discovered native libs
-   * @return The Scala Native `nativelib`
-   */
-  def findNativeLib(nativelibs: Seq[NativeLib]): NativeLib = {
-    val nativelib = nativelibs.find { nl =>
-      val srcPath = nl.src
-      if (isJar(srcPath))
-        IO.existsInJar(srcPath, hasMarkerFileInJar)
-      else
-        IO.existsInDir(srcPath, dirMarkerFilePattern(srcPath))
-    }
-    nativelib match {
-      case Some(nl) => nl
-      case None =>
-        throw new BuildException(
-          s"Native Library 'nativelib' not found: $nativelibs")
-    }
-  }
-
-  /**
    * Find the native file paths for this native library
    *
    * @param destPath The native lib dest path
@@ -193,9 +158,6 @@ private[scalanative] object NativeLib {
 
   private def isNativeFile(name: String): Boolean =
     jarPattern.matcher(name).matches()
-
-  private def hasMarkerFileInJar(name: String): Boolean =
-    name.equals(nativeLibMarkerFile)
 
   private def readDir(path: Path): Option[Path] =
     IO.existsInDir(path, srcPatterns(path)) match {
