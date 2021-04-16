@@ -20,7 +20,7 @@ lazy val nameSettings: Seq[Setting[_]] = Seq(
 )
 
 lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
-  (Compile / doc / sources) := Nil
+  sources in (Compile, doc) := Nil
 )
 
 lazy val docsSettings: Seq[Setting[_]] = {
@@ -29,7 +29,7 @@ lazy val docsSettings: Seq[Setting[_]] = {
   Def.settings(
     autoAPIMappings := true,
     exportJars := true, // required so ScalaDoc linking works
-    scalacOptions in (Compile, doc) := {
+    Compile / doc / scalacOptions := {
       val prev = (scalacOptions in (Compile, doc)).value
       if (scalaVersion.value.startsWith("2.11."))
         prev.filter(_ != "-Xfatal-warnings")
