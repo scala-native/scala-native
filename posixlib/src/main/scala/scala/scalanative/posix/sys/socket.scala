@@ -177,11 +177,27 @@ object socket {
            length: CSize,
            flags: CInt): CSSize = extern
 
+  @name("scalanative_recvfrom")
+  def recvfrom(socket: CInt,
+               buffer: Ptr[Byte],
+               length: CSize,
+               flags: CInt,
+               dest_addr: Ptr[sockaddr],
+               address_len: Ptr[socklen_t]): CSSize = extern
+
   @name("scalanative_send")
   def send(socket: CInt,
            buffer: Ptr[Byte],
            length: CSize,
            flags: CInt): CSSize = extern
+
+  @name("scalanative_sendto")
+  def sendto(socket: CInt,
+             buffer: Ptr[Byte],
+             length: CSize,
+             flags: CInt,
+             dest_addr: Ptr[sockaddr],
+             address_len: socklen_t): CSSize = extern
 
   @name("scalanative_shutdown")
   def shutdown(socket: CInt, how: CInt): CInt = extern

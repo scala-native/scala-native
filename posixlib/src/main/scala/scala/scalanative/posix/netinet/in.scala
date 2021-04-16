@@ -139,6 +139,11 @@ object inOps {
     def sin_addr_=(v: in_addr): Unit              = ptr._3 = v
   }
 
+  implicit class sockaddr_inAddrOps(val value: in_addr) extends AnyVal {
+    def s_addr: in_addr_t            = value._1
+    def s_addr_=(v: in_addr_t): Unit = value._1 = v
+  }
+
   implicit class sockaddr_in6Ops(val ptr: Ptr[sockaddr_in6]) extends AnyVal {
     def sin6_addr: in6_addr                        = ptr._1
     def sin6_family: socket.sa_family_t            = ptr._2

@@ -1,10 +1,11 @@
 #include <string.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "../netinet/in.h"
+// #include "../netinet/in.h"
 #include "socket_conversions.h"
-#include "socket.h"
+// #include "socket.h"
 
 #ifdef _WIN32
 #include <WinSock2.h>
@@ -13,6 +14,22 @@ typedef SSIZE_T ssize_t;
 #else
 #include <netinet/in.h>
 #include <sys/socket.h>
+#if !(defined __STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
+#ifndef SCALANATIVE_SUPPRESS_STRUCT_CHECK_WARNING
+#warning "Size and order of C structures are not checked when -std < c11."
+#endif
+#else
+// Posix defines the order of required fields.
+// The first field in C has had size 2 and no padding after it
+// since time immemorial. Verify that the Scala Native has the same.
+
+_Static_assert(offsetof(struct scalanative_sockaddr, sa_data) == 2,
+               "Unexpected size: scalanative_sockaddr sa_family");
+
+_Static_assert(offsetof(struct scalanative_sockaddr, sa_data) ==
+                   offsetof(struct sockaddr, sa_data),
+               "offset mismatch: sockaddr sa_data");
+#endif
 #endif
 
 int scalanative_scm_rights() {
@@ -214,8 +231,28 @@ ssize_t scalanative_recv(int socket, void *buffer, size_t length, int flags) {
     return recv(socket, buffer, length, flags);
 }
 
-ssize_t scalanative_send(int socket, void *buffer, size_t length, int flags) {
+ssize_t scalanative_recvfrom(int socket, void *buffer, size_t length, int flags,
+                             struct scalanative_sockaddr *address,
+                             socklen_t *address_len) {
+    // Using this function rather than a direct call in socket.scala allows
+    // _Static_asserts at the top of this file to check structure requirements.
+
+    return recvfrom(socket, buffer, length, flags, (struct sockaddr *)address,
+                    address_len);
+}
+
+int scalanative_send(int socket, void *buffer, size_t length, int flags) {
     return send(socket, buffer, length, flags);
+}
+
+ssize_t scalanative_sendto(int socket, void *buffer, size_t length, int flags,
+                           struct scalanative_sockaddr *address,
+                           socklen_t address_len) {
+    // Using this function rather than a direct call in socket.scala allows
+    // _Static_asserts at the top of this file to check structure requirements.
+
+    return sendto(socket, buffer, length, flags, (struct sockaddr *)address,
+                  address_len);
 }
 
 int scalanative_shutdown(int socket, int how) { return shutdown(socket, how); }
