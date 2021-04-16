@@ -2,7 +2,6 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Files, Path, Paths}
-import java.util.Arrays
 import scala.sys.process._
 import scalanative.build.IO.RichPath
 import scalanative.build.NativeLib._
@@ -10,72 +9,6 @@ import scalanative.compat.CompatParColls.Converters._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
-
-  /**
-   * Called to unpack jars and copy native code.
-   *
-   * @param nativelib the native lib to copy/unpack
-   * @return The destination path of the directory
-   */
-  def unpackNativeCode(nativelib: NativeLib): Path =
-    if (NativeLib.isJar(nativelib)) unpackNativeJar(nativelib)
-    else copyNativeDir(nativelib)
-
-  /**
-   * Unpack the `src` Jar Path to `workdir/dest` where `dest`
-   * is the generated directory where the Scala Native lib or
-   * a third party library that includes native code is copied.
-   *
-   * If the same archive has already been unpacked to this location
-   * and hasn't changed, this call has no effect.
-   *
-   * @param nativelib The NativeLib to unpack.
-   * @return The Path where the nativelib has been unpacked, `workdir/dest`.
-   */
-  private def unpackNativeJar(nativelib: NativeLib): Path = {
-    val target      = nativelib.dest
-    val source      = nativelib.src
-    val jarhash     = IO.sha1(source)
-    val jarhashPath = target.resolve("jarhash")
-    def unpacked =
-      Files.exists(target) &&
-        Files.exists(jarhashPath) &&
-        Arrays.equals(jarhash, Files.readAllBytes(jarhashPath))
-
-    if (!unpacked) {
-      IO.deleteRecursive(target)
-      IO.unzip(source, target)
-      IO.write(jarhashPath, jarhash)
-    }
-    target
-  }
-
-  /**
-   * Copy project code from project `src` Path to `workdir/dest`
-   * Path where it can be compiled and linked.
-   *
-   * This does not copy if no native code has changed.
-   *
-   * @param nativelib The NativeLib to copy.
-   * @return The Path where the code was copied, `workdir/dest`.
-   */
-  private def copyNativeDir(nativelib: NativeLib): Path = {
-    val target        = nativelib.dest
-    val source        = nativelib.src
-    val files         = IO.getAll(source, NativeLib.allFilesPattern(source))
-    val fileshash     = IO.sha1files(files)
-    val fileshashPath = target.resolve("fileshash")
-    def copied =
-      Files.exists(target) &&
-        Files.exists(fileshashPath) &&
-        Arrays.equals(fileshash, Files.readAllBytes(fileshashPath))
-    if (!copied) {
-      IO.deleteRecursive(target)
-      IO.copyDirectory(source, target)
-      IO.write(fileshashPath, fileshash)
-    }
-    target
-  }
 
   /**
    * Filter the `nativelib` source files with special logic

@@ -69,7 +69,7 @@ object Build {
 
         // compile all libs
         val libObjectPaths = nativelibs
-          .map(nl => LLVM.unpackNativeCode(nl))
+          .map(nl => NativeLib.unpackNativeCode(nl))
           .map(destPath => {
             val paths = NativeLib.findNativePaths(workdir, destPath)
             LLVM.filterNativelib(fconfig, linked, destPath, paths)
