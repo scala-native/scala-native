@@ -20,7 +20,6 @@ lazy val nameSettings: Seq[Setting[_]] = Seq(
 )
 
 lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
-//  sources in (Compile, doc) := Nil
   sources in (Compile, doc) := Nil
 )
 
