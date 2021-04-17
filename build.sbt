@@ -21,7 +21,7 @@ lazy val nameSettings: Seq[Setting[_]] = Seq(
 
 lazy val disabledDocsSettings: Seq[Setting[_]] = Seq(
 //  Compile / doc / sources := Nil
-    doc / sources := Nil
+  sources := Nil
 )
 
 lazy val docsSettings: Seq[Setting[_]] = {
