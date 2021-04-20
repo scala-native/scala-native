@@ -88,7 +88,7 @@ int scalanative_termios_vt1() {
 #ifdef VT1
     return VT1;
 #else
-return 0;
+    return 0;
 #endif
 }
 int scalanative_termios_ffdly() {
