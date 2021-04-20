@@ -10,12 +10,14 @@ import scalanative.posix.sys.socket
 object in {
   type in_port_t = uint16_t
   type in_addr_t = uint32_t
+  type _8        = Nat._8
   type _16       = Nat.Digit2[Nat._1, Nat._6]
 
   type in_addr = CStruct1[in_addr_t] // s_addr
-  type sockaddr_in = CStruct3[socket.sa_family_t, // sin_family
-                              in_port_t, // sin_port
-                              in_addr]   // sin_addr
+  type sockaddr_in = CStruct4[socket.sa_family_t, // sin_family
+                              in_port_t,        // sin_port
+                              in_addr,          // sin_addr
+                              CArray[Byte, _8]] // sin_zero, Posix allowed
 
   type in6_addr = CStruct1[CArray[uint8_t, _16]] // s6_addr
   type sockaddr_in6 = CStruct5[in6_addr, // sin6_addr

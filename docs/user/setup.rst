@@ -19,8 +19,16 @@ These are only required if you use the corresponding feature.
 Installing sbt
 --------------
 
+**macOS and Linux**
+
 Please refer to `this link <https://www.scala-sbt.org/release/docs/Setup.html>`_
 for instructions for your operating system.
+
+**FreeBSD**
+
+.. code-block:: shell
+
+    $ pkg install sbt
 
 Installing clang and runtime dependencies
 -----------------------------------------
@@ -85,11 +93,11 @@ installation of Arch Linux.
     $ sudo dnf groupinstall "Development Tools"
     $ sudo dnf install gc-devel zlib-devel # both optional
 
-**FreeBSD**
+**FreeBSD 12.2 and later**
 
 .. code-block:: shell
 
-    $ pkg install llvm110
+    $ pkg install llvm10
     $ pkg install boehm-gc # optional
 
 *Note:* A version of zlib that is sufficiently recent comes with the
