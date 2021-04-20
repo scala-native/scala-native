@@ -26,7 +26,8 @@ typedef struct {
 void LargeAllocator_Init(LargeAllocator *allocator,
                          BlockAllocator *blockAllocator, Bytemap *bytemap,
                          word_t *blockMetaStart, word_t *heapStart);
-word_t *LargeAllocator_Alloc(Heap *heap, uint32_t objectSize);
+word_t *LargeAllocator_Alloc(ThreadManager *threadManager, Heap *heap,
+                             uint32_t objectSize);
 void LargeAllocator_Clear(LargeAllocator *allocator);
 void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size);

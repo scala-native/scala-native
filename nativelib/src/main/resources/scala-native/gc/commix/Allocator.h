@@ -43,6 +43,7 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
                     word_t *heapStart);
 bool Allocator_CanInitCursors(Allocator *allocator);
 void Allocator_Clear(Allocator *allocator);
-word_t *Allocator_Alloc(Heap *heap, uint32_t objectSize);
+word_t *Allocator_Alloc(ThreadManager *threadManager, Heap *heap,
+                        uint32_t objectSize);
 
 #endif // IMMIX_ALLOCATOR_H
