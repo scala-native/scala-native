@@ -161,7 +161,19 @@ char *scalanative_strptime(const char *s, const char *format,
 char **scalanative_tzname() { return tzname; }
 
 // XSI
-long scalanative_timezone() { return timezone; }
+long scalanative_timezone() {
+#if defined(__FreeBSD__)
+    return 0;
+#else
+    return timezone;
+#endif
+}
 
 // XSI
-int scalanative_daylight() { return daylight; }
+int scalanative_daylight() {
+#if defined(__FreeBSD__)
+    return 0;
+#else
+    return daylight;
+#endif
+}

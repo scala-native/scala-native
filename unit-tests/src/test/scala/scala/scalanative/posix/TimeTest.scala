@@ -2,8 +2,11 @@ package scala.scalanative.posix
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import java.io.IOException
+
+import org.scalanative.testsuite.utils.Platform
 
 import scalanative.libc.{errno => libcErrno, string}
 import scala.scalanative.unsafe._
@@ -43,6 +46,9 @@ class TimeTest {
   }
 
   @Test def localtimeShouldTransformTheEpochToLocaltime(): Unit = {
+    assumeFalse(
+      "Skipping localtime test since FreeBSD hasn't the 'timezone' variable",
+      Platform.isFreeBSD)
     val time_ptr = stackalloc[time_t]
     !time_ptr = epoch + timezone
     val time: Ptr[tm] = localtime(time_ptr)
@@ -53,6 +59,9 @@ class TimeTest {
   }
 
   @Test def localtime_rShouldTransformTheEpochToLocaltime(): Unit = {
+    assumeFalse(
+      "Skipping localtime_r test since FreeBSD hasn't the 'timezone' variable",
+      Platform.isFreeBSD)
     Zone { implicit z =>
       val time_ptr = stackalloc[time_t]
       !time_ptr = epoch + timezone
@@ -273,9 +282,15 @@ class TimeTest {
       // macOS will parse and accept "GMT" or the local timezone name
       // and write to the corresponding fields in the C struct.
       // "GMT" is used here to avoid local timezone handling.
+      // FreeBSD fills the structure with values relative to the local
+      // time zone, so the check would fail if we parse a date with a
+      // different time zone.
 
       val cp =
-        strptime(c"Fri Mar 31 14:47:44 GMT 2017", c"%a %b %d %T %Z %Y", tmPtr)
+        if (Platform.isFreeBSD)
+          strptime(c"Fri Mar 31 14:47:44 2017", c"%a %b %d %T %Y", tmPtr)
+        else
+          strptime(c"Fri Mar 31 14:47:44 GMT 2017", c"%a %b %d %T %Z %Y", tmPtr)
 
       assertNotNull(s"strptime() returned unexpected null pointer", cp)
 

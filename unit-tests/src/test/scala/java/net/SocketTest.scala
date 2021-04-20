@@ -58,6 +58,8 @@ class SocketTest {
       assertEquals(s.getSoLinger, 100)
       s.setSoLinger(false, 50000000)
       assertEquals(s.getSoLinger, -1)
+      s.setSoLinger(true, 0)
+      assertEquals(s.getSoLinger, 0)
     } finally {
       s.close()
     }

@@ -187,8 +187,7 @@ class Socket protected (private[net] val impl: SocketImpl,
 
   def getSoLinger: Int = {
     checkClosedAndCreate()
-    val value = impl.getOption(SocketOptions.SO_LINGER).asInstanceOf[Int]
-    if (value == 0) -1 else value
+    impl.getOption(SocketOptions.SO_LINGER).asInstanceOf[Int]
   }
 
   def getSoTimeout: Int = {
@@ -246,6 +245,8 @@ class Socket protected (private[net] val impl: SocketImpl,
     }
 
     val value = if (on) {
+      // the maximum timeout value is platform specific,
+      // but most implementations limit it to USHORT_MAX
       if (linger > 65535) 65535 else linger
     } else {
       -1
