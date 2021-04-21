@@ -180,7 +180,7 @@ class FilesTest {
     }
   }
 
-  @Test def filesCopyshouldCopyAttributes(): Unit = {
+  @Test def filesCopyShouldCopyAttributes(): Unit = {
     withTemporaryDirectory { dirFile =>
       val foo = dirFile.toPath.resolve("foo")
       Files.createFile(foo)
@@ -195,7 +195,7 @@ class FilesTest {
       assertEquals("lastModifiedTime",
                    attrs.lastModifiedTime,
                    copyAttrs.lastModifiedTime)
-      assertEquals("lastModifiedTime",
+      assertEquals("lastAccessTime",
                    attrs.lastAccessTime,
                    copyAttrs.lastAccessTime)
       assertEquals("creationTime", attrs.creationTime, copyAttrs.creationTime)

@@ -83,34 +83,24 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
 
   private def attributes =
     new PosixFileAttributes {
-      private[this] var st_dev: stat.dev_t         = _
-      private[this] var st_rdev: stat.dev_t        = _
-      private[this] var st_ino: stat.ino_t         = _
-      private[this] var st_uid: stat.uid_t         = _
-      private[this] var st_gid: stat.gid_t         = _
-      private[this] var st_size: unistd.off_t      = _
-      private[this] var st_atime: time.time_t      = _
-      private[this] var st_mtime: time.time_t      = _
-      private[this] var st_ctime: time.time_t      = _
-      private[this] var st_blocks: stat.blkcnt_t   = _
-      private[this] var st_blksize: stat.blksize_t = _
-      private[this] var st_nlink: stat.nlink_t     = _
-      private[this] var st_mode: stat.mode_t       = _
+      private[this] var st_ino: stat.ino_t    = _
+      private[this] var st_uid: stat.uid_t    = _
+      private[this] var st_gid: stat.gid_t    = _
+      private[this] var st_size: unistd.off_t = _
+      private[this] var st_atime: time.time_t = _
+      private[this] var st_mtime: time.time_t = _
+      private[this] var st_mode: stat.mode_t  = _
 
       Zone { implicit z =>
         val buf = getStat()
-        st_dev = buf._1
-        st_rdev = buf._2
+
+        // Copy only what is referenced below. Save runtime cycles.
         st_ino = buf._3
         st_uid = buf._4
         st_gid = buf._5
         st_size = buf._6
         st_atime = buf._7
         st_mtime = buf._8
-        st_ctime = buf._9
-        st_blocks = buf._10
-        st_blksize = buf._11
-        st_nlink = buf._12
         st_mode = buf._13
       }
 
@@ -134,8 +124,15 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       override def lastModifiedTime() =
         FileTime.from(st_mtime, TimeUnit.SECONDS)
 
-      override def creationTime() =
-        FileTime.from(st_ctime, TimeUnit.SECONDS)
+      override def creationTime() = {
+        // True file creationTime is not accessible in Posix.
+        // st_ctime is last metadata change time, NOT original creation time.
+        // See the Java 8 documentation "Interface BasicFileAttributes" section
+        // for creationTime(). It allows the use of  last-modified-time
+        // as a fallback when the true creationTime is unobtainable.
+
+        FileTime.from(st_mtime, TimeUnit.SECONDS)
+      }
 
       override def group() = PosixGroupPrincipal(st_gid)(None)
 
