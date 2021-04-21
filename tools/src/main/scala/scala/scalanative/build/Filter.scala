@@ -27,8 +27,6 @@ object Filter {
     val codePath = destPath.resolve(codeDir)
     // check if filtering is needed, o.w. return all paths
     findFilterProperties(codePath).fold(allPaths) { file =>
-      val paths = allPaths.map(_.abs)
-
       // predicate to check if given file path shall be compiled
       // we only include sources of the current gc and exclude
       // all optional dependencies if they are not necessary
@@ -41,7 +39,7 @@ object Filter {
 
       def include(path: String) = {
         if (path.contains(optPath)) {
-          val name = Paths.get(path).toFile.getName.split("\\.").head
+          val name = Paths.get(path).toFile.getName.split(".").head
           linkerResult.links.map(_.name).contains(name)
         } else if (path.contains(gcPath)) {
           path.contains(gcSelPath)
@@ -50,13 +48,13 @@ object Filter {
         }
       }
 
-      val (includePaths, excludePaths) = paths.partition(include(_))
+      val (includePaths, excludePaths) =
+        allPaths.map(_.abs).partition(include(_))
 
       // delete .o files for all excluded source files
       excludePaths.foreach { path =>
-        val opath = Paths.get(path + oExt) // path.resolve
-        if (Files.exists(opath))
-          Files.delete(opath)
+        val opath = Paths.get(path + oExt)
+        Files.deleteIfExists(opath)
       }
 
       includePaths.map(Paths.get(_))
