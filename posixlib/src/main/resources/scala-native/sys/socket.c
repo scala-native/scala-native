@@ -235,7 +235,7 @@ ssize_t scalanative_recv(int socket, void *buffer, size_t length, int flags) {
     return recv(socket, buffer, length, flags);
 }
 
-int scalanative_send(int socket, void *buffer, size_t length, int flags) {
+ssize_t scalanative_send(int socket, void *buffer, size_t length, int flags) {
     return send(socket, buffer, length, flags);
 }
 
