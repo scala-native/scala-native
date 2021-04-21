@@ -41,12 +41,12 @@ word_t *memoryMap(size_t memorySize) {
     memSize.QuadPart = memorySize;
 
     hMapFile = CreateFileMappingW(
-        INVALID_HANDLE_VALUE,      // use paging file
-        NULL,                      // default security
-        PAGE_READWRITE,            // read/write access
-        memSize.u.HighPart,       // maximum object size (high-order DWORD)
-        memSize.u.LowPart,         // maximum object size (low-order DWORD)
-        NULL);                     // name of mapping object
+        INVALID_HANDLE_VALUE, // use paging file
+        NULL,                 // default security
+        PAGE_READWRITE,       // read/write access
+        memSize.u.HighPart,   // maximum object size (high-order DWORD)
+        memSize.u.LowPart,    // maximum object size (low-order DWORD)
+        NULL);                // name of mapping object
 
     if (hMapFile == NULL) {
         return NULL;
