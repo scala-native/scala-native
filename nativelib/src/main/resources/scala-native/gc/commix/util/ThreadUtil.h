@@ -15,17 +15,16 @@
 #include <fcntl.h>
 #endif
 
-//typedef int pid_t;
 typedef void *(*routine_fn)(void *);
 #ifdef _WIN32
 typedef HANDLE thread_t;
 typedef HANDLE mutex_t;
 typedef HANDLE semaphore_t;
+typedef int pid_t;
 #else
 typedef pthread_t thread_t;
 typedef pthread_mutex_t mutex_t;
 typedef sem_t semaphore_t;
-//typedef pid pid_t;
 #endif
 
 bool thread_create(thread_t *ref, routine_fn routine, void *data);

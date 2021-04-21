@@ -38,13 +38,14 @@ word_t *memoryMap(size_t memorySize) {
 #ifdef _WIN32
     HANDLE hMapFile;
     ULARGE_INTEGER memSize;
+    memSize.QuadPart = memorySize;
 
     hMapFile = CreateFileMappingW(
         INVALID_HANDLE_VALUE,      // use paging file
         NULL,                      // default security
         PAGE_READWRITE,            // read/write access
-        (memorySize >> 32),        // maximum object size (high-order DWORD)
-        (memorySize & 0xFFFFFFFF), // maximum object size (low-order DWORD)
+        memSize.u.HighPart,       // maximum object size (high-order DWORD)
+        memSize.u.LowPart,         // maximum object size (low-order DWORD)
         NULL);                     // name of mapping object
 
     if (hMapFile == NULL) {
@@ -55,7 +56,7 @@ word_t *memoryMap(size_t memorySize) {
 #else // Unix
     return mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS, HEAP_MEM_FD,
                 HEAP_MEM_FD_OFFSET);
+#endif
 }
-#endif // memoryMap
 
 #endif // MEMORYMAP_H

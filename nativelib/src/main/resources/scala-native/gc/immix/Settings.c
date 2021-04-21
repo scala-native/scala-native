@@ -1,3 +1,8 @@
+#ifdef _WIN32
+// sscanf and getEnv is deprecated in WinCRT, disable warnings
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "Settings.h"
 #include "Constants.h"
 #include "metadata/BlockMeta.h"

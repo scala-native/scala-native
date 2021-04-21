@@ -13,18 +13,6 @@
 #include "MemoryMap.h"
 #include <time.h>
 
-// Allow read and write
-#define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
-// Map private anonymous memory, and prevent from reserving swap
-#ifdef MAP_NORESERVE
-#define HEAP_MEM_FLAGS (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
-#else
-#define HEAP_MEM_FLAGS (MAP_PRIVATE | MAP_ANONYMOUS)
-#endif
-// Map anonymous memory (not a file)
-#define HEAP_MEM_FD -1
-#define HEAP_MEM_FD_OFFSET 0
-
 void Heap_exitWithOutOfMemory() {
     fprintf(stderr, "Out of heap space\n");
     StackTrace_PrintStackTrace();

@@ -4,11 +4,13 @@
 #include "Allocator.h"
 #include "BlockAllocator.h"
 #include <stdio.h>
-#include <unistd.h>
 #include <limits.h>
 #include "util/ThreadUtil.h"
 #include <errno.h>
 #include <stdlib.h>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 /*
 If in OSX, sem_open cannot create a semaphore whose name is longer than
@@ -26,6 +28,7 @@ The +1 accounts for the null char at the end of the name
 #define SEM_MAX_LENGTH PSEMNAMLEN + 1
 #elif defined(_WIN32)
 #define SEM_MAX_LENGTH MAX_PATH + 1
+#define SEM_FAILED NULL
 #else
 #define SEM_MAX_LENGTH _POSIX_PATH_MAX + 1
 #endif
@@ -66,8 +69,8 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
         fprintf(stderr,
                 "Unlinking master semaphore failed in commix Phase_Init\n");
         exit(errno);
-#endif
     }
+#endif
 
     heap->sweep.cursor = initialBlockCount;
     heap->lazySweep.cursorDone = initialBlockCount;
