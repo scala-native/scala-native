@@ -2,6 +2,7 @@ package scala.scalanative
 package linker
 
 import java.nio.file.{Path, Paths}
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scalanative.nir._
 
@@ -102,26 +103,34 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       }
     }
 
-  def processDelayed(): Unit = {
-    /*  Check methods that were marked to not have any defined targets yet when processing loop.
-     *  At this stage they should define at least 1 target, or should be marked as a missing symbol.
-     */
-    delayedMethods.foreach {
-      case DelayedMethod(top, sig, position) =>
-        scopeInfo(top).foreach { info =>
-          val wasAllocated = info match {
-            case value: Trait => value.implementors.exists(_.allocated)
-            case clazz: Class => clazz.allocated
+  @tailrec
+  final def processDelayed(): Unit = {
+    // Recursively iterate delayed methods - processing delayed method that has existing implementation
+    // might result in calling other delayed method. Loop until no more delayedMethods are found
+    if (delayedMethods.nonEmpty) {
+      /*  Check methods that were marked to not have any defined targets yet when processing loop.
+       *  At this stage they should define at least 1 target, or should be marked as a missing symbol.
+       */
+      delayedMethods.foreach {
+        case DelayedMethod(top, sig, position) =>
+          scopeInfo(top).foreach { info =>
+            val wasAllocated = info match {
+              case value: Trait => value.implementors.exists(_.allocated)
+              case clazz: Class => clazz.allocated
+            }
+            val targets = info.targets(sig)
+            if (targets.isEmpty && wasAllocated) {
+              addMissing(top.member(sig), position)
+            } else {
+              todo ++= targets
+            }
           }
-          val targets = info.targets(sig)
-          if (targets.isEmpty && wasAllocated) {
-            addMissing(top.member(sig), position)
-          } else {
-            todo ++= targets
-          }
-        }
+      }
+
+      delayedMethods.clear()
+      process()
+      processDelayed()
     }
-    process()
   }
 
   def reachDefn(name: Global): Unit = {
