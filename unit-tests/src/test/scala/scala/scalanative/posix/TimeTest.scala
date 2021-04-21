@@ -23,6 +23,25 @@ class TimeTest {
   val now_time_t: time_t = scala.scalanative.posix.time.time(null)
   val epoch: time_t      = 0L
 
+  // Some of the tests (the ones that call localtime) need
+  // for the standard time to be in effect. This is because
+  // depending on the timezone and or the underlying C stdlib
+  // (we observed differences in tm_isdt output when dst was
+  // in effect between macOS, Arch Linux and Ubuntu), if
+  // daylight saving time is in effect, we can get skewed time
+  // results. This is a best effort to make the tests more portable
+  //
+  // See discussion in https://github.com/scala-native/scala-native/issues/2237
+  val timeIsStandard: Boolean = {
+    Zone { implicit z =>
+      val time_ptr = stackalloc[time_t]
+      !time_ptr = now_time_t
+      val localtime: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
+
+      localtime.tm_isdst == 0
+    }
+  }
+
   @Test def asctimeWithGivenKnownStateShouldMatchItsRepresentation(): Unit = {
     Zone { implicit z =>
       val anno_zero_ptr = alloc[tm]
@@ -30,7 +49,7 @@ class TimeTest {
       anno_zero_ptr.tm_wday = 1
       val cstr: CString = asctime(anno_zero_ptr)
       val str: String   = fromCString(cstr)
-      assertTrue("Mon Jan  1 00:00:00 1900\n".equals(str))
+      assertEquals("Mon Jan  1 00:00:00 1900\n", str)
     }
   }
 
@@ -41,11 +60,11 @@ class TimeTest {
       anno_zero_ptr.tm_wday = 1
       val cstr: CString = asctime_r(anno_zero_ptr, alloc[Byte](26))
       val str: String   = fromCString(cstr)
-      assertTrue("Mon Jan  1 00:00:00 1900\n".equals(str))
+      assertEquals("Mon Jan  1 00:00:00 1900\n", str)
     }
   }
-
   @Test def localtimeShouldTransformTheEpochToLocaltime(): Unit = {
+    assumeTrue("time is not standard, test will not execute", timeIsStandard)
     assumeFalse(
       "Skipping localtime test since FreeBSD hasn't the 'timezone' variable",
       Platform.isFreeBSD)
@@ -55,21 +74,22 @@ class TimeTest {
     val cstr: CString = asctime(time)
     val str: String   = fromCString(cstr)
 
-    assertTrue("Thu Jan  1 00:00:00 1970\n".equals(str))
+    assertEquals("Thu Jan  1 00:00:00 1970\n", str)
   }
 
   @Test def localtime_rShouldTransformTheEpochToLocaltime(): Unit = {
-    assumeFalse(
-      "Skipping localtime_r test since FreeBSD hasn't the 'timezone' variable",
-      Platform.isFreeBSD)
     Zone { implicit z =>
+      assumeTrue("time is not standard, test will not execute", timeIsStandard)
+      assumeFalse(
+        "Skipping localtime_r test since FreeBSD hasn't the 'timezone' variable",
+        Platform.isFreeBSD)
       val time_ptr = stackalloc[time_t]
       !time_ptr = epoch + timezone
       val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
       val cstr: CString = asctime_r(time, alloc[Byte](26))
       val str: String   = fromCString(cstr)
 
-      assertTrue("Thu Jan  1 00:00:00 1970\n".equals(str))
+      assertEquals("Thu Jan  1 00:00:00 1970\n", str)
     }
   }
 
@@ -170,7 +190,7 @@ class TimeTest {
 
       val isoDateString: String = fromCString(isoDatePtr)
 
-      assertTrue("1900-01-01T00:00:00Z".equals(isoDateString))
+      assertEquals("1900-01-01T00:00:00Z", isoDateString)
     }
   }
 
@@ -185,7 +205,7 @@ class TimeTest {
       strftime(datePtr, 70.toULong, c"%A %c", timePtr)
 
       val dateString: String = fromCString(datePtr)
-      assertTrue("Monday Mon Jan  1 00:00:00 1900".equals(dateString))
+      assertEquals("Monday Mon Jan  1 00:00:00 1900", dateString)
     }
   }
 
@@ -234,6 +254,7 @@ class TimeTest {
 
   @Test def strptimeDoesNotWriteMemoryOutsideStructTm(): Unit = {
     Zone { implicit z =>
+      assumeTrue("time is not standard, test will not execute", timeIsStandard)
       // The purpose of this test is to check that time.scala method
       // declaration had an "@name" annotation, so that structure
       // copy-in/copy-out happened? Failure case is if 36 byte
@@ -335,7 +356,7 @@ class TimeTest {
       val expectedYday = 89
       assertEquals("tm_yday", expectedYday, tmPtr.tm_yday)
 
-      // Per posix specification, contents of tm_isdst are not reliable.
+    // Per posix specification, contents of tm_isdst are not reliable.
     }
   }
 
