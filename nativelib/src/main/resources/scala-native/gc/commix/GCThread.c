@@ -3,7 +3,6 @@
 #include "Sweeper.h"
 #include "Marker.h"
 #include "Phase.h"
-#include <semaphore.h>
 #include <errno.h>
 #include <stdlib.h>
 
@@ -14,7 +13,7 @@ static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
     while (!Marker_IsMarkDone(heap)) {
         Marker_MarkAndScale(heap, stats);
         if (!Marker_IsMarkDone(heap)) {
-            sched_yield();
+            thread_yield();
         }
     }
 
@@ -73,12 +72,12 @@ static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap,
 void *GCThread_loop(void *arg) {
     GCThread *thread = (GCThread *)arg;
     Heap *heap = thread->heap;
-    sem_t *start = heap->gcThreads.startWorkers;
+    semaphore_t *start = heap->gcThreads.startWorkers;
     Stats *stats = Stats_OrNull(thread->stats);
 
     while (true) {
         thread->active = false;
-        if (sem_wait(start) != 0) {
+        if (!semaphore_wait(start)) {
             fprintf(stderr,
                     "Acquiring semaphore failed in commix GCThread_loop\n");
             exit(errno);
@@ -108,11 +107,11 @@ void *GCThread_loop(void *arg) {
 void *GCThread_loopMaster(void *arg) {
     GCThread *thread = (GCThread *)arg;
     Heap *heap = thread->heap;
-    sem_t *start = heap->gcThreads.startMaster;
+    semaphore_t *start = heap->gcThreads.startMaster;
     Stats *stats = Stats_OrNull(thread->stats);
     while (true) {
         thread->active = false;
-        if (sem_wait(start) != 0) {
+        if (!semaphore_wait(start)) {
             fprintf(
                 stderr,
                 "Acquiring semaphore failed in commix GCThread_loopMaster\n");
@@ -145,13 +144,13 @@ void GCThread_Init(GCThread *thread, int id, Heap *heap, Stats *stats) {
     thread->heap = heap;
     thread->stats = stats;
     thread->active = false;
-    // we do not use the pthread value
-    pthread_t self;
+    // we do not use the thread handle
+    thread_t self;
 
     if (id == 0) {
-        pthread_create(&self, NULL, GCThread_loopMaster, (void *)thread);
+        thread_create(&self, GCThread_loopMaster, (void *)thread);
     } else {
-        pthread_create(&self, NULL, GCThread_loop, (void *)thread);
+        thread_create(&self, GCThread_loop, (void *)thread);
     }
 }
 
@@ -180,7 +179,7 @@ int GCThread_ActiveCount(Heap *heap) {
 }
 
 INLINE void GCThread_WakeMaster(Heap *heap) {
-    if (sem_post(heap->gcThreads.startMaster) != 0) {
+    if (!semaphore_unlock(heap->gcThreads.startMaster)) {
         fprintf(stderr,
                 "Releasing semaphore failed in commix GCThread_WakeMaster\n");
         exit(errno);
@@ -188,9 +187,9 @@ INLINE void GCThread_WakeMaster(Heap *heap) {
 }
 
 INLINE void GCThread_WakeWorkers(Heap *heap, int toWake) {
-    sem_t *startWorkers = heap->gcThreads.startWorkers;
+    semaphore_t *startWorkers = heap->gcThreads.startWorkers;
     for (int i = 0; i < toWake; i++) {
-        if (sem_post(startWorkers) != 0) {
+        if (!semaphore_unlock(startWorkers)) {
             fprintf(
                 stderr,
                 "Releasing semaphore failed in commix GCThread_WakeWorkers\n");

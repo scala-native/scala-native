@@ -1,5 +1,5 @@
-#ifndef IMMIX_MEMORY_H
-#define IMMIX_MEMORY_H
+#ifndef GC_MEMORY_H
+#define GC_MEMORY_H
 
 /*
  * Author:  David Robert Nadeau
@@ -10,7 +10,8 @@
 
 #if defined(_WIN32)
 #include <Windows.h>
-
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #elif defined(__unix__) || defined(__unix) || defined(unix) ||                 \
     (defined(__APPLE__) && defined(__MACH__))
 #include <unistd.h>
@@ -97,4 +98,4 @@ size_t getMemorySize() {
 #endif
 }
 
-#endif // IMMIX_MEMORY_H
+#endif // GC_MEMORY_H

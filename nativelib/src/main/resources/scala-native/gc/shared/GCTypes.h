@@ -1,5 +1,5 @@
-#ifndef IMMIX_GC_TYPES_H
-#define IMMIX_GC_TYPES_H
+#ifndef GC_TYPES_H
+#define GC_TYPES_H
 
 #include <stdint.h>
 
@@ -12,4 +12,4 @@
 typedef uintptr_t word_t;
 typedef uint8_t ubyte_t;
 
-#endif // IMMIX_GC_TYPES_H
+#endif // GC_TYPES_H

@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <sys/mman.h>
 #include <stdio.h>
 #include "Heap.h"
 #include "Block.h"
@@ -10,8 +9,8 @@
 #include "utils/MathUtils.h"
 #include "StackTrace.h"
 #include "Settings.h"
-#include "Memory.h"
-#include <memory.h>
+#include "MemoryInfo.h"
+#include "MemoryMap.h"
 #include <time.h>
 
 // Allow read and write
@@ -51,9 +50,7 @@ size_t Heap_getMemoryLimit() {
  */
 word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
     assert(alignmentSize % WORD_SIZE == 0);
-    word_t *heapStart = mmap(NULL, memoryLimit, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
-                             HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
-
+    word_t *heapStart = memoryMap(memoryLimit);
     size_t alignmentMask = ~(alignmentSize - 1);
     // Heap start not aligned on
     if (((word_t)heapStart & alignmentMask) != (word_t)heapStart) {
@@ -73,7 +70,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         fprintf(stderr,
                 "SCALANATIVE_MAX_HEAP_SIZE too small to initialize heap.\n");
         fprintf(stderr, "Minimum required: %zum \n",
-                MIN_HEAP_SIZE / 1024 / 1024);
+                (size_t)(MIN_HEAP_SIZE / 1024 / 1024));
         fflush(stderr);
         exit(1);
     }
@@ -177,7 +174,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
             return (word_t *)object;
         } else {
             size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
-            uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
+            uint32_t pow2increment = 1ULL << MathUtils_Log2Ceil(increment);
             Heap_Grow(heap, pow2increment);
 
             object = LargeAllocator_GetBlock(&largeAllocator, size);

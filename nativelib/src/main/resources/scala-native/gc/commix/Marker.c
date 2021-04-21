@@ -7,7 +7,7 @@
 #include "headers/ObjectHeader.h"
 #include "datastructures/GreyPacket.h"
 #include "GCThread.h"
-#include <sched.h>
+#include "util/ThreadUtil.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -359,7 +359,7 @@ void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
     while (!Marker_IsMarkDone(heap)) {
         Marker_Mark(heap, stats);
         if (!Marker_IsMarkDone(heap)) {
-            sched_yield();
+            thread_yield();
         }
     }
 }

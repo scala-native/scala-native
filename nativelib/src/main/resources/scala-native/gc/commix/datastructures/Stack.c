@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "Stack.h"
-#include "../Log.h"
+#include "Log.h"
 
 void Stack_doubleSize(Stack *stack);
 

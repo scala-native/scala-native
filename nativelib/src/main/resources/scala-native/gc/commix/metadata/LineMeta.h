@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "../GCTypes.h"
+#include "GCTypes.h"
 #include "../Constants.h"
 
 typedef struct {
