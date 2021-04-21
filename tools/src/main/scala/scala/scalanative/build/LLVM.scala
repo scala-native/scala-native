@@ -104,10 +104,12 @@ private[scalanative] object LLVM {
     // we only include sources of the current gc and exclude
     // all optional dependencies if they are not necessary
     val optPath = libPath.resolve("optional").abs
-    val (gcPath, gcSelPath) = {
-      val gcPath    = libPath.resolve("gc")
-      val gcSelPath = gcPath.resolve(config.gc.name)
-      (gcPath.abs, gcSelPath.abs)
+    val (gcPath, gcSelPaths) = {
+      val gcPath = libPath.resolve("gc")
+      // shared gc paths
+      val gcSelPaths = gcPath.resolve(config.gc.name).abs +:
+        config.gc.include.map(gcPath.resolve(_).abs)
+      (gcPath.abs, gcSelPaths)
     }
 
     def include(path: String) = {
@@ -115,7 +117,7 @@ private[scalanative] object LLVM {
         val name = Paths.get(path).toFile.getName.split("\\.").head
         linkerResult.links.map(_.name).contains(name)
       } else if (path.contains(gcPath)) {
-        path.contains(gcSelPath)
+        gcSelPaths.exists(gcSelPath => path.contains(gcSelPath))
       } else {
         true
       }
@@ -124,10 +126,13 @@ private[scalanative] object LLVM {
     val (includePaths, excludePaths) = paths.partition(include(_))
 
     // delete .o files for all excluded source files
+    // avoids deleting .o files except when changing
+    // optional or garbage collectors
     excludePaths.foreach { path =>
       val opath = Paths.get(path + oExt)
-      if (Files.exists(opath))
+      if (Files.exists(opath)) {
         Files.delete(opath)
+      }
     }
 
     val fltoOpt   = flto(config)
