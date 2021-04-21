@@ -104,12 +104,12 @@ private[scalanative] object LLVM {
     // we only include sources of the current gc and exclude
     // all optional dependencies if they are not necessary
     val optPath = libPath.resolve("optional").abs
-    val (gcPath, gcSelPaths) = {
-      val gcPath = libPath.resolve("gc")
-      // shared gc paths
-      val gcSelPaths = gcPath.resolve(config.gc.name).abs +:
-        config.gc.include.map(gcPath.resolve(_).abs)
-      (gcPath.abs, gcSelPaths)
+    val (gcPath, gcIncludePaths, gcSelectedPaths) = {
+      val gcPath         = libPath.resolve("gc")
+      val gcIncludePaths = config.gc.include.map(gcPath.resolve(_).abs)
+      val selectedGC     = gcPath.resolve(config.gc.name).abs
+      val selectedGCPath = selectedGC +: gcIncludePaths
+      (gcPath.abs, gcIncludePaths, selectedGCPath)
     }
 
     def include(path: String) = {
@@ -117,7 +117,7 @@ private[scalanative] object LLVM {
         val name = Paths.get(path).toFile.getName.split("\\.").head
         linkerResult.links.map(_.name).contains(name)
       } else if (path.contains(gcPath)) {
-        gcSelPaths.exists(gcSelPath => path.contains(gcSelPath))
+        gcSelectedPaths.exists(path.contains)
       } else {
         true
       }
@@ -135,8 +135,9 @@ private[scalanative] object LLVM {
       }
     }
 
-    val fltoOpt   = flto(config)
-    val targetOpt = target(config)
+    val fltoOpt    = flto(config)
+    val targetOpt  = target(config)
+    val includeOpt = gcIncludePaths.map("-I" + _)
 
     // generate .o files for all included source files in parallel
     includePaths.par.map { path =>
@@ -148,7 +149,7 @@ private[scalanative] object LLVM {
         val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
         val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
         val compilec =
-          Seq(compiler) ++ fltoOpt ++ flags ++ targetOpt ++
+          Seq(compiler) ++ fltoOpt ++ flags ++ targetOpt ++ includeOpt ++
             Seq("-c", path, "-o", opath)
 
         config.logger.running(compilec)
