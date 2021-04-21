@@ -177,7 +177,7 @@ object socket {
            length: CSize,
            flags: CInt): CSSize = extern
 
-  @name("scalanative_recvfrom")
+  // direct call to C, _Static_assert in socket.c validates structures.
   def recvfrom(socket: CInt,
                buffer: Ptr[Byte],
                length: CSize,
@@ -191,7 +191,7 @@ object socket {
            length: CSize,
            flags: CInt): CSSize = extern
 
-  @name("scalanative_sendto")
+  // direct call to C, _Static_assert in socket.c validates structures.
   def sendto(socket: CInt,
              buffer: Ptr[Byte],
              length: CSize,

@@ -22,7 +22,7 @@ class UdpSocketTest {
     val localhostInetAddr = inet_addr(localhost)
 
     val inSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
-    assertNotEquals("socket", -1, inSocket)
+    assertNotEquals("socket_1", -1, inSocket)
 
     try {
       val inAddr      = alloc[sockaddr]
@@ -48,7 +48,7 @@ class UdpSocketTest {
 
       // Now use port.
       val outSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
-      assertNotEquals("socket", -1, outSocket)
+      assertNotEquals("socket_2", -1, outSocket)
 
       try {
         val outAddr      = alloc[sockaddr]
@@ -107,7 +107,7 @@ class UdpSocketTest {
         // on partial reads rather than fail.
         // Punt to a future generation. Since this is loopback and
         // writes are small, if any bytes are ready, all should be.
-        assertEquals("recvfrom length", nBytesSent, nBytesPeekedAt)
+        assertEquals("recvfrom_1 length", nBytesSent, nBytesPeekedAt)
 
         // Test retrieving remote address.
         val srcAddr    = alloc[sockaddr]
@@ -116,7 +116,7 @@ class UdpSocketTest {
         val nBytesRecvd =
           recvfrom(inSocket, inData, maxInData.toUInt, 0, srcAddr, srcAddrLen)
 
-        assertEquals("recvfrom length", nBytesSent, nBytesRecvd)
+        assertEquals("recvfrom_2 length", nBytesSent, nBytesRecvd)
 
         // Packet came from where we expected, and not Mars.
         assertEquals("unexpected remote address",

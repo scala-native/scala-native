@@ -19,9 +19,13 @@ typedef SSIZE_T ssize_t;
 #warning "Size and order of C structures are not checked when -std < c11."
 #endif
 #else
-// Posix defines the order of required fields.
-// The first field in C has had size 2 and no padding after it
-// since time immemorial. Verify that the Scala Native has the same.
+// Posix defines the order and type of required fields. Size of fields
+// and any internal or tail padding are left unspecified. This section
+// verifies that the C and Scala Native definitons match in each compilation
+// environment.
+//
+// The first sockaddr field in C has had size 2 and no padding after it
+// since time immemorial. Chedk that the Scala Native has the same.
 
 _Static_assert(offsetof(struct scalanative_sockaddr, sa_data) == 2,
                "Unexpected size: scalanative_sockaddr sa_family");
@@ -231,28 +235,8 @@ ssize_t scalanative_recv(int socket, void *buffer, size_t length, int flags) {
     return recv(socket, buffer, length, flags);
 }
 
-ssize_t scalanative_recvfrom(int socket, void *buffer, size_t length, int flags,
-                             struct scalanative_sockaddr *address,
-                             socklen_t *address_len) {
-    // Using this function rather than a direct call in socket.scala allows
-    // _Static_asserts at the top of this file to check structure requirements.
-
-    return recvfrom(socket, buffer, length, flags, (struct sockaddr *)address,
-                    address_len);
-}
-
 int scalanative_send(int socket, void *buffer, size_t length, int flags) {
     return send(socket, buffer, length, flags);
-}
-
-ssize_t scalanative_sendto(int socket, void *buffer, size_t length, int flags,
-                           struct scalanative_sockaddr *address,
-                           socklen_t address_len) {
-    // Using this function rather than a direct call in socket.scala allows
-    // _Static_asserts at the top of this file to check structure requirements.
-
-    return sendto(socket, buffer, length, flags, (struct sockaddr *)address,
-                  address_len);
 }
 
 int scalanative_shutdown(int socket, int how) { return shutdown(socket, how); }
