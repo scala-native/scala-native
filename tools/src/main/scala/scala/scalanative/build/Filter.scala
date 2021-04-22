@@ -39,7 +39,7 @@ object Filter {
 
       def include(path: String) = {
         if (path.contains(optPath)) {
-          val name = Paths.get(path).toFile.getName.split(".").head
+          val name = Paths.get(path).toFile.getName.split("\\.").head
           linkerResult.links.map(_.name).contains(name)
         } else if (path.contains(gcPath)) {
           path.contains(gcSelPath)

@@ -40,7 +40,7 @@ private[scalanative] object LLVM {
         val result = Process(compilec, config.workdir.toFile) ! Logger
           .toProcessLogger(config.logger)
         if (result != 0) {
-          sys.error("Failed to compile ll or native code.")
+          sys.error(s"Failed to compile ${inpath}")
         }
       }
       objPath
