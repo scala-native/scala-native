@@ -58,9 +58,10 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     }
     // clean up when process closes
     // also prevents any other process from `sem_open`ing it
-    // On Windows we don't have equivalent of `sem_unlink` - semaphore would be 
+    // On Windows we don't have equivalent of `sem_unlink` - semaphore would be
     // removed automatically after all its handles would be closed. In our case
-    // it happens at process exit, since we do never explicitly close semaphores.
+    // it happens at process exit, since we do never explicitly close
+    // semaphores.
 #ifndef _WIN32
     if (sem_unlink(startWorkersName) != 0) {
         fprintf(stderr,
