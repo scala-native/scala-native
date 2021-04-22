@@ -1,6 +1,3 @@
-#ifndef MEMORYMAP_H
-#define MEMORYMAP_H
-
 #include "MemoryMap.h"
 
 #ifdef _WIN32
@@ -57,5 +54,3 @@ word_t *memoryMap(size_t memorySize) {
                 HEAP_MEM_FD_OFFSET);
 #endif
 }
-
-#endif // MEMORYMAP_H
