@@ -2,10 +2,12 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Files, Path, Paths}
+
 import scalanative.build.IO.RichPath
 import scalanative.build.NativeLib._
+import scalanative.build.LLVM._
 
-object Filter {
+private[scalanative] object Filter {
 
   /** To find filter file */
   private val filterProperties = s"${codeDir}-filter.properties"

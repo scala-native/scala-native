@@ -6,6 +6,8 @@ import java.nio.file.{Files, Path}
 import java.util.Arrays
 import java.util.regex._
 
+import scalanative.build.LLVM._
+
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
 
@@ -14,18 +16,6 @@ private[scalanative] object NativeLib {
 
   /** Java Archive extension: ".jar" */
   val jarExt = ".jar"
-
-  /** Object file extension: ".o" */
-  val oExt = ".o"
-
-  /** C++ file extension: ".cpp" */
-  val cppExt = ".cpp"
-
-  /** LLVM intermediate file extension: ".ll" */
-  val llExt = ".ll"
-
-  /** List of source patterns used: ".c, .cpp, .S" */
-  val srcExtensions = Seq(".c", cppExt, ".S")
 
   /**
    * Name of directory that contains native code: "scala-native"

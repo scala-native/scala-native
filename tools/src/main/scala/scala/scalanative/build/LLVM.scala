@@ -10,6 +10,18 @@ import scalanative.compat.CompatParColls.Converters._
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
 
+  /** Object file extension: ".o" */
+  val oExt = ".o"
+
+  /** C++ file extension: ".cpp" */
+  val cppExt = ".cpp"
+
+  /** LLVM intermediate file extension: ".ll" */
+  val llExt = ".ll"
+
+  /** List of source patterns used: ".c, .cpp, .S" */
+  val srcExtensions = Seq(".c", cppExt, ".S")
+
   /**
    * Compile the given files to object files
    *
