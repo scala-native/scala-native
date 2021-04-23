@@ -81,11 +81,19 @@ private[scalanative] object LLVM {
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.
       // * libpthread for process APIs and parallel garbage collection.
-      "pthread" +: "dl" +: srclinks ++: gclinks
+      // * Dbghelp for windows implementation of unwind libunwind API
+      val platformsLinks =
+        if (config.targetsWindows) Seq("Dbghelp.lib")
+        else Seq("pthread", "dl")
+      platformsLinks ++ srclinks ++ gclinks
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
-    val flags =
-      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ target(config)
+    val flags = {
+      val platformFlags =
+        if (config.targetsWindows) Seq()
+        else Seq("-rdynamic")
+      flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ target(config)
+    }
     val paths   = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
     val ltoName = lto(config).getOrElse("none")
