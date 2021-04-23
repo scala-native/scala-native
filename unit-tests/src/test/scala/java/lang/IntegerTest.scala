@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows._
+import scalanative.junit.utils.ThrowsHelper._
 
 class IntegerTest {
   val signedMaxValue     = Integer.MAX_VALUE
@@ -17,6 +18,96 @@ class IntegerTest {
   val unsignedMaxValue       = -1
   val unsignedMaxValueText   = "4294967295"
   val unsignedMaxPlusOneText = "4294967296"
+
+  @Test def decodeTest(): Unit = {
+    import Integer.decode
+
+    assertTrue(decode("-1") == -1)
+    assertTrue(decode("+1") == 1)
+    assertTrue(decode("1") == 1)
+    assertTrue(decode("-123") == -123)
+    assertTrue(decode("+123") == 123)
+    assertTrue(decode("123") == 123)
+    assertTrue(decode("-0") == 0)
+    assertTrue(decode("+0") == 0)
+    assertTrue(decode("00") == 0)
+    assertTrue(decode("-0x1") == -1)
+    assertTrue(decode("+0x1") == 1)
+    assertTrue(decode("0x1") == 1)
+    assertTrue(decode("-0x7b") == -123)
+    assertTrue(decode("+0x7b") == 123)
+    assertTrue(decode("0x7b") == 123)
+    assertTrue(decode("-0x0") == 0)
+    assertTrue(decode("+0x0") == 0)
+    assertTrue(decode("0x0") == 0)
+    assertTrue(decode("-0X1") == -1)
+    assertTrue(decode("+0X1") == 1)
+    assertTrue(decode("0X1") == 1)
+    assertTrue(decode("-0X7B") == -123)
+    assertTrue(decode("+0X7B") == 123)
+    assertTrue(decode("0X7b") == 123)
+    assertTrue(decode("-0X0") == 0)
+    assertTrue(decode("+0X0") == 0)
+    assertTrue(decode("0X0") == 0)
+    assertTrue(decode("-#1") == -1)
+    assertTrue(decode("+#1") == 1)
+    assertTrue(decode("#1") == 1)
+    assertTrue(decode("-#7B") == -123)
+    assertTrue(decode("+#7B") == 123)
+    assertTrue(decode("#7b") == 123)
+    assertTrue(decode("-#0") == 0)
+    assertTrue(decode("+#0") == 0)
+    assertTrue(decode("#0") == 0)
+    assertTrue(decode("-01") == -1)
+    assertTrue(decode("+01") == 1)
+    assertTrue(decode("01") == 1)
+    assertTrue(decode("-0173") == -123)
+    assertTrue(decode("+0173") == 123)
+    assertTrue(decode("0173") == 123)
+    assertTrue(decode("-00") == 0)
+    assertTrue(decode("+00") == 0)
+    assertTrue(decode(signedMaxValueText) == signedMaxValue)
+    assertTrue(decode(signedMinValueText) == signedMinValue)
+
+    assertThrowsAnd(classOf[NumberFormatException], decode(null)) {
+      _.toString == "java.lang.NumberFormatException: null"
+    }
+    assertThrowsAnd(classOf[NumberFormatException], decode("+")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "+""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], decode("-")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "-""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], decode("")) {
+      _.toString == """java.lang.NumberFormatException: For input string: """""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], decode("0x")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "0x""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], decode("#")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "#""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], decode("0xh")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "0xh""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], decode("0XH")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "0XH""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], decode("09")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "09""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], decode("123a")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "123a""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException],
+                    decode(signedMinMinusOneText)) {
+      _.toString == s"""java.lang.NumberFormatException: For input string: "$signedMinMinusOneText""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException],
+                    decode(signedMaxPlusOneText)) {
+      _.toString == s"""java.lang.NumberFormatException: For input string: "$signedMaxPlusOneText""""
+    }
+  }
 
   @Test def parseInt(): Unit = {
     import Integer.{parseInt => parse}
@@ -36,17 +127,36 @@ class IntegerTest {
     assertTrue(parse(signedMaxValueText) == signedMaxValue)
     assertTrue(parse(signedMinValueText) == signedMinValue)
 
-    assertThrows(classOf[NumberFormatException], parse(null))
-    assertThrows(classOf[NumberFormatException], parse("+"))
-    assertThrows(classOf[NumberFormatException], parse("-"))
-    assertThrows(classOf[NumberFormatException], parse(""))
-    assertThrows(classOf[NumberFormatException],
-                 parse("123", Character.MIN_RADIX - 1))
-    assertThrows(classOf[NumberFormatException],
-                 parse("123", Character.MAX_RADIX + 1))
-    assertThrows(classOf[NumberFormatException], parse("123a", 10))
-    assertThrows(classOf[NumberFormatException], parse(signedMinMinusOneText))
-    assertThrows(classOf[NumberFormatException], parse(signedMaxPlusOneText))
+    assertThrowsAnd(classOf[NumberFormatException], parse(null)) {
+      _.toString == "java.lang.NumberFormatException: null"
+    }
+    assertThrowsAnd(classOf[NumberFormatException], parse("+")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "+""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], parse("-")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "-""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], parse("")) {
+      _.toString == """java.lang.NumberFormatException: For input string: """""
+    }
+    assertThrowsAnd(classOf[NumberFormatException],
+                    parse("123", Character.MIN_RADIX - 1)) {
+      _.toString == """java.lang.NumberFormatException: radix 1 less than Character.MIN_RADIX"""
+    }
+    assertThrowsAnd(classOf[NumberFormatException],
+                    parse("123", Character.MAX_RADIX + 1)) {
+      _.toString == """java.lang.NumberFormatException: radix 37 greater than Character.MAX_RADIX"""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], parse("123a", 10)) {
+      _.toString == """java.lang.NumberFormatException: For input string: "123a""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException],
+                    parse(signedMinMinusOneText)) {
+      _.toString == s"""java.lang.NumberFormatException: For input string: "$signedMinMinusOneText""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], parse(signedMaxPlusOneText)) {
+      _.toString == s"""java.lang.NumberFormatException: For input string: "$signedMaxPlusOneText""""
+    }
   }
 
   @Test def parseUnsignedInt(): Unit = {
@@ -60,17 +170,36 @@ class IntegerTest {
     assertTrue(parse("100", 2) == 4)
     assertTrue(parse(unsignedMaxValueText) == unsignedMaxValue)
 
-    assertThrows(classOf[NumberFormatException], parse(null))
-    assertThrows(classOf[NumberFormatException], parse("+"))
-    assertThrows(classOf[NumberFormatException], parse("-"))
-    assertThrows(classOf[NumberFormatException], parse(""))
-    assertThrows(classOf[NumberFormatException], parse("-1"))
-    assertThrows(classOf[NumberFormatException],
-                 parse("123", Character.MIN_RADIX - 1))
-    assertThrows(classOf[NumberFormatException],
-                 parse("123", Character.MAX_RADIX + 1))
-    assertThrows(classOf[NumberFormatException], parse("123a", 10))
-    assertThrows(classOf[NumberFormatException], parse(unsignedMaxPlusOneText))
+    assertThrowsAnd(classOf[NumberFormatException], parse(null)) {
+      _.toString == """java.lang.NumberFormatException: null"""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], parse("+")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "+""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], parse("-")) {
+      _.toString == """java.lang.NumberFormatException: For input string: "-""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], parse("")) {
+      _.toString == """java.lang.NumberFormatException: For input string: """""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], parse("-1")) {
+      _.toString == """java.lang.NumberFormatException: Illegal leading minus sign on unsigned string -1."""
+    }
+    assertThrowsAnd(classOf[NumberFormatException],
+                    parse("123", Character.MIN_RADIX - 1)) {
+      _.toString == """java.lang.NumberFormatException: radix 1 less than Character.MIN_RADIX"""
+    }
+    assertThrowsAnd(classOf[NumberFormatException],
+                    parse("123", Character.MAX_RADIX + 1)) {
+      _.toString == """java.lang.NumberFormatException: radix 37 greater than Character.MAX_RADIX"""
+    }
+    assertThrowsAnd(classOf[NumberFormatException], parse("123a", 10)) {
+      _.toString == """java.lang.NumberFormatException: For input string: "123a""""
+    }
+    assertThrowsAnd(classOf[NumberFormatException],
+                    parse(unsignedMaxPlusOneText)) {
+      _.toString == s"""java.lang.NumberFormatException: String value $unsignedMaxPlusOneText exceeds range of unsigned int."""
+    }
 
     val octalMulOverflow = "137777777770"
     // in binary:

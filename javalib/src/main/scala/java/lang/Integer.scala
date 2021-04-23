@@ -207,15 +207,22 @@ object Integer {
   @inline def compareUnsigned(x: scala.Int, y: scala.Int): scala.Int =
     compare(x ^ scala.Int.MinValue, y ^ scala.Int.MinValue)
 
+  private def fail(s: String): Nothing =
+    throw new NumberFormatException(s"""For input string: "$s"""")
+
   def decode(nm: String): Integer = {
+    if (nm == null)
+      throw new NumberFormatException("null")
     val length = nm.length()
-    if (length == 0) throw new NumberFormatException()
+    if (length == 0) fail(nm)
 
     var i        = 0
     var first    = nm.charAt(i)
     val negative = first == '-'
-    if (negative) {
-      if (length == 1) throw new NumberFormatException(nm)
+    val positive = first == '+'
+
+    if (negative || positive) {
+      if (length == 1) fail(nm)
       i += 1
       first = nm.charAt(i)
     }
@@ -227,14 +234,14 @@ object Integer {
       first = nm.charAt(i)
       if (first == 'x' || first == 'X') {
         i += 1
-        if (i == length) throw new NumberFormatException(nm)
+        if (i == length) fail(nm)
         base = 16
       } else {
         base = 8
       }
     } else if (first == '#') {
       i += 1
-      if (i == length) throw new NumberFormatException(nm)
+      if (i == length) fail(nm)
       base = 16
     }
 
@@ -296,22 +303,22 @@ object Integer {
     parseInt(s, 10)
 
   def parseInt(s: String, radix: scala.Int): scala.Int = {
-    if (s == null || radix < Character.MIN_RADIX ||
-        radix > Character.MAX_RADIX) {
-      throw new NumberFormatException()
-    }
+    if (s == null)
+      throw new NumberFormatException("null")
+    if (radix < Character.MIN_RADIX)
+      throw new NumberFormatException(
+        s"radix $radix less than Character.MIN_RADIX")
+    if (radix > Character.MAX_RADIX)
+      throw new NumberFormatException(
+        s"radix $radix greater than Character.MAX_RADIX")
 
     val length = s.length()
-    if (length == 0) {
-      throw new NumberFormatException(s)
-    }
+    if (length == 0) fail(s)
 
     val positive = s.charAt(0) == '+'
     val negative = s.charAt(0) == '-'
     val offset   = if (positive || negative) 1 else 0
-    if (offset > 0 && length == 1) {
-      throw new NumberFormatException(s)
-    }
+    if (offset > 0 && length == 1) fail(s)
 
     parse(s, offset, radix, negative)
   }
@@ -328,17 +335,17 @@ object Integer {
     while (offset < length) {
       val digit = Character.digit(s.charAt(offset), radix)
       offset += 1
-      if (digit == -1) throw new NumberFormatException(s)
-      if (max > result) throw new NumberFormatException(s)
+      if (digit == -1) fail(s)
+      if (max > result) fail(s)
 
       val next = result * radix - digit
-      if (next > result) throw new NumberFormatException(s)
+      if (next > result) fail(s)
       result = next
     }
 
     if (!negative) {
       result = -result
-      if (result < 0) throw new NumberFormatException(s)
+      if (result < 0) fail(s)
     }
 
     result
@@ -600,16 +607,24 @@ object Integer {
   @inline def parseUnsignedInt(s: String): scala.Int = parseUnsignedInt(s, 10)
 
   def parseUnsignedInt(s: String, radix: scala.Int): scala.Int = {
-    if (s == null || radix < Character.MIN_RADIX ||
-        radix > Character.MAX_RADIX) throw new NumberFormatException(s)
+    if (s == null)
+      throw new NumberFormatException("null")
+    if (radix < Character.MIN_RADIX)
+      throw new NumberFormatException(
+        s"radix $radix less than Character.MIN_RADIX")
+    if (radix > Character.MAX_RADIX)
+      throw new NumberFormatException(
+        s"radix $radix greater than Character.MAX_RADIX")
 
     val len = s.length()
+    if (len == 0) fail(s)
 
-    if (len == 0) throw new NumberFormatException(s)
-
-    val hasPlusSign = s.charAt(0) == '+'
-
-    if (hasPlusSign && len == 1) throw new NumberFormatException(s)
+    val hasPlusSign  = s.charAt(0) == '+'
+    val hasMinusSign = s.charAt(0) == '-'
+    if ((hasPlusSign || hasMinusSign) && len == 1) fail(s)
+    if (hasMinusSign)
+      throw new NumberFormatException(
+        s"""Illegal leading minus sign on unsigned string $s.""")
 
     val offset = if (hasPlusSign) 1 else 0
 
@@ -627,14 +642,15 @@ object Integer {
       val digit = Character.digit(s.charAt(offset), radix)
       offset += 1
 
-      if (digit == -1) throw new NumberFormatException(s)
+      if (digit == -1) fail(s)
 
-      if (compareUnsigned(result, max) > 0) throw new NumberFormatException(s)
+      if (compareUnsigned(result, max) > 0) fail(s)
 
       result = result * radix + digit
 
       if (compareUnsigned(digit, result) > 0)
-        throw new NumberFormatException(s)
+        throw new NumberFormatException(
+          s"""String value $s exceeds range of unsigned int.""")
     }
 
     result
