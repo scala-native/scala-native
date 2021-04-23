@@ -1,8 +1,6 @@
 #include "Bytemap.h"
-#include "../Constants.h"
-#include "../Log.h"
-#include "../utils/MathUtils.h"
 #include <stdio.h>
+#include "utils/MathUtils.h"
 
 void Bytemap_Init(Bytemap *bytemap, word_t *firstAddress, size_t size) {
     bytemap->firstAddress = firstAddress;

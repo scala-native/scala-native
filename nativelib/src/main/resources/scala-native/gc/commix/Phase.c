@@ -4,10 +4,13 @@
 #include "Allocator.h"
 #include "BlockAllocator.h"
 #include <stdio.h>
-#include <unistd.h>
 #include <limits.h>
+#include "util/ThreadUtil.h"
 #include <errno.h>
 #include <stdlib.h>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 /*
 If in OSX, sem_open cannot create a semaphore whose name is longer than
@@ -23,12 +26,15 @@ The +1 accounts for the null char at the end of the name
 #ifdef __APPLE__
 #include <sys/posix_sem.h>
 #define SEM_MAX_LENGTH PSEMNAMLEN + 1
+#elif defined(_WIN32)
+#define SEM_MAX_LENGTH MAX_PATH + 1
+#define SEM_FAILED NULL
 #else
 #define SEM_MAX_LENGTH _POSIX_PATH_MAX + 1
 #endif
 
 void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
-    pid_t pid = getpid();
+    pid_t pid = process_getid();
     char startWorkersName[SEM_MAX_LENGTH];
     char startMasterName[SEM_MAX_LENGTH];
     snprintf(startWorkersName, SEM_MAX_LENGTH, "mt_%d_commix", pid);
@@ -37,16 +43,14 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     // MacOs we do not share them across processes
     // We open the semaphores and try to check the call succeeded,
     // if not, we exit the process
-    heap->gcThreads.startWorkers =
-        sem_open(startWorkersName, O_CREAT | O_EXCL, 0644, 0);
+    heap->gcThreads.startWorkers = semaphore_open(startWorkersName, 0U);
     if (heap->gcThreads.startWorkers == SEM_FAILED) {
         fprintf(stderr,
                 "Opening worker semaphore failed in commix Phase_Init\n");
         exit(errno);
     }
 
-    heap->gcThreads.startMaster =
-        sem_open(startMasterName, O_CREAT | O_EXCL, 0644, 0);
+    heap->gcThreads.startMaster = semaphore_open(startMasterName, 0U);
     if (heap->gcThreads.startMaster == SEM_FAILED) {
         fprintf(stderr,
                 "Opening master semaphore failed in commix Phase_Init\n");
@@ -54,6 +58,11 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     }
     // clean up when process closes
     // also prevents any other process from `sem_open`ing it
+    // On Windows we don't have equivalent of `sem_unlink` - semaphore would be
+    // removed automatically after all its handles would be closed. In our case
+    // it happens at process exit, since we do never explicitly close
+    // semaphores.
+#ifndef _WIN32
     if (sem_unlink(startWorkersName) != 0) {
         fprintf(stderr,
                 "Unlinking worker semaphore failed in commix Phase_Init\n");
@@ -64,6 +73,7 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
                 "Unlinking master semaphore failed in commix Phase_Init\n");
         exit(errno);
     }
+#endif
 
     heap->sweep.cursor = initialBlockCount;
     heap->lazySweep.cursorDone = initialBlockCount;

@@ -8,6 +8,7 @@
 #include "Sweeper.h"
 #include "Log.h"
 #include "headers/ObjectHeader.h"
+#include "util/ThreadUtil.h"
 
 inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
     assert(size >= MIN_BLOCK_SIZE);
@@ -206,7 +207,7 @@ word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
     while (object == NULL && !Sweeper_IsSweepDone(heap)) {
         object = LargeAllocator_tryAlloc(&largeAllocator, size);
         if (object == NULL) {
-            sched_yield();
+            thread_yield();
         }
     }
     Stats_RecordTime(stats, end_ns);

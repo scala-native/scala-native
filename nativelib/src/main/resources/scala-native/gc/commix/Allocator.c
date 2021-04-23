@@ -4,6 +4,7 @@
 #include "Sweeper.h"
 #include <stdio.h>
 #include <memory.h>
+#include "util/ThreadUtil.h"
 
 bool Allocator_getNextLine(Allocator *allocator);
 bool Allocator_newBlock(Allocator *allocator);
@@ -231,7 +232,7 @@ word_t *Allocator_lazySweep(Heap *heap, uint32_t size) {
     while (object == NULL && !Sweeper_IsSweepDone(heap)) {
         object = Allocator_tryAlloc(&allocator, size);
         if (object == NULL) {
-            sched_yield();
+            thread_yield();
         }
     }
     Stats_RecordTime(stats, end_ns);

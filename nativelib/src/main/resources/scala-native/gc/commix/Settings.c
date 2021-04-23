@@ -1,10 +1,19 @@
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+// sscanf and getEnv is deprecated in WinCRT, disable warnings
+#define _CRT_SECURE_NO_WARNINGS
+#include <windows.h>
+#endif
+
 #include "Settings.h"
 #include "Constants.h"
 #include "metadata/BlockMeta.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 /*
  Accepts number of bytes or number with a suffix letter for indicating the
@@ -92,7 +101,13 @@ int Settings_GCThreadCount() {
     char *str = getenv("SCALANATIVE_GC_THREADS");
     if (str == NULL) {
         // default is number of cores - 1, but no less than 1 and no more than 8
+#ifdef _WIN32
+        SYSTEM_INFO sysInfo;
+        GetSystemInfo(&sysInfo);
+        int processorCount = (int)sysInfo.dwNumberOfProcessors;
+#else
         int processorCount = (int)sysconf(_SC_NPROCESSORS_ONLN);
+#endif
         int defaultGThreadCount = processorCount - 1;
         if (defaultGThreadCount < 1) {
             defaultGThreadCount = 1;

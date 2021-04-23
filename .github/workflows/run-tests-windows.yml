@@ -1,0 +1,51 @@
+name: Windows tests
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  compile-gc:
+    name: Compile GCs
+    runs-on: windows-2019
+    strategy:
+      matrix: 
+        gc: [
+        {name: none,    include: [shared]},
+        {name: immix,   include: [shared, immix_commix]},
+        {name: commix,  include: [shared, immix_commix]}
+        ]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      
+      #Prepare environment, clang needs to be installed
+      - name: Cache LLVM
+        id: cache-llvm
+        uses: actions/cache@v2
+        with:
+          path: |
+            C:\Program Files\LLVM\
+          key: ${{ runner.os }}-llvm-6
+      - name: Install LLVM
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        run: choco install llvm --version=6.0.1 
+
+      - name: Add LLVM on Path
+        run: echo "${env:ProgramFiles}\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Assert clang installed and on path
+        run: clang --version
+
+      # Compile all files in GC and included shared directories using clang.
+      - name: Compile GCs
+        run: |
+          $gcRoot       = (Resolve-Path -Path ".\nativelib\src\main\resources\scala-native\gc").Path 
+          $gcDir        = %{Join-Path $gcRoot "${{matrix.gc.name}}"}
+          $sharedDirs   = @("${{ join(matrix.gc.include, '", "') }}") | %{Join-Path $gcRoot $_}
+          $compiledDirs = @($gcDir) + $sharedDirs
+          $includes     = $sharedDirs | %{"-I" + $_}
+          Get-ChildItem -Path $compiledDirs -Include *.c -Recurse -File `
+          | ForEach-Object {clang -std=gnu11 -Wno-override-module $includes -c "$_"}
+          Get-ChildItem -Path $compiledDirs -Include *.cpp -Recurse -File `
+          | ForEach-Object {clang++ -std=c++14 -Wno-override-module $includes -c "$_"}

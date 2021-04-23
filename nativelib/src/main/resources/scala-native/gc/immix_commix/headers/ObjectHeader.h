@@ -5,10 +5,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
-#include "../GCTypes.h"
-#include "../Constants.h"
+#include "../CommonConstants.h"
 #include "../Log.h"
 #include "../utils/MathUtils.h"
+#include "GCTypes.h"
 
 extern int __object_array_id;
 extern int __array_ids_min;

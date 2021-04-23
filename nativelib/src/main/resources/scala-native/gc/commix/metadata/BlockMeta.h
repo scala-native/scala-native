@@ -6,9 +6,9 @@
 #include <stdint.h>
 #include <string.h>
 #include "LineMeta.h"
-#include "../GCTypes.h"
+#include "GCTypes.h"
 #include "../Constants.h"
-#include "../Log.h"
+#include "Log.h"
 
 typedef enum {
     block_free = 0x0,

@@ -5,13 +5,16 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include "../Constants.h"
-#include "../GCTypes.h"
+#include "GCTypes.h"
 #include "BlockRange.h"
-#include "../Log.h"
-#include "../headers/ObjectHeader.h"
+#include "Log.h"
+#include "headers/ObjectHeader.h"
 
 typedef Object *Stack_Type;
 
+// No support for 3-byte alignment in MSVC
+// https://docs.microsoft.com/en-us/cpp/c-language/padding-and-alignment-of-structure-members?redirectedfrom=MSDN&view=msvc-160
+// Would result in size of 16 bytes on Windows and 8 on Unix
 typedef union {
     struct __attribute__((packed)) {
         uint32_t idx : BLOCK_COUNT_BITS;

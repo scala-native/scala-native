@@ -2,6 +2,9 @@
 #include "StackTrace.h"
 
 void StackTrace_PrintStackTrace() {
+#if defined(_WIN32)
+    printf("Stacktrace not implemented in Windows\n");
+#else
     unw_cursor_t cursor;
     unw_context_t context;
     unw_getcontext(&context);
@@ -19,4 +22,5 @@ void StackTrace_PrintStackTrace() {
             printf("\tat %s\n", sym);
         }
     }
+#endif
 }
