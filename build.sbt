@@ -19,7 +19,6 @@ lazy val nameSettings: Seq[Setting[_]] = Seq(
   name := projectName(thisProject.value) // Maven <name>
 )
 
-
 lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
   sources in (Compile, doc) := Nil
 )
