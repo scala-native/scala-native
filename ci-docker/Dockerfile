@@ -25,15 +25,16 @@ ENV PATH "/usr/lib/jvm/java-8-openjdk-$HOST_ARCHITECTURE/bin:$PATH"
 
 ENV SBT_LAUNCHER_VERSION 1.3.7
 ENV SBT_INSTALL_FILE sbt-$SBT_LAUNCHER_VERSION.deb
-ENV SBT_INSTALL_URL https://repo.scala-sbt.org/scalasbt/debian/SBT_INSTALL_FILE
+ENV SBT_INSTALL_URL \
+        https://repo.scala-sbt.org/scalasbt/debian/$SBT_INSTALL_FILE
 
 RUN apt-get install -y curl
 
 # Install sbt
 RUN \
-  curl -L -O SBT_INSTALL_URL && \
-  dpkg -i SBT_INSTALL_FILE && \
-  rm SBT_INSTALL_FILE && \
+  curl -L -O $SBT_INSTALL_URL && \
+  dpkg -i $SBT_INSTALL_FILE && \
+  rm $SBT_INSTALL_FILE && \
   apt-get update && \
   apt-get install -y sbt
 
