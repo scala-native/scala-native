@@ -10,7 +10,7 @@ import scalanative.build.LLVM._
 private[scalanative] object Filter {
 
   /** To find filter file */
-  private val filterProperties = s"${codeDir}-filter.properties"
+  private val filterProperties = s"${codeDir}.properties"
 
   /**
    * Filter the `nativelib` source files with special logic
