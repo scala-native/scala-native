@@ -29,7 +29,8 @@ RUN apt-get install -y curl
 
 # Install sbt
 RUN \
-  curl -L -o sbt-$SBT_LAUNCHER_VERSION.deb https://dl.bintray.com/sbt/debian/sbt-$SBT_LAUNCHER_VERSION.deb && \
+  curl -L -o sbt-$SBT_LAUNCHER_VERSION.deb \
+      https://repo.scala-sbt.org/scalasbt/debian/sbt-1.3.7.deb && \
   dpkg -i sbt-$SBT_LAUNCHER_VERSION.deb && \
   rm sbt-$SBT_LAUNCHER_VERSION.deb && \
   apt-get update && \
