@@ -41,8 +41,10 @@ private[scalanative] object LLVM {
       if (isLl || !Files.exists(objPath)) {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag =
-          if (isLl) "" else if (isCpp) "-std=c++11" else "-std=gnu11"
-        val flags = opt(config) +: stdflag +: "-fvisibility=hidden" +:
+          if (isLl) Seq()
+          else if (isCpp) Seq("-std=c++11")
+          else Seq("-std=gnu11")
+        val flags = opt(config) +: stdflag ++: "-fvisibility=hidden" +:
           config.compileOptions
         val compilec =
           Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
