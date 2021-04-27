@@ -63,7 +63,7 @@ WORKDIR /home/scala-native/scala-native
 # should be only a minimal, and lessening, re-fetch performance hit.
 
 CMD sbt \
-    -ivy /tmp/.ivy2 \
+    -ivy $WORKDIR/.ivy2 \
     -no-colors \
     -J-Xmx5G \
     "++ $SCALA_VERSION -v" \
