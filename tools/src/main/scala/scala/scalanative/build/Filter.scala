@@ -72,7 +72,7 @@ private[scalanative] object Filter {
    * Check for a filtering properties file in destination
    * native code directory.
    *
-   * @param codePath The native code directory
+   * @param nativeCodePath The native code directory
    * @return The optional path to the file or none
    */
   private def findFilterProperties(nativeCodePath: Path): Option[Path] = {

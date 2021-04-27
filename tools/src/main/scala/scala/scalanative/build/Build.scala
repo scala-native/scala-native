@@ -69,13 +69,13 @@ object Build {
 
         // compile all libs
         val libObjectPaths = nativelibs
-          .map(nl => NativeLib.unpackNativeCode(nl))
-          .map(destPath => {
+          .map { NativeLib.unpackNativeCode }
+          .map { destPath =>
             val paths = NativeLib.findNativePaths(workdir, destPath)
             val (projPaths, projConfig) =
               Filter.filterNativelib(fconfig, linked, destPath, paths)
             LLVM.compile(projConfig, projPaths)
-          })
+          }
           .flatten
 
         // compile generated ll
