@@ -52,9 +52,10 @@ USER scala-native
 
 WORKDIR /home/scala-native/scala-native
 
-CMD sbt -ivy /tmp/.ivy2 \
-    "++ $SCALA_VERSION -v" \
+CMD sbt \
+    -ivy /tmp/.ivy2 \
     -no-colors \
     -J-Xmx5G \
+    "++ $SCALA_VERSION -v" \
     "set sbtScalaNative / scriptedBufferLog := false" \
     "$TEST_COMMAND"
