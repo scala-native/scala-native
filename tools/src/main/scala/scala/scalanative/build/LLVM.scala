@@ -45,8 +45,8 @@ private[scalanative] object LLVM {
         val flags = opt(config) +: stdflag +: "-fvisibility=hidden" +:
           config.compileOptions
         val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++ includeOpt ++
-            Seq("-c", path, "-o", opath)
+          Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
+            Seq("-c", inpath, "-o", outpath)
 
         config.logger.running(compilec)
         val result = Process(compilec, config.workdir.toFile) ! Logger

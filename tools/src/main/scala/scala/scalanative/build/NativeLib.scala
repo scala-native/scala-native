@@ -20,7 +20,7 @@ private[scalanative] object NativeLib {
   /**
    * Name of directory that contains native code: "scala-native"
    */
-  val codeDir = "scala-native"
+  val nativeCodeDir = "scala-native"
 
   /** Used to find native source files in directories */
   private def srcPatterns(path: Path): String =
@@ -30,11 +30,11 @@ private[scalanative] object NativeLib {
   private val jarSrcRegex: String = {
     val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
     // Paths in jars always contains '/' separator instead of OS specific one.
-    s"""^$codeDir/(.+)$regexExtensions$$"""
+    s"""^$nativeCodeDir/(.+)$regexExtensions$$"""
   }
 
   private def srcPathPattern(path: Path): String =
-    makeDirPath(path, codeDir)
+    makeDirPath(path, nativeCodeDir)
 
   /**
    * Used to create hash of the directory to copy
@@ -56,7 +56,7 @@ private[scalanative] object NativeLib {
    */
   private def destSrcPattern(workdir: Path, destPath: Path): String = {
     val dirPattern = s"{${destPath.getFileName()}}"
-    val pathPat    = makeDirPath(workdir, dirPattern, codeDir)
+    val pathPat    = makeDirPath(workdir, dirPattern, nativeCodeDir)
     srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
   }
 

@@ -10,7 +10,7 @@ import scalanative.build.LLVM._
 private[scalanative] object Filter {
 
   /** To find filter file */
-  private val filterProperties = s"${codeDir}.properties"
+  private val nativeProjectProps = s"${nativeCodeDir}.properties"
 
   /**
    * Filter the `nativelib` source files with special logic
@@ -25,18 +25,20 @@ private[scalanative] object Filter {
   def filterNativelib(config: Config,
                       linkerResult: linker.Result,
                       destPath: Path,
-                      allPaths: Seq[Path]): Seq[Path] = {
-    val codePath = destPath.resolve(codeDir)
+                      allPaths: Seq[Path]): (Seq[Path], Config) = {
+    val nativeCodePath = destPath.resolve(nativeCodeDir)
     // check if filtering is needed, o.w. return all paths
-    findFilterProperties(codePath).fold(allPaths) { file =>
+    findFilterProperties(nativeCodePath).fold((allPaths, config)) { file =>
       // predicate to check if given file path shall be compiled
       // we only include sources of the current gc and exclude
       // all optional dependencies if they are not necessary
-      val optPath = codePath.resolve("optional").abs
-      val (gcPath, gcSelPath) = {
-        val gcPath    = codePath.resolve("gc")
-        val gcSelPath = gcPath.resolve(config.gc.name)
-        (gcPath.abs, gcSelPath.abs)
+      val optPath = nativeCodePath.resolve("optional").abs
+      val (gcPath, gcIncludePaths, gcSelectedPaths) = {
+        val gcPath         = nativeCodePath.resolve("gc")
+        val gcIncludePaths = config.gc.include.map(gcPath.resolve(_).abs)
+        val selectedGC     = gcPath.resolve(config.gc.name).abs
+        val selectedGCPath = selectedGC +: gcIncludePaths
+        (gcPath.abs, gcIncludePaths, selectedGCPath)
       }
 
       def include(path: String) = {
@@ -44,22 +46,25 @@ private[scalanative] object Filter {
           val name = Paths.get(path).toFile.getName.split("\\.").head
           linkerResult.links.map(_.name).contains(name)
         } else if (path.contains(gcPath)) {
-          path.contains(gcSelPath)
+          gcSelectedPaths.exists(path.contains)
         } else {
           true
         }
       }
 
-      val (includePaths, excludePaths) =
-        allPaths.map(_.abs).partition(include(_))
+      val (includePaths, excludePaths) = allPaths.map(_.abs).partition(include)
 
       // delete .o files for all excluded source files
+      // avoids deleting .o files except when changing
+      // optional or garbage collectors
       excludePaths.foreach { path =>
         val opath = Paths.get(path + oExt)
         Files.deleteIfExists(opath)
       }
-
-      includePaths.map(Paths.get(_))
+      val projectConfig = config.withCompilerConfig(
+        _.withCompileOptions(gcIncludePaths.map("-I" + _)))
+      val projectPaths = includePaths.map(Paths.get(_))
+      (projectPaths, projectConfig)
     }
   }
 
@@ -70,8 +75,8 @@ private[scalanative] object Filter {
    * @param codePath The native code directory
    * @return The optional path to the file or none
    */
-  private def findFilterProperties(codePath: Path): Option[Path] = {
-    val file = codePath.resolve(filterProperties)
+  private def findFilterProperties(nativeCodePath: Path): Option[Path] = {
+    val file = nativeCodePath.resolve(nativeProjectProps)
     if (Files.exists(file)) Some(file)
     else None
   }
