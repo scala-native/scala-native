@@ -52,6 +52,16 @@ USER scala-native
 
 WORKDIR /home/scala-native/scala-native
 
+# Put on your Personal Protective Equipment (PPE) before proceeding!
+#
+# Using sbt -ivy option is workaround required by sbt +/- 1.5.0
+# to prevent sbt lock file errors in Docker when changing build.sbt.
+# See Scala Native Issue #2260 and Sbt Issue #6634.
+# This appears to be the singular critical intervention point.
+# Other uses of sbt, say in .yml files, seem to work after the change here.
+# Sbt 1.5.n mainly uses Coursier and is moving off using Ivy2, so there
+# should be only a minimal, and lessening, re-fetch performance hit.
+
 CMD sbt \
     -ivy /tmp/.ivy2 \
     -no-colors \
