@@ -62,7 +62,8 @@ private[scalanative] object Filter {
         Files.deleteIfExists(opath)
       }
       val projectConfig = config.withCompilerConfig(
-        _.withCompileOptions(config.compileOptions ++ gcIncludePaths.map("-I" + _)))
+        _.withCompileOptions(
+          config.compileOptions ++ gcIncludePaths.map("-I" + _)))
       val projectPaths = includePaths.map(Paths.get(_))
       (projectPaths, projectConfig)
     }
