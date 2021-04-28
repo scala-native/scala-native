@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===-------------------- UnwindRegistersRestore.S ------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -918,3 +919,4 @@ DEFINE_LIBUNWIND_PRIVATE_FUNCTION(_ZN9libunwind21Registers_mips_newabi6jumptoEv)
 
 NO_EXEC_STACK_DIRECTIVE
 
+#endif // defined(_POSIX_VERSION)

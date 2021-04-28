@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===------------------------- EHHeaderParser.hpp -------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -161,3 +162,4 @@ size_t EHHeaderParser<A>::getTableEntrySize(uint8_t tableEnc) {
 } // namespace libunwind
 
 #endif
+#endif // defined(_POSIX_VERSION)

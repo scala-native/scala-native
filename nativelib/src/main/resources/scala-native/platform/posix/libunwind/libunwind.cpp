@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===--------------------------- libunwind.cpp ----------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -376,3 +377,4 @@ bool logDWARF() {
 }
 
 #endif // NDEBUG
+#endif // defined(_POSIX_VERSION)

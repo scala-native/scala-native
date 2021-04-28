@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===--------------------- Unwind_AppleExtras.cpp -------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -178,3 +179,4 @@ bool checkKeyMgrRegisteredFDEs(uintptr_t pc, void *&fde) {
 }
 
 } // namespace libunwind
+#endif // defined(_POSIX_VERSION)

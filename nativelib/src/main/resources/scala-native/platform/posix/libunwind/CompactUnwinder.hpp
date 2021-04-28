@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===-------------------------- CompactUnwinder.hpp -----------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -711,3 +712,4 @@ int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrame(
 } // namespace libunwind
 
 #endif // __COMPACT_UNWINDER_HPP__
+#endif // defined(_POSIX_VERSION)

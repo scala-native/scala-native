@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===------------------------ UnwindRegistersSave.S -----------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -858,3 +859,4 @@ DEFINE_LIBUNWIND_FUNCTION(unw_getcontext)
 
 NO_EXEC_STACK_DIRECTIVE
 
+#endif // defined(_POSIX_VERSION)

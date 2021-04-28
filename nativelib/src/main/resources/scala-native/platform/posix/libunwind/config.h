@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===----------------------------- config.h -------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -174,3 +175,4 @@ template <typename _Type, typename _Mem> struct check_fit {
 #endif // __cplusplus
 
 #endif // LIBUNWIND_CONFIG_H
+#endif // defined(_POSIX_VERSION)

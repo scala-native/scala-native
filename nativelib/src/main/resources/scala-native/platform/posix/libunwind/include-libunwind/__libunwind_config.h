@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===------------------------- __libunwind_config.h -----------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -109,3 +110,4 @@
 #endif // _LIBUNWIND_IS_NATIVE_ONLY
 
 #endif // ____LIBUNWIND_CONFIG_H__
+#endif // defined(_POSIX_VERSION)

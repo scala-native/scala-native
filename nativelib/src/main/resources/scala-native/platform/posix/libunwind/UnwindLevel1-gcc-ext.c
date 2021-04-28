@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===--------------------- UnwindLevel1-gcc-ext.c -------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -311,3 +312,4 @@ _LIBUNWIND_EXPORT void *__deregister_frame_info_bases(const void *fde) {
 #endif // defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
 
 #endif // defined(_LIBUNWIND_BUILD_ZERO_COST_APIS)
+#endif // defined(_POSIX_VERSION)

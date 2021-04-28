@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===------------------------------- unwind.h -----------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -361,3 +362,4 @@ extern void *__deregister_frame_info_bases(const void *fde) LIBUNWIND_UNAVAIL;
 #endif
 
 #endif // __UNWIND_H__
+#endif // defined(_POSIX_VERSION)

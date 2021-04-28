@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===---------------------------- libunwind.h -----------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -789,3 +790,4 @@ enum {
 };
 
 #endif
+#endif // defined(_POSIX_VERSION)

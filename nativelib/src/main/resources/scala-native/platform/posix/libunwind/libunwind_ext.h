@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===------------------------ libunwind_ext.h -----------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -43,3 +44,4 @@ extern _Unwind_Reason_Code _Unwind_VRS_Interpret(_Unwind_Context *context,
 #endif
 
 #endif // __LIBUNWIND_EXT__
+#endif // defined(_POSIX_VERSION)

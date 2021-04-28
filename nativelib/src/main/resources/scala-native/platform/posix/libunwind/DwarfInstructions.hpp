@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===-------------------------- DwarfInstructions.hpp ---------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -762,3 +763,4 @@ DwarfInstructions<A, R>::evaluateExpression(pint_t expression, A &addressSpace,
 } // namespace libunwind
 
 #endif // __DWARF_INSTRUCTIONS_HPP__
+#endif // defined(_POSIX_VERSION)

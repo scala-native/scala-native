@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===--------------------------- Unwind-EHABI.cpp -------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -999,3 +1000,4 @@ extern "C" _LIBUNWIND_EXPORT _Unwind_Reason_Code __gnu_unwind_frame(
 }
 
 #endif // defined(_LIBUNWIND_ARM_EHABI)
+#endif // defined(_POSIX_VERSION)

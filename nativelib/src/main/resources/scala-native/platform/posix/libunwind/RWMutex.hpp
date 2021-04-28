@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===----------------------------- Registers.hpp --------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -75,3 +76,4 @@ class _LIBUNWIND_HIDDEN RWMutex {
 } // namespace libunwind
 
 #endif // __RWMUTEX_HPP__
+#endif // defined(_POSIX_VERSION)

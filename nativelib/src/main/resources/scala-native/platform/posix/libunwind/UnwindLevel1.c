@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===------------------------- UnwindLevel1.c -----------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -514,3 +515,4 @@ _LIBUNWIND_EXPORT void _Unwind_SetIP(struct _Unwind_Context *context,
 }
 
 #endif // !defined(_LIBUNWIND_ARM_EHABI) && !defined(__USING_SJLJ_EXCEPTIONS__)
+#endif // defined(_POSIX_VERSION)

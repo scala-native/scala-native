@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===------------------ mach-o/compact_unwind_encoding.h ------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -456,3 +457,4 @@ struct unwind_info_compressed_second_level_page_header {
     ((entry >> 24) & 0xFF)
 
 #endif
+#endif // defined(_POSIX_VERSION)

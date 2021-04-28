@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===------------------------------- dwarf2.h -----------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -231,3 +232,4 @@ enum {
 };
 
 #endif
+#endif // defined(_POSIX_VERSION)

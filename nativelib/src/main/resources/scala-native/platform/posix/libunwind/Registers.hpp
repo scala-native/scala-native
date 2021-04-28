@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===----------------------------- Registers.hpp --------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -3106,3 +3107,4 @@ inline const char *Registers_mips_newabi::getRegisterName(int regNum) {
 } // namespace libunwind
 
 #endif // __REGISTERS_HPP__
+#endif // defined(_POSIX_VERSION)

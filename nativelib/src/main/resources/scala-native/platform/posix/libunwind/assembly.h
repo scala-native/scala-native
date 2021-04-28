@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 /* ===-- assembly.h - libUnwind assembler support macros -------------------===
  *
  *                     The LLVM Compiler Infrastructure
@@ -112,3 +113,4 @@
 #endif /* UNWIND_ASSEMBLY_H */
 
 // clang-format on
+#endif // defined(_POSIX_VERSION)

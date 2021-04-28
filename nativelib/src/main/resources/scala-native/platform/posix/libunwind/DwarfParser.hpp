@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===--------------------------- DwarfParser.hpp --------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -734,3 +735,4 @@ bool CFI_Parser<A>::parseInstructions(A &addressSpace, pint_t instructions,
 } // namespace libunwind
 
 #endif // __DWARF_PARSER_HPP__
+#endif // defined(_POSIX_VERSION)

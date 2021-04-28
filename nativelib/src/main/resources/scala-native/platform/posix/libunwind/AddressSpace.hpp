@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===------------------------- AddressSpace.hpp ---------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -739,3 +740,4 @@ struct unw_addr_space_ppc64 : public unw_addr_space {
 } // namespace libunwind
 
 #endif // __ADDRESSSPACE_HPP__
+#endif // defined(_POSIX_VERSION)

@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 //===--------------------------- Unwind-sjlj.c ----------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -493,3 +494,4 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetCFA(struct _Unwind_Context *context) {
 }
 
 #endif // defined(_LIBUNWIND_BUILD_SJLJ_APIS)
+#endif // defined(_POSIX_VERSION)
