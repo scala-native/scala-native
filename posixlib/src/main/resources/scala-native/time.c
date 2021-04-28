@@ -1,6 +1,7 @@
 #if defined(_POSIX_VERSION)
 // X/Open System Interfaces (XSI), also sets _POSIX_C_SOURCE.
 // Partial, but useful, implementation of X/Open 7, incorporating Posix 2008.
+
 #define _XOPEN_SOURCE 700
 
 #include <string.h>

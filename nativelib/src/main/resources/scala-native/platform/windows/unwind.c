@@ -1,4 +1,4 @@
-// Unwind implementation used only on Windows
+// Unwind API implementation used only on Windows
 #if defined(_WIN32)
 
 #define WIN32_LEAN_AND_MEAN
@@ -16,7 +16,7 @@ typedef struct _UnwindContext {
     DWORD64 cursor;
     SYMBOL_INFOW symbol;
 } UnwindContext;
-// architecture independent register numbers
+
 
 int scalanative_unwind_get_context(void *context) { return 0; }
 
@@ -34,9 +34,8 @@ int scalanative_unwind_init_local(void *cursor, void *context) {
     }
     ucontext->frames = CaptureStackBackTrace(0, MAX_LENGTH_OF_CALLSTACK,
                                              ucontext->stack, NULL);
-    // cursor should be -1, but we don't want to show this function
     ucontext->cursor = 0;
-    ucontext->symbol.MaxNameLen = 255; // todo: review
+    ucontext->symbol.MaxNameLen = 255;
     ucontext->symbol.SizeOfStruct = sizeof(SYMBOL_INFOW);
     return 0;
 }
@@ -70,9 +69,6 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
     return 0;
 }
 
-
-// Hybryda NativeImage + Scala Native
-
 int scalanative_unwind_get_reg(void *cursor, int regnum,
                                unsigned long long *valp) {
     UnwindContext *ucontext = (UnwindContext *)cursor;
@@ -80,6 +76,7 @@ int scalanative_unwind_get_reg(void *cursor, int regnum,
     return 0;
 }
 
-int scalanative_unw_reg_ip() { return UNW_REG_IP; }
+// Only usage results in passing to get_reg as `regnum`, where it's not actually used
+int scalanative_unw_reg_ip() { return -1; }
 
 #endif // _WIN32
