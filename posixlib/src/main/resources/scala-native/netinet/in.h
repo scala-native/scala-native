@@ -1,12 +1,23 @@
 #ifndef __NETINET_IN_H
 #define __NETINET_IN_H
 
-#include <netinet/in.h>
 #include <inttypes.h>
 #include "../sys/socket.h"
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define WINSOCK_DEPRECATED_NO_WARNINGS
+#pragma comment(lib, "Ws2_32.lib")
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+typedef uint32_t in_addr_t;
+typedef uint16_t in_port_t;
+#else
+#include <netinet/in.h>
+#endif
+
 struct scalanative_in_addr {
-    in_addr_t s_addr;
+    in_addr_t so_addr;
 };
 
 struct scalanative_in6_addr {

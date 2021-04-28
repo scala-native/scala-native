@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 #include <stdlib.h>
 #include <grp.h>
 #include "types.h"
@@ -35,3 +36,5 @@ int scalanative_getgrnam(char *name, struct scalanative_group *buf) {
         return 0;
     }
 }
+
+#endif //_POSIX_VERSION

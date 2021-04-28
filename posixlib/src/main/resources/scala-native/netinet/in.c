@@ -1,10 +1,9 @@
-#include <netinet/in.h>
 #include <string.h>
 #include "in.h"
 
 void scalanative_convert_in_addr(struct scalanative_in_addr *in,
                                  struct in_addr *out) {
-    out->s_addr = in->s_addr;
+    out->s_addr = in->so_addr;
 }
 
 void scalanative_convert_in6_addr(struct scalanative_in6_addr *in,
@@ -14,7 +13,7 @@ void scalanative_convert_in6_addr(struct scalanative_in6_addr *in,
 
 void scalanative_convert_scalanative_in_addr(struct in_addr *in,
                                              struct scalanative_in_addr *out) {
-    out->s_addr = in->s_addr;
+    out->so_addr = in->s_addr;
 }
 
 void scalanative_convert_scalanative_in6_addr(

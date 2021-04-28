@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 #include <stdlib.h>
 #include <pwd.h>
 #include "types.h"
@@ -45,3 +46,5 @@ int scalanative_getpwnam(char *name, struct scalanative_passwd *buf) {
         return 0;
     }
 }
+
+#endif // _POSIX_VERSION

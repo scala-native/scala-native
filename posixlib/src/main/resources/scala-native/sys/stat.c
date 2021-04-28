@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 #include "../types.h"
 #include <sys/stat.h>
 
@@ -124,3 +125,5 @@ int scalanative_s_isfifo(mode_t mode) { return S_ISFIFO(mode); }
 int scalanative_s_islnk(mode_t mode) { return S_ISLNK(mode); }
 
 int scalanative_s_issock(mode_t mode) { return S_ISSOCK(mode); }
+
+#endif // _POSIX_VERSION

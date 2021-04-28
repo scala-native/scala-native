@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 #include <cpio.h>
 
 unsigned short scalanative_c_issock() { return C_ISSOCK; }
@@ -22,3 +23,5 @@ unsigned short scalanative_c_iwoth() { return C_IWOTH; }
 unsigned short scalanative_c_ixoth() { return C_IXOTH; }
 
 const char *scalanative_magic() { return MAGIC; }
+
+#endif // _POSIX_VERSION

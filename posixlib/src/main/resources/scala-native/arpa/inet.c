@@ -1,4 +1,11 @@
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#pragma comment(lib, "Ws2_32.lib")
+#include <WinSock2.h>
+#else
 #include <arpa/inet.h>
+#endif
 #include "../netinet/in.h"
 
 uint32_t scalanative_htonl(uint32_t arg) { return htonl(arg); }

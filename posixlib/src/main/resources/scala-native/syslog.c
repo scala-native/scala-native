@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 #include <syslog.h>
 #include <stdarg.h>
 
@@ -58,3 +59,5 @@ int scalanative_log_odelay() { return LOG_ODELAY; }
 int scalanative_log_ndelay() { return LOG_NDELAY; }
 int scalanative_log_nowait() { return LOG_NOWAIT; }
 int scalanative_log_perror() { return LOG_PERROR; }
+
+#endif // _POSIX_VERSION

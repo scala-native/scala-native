@@ -1,6 +1,7 @@
 #include <errno.h>
 
 // Omitting EDOM EILSEQ and ERANGE since they are in clib
+// Includes errno compat with Windows errors, not all of them are actually defined
 int scalanative_e2big() { return E2BIG; }
 
 int scalanative_eacces() { return EACCES; }
@@ -33,7 +34,13 @@ int scalanative_edeadlk() { return EDEADLK; }
 
 int scalanative_edestaddrreq() { return EDESTADDRREQ; }
 
-int scalanative_edquot() { return EDQUOT; }
+int scalanative_edquot() {
+#ifdef EDQUOT
+    return EDQUOT;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_eexist() { return EEXIST; }
 
@@ -65,7 +72,13 @@ int scalanative_emlink() { return EMLINK; }
 
 int scalanative_emsgsize() { return EMSGSIZE; }
 
-int scalanative_emultihup() { return EMULTIHOP; }
+int scalanative_emultihup() {
+#ifdef EMULTIHOP
+    return EMULTIHOP;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_enametoolong() { return ENAMETOOLONG; }
 
@@ -161,7 +174,13 @@ int scalanative_espipe() { return ESPIPE; }
 
 int scalanative_esrch() { return ESRCH; }
 
-int scalanative_estale() { return ESTALE; }
+int scalanative_estale() {
+#ifdef ESTALE
+    return ESTALE;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_etime() {
 #ifdef ENOTIME

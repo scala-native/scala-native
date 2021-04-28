@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 // The Open Group Base Specifications Issue 7, 2018 edition
 // https://pubs.opengroup.org/onlinepubs/9699919799/basedefs\
 //     /sys_resource.h.html
@@ -98,3 +99,5 @@ int scalanative_rlimit_stack() { return RLIMIT_STACK; };
 int scalanative_rusage_children() { return RUSAGE_CHILDREN; };
 
 int scalanative_rusage_self() { return RUSAGE_SELF; };
+
+#endif // _POSIX_VERSION

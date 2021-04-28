@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 #include <sys/utsname.h>
 #include <string.h>
 
@@ -28,3 +29,5 @@ int scalanative_uname(struct scalanative_utsname *scalanative_utsname) {
     }
     return res;
 }
+
+#endif //_POSIX_VERSION

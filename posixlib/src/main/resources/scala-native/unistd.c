@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 #include <unistd.h>
 #include "types.h"
 
@@ -49,3 +50,5 @@ int scalanative_chown(char *path, scalanative_uid_t owner,
                       scalanative_gid_t group) {
     return chown(path, owner, group);
 }
+
+#endif // _POSIX_VERSION

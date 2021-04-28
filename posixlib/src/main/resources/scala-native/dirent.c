@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 #include <dirent.h>
 #include <string.h>
 #include <stdio.h>
@@ -48,3 +49,5 @@ int scalanative_readdir(DIR *dirp, struct scalanative_dirent *buf) {
 }
 
 int scalanative_closedir(DIR *dirp) { return closedir(dirp); }
+
+#endif // _POSIX_VERSION

@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 #include <sys/types.h>
 #include <sys/uio.h>
 
@@ -26,3 +27,4 @@ ssize_t scalanative_writev(int fildes, struct scalanative_iovec *buf,
     iovec_to_scalanative_iovec(&copy, buf);
     return result;
 }
+#endif //_POSIX_VERSION

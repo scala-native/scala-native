@@ -1,3 +1,4 @@
+#if defined(_POSIX_VERSION)
 #include <pthread.h>
 #include <sys/types.h>
 #include <string.h>
@@ -64,3 +65,5 @@ int scalanative_pthread_process_private() { return PTHREAD_PROCESS_PRIVATE; }
 int scalanative_pthread_scope_process() { return PTHREAD_SCOPE_PROCESS; }
 
 int scalanative_pthread_scope_system() { return PTHREAD_SCOPE_SYSTEM; }
+
+#endif // _POSIX_VERSION

@@ -1,14 +1,27 @@
-#include <netinet/in.h>
-#include "../netinet/in.h"
-#include <sys/socket.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include "../netinet/in.h"
 #include "socket_conversions.h"
 #include "socket.h"
 
-int scalanative_scm_rights() { return SCM_RIGHTS; }
+#ifdef _WIN32
+#include <WinSock2.h>
+#pragma comment(lib, "Ws2_32.lib")
+typedef SSIZE_T ssize_t;
+#else
+#include <netinet/in.h>
+#include <sys/socket.h>
+#endif
+
+int scalanative_scm_rights() {
+#ifdef SCM_RIGHTS
+    return SCM_RIGHTS;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_sock_dgram() { return SOCK_DGRAM; }
 
@@ -58,15 +71,20 @@ int scalanative_msg_ctrunc() { return MSG_CTRUNC; }
 
 int scalanative_msg_dontroute() { return MSG_DONTROUTE; }
 
-int scalanative_msg_eor() { return MSG_EOR; }
+int scalanative_msg_eor() {
+#ifdef MSG_EOR
+    return MSG_EOR;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_msg_oob() { return MSG_OOB; }
 
 int scalanative_msg_nosignal() {
 #ifdef MSG_NOSIGNAL
     return MSG_NOSIGNAL;
-#endif
-#ifndef MSG_NOSIGNAL
+#else
     return 0;
 #endif
 }
