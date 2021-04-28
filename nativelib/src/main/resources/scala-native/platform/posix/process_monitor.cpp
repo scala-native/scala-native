@@ -1,3 +1,6 @@
+// This mechanism is only used in POSIX compliant platforms.
+// On Windows other build in approach is used.
+#if defined(_POSIX_VERSION)
 #include <memory>
 #include <pthread.h>
 #include <sys/wait.h>
@@ -100,3 +103,5 @@ void scalanative_process_monitor_init() {
     pthread_detach(thread);
 }
 }
+
+#endif // _POSIX_VERSION

@@ -1,3 +1,6 @@
+// Unwind implementation used only on Posix compliant systems
+#if defined(_POSIX_VERSION)
+#include "../unwind.h"
 #include "libunwind/include-libunwind/libunwind.h"
 
 int scalanative_unwind_get_context(void *context) {
@@ -24,3 +27,5 @@ int scalanative_unwind_get_reg(void *cursor, int regnum,
 }
 
 int scalanative_unw_reg_ip() { return UNW_REG_IP; }
+
+#endif // _POSIX_VERSION
