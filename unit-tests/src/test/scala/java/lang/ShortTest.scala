@@ -15,6 +15,13 @@ class ShortTest {
   val signedMaxPlusOneText  = "32768"
   val signedMinMinusOneText = "-32769"
 
+  def assertThrowsAndMessage[T <: Throwable, U](
+      expectedThrowable: Class[T],
+      code: => U)(expectedMsg: String): Unit = {
+    val exception = expectThrows(expectedThrowable, code)
+    assertEquals(expectedMsg, exception.toString)
+  }
+
   @Test def decodeTest(): Unit = {
     import Short.decode
 

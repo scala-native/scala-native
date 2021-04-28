@@ -4,7 +4,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows._
-import scalanative.junit.utils.ThrowsHelper._
 
 class LongTest {
   val signedMaxValue     = Long.MAX_VALUE
@@ -18,6 +17,13 @@ class LongTest {
   val unsignedMaxValue       = -1L
   val unsignedMaxValueText   = "18446744073709551615"
   val unsignedMaxPlusOneText = "18446744073709551616"
+
+  def assertThrowsAndMessage[T <: Throwable, U](
+      expectedThrowable: Class[T],
+      code: => U)(expectedMsg: String): Unit = {
+    val exception = expectThrows(expectedThrowable, code)
+    assertEquals(expectedMsg, exception.toString)
+  }
 
   @Test def decodeTest(): Unit = {
     import Long.decode
