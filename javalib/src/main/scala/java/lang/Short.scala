@@ -201,7 +201,8 @@ object Short {
     if (r == i)
       valueOf(r)
     else
-      throw new NumberFormatException()
+      throw new NumberFormatException(
+        s"""Value $nm out of range from input $nm""")
   }
 
   @inline def hashCode(value: scala.Short): scala.Int =
@@ -213,7 +214,8 @@ object Short {
   @inline def parseShort(s: String, radix: scala.Int): scala.Short = {
     val i = Integer.parseInt(s, radix)
     if (i < MIN_VALUE || i > MAX_VALUE)
-      throw new NumberFormatException(s"""For input string: "$s"""")
+      throw new NumberFormatException(
+        s"""Value out of range. Value:"$s" Radix:$radix""")
     else
       i.toShort
   }
