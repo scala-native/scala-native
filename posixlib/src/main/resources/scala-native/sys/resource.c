@@ -1,3 +1,5 @@
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
 // The Open Group Base Specifications Issue 7, 2018 edition
 // https://pubs.opengroup.org/onlinepubs/9699919799/basedefs\
 //     /sys_resource.h.html
@@ -98,3 +100,5 @@ int scalanative_rlimit_stack() { return RLIMIT_STACK; };
 int scalanative_rusage_children() { return RUSAGE_CHILDREN; };
 
 int scalanative_rusage_self() { return RUSAGE_SELF; };
+
+#endif // Unix or Mac OS

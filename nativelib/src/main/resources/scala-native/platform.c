@@ -1,8 +1,10 @@
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #else
 #include <sys/utsname.h>
 #endif
+#include <stdlib.h>
 
 int scalanative_platform_is_linux() {
 #ifdef __linux__
@@ -31,7 +33,7 @@ int scalanative_platform_is_windows() {
 char *scalanative_windows_get_user_lang() {
 #ifdef _WIN32
     char *dest = malloc(9);
-    GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SISO639LANGNAME, dest, 9);
+    GetLocaleInfoA(LOCALE_USER_DEFAULT, LOCALE_SISO639LANGNAME, dest, 9);
     return dest;
 #endif
     return "";
@@ -40,7 +42,7 @@ char *scalanative_windows_get_user_lang() {
 char *scalanative_windows_get_user_country() {
 #ifdef _WIN32
     char *dest = malloc(9);
-    GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SISO3166CTRYNAME, dest, 9);
+    GetLocaleInfoA(LOCALE_USER_DEFAULT, LOCALE_SISO3166CTRYNAME, dest, 9);
     return dest;
 #endif
     return "";
@@ -56,9 +58,11 @@ void scalanative_set_os_props(void (*add_prop)(const char *, const char *)) {
 #ifdef _WIN32
     add_prop("os.name", "Windows (Unknown version)");
     wchar_t wcharPath[MAX_PATH];
+    size_t size = sizeof(wchar_t) * wcslen(wcharPath);
     char path[MAX_PATH];
     if (GetTempPathW(MAX_PATH, wcharPath) &&
-        wcstombs(path, wcharPath, MAX_PATH) != -1) {
+        wcstombs_s(&size, path, MAX_PATH, wcharPath, MAX_PATH - 1) == 0 &&
+        size > 0) {
         add_prop("java.io.tmpdir", (const char *)path);
     }
 #else

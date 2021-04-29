@@ -1,3 +1,5 @@
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <termios.h>
 #if defined(__FreeBSD__)
 #define COMPAT_43TTY
@@ -164,3 +166,5 @@ int scalanative_termios_tcioff() { return TCIOFF; }
 int scalanative_termios_tcion() { return TCION; }
 int scalanative_termios_tcooff() { return TCOOFF; }
 int scalanative_termios_tcoon() { return TCOON; }
+
+#endif // Unix or Mac OS

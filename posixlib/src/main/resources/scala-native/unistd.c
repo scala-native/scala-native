@@ -1,3 +1,5 @@
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <unistd.h>
 #include "types.h"
 
@@ -49,3 +51,5 @@ int scalanative_chown(char *path, scalanative_uid_t owner,
                       scalanative_gid_t group) {
     return chown(path, owner, group);
 }
+
+#endif // Unix or Mac OS

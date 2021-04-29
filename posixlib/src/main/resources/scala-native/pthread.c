@@ -1,3 +1,5 @@
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <pthread.h>
 #include <sys/types.h>
 #include <string.h>
@@ -64,3 +66,5 @@ int scalanative_pthread_process_private() { return PTHREAD_PROCESS_PRIVATE; }
 int scalanative_pthread_scope_process() { return PTHREAD_SCOPE_PROCESS; }
 
 int scalanative_pthread_scope_system() { return PTHREAD_SCOPE_SYSTEM; }
+
+#endif // Unix or Mac OS

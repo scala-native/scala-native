@@ -1,3 +1,5 @@
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
 #include "../types.h"
 #include <sys/stat.h>
 
@@ -124,3 +126,5 @@ int scalanative_s_isfifo(mode_t mode) { return S_ISFIFO(mode); }
 int scalanative_s_islnk(mode_t mode) { return S_ISLNK(mode); }
 
 int scalanative_s_issock(mode_t mode) { return S_ISSOCK(mode); }
+
+#endif // Unix or Mac OS
