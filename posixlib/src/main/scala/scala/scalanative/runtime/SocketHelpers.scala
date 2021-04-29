@@ -19,16 +19,14 @@ object SocketHelpers {
 
   def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean = {
     Zone { implicit z =>
-      val cIP   = toCString(ip)
-      var hints = alloc[addrinfo] // alloc documented to clear retured memory
-      var ret   = alloc[Ptr[addrinfo]]
+      val cIP = toCString(ip)
 
+      var hints = alloc[addrinfo] // alloc documented to clear retured memory
       hints.ai_family = AF_UNSPEC
-      hints.ai_protocol = 0
-      hints.ai_addr = null
       hints.ai_flags = 4 // AI_NUMERICHOST
       hints.ai_socktype = SOCK_STREAM
-      hints.ai_next = null
+
+      var ret = alloc[Ptr[addrinfo]]
 
       if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
         return false
@@ -107,13 +105,11 @@ object SocketHelpers {
   def hostToIp(host: String): Option[String] = {
     Zone { implicit z =>
       var hints = alloc[addrinfo]
-      var ret   = alloc[Ptr[addrinfo]]
+      hints.ai_family = AF_UNSPEC
+
+      var ret = alloc[Ptr[addrinfo]]
 
       var ipstr = alloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
-      libc.memset(hints.rawptr, 0, sizeof[addrinfo])
-      hints.ai_family = AF_UNSPEC
-      hints.ai_socktype = 0
-      hints.ai_next = null
 
       val status = getaddrinfo(toCString(host), null, hints, ret)
       if (status != 0)
@@ -141,14 +137,12 @@ object SocketHelpers {
 
   def hostToIpArray(host: String): scala.Array[String] = {
     Zone { implicit z =>
+      // unsafe.alloc is documented to clear memory
       var hints = alloc[addrinfo]
-      var ret   = alloc[Ptr[addrinfo]]
-
-      libc.memset(hints.rawptr, 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
       hints.ai_socktype = SOCK_STREAM
-      hints.ai_protocol = 0
-      hints.ai_next = null
+
+      var ret = alloc[Ptr[addrinfo]]
 
       val retArray = scala.collection.mutable.ArrayBuffer[String]()
       val status   = getaddrinfo(toCString(host), null, hints, ret)

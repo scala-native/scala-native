@@ -151,8 +151,7 @@ class TimeTest {
 
         // grossly over-provision rather than chase fencepost bugs.
         val bufSize = 70.toULong
-        val buf     = alloc[Byte](bufSize)
-        string.memset(buf, 0, bufSize)
+        val buf     = alloc[Byte](bufSize) // unsafe.alloc will cle
 
         val n = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 
@@ -275,8 +274,7 @@ class TimeTest {
                    36.toULong)
 
       val tmBufSize = 56.toULong
-      val tmBuf     = alloc[Byte](tmBufSize)
-      string.memset(tmBuf, 0, tmBufSize)
+      val tmBuf     = alloc[Byte](tmBufSize) // unsafe.alloc will cle
 
       val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
