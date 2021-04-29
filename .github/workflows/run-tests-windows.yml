@@ -84,6 +84,10 @@ jobs:
   run-sandbox:
     name: Run sandbox project
     runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [ 2.13.5, 2.12.13, 2.11.12 ]
     steps:
       - uses: actions/checkout@v2
 
@@ -107,7 +111,7 @@ jobs:
 
       - name: Run sandbox
         run: |
-          sbt `sandbox/run`
+          sbt ++${{matrix.scala}};sandbox/run
         shell: cmd
 
 
