@@ -20,10 +20,9 @@ object SocketHelpers {
   def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean = {
     Zone { implicit z =>
       val cIP   = toCString(ip)
-      var hints = alloc[addrinfo]
+      var hints = alloc[addrinfo] // alloc documented to clear retured memory
       var ret   = alloc[Ptr[addrinfo]]
 
-      libc.memset(hints.rawptr, 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
       hints.ai_protocol = 0
       hints.ai_addr = null

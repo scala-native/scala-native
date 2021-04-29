@@ -136,11 +136,7 @@ class TimeTest {
       // Scala Native tm, so the linux 56 byte form is necessary here.
       val tmBufCount = 7.toULong
 
-      val tmBuf = alloc[Ptr[Byte]](tmBufCount)
-      string.memset(tmBuf.asInstanceOf[Ptr[Byte]],
-                    0,
-                    tmBufCount * sizeof[Ptr[Byte]])
-
+      val tmBuf = alloc[Ptr[Byte]](tmBufCount) // alloc documented to clear all
       val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
       if (localtime_r(ttPtr, tmPtr) == null) {

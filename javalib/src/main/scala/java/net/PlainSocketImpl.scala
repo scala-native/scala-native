@@ -74,14 +74,14 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   override def bind(addr: InetAddress, port: Int): Unit = {
-    val hints = stackalloc[addrinfo]
-    val ret   = stackalloc[Ptr[addrinfo]]
-    string.memset(hints.asInstanceOf[Ptr[Byte]], 0, sizeof[addrinfo])
-    hints.ai_family = socket.AF_UNSPEC
-    hints.ai_flags = AI_NUMERICHOST
-    hints.ai_socktype = socket.SOCK_STREAM
+    val ret = stackalloc[Ptr[addrinfo]]
 
     Zone { implicit z =>
+      val hints = alloc[addrinfo] // alloc is documented to clear memory
+      hints.ai_family = socket.AF_UNSPEC
+      hints.ai_flags = AI_NUMERICHOST
+      hints.ai_socktype = socket.SOCK_STREAM
+
       val cIP = toCString(addr.getHostAddress())
       if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
         throw new BindException(
@@ -269,16 +269,16 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     throwIfClosed(fd.fd, "connect") // Do not send negative fd.fd to poll()
 
-    val inetAddr = address.asInstanceOf[InetSocketAddress]
-    val hints    = stackalloc[addrinfo]
-    val ret      = stackalloc[Ptr[addrinfo]]
-    string.memset(hints.asInstanceOf[Ptr[Byte]], 0, sizeof[addrinfo])
-    hints.ai_family = socket.AF_UNSPEC
-    hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
-    hints.ai_socktype = socket.SOCK_STREAM
+    val inetAddr      = address.asInstanceOf[InetSocketAddress]
+    val ret           = stackalloc[Ptr[addrinfo]]
     val remoteAddress = inetAddr.getAddress.getHostAddress()
 
     Zone { implicit z =>
+      val hints = alloc[addrinfo] // alloc is documented to clear memory
+      hints.ai_family = socket.AF_UNSPEC
+      hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
+      hints.ai_socktype = socket.SOCK_STREAM
+
       val cIP   = toCString(remoteAddress)
       val cPort = toCString(inetAddr.getPort.toString)
 
