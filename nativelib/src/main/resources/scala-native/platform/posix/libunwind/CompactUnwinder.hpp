@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===-------------------------- CompactUnwinder.hpp -----------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -712,4 +713,4 @@ int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrame(
 } // namespace libunwind
 
 #endif // __COMPACT_UNWINDER_HPP__
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

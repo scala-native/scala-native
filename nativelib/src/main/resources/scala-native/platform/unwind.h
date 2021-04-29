@@ -1,6 +1,8 @@
 #ifndef UNWIND_H
 #define UNWIND_H
 
+#include <stddef.h>
+
 int scalanative_unwind_get_context(void *context);
 int scalanative_unwind_init_local(void *cursor, void *context);
 int scalanative_unwind_step(void *cursor);

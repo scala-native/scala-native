@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 /* ===-- assembly.h - libUnwind assembler support macros -------------------===
  *
  *                     The LLVM Compiler Infrastructure
@@ -113,4 +114,4 @@
 #endif /* UNWIND_ASSEMBLY_H */
 
 // clang-format on
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

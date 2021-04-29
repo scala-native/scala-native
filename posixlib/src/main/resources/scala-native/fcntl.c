@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <fcntl.h>
 
 int scalanative_f_dupfd() { return F_DUPFD; }
@@ -51,4 +52,4 @@ int scalanative_o_rdwr() { return O_RDWR; }
 
 int scalanative_o_wronly() { return O_WRONLY; }
 
-#endif //_POSIX_VERSION
+#endif // Unix or Mac OS

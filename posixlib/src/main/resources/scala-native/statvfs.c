@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <stdlib.h>
 #include <sys/statvfs.h>
 #include "types.h"
@@ -60,4 +61,4 @@ unsigned long scalanative_st_rdonly() { return ST_RDONLY; }
 
 unsigned long scalanative_st_nosuid() { return ST_NOSUID; }
 
-#endif // _POSIX_VERSION
+#endif // Unix or Mac OS

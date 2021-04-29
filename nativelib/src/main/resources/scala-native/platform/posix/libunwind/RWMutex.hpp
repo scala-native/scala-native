@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===----------------------------- Registers.hpp --------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -76,4 +77,4 @@ class _LIBUNWIND_HIDDEN RWMutex {
 } // namespace libunwind
 
 #endif // __RWMUTEX_HPP__
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

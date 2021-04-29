@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <dirent.h>
 #include <string.h>
 #include <stdio.h>
@@ -50,4 +51,4 @@ int scalanative_readdir(DIR *dirp, struct scalanative_dirent *buf) {
 
 int scalanative_closedir(DIR *dirp) { return closedir(dirp); }
 
-#endif // _POSIX_VERSION
+#endif // Unix or Mac OS

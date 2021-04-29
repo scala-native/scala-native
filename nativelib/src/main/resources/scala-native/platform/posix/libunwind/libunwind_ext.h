@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------ libunwind_ext.h -----------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -44,4 +45,4 @@ extern _Unwind_Reason_Code _Unwind_VRS_Interpret(_Unwind_Context *context,
 #endif
 
 #endif // __LIBUNWIND_EXT__
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

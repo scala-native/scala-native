@@ -1,5 +1,6 @@
 // Unwind implementation used only on Posix compliant systems
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 #include "../unwind.h"
 #include "libunwind/include-libunwind/libunwind.h"
 
@@ -28,4 +29,4 @@ int scalanative_unwind_get_reg(void *cursor, int regnum,
 
 int scalanative_unw_reg_ip() { return UNW_REG_IP; }
 
-#endif // _POSIX_VERSION
+#endif // Unix or Mac OS

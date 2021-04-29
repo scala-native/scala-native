@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <sys/types.h>
 #include <sys/uio.h>
 
@@ -27,4 +28,4 @@ ssize_t scalanative_writev(int fildes, struct scalanative_iovec *buf,
     iovec_to_scalanative_iovec(&copy, buf);
     return result;
 }
-#endif //_POSIX_VERSION
+#endif // Unix or Mac OS

@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------- UnwindCursor.hpp ---------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -1453,4 +1454,4 @@ bool UnwindCursor<A, R>::getFunctionName(char *buf, size_t bufLen,
 } // namespace libunwind
 
 #endif // __UNWINDCURSOR_HPP__
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

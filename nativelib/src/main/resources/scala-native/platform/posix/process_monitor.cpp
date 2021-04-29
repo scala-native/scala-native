@@ -1,6 +1,7 @@
 // This mechanism is only used in POSIX compliant platforms.
 // On Windows other build in approach is used.
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <memory>
 #include <pthread.h>
 #include <sys/wait.h>
@@ -104,4 +105,4 @@ void scalanative_process_monitor_init() {
 }
 }
 
-#endif // _POSIX_VERSION
+#endif // Unix or Mac OS

@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===----------------------------- config.h -------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -175,4 +176,4 @@ template <typename _Type, typename _Mem> struct check_fit {
 #endif // __cplusplus
 
 #endif // LIBUNWIND_CONFIG_H
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

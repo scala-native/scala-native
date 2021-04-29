@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===--------------------------- Unwind-EHABI.cpp -------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -1000,4 +1001,4 @@ extern "C" _LIBUNWIND_EXPORT _Unwind_Reason_Code __gnu_unwind_frame(
 }
 
 #endif // defined(_LIBUNWIND_ARM_EHABI)
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

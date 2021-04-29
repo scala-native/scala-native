@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------------- unwind.h -----------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -362,4 +363,4 @@ extern void *__deregister_frame_info_bases(const void *fde) LIBUNWIND_UNAVAIL;
 #endif
 
 #endif // __UNWIND_H__
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===------------------ mach-o/compact_unwind_encoding.h ------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -457,4 +458,4 @@ struct unwind_info_compressed_second_level_page_header {
     ((entry >> 24) & 0xFF)
 
 #endif
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===---------------------------- libunwind.h -----------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -790,4 +791,4 @@ enum {
 };
 
 #endif
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

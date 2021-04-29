@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 // X/Open System Interfaces (XSI), also sets _POSIX_C_SOURCE.
 // Partial, but useful, implementation of X/Open 7, incorporating Posix 2008.
 
@@ -179,4 +180,4 @@ int scalanative_daylight() {
 #endif
 }
 
-#endif // _POSIX_VERSION
+#endif // Unix or Mac OS

@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------- EHHeaderParser.hpp -------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -162,4 +163,4 @@ size_t EHHeaderParser<A>::getTableEntrySize(uint8_t tableEnc) {
 } // namespace libunwind
 
 #endif
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

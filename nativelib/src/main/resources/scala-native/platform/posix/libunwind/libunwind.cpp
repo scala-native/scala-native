@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===--------------------------- libunwind.cpp ----------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -377,4 +378,4 @@ bool logDWARF() {
 }
 
 #endif // NDEBUG
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

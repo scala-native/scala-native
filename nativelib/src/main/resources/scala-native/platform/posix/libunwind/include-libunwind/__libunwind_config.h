@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------- __libunwind_config.h -----------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -110,4 +111,4 @@
 #endif // _LIBUNWIND_IS_NATIVE_ONLY
 
 #endif // ____LIBUNWIND_CONFIG_H__
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

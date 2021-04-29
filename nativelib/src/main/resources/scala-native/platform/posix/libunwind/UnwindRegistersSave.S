@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------ UnwindRegistersSave.S -----------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -859,4 +860,4 @@ DEFINE_LIBUNWIND_FUNCTION(unw_getcontext)
 
 NO_EXEC_STACK_DIRECTIVE
 
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

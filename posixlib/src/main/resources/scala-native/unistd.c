@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <unistd.h>
 #include "types.h"
 
@@ -51,4 +52,4 @@ int scalanative_chown(char *path, scalanative_uid_t owner,
     return chown(path, owner, group);
 }
 
-#endif // _POSIX_VERSION
+#endif // Unix or Mac OS

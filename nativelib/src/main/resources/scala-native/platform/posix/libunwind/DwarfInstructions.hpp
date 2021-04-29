@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 //===-------------------------- DwarfInstructions.hpp ---------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -763,4 +764,4 @@ DwarfInstructions<A, R>::evaluateExpression(pint_t expression, A &addressSpace,
 } // namespace libunwind
 
 #endif // __DWARF_INSTRUCTIONS_HPP__
-#endif // defined(_POSIX_VERSION)
+#endif // Unix or Mac OS)

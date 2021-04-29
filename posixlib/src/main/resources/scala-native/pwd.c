@@ -1,4 +1,5 @@
-#if defined(_POSIX_VERSION)
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <stdlib.h>
 #include <pwd.h>
 #include "types.h"
@@ -47,4 +48,4 @@ int scalanative_getpwnam(char *name, struct scalanative_passwd *buf) {
     }
 }
 
-#endif // _POSIX_VERSION
+#endif // Unix or Mac OS
