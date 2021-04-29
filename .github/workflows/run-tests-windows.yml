@@ -21,16 +21,17 @@ jobs:
       - uses: actions/checkout@v2
       
       #Prepare environment, clang needs to be installed
+      #Compilation on MSVC needs c++14 or higher and expects llvm 10.0.0 or newer
       - name: Cache LLVM
         id: cache-llvm
         uses: actions/cache@v2
         with:
           path: |
             C:\Program Files\LLVM\
-          key: ${{ runner.os }}-llvm-6
+          key: ${{ runner.os }}-llvm-10
       - name: Install LLVM
         if: steps.cache-llvm.outputs.cache-hit != 'true'
-        run: choco install llvm --version=6.0.1 
+        run: choco install llvm --version=10.0.0
 
       - name: Add LLVM on Path
         run: echo "${env:ProgramFiles}\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -57,16 +58,17 @@ jobs:
       - uses: actions/checkout@v2
 
       #Prepare environment, clang needs to be installed
+      #Compilation on MSVC needs c++14 or higher and expects llvm 10.0.0 or newer
       - name: Cache LLVM
         id: cache-llvm
         uses: actions/cache@v2
         with:
           path: |
             C:\Program Files\LLVM\
-          key: ${{ runner.os }}-llvm-6
+          key: ${{ runner.os }}-llvm-10
       - name: Install LLVM
         if: steps.cache-llvm.outputs.cache-hit != 'true'
-        run: choco install llvm --version=6.0.1
+        run: choco install llvm --version=10.0.0
 
       - name: Add LLVM on Path
         run: echo "${env:ProgramFiles}\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -96,7 +98,7 @@ jobs:
           | ForEach-Object { Get-ChildItem -Path $_.FullName -File -Recurse -Include *.c,*.S }`
           ) + (Get-ChildItem -Path . -File -Filter *.c)
 
-          $cppSources = Get-ChildItem -Path . -Directory -Exclude gc,optional `
+          $cppSources = Get-ChildItem -Path . -Directory -Exclude $gcDir,$optionalDir `
           | ForEach-Object { Get-ChildItem -Path $_.FullName -File -Recurse -Include *.cpp }
 
           $cSources | ForEach-Object {clang -std=gnu11 -c "$_"}
