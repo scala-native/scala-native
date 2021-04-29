@@ -19,9 +19,7 @@ typedef double complex DoubleComplex;
  */
 FloatComplex toFloatComplex(float snfc[2]) { return *(FloatComplex *)snfc; }
 
-DoubleComplex toDoubleComplex(double sndc[2]) {
-    return *(DoubleComplex *)sndc;
-}
+DoubleComplex toDoubleComplex(double sndc[2]) { return *(DoubleComplex *)sndc; }
 
 float *toNativeFloatComplex(FloatComplex fc, float res[2]) {
     float *fa = (float *)&fc;

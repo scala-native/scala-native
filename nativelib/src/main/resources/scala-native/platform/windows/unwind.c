@@ -17,7 +17,6 @@ typedef struct _UnwindContext {
     SYMBOL_INFOW symbol;
 } UnwindContext;
 
-
 int scalanative_unwind_get_context(void *context) { return 0; }
 
 int scalanative_unwind_init_local(void *cursor, void *context) {
@@ -76,7 +75,8 @@ int scalanative_unwind_get_reg(void *cursor, int regnum,
     return 0;
 }
 
-// Only usage results in passing to get_reg as `regnum`, where it's not actually used
+// Only usage results in passing to get_reg as `regnum`, where it's not actually
+// used
 int scalanative_unw_reg_ip() { return -1; }
 
 #endif // _WIN32

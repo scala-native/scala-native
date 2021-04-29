@@ -1,7 +1,8 @@
 #include <errno.h>
 
 // Omitting EDOM EILSEQ and ERANGE since they are in clib
-// Includes errno compat with Windows errors, not all of them are actually defined
+// Includes errno compat with Windows errors, not all of them are actually
+// defined
 int scalanative_e2big() { return E2BIG; }
 
 int scalanative_eacces() { return EACCES; }
