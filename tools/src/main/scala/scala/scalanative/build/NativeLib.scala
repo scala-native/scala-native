@@ -14,58 +14,10 @@ private[scalanative] case class NativeLib(src: Path, dest: Path)
 /** Utilities for dealing with native library code */
 private[scalanative] object NativeLib {
 
-  /** Java Archive extension: ".jar" */
-  val jarExt = ".jar"
-
   /**
    * Name of directory that contains native code: "scala-native"
    */
   val nativeCodeDir = "scala-native"
-
-  /** Used to find native source files in directories */
-  private def srcPatterns(path: Path): String =
-    srcExtensions.mkString(s"glob:${srcPathPattern(path)}**{", ",", "}")
-
-  /** Used to find native source files in jar files */
-  private val jarSrcRegex: String = {
-    val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
-    // Paths in jars always contains '/' separator instead of OS specific one.
-    s"""^$nativeCodeDir/(.+)$regexExtensions$$"""
-  }
-
-  private def srcPathPattern(path: Path): String =
-    makeDirPath(path, nativeCodeDir)
-
-  /**
-   * Used to create hash of the directory to copy
-   *
-   * @param path The classpath entry
-   * @return The file pattern
-   */
-  private def allFilesPattern(path: Path): String =
-    s"glob:${srcPathPattern(path)}**"
-
-  /**
-   * This method guarantees that only code copied and generated
-   * into the `native` directory and also in the `scala-native`
-   * sub directory gets picked up for compilation.
-   *
-   * @param workdir The base working directory
-   * @param destPath The dest Path to the native lib
-   * @return The source pattern
-   */
-  private def destSrcPattern(workdir: Path, destPath: Path): String = {
-    val dirPattern = s"{${destPath.getFileName()}}"
-    val pathPat    = makeDirPath(workdir, dirPattern, nativeCodeDir)
-    srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
-  }
-
-  /** Does this Path point to a jar file */
-  private def isJar(path: Path): Boolean =
-    path.toString().endsWith(jarExt)
-
-  /** Is this NativeLib in a jar file */
-  private def isJar(nativelib: NativeLib): Boolean = isJar(nativelib.src)
 
   /**
    * Finds all the native libs on the classpath.
@@ -198,6 +150,23 @@ private[scalanative] object NativeLib {
     target
   }
 
+  /** Java Archive extension: ".jar" */
+  private val jarExt = ".jar"
+
+  /** Does this Path point to a jar file */
+  private def isJar(path: Path): Boolean =
+    path.toString().endsWith(jarExt)
+
+  /** Is this NativeLib in a jar file */
+  private def isJar(nativelib: NativeLib): Boolean = isJar(nativelib.src)
+
+  /** Used to find native source files in jar files */
+  private val jarSrcRegex: String = {
+    val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
+    // Paths in jars always contains '/' separator instead of OS specific one.
+    s"""^$nativeCodeDir/(.+)$regexExtensions$$"""
+  }
+
   private val jarPattern = Pattern.compile(jarSrcRegex)
 
   private def isNativeFile(name: String): Boolean =
@@ -215,11 +184,41 @@ private[scalanative] object NativeLib {
       case false => None
     }
 
+  /** Used to find native source files in directories */
+  private def srcPatterns(path: Path): String =
+    srcExtensions.mkString(s"glob:${srcPathPattern(path)}**{", ",", "}")
+
+  private def srcPathPattern(path: Path): String =
+    makeDirPath(path, nativeCodeDir)
+
+  /**
+   * Used to create hash of the directory to copy
+   *
+   * @param path The classpath entry
+   * @return The file pattern
+   */
+  private def allFilesPattern(path: Path): String =
+    s"glob:${srcPathPattern(path)}**"
+
+  /**
+   * This method guarantees that only code copied and generated
+   * into the `native` directory and also in the `scala-native`
+   * sub directory gets picked up for compilation.
+   *
+   * @param workdir The base working directory
+   * @param destPath The dest Path to the native lib
+   * @return The source pattern
+   */
+  private def destSrcPattern(workdir: Path, destPath: Path): String = {
+    val dirPattern = s"{${destPath.getFileName()}}"
+    val pathPat    = makeDirPath(workdir, dirPattern, nativeCodeDir)
+    srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
+  }
+
   private def makeDirPath(path: Path, elems: String*): String = {
     val pathSep = if (Platform.isWindows) raw"\\" else File.separator
 
     (path.toString.replace(File.separator, pathSep) +: elems)
       .mkString("", pathSep, pathSep)
   }
-
 }
