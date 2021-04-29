@@ -15,6 +15,7 @@ import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
 import scala.util.Try
+import scala.scalanative.build.Platform
 
 object ScalaNativePluginInternal {
 
@@ -83,7 +84,8 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
     nativeLink / artifactPath := {
-      crossTarget.value / (moduleName.value + "-out")
+      val ext = if(Platform.isWindows) ".exe"   else ""
+      crossTarget.value / (moduleName.value + "-out" + ext)
     },
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
