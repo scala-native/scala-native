@@ -40,9 +40,11 @@ private[scalanative] object LLVM {
       if (isLl || !Files.exists(objPath)) {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag =
-          if (isLl) Seq()
-          else if (isCpp) Seq("-std=c++11")
-          else Seq("-std=gnu11")
+          if (isLl) None
+          else if (isCpp) {
+            if (config.targetsWindows) Some("-std=c++14")
+            else Some("-std=c++11")
+          } else Some("-std=gnu11")
         val flags = opt(config) +: stdflag ++: "-fvisibility=hidden" +:
           config.compileOptions
         val compilec =
@@ -83,7 +85,7 @@ private[scalanative] object LLVM {
       // * libpthread for process APIs and parallel garbage collection.
       // * Dbghelp for windows implementation of unwind libunwind API
       val platformsLinks =
-        if (config.targetsWindows) Seq("Dbghelp.lib")
+        if (config.targetsWindows) Seq("Dbghelp")
         else Seq("pthread", "dl")
       platformsLinks ++ srclinks ++ gclinks
     }
