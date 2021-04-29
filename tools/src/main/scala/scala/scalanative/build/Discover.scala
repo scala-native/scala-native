@@ -79,6 +79,13 @@ object Discover {
     libs
   }
 
+  /** Find default linktime resolve properties */
+  def linktimeProperties(): Map[String, Any] = {
+    Map(
+      "isWindows" -> Platform.isWindows
+    )
+  }
+
   /** Tests whether the clang compiler is greater or equal to the
    *  minumum version required.
    */

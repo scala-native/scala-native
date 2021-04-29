@@ -61,7 +61,8 @@ object ScalaNativePluginInternal {
       .withLTO(Discover.LTO())
       .withGC(Discover.GC())
       .withMode(Discover.mode())
-      .withOptimize(Discover.optimize()),
+      .withOptimize(Discover.optimize())
+      .withLinktimeProperties(Discover.linktimeProperties()),
     nativeWarnOldJVM := {
       val logger = streams.value.log
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -84,7 +85,7 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
     nativeLink / artifactPath := {
-      val ext = if(Platform.isWindows) ".exe"   else ""
+      val ext = if (Platform.isWindows) ".exe" else ""
       crossTarget.value / (moduleName.value + "-out" + ext)
     },
     nativeWorkdir := {
