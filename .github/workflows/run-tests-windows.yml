@@ -80,5 +80,3 @@ jobs:
 
           $cSources | ForEach-Object {clang -std=gnu11 -c "$_"}
           $cppSources | ForEach-Object {clang++ -std=c++14 -c "$_"}
-
-
