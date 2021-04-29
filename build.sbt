@@ -400,6 +400,7 @@ lazy val sbtScalaNative =
             nativelib / publishLocal,
             clib / publishLocal,
             posixlib / publishLocal,
+            windowslib / publishLocal,
             javalib / publishLocal,
             auxlib / publishLocal,
             scalalib / publishLocal,
@@ -443,6 +444,13 @@ lazy val posixlib =
     .settings(mavenPublishSettings)
     .dependsOn(nscplugin % "plugin", nativelib)
 
+lazy val windowslib =
+  project
+    .in(file("windowslib"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(mavenPublishSettings)
+    .dependsOn(nscplugin % "plugin", nativelib, clib)
+
 lazy val javalibCommonSettings = Def.settings(
   disabledDocsSettings,
   // This is required to have incremental compilation to work in javalib.
@@ -473,7 +481,7 @@ lazy val javalib =
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
     .settings(javalibCommonSettings)
-    .dependsOn(nscplugin % "plugin", posixlib, clib)
+    .dependsOn(nscplugin % "plugin", posixlib, windowslib, clib)
 
 lazy val javalibExtDummies = project
   .in(file("javalib-ext-dummies"))
