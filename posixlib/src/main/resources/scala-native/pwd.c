@@ -1,4 +1,4 @@
-#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <stdlib.h>
 #include <pwd.h>

@@ -1,4 +1,4 @@
-#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 // The Open Group Base Specifications Issue 7, 2018 edition
 // https://pubs.opengroup.org/onlinepubs/9699919799/basedefs\

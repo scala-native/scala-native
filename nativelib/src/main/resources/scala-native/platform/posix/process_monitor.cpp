@@ -1,6 +1,6 @@
 // This mechanism is only used in POSIX compliant platforms.
 // On Windows other build in approach is used.
-#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <memory>
 #include <pthread.h>
