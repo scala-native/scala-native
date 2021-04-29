@@ -102,15 +102,15 @@ jobs:
           $cSources | ForEach-Object {clang -std=gnu11 -c "$_"}
           $cppSources | ForEach-Object {clang++ -std=c++14 -c "$_"}
 
-      - name: Cache zlib
-        id: cache-llvm
+      - name: Cache optional deps
+        id: cache-optional
         uses: actions/cache@v2
         with:
           path: |
             C:\Program Files\zlib\
-          key: ${{ runner.os }}-zlib
+          key: ${{ runner.os }}-optional
       - name: Install zlib
-        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        if: steps.cache-optional.outputs.cache-hit != 'true'
         run: |
           (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install_zlib.bat')
           ./install_zlib.bat
