@@ -45,7 +45,83 @@ jobs:
           $sharedDirs   = @("${{ join(matrix.gc.include, '", "') }}") | %{Join-Path $gcRoot $_}
           $compiledDirs = @($gcDir) + $sharedDirs
           $includes     = $sharedDirs | %{"-I" + $_}
-          Get-ChildItem -Path $compiledDirs -Include *.c -Recurse -File `
+          Get-ChildItem -Path $compiledDirs -Filter *.c -Recurse -File `
           | ForEach-Object {clang -std=gnu11 -Wno-override-module $includes -c "$_"}
-          Get-ChildItem -Path $compiledDirs -Include *.cpp -Recurse -File `
+          Get-ChildItem -Path $compiledDirs -Filter *.cpp -Recurse -File `
           | ForEach-Object {clang++ -std=c++14 -Wno-override-module $includes -c "$_"}
+
+  compile-non-gc:
+    name: Compile non-GC sources
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+
+      #Prepare environment, clang needs to be installed
+      - name: Cache LLVM
+        id: cache-llvm
+        uses: actions/cache@v2
+        with:
+          path: |
+            C:\Program Files\LLVM\
+          key: ${{ runner.os }}-llvm-6
+      - name: Install LLVM
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        run: choco install llvm --version=6.0.1
+
+      - name: Add LLVM on Path
+        run: echo "${env:ProgramFiles}\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Assert clang installed and on path
+        run: clang --version
+
+      - name: Compile clib
+        run: |
+          $codeDir      = (Resolve-Path -Path ".\clib\src\main\resources\scala-native\").Path
+          Get-ChildItem -Path $codeDir -Include *.c -Recurse -File `
+          | ForEach-Object {clang -std=gnu11 -c "$_"}
+
+      - name: Compile posixlib
+        run: |
+          $codeDir      = (Resolve-Path -Path ".\posixlib\src\main\resources\scala-native\").Path
+          Get-ChildItem -Path $codeDir -Include *.c -Recurse -File `
+          | ForEach-Object {clang -std=gnu11 -c "$_"}
+
+      # Compile nativelib excluding GC and optional dependencies
+      - name: Compile nativelib
+        run: |
+          $codeDir      = (Resolve-Path -Path ".\nativelib\src\main\resources\scala-native\").Path
+          $gcDir        = Join-Path $codeDir gc
+          $optionalDir  = Join-Path $codeDir optional
+
+          $cSources = (Get-ChildItem -Path . -Directory -Exclude gc,optional `
+          | ForEach-Object { Get-ChildItem -Path $_.FullName -File -Recurse -Include *.c,*.S }`
+          ) + (Get-ChildItem -Path . -File -Filter *.c)
+
+          $cppSources = Get-ChildItem -Path . -Directory -Exclude gc,optional `
+          | ForEach-Object { Get-ChildItem -Path $_.FullName -File -Recurse -Include *.cpp }
+
+          $cSources | ForEach-Object {clang -std=gnu11 -c "$_"}
+          $cppSources | ForEach-Object {clang++ -std=c++14 -c "$_"}
+
+      - name: Cache zlib
+        id: cache-llvm
+        uses: actions/cache@v2
+        with:
+          path: |
+            C:\Program Files\zlib\
+          key: ${{ runner.os }}-zlib
+      - name: Install zlib
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        run: |
+          (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install_zlib.bat')
+          ./install_zlib.bat
+          del install_zlib.bat
+
+      # Compile optional components like zlib
+      - name: Compile optional
+        run: |
+          $codeDir      = (Resolve-Path -Path ".\nativelib\src\main\resources\scala-native\optional").Path
+          Get-ChildItem -Path $codeDir -Filter *.c -Recurse -File `
+          | ForEach-Object {clang -std=gnu11 -c -I C:\Program Files\zlib\include "$_"}
+
+
+
