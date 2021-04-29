@@ -6,12 +6,8 @@
 #include <sys/time.h>
 #endif
 
-extern "C" {
 long long scalanative_current_time_millis() {
     long long current_time_millis;
-
-#define MILLIS_PER_SEC 1000LL
-#define MICROS_PER_MILLI 1000LL
 
 #if defined(_WIN32)
     // January 1, 1970 (start of Unix epoch) in "ticks"
@@ -30,15 +26,13 @@ long long scalanative_current_time_millis() {
 
     current_time_millis = (li.QuadPart - UNIX_TIME_START) / TICKS_PER_MILLIS;
 #else
+#define MILLIS_PER_SEC 1000LL
+#define MICROS_PER_MILLI 1000LL
+
     struct timeval tv;
     gettimeofday(&tv, NULL);
     current_time_millis =
         tv.tv_sec * MILLIS_PER_SEC + tv.tv_usec / MICROS_PER_MILLI;
 #endif
-
-#undef MILLIS_PER_SEC
-#undef MICROS_PER_MILLI
-
     return current_time_millis;
-}
 }
