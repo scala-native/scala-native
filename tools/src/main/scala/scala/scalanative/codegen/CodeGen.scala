@@ -77,12 +77,12 @@ object CodeGen {
     }
 
   object Impl {
-    import scala.scalanative.codegen.compat.GenericCodeGen
+    import scala.scalanative.codegen.AbstractCodeGen
     import scala.scalanative.codegen.compat.os._
 
     def apply(config: Config, env: Map[Global, Defn], defns: Seq[Defn])(
-        implicit meta: Metadata): GenericCodeGen = {
-      new GenericCodeGen(config, env, defns) {
+        implicit meta: Metadata): AbstractCodeGen = {
+      new AbstractCodeGen(config, env, defns) {
         override val os: OsCompat = {
           if (config.targetsWindows) new WindowsCompat(this)
           else new UnixCompat(this)

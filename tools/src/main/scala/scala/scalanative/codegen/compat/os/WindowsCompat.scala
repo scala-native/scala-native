@@ -1,11 +1,12 @@
 package scala.scalanative.codegen.compat.os
 
-import scala.scalanative.codegen.compat.GenericCodeGen
+import scala.scalanative.codegen.AbstractCodeGen
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir.{Fresh, Next, Position, Val}
 import scala.scalanative.util.ShowBuilder
 
-private[codegen] class WindowsCompat(codegen: GenericCodeGen) extends OsCompat {
+private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
+    extends OsCompat {
   val ehWrapperTy       = "\"??_R0?AVExceptionWrapper@scalanative@@@8\""
   val ehWrapperName     = "c\".?AVExceptionWrapper@scalanative@@\\00\""
   val ehClass           = "%\"class.scalanative::ExceptionWrapper\""

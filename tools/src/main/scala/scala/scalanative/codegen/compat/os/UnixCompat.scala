@@ -1,11 +1,11 @@
 package scala.scalanative.codegen.compat.os
 
-import scala.scalanative.codegen.compat.GenericCodeGen
+import scala.scalanative.codegen.AbstractCodeGen
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir._
 import scala.scalanative.util.ShowBuilder
 
-private[codegen] class UnixCompat(codeGen: GenericCodeGen) extends OsCompat {
+private[codegen] class UnixCompat(codeGen: AbstractCodeGen) extends OsCompat {
   val ehWrapperTy = "@_ZTIN11scalanative16ExceptionWrapperE"
   val excRecTy    = "{ i8*, i32 }"
   val beginCatch  = "@__cxa_begin_catch"

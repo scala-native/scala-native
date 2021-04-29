@@ -1,9 +1,8 @@
-package scala.scalanative.codegen.compat
+package scala.scalanative.codegen
 
 import java.nio.file.{Path, Paths}
 import java.{lang => jl}
 import scala.collection.mutable
-import scala.scalanative.codegen.Metadata
 import scala.scalanative.codegen.compat.os.OsCompat
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.ControlFlow.{Block, Graph => CFG}
@@ -12,7 +11,7 @@ import scala.scalanative.util.ShowBuilder.FileShowBuilder
 import scala.scalanative.util.{ShowBuilder, unreachable, unsupported}
 import scala.scalanative.{build, linker, nir}
 
-private[codegen] abstract class GenericCodeGen(
+private[codegen] abstract class AbstractCodeGen(
     val config: build.Config,
     env: Map[Global, Defn],
     defns: Seq[Defn])(implicit meta: Metadata) {
@@ -138,7 +137,7 @@ private[codegen] abstract class GenericCodeGen(
       unsupported(defn)
   }
 
-  private[compat] def genGlobalDefn(
+  private[codegen] def genGlobalDefn(
       attrs: Attrs,
       name: nir.Global,
       isConst: Boolean,
@@ -158,7 +157,7 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genFunctionDefn(
+  private[codegen] def genFunctionDefn(
       attrs: Attrs,
       name: Global,
       sig: Type,
@@ -220,7 +219,7 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genFunctionReturnType(retty: Type)(
+  private[codegen] def genFunctionReturnType(retty: Type)(
       implicit sb: ShowBuilder): Unit = {
     retty match {
       case refty: Type.RefKind =>
@@ -231,7 +230,7 @@ private[codegen] abstract class GenericCodeGen(
     genType(retty)
   }
 
-  private[compat] def genReferenceTypeAttribute(refty: Type.RefKind)(
+  private[codegen] def genReferenceTypeAttribute(refty: Type.RefKind)(
       implicit sb: ShowBuilder): Unit = {
     import sb._
     val (nonnull, deref, size) = toDereferenceable(refty)
@@ -245,7 +244,7 @@ private[codegen] abstract class GenericCodeGen(
     str(") ")
   }
 
-  private[compat] def toDereferenceable(
+  private[codegen] def toDereferenceable(
       refty: Type.RefKind): (Boolean, String, Long) = {
     val size = meta.linked.infos(refty.className) match {
       case info: linker.Trait =>
@@ -263,7 +262,7 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genBlock(
+  private[codegen] def genBlock(
       block: Block)(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
     import sb._
     val Block(name, params, insts, isEntry) = block
@@ -278,21 +277,21 @@ private[codegen] abstract class GenericCodeGen(
     unindent()
   }
 
-  private[compat] def genBlockHeader()(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genBlockHeader()(implicit sb: ShowBuilder): Unit = {
     import sb._
     newline()
     genBlockSplitName()
     str(":")
   }
 
-  private[compat] def genBlockSplitName()(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genBlockSplitName()(implicit sb: ShowBuilder): Unit = {
     import sb._
     genLocal(currentBlockName)
     str(".")
     str(currentBlockSplit)
   }
 
-  private[compat] def genBlockPrologue(
+  private[codegen] def genBlockPrologue(
       block: Block)(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
     import sb._
     if (!block.isEntry) {
@@ -339,7 +338,7 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genBlockLandingPads(
+  private[codegen] def genBlockLandingPads(
       block: Block)(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
     block.insts.foreach {
       case inst @ Inst.Let(_, _, unwind: Next.Unwind) =>
@@ -349,7 +348,7 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genType(ty: Type)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genType(ty: Type)(implicit sb: ShowBuilder): Unit = {
     import sb._
     ty match {
       case Type.Vararg                                           => str("...")
@@ -380,7 +379,7 @@ private[codegen] abstract class GenericCodeGen(
 
   private val constMap = mutable.Map.empty[Val, Global]
   private val constTy  = mutable.Map.empty[Global, Type]
-  private[compat] def constFor(v: Val): Global =
+  private[codegen] def constFor(v: Val): Global =
     if (constMap.contains(v)) {
       constMap(v)
     } else {
@@ -391,7 +390,7 @@ private[codegen] abstract class GenericCodeGen(
       constTy(name) = v.ty
       name
     }
-  private[compat] def deconstify(v: Val): Val = v match {
+  private[codegen] def deconstify(v: Val): Val = v match {
     case Val.Local(local, _) if copies.contains(local) =>
       deconstify(copies(local))
     case Val.StructValue(vals) =>
@@ -404,7 +403,7 @@ private[codegen] abstract class GenericCodeGen(
       v
   }
 
-  private[compat] def genJustVal(v: Val)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genJustVal(v: Val)(implicit sb: ShowBuilder): Unit = {
     import sb._
 
     deconstify(v) match {
@@ -443,7 +442,7 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genChars(bytes: Array[Byte])(
+  private[codegen] def genChars(bytes: Array[Byte])(
       implicit sb: ShowBuilder): Unit = {
     import sb._
 
@@ -461,28 +460,28 @@ private[codegen] abstract class GenericCodeGen(
     str("\\00\"")
   }
 
-  private[compat] def genFloatHex(value: Float)(
+  private[codegen] def genFloatHex(value: Float)(
       implicit sb: ShowBuilder): Unit = {
     import sb._
     str("0x")
     str(jl.Long.toHexString(jl.Double.doubleToRawLongBits(value.toDouble)))
   }
 
-  private[compat] def genDoubleHex(value: Double)(
+  private[codegen] def genDoubleHex(value: Double)(
       implicit sb: ShowBuilder): Unit = {
     import sb._
     str("0x")
     str(jl.Long.toHexString(jl.Double.doubleToRawLongBits(value)))
   }
 
-  private[compat] def genVal(value: Val)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genVal(value: Val)(implicit sb: ShowBuilder): Unit = {
     import sb._
     genType(value.ty)
     str(" ")
     genJustVal(value)
   }
 
-  private[compat] def mangled(g: Global): String = g match {
+  private[codegen] def mangled(g: Global): String = g match {
     case Global.None =>
       unsupported(g)
     case Global.Member(_, sig) if sig.isExtern =>
@@ -492,14 +491,15 @@ private[codegen] abstract class GenericCodeGen(
       "_S" + g.mangle
   }
 
-  private[compat] def genGlobal(g: Global)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genGlobal(g: Global)(implicit sb: ShowBuilder): Unit = {
     import sb._
     str("\"")
     str(mangled(g))
     str("\"")
   }
 
-  private[compat] def genLocal(local: Local)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genLocal(local: Local)(
+      implicit sb: ShowBuilder): Unit = {
     import sb._
     local match {
       case Local(id) =>
@@ -508,8 +508,8 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genInst(inst: Inst)(implicit fresh: Fresh,
-                                          sb: ShowBuilder): Unit = {
+  private[codegen] def genInst(inst: Inst)(implicit fresh: Fresh,
+                                           sb: ShowBuilder): Unit = {
     import sb._
     inst match {
       case inst: Inst.Let =>
@@ -587,8 +587,8 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genLet(inst: Inst.Let)(implicit fresh: Fresh,
-                                             sb: ShowBuilder): Unit = {
+  private[codegen] def genLet(inst: Inst.Let)(implicit fresh: Fresh,
+                                              sb: ShowBuilder): Unit = {
     import sb._
     def isVoid(ty: Type): Boolean =
       ty == Type.Unit || ty == Type.Nothing
@@ -742,9 +742,10 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genCall(genBind: () => Unit, call: Op.Call, unwind: Next)(
-      implicit fresh: Fresh,
-      sb: ShowBuilder): Unit = {
+  private[codegen] def genCall(
+      genBind: () => Unit,
+      call: Op.Call,
+      unwind: Next)(implicit fresh: Fresh, sb: ShowBuilder): Unit = {
     import sb._
     call match {
       case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
@@ -812,7 +813,7 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genCallFunctionType(ty: Type)(
+  private[codegen] def genCallFunctionType(ty: Type)(
       implicit sb: ShowBuilder): Unit = {
     ty match {
       case Type.Function(argtys, retty) =>
@@ -827,7 +828,7 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genCallArgument(v: Val)(
+  private[codegen] def genCallArgument(v: Val)(
       implicit sb: ShowBuilder): Unit = {
     import sb._
     v match {
@@ -849,7 +850,7 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genOp(op: Op)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genOp(op: Op)(implicit sb: ShowBuilder): Unit = {
     import sb._
     op match {
       case Op.Extract(aggr, indexes) =>
@@ -911,7 +912,7 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genNext(next: Next)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genNext(next: Next)(implicit sb: ShowBuilder): Unit = {
     import sb._
     next match {
       case Next.Case(v, next) =>
@@ -930,10 +931,10 @@ private[codegen] abstract class GenericCodeGen(
     }
   }
 
-  private[compat] def genConv(conv: Conv)(implicit sb: ShowBuilder): Unit =
+  private[codegen] def genConv(conv: Conv)(implicit sb: ShowBuilder): Unit =
     sb.str(conv.show)
 
-  private[compat] def genAttr(attr: Attr)(implicit sb: ShowBuilder): Unit =
+  private[codegen] def genAttr(attr: Attr)(implicit sb: ShowBuilder): Unit =
     sb.str(attr.show)
 
 }
