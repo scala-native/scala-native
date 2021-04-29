@@ -92,7 +92,7 @@ jobs:
           $gcDir        = Join-Path $codeDir gc
           $optionalDir  = Join-Path $codeDir optional
 
-          $cSources = (Get-ChildItem -Path . -Directory -Exclude gc,optional `
+          $cSources = (Get-ChildItem -Path . -Directory -Exclude $gcDir,$optionalDir `
           | ForEach-Object { Get-ChildItem -Path $_.FullName -File -Recurse -Include *.c,*.S }`
           ) + (Get-ChildItem -Path . -File -Filter *.c)
 
