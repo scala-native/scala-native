@@ -111,6 +111,11 @@ jobs:
         run: clang --version
 
       - name: Run sandbox
+        # Set heap limits manually, there seams to be bug in detection of avaiable memory
+        # which results in undefined beviour at runtime 
+        env:
+          SCALANATIVE_MIN_SIZE: 128M
+          SCALANATIVE_MAX_SIZE: 1G
         run: |
           sbt ++${{matrix.scala}};sandbox/run
         shell: cmd
