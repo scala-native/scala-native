@@ -163,12 +163,10 @@ object signal {
   type mcontext_t = Ptr[Byte]
 
   type ucontext_t = CStruct4[
-    Ptr[Byte], // ucontext_t *uc_link Ptr to the context that is resumed when this context returns (Ptr instead)
-    sigset_t,  // c_sigmask The set of signals that are blocked when this context is active
-    Ptr[
-      stack_t
-    ],         // uc_stack The stack used by this context (Ptr instead of value)
-    mcontext_t // uc_mcontext A machine-specific representation of the saved context
+    Ptr[Byte],    // ucontext_t *uc_link Ptr to the resumed context when context returns (Ptr[Byte] instead)
+    sigset_t,     // c_sigmask The set of signals that are blocked when this context is active
+    Ptr[stack_t], // uc_stack The stack context (Ptr instead of value)
+    mcontext_t    // uc_mcontext A machine-specific representation of the saved context
   ]
 
   type stack_t = CStruct3[
