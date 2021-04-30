@@ -118,7 +118,7 @@ object FileDescriptor {
 
       val fileHandle = if (isWindows) {
         val handle = CreateFileW(
-          filename = toCWideStringUTF16LE(file.getPath),
+          filename = toCWideStringUTF16LE(file.getPath()),
           desiredAccess = FILE_GENERIC_READ,
           shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
           securityAttributes = null,
