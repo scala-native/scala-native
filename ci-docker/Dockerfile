@@ -38,7 +38,7 @@ RUN \
   apt-get update && \
   apt-get install -y sbt
 
-RUN apt-get update && apt-get install -y clang-6.0 zlib1g-dev libgc-dev
+RUN apt-get update && apt-get install -y clang-6.0 zlib1g-dev libgc-dev libssl-dev
 
 ENV LC_ALL "C.UTF-8"
 
