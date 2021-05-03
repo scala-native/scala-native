@@ -96,12 +96,16 @@ object Files {
     if (options.contains(COPY_ATTRIBUTES)) {
       val newAttrView =
         getFileAttributeView(target, classOf[PosixFileAttributeView], linkOpts)
-      newAttrView.setTimes(attrs.lastModifiedTime(),
-                           attrs.lastAccessTime(),
-                           attrs.creationTime())
+
+      // Re-read attrs, copy() above may have changed lastModifiedTime.
+      val attrs =
+        Files.readAttributes(source, classOf[PosixFileAttributes], linkOpts)
       newAttrView.setGroup(attrs.group())
       newAttrView.setOwner(attrs.owner())
       newAttrView.setPermissions(attrs.permissions())
+      newAttrView.setTimes(attrs.lastModifiedTime(),
+                           attrs.lastAccessTime(),
+                           attrs.creationTime())
     }
     target
   }
