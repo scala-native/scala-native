@@ -3,6 +3,9 @@ package build
 
 import java.nio.file.{Files, Path, Paths}
 
+import java.util.Properties
+import java.io.FileInputStream
+
 import scalanative.build.IO.RichPath
 import scalanative.build.NativeLib._
 import scalanative.build.LLVM._
@@ -38,6 +41,10 @@ private[scalanative] object Filter {
       // predicate to check if given file path shall be compiled
       // we only include sources of the current gc and exclude
       // all optional dependencies if they are not necessary
+      val props = new Properties()
+      props.load(new FileInputStream(file.toFile()))
+      val plugin = props.getProperty("plugin")
+      println(plugin)
       val optPath = nativeCodePath.resolve("optional").abs
       val (gcPath, gcIncludePaths, gcSelectedPaths) = {
         val gcPath = nativeCodePath.resolve("gc")
