@@ -14,5 +14,5 @@ package object linker {
   def propName(name: String) = Sig.Generated(name + "_property")
 
   val linktimeInfoModule = Global.Top("scala.scalanative.meta.LinktimeInfo$")
-  val isWindowsProp = linktimeInfoModule.member(propName("isWindows"))
+  val isWindowsProp      = linktimeInfoModule.member(propName("isWindows"))
 }

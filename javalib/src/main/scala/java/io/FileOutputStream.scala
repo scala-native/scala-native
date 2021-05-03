@@ -38,7 +38,7 @@ class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
 
   override def write(buffer: Array[Byte], offset: Int, count: Int): Unit = {
     if (buffer == null) {
-    throw new NullPointerException
+      throw new NullPointerException
     }
     if (offset < 0 || count < 0 || count > buffer.length - offset) {
       throw new IndexOutOfBoundsException
