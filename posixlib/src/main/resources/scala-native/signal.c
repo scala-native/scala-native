@@ -1,3 +1,5 @@
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <signal.h>
 
 // symbolic constants -  see signal.scala
@@ -85,5 +87,4 @@ int scalanative_si_queue() { return SI_QUEUE; }
 int scalanative_si_timer() { return SI_TIMER; }
 int scalanative_si_asyncio() { return SI_ASYNCIO; }
 int scalanative_si_mesgq() { return SI_MESGQ; }
-
-// scala native helper functions
+#endif // is Unix or MacOS
