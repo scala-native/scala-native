@@ -282,14 +282,14 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
     )
 
     val cases: List[((Double, String, Long), Int)] = List(
-      (-0.0, "", 1L)              -> 1,
-      (1.5, "2", 2L)              -> 2,
-      (3.0, "tri", -1L)           -> 3,
-      (3.0, "", 3L)               -> 3,
-      (4.0, "four", 4L)           -> 4,
-      (4.0, "three", 4L)          -> 4,
-      (5.0, "", 1234567889L)      -> 5,
-      (654321.0, "", 1234567891L) -> 6
+      (-0.0, "none", 1L)              -> 1,
+      (1.5, "2", 2L)                  -> 2,
+      (3.0, "tri", -1L)               -> 3,
+      (3.0, "None", 3L)               -> 3,
+      (4.0, "four", 4L)               -> 4,
+      (4.0, "three", 4L)              -> 4,
+      (5.0, "None", 1234567889L)      -> 5,
+      (654321.0, "None", 1234567891L) -> 6
     )
 
     for (((doubleValue, stringValue, longValue), pathNumber) <- cases)

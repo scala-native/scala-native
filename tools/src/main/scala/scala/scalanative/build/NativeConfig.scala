@@ -165,23 +165,34 @@ object NativeConfig {
 
     override def withLinktimeProperties(v: Map[String, Any]): NativeConfig = {
       def isNumberOrString(value: Any) = {
-        def isNonUnitPrimitive =
-          value.getClass.isPrimitive && value.isInstanceOf[Unit]
+        def isNonUnitPrimitive = value match {
+          case _: java.lang.Boolean | Boolean => true
+          case _: java.lang.Byte | Byte       => true
+          case _: java.lang.Character | Char  => true
+          case _: java.lang.Short | Short     => true
+          case _: java.lang.Integer | Int     => true
+          case _: java.lang.Long | Long       => true
+          case _: java.lang.Float | Float     => true
+          case _: java.lang.Double | Double   => true
+          case _                              => false
+        }
 
-        def isNonEmptyString =
-          value.isInstanceOf[String] && value.toString.nonEmpty
+        def isNonEmptyString = value match {
+          case s: String => s.nonEmpty
+          case _         => false
+        }
 
         value != null && (isNonUnitPrimitive || isNonEmptyString)
       }
 
-      val invalid = linktimeProperties.collect {
+      val invalid = v.collect {
         case (key, value) if !isNumberOrString(value) => key
       }
       if (invalid.nonEmpty) {
         System.err.println(
           s"Invalid link-time properties: \n ${invalid.mkString(" - ", "\n", "")}")
         throw new BuildException(
-          "Link-time properties needs to be non-null primitives or string")
+          "Link-time properties needs to be non-null primitives or non-empty string")
       }
 
       copy(linktimeProperties = v)
