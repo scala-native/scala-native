@@ -9,6 +9,7 @@ import scala.scalanative.build.ScalaNative.dumpDefns
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir._
 import scala.scalanative.util.{Scope, partitionBy, procs}
+import scala.scalanative.compat.CompatParColls.Converters._
 
 object CodeGen {
 
