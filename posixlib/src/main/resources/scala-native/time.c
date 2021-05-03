@@ -21,8 +21,7 @@ struct scalanative_tm {
     int tm_isdst;
 };
 
-static struct scalanative_tm scalanative_gmtime_buf;
-static struct scalanative_tm scalanative_localtime_buf;
+static struct scalanative_tm scalanative_shared_tm_buf;
 
 static void scalanative_tm_init(struct scalanative_tm *scala_tm,
                                 struct tm *tm) {
@@ -74,7 +73,7 @@ struct scalanative_tm *scalanative_gmtime_r(const time_t *clock,
 }
 
 struct scalanative_tm *scalanative_gmtime(const time_t *clock) {
-    return scalanative_gmtime_r(clock, &scalanative_gmtime_buf);
+    return scalanative_gmtime_r(clock, &scalanative_shared_tm_buf);
 }
 
 struct scalanative_tm *scalanative_localtime_r(const time_t *clock,
@@ -86,7 +85,9 @@ struct scalanative_tm *scalanative_localtime_r(const time_t *clock,
 }
 
 struct scalanative_tm *scalanative_localtime(const time_t *clock) {
-    return scalanative_localtime_r(clock, &scalanative_localtime_buf);
+    // Calling localtime() ensures that tzset() has been called.
+    scalanative_tm_init(&scalanative_shared_tm_buf, localtime(clock));
+    return &scalanative_shared_tm_buf;
 }
 
 time_t scalanative_mktime(struct scalanative_tm *result) {
