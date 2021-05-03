@@ -21,12 +21,12 @@ object SocketHelpers {
     Zone { implicit z =>
       val cIP = toCString(ip)
 
-      var hints = alloc[addrinfo] // alloc documented to clear retured memory
+      val hints = alloc[addrinfo] // alloc documented to clear retured memory
       hints.ai_family = AF_UNSPEC
       hints.ai_flags = 4 // AI_NUMERICHOST
       hints.ai_socktype = SOCK_STREAM
 
-      var ret = alloc[Ptr[addrinfo]]
+      val ret = alloc[Ptr[addrinfo]]
 
       if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
         return false
@@ -104,31 +104,32 @@ object SocketHelpers {
 
   def hostToIp(host: String): Option[String] = {
     Zone { implicit z =>
-      var hints = alloc[addrinfo]
+      val hints = alloc[addrinfo]
       hints.ai_family = AF_UNSPEC
 
-      var ret = alloc[Ptr[addrinfo]]
+      val ret = alloc[Ptr[addrinfo]]
 
-      var ipstr = alloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
+      val ipstr = alloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
 
       val status = getaddrinfo(toCString(host), null, hints, ret)
       if (status != 0)
         return None
 
-      var addr = alloc[Byte]
-      if ((!ret).ai_family == AF_INET) {
-        addr = (!ret).ai_addr
-          .asInstanceOf[Ptr[sockaddr_in]]
-          .sin_addr
-          .toPtr
-          .asInstanceOf[Ptr[Byte]]
-      } else {
-        addr = (!ret).ai_addr
-          .asInstanceOf[Ptr[sockaddr_in6]]
-          .sin6_addr
-          .toPtr
-          .asInstanceOf[Ptr[Byte]]
-      }
+      val addr =
+        if ((!ret).ai_family == AF_INET) {
+          (!ret).ai_addr
+            .asInstanceOf[Ptr[sockaddr_in]]
+            .sin_addr
+            .toPtr
+            .asInstanceOf[Ptr[Byte]]
+        } else {
+          (!ret).ai_addr
+            .asInstanceOf[Ptr[sockaddr_in6]]
+            .sin6_addr
+            .toPtr
+            .asInstanceOf[Ptr[Byte]]
+        }
+
       inet_ntop((!ret).ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
       freeaddrinfo(!ret)
       Some(fromCString(ipstr))
@@ -138,11 +139,11 @@ object SocketHelpers {
   def hostToIpArray(host: String): scala.Array[String] = {
     Zone { implicit z =>
       // unsafe.alloc is documented to clear memory
-      var hints = alloc[addrinfo]
+      val hints = alloc[addrinfo]
       hints.ai_family = AF_UNSPEC
       hints.ai_socktype = SOCK_STREAM
 
-      var ret = alloc[Ptr[addrinfo]]
+      val ret = alloc[Ptr[addrinfo]]
 
       val retArray = scala.collection.mutable.ArrayBuffer[String]()
       val status   = getaddrinfo(toCString(host), null, hints, ret)
@@ -151,21 +152,23 @@ object SocketHelpers {
 
       var p = !ret
       while (p != null) {
-        var ipstr = alloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
-        var addr  = alloc[Byte]
-        if (p.ai_family == AF_INET) {
-          addr = p.ai_addr
-            .asInstanceOf[Ptr[sockaddr_in]]
-            .sin_addr
-            .toPtr
-            .asInstanceOf[Ptr[Byte]]
-        } else {
-          addr = p.ai_addr
-            .asInstanceOf[Ptr[sockaddr_in6]]
-            .sin6_addr
-            .toPtr
-            .asInstanceOf[Ptr[Byte]]
-        }
+        val ipstr = alloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
+
+        val addr =
+          if (p.ai_family == AF_INET) {
+            p.ai_addr
+              .asInstanceOf[Ptr[sockaddr_in]]
+              .sin_addr
+              .toPtr
+              .asInstanceOf[Ptr[Byte]]
+          } else {
+            p.ai_addr
+              .asInstanceOf[Ptr[sockaddr_in6]]
+              .sin6_addr
+              .toPtr
+              .asInstanceOf[Ptr[Byte]]
+          }
+
         inet_ntop(p.ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
         retArray += fromCString(ipstr)
         p = p.ai_next.asInstanceOf[Ptr[addrinfo]]
@@ -177,35 +180,34 @@ object SocketHelpers {
 
   def ipToHost(ip: String, isV6: Boolean): Option[String] = {
     Zone { implicit z =>
-      var status  = 0
       val host    = alloc[CChar](1024.toUInt)
       val service = alloc[CChar](20.toUInt)
-      if (isV6) {
+      val status = if (isV6) {
         val addr6 = alloc[sockaddr_in6]
         addr6.sin6_family = AF_INET6.toUShort
         inet_pton(AF_INET6,
                   toCString(ip),
                   addr6.sin6_addr.toPtr.asInstanceOf[Ptr[Byte]])
-        status = getnameinfo(addr6.asInstanceOf[Ptr[sockaddr]],
-                             sizeof[sockaddr_in6].toUInt,
-                             host,
-                             1024.toUInt,
-                             service,
-                             20.toUInt,
-                             0)
+        getnameinfo(addr6.asInstanceOf[Ptr[sockaddr]],
+                    sizeof[sockaddr_in6].toUInt,
+                    host,
+                    1024.toUInt,
+                    service,
+                    20.toUInt,
+                    0)
       } else {
         val addr4 = alloc[sockaddr_in]
         addr4.sin_family = AF_INET.toUShort
         inet_pton(AF_INET,
                   toCString(ip),
                   addr4.sin_addr.toPtr.asInstanceOf[Ptr[Byte]])
-        status = getnameinfo(addr4.asInstanceOf[Ptr[sockaddr]],
-                             sizeof[sockaddr_in].toUInt,
-                             host,
-                             1024.toUInt,
-                             service,
-                             20.toUInt,
-                             0)
+        getnameinfo(addr4.asInstanceOf[Ptr[sockaddr]],
+                    sizeof[sockaddr_in].toUInt,
+                    host,
+                    1024.toUInt,
+                    service,
+                    20.toUInt,
+                    0)
       }
 
       if (status == 0) Some(fromCString(host)) else None
