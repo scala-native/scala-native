@@ -119,5 +119,3 @@ jobs:
         run: |
           sbt ++${{matrix.scala}};sandbox/run
         shell: cmd
-
-

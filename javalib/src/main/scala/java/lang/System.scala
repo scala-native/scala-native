@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.posix.pwdOps._
 import scala.scalanative.posix.{pwd, unistd}
-import scala.scalanative.meta.LinktimeProperites.isWindows
+import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.runtime.{GC, Intrinsics, Platform, time}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._

@@ -3,7 +3,7 @@ package java.io
 import java.nio.file.WindowsException
 import scala.scalanative.nio.fs.UnixException
 import scala.scalanative.libc._
-import scala.scalanative.meta.LinktimeProperites.isWindows
+import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.unistd
 import scala.scalanative.runtime
 import scala.scalanative.unsafe._
@@ -38,7 +38,7 @@ class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
 
   override def write(buffer: Array[Byte], offset: Int, count: Int): Unit = {
     if (buffer == null) {
-      throw new NullPointerException
+    throw new NullPointerException
     }
     if (offset < 0 || count < 0 || count > buffer.length - offset) {
       throw new IndexOutOfBoundsException
