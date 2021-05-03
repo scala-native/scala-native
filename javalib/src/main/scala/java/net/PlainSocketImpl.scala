@@ -77,8 +77,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     val ret = stackalloc[Ptr[addrinfo]]
 
     Zone { implicit z =>
-      val hints = stackalloc[addrinfo]
-      string.memset(hints.asInstanceOf[Ptr[Byte]], 0, sizeof[addrinfo])
+      val hints = stackalloc[addrinfo] // As of PR #1426, stackalloc clears.
       hints.ai_family = socket.AF_UNSPEC
       hints.ai_flags = AI_NUMERICHOST
       hints.ai_socktype = socket.SOCK_STREAM
