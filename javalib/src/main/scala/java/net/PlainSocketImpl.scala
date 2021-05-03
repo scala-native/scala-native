@@ -125,7 +125,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
       pollFdPtr.fd = fd.fd
       pollFdPtr.events = POLLIN
-      pollFdPtr.revents = 0
+      // pollFdPtr.revents already zero, stackalloc cleared.
 
       val pollRes = poll(pollFdPtr, nAlloc, timeout)
 
@@ -238,7 +238,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     pollFdPtr.fd = fd.fd
     pollFdPtr.events = POLLIN | POLLOUT
-    pollFdPtr.revents = 0
+    // pollFdPtr.revents already zero, stackalloc cleared.
 
     val pollRes = poll(pollFdPtr, nAlloc.toUInt, timeout)
 
