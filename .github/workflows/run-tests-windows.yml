@@ -87,22 +87,32 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-2016, windows-2019 ]
+        os: [ windows-2019 ]
         scala: [ 2.13.5, 2.12.13, 2.11.12 ]
     steps:
       - uses: actions/checkout@v2
 
       #Prepare environment, clang needs to be installed
       #Compilation on MSVC needs c++14 or higher and expects llvm 10.0.0 or newer
-      - name: Cache LLVM
-        id: cache-llvm
+      #Cache commonly used files: Coursier, ivy cache
+      - name: Resolve env variables
+        id: resolve-env
+        run: |
+          echo "::set-output name=ProgramFiles::${env:ProgramFiles}"
+          echo "::set-output name=LocalAppData::${env:LocalAppData}"
+          echo "::set-output name=UserProfile::${env:UserProfile}"
+      - name: Cache dependencies
+        id: cache-deps
         uses: actions/cache@v2
         with:
           path: |
-            C:\Program Files\LLVM\
-          key: ${{ runner.os }}-llvm-10
+            ${{steps.resolve-env.outputs.ProgramFiles}}\LLVM\
+            ${{steps.resolve-env.outputs.LocalAppData}}\Coursier\Cache\v1\
+            ${{steps.resolve-env.outputs.UserProfile}}\.ivy2\cache
+          key: ${{ runner.os }}-${{ matrix.scala }}-deps
+      # Install LLVM in case if cache is missing
       - name: Install LLVM
-        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: choco install llvm --version=10.0.0
 
       - name: Add LLVM on Path
