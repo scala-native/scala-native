@@ -20,7 +20,9 @@ RUN sed -i -e "s/deb http/deb [arch=$HOST_ARCHITECTURE] http/g" /etc/apt/host-so
     cat /etc/apt/host-sources.list >> /etc/apt/sources.list && \
     rm /etc/apt/host-sources.list
 
-RUN apt-get update && apt-get install -y openjdk-8-jdk-headless:$HOST_ARCHITECTURE
+RUN apt-get update
+
+RUN apt-get install -y openjdk-8-jdk-headless:$HOST_ARCHITECTURE
 ENV PATH "/usr/lib/jvm/java-8-openjdk-$HOST_ARCHITECTURE/bin:$PATH"
 
 ENV SBT_LAUNCHER_VERSION 1.3.7
@@ -34,11 +36,9 @@ RUN apt-get install -y curl
 RUN \
   curl -L -O $SBT_INSTALL_URL && \
   dpkg -i $SBT_INSTALL_FILE && \
-  rm $SBT_INSTALL_FILE && \
-  apt-get update && \
-  apt-get install -y sbt
+  rm $SBT_INSTALL_FILE
 
-RUN apt-get update && apt-get install -y clang-6.0 zlib1g-dev libgc-dev
+RUN apt-get install -y clang-6.0 zlib1g-dev libgc-dev
 
 ENV LC_ALL "C.UTF-8"
 
