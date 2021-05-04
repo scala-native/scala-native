@@ -25,13 +25,13 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
        |  def decimalSeparator: Char = resolved
        |  @resolvedAtLinktime("float")
        |  def float: Float = resolved
-       |  
+       |
        |  object inner{
-       |   @resolvedAtLinktime("inner.countFrom")
-       |   def countFrom: Long = resolved
+       |    @resolvedAtLinktime("inner.countFrom")
+       |    def countFrom: Long = resolved
        |   
-       |   @resolvedAtLinktime("secret.performance.multiplier")
-       |   def performanceMultiplier: Double = resolved
+       |    @resolvedAtLinktime("secret.performance.multiplier")
+       |    def performanceMultiplier: Double = resolved
        |  }
        |}
        |""".stripMargin
