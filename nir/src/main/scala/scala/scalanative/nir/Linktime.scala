@@ -6,7 +6,7 @@ sealed trait LinktimeCondition {
 
 object LinktimeCondition {
 
-  case class SimpleCondition(name: Global, comparison: Comp, value: Val)(
+  case class SimpleCondition(propertyName: String, comparison: Comp, value: Val)(
       implicit val position: Position)
       extends LinktimeCondition
 
@@ -31,19 +31,11 @@ object Linktime {
   // Takes Global for constant struct describing linktime property.
   // Replaced with resolved value at link-time.
   final val PropertyResolveFunctionName: Global.Member =
-    Linktime.member(Sig.Method("resolveProperty", Seq(Type.Ptr, Type.Nothing)))
+    Linktime.member(Sig.Method("resolveProperty", Seq(Rt.String, Type.Nothing)))
 
   final def PropertyResolveFunctionTy(retty: Type): Type.Function =
-    Type.Function(Seq(Type.Ptr), retty)
+    Type.Function(Seq(Rt.String), retty)
 
   final def PropertyResolveFunction(retty: Type): Val.Global =
     Val.Global(PropertyResolveFunctionName, PropertyResolveFunctionTy(retty))
-
-  def nameToLinktimePropertyName(name: Global): Global.Member = {
-    val Global.Member(owner, sig) = name
-    require(sig.isMethod, s"Expected method, but received ${sig.unmangled}")
-
-    val Sig.Method(ident, _, _) = sig.unmangled
-    owner.member(Sig.Generated(s"${ident}_property"))
-  }
 }

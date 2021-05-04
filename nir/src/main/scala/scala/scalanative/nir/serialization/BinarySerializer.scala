@@ -40,7 +40,7 @@ final class BinarySerializer {
                             Versions.revision,
                             Defn.existsEntryPoint(defns)))
 
-    putSeq(filenames)(putUTF8tring)
+    putSeq(filenames)(putUTF8String)
 
     putSeq(names) { n =>
       putGlobal(n)
@@ -75,7 +75,7 @@ final class BinarySerializer {
 
   private def putInts(ints: Seq[Int]) = putSeq[Int](ints)(putInt)
 
-  private def putUTF8tring(v: String) = putBytes {
+  private def putUTF8String(v: String) = putBytes {
     v.getBytes(StandardCharsets.UTF_8)
   }
 
@@ -98,12 +98,12 @@ final class BinarySerializer {
     case Attr.UnOpt        => putInt(T.UnOptAttr)
     case Attr.NoOpt        => putInt(T.NoOptAttr)
     case Attr.DidOpt       => putInt(T.DidOptAttr)
-    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putUTF8tring(msg)
+    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putUTF8String(msg)
 
     case Attr.Dyn      => putInt(T.DynAttr)
     case Attr.Stub     => putInt(T.StubAttr)
     case Attr.Extern   => putInt(T.ExternAttr)
-    case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8tring(s)
+    case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8String(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
   }
 
@@ -281,17 +281,17 @@ final class BinarySerializer {
       putInt(T.NoneGlobal)
     case Global.Top(id) =>
       putInt(T.TopGlobal)
-      putUTF8tring(id)
+      putUTF8String(id)
     case Global.Member(Global.Top(owner), sig) =>
       putInt(T.MemberGlobal)
-      putUTF8tring(owner)
+      putUTF8String(owner)
       putSig(sig)
     case _ =>
       util.unreachable
   }
 
   private def putSig(sig: Sig): Unit =
-    putUTF8tring(sig.mangle)
+    putUTF8String(sig.mangle)
 
   private def putLocal(local: Local): Unit =
     putLong(local.id)
@@ -531,9 +531,9 @@ final class BinarySerializer {
   }
 
   private def putLinktimeCondition(cond: LinktimeCondition): Unit = cond match {
-    case LinktimeCondition.SimpleCondition(name, comparison, value) =>
+    case LinktimeCondition.SimpleCondition(propertyName, comparison, value) =>
       putInt(LinktimeCondition.Tag.SimpleCondition)
-      putGlobal(name)
+      putUTF8String(propertyName)
       putComp(comparison)
       putVal(value)
       putPosition(cond.position)

@@ -300,7 +300,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
   private def getLinktimeCondition(): LinktimeCondition = getInt() match {
     case LinktimeCondition.Tag.SimpleCondition =>
-      LinktimeCondition.SimpleCondition(name = getGlobal(),
+      LinktimeCondition.SimpleCondition(propertyName = getUTF8String(),
                                         comparison = getComp(),
                                         value = getVal())(getPosition())
 

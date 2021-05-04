@@ -219,7 +219,7 @@ final class Result(val infos: mutable.Map[Global, Info],
                    val defns: Seq[Defn],
                    val dynsigs: Seq[Sig],
                    val dynimpls: Seq[Global],
-                   val resolvedVals: mutable.Map[Global, Val]) {
+                   val resolvedVals: mutable.Map[String, Val]) {
   lazy val ObjectClass       = infos(Rt.Object.name).asInstanceOf[Class]
   lazy val StringClass       = infos(Rt.StringName).asInstanceOf[Class]
   lazy val StringValueField  = infos(Rt.StringValueName).asInstanceOf[Field]

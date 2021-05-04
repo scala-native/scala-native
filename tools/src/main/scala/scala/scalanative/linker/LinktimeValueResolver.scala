@@ -6,9 +6,9 @@ import scala.scalanative.nir._
 trait LinktimeValueResolver { self: Reach =>
   import LinktimeValueResolver._
 
-  private val resolvedValues = mutable.Map.empty[Global, LinktimeValue]
+  private val resolvedValues = mutable.Map.empty[String, LinktimeValue]
   // For compat with 2.13 where mapValues is deprecated
-  def resolvedNirValues: mutable.Map[Global, Val] = resolvedValues.map {
+  def resolvedNirValues: mutable.Map[String, Val] = resolvedValues.map {
     case (k, v) => k -> v.nirValue
   }
 
@@ -21,7 +21,8 @@ trait LinktimeValueResolver { self: Reach =>
         defn.insts.map {
           case inst: Inst.LinktimeIf => resolveLinktimeIf(inst)
           case inst @ Inst.Let(_, ReferencedPropertyOp(propertyName), _) =>
-            resolveReferencedProperty(inst, propertyName)
+            val resolvedVal = resolveLinktimeProperty(propertyName).nirValue
+            inst.copy(op = Op.Copy(resolvedVal))
           case inst => inst
         }
       }
@@ -36,35 +37,19 @@ trait LinktimeValueResolver { self: Reach =>
     case _                                       => false
   }
 
-  private def resolveLinktimeProperty(name: Global)(
+  private def resolveLinktimeProperty(name: String)(
       implicit pos: Position): LinktimeValue =
     resolvedValues.getOrElseUpdate(name, lookupLinktimeProperty(name))
 
-  private def lookupLinktimeProperty(name: Global)(
+  private def lookupLinktimeProperty(propertyName: String)(
       implicit pos: Position): LinktimeValue = {
-    fieldInfo(name).fold[LinktimeValue] {
-      addMissing(name, pos)
-      ComparableVal(null, Val.Null).asAny
-    } { field =>
-      require(field.isConst, "Linktime property was not const")
-      field.ty match {
-        case Type.Ref(Rt.StringName, _, _) => ()
-        case ty =>
-          throw new LinkingException(
-            s"Linktime property defined with wrong type $ty")
+    config.compilerConfig.linktimeProperties
+      .get(propertyName)
+      .map(ComparableVal.fromAny(_).asAny)
+      .getOrElse {
+        throw new LinkingException(
+          s"Link-time property named `$propertyName` not defined in the config")
       }
-
-      require(field.ty == Rt.String, "Linktime property was not a string")
-
-      val Val.String(propertyName) = field.init
-
-      config.compilerConfig.linktimeProperties
-        .get(propertyName)
-        .fold(throw new LinkingException(
-          s"Link-time property $propertyName not defined in config")) {
-          ComparableVal.fromAny(_).asAny
-        }
-    }
   }
 
   private def resolveCondition(cond: LinktimeCondition)(
@@ -118,22 +103,16 @@ trait LinktimeValueResolver { self: Reach =>
     else Inst.Jump(elsep)
   }
 
-  private def resolveReferencedProperty(inst: Inst.Let, propertyName: Global)(
-      implicit pos: Position): Inst = {
-    reachGlobal(propertyName)
-    inst.copy(op = Op.Copy(resolveLinktimeProperty(propertyName).nirValue))
-  }
-
 }
 
 private[linker] object LinktimeValueResolver {
   type LinktimeValue = ComparableVal[Any]
 
   object ReferencedPropertyOp {
-    def unapply(op: Op): Option[Global] = op match {
+    def unapply(op: Op): Option[String] = op match {
       case Op.Call(_,
                    Val.Global(Linktime.PropertyResolveFunctionName, _),
-                   Seq(Val.Global(propertyName, _))) =>
+                   Seq(Val.String(propertyName))) =>
         Some(propertyName)
       case _ => None
     }

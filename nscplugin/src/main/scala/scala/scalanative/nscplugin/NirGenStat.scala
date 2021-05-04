@@ -574,9 +574,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val sig      = genMethodSig(sym)
         val isStatic = owner.isExternModule || isImplClass(owner)
 
-        lazy val resolvedAtLinktimeAnnotation =
-          sym.annotations.find(_.symbol == ResolvedAtLinktimeClass)
-
         dd.rhs match {
           case EmptyTree
               if (isScala211 &&
@@ -609,8 +606,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           // Have a concrete method with JavaDefaultMethodAnnotation; a blivet.
           // Do not emit, not even as abstract.
 
-          case _ if resolvedAtLinktimeAnnotation.isDefined =>
-            genLinktimeResolved(dd, resolvedAtLinktimeAnnotation.get, name)
+          case _
+              if sym.annotations.exists(_.symbol == ResolvedAtLinktimeClass) =>
+            genLinktimeResolved(dd, name)
 
           case rhs =>
             scoped(
@@ -623,16 +621,24 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
-    protected def genLinktimeResolved(
-        dd: DefDef,
-        annotation: AnnotationInfo,
-        name: Global)(implicit pos: nir.Position): Unit = {
+    protected def genLinktimeResolved(dd: DefDef, name: Global)(
+        implicit pos: nir.Position): Unit = {
+      if (dd.symbol.isConstant) {
+        globalError(
+          dd.pos,
+          "Link-time property cannot be constant value, it would be inlined by scalac compiler")
+      }
+
       dd.rhs.symbol match {
         case ResolvedMethod =>
           checkExplicitReturnTypeAnnotation(dd, "value resolved at link-time")
-          val retty        = genType(dd.tpt.tpe)
-          val propertyName = genLinktimeResolvedProperty(dd, annotation, name)
-          genLinktimeResolvedMethod(retty, propertyName, name)
+          dd match {
+            case LinktimeProperty(propertyName, _) =>
+              val retty = genType(dd.tpt.tpe)
+              genLinktimeResolvedMethod(retty, propertyName, name)
+
+            case _ =>
+          }
         case _ =>
           globalError(
             dd.pos,
@@ -640,66 +646,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
-    private def genLinktimeResolvedProperty(dd: DefDef,
-                                            annotationInfo: AnnotationInfo,
-                                            name: Global): Global.Member = {
-      require(annotationInfo.symbol == ResolvedAtLinktimeClass,
-              "Expected linktime property class")
-
-      implicit val fresh: Fresh      = Fresh()
-      implicit val buf: ExprBuffer   = new ExprBuffer()
-      implicit val pos: nir.Position = dd.pos
-
-      def fromLiteralOrFallback(tree: Tree, checkedCase: String)(
-          fallback: PartialFunction[Tree, Val] = PartialFunction.empty)(
-          implicit buf: ExprBuffer): Val = {
-
-        def isValidLiteral(lit: Literal) = {
-          lit.value.tag != UnitTag &&
-          lit.value.tag != NullTag
-        }
-
-        tree match {
-          case lit @ Literal(Constant(_)) if isValidLiteral(lit) =>
-            buf.genLiteralValue(lit)
-          case _ if fallback.isDefinedAt(tree) => fallback(tree)
-          case _ =>
-            globalError(dd.pos,
-                        s"$checkedCase needs to be non-null literal constant")
-            Val.Null
-        }
-      }
-
-      def normalizedSymbolName(delimiter: Char): String = {
-        dd.symbol.fullName(delimiter).replace('$', delimiter)
-      }
-
-      if (dd.symbol.isConstant) {
-        globalError(
-          dd.pos,
-          "Link-time property cannot be constant value, it would be inlined by scalac compiler")
-      }
-
-      val propertyName =
-        fromLiteralOrFallback(annotationInfo.args.head,
-                              "Name used to resolve link-time property") {
-          case tree if tree.symbol.isParamWithDefault =>
-            Val.String(normalizedSymbolName('.'))
-        }
-
-      val globalPropertyName = Linktime.nameToLinktimePropertyName(name)
-
-      curStatBuffer.get += Defn.Const(Attrs.None,
-                                      globalPropertyName,
-                                      Rt.String,
-                                      propertyName)
-
-      globalPropertyName
-    }
-
+    /* Generate stub method that can be used to get value of link-time property at runtime */
     private def genLinktimeResolvedMethod(
         retty: nir.Type,
-        propertyName: nir.Global,
+        propertyName: String,
         methodName: nir.Global)(implicit pos: nir.Position): Unit = {
       implicit val fresh: Fresh = Fresh()
       val buf                   = new ExprBuffer()
@@ -707,7 +657,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       buf.label(fresh())
       val value = buf.call(Linktime.PropertyResolveFunctionTy(retty),
                            Linktime.PropertyResolveFunction(retty),
-                           Seq(Val.Global(propertyName, retty)),
+                           Val.String(propertyName) :: Nil,
                            Next.None)
       buf.ret(value)
 
@@ -897,6 +847,25 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           externMethodDd.pos,
           s"$methodKind ${externMethodDd.name} needs result type")
       case _ => ()
+    }
+  }
+
+  protected object LinktimeProperty {
+    def unapply(tree: Tree): Option[(String, nir.Position)] = {
+      if (tree.symbol == null) None
+      else {
+        tree.symbol.annotations
+          .find(_.symbol == ResolvedAtLinktimeClass)
+          .flatMap(_.args.headOption)
+          .flatMap {
+            case Literal(Constant(name: String)) => Some((name, tree.pos))
+            case _ =>
+              globalError(
+                tree.symbol.pos,
+                s"Name used to resolve link-time property needs to be non-null literal constant")
+              None
+          }
+      }
     }
   }
 }
