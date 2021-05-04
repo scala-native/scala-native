@@ -165,24 +165,14 @@ object NativeConfig {
 
     override def withLinktimeProperties(v: Map[String, Any]): NativeConfig = {
       def isNumberOrString(value: Any) = {
-        def isNonUnitPrimitive = value match {
-          case _: java.lang.Boolean | Boolean => true
-          case _: java.lang.Byte | Byte       => true
-          case _: java.lang.Character | Char  => true
-          case _: java.lang.Short | Short     => true
-          case _: java.lang.Integer | Int     => true
-          case _: java.lang.Long | Long       => true
-          case _: java.lang.Float | Float     => true
-          case _: java.lang.Double | Double   => true
-          case _                              => false
+        def hasSupportedType = value match {
+          case _: Boolean | _: Byte | _: Char | _: Short | _: Int | _: Long |
+              _: Float | _: Double | _: String =>
+            true
+          case _ => false
         }
 
-        def isNonEmptyString = value match {
-          case s: String => s.nonEmpty
-          case _         => false
-        }
-
-        value != null && (isNonUnitPrimitive || isNonEmptyString)
+        value != null && hasSupportedType
       }
 
       val invalid = v.collect {
