@@ -22,19 +22,24 @@ object FileApi {
                   securityAttributes: SecurityAttributes,
                   creationDisposition: DWord,
                   flagsAndAttributes: UInt,
-                  templateFile: Handle): Handle = extern
-
-  def FlushFileBuffers(handle: Handle): Boolean                  = extern
-  def GetFileAttributesA(filename: CString): DWord               = extern
-  def GetFileAttributesW(filename: CWString): DWord              = extern
-  def GetTempPathA(bufferLength: DWord, buffer: CString): DWord  = extern
-  def GetTempPathW(bufferLength: DWord, buffer: CWString): DWord = extern
+                  templateFile: Handle): Handle                         = extern
+  def DeleteFileA(filename: CString): Boolean                           = extern
+  def DeleteFileW(filename: CWString): Boolean                          = extern
+  def FlushFileBuffers(handle: Handle): Boolean                         = extern
+  def GetFileAttributesA(filename: CString): DWord                      = extern
+  def GetFileAttributesW(filename: CWString): DWord                     = extern
+  def GetFileSizeEx(file: Handle, fileSize: Ptr[LargeInteger]): Boolean = extern
+  def GetTempPathA(bufferLength: DWord, buffer: CString): DWord         = extern
+  def GetTempPathW(bufferLength: DWord, buffer: CWString): DWord        = extern
   def ReadFile(fileHandle: Handle,
                buffer: Ptr[Byte],
                bytesToRead: DWord,
                bytesReadPtr: Ptr[DWord],
                overlapped: Ptr[Byte]): Boolean = extern
-
+  def SetFileAttributesA(filename: CString, fileAttributes: DWord): Boolean =
+    extern
+  def SetFileAttributesW(filename: CWString, fileAttributes: DWord): Boolean =
+    extern
   def SetFilePointerEx(file: Handle,
                        distanceToMove: LargeInteger,
                        newFilePointer: Ptr[LargeInteger],

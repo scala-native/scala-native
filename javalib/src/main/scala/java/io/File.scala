@@ -4,7 +4,7 @@ import java.nio.file.{FileSystems, Path}
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import scala.annotation.tailrec
-import scalanative.annotation.stub
+import scalanative.annotation.{alwaysinline, stub}
 import scalanative.posix.{limits, unistd, utime}
 import scalanative.posix.sys.stat
 import scalanative.unsigned._
@@ -18,7 +18,11 @@ import scalanative.runtime.{DeleteOnExit, Platform}
 import unistd._
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.windows
+import windows.FileApi._
+import windows.FileApiExt._
 import scala.scalanative.windows.WinBaseApi._
+import scala.scalanative.windows.util.HelperMethods._
+import scala.scalanative.windows.winnt.AccessRights._
 
 class File(_path: String) extends Serializable with Comparable[File] {
   import File._
@@ -110,8 +114,14 @@ class File(_path: String) extends Serializable with Comparable[File] {
   private def deleteDirImpl(): Boolean =
     Zone { implicit z => remove(toCString(path)) == 0 }
 
-  private def deleteFileImpl(): Boolean =
-    Zone { implicit z => unlink(toCString(path)) == 0 }
+  private def deleteFileImpl(): Boolean = Zone { implicit z =>
+    if (isWindows) {
+      setReadOnlyWindows(enabled = false)
+      DeleteFileW(toCWideStringUTF16LE(path))
+    } else {
+      unlink(toCString(path)) == 0
+    }
+  }
 
   override def equals(that: Any): Boolean =
     that match {
@@ -193,13 +203,26 @@ class File(_path: String) extends Serializable with Comparable[File] {
     File.isAbsolute(path)
 
   def isDirectory(): Boolean =
-    Zone { implicit z => stat.S_ISDIR(accessMode()) != 0 }
+    Zone { implicit z =>
+      if (isWindows)
+        fileAttributeIsSet(FILE_ATTRIBUTE_DIRECTORY)
+      else
+        stat.S_ISDIR(accessMode()) != 0
+    }
 
   def isFile(): Boolean =
-    Zone { implicit z => stat.S_ISREG(accessMode()) != 0 }
+    Zone { implicit z =>
+      if (isWindows)
+        fileAttributeIsSet(FILE_ATTRIBUTE_NORMAL) || !isDirectory()
+      else
+        stat.S_ISREG(accessMode()) != 0
+    }
 
-  def isHidden(): Boolean =
-    getName().startsWith(".")
+  def isHidden(): Boolean = {
+    if (isWindows)
+      fileAttributeIsSet(FILE_ATTRIBUTE_HIDDEN)
+    else getName().startsWith(".")
+  }
 
   def lastModified(): Long =
     Zone { implicit z =>
@@ -220,6 +243,12 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
   }
 
+  @alwaysinline
+  private def fileAttributeIsSet(attribute: windows.DWord): Boolean = Zone {
+    implicit z =>
+      (GetFileAttributesW(toCWideStringUTF16LE(path)) & attribute) == attribute
+  }
+
   def setLastModified(time: Long): Boolean =
     if (time < 0) {
       throw new IllegalArgumentException("Negative time")
@@ -238,15 +267,37 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def setReadOnly(): Boolean =
     Zone { implicit z =>
-      import stat._
-      val mask =
-        S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
-      val newMode = accessMode() & mask
-      chmod(toCString(path), newMode) == 0
+      if (isWindows) {
+        setReadOnlyWindows(enabled = true)
+      } else {
+        import stat._
+        val mask =
+          S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
+        val newMode = accessMode() & mask
+        chmod(toCString(path), newMode) == 0
+      }
     }
 
-  def length(): Long =
-    Zone { implicit z =>
+  private def setReadOnlyWindows(enabled: Boolean)(implicit z: Zone) = {
+    val filename          = toCWideStringUTF16LE(path)
+    val currentAttributes = GetFileAttributesW(filename)
+    def newAttributes =
+      if (enabled) currentAttributes | FILE_ATTRIBUTE_READONLY
+      else (currentAttributes & ~FILE_ATTRIBUTE_READONLY)
+
+    def setNewAttributes = SetFileAttributesW(filename, newAttributes)
+
+    currentAttributes != INVALID_FILE_ATTRIBUTES && setNewAttributes
+  }
+
+  def length(): Long = Zone { implicit z =>
+    if (isWindows) {
+      withFileOpen(path, access = FILE_READ_ATTRIBUTES) { handle =>
+        val size = stackalloc[windows.LargeInteger]
+        if (GetFileSizeEx(handle, size)) (!size).toLong
+        else 0L
+      }
+    } else {
       val buf = alloc[stat.stat]
       if (stat.stat(toCString(path), buf) == 0) {
         buf._6
@@ -254,6 +305,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         0L
       }
     }
+  }
 
   def list(): Array[String] =
     list(FilenameFilter.allPassFilter)
