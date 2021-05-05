@@ -23,13 +23,14 @@ final class FileDescriptor(fileHandle: FileHandle, readOnly: Boolean = false) {
 
   override def toString(): String =
     s"FileDescriptor(${fd}, readonly=$readOnly"
+
   /* Unix file descriptor underlying value */
   @alwaysinline
   private[java] def fd: Int = fileHandle.toInt
 
   /* Windows file handler underlying value */
-  @alwaysinline
-  private[java] def handle: Handle = fileHandle
+  private[java] lazy val handle: Handle =
+    fromRawPtr[Byte](Intrinsics.castLongToRawPtr(fileHandle))
 
   // ScalaNative private construcors
   private[java] def this(fd: Int) =
@@ -82,12 +83,12 @@ final class FileDescriptor(fileHandle: FileHandle, readOnly: Boolean = false) {
 }
 
 object FileDescriptor {
-  type FileHandle = Ptr[Byte]
+  // Universal type allowing to store references to both Unix integer based,
+  // and Windows pointer based file handles
+  type FileHandle = Long
   object FileHandle {
-    def apply(handle: Handle): FileHandle = handle
-    def apply(unixFd: Int): FileHandle = fromRawPtr[Byte] {
-      Intrinsics.castIntToRawPtr(unixFd)
-    }
+    def apply(handle: Handle): FileHandle = handle.toLong
+    def apply(unixFd: Int): FileHandle    = unixFd.toLong
   }
 
   val in: FileDescriptor = {
