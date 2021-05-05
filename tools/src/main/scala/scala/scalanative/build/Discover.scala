@@ -81,7 +81,7 @@ object Discover {
 
   /** Find default linktime resolve properties */
   def linktimeProperties(): Map[String, Any] = {
-    def linktimeInfo = "scala.scalanative.meta.LinktimeInfo"
+    val linktimeInfo = "scalanative.meta.linktimeinfo"
     Map(
       s"$linktimeInfo.isWindows" -> Platform.isWindows
     )
