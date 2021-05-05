@@ -2,17 +2,23 @@ package java.io
 
 import java.nio.file.{FileSystems, Path}
 import java.net.URI
-
+import java.nio.charset.StandardCharsets
 import scala.annotation.tailrec
 import scalanative.annotation.stub
-import scalanative.posix.{fcntl, limits, unistd, utime}
+import scalanative.posix.{limits, unistd, utime}
 import scalanative.posix.sys.stat
 import scalanative.unsigned._
 import scalanative.unsafe._
-import scalanative.libc._, stdlib._, stdio._, string._
+import scalanative.libc._
+import stdlib._
+import stdio._
+import string._
 import scalanative.nio.fs.FileHelpers
 import scalanative.runtime.{DeleteOnExit, Platform}
 import unistd._
+import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.windows
+import scala.scalanative.windows.WinBaseApi._
 
 class File(_path: String) extends Serializable with Comparable[File] {
   import File._
@@ -86,8 +92,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
       }
     }
 
-  def exists(): Boolean =
-    Zone { implicit z => access(toCString(path), unistd.F_OK) == 0 }
+  @inline
+  def exists(): Boolean = FileHelpers.exists(path)
 
   def toPath(): Path =
     FileSystems.getDefault().getPath(this.getPath(), Array.empty)
@@ -140,7 +146,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
     resolvedName
   }
 
-  /** Finds the canonical path for `path`. */
+  /** Finds the canonical path for `path`.
+   */
   private def simplifyNonExistingPath(path: String): String =
     path
       .split(separatorChar)
@@ -344,9 +351,16 @@ object File {
 
   private def getUserDir(): String =
     Zone { implicit z =>
-      var buff: CString = alloc[CChar](4096.toUInt)
-      var res: CString = getcwd(buff, 4095.toUInt)
-      fromCString(res)
+      if (isWindows) {
+        val buffSize = GetCurrentDirectoryW(0.toUInt, null)
+        val buff = alloc[windows.WChar](buffSize + 1.toUInt)
+        GetCurrentDirectoryW(buffSize, buff)
+        fromCWideString(buff, StandardCharsets.UTF_16LE)
+      } else {
+        val buff: CString = alloc[CChar](4096.toUInt)
+        getcwd(buff, 4095.toUInt)
+        fromCString(buff)
+      }
     }
 
   /** The purpose of this method is to take a path and fix the slashes up. This
@@ -379,10 +393,12 @@ object File {
         }
       } else {
         // check for leading slashes before a drive
-        if (currentChar == ':' && uncIndex > 0 &&
-            (newLength == 2 ||
-              (newLength == 3 && newPath(1) == separatorChar)) &&
-            newPath(0) == separatorChar) {
+        if (currentChar == ':'
+            && uncIndex > 0
+            && (newLength == 2 || (newLength == 3 && newPath(
+              1
+            ) == separatorChar))
+            && newPath(0) == separatorChar) {
           newPath(0) = newPath(newLength - 1)
           newLength = 1
           // allow trailing slash after drive letter
@@ -396,9 +412,9 @@ object File {
       i += 1
     }
 
-    if (foundSlash &&
-        (newLength > (uncIndex + 1) ||
-          (newLength == 2 && newPath(0) != separatorChar))) {
+    if (foundSlash && (newLength > (uncIndex + 1) || (newLength == 2 && newPath(
+          0
+        ) != separatorChar))) {
       newLength -= 1
     }
 
@@ -429,8 +445,9 @@ object File {
   def isAbsolute(path: String): Boolean =
     if (separatorChar == '\\') { // Windows. Must start with `\\` or `X:(\|/)`
       (path.length > 1 && path.startsWith(separator + separator)) ||
-      (path.length > 2 && path(0).isLetter && path(1) == ':' &&
-        (path(2) == '/' || path(2) == '\\'))
+      (path.length > 2 && path(0).isLetter && path(1) == ':' && (path(
+        2
+      ) == '/' || path(2) == '\\'))
     } else {
       path.length > 0 && path.startsWith(separator)
     }
