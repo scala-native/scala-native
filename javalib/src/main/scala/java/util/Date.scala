@@ -3,13 +3,13 @@ package java.util
 import java.time.Instant
 
 import scalanative.posix.time._
-import scalanative.posix.sys.types.size_t
 import scalanative.unsafe._
 import scalanative.unsigned._
+import scala.scalanative.meta.LinktimeInfo.isWindows
 
 /** Ported from Scala JS and Apache Harmony
- *    - omits deprecated methods
- *    - toString code created ab ovo for Scala Native.
+ * - omits deprecated methods
+ * - toString code created ab ovo for Scala Native.
  */
 class Date(var milliseconds: Long)
     extends Object
@@ -63,18 +63,26 @@ object Date {
       !ttPtr = seconds
 
       val tmPtr = alloc[tm]
+      def getLocalTime() =
+        if (isWindows) localtime_s(ttPtr, tmPtr)
+        else localtime_r(ttPtr, tmPtr)
 
-      if (localtime_r(ttPtr, tmPtr) == null) {
+      if (getLocalTime() == null) {
         default
       } else {
         // 40 is over-provisioning.
         // Most result strings should be about 28 + 1 for terminal NULL
         // + 2 because some IANA timezone abbreviation can have 5 characters.
         val bufSize = 40.toULong // no toSize_t() yet
-        val buf = alloc[Byte](bufSize)
-        val n = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
+        val buf     = alloc[Byte](bufSize)
 
-        if (n == 0) default else fromCString(buf)
+        // %Z on Windows might produce long, localized names of variable length
+        val format =
+          if (isWindows) c"%a %b %d %T %Y"
+          else c"%a %b %d %T %Z %Y"
+        val n = strftime(buf, bufSize, format, tmPtr)
+
+        if (n.toInt == 0) default else fromCString(buf)
       }
     }
 

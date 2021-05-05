@@ -1,12 +1,22 @@
-#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
-    (defined(__APPLE__) && defined(__MACH__))
 // X/Open System Interfaces (XSI), also sets _POSIX_C_SOURCE.
 // Partial, but useful, implementation of X/Open 7, incorporating Posix 2008.
 
 #define _XOPEN_SOURCE 700
 
-#include <string.h>
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
+#include <unistd.h>
 #include <sys/time.h>
+#endif
+
+#if defined(_WIN32)
+#define _CRT_SECURE_NO_WARNINGS
+#define daylight _daylight
+#define timezone _timezone
+#define tzname _tzname
+#endif
+
+#include <string.h>
 #include <time.h>
 
 struct scalanative_tm {
@@ -52,10 +62,19 @@ static void tm_init(struct tm *tm, struct scalanative_tm *scala_tm) {
     // strftime is _NOT_ and must zero the excess fields itself.
 }
 
+#ifndef _WIN32
 char *scalanative_asctime_r(struct scalanative_tm *scala_tm, char *buf) {
     struct tm tm;
     tm_init(&tm, scala_tm);
     return asctime_r(&tm, buf);
+}
+#endif
+
+errno_t scalanative_asctime_s(struct scalanative_tm *scala_tm, size_t size,
+                              char *buf) {
+    struct tm tm;
+    tm_init(&tm, scala_tm);
+    return asctime_s(buf, size, &tm);
 }
 
 char *scalanative_asctime(struct scalanative_tm *scala_tm) {
@@ -64,6 +83,7 @@ char *scalanative_asctime(struct scalanative_tm *scala_tm) {
     return asctime(&tm);
 }
 
+#ifndef _WIN32
 struct scalanative_tm *scalanative_gmtime_r(const time_t *clock,
                                             struct scalanative_tm *result) {
     struct tm tm;
@@ -71,15 +91,38 @@ struct scalanative_tm *scalanative_gmtime_r(const time_t *clock,
     scalanative_tm_init(result, &tm);
     return result;
 }
+#endif
 
-struct scalanative_tm *scalanative_gmtime(const time_t *clock) {
-    return scalanative_gmtime_r(clock, &scalanative_shared_tm_buf);
+struct scalanative_tm *scalanative_gmtime_s(const time_t *clock,
+                                            struct scalanative_tm *result) {
+    struct tm tm;
+    gmtime_s(&tm, clock);
+    scalanative_tm_init(result, &tm);
+    return result;
 }
 
+struct scalanative_tm *scalanative_gmtime(const time_t *clock) {
+#ifdef _WIN32
+    return scalanative_gmtime_s(clock, &scalanative_shared_tm_buf);
+#else
+    return scalanative_gmtime_r(clock, &scalanative_shared_tm_buf);
+#endif
+}
+
+#ifndef _WIN32
 struct scalanative_tm *scalanative_localtime_r(const time_t *clock,
                                                struct scalanative_tm *result) {
     struct tm tm;
     localtime_r(clock, &tm);
+    scalanative_tm_init(result, &tm);
+    return result;
+}
+#endif
+
+struct scalanative_tm *scalanative_localtime_s(const time_t *clock,
+                                               struct scalanative_tm *result) {
+    struct tm tm;
+    localtime_s(&tm, clock);
     scalanative_tm_init(result, &tm);
     return result;
 }
@@ -117,6 +160,7 @@ size_t scalanative_strftime(char *buf, size_t maxsize, const char *format,
 }
 
 // XSI
+#if defined(_POSIX_VERSION)
 char *scalanative_strptime(const char *s, const char *format,
                            struct scalanative_tm *scala_tm) {
     // Note Well:
@@ -155,11 +199,11 @@ char *scalanative_strptime(const char *s, const char *format,
     //    be reported as parse errors at this level.
 
     struct tm tm;
-
     char *result = strptime(s, format, &tm);
     scalanative_tm_init(scala_tm, &tm);
     return result;
 }
+#endif // defined(_POSIX_VERSION)
 
 char **scalanative_tzname() { return tzname; }
 
@@ -181,4 +225,7 @@ int scalanative_daylight() {
 #endif
 }
 
-#endif // Unix or Mac OS
+// Windows compat
+#ifdef _WIN32
+void tzset() { return _tzset(); }
+#endif
