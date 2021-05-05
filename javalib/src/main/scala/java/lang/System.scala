@@ -10,6 +10,7 @@ import scala.scalanative.runtime.{GC, Intrinsics, Platform, time}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows.FileApi._
+import scala.scalanative.windows.FileApiExt.MAX_PATH
 import scala.scalanative.windows.UserEnvApi._
 import scala.scalanative.windows.WinBaseApi._
 import scala.scalanative.windows.ProcessEnv._
@@ -53,8 +54,8 @@ object System {
       sysProps.setProperty("file.separator", "\\")
       sysProps.setProperty("path.separator", ";")
       sysProps.setProperty("java.io.tmpdir", {
-        val buffer = stackalloc[scala.Byte](MaxPathSize)
-        GetTempPathA(MaxPathSize, buffer)
+        val buffer = stackalloc[scala.Byte](MAX_PATH)
+        GetTempPathA(MAX_PATH, buffer)
         fromCString(buffer)
       })
 

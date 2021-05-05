@@ -1,14 +1,14 @@
 package scala.scalanative.windows
 
+import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.runtime.Intrinsics.castIntToRawPtr
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
+import scala.scalanative.windows.HandleApi.Handle
 
 @extern
 object HandleApi {
   type Handle = Ptr[Byte]
-
-  @name("scalanative_win32_invalid_handle_value")
-  def InvalidHandleValue: Handle = extern
 
   def CloseHandle(handle: Handle): Boolean = extern
 
@@ -19,6 +19,7 @@ object HandleApi {
 }
 
 object HandleApiExt {
+  final val INVALID_HANDLE_VALUE: Handle   = fromRawPtr[Byte](castIntToRawPtr(-1))
   final val HANDLE_FLAG_INHERIT            = 0x00000001.toUInt
   final val HANDLE_FLAG_PROTECT_FROM_CLOSE = 0x00000002.toUInt
 }

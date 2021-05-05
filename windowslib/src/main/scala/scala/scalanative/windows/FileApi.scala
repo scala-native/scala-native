@@ -43,16 +43,11 @@ object FileApi {
                 bytesToRead: DWord,
                 bytesWritten: Ptr[DWord],
                 overlapped: Ptr[Byte]): Boolean = extern
-
-  // utils
-  @name("scalanative_win32_file_max_path")
-  def MaxPathSize: DWord = extern
-
-  @name("scalanative_win32_invalid_file_attributes")
-  def InvalidFileAttributes: DWord = extern
 }
 
 object FileApiExt {
+  final val MAX_PATH = 260.toUInt
+
   // File Pointer Move Methods
   final val FILE_BEGIN   = 0.toUInt
   final val FILE_CURRENT = 1.toUInt
@@ -74,6 +69,7 @@ object FileApiExt {
   final val TRUNCATE_EXISTING = 0x05.toUShort
 
   // File attributes
+  final val INVALID_FILE_ATTRIBUTES               = 0xFFFFFFFF.toUInt
   final val FILE_ATTRIBUTE_READONLY               = 0x00000001.toUInt
   final val FILE_ATTRIBUTE_HIDDEN                 = 0x00000002.toUInt
   final val FILE_ATTRIBUTE_SYSTEM                 = 0x00000004.toUInt

@@ -10,6 +10,7 @@ import scala.scalanative.unsigned._
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.HandleApi._
+import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
 import scala.scalanative.windows.{ConsoleApiExt, DWord}
 
@@ -17,7 +18,7 @@ final class FileDescriptor(fileHandle: FileHandle, readOnly: Boolean = false) {
 
   def this() =
     this {
-      if (isWindows) FileHandle(InvalidHandleValue)
+      if (isWindows) FileHandle(INVALID_HANDLE_VALUE)
       else FileHandle(-1)
     }
 
@@ -68,7 +69,7 @@ final class FileDescriptor(fileHandle: FileHandle, readOnly: Boolean = false) {
   def valid(): Boolean =
     if (isWindows) {
       val flags = stackalloc[DWord]
-      handle != InvalidHandleValue &&
+      handle != INVALID_HANDLE_VALUE &&
       GetHandleInformation(handle, flags)
     } else {
       // inspired by Apache Harmony including filedesc.c
@@ -127,7 +128,7 @@ object FileDescriptor {
           flagsAndAttributes = 0.toUInt,
           templateFile = null
         )
-        if (handle == InvalidHandleValue) {
+        if (handle == INVALID_HANDLE_VALUE) {
           fail()
         }
         FileHandle(handle)

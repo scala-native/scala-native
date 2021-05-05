@@ -11,8 +11,8 @@ import scala.scalanative.unsigned._
 import scala.scalanative.windows.ErrorHandlingApi._
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
-import scala.scalanative.windows.HandleApi._
-import scala.scalanative.windows.winnt.AccessRights
+import scala.scalanative.windows.HandleApiExt._
+import scala.scalanative.windows.winnt.AccessRights._
 
 class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
     extends OutputStream {
@@ -81,7 +81,7 @@ object FileOutputStream {
       if (isWindows) {
         val handle = CreateFileA(
           fileName,
-          desiredAccess = AccessRights.FILE_GENERIC_WRITE,
+          desiredAccess = FILE_GENERIC_WRITE,
           shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
           securityAttributes = null,
           creationDisposition =
@@ -90,7 +90,7 @@ object FileOutputStream {
           flagsAndAttributes = 0.toUInt,
           templateFile = null
         )
-        if (handle == InvalidHandleValue) {
+        if (handle == INVALID_HANDLE_VALUE) {
           throw new FileNotFoundException(s"$file (${GetLastError()})")
         }
         new FileDescriptor(FileDescriptor.FileHandle(handle))
