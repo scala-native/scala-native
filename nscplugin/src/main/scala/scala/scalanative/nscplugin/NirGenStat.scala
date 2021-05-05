@@ -606,8 +606,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           // Have a concrete method with JavaDefaultMethodAnnotation; a blivet.
           // Do not emit, not even as abstract.
 
-          case _
-              if sym.annotations.exists(_.symbol == ResolvedAtLinktimeClass) =>
+          case _ if sym.hasAnnotation(ResolvedAtLinktimeClass) =>
             genLinktimeResolved(dd, name)
 
           case rhs =>
@@ -854,8 +853,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def unapply(tree: Tree): Option[(String, nir.Position)] = {
       if (tree.symbol == null) None
       else {
-        tree.symbol.annotations
-          .find(_.symbol == ResolvedAtLinktimeClass)
+        tree.symbol
+          .getAnnotation(ResolvedAtLinktimeClass)
           .flatMap(_.args.headOption)
           .flatMap {
             case Literal(Constant(name: String)) => Some((name, tree.pos))
