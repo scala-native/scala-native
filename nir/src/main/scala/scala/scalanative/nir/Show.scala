@@ -185,6 +185,7 @@ object Show {
           str(" ")
           next_(unwind)
         }
+      case _ => util.unsupported(s"Show does not support ${inst}")
     }
 
     def op_(op: Op): Unit = op match {

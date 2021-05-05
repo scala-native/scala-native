@@ -32,6 +32,9 @@ class Buffer(implicit fresh: Fresh) {
   def branch(value: Val, thenp: Next, elsep: Next)(
       implicit pos: Position): Unit =
     this += Inst.If(value, thenp, elsep)
+  def branchLinktime(condition: LinktimeCondition, thenp: Next, elsep: Next)(
+      implicit pos: Position): Unit =
+    this += Inst.LinktimeIf(condition, thenp, elsep)
   def switch(value: Val, default: Next, cases: Seq[Next])(
       implicit pos: Position): Unit =
     this += Inst.Switch(value, default, cases)

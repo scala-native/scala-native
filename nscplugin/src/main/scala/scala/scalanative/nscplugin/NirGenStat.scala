@@ -596,7 +596,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             ()
 
           case rhs if owner.isExternModule =>
-            checkExplicitReturnTypeAnnotation(dd)
+            checkExplicitReturnTypeAnnotation(dd, "extern method")
             genExternMethod(attrs, name, sig, rhs)
 
           case rhs
@@ -605,6 +605,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 !isImplClass(sym.owner)) =>
           // Have a concrete method with JavaDefaultMethodAnnotation; a blivet.
           // Do not emit, not even as abstract.
+
+          case _ if sym.hasAnnotation(ResolvedAtLinktimeClass) =>
+            genLinktimeResolved(dd, name)
 
           case rhs =>
             scoped(
@@ -615,6 +618,54 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             }
         }
       }
+    }
+
+    protected def genLinktimeResolved(dd: DefDef, name: Global)(
+        implicit pos: nir.Position): Unit = {
+      if (dd.symbol.isConstant) {
+        globalError(
+          dd.pos,
+          "Link-time property cannot be constant value, it would be inlined by scalac compiler")
+      }
+
+      dd.rhs.symbol match {
+        case ResolvedMethod =>
+          checkExplicitReturnTypeAnnotation(dd, "value resolved at link-time")
+          dd match {
+            case LinktimeProperty(propertyName, _) =>
+              val retty = genType(dd.tpt.tpe)
+              genLinktimeResolvedMethod(retty, propertyName, name)
+
+            case _ =>
+          }
+        case _ =>
+          globalError(
+            dd.pos,
+            s"Link-time resolved property must have ${ResolvedMethod.fullName} as body")
+      }
+    }
+
+    /* Generate stub method that can be used to get value of link-time property at runtime */
+    private def genLinktimeResolvedMethod(
+        retty: nir.Type,
+        propertyName: String,
+        methodName: nir.Global)(implicit pos: nir.Position): Unit = {
+      implicit val fresh: Fresh = Fresh()
+      val buf                   = new ExprBuffer()
+
+      buf.label(fresh())
+      val value = buf.call(Linktime.PropertyResolveFunctionTy(retty),
+                           Linktime.PropertyResolveFunction(retty),
+                           Val.String(propertyName) :: Nil,
+                           Next.None)
+      buf.ret(value)
+
+      curStatBuffer.get += Defn.Define(
+        Attrs(inlineHint = Attr.AlwaysInline),
+        methodName,
+        Type.Function(Seq(), retty),
+        buf.toSeq
+      )
     }
 
     def genExternMethod(attrs: nir.Attrs,
@@ -787,14 +838,33 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
   }
 
-  private def checkExplicitReturnTypeAnnotation(
-      externMethodDd: DefDef): Unit = {
+  private def checkExplicitReturnTypeAnnotation(externMethodDd: DefDef,
+                                                methodKind: String): Unit = {
     externMethodDd.tpt match {
       case resultTypeTree: global.TypeTree if resultTypeTree.wasEmpty =>
         global.reporter.error(
           externMethodDd.pos,
-          "extern method " + externMethodDd.name + " needs result type")
-      case other =>
+          s"$methodKind ${externMethodDd.name} needs result type")
+      case _ => ()
+    }
+  }
+
+  protected object LinktimeProperty {
+    def unapply(tree: Tree): Option[(String, nir.Position)] = {
+      if (tree.symbol == null) None
+      else {
+        tree.symbol
+          .getAnnotation(ResolvedAtLinktimeClass)
+          .flatMap(_.args.headOption)
+          .flatMap {
+            case Literal(Constant(name: String)) => Some((name, tree.pos))
+            case _ =>
+              globalError(
+                tree.symbol.pos,
+                s"Name used to resolve link-time property needs to be non-null literal constant")
+              None
+          }
+      }
     }
   }
 }

@@ -31,4 +31,9 @@ object Inst {
       extends Cf
   final case class Unreachable(unwind: Next)(implicit val pos: Position)
       extends Cf
+
+  sealed trait LinktimeCf extends Cf
+  final case class LinktimeIf(cond: LinktimeCondition, thenp: Next, elsep: Next)(
+      implicit val pos: Position)
+      extends LinktimeCf
 }

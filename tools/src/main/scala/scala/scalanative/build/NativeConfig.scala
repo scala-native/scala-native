@@ -42,6 +42,9 @@ sealed trait NativeConfig {
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
 
+  /** Map of properties resolved at linktime  */
+  def linktimeProperties: Map[String, Any]
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
 
@@ -80,6 +83,9 @@ sealed trait NativeConfig {
 
   /** Create a new config with given optimize value */
   def withOptimize(value: Boolean): NativeConfig
+
+  /** Create a new config with given linktime properites */
+  def withLinktimeProperties(value: Map[String, Any]): NativeConfig
 }
 
 object NativeConfig {
@@ -98,7 +104,8 @@ object NativeConfig {
       check = false,
       dump = false,
       linkStubs = false,
-      optimize = false
+      optimize = false,
+      linktimeProperties = Map.empty
     )
 
   private final case class Impl(clang: Path,
@@ -112,7 +119,8 @@ object NativeConfig {
                                 linkStubs: Boolean,
                                 check: Boolean,
                                 dump: Boolean,
-                                optimize: Boolean)
+                                optimize: Boolean,
+                                linktimeProperties: Map[String, Any])
       extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -155,7 +163,46 @@ object NativeConfig {
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
-    override def toString: String =
+    override def withLinktimeProperties(v: Map[String, Any]): NativeConfig = {
+      def isNumberOrString(value: Any) = {
+        def hasSupportedType = value match {
+          case _: Boolean | _: Byte | _: Char | _: Short | _: Int | _: Long |
+              _: Float | _: Double | _: String =>
+            true
+          case _ => false
+        }
+
+        value != null && hasSupportedType
+      }
+
+      val invalid = v.collect {
+        case (key, value) if !isNumberOrString(value) => key
+      }
+      if (invalid.nonEmpty) {
+        System.err.println(
+          s"Invalid link-time properties: \n ${invalid.mkString(" - ", "\n", "")}")
+        throw new BuildException(
+          "Link-time properties needs to be non-null primitives or non-empty string")
+      }
+
+      copy(linktimeProperties = v)
+    }
+
+    override def toString: String = {
+      val listLinktimeProperties = {
+        if (linktimeProperties.isEmpty) ""
+        else {
+          val maxKeyLength = linktimeProperties.keys.map(_.length).max
+          val keyPadSize   = maxKeyLength.min(20)
+          "\n" + linktimeProperties.toSeq
+            .sortBy(_._1)
+            .map {
+              case (key, value) =>
+                s"   * ${key.padTo(keyPadSize, ' ')} : $value"
+            }
+            .mkString("\n")
+        }
+      }
       s"""NativeConfig(
         | - clang:           $clang
         | - clangPP:         $clangPP
@@ -169,7 +216,9 @@ object NativeConfig {
         | - check:           $check
         | - dump:            $dump
         | - optimize         $optimize
+        | - linktimeProperties: $listLinktimeProperties
         |)""".stripMargin
+    }
   }
 
 }

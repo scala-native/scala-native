@@ -191,8 +191,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val thenn, elsen, mergen = fresh()
       val mergev               = Val.Local(fresh(), retty)
 
-      val cond = genExpr(condp)
-      buf.branch(cond, Next(thenn), Next(elsen))(condp.pos)
+      getLinktimeCondition(condp).fold {
+        val cond = genExpr(condp)
+        buf.branch(cond, Next(thenn), Next(elsen))(condp.pos)
+      } { cond =>
+        buf.branchLinktime(cond, Next(thenn), Next(elsen))(condp.pos)
+      }
+
       locally {
         buf.label(thenn)(thenp.pos)
         val thenv = genExpr(thenp)
@@ -1109,6 +1114,77 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     private final val ExternForwarderSig = Sig.Generated("$extern$forwarder")
+
+    def getLinktimeCondition(condp: Tree): Option[LinktimeCondition] = {
+      import LinktimeCondition._
+      def genComparsion(name: Name, value: Val): Comp = {
+        def intOrFloatComparison(onInt: Comp, onFloat: Comp)(
+            implicit tpe: nir.Type) =
+          if (tpe.isInstanceOf[Type.F]) onFloat else onInt
+
+        import Comp._
+        implicit val tpe: nir.Type = value.ty
+        name match {
+          case nme.EQ => intOrFloatComparison(Ieq, Feq)
+          case nme.NE => intOrFloatComparison(Ine, Fne)
+          case nme.GT => intOrFloatComparison(Sgt, Fgt)
+          case nme.GE => intOrFloatComparison(Sge, Fge)
+          case nme.LT => intOrFloatComparison(Slt, Flt)
+          case nme.LE => intOrFloatComparison(Sle, Fle)
+          case nme =>
+            globalError(condp.pos, s"Unsupported condition '$nme'"); Comp.Ine
+        }
+      }
+
+      condp match {
+        // if(bool) (...)
+        case Apply(LinktimeProperty(name, position), List()) =>
+          Some {
+            SimpleCondition(propertyName = name,
+                            comparison = Comp.Ieq,
+                            value = Val.True)(position)
+          }
+
+        // if(!bool) (...)
+        case Apply(Select(Apply(LinktimeProperty(name, position), List()),
+                          nme.UNARY_!),
+                   List()) =>
+          Some {
+            SimpleCondition(propertyName = name,
+                            comparison = Comp.Ieq,
+                            value = Val.False)(position)
+          }
+
+        // if(property <comp> x) (...)
+        case Apply(Select(LinktimeProperty(name, position), comp),
+                   List(arg @ Literal(Constant(_)))) =>
+          Some {
+            val argValue = genLiteralValue(arg)
+            SimpleCondition(propertyName = name,
+                            comparison = genComparsion(comp, argValue),
+                            value = argValue)(position)
+          }
+
+        // if(cond1 {&&,||} cond2) (...)
+        case Apply(Select(cond1, op), List(cond2)) =>
+          (getLinktimeCondition(cond1), getLinktimeCondition(cond2)) match {
+            case (Some(c1), Some(c2)) =>
+              val bin = op match {
+                case nme.ZAND => Bin.And
+                case nme.ZOR  => Bin.Or
+              }
+              Some(ComplexCondition(bin, c1, c2)(condp.pos))
+            case (None, None) => None
+            case _ =>
+              globalError(
+                condp.pos,
+                "Mixing link-time and runtime conditions is not allowed")
+              None
+          }
+
+        case _ => None
+      }
+    }
 
     def genFuncExternForwarder(funcName: Global, treeSym: Symbol)(
         implicit pos: nir.Position): Defn = {

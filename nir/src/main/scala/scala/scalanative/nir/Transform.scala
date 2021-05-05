@@ -51,6 +51,7 @@ trait Transform {
         Inst.Throw(onVal(v), onNext(unwind))
       case Inst.Unreachable(unwind) =>
         Inst.Unreachable(onNext(unwind))
+      case _: Inst.LinktimeCf => util.unreachable
     }
   }
 
