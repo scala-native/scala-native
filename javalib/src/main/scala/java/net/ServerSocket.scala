@@ -1,6 +1,6 @@
 package java.net
 
-import java.io.{InputStream, OutputStream, IOException, Closeable}
+import java.io.Closeable
 
 class ServerSocket(
     private var port: Int,
@@ -8,7 +8,7 @@ class ServerSocket(
     private var bindAddr: InetAddress
 ) extends Closeable {
 
-  private val impl = new PlainSocketImpl()
+  private val impl = AbstractPlainSocketImpl()
 
   private var created = false
   private var bound = false

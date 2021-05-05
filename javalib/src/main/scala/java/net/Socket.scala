@@ -2,28 +2,26 @@ package java.net
 
 import java.io.{InputStream, OutputStream, IOException, Closeable}
 
-class Socket protected (
-    private[net] val impl: SocketImpl,
-    private[net] var addr: InetAddress,
-    private[net] var port: Int,
-    private[net] var localAddr: InetAddress,
-    private[net] var localPort: Int,
-    streaming: Boolean,
-    shouldStartup: Boolean
-) extends Closeable {
+class Socket protected (private[net] val impl: SocketImpl,
+                        private[net] var addr: InetAddress,
+                        private[net] var port: Int,
+                        private[net] var localAddr: InetAddress,
+                        private[net] var localPort: Int,
+                        streaming: Boolean,
+                        shouldStartup: Boolean)
+    extends Closeable {
 
-  private[net] var created = false
-  private[net] var bound = false
-  private[net] var connected = false
-  private[net] var closed = false
-  private[net] var inputShutdown = false
+  private[net] var created        = false
+  private[net] var bound          = false
+  private[net] var connected      = false
+  private[net] var closed         = false
+  private[net] var inputShutdown  = false
   private[net] var outputShutdown = false
 
   if (!streaming) {
     throw new UnsupportedOperationException(
       "Only streaming sockets are supported " +
-        "in this class for the moment."
-    )
+        "in this class for the moment.")
   }
 
   if (shouldStartup) {
@@ -33,8 +31,7 @@ class Socket protected (
   private def startup(dstAddr: InetAddress, dstPort: Int, timeout: Int = 0) = {
     if (dstPort < 0 || dstPort > 65535)
       throw new IllegalArgumentException(
-        "Socket port must be between 0 and 65535"
-      )
+        "Socket port must be between 0 and 65535")
 
     impl.create(streaming)
     created = true
@@ -52,57 +49,55 @@ class Socket protected (
   }
 
   def this() =
-    this(new PlainSocketImpl(), null, -1, null, 0, true, false)
+    this(AbstractPlainSocketImpl(), null, -1, null, 0, true, false)
 
   protected[net] def this(impl: SocketImpl) =
     this(impl, null, -1, null, 0, true, false)
 
   def this(address: InetAddress, port: Int) =
-    this(new PlainSocketImpl(), address, port, null, 0, true, true)
+    this(AbstractPlainSocketImpl(), address, port, null, 0, true, true)
 
-  def this(
-      address: InetAddress,
-      port: Int,
-      localAddr: InetAddress,
-      localPort: Int
-  ) =
-    this(new PlainSocketImpl(), address, port, localAddr, localPort, true, true)
+  def this(address: InetAddress,
+           port: Int,
+           localAddr: InetAddress,
+           localPort: Int) =
+    this(AbstractPlainSocketImpl(),
+         address,
+         port,
+         localAddr,
+         localPort,
+         true,
+         true)
 
   def this(host: String, port: Int) =
-    this(
-      new PlainSocketImpl(),
-      InetAddress.getByName(host),
-      port,
-      null,
-      0,
-      true,
-      true
-    )
+    this(AbstractPlainSocketImpl(),
+         InetAddress.getByName(host),
+         port,
+         null,
+         0,
+         true,
+         true)
 
   def this(host: String, port: Int, localAddr: InetAddress, localPort: Int) =
-    this(
-      new PlainSocketImpl(),
-      InetAddress.getByName(host),
-      port,
-      localAddr,
-      localPort,
-      true,
-      true
-    )
+    this(AbstractPlainSocketImpl(),
+         InetAddress.getByName(host),
+         port,
+         localAddr,
+         localPort,
+         true,
+         true)
 
   def this(host: InetAddress, port: Int, stream: Boolean) =
-    this(new PlainSocketImpl(), host, port, null, 0, stream, true)
+    this(AbstractPlainSocketImpl(), host, port, null, 0, stream, true)
 
   def this(host: String, port: Int, stream: Boolean) =
-    this(
-      new PlainSocketImpl(),
-      InetAddress.getByName(host),
-      port,
-      null,
-      0,
-      true,
-      true
-    )
+    this(AbstractPlainSocketImpl(),
+         InetAddress.getByName(host),
+         port,
+         null,
+         0,
+         true,
+         true)
 
   // def this(proxy: Proxy)
 
@@ -121,8 +116,7 @@ class Socket protected (
     if (bindpoint != null && !bindpoint.isInstanceOf[InetSocketAddress]) {
       throw new IllegalArgumentException(
         "Endpoint is of unsupported " +
-          "SocketAddress subclass"
-      )
+          "SocketAddress subclass")
     }
 
     val addr =
@@ -147,8 +141,7 @@ class Socket protected (
     if (!endpoint.isInstanceOf[InetSocketAddress] || endpoint == null) {
       throw new IllegalArgumentException(
         "Invalid address argument to connect - " +
-          "either of unsupported SocketAddress subclass or null"
-      )
+          "either of unsupported SocketAddress subclass or null")
     }
     val inetAddr = endpoint.asInstanceOf[InetSocketAddress]
     this.addr = inetAddr.getAddress
@@ -158,10 +151,10 @@ class Socket protected (
 
   // def getChannel: SocketChannel
 
-  def getInetAddress: InetAddress = addr
+  def getInetAddress: InetAddress  = addr
   def getLocalAddress: InetAddress = localAddr
-  def getLocalPort: Int = localPort
-  def getPort: Int = port
+  def getLocalPort: Int            = localPort
+  def getPort: Int                 = port
 
   def getRemoteSocketAddress: SocketAddress = {
     if (!connected) null
@@ -218,10 +211,10 @@ class Socket protected (
     impl.getOption(SocketOptions.IP_TOS).asInstanceOf[Int]
   }
 
-  def isBound: Boolean = bound
-  def isClosed: Boolean = closed
-  def isConnected: Boolean = connected
-  def isInputShutdown: Boolean = inputShutdown
+  def isBound: Boolean          = bound
+  def isClosed: Boolean         = closed
+  def isConnected: Boolean      = connected
+  def isInputShutdown: Boolean  = inputShutdown
   def isOutputShutdown: Boolean = outputShutdown
 
   // def sendUrgentData(data: Int): Unit
