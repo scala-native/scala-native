@@ -2,6 +2,7 @@ package java.lang
 
 import scalanative.unsafe.{CString, fromCString}
 import scalanative.libc.string.strlen
+import scalanative.runtime.Platform.isWindows
 
 final class StackTraceElement(
     val getClassName: String,
@@ -52,7 +53,7 @@ private[lang] object StackTraceElement {
     var methodName = ""
 
     def readSymbol(): Boolean = {
-      if (read() != '_') {
+      if (!isWindows && read() != '_') {
         false
       } else if (read() != 'S') {
         false
