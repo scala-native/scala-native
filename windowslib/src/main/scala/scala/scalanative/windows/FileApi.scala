@@ -22,12 +22,21 @@ object FileApi {
                   securityAttributes: SecurityAttributes,
                   creationDisposition: DWord,
                   flagsAndAttributes: UInt,
-                  templateFile: Handle): Handle                         = extern
-  def DeleteFileA(filename: CString): Boolean                           = extern
-  def DeleteFileW(filename: CWString): Boolean                          = extern
-  def FlushFileBuffers(handle: Handle): Boolean                         = extern
-  def GetFileAttributesA(filename: CString): DWord                      = extern
-  def GetFileAttributesW(filename: CWString): DWord                     = extern
+                  templateFile: Handle): Handle     = extern
+  def DeleteFileA(filename: CString): Boolean       = extern
+  def DeleteFileW(filename: CWString): Boolean      = extern
+  def FlushFileBuffers(handle: Handle): Boolean     = extern
+  def GetFileAttributesA(filename: CString): DWord  = extern
+  def GetFileAttributesW(filename: CWString): DWord = extern
+  def GetFullPathNameA(filename: CString,
+                       bufferLength: DWord,
+                       buffer: CString,
+                       filePart: Ptr[CString]): DWord = extern
+
+  def GetFullPathNameW(filename: CWString,
+                       bufferLength: DWord,
+                       buffer: CWString,
+                       filePart: Ptr[CWString]): DWord                  = extern
   def GetFileSizeEx(file: Handle, fileSize: Ptr[LargeInteger]): Boolean = extern
   def GetTempPathA(bufferLength: DWord, buffer: CString): DWord         = extern
   def GetTempPathW(bufferLength: DWord, buffer: CWString): DWord        = extern

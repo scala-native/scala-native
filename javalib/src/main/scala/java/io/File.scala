@@ -28,23 +28,18 @@ class File(_path: String) extends Serializable with Comparable[File] {
   import File._
 
   if (_path == null) throw new NullPointerException()
-  private val path: String = fixSlashes(_path)
+  private val path: String           = fixSlashes(_path)
   private[io] val properPath: String = File.properPath(path)
-  private[io] val properPathBytes: Array[Byte] =
-    File.properPath(path).getBytes("UTF-8")
 
   def this(parent: String, child: String) =
     this(
-      Option(parent).map(p => p + File.separatorChar + child).getOrElse(child)
-    )
+      Option(parent).map(p => p + File.separatorChar + child).getOrElse(child))
 
   def this(parent: File, child: String) =
     this(Option(parent).map(_.path).orNull, child)
 
-  def this(uri: URI) = {
-    this(uri.getPath())
-    checkURI(uri)
-  }
+  def this(uri: URI) =
+    this(File.checkURI(uri).getPath())
 
   def compareTo(file: File): Int = {
     if (caseSensitive) getPath().compareTo(file.getPath())
@@ -146,9 +141,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
       }
     }
 
-  /** Finds the canonical path for `path`, using `realpath`. The file must
-   *  exist, because the result of `realpath` doesn't match that of Java on
-   *  non-existing file.
+  /**
+   * Finds the canonical path for `path`, using `realpath`.
+   * The file must exist, because the result of `realpath` doesn't
+   * match that of Java on non-existing file.
    */
   private def simplifyExistingPath(path: CString)(implicit z: Zone): CString = {
     val resolvedName = alloc[Byte](limits.PATH_MAX.toUInt)
@@ -156,7 +152,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
     resolvedName
   }
 
-  /** Finds the canonical path for `path`.
+  /**
+   * Finds the canonical path for `path`.
    */
   private def simplifyNonExistingPath(path: String): String =
     path
@@ -267,9 +264,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def setReadOnly(): Boolean =
     Zone { implicit z =>
-      if (isWindows) {
-        setReadOnlyWindows(enabled = true)
-      } else {
+      if (isWindows) setReadOnlyWindows(enabled = true)
+      else {
         import stat._
         val mask =
           S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
@@ -281,13 +277,14 @@ class File(_path: String) extends Serializable with Comparable[File] {
   private def setReadOnlyWindows(enabled: Boolean)(implicit z: Zone) = {
     val filename          = toCWideStringUTF16LE(path)
     val currentAttributes = GetFileAttributesW(filename)
+
     def newAttributes =
       if (enabled) currentAttributes | FILE_ATTRIBUTE_READONLY
-      else (currentAttributes & ~FILE_ATTRIBUTE_READONLY)
+      else currentAttributes & ~FILE_ATTRIBUTE_READONLY
 
-    def setNewAttributes = SetFileAttributesW(filename, newAttributes)
+    def setNewAttributes() = SetFileAttributesW(filename, newAttributes)
 
-    currentAttributes != INVALID_FILE_ATTRIBUTES && setNewAttributes
+    currentAttributes != INVALID_FILE_ATTRIBUTES && setNewAttributes()
   }
 
   def length(): Long = Zone { implicit z =>
@@ -375,7 +372,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   // Ported from Apache Harmony
   def toURI(): URI = {
-    val path = getAbsolutePath()
+    val path = getAbsolutePath().map {
+      case '\\' => '/'
+      case c    => c
+    }
     if (!path.startsWith("/")) {
       // start with sep.
       new URI(
@@ -383,8 +383,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         null,
         new StringBuilder(path.length + 1).append('/').append(path).toString,
         null,
-        null
-      )
+        null)
     } else if (path.startsWith("//")) {
       // UNC path
       new URI("file", "", path, null)
@@ -405,7 +404,7 @@ object File {
     Zone { implicit z =>
       if (isWindows) {
         val buffSize = GetCurrentDirectoryW(0.toUInt, null)
-        val buff = alloc[windows.WChar](buffSize + 1.toUInt)
+        val buff     = alloc[windows.WChar](buffSize + 1.toUInt)
         GetCurrentDirectoryW(buffSize, buff)
         fromCWideString(buff, StandardCharsets.UTF_16LE)
       } else {
@@ -421,18 +420,18 @@ object File {
    */
   // Ported from Apache Harmony
   private def fixSlashes(path: String): String = {
-    val length = path.length
+    val length    = path.length
     var newLength = 0
 
     var uncIndex =
       if (separatorChar == '/') 0 // UNIX world
       else if (length > 2 && path.charAt(1) == ':')
-        2 // Windows, but starts with C:...
+        2    // Windows, but starts with C:...
       else 1 // Possible UNC path name
 
     var foundSlash = false
-    val newPath = path.toCharArray()
-    var i = 0
+    val newPath    = path.toCharArray()
+    var i          = 0
     while (i < length) {
       val currentChar = newPath(i)
 
@@ -447,9 +446,7 @@ object File {
         // check for leading slashes before a drive
         if (currentChar == ':'
             && uncIndex > 0
-            && (newLength == 2 || (newLength == 3 && newPath(
-              1
-            ) == separatorChar))
+            && (newLength == 2 || (newLength == 3 && newPath(1) == separatorChar))
             && newPath(0) == separatorChar) {
           newPath(0) = newPath(newLength - 1)
           newLength = 1
@@ -465,28 +462,39 @@ object File {
     }
 
     if (foundSlash && (newLength > (uncIndex + 1) || (newLength == 2 && newPath(
-          0
-        ) != separatorChar))) {
+          0) != separatorChar))) {
       newLength -= 1
     }
 
     new String(newPath, 0, newLength)
   }
 
-  /** Returns a string representing the proper path of this file. If this file
-   *  path is absolute, the user.dir property is not prepended, otherwise it is.
+  /**
+   * Returns a string representing the proper path of this file. If this file
+   * path is absolute, the user.dir property is not prepended, otherwise it
+   * is.
    */
   // Ported from Apache Harmony
   private def properPath(path: String): String = {
     if (isAbsolute(path)) path
+    else if (isWindows) Zone { implicit z =>
+      val pathCString = toCWideStringUTF16LE(path)
+      val bufSize     = GetFullPathNameW(pathCString, 0.toUInt, null, null)
+      val buf         = stackalloc[windows.WChar](bufSize)
+      if (GetFullPathNameW(pathCString,
+                           bufferLength = bufSize,
+                           buffer = buf,
+                           filePart = null) == 0.toUInt) {
+        throw new IOException("Failed to resolve correct path")
+      }
+      fromCWideString(buf, StandardCharsets.UTF_16LE)
+    }
     else {
       val userdir =
         Option(getUserDir())
           .getOrElse(
             throw new IOException(
-              "getcwd() error in trying to get user directory."
-            )
-          )
+              "getcwd() error in trying to get user directory."))
 
       if (path.isEmpty()) userdir
       else if (userdir.endsWith(separator)) userdir + path
@@ -497,23 +505,22 @@ object File {
   def isAbsolute(path: String): Boolean =
     if (separatorChar == '\\') { // Windows. Must start with `\\` or `X:(\|/)`
       (path.length > 1 && path.startsWith(separator + separator)) ||
-      (path.length > 2 && path(0).isLetter && path(1) == ':' && (path(
-        2
-      ) == '/' || path(2) == '\\'))
+      (path.length > 2 && path(0).isLetter && path(1) == ':' && (path(2) == '/' || path(
+        2) == '\\'))
     } else {
       path.length > 0 && path.startsWith(separator)
     }
 
-  /** Resolve a symbolic link. While the path resolves to an existing path, keep
-   *  resolving. If an absolute link is found, resolve the parent directories if
-   *  resolveAbsolute is true.
+  /**
+   * Resolve a symbolic link. While the path resolves to an existing path,
+   * keep resolving. If an absolute link is found, resolve the parent
+   * directories if resolveAbsolute is true.
    */
   // Ported from Apache Harmony
   private def resolveLink(
       path: CString,
       resolveAbsolute: Boolean,
-      restart: Boolean = false
-  )(implicit z: Zone): CString = {
+      restart: Boolean = false)(implicit z: Zone): CString = {
     val resolved =
       readLink(path) match {
         // path is not a symlink
@@ -528,14 +535,14 @@ object File {
         case link =>
           val linkLength = strlen(link)
           val pathLength = strlen(path)
-          val `1UL` = 1.toULong
-          var last = pathLength - `1UL`
+          val `1UL`      = 1.toULong
+          var last       = pathLength - `1UL`
           while (path(last) != separatorChar) last -= `1UL`
           last += `1UL`
 
           // previous path up to last /, plus result of resolving the link.
           val newPathLength = last + linkLength + `1UL`
-          val newPath = alloc[Byte](newPathLength)
+          val newPath       = alloc[Byte](newPathLength)
           strncpy(newPath, path, last)
           strncat(newPath, link, linkLength)
 
@@ -546,11 +553,13 @@ object File {
     else resolved
   }
 
-  @tailrec private def resolve(path: CString, start: UInt = 0.toUInt)(implicit
-      z: Zone
-  ): CString = {
-    val part: CString = alloc[Byte](limits.PATH_MAX.toUInt)
-    val `1U` = 1.toUInt
+  @tailrec private def resolve(path: CString, start: UInt = 0.toUInt)(
+      implicit z: Zone): CString = {
+    val partSize =
+      if (isWindows) windows.FileApiExt.MAX_PATH
+      else limits.PATH_MAX.toUInt
+    val part: CString = alloc[Byte](partSize)
+    val `1U`          = 1.toUInt
     // Find the next separator
     var i = start
     while (i < strlen(path) && path(i) != separatorChar) i += `1U`
@@ -577,8 +586,9 @@ object File {
 
   }
 
-  /** If `link` is a symlink, follows it and returns the path pointed to.
-   *  Otherwise, returns `None`.
+  /**
+   * If `link` is a symlink, follows it and returns the path pointed to.
+   * Otherwise, returns `None`.
    */
   private def readLink(link: CString)(implicit z: Zone): CString = {
     val buffer: CString = alloc[Byte](limits.PATH_MAX.toUInt)
@@ -592,12 +602,12 @@ object File {
     }
   }
 
-  val pathSeparatorChar: Char = if (Platform.isWindows()) ';' else ':'
-  val pathSeparator: String = pathSeparatorChar.toString
-  val separatorChar: Char = if (Platform.isWindows()) '\\' else '/'
-  val separator: String = separatorChar.toString
-  private var counter: Int = 0
-  private var counterBase: Int = 0
+  val pathSeparatorChar: Char        = if (Platform.isWindows()) ';' else ':'
+  val pathSeparator: String          = pathSeparatorChar.toString
+  val separatorChar: Char            = if (Platform.isWindows()) '\\' else '/'
+  val separator: String              = separatorChar.toString
+  private var counter: Int           = 0
+  private var counterBase: Int       = 0
   private val caseSensitive: Boolean = !Platform.isWindows()
 
   def listRoots(): Array[File] =
@@ -614,16 +624,14 @@ object File {
 
   @throws(classOf[IOException])
   def createTempFile(prefix: String, suffix: String, directory: File): File =
-    FileHelpers.createTempFile(
-      prefix,
-      suffix,
-      directory,
-      minLength = true,
-      throwOnError = true
-    )
+    FileHelpers.createTempFile(prefix,
+                               suffix,
+                               directory,
+                               minLength = true,
+                               throwOnError = true)
 
   // Ported from Apache Harmony
-  private def checkURI(uri: URI): Unit = {
+  private def checkURI(uri: URI): URI = {
     def throwExc(msg: String): Unit =
       throw new IllegalArgumentException(s"$msg: $uri")
     def compMsg(comp: String): String =
@@ -644,6 +652,7 @@ object File {
     } else if (uri.getRawFragment() != null) {
       throwExc(compMsg("fragment"))
     }
+    uri
     // else URI is ok
   }
 }
