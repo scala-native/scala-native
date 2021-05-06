@@ -14,7 +14,6 @@ object time {
   type clock_t  = types.clock_t
   type timespec = CStruct2[time_t, CLong]
   type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
-  type errno_t  = CInt
 
   // Some methods here have a @name annotation and some do not.
   // Methods where a @name extern "glue" layer would simply pass through
@@ -35,10 +34,6 @@ object time {
   @name("scalanative_asctime_r")
   def asctime_r(time_ptr: Ptr[tm], buf: Ptr[CChar]): CString = extern
 
-  @name("scalanative_asctime_s")
-  def asctime_r(time_ptr: Ptr[tm], size: CSize, buf: Ptr[CChar]): errno_t =
-    extern
-
   def clock(): clock_t                                     = extern
   def ctime(time: Ptr[time_t]): CString                    = extern
   def ctime_r(time: Ptr[time_t], buf: Ptr[CChar]): CString = extern
@@ -50,17 +45,11 @@ object time {
   @name("scalanative_gmtime_r")
   def gmtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
 
-  @name("scalanative_gmtime_s")
-  def gmtime_s(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
-
   @name("scalanative_localtime")
   def localtime(time: Ptr[time_t]): Ptr[tm] = extern
 
   @name("scalanative_localtime_r")
   def localtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
-
-  @name("scalanative_localtime_s")
-  def localtime_s(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
 
   @name("scalanative_mktime")
   def mktime(time: Ptr[tm]): time_t = extern

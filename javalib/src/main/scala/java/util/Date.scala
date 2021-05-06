@@ -3,6 +3,7 @@ package java.util
 import java.time.Instant
 
 import scalanative.posix.time._
+import scalanative.windows.crt.{time => winTime}
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo.isWindows
@@ -54,8 +55,8 @@ object Date {
   // Applications which must track timezone changes over their lifetime
   // must do timely subsequent tzset() calls, either directly or through
   // an occasional localtime().
-
-  tzset()
+  if (isWindows) winTime.tzset()
+  else tzset()
 
   private def secondsToString(seconds: Long, default: => String): String =
     Zone { implicit z =>
@@ -64,10 +65,10 @@ object Date {
 
       val tmPtr = alloc[tm]
       def getLocalTime() =
-        if (isWindows) localtime_s(ttPtr, tmPtr)
-        else localtime_r(ttPtr, tmPtr)
+        if (isWindows) winTime.localtime_s(tmPtr, ttPtr) != 0
+        else localtime_r(ttPtr, tmPtr) == null
 
-      if (getLocalTime() == null) {
+      if (getLocalTime()) {
         default
       } else {
         // 40 is over-provisioning.
@@ -76,12 +77,13 @@ object Date {
         val bufSize = 40.toULong // no toSize_t() yet
         val buf     = alloc[Byte](bufSize)
 
-        // %Z on Windows might produce long, localized names of variable length
-        val format =
-          if (isWindows) c"%a %b %d %T %Y"
-          else c"%a %b %d %T %Z %Y"
-        val n = strftime(buf, bufSize, format, tmPtr)
-
+        val n = {
+          // %Z on Windows might produce long, localized names of variable length
+          if (isWindows)
+            winTime.strftime(buf, bufSize, c"%a %b %d %T %Y", tmPtr)
+          else
+            strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
+        }
         if (n.toInt == 0) default else fromCString(buf)
       }
     }
