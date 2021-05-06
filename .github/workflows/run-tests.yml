@@ -34,7 +34,6 @@ jobs:
         with:
           path: |
             ~/.cache/coursier
-            ~/.ivy2/cache
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
@@ -148,7 +147,6 @@ jobs:
         with:
           path: |
             ~/.cache/coursier
-            ~/.ivy2/cache
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
@@ -195,7 +193,6 @@ jobs:
         with:
           path: |
             ~/.cache/coursier
-            ~/.ivy2/cache
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
@@ -238,7 +235,6 @@ jobs:
         with:
           path: |
             ~/.cache/coursier
-            ~/.ivy2/cache
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
