@@ -1,6 +1,7 @@
 package scala.scalanative.windows
 
 import scala.scalanative.unsafe._
+import scalanative.windows.{Word => WinWord}
 
 @link("ws2_32")
 @extern
@@ -12,9 +13,9 @@ object WinSocketApi {
   type WSAPollFd        = CStruct3[Socket, CShort, CShort]
   // This structures contains additional 5 fields with different order in Win_64 and others
   // Should only be treated as read-only and never allocated in ScalaNative.
-  type WSAData = CStruct2[Word, Word]
+  type WSAData = CStruct2[WinWord, WinWord]
 
-  def WSAStartup(versionRequested: Word, data: Ptr[WSAData]): CInt = extern
+  def WSAStartup(versionRequested: WinWord, data: Ptr[WSAData]): CInt = extern
 
   def WSACleanup(): CInt = extern
 
@@ -93,8 +94,8 @@ object WinSocketApiOps {
   }
 
   implicit class WSADataOps(val ref: Ptr[WSAData]) extends AnyVal {
-    def version: Word     = ref._1
-    def highVersion: Word = ref._2
+    def version: WinWord     = ref._1
+    def highVersion: WinWord = ref._2
   }
 
   implicit class WSAPollFdOps(val ref: Ptr[WSAPollFd]) extends AnyVal {

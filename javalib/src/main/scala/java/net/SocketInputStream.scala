@@ -8,7 +8,7 @@ private[net] class SocketInputStream(socket: AbstractPlainSocketImpl)
 
   override def close(): Unit = socket.close()
 
-  override def available(): Int = socket.available
+  override def available(): Int = socket.available()
 
   override def read(): Int = {
     val buffer = new Array[Byte](1)

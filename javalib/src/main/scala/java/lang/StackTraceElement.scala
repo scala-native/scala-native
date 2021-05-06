@@ -53,7 +53,7 @@ private[lang] object StackTraceElement {
     var methodName = ""
 
     def readSymbol(): Boolean = {
-      if (!isWindows && read() != '_') {
+      if (!isWindows() && read() != '_') {
         false
       } else if (read() != 'S') {
         false
