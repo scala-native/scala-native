@@ -40,13 +40,6 @@ jobs:
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" test-tools
 
-      # Pre-compile and cache results for the most time consuming projects and it dependencies too speed up execution in next phases
-      # We cannot use `compile` because sbtScalaNative does not crossCompile
-      - name: Compile
-        run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" \
-          "tests/Test/compile" "testsExt/Test/compile" \
-          "junitTestOutputsNative/Test/compile" "junitTestOutputsJVM/Test/compile"
-
   # Build testing image that would be used to build and run against different platforms
   # Currently only Linux x64 is tested
   build-image:
