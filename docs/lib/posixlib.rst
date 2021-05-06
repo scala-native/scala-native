@@ -51,7 +51,7 @@ C Header          Scala Native Module
 `search.h`_       N/A
 `semaphore.h`_    N/A
 `setjmp.h`_       N/A
-`signal.h`_       N/A
+`signal.h`_       scala.scalanative.posix.signal_
 `spawn.h`_        N/A
 `stdarg.h`_       N/A
 `stdbool.h`_      N/A
