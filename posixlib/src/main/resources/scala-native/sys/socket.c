@@ -3,9 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-// #include "../netinet/in.h"
 #include "socket_conversions.h"
-// #include "socket.h"
 
 #ifdef _WIN32
 #include <WinSock2.h>
