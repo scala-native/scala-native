@@ -42,9 +42,9 @@ if ! docker pull $FULL_IMAGE_NAME;then
 fi
 
 docker run -i "${FULL_IMAGE_NAME}" java -version
-docker run -v $HOME/.ivy2:/home/scala-native/.ivy2 \
-           -v $HOME/.sbt:/home/scala-native/.sbt \
-           -v $PWD:/home/scala-native/scala-native \
+docker run --mount type=bind,source=$HOME/.cache/coursier,target=/home/scala-native/.cache/coursier \
+           --mount type=bind,source=$HOME/.sbt,target=/home/scala-native/.sbt \
+           --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
            -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \
            -e SCALANATIVE_GC="$SCALANATIVE_GC" \
            -e SCALANATIVE_OPTIMIZE="$SCALANATIVE_OPTIMIZE" \
