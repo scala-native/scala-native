@@ -19,11 +19,11 @@ typedef SSIZE_T ssize_t;
 #else
 // Posix defines the order and type of required fields. Size of fields
 // and any internal or tail padding are left unspecified. This section
-// verifies that the C and Scala Native definitons match in each compilation
+// verifies that the C and Scala Native definitions match in each compilation
 // environment.
 //
 // The first sockaddr field in C has had size 2 and no padding after it
-// since time immemorial. Chedk that the Scala Native has the same.
+// since time immemorial. Verify that the Scala Native field has the same.
 
 _Static_assert(offsetof(struct scalanative_sockaddr, sa_data) == 2,
                "Unexpected size: scalanative_sockaddr sa_family");
