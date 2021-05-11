@@ -106,12 +106,17 @@ class InetAddressTest {
   }
 
   @Test def isLoopbackAddress(): Unit = {
-    val ia1 = InetAddress.getByName("239.255.255.255")
-    assertFalse("239.n.n.n", ia1.isLoopbackAddress())
-    val ia2 = InetAddress.getByName("localhost")
-    assertTrue("localhost", ia2.isLoopbackAddress())
-    val ia3 = InetAddress.getByName("127.0.0.2")
-    assertTrue("127.0.0.2", ia3.isLoopbackAddress())
+    val a1  = "239.255.255.255"
+    val ia1 = InetAddress.getByName(a1)
+    assertFalse(a1, ia1.isLoopbackAddress())
+
+    val a2  = "localhost"
+    val ia2 = InetAddress.getByName(a2)
+    assertTrue(a2, ia2.isLoopbackAddress())
+
+    val a3  = "127.0.0.2"
+    val ia3 = InetAddress.getByName(a3)
+    assertTrue(a3, ia3.isLoopbackAddress())
   }
 
   @Test def isSiteLocalAddress(): Unit = {
