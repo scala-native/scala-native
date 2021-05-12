@@ -21,6 +21,12 @@ object SocketHelpers {
     Zone { implicit z =>
       val cIP = toCString(ip)
 
+      // Design note:
+      // For historical reasons, this file uses heap alloc
+      // extensively. All but two of those allocations are "small".
+      // With care for cumulative stack size, those small allocations
+      // could be replaced by stackalloc.
+
       val hints = alloc[addrinfo] // alloc documented to clear retured memory
       hints.ai_family = AF_UNSPEC
       hints.ai_flags = 4 // AI_NUMERICHOST
