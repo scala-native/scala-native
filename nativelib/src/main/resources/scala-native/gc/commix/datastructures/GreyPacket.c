@@ -34,7 +34,7 @@ void GreyList_Init(GreyList *list) {
     list->head.atom = GreyPacketRef_Empty();
 }
 
-uint32_t GreyList_Size(GreyList *list) {
+UInt24 GreyList_Size(GreyList *list) {
     GreyPacketRef head;
     head.atom = list->head.atom;
     return head.sep.size;
@@ -42,7 +42,7 @@ uint32_t GreyList_Size(GreyList *list) {
 
 void GreyList_Push(GreyList *list, word_t *greyPacketsStart,
                    GreyPacket *packet) {
-    uint32_t packetIdx = GreyPacket_IndexOf(greyPacketsStart, packet);
+    UInt24 packetIdx = GreyPacket_IndexOf(greyPacketsStart, packet);
     GreyPacketRef newHead;
     newHead.sep.idx = packetIdx;
     newHead.sep.timesPoped = (uint16_t)packet->timesPoped;
@@ -51,9 +51,9 @@ void GreyList_Push(GreyList *list, word_t *greyPacketsStart,
     do {
         // head will be replaced with actual value if
         // atomic_compare_exchange_strong fails
-        newHead.sep.size = head.sep.size + 1;
-        uint32_t nextIdx = head.sep.idx;
-        if (nextIdx == GREYLIST_LAST) {
+        newHead.sep.size = UInt24_plus(head.sep.size, 1);
+        UInt24 nextIdx = head.sep.idx;
+        if (UInt24_equals(nextIdx, GREYLIST_LAST)) {
             packet->next.atom = GreyPacketRef_Empty();
         } else {
             packet->next.atom = head.atom;
@@ -64,7 +64,7 @@ void GreyList_Push(GreyList *list, word_t *greyPacketsStart,
 
 void GreyList_PushAll(GreyList *list, word_t *greyPacketsStart,
                       GreyPacket *first, uint_fast32_t size) {
-    uint32_t packetIdx = GreyPacket_IndexOf(greyPacketsStart, first);
+    UInt24 packetIdx = GreyPacket_IndexOf(greyPacketsStart, first);
     GreyPacketRef newHead;
     newHead.sep.idx = packetIdx;
     newHead.sep.timesPoped = (uint16_t)first->timesPoped;
@@ -74,9 +74,9 @@ void GreyList_PushAll(GreyList *list, word_t *greyPacketsStart,
     do {
         // head will be replaced with actual value if
         // atomic_compare_exchange_strong fails
-        newHead.sep.size = head.sep.size + size;
-        uint32_t nextIdx = head.sep.idx;
-        if (nextIdx == GREYLIST_LAST) {
+        newHead.sep.size = UInt24_plus(head.sep.size, size);
+        UInt24 nextIdx = head.sep.idx;
+        if (UInt24_equals(nextIdx, GREYLIST_LAST)) {
             last->next.atom = GreyPacketRef_Empty();
         } else {
             last->next.atom = head.atom;
@@ -89,14 +89,14 @@ GreyPacket *GreyList_Pop(GreyList *list, word_t *greyPacketsStart) {
     GreyPacketRef head;
     head.atom = list->head.atom;
     GreyPacketRef nextValue;
-    uint32_t headIdx;
+    UInt24 headIdx;
     GreyPacket *res;
     do {
         // head will be replaced with actual value if
         // atomic_compare_exchange_strong fails
         headIdx = head.sep.idx;
-        assert(headIdx != GREYLIST_NEXT);
-        if (headIdx == GREYLIST_LAST) {
+        assert(!UInt24_equals(headIdx, GREYLIST_NEXT));
+        if (UInt24_equals(headIdx, GREYLIST_LAST)) {
             return NULL;
         }
         res = GreyPacket_FromIndex(greyPacketsStart, headIdx);
@@ -105,8 +105,8 @@ GreyPacket *GreyList_Pop(GreyList *list, word_t *greyPacketsStart) {
         if (next.atom != 0) {
             nextValue.atom = next.atom;
         } else {
-            nextValue.sep.idx = headIdx + 1;
-            nextValue.sep.size = head.sep.size - 1;
+            nextValue.sep.idx = UInt24_plus(headIdx, 1);
+            nextValue.sep.size = UInt24_plus(head.sep.size, -1);
         }
     } while (!atomic_compare_exchange_strong(
         &list->head.atom, (uint64_t *)&head.atom, nextValue.atom));
