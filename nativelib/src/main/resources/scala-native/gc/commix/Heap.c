@@ -313,9 +313,9 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     // over all available memory leading to OutOffMemory errors for other
     // processes. Also when using UNLIMITED heap size it might try to commit
     // more memory then it is available.
-        if (!memoryCommit(heapEnd,  incrementInBytes)) {
+    if (!memoryCommit(heapEnd, incrementInBytes)) {
         Heap_exitWithOutOfMemory();
-        };
+    };
 #endif // WIN32
 
 #ifdef DEBUG_ASSERT
