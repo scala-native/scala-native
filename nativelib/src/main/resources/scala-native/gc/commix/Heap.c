@@ -144,30 +144,50 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->lineMetaEnd = lineMetaStart + initialBlockCount * LINE_COUNT *
                                             LINE_METADATA_SIZE / WORD_SIZE;
 
+    // reserve space for bytemap
+    size_t bytemapSpaceSize =
+        maxHeapSize / ALLOCATION_ALIGNMENT + sizeof(Bytemap);
+    Bytemap *bytemap =
+        (Bytemap *)Heap_mapAndAlign(bytemapSpaceSize, ALLOCATION_ALIGNMENT);
+    heap->bytemap = bytemap;
+
+    uint32_t greyPacketCount =
+        (uint32_t)(maxHeapSize * GREY_PACKET_RATIO / GREY_PACKET_SIZE);
+    heap->mark.total = greyPacketCount;
+    size_t greyPacketsSpaceSize = greyPacketCount * sizeof(GreyPacket);
+    word_t *greyPacketsStart =
+        Heap_mapAndAlign(greyPacketsSpaceSize, WORD_SIZE);
+    heap->greyPacketsStart = greyPacketsStart;
+
+    // Init heap for small objects
     word_t *heapStart = Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
+    heap->heapSize = minHeapSize;
+    heap->heapStart = heapStart;
+    heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
+
+#ifdef _WIN32
+    // Commit memory chunks reserved using mapMemory
+    bool commitStatus =
+        memoryCommit(blockMetaStart, blockMetaSpaceSize) &&
+        memoryCommit(lineMetaStart, lineMetaSpaceSize) &&
+        memoryCommit(bytemap, bytemapSpaceSize) &&
+        memoryCommit(greyPacketsStart, greyPacketsSpaceSize) &&
+        // Due to lack of over-committing on Windows on Heap init reserve memory
+        // chunk equal to maximal size of heap, but commit only minimal needed
+        // chunk of memory. Additional chunks of heap should be committed on
+        // demend when growing the heap.
+        memoryCommit(heapStart, minHeapSize);
+    if (!commitStatus) {
+        Heap_exitWithOutOfMemory();
+    }
+#endif // _WIN32
 
     BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
     GreyList_Init(&heap->mark.empty);
     GreyList_Init(&heap->mark.full);
-    uint32_t greyPacketCount =
-        (uint32_t)(maxHeapSize * GREY_PACKET_RATIO / GREY_PACKET_SIZE);
-    heap->mark.total = greyPacketCount;
-    word_t *greyPacketsStart =
-        Heap_mapAndAlign(greyPacketCount * sizeof(GreyPacket), WORD_SIZE);
-    heap->greyPacketsStart = greyPacketsStart;
+
     GreyList_PushAll(&heap->mark.empty, greyPacketsStart,
                      (GreyPacket *)greyPacketsStart, greyPacketCount);
-
-    // reserve space for bytemap
-    Bytemap *bytemap = (Bytemap *)Heap_mapAndAlign(
-        maxHeapSize / ALLOCATION_ALIGNMENT + sizeof(Bytemap),
-        ALLOCATION_ALIGNMENT);
-    heap->bytemap = bytemap;
-
-    // Init heap for small objects
-    heap->heapSize = minHeapSize;
-    heap->heapStart = heapStart;
-    heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
 
     Phase_Init(heap, initialBlockCount);
 
@@ -270,22 +290,33 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     if (!Heap_isGrowingPossible(heap, incrementInBlocks)) {
         Heap_exitWithOutOfMemory();
     }
+    size_t incrementInBytes = incrementInBlocks * SPACE_USED_PER_BLOCK;
 
 #ifdef DEBUG_PRINT
-    printf("Growing small heap by %zu bytes, to %zu bytes\n",
-           incrementInBlocks * SPACE_USED_PER_BLOCK,
-           heap->heapSize + incrementInBlocks * SPACE_USED_PER_BLOCK);
+    printf("Growing small heap by %zu bytes, to %zu bytes\n", incrementInBytes,
+           heap->heapSize + incrementInBytes);
     fflush(stdout);
 #endif
 
     word_t *heapEnd = heap->heapEnd;
     heap->heapEnd = heapEnd + incrementInBlocks * WORDS_IN_BLOCK;
-    heap->heapSize += incrementInBlocks * SPACE_USED_PER_BLOCK;
+    heap->heapSize += incrementInBytes;
     word_t *blockMetaEnd = heap->blockMetaEnd;
     heap->blockMetaEnd =
         (word_t *)(((BlockMeta *)heap->blockMetaEnd) + incrementInBlocks);
     heap->lineMetaEnd +=
         incrementInBlocks * LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
+
+#ifdef _WIN32
+    // Windows does not allow for over-committing, because of that we commit
+    // next chunk of memory when growing heap. Without this process might take
+    // over all available memory leading to OutOffMemory errors for other
+    // processes. Also when using UNLIMITED heap size it might try to commit
+    // more memory then it is available.
+        if (!memoryCommit(heapEnd,  incrementInBytes)) {
+        Heap_exitWithOutOfMemory();
+        };
+#endif // WIN32
 
 #ifdef DEBUG_ASSERT
     BlockMeta *end = (BlockMeta *)blockMetaEnd;
