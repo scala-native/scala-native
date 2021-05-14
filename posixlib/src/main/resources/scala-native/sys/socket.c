@@ -1,10 +1,9 @@
 #include <string.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "../netinet/in.h"
 #include "socket_conversions.h"
-#include "socket.h"
 
 #ifdef _WIN32
 #include <WinSock2.h>
@@ -13,6 +12,26 @@ typedef SSIZE_T ssize_t;
 #else
 #include <netinet/in.h>
 #include <sys/socket.h>
+#if !(defined __STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
+#ifndef SCALANATIVE_SUPPRESS_STRUCT_CHECK_WARNING
+#warning "Size and order of C structures are not checked when -std < c11."
+#endif
+#else
+// Posix defines the order and type of required fields. Size of fields
+// and any internal or tail padding are left unspecified. This section
+// verifies that the C and Scala Native definitions match in each compilation
+// environment.
+//
+// The first sockaddr field in C has had size 2 and no padding after it
+// since time immemorial. Verify that the Scala Native field has the same.
+
+_Static_assert(offsetof(struct scalanative_sockaddr, sa_data) == 2,
+               "Unexpected size: scalanative_sockaddr sa_family");
+
+_Static_assert(offsetof(struct scalanative_sockaddr, sa_data) ==
+                   offsetof(struct sockaddr, sa_data),
+               "offset mismatch: sockaddr sa_data");
+#endif
 #endif
 
 int scalanative_scm_rights() {
