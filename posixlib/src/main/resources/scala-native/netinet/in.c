@@ -1,25 +1,27 @@
-#include <string.h>
 #include "in.h"
 
-void scalanative_convert_in_addr(struct scalanative_in_addr *in,
-                                 struct in_addr *out) {
-    out->s_addr = in->so_addr;
-}
+// Match declarations in in.scala
 
-void scalanative_convert_in6_addr(struct scalanative_in6_addr *in,
-                                  struct in6_addr *out) {
-    void *ignored = memcpy(out->s6_addr, in->_s6_addr, 16);
-}
+_Static_assert(sizeof(in_addr_t) == 4, "size mismatch: in_addr_t");
 
-void scalanative_convert_scalanative_in_addr(struct in_addr *in,
-                                             struct scalanative_in_addr *out) {
-    out->so_addr = in->s_addr;
-}
+_Static_assert(sizeof(in_port_t) == 2, "size mismatch: in_port_t");
 
-void scalanative_convert_scalanative_in6_addr(
-    struct in6_addr *in, struct scalanative_in6_addr *out) {
-    void *ignored = memcpy(out->_s6_addr, in->s6_addr, 16);
-}
+_Static_assert(sizeof(struct scalanative_in_addr) == sizeof(struct in_addr),
+               "size mismatch: struct scalanative_in_addr");
+
+_Static_assert(sizeof(struct scalanative_in6_addr) == sizeof(struct in6_addr),
+               "size mismatch: struct scalanative_in_addr");
+
+// Os sockaddr_in may not have sin_zero field, so require only Posix minimum.
+_Static_assert(sizeof(struct scalanative_sockaddr_in) >= 8,
+               "size mismatch: struct scalanative_sockaddr_in");
+
+_Static_assert(sizeof(struct scalanative_sockaddr_in6) ==
+                   sizeof(struct sockaddr_in6),
+               "size mismatch: struct scalanative_sockaddr_in6");
+
+_Static_assert(sizeof(struct scalanative_ipv6_mreq) == sizeof(struct ipv6_mreq),
+               "size mismatch: struct scalanative_ipv6_mreq");
 
 int scalanative_ipproto_ip() { return IPPROTO_IP; }
 
@@ -60,75 +62,3 @@ int scalanative_ip_multicast_if() { return IP_MULTICAST_IF; }
 int scalanative_ip_multicast_loop() { return IP_MULTICAST_LOOP; }
 
 int scalanative_ip_tos() { return IP_TOS; }
-
-int scalanative_in6_is_addr_unspecified(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_UNSPECIFIED(&converted);
-}
-
-int scalanative_in6_is_addr_loopback(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_LOOPBACK(&converted);
-}
-
-int scalanative_in6_is_addr_multicast(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_MULTICAST(&converted);
-}
-
-int scalanative_in6_is_addr_linklocal(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_LINKLOCAL(&converted);
-}
-
-int scalanative_in6_is_addr_sitelocal(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_SITELOCAL(&converted);
-}
-
-int scalanative_in6_is_addr_v4mapped(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_V4MAPPED(&converted);
-}
-
-int scalanative_in6_is_addr_v4compat(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_V4COMPAT(&converted);
-}
-
-int scalanative_in6_is_addr_mc_nodelocal(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_MC_NODELOCAL(&converted);
-}
-
-int scalanative_in6_is_addr_mc_linklocal(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_MC_LINKLOCAL(&converted);
-}
-
-int scalanative_in6_is_addr_mc_sitelocal(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_MC_SITELOCAL(&converted);
-}
-
-int scalanative_in6_is_addr_mc_orglocal(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_MC_ORGLOCAL(&converted);
-}
-
-int scalanative_in6_is_addr_mc_global(struct scalanative_in6_addr *arg) {
-    struct in6_addr converted;
-    scalanative_convert_in6_addr(arg, &converted);
-    return IN6_IS_ADDR_MC_GLOBAL(&converted);
-}

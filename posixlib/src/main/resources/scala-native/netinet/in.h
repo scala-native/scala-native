@@ -17,7 +17,7 @@ typedef uint16_t in_port_t;
 #endif
 
 struct scalanative_in_addr {
-    in_addr_t so_addr;
+    uint32_t so_addr;
 };
 
 struct scalanative_in6_addr {
@@ -40,13 +40,9 @@ struct scalanative_sockaddr_in6 {
     uint32_t sin6_scope_id;
 };
 
-void scalanative_convert_in_addr(struct scalanative_in_addr *in,
-                                 struct in_addr *out);
-void scalanative_convert_in6_addr(struct scalanative_in6_addr *in,
-                                  struct in6_addr *out);
-void scalanative_convert_scalanative_in_addr(struct in_addr *in,
-                                             struct scalanative_in_addr *out);
-void scalanative_convert_scalanative_in6_addr(struct in6_addr *in,
-                                              struct scalanative_in6_addr *out);
+struct scalanative_ipv6_mreq {
+    struct scalanative_in6_addr ipv6mr_multiaddr;
+    uint32_t ipv6mr_interface;
+};
 
 #endif // __NETINET_IN_H

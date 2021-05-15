@@ -1,5 +1,6 @@
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
+#include <stddef.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 
@@ -8,24 +9,7 @@ struct scalanative_iovec {
     size_t iov_len; /** The size of the memory pointed to by iov_base. */
 };
 
-void iovec_to_scalanative_iovec(struct iovec *orig,
-                                struct scalanative_iovec *buf) {
-    buf->iov_base = orig->iov_base;
-    buf->iov_len = orig->iov_len;
-}
+_Static_assert(sizeof(struct scalanative_iovec) == sizeof(struct iovec),
+               "size mismatch: struct scalanative_iovec");
 
-ssize_t scalanative_readv(int d, struct scalanative_iovec *buf, int iovcnt) {
-    struct iovec copy;
-    ssize_t result = readv(d, &copy, iovcnt);
-    iovec_to_scalanative_iovec(&copy, buf);
-    return result;
-}
-
-ssize_t scalanative_writev(int fildes, struct scalanative_iovec *buf,
-                           int iovcnt) {
-    struct iovec copy;
-    ssize_t result = writev(fildes, &copy, iovcnt);
-    iovec_to_scalanative_iovec(&copy, buf);
-    return result;
-}
 #endif // Unix or Mac OS

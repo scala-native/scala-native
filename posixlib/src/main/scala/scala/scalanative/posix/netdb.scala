@@ -2,36 +2,19 @@ package scala.scalanative.posix
 
 import scalanative.unsafe._
 import scalanative.posix.sys.socket
-import scalanative.posix.netinet.in
 
 @extern
 object netdb {
-  type addrinfo = CStruct8[CInt,
-                           CInt,
-                           CInt,
-                           CInt,
-                           socket.socklen_t,
-                           Ptr[socket.sockaddr],
-                           Ptr[CChar],
-                           Ptr[Byte]]
+  type addrinfo = CStruct8[CInt, // ai_flags
+                           CInt,                 // ai_family
+                           CInt,                 // ai_socktype
+                           CInt,                 // ai_protocol
+                           socket.socklen_t,     // ai_addrlen
+                           Ptr[socket.sockaddr], // ai_addr
+                           Ptr[CChar],           // ai_canonname
+                           Ptr[Byte]]            // ai_next
 
-  @name("scalanative_freeaddrinfo")
-  def freeaddrinfo(addr: Ptr[addrinfo]): Unit = extern
-
-  @name("scalanative_getaddrinfo")
-  def getaddrinfo(name: CString,
-                  service: CString,
-                  hints: Ptr[addrinfo],
-                  res: Ptr[Ptr[addrinfo]]): CInt = extern
-
-  @name("scalanative_getnameinfo")
-  def getnameinfo(addr: Ptr[socket.sockaddr],
-                  addrlen: socket.socklen_t,
-                  host: CString,
-                  hostlen: socket.socklen_t,
-                  service: CString,
-                  servlen: socket.socklen_t,
-                  flags: CInt): CInt = extern
+  // Compile time constants require a @name annotation & supporting C code.
 
   @name("scalanative_ai_numerichost")
   def AI_NUMERICHOST: CInt = extern
@@ -50,6 +33,24 @@ object netdb {
 
   @name("scalanative_ai_canonname")
   def AI_CANONNAME: CInt = extern
+
+  // Direct function calls to C do not require a @name annotation.
+
+  def freeaddrinfo(addr: Ptr[addrinfo]): Unit = extern
+
+  def getaddrinfo(name: CString,
+                  service: CString,
+                  hints: Ptr[addrinfo],
+                  res: Ptr[Ptr[addrinfo]]): CInt = extern
+
+  def getnameinfo(addr: Ptr[socket.sockaddr],
+                  addrlen: socket.socklen_t,
+                  host: CString,
+                  hostlen: socket.socklen_t,
+                  service: CString,
+                  servlen: socket.socklen_t,
+                  flags: CInt): CInt = extern
+
 }
 
 object netdbOps {

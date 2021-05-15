@@ -89,42 +89,29 @@ object in {
   @name("scalanative_ip_tos")
   def IP_TOS: CInt = extern
 
-  @name("scalanative_in6_is_addr_unspecified")
   def IN6_IS_ADDR_UNSPECIFIED(arg: Ptr[in6_addr]): CInt = extern
 
-  @name("scalanative_in6_is_addr_loopback")
   def IN6_IS_ADDR_LOOPBACK(arg: Ptr[in6_addr]): CInt = extern
 
-  @name("scalanative_in6_is_addr_multicast")
   def IN6_IS_ADDR_MULTICAST(arg: Ptr[in6_addr]): CInt = extern
 
-  @name("scalanative_in6_is_addr_linklocal")
   def IN6_IS_ADDR_LINKLOCAL(arg: Ptr[in6_addr]): CInt = extern
 
-  @name("scalanative_in6_is_addr_sitelocal")
   def IN6_IS_ADDR_SITELOCAL(arg: Ptr[in6_addr]): CInt = extern
 
-  @name("scalanative_in6_is_addr_v4mapped")
   def IN6_IS_ADDR_V4MAPPED(arg: Ptr[in6_addr]): CInt = extern
 
-  @name("scalanative_in6_is_addr_v4compat")
   def IN6_IS_ADDR_V4COMPAT(arg: Ptr[in6_addr]): CInt = extern
 
-  @name("scalanative_in6_is_addr_mc_nodelocal")
   def IN6_IS_ADDR_MC_NODELOCAL(arg: Ptr[in6_addr]): CInt = extern
 
-  @name("scalanative_in6_is_addr_mc_linklocal")
   def IN6_IS_ADDR_MC_LINKLOCAL(arg: Ptr[in6_addr]): CInt = extern
 
-  @name("scalanative_in6_is_addr_mc_sitelocal")
   def IN6_IS_ADDR_MC_SITELOCAL(arg: Ptr[in6_addr]): CInt = extern
 
-  @name("scalanative_in6_is_addr_mc_orglocal")
   def IN6_IS_ADDR_MC_ORGLOCAL(arg: Ptr[in6_addr]): CInt = extern
 
-  @name("scalanative_in6_is_addr_mc_global")
   def IN6_IS_ADDR_MC_GLOBAL(arg: Ptr[in6_addr]): CInt = extern
-
 }
 
 object inOps {
