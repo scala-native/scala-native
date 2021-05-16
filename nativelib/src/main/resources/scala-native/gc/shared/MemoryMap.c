@@ -94,7 +94,7 @@ word_t *memoryMapPrealloc(size_t memorySize, size_t doPrealloc) {
     return (word_t *)(MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0,
                                     memorySize));
 #else // Unix
-    word_t res;
+    word_t *res;
     if (doPrealloc) {
         res = mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS_PREALLOC,
                    HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
