@@ -6,4 +6,6 @@
 
 word_t *memoryMap(size_t memorySize);
 
+word_t *memoryMapPrealloc(size_t memorySize, size_t doPrealloc);
+
 #endif // MEMORYMAP_H
