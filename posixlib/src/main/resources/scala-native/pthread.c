@@ -6,7 +6,7 @@
 
 size_t scalanative_size_of_pthread_t() { return sizeof(pthread_t); }
 
-size_t scalanative_pthread_attr_t() { return sizeof(pthread_attr_t); }
+size_t scalanative_size_of_pthread_attr_t() { return sizeof(pthread_attr_t); }
 
 size_t scalanative_size_of_pthread_cond_t() { return sizeof(pthread_cond_t); }
 
@@ -48,10 +48,7 @@ int scalanative_pthread_mutex_normal() { return PTHREAD_MUTEX_NORMAL; }
 
 int scalanative_pthread_mutex_recursive() { return PTHREAD_MUTEX_RECURSIVE; }
 
-pthread_once_t scalanative_pthread_once_init() {
-    pthread_once_t once_block = PTHREAD_ONCE_INIT;
-    return once_block;
-}
+pthread_once_t scalanative_pthread_once_init() { return PTHREAD_ONCE_INIT; }
 
 int scalanative_pthread_prio_inherit() { return PTHREAD_PRIO_INHERIT; }
 
