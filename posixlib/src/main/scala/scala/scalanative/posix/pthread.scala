@@ -101,7 +101,6 @@ object pthread {
   def pthread_condattr_setpshared(attr: Ptr[pthread_condattr_t],
                                   pshared: CInt): CInt = extern
 
-  @name("scalanative_pthread_create")
   def pthread_create(thread: Ptr[pthread_t],
                      attr: Ptr[pthread_attr_t],
                      startroutine: CFuncPtr1[Ptr[Byte], Ptr[Byte]],
