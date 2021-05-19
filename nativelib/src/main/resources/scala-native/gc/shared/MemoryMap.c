@@ -105,8 +105,10 @@ word_t *memoryMapPrealloc(size_t memorySize, size_t doPrealloc) {
 
 #ifndef __linux__
     // if we are not on linux the next best thing we can do is to mark the pages
-    // as MADV_WILLNEED.
-    madvise(res, memorySize, MADV_WILLNEED);
+    // as MADV_WILLNEED but only if doPrealloc is enabled.
+    if (doPrealloc) {
+        madvise(res, memorySize, MADV_WILLNEED);
+    }
 #endif
 
     return res;
