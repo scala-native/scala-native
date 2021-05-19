@@ -42,7 +42,7 @@ private[scalanative] object LLVM {
         val stdflag =
           if (isLl) Seq()
           else if (isCpp) Seq("-std=c++11")
-          else Seq("-std=gnu11")
+          else Seq("-std=c11")
         val flags = opt(config) +: stdflag ++: "-fvisibility=hidden" +:
           config.compileOptions
         val compilec =
