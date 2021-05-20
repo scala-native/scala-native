@@ -7,7 +7,7 @@
 #else // Unix
 // For Linux
 // https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
-#define _GNU_SOURCE
+#define _BSD_SOURCE
 #include <sys/mman.h>
 // Darwin defines MAP_ANON instead of MAP_ANONYMOUS
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
