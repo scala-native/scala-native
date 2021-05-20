@@ -4,22 +4,6 @@
 #include <sys/types.h>
 #include <string.h>
 
-size_t scalanative_pthread_t_size() { return sizeof(pthread_t); }
-
-size_t scalanative_pthread_attr_t_size() { return sizeof(pthread_attr_t); }
-
-size_t scalanative_pthread_cond_t_size() { return sizeof(pthread_cond_t); }
-
-size_t scalanative_pthread_condattr_t_size() {
-    return sizeof(pthread_condattr_t);
-}
-
-size_t scalanative_pthread_mutex_t_size() { return sizeof(pthread_mutex_t); }
-
-size_t scalanative_pthread_mutexattr_t_size() {
-    return sizeof(pthread_mutexattr_t);
-}
-
 int scalanative_pthread_cancel_asynchronous() {
     return PTHREAD_CANCEL_ASYNCHRONOUS;
 }
@@ -67,5 +51,23 @@ int scalanative_pthread_process_private() { return PTHREAD_PROCESS_PRIVATE; }
 int scalanative_pthread_scope_process() { return PTHREAD_SCOPE_PROCESS; }
 
 int scalanative_pthread_scope_system() { return PTHREAD_SCOPE_SYSTEM; }
+
+// The following are not part of the POSIX spec
+
+size_t scalanative_pthread_t_size() { return sizeof(pthread_t); }
+
+size_t scalanative_pthread_attr_t_size() { return sizeof(pthread_attr_t); }
+
+size_t scalanative_pthread_cond_t_size() { return sizeof(pthread_cond_t); }
+
+size_t scalanative_pthread_condattr_t_size() {
+    return sizeof(pthread_condattr_t);
+}
+
+size_t scalanative_pthread_mutex_t_size() { return sizeof(pthread_mutex_t); }
+
+size_t scalanative_pthread_mutexattr_t_size() {
+    return sizeof(pthread_mutexattr_t);
+}
 
 #endif // Unix or Mac OS

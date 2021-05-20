@@ -13,6 +13,11 @@ import scala.scalanative.posix.sys.types._
 @extern
 object pthread {
 
+  // simpify definitions - not in spec
+  type routine = CFuncPtr0[Unit]
+
+  // functions
+
   def pthread_atfork(prepare: routine, parent: routine, child: routine): CInt =
     extern
 
@@ -211,10 +216,8 @@ object pthread {
 
   def pthread_testcancel(): Unit = extern
 
-  // Types
-  type routine = CFuncPtr0[Unit]
+  // symbolic constants
 
-  // Macros
   @name("scalanative_pthread_cancel_asynchronous")
   def PTHREAD_CANCEL_ASYNCHRONOUS: CInt = extern
 
@@ -279,6 +282,7 @@ object pthread {
   def PTHREAD_SCOPE_SYSTEM: CInt = extern
 
   // The following are not part of the POSIX spec
+  // and therefore could be subject to removal
 
   @name("scalanative_pthread_t_size")
   def pthread_t_size: CSize = extern
