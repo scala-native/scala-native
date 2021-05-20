@@ -288,7 +288,7 @@ object pthread {
   def PTHREAD_SCOPE_SYSTEM: CInt = extern
 
   // BEWARE:
-  // The pthread_*t_size methods and corresponding
+  // The six scalanative_pthread_*t_size methods below and corresponding
   // scalanative_pthread_*size_of_*_t C functions
   // are not part of the specification:
   //   The Open Group Base Specifications Issue 7, 2018 edition
@@ -296,21 +296,15 @@ object pthread {
   // Someday they should be removed and, iff useful, moved to another
   // file, say pthread_helpers.*, and given new names.
 
-  @name("scalanative_pthread_size_of_pthread_t")
-  def pthread_t_size: CSize = extern
+  def scalanative_pthread_t_size: CSize = extern
 
-  @name("scalanative_pthread_size_of_pthread_attr_t")
-  def pthread_attr_t_size: CSize = extern
+  def scalanative_pthread_attr_t_size: CSize = extern
 
-  @name("scalanative_pthread_size_of_pthread_cond_t")
-  def pthread_cond_t_size: CSize = extern
+  def scalanative_pthread_cond_t_size: CSize = extern
 
-  @name("scalanative_pthread_size_of_pthread_condattr_t")
-  def pthread_condattr_t_size: CSize = extern
+  def scalanative_pthread_condattr_t_size: CSize = extern
 
-  @name("scalanative_pthread_size_of_pthread_mutex_t")
-  def pthread_mutex_t_size: CSize = extern
+  def scalanative_pthread_mutex_t_size: CSize = extern
 
-  @name("scalanative_pthread_size_of_pthread_mutexattr_t")
-  def pthread_mutexattr_t_size: CSize = extern
+  def scalanative_pthread_mutexattr_t_size: CSize = extern
 }
