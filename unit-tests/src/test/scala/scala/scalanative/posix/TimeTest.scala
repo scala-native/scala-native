@@ -18,6 +18,8 @@ import timeOps.tmOps
 class TimeTest {
   tzset()
 
+  // Note: alloc clears memory
+
   // In 2.11/2.12 time was resolved to posix.time.type, in 2.13 to
   // posix.time.time method.
   val now_time_t: time_t = scala.scalanative.posix.time.time(null)
@@ -137,9 +139,6 @@ class TimeTest {
       val tmBufCount = 7.toULong
 
       val tmBuf = alloc[Ptr[Byte]](tmBufCount)
-      string.memset(tmBuf.asInstanceOf[Ptr[Byte]],
-                    0,
-                    tmBufCount * sizeof[Ptr[Byte]])
 
       val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
@@ -156,7 +155,6 @@ class TimeTest {
         // grossly over-provision rather than chase fencepost bugs.
         val bufSize = 70.toULong
         val buf     = alloc[Byte](bufSize)
-        string.memset(buf, 0, bufSize)
 
         val n = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 
@@ -280,7 +278,6 @@ class TimeTest {
 
       val tmBufSize = 56.toULong
       val tmBuf     = alloc[Byte](tmBufSize)
-      string.memset(tmBuf, 0, tmBufSize)
 
       val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 

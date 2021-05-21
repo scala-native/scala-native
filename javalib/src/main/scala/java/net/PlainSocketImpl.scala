@@ -76,7 +76,6 @@ private[net] class PlainSocketImpl extends SocketImpl {
   override def bind(addr: InetAddress, port: Int): Unit = {
     val hints = stackalloc[addrinfo]
     val ret   = stackalloc[Ptr[addrinfo]]
-    string.memset(hints.asInstanceOf[Ptr[Byte]], 0, sizeof[addrinfo])
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST
     hints.ai_socktype = socket.SOCK_STREAM
@@ -272,7 +271,6 @@ private[net] class PlainSocketImpl extends SocketImpl {
     val inetAddr = address.asInstanceOf[InetSocketAddress]
     val hints    = stackalloc[addrinfo]
     val ret      = stackalloc[Ptr[addrinfo]]
-    string.memset(hints.asInstanceOf[Ptr[Byte]], 0, sizeof[addrinfo])
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
     hints.ai_socktype = socket.SOCK_STREAM
