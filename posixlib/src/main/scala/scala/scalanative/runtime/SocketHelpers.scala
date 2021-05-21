@@ -16,6 +16,12 @@ import scala.scalanative.posix.sys.timeOps._
 import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
 object SocketHelpers {
+  /*
+   * The following should be long enough and exists on macOS.
+   * https://www.gnu.org/software/libc/manual/html_node/Host-Identification.html
+   * https://man7.org/linux/man-pages/man2/gethostname.2.html
+   */
+  val MAXHOSTNAMELEN = 256.toUInt // exists on macOS
 
   def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean =
     Zone { implicit z =>
@@ -179,7 +185,7 @@ object SocketHelpers {
 
   def ipToHost(ip: String, isV6: Boolean): Option[String] =
     Zone { implicit z =>
-      val host    = stackalloc[CChar](1024.toUInt)
+      val host    = stackalloc[CChar](MAXHOSTNAMELEN)
       val service = stackalloc[CChar](20.toUInt)
       val status =
         if (isV6) {
@@ -191,7 +197,7 @@ object SocketHelpers {
           getnameinfo(addr6.asInstanceOf[Ptr[sockaddr]],
                       sizeof[sockaddr_in6].toUInt,
                       host,
-                      1024.toUInt,
+                      MAXHOSTNAMELEN,
                       service,
                       20.toUInt,
                       0)
