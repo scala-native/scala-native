@@ -17,7 +17,7 @@ import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
 object SocketHelpers {
 
-  def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean = {
+  def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean =
     Zone { implicit z =>
       val cIP   = toCString(ip)
       val hints = stackalloc[addrinfo]
@@ -100,11 +100,10 @@ object SocketHelpers {
         close(sock)
         freeaddrinfo(ai)
       }
+      true
     }
-    true
-  }
 
-  def hostToIp(host: String): Option[String] = {
+  def hostToIp(host: String): Option[String] =
     Zone { implicit z =>
       val hints = stackalloc[addrinfo]
       val ret   = stackalloc[Ptr[addrinfo]]
@@ -137,9 +136,8 @@ object SocketHelpers {
       freeaddrinfo(ai)
       Some(fromCString(ipstr))
     }
-  }
 
-  def hostToIpArray(host: String): scala.Array[String] = {
+  def hostToIpArray(host: String): scala.Array[String] =
     Zone { implicit z =>
       val hints = stackalloc[addrinfo]
       val ret   = stackalloc[Ptr[addrinfo]]
@@ -178,9 +176,8 @@ object SocketHelpers {
       freeaddrinfo(!ret) // start from first addrinfo
       retArray.toArray
     }
-  }
 
-  def ipToHost(ip: String, isV6: Boolean): Option[String] = {
+  def ipToHost(ip: String, isV6: Boolean): Option[String] =
     Zone { implicit z =>
       val host    = stackalloc[CChar](1024.toUInt)
       val service = stackalloc[CChar](20.toUInt)
@@ -214,5 +211,4 @@ object SocketHelpers {
         }
       if (status == 0) Some(fromCString(host)) else None
     }
-  }
 }
