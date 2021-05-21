@@ -1,15 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.unsafe.{
-  CFuncPtr0,
-  CFuncPtr1,
-  CInt,
-  CSize,
-  Ptr,
-  extern,
-  name
-}
+import scala.scalanative.unsafe._
 import scala.scalanative.posix.sched.sched_param
 import scala.scalanative.posix.time.timespec
 import scala.scalanative.posix.sys.types._
@@ -17,8 +9,14 @@ import scala.scalanative.posix.sys.types._
 // SUSv2 version is used for compatibility
 // see http://pubs.opengroup.org/onlinepubs/007908799/xsh/threads.html
 
+@link("pthread")
 @extern
 object pthread {
+
+  // simpify definitions - not in spec
+  type routine = CFuncPtr0[Unit]
+
+  // functions
 
   def pthread_atfork(prepare: routine, parent: routine, child: routine): CInt =
     extern
@@ -72,7 +70,6 @@ object pthread {
   def pthread_attr_setstacksize(attr: Ptr[pthread_attr_t],
                                 stacksize: CSize): CInt = extern
 
-  @name("scalanative_pthread_cancel")
   def pthread_cancel(thread: pthread_t): CInt = extern
 
   def pthread_cond_broadcast(cond: Ptr[pthread_cond_t]): CInt = extern
@@ -106,12 +103,10 @@ object pthread {
                      startroutine: CFuncPtr1[Ptr[Byte], Ptr[Byte]],
                      args: Ptr[Byte]): CInt = extern
 
-  @name("scalanative_pthread_detach")
   def pthread_detach(thread: pthread_t): CInt = extern
 
   def pthread_equal(thread1: pthread_t, thread2: pthread_t): CInt = extern
 
-  @name("scalanative_pthread_exit")
   def pthread_exit(retval: Ptr[Byte]): Unit = extern
 
   def pthread_getconcurrency(): CInt = extern
@@ -122,12 +117,10 @@ object pthread {
 
   def pthread_getspecific(key: pthread_key_t): Ptr[Byte] = extern
 
-  @name("scalanative_pthread_join")
   def pthread_join(thread: pthread_t, value_ptr: Ptr[Ptr[Byte]]): CInt = extern
 
   def pthread_key_create(key: Ptr[pthread_key_t],
-                         destructor: CFuncPtr1[Ptr[Byte], Unit]): CInt =
-    extern
+                         destructor: CFuncPtr1[Ptr[Byte], Unit]): CInt = extern
 
   def pthread_key_delete(key: pthread_key_t): CInt = extern
 
@@ -197,8 +190,7 @@ object pthread {
 
   def pthread_rwlock_wrlock(rwlock: Ptr[pthread_rwlock_t]): CInt = extern
 
-  def pthread_rwlockattr_destroy(attr: Ptr[pthread_rwlockattr_t]): CInt =
-    extern
+  def pthread_rwlockattr_destroy(attr: Ptr[pthread_rwlockattr_t]): CInt = extern
 
   def pthread_rwlockattr_getpshared(attr: Ptr[pthread_rwlockattr_t],
                                     pshared: Ptr[CInt]): CInt = extern
@@ -224,17 +216,15 @@ object pthread {
 
   def pthread_testcancel(): Unit = extern
 
-  // Types
-  type routine = CFuncPtr0[Unit]
+  // symbolic constants
 
-  // Macros
   @name("scalanative_pthread_cancel_asynchronous")
   def PTHREAD_CANCEL_ASYNCHRONOUS: CInt = extern
 
   @name("scalanative_pthread_cancel_enable")
   def PTHREAD_CANCEL_ENABLE: CInt = extern
 
-  @name("scalanative_pthread_cancel_defered")
+  @name("scalanative_pthread_cancel_deferred")
   def PTHREAD_CANCEL_DEFERRED: CInt = extern
 
   @name("scalanative_pthread_cancel_disable")
@@ -243,10 +233,10 @@ object pthread {
   @name("scalanative_pthread_canceled")
   def PTHREAD_CANCELED: Ptr[Byte] = extern
 
-  @name("scalanative_pthread_create_deteached")
+  @name("scalanative_pthread_create_detached")
   def PTHREAD_CREATE_DETACHED: CInt = extern
 
-  @name("scalanative_pthread_create_joinale")
+  @name("scalanative_pthread_create_joinable")
   def PTHREAD_CREATE_JOINABLE: CInt = extern
 
   @name("scalanative_pthread_explicit_sched")
@@ -291,22 +281,25 @@ object pthread {
   @name("scalanative_pthread_scope_system")
   def PTHREAD_SCOPE_SYSTEM: CInt = extern
 
-  @name("scalanative_size_of_pthread_t")
+  // The following are not part of the POSIX spec
+  // and therefore could be subject to removal
+
+  @name("scalanative_pthread_t_size")
   def pthread_t_size: CSize = extern
 
-  @name("scalanative_pthread_attr_t")
+  @name("scalanative_pthread_attr_t_size")
   def pthread_attr_t_size: CSize = extern
 
-  @name("scalanative_size_of_pthread_cond_t")
+  @name("scalanative_pthread_cond_t_size")
   def pthread_cond_t_size: CSize = extern
 
-  @name("scalanative_size_of_pthread_condattr_t")
+  @name("scalanative_pthread_condattr_t_size")
   def pthread_condattr_t_size: CSize = extern
 
-  @name("scalanative_size_of_pthread_mutex_t")
+  @name("scalanative_pthread_mutex_t_size")
   def pthread_mutex_t_size: CSize = extern
 
-  @name("scalanative_size_of_pthread_mutexattr_t")
+  @name("scalanative_pthread_mutexattr_t_size")
   def pthread_mutexattr_t_size: CSize = extern
 
 }
