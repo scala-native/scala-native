@@ -17,11 +17,11 @@ import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
 object SocketHelpers {
   /*
-   * The following should be long enough and exists on macOS.
+   * The following should be long enough and constant exists on macOS.
    * https://www.gnu.org/software/libc/manual/html_node/Host-Identification.html
    * https://man7.org/linux/man-pages/man2/gethostname.2.html
    */
-  val MAXHOSTNAMELEN = 256.toUInt // exists on macOS
+  val MAXHOSTNAMELEN = 256.toUInt
 
   def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean =
     Zone { implicit z =>
