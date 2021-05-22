@@ -270,6 +270,10 @@ trait NirDefinitions {
     lazy val ModRawWordsUnsigned =
       getMember(IntrinsicsModule, TermName("modRawWordsUnsigned"))
 
+    lazy val ResolvedAtLinktimeClass = getRequiredClass(
+      "scala.scalanative.unsafe.resolvedAtLinktime")
+    lazy val ResolvedMethod = getMember(NativeModule, TermName("resolved"))
+
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
       'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),
       'C' -> getRequiredClass("scala.scalanative.runtime.PrimitiveChar"),

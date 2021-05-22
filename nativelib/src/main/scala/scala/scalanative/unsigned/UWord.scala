@@ -351,6 +351,8 @@ object UWord {
     new UWord(castIntToRawWord(x.toInt))
   @inline implicit def intToUWord(x: Int): UWord =
     new UWord(castIntToRawWord(x))
+  @inline implicit def wordToUWord(x: Word): UWord =
+    new UWord(x.rawWord)
 
   @inline implicit def ubyteToUWord(x: UByte): UWord =
     x.toUWord

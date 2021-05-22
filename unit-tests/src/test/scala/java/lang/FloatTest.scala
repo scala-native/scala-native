@@ -1,5 +1,18 @@
 package java.lang
 
+// Three tests ported from Scala.js javalib/lang/FloatTest.scala
+// commit: 217f3a3 dated: 2021-02-19
+//   isFinite()
+//   isInfinite()
+//   isNanTest()
+
+// Because this test is the java.lang package, an unqualified Float
+// is a java.lang.Float. Prior art used unqualified Float freely,
+// with that intent.  Scala.js JFloat is introduced to minimize changes
+// in ported Scala.js tests. Existing usages of unqualified Double
+// are not changed. Joys of blending code bases.
+import java.lang.{Float => JFloat}
+
 import java.lang.Float.{floatToIntBits, floatToRawIntBits, intBitsToFloat}
 
 import org.junit.Test
@@ -296,5 +309,45 @@ class FloatTest {
     assertF2sEquals("3.1415926E7", (math.Pi * 1.0E+7).toFloat)
     assertF2sEquals("0.0031415927", (math.Pi * 1.0E-3).toFloat)
     assertF2sEquals("3.1415926E-4", (math.Pi * 1.0E-4).toFloat)
+  }
+
+  @Test def isFinite(): Unit = {
+    assertFalse(JFloat.isFinite(scala.Float.PositiveInfinity))
+    assertFalse(JFloat.isFinite(scala.Float.NegativeInfinity))
+    assertFalse(JFloat.isFinite(scala.Float.NaN))
+    assertFalse(JFloat.isFinite(1f / 0))
+    assertFalse(JFloat.isFinite(-1f / 0))
+
+    assertTrue(JFloat.isFinite(0f))
+    assertTrue(JFloat.isFinite(1f))
+    assertTrue(JFloat.isFinite(123456f))
+    assertTrue(JFloat.isFinite(scala.Float.MinValue))
+    assertTrue(JFloat.isFinite(scala.Float.MaxValue))
+    assertTrue(JFloat.isFinite(scala.Float.MinPositiveValue))
+  }
+
+  @Test def isInfinite_Issue515(): Unit = {
+    assertTrue(scala.Float.PositiveInfinity.isInfinite)
+    assertTrue(scala.Float.NegativeInfinity.isInfinite)
+    assertTrue((1f / 0).isInfinite)
+    assertTrue((-1f / 0).isInfinite)
+    assertFalse(0f.isInfinite)
+  }
+
+  @Test def isNaNTest(): Unit = {
+    def f(v: Float): Boolean = {
+      var v2 = v // do not inline
+      v2.isNaN
+    }
+
+    assertTrue(f(Float.NaN))
+
+    assertFalse(f(scala.Float.PositiveInfinity))
+    assertFalse(f(scala.Float.NegativeInfinity))
+    assertFalse(f(1f / 0))
+    assertFalse(f(-1f / 0))
+    assertFalse(f(0f))
+    assertFalse(f(3f))
+    assertFalse(f(-1.5f))
   }
 }

@@ -8,49 +8,82 @@ If you have reached this section you probably have a system that is now able to 
 Minimal sbt project
 -------------------
 
-The easiest way to make a fresh project is to use our official gitter8 template::
+The easiest way to make a fresh project is to use our official gitter8
+template.  In an empty working directory, execute::
 
     sbt new scala-native/scala-native.g8
 
-This generates the following files:
+This will:
 
-* ``project/plugins.sbt`` to add a plugin dependency::
+* start sbt.
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.0-M2")
+* prompt for a project name
 
-* ``project/build.properties`` to specify the sbt version::
+* use the `.g8 template
+  <https://github.com/scala-native/scala-native.g8/tree/master/src/main/g8>`_.
+  to generate a basic project with that name.
 
-    sbt.version = 1.4.1
+* create a project sub-directory with the project name.
 
-* ``build.sbt`` to enable the plugin and specify Scala version::
+* copy the contents at these template links to the corresponding location
+  in this new project sub-directory.
 
-    enablePlugins(ScalaNativePlugin)
+  * `project/plugins.sbt
+    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/plugins.sbt>`_
+    adds the Scala Native plugin dependency and its version.
 
-    scalaVersion := "2.11.12"
+  * `project/build.properties
+    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/build.properties>`_
+    specifies the sbt version.
 
-* ``src/main/scala/Main.scala`` with minimal application::
+  * `build.sbt
+    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/build.sbt>`_
+    enables the plugin and specifies the Scala version.
 
-    object Main {
-      def main(args: Array[String]): Unit =
-        println("Hello, world!")
-    }
+  * `src/main/scala/Main.scala
+    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/src/main/scala/Main.scala>`_
+    is a minimal application.
+    ::
+     
+      object Main {
+        def main(args: Array[String]): Unit =
+          println("Hello, world!")
+      }
+      
 
-Now, simply run ``sbt run`` to get everything compiled and have the expected
-output! Please refer to the :ref:`faq` if you encounter any problems.
+To use the new project:
+
+* Change the current working directory to the new project directory.
+
+   - For example, on linux with a project named AnswerToProjectNamePrompt,
+     type ``cd AnswerToProjectNamePrompt``.
+
+* Type ``sbt run``.
+
+This will get everything compiled and should have the expected output!
+
+Please refer to the :ref:`faq` if you encounter any problems.
+
+The generated project is a starting point. After the first run, you
+should review the software versions in the generated files and, possibly,
+update or customize them. `Scaladex <https://index.scala-lang.org/>`_
+is a useful resource for software versions.
 
 Scala versions
 --------------
 
 Scala Native supports following Scala versions for corresponding releases:
 
-========================== ========================
+========================== ================================
 Scala Native Version       Scala Versions
-========================== ========================
+========================== ================================
 0.1.x                      2.11.8
 0.2.x                      2.11.8, 2.11.11
 0.3.0-0.3.3                2.11.8, 2.11.11
 0.3.4+, 0.4.0-M1, 0.4.0-M2 2.11.8, 2.11.11, 2.11.12
-========================== ========================
+0.4.0                      2.11.12, 2.12.13, 2.13.4
+0.4.1                      2.11.12, 2.12.13, 2.13.4, 2.13.5
+========================== ================================
 
 Sbt settings and tasks
 ----------------------
@@ -81,7 +114,7 @@ Since Name                     Type             Description
 0.1   ``nativeCompileOptions`` ``Seq[String]``  Extra options passed to clang verbatim during compilation
 0.1   ``nativeLinkingOptions`` ``Seq[String]``  Extra options passed to clang verbatim during linking
 0.1   ``nativeMode``           ``String``       One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
-0.2   ``nativeGC``             ``String``       One of ``"none"``, ``"boehm"`` or ``"immix"`` (3)
+0.2   ``nativeGC``             ``String``       One of ``"none"``, ``"boehm"``, ``"immix"`` or ``"commix"`` (3)
 0.3.3 ``nativeLinkStubs``      ``Boolean``      Whether to link ``@stub`` definitions, or to ignore them
 0.4.0 ``nativeConfig``         ``NativeConfig`` Configuration of the Scala Native plugin
 0.4.0 ``nativeLTO``            ``String``       One of ``"none"``, ``"full"`` or ``"thin"`` (4)
@@ -134,12 +167,16 @@ Garbage collectors
    More information about the collector is available as part of the original
    `0.3.0 announcement <https://github.com/scala-native/scala-native/releases/tag/v0.3.0>`_.
 
-2. **boehm.** (default through 0.3.7)
+2. **commix.** (introduced in 0.4)
+
+   Commix is parallel mark and concurrent sweep garbage collector based on Immix
+
+3. **boehm.** (default through 0.3.7)
 
    Conservative generational garbage collector. More information is available
    at the Github project "ivmai/bdgc" page.
 
-3. **none.** (experimental, introduced in 0.2)
+4. **none.** (experimental, introduced in 0.2)
 
    Garbage collector that allocates things without ever freeing them. Useful
    for short-running command-line applications or applications where garbage

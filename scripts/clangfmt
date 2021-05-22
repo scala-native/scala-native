@@ -1,20 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Format C/C++ code using clang-format.
 #
-# To ensure reproducible formatting the script checks that clang-format
-# is from the most recent version of LLVM supported by Scala Native.
+# To ensure reproducible formatting this script checks that clang-format
+# matches the lowest version number of LLVM supported by Scala Native.
 #
 # Usage: $0 [--test]
 #
 # Set CLANG_FORMAT_PATH to configure path to clang-format.
 
 set -euo pipefail
-IFS=$'\n\t'
 
-# The required version of clang-format.
-CLANG_FORMAT_VERSION=5.0
-CLANG_FORMAT_VERSION_STRING="clang-format version $CLANG_FORMAT_VERSION"
+# The required version of clang-format (matches minimum clang version) for CI
+CLANG_FORMAT_VERSION=6
 
 die() {
   while [ "$#" -gt 0 ]; do
@@ -23,31 +21,45 @@ die() {
   exit 1
 }
 
+# avoid unbound var
+version=
+
 check_clang_format_version() {
   cmd="$1"
-  [ -e "$(type -P "$cmd")" ] && \
-    "$cmd" --version 2> /dev/null | grep -q "$CLANG_FORMAT_VERSION_STRING"
+  # version can be in 3rd or 4th position after the word "version"
+  version=$("$cmd" --version \
+    | grep -E -i -o " version [0-9]+.[0-9]+" \
+    | grep -E -i -o "[0-9]+.[0-9]+")
+
+  major=${version%%.*}
+  [ $major -eq $CLANG_FORMAT_VERSION ]
 }
 
 clang_format=
 
 if [ -n "${CLANG_FORMAT_PATH:-}" ]; then
-  check_clang_format_version "$CLANG_FORMAT_PATH" || \
-    die "CLANG_FORMAT_PATH does not have required version $CLANG_FORMAT_VERSION" \
-        "CLANG_FORMAT_PATH points to $CLANG_FORMAT_PATH"
-  clang_format="$CLANG_FORMAT_PATH"
-else
-  for cmd in "clang-format-$CLANG_FORMAT_VERSION" clang-format; do
-    if check_clang_format_version "$cmd"; then
-      clang_format="$cmd"
-      break
+  if [ ! -e "$(type -P "${CLANG_FORMAT_PATH}")" ]; then
+    echo "CLANG_FORMAT_PATH='$CLANG_FORMAT_PATH' does not exist or is not executable" >&2
+  else
+    if check_clang_format_version "$CLANG_FORMAT_PATH"; then
+      clang_format="$CLANG_FORMAT_PATH"
+    else
+      echo "CLANG_FORMAT_PATH='$CLANG_FORMAT_PATH'" >&2
     fi
-  done
+  fi
+else
+  if [ ! -e "$(type -P clang-format)" ]; then
+    echo "clang-format is not installed or not in the PATH." >&2
+  else
+    check_clang_format_version "clang-format" && \
+      clang_format=clang-format
+  fi
 fi
 
 if [ -z "$clang_format" ]; then
-  die "clang-format version $CLANG_FORMAT_VERSION not found" \
-      "Install LLVM version $CLANG_FORMAT_VERSION and rerun."
+  die "clang-format version '$CLANG_FORMAT_VERSION' expected, but version '$version' found." \
+      "Install LLVM version '$CLANG_FORMAT_VERSION' and rerun." \
+      "Hint: export CLANG_FORMAT_PATH='/path/to/clang-format'"
 fi
 
 test_mode=
@@ -61,14 +73,31 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+# Use this block for version 10 and above
+# if [ "$test_mode" = true ]; then
+#   opts="--dry-run"
+#   err="--Werror"
+# else
+#   opts="-i"
+#   err=
+# fi
+
+# Remove for version 10 and above
+opts="-i"
+err=
+
 if [ "$#" -gt 0 ]; then
-  "$clang_format" --style=file -i "$@"
+  "$clang_format" --style=file "$opts" "$@"
 else
-  find . -name "*.[ch]" -or -name "*.cpp" | xargs "$clang_format" --style=file -i
+  find . -name "*.[ch]" -or -name "*.cpp" -or -name "*.hpp" | \
+    xargs "$clang_format" --style=file "$opts" $err || \
+      die "C/C++ code formatting changes detected" \
+          "Run '$0' to reformat."
 fi
 
+# Remove for version 10 and above
 if [ "$test_mode" = true ]; then
   git diff --quiet --exit-code || \
     die "C/C++ code formatting changes detected" \
-        "Run \`$0\` to reformat."
+        "Run '$0' to reformat."
 fi

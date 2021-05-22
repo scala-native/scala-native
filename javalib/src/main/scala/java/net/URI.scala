@@ -2,7 +2,7 @@ package java.net
 
 // Ported from Apache Harmony
 
-import java.io.IOException
+import java.lang.{StringBuilder => JStringBuilder}
 import java.io.Serializable
 import java.io.UnsupportedEncodingException
 import java.util.StringTokenizer
@@ -57,7 +57,7 @@ final class URI private () extends Comparable[URI] with Serializable {
 
   def this(scheme: String, ssp: String, fragment: String) = {
     this()
-    val uri: StringBuilder = new StringBuilder()
+    val uri = new JStringBuilder()
     if (scheme != null) {
       uri.append(scheme)
       uri.append(':')
@@ -94,7 +94,7 @@ final class URI private () extends Comparable[URI] with Serializable {
           path.charAt(0) != '/') {
         throw new URISyntaxException(path, "Relative path")
       }
-      val uri: StringBuilder = new StringBuilder()
+      val uri = new JStringBuilder()
       if (scheme != null) {
         uri.append(scheme)
         uri.append(':')
@@ -146,7 +146,7 @@ final class URI private () extends Comparable[URI] with Serializable {
         path.charAt(0) != '/') {
       throw new URISyntaxException(path, "Relative path")
     }
-    val uri: StringBuilder = new StringBuilder()
+    val uri = new JStringBuilder()
     if (scheme != null) {
       uri.append(scheme)
       uri.append(':')
@@ -729,7 +729,7 @@ final class URI private () extends Comparable[URI] with Serializable {
    */
 
   private def convertHexToLowerCase(s: String): String = {
-    val result: StringBuilder = new StringBuilder("")
+    val result = new JStringBuilder("")
     if (s.indexOf('%') == -1) {
       return s
     }
@@ -933,7 +933,7 @@ final class URI private () extends Comparable[URI] with Serializable {
       }
     }
 
-    val newpath: StringBuilder = new StringBuilder()
+    val newpath = new JStringBuilder()
     if (path.startsWith("/")) {
       newpath.append('/')
     }
@@ -1058,7 +1058,7 @@ final class URI private () extends Comparable[URI] with Serializable {
   }
 
   private def setSchemeSpecificPart() = {
-    val ssp = new StringBuilder()
+    val ssp = new JStringBuilder()
     if (authority != null) {
       ssp.append("//" + authority)
     }
@@ -1102,7 +1102,7 @@ final class URI private () extends Comparable[URI] with Serializable {
 
   override def toString: String = {
     if (string == null) {
-      val result: StringBuilder = new StringBuilder()
+      val result = new JStringBuilder()
       if (scheme != null) {
         result.append(scheme)
         result.append(':')
@@ -1132,7 +1132,7 @@ final class URI private () extends Comparable[URI] with Serializable {
   }
 
   private def getHashString(): String = {
-    val result: StringBuilder = new StringBuilder()
+    val result = new JStringBuilder()
     if (scheme != null) {
       result.append(scheme.toLowerCase())
       result.append(':')

@@ -9,6 +9,7 @@ import java.lang.StringBuilder
 import java.util.Formatter.BigDecimalLayoutForm
 import org.junit.Assert._
 import org.junit.{After, Before, Ignore, Test}
+import org.scalanative.testsuite.utils.Platform.executingInJVM
 import scala.scalanative.junit.utils.AssertThrows._
 
 class DefaultFormatterTest {
@@ -575,14 +576,14 @@ class DefaultFormatterTest {
       assertThrows(classOf[IllegalFormatPrecisionException], f.format("%5.9%"))
     }
 
-    locally {
+    if (!executingInJVM) { // https://bugs.openjdk.java.net/browse/JDK-8260221
       val f = new Formatter()
-      assertIllegalFormatFlagsExceptionException(f, "%+%")
-      assertIllegalFormatFlagsExceptionException(f, "%#%")
-      assertIllegalFormatFlagsExceptionException(f, "% %")
-      assertIllegalFormatFlagsExceptionException(f, "%0%")
-      assertIllegalFormatFlagsExceptionException(f, "%,%")
-      assertIllegalFormatFlagsExceptionException(f, "%(%")
+      assertFormatFlagsConversionMismatchException(f, "%+%")
+      assertFormatFlagsConversionMismatchException(f, "%#%")
+      assertFormatFlagsConversionMismatchException(f, "% %")
+      assertFormatFlagsConversionMismatchException(f, "%0%")
+      assertFormatFlagsConversionMismatchException(f, "%,%")
+      assertFormatFlagsConversionMismatchException(f, "%(%")
     }
 
     locally {
@@ -610,6 +611,12 @@ class DefaultFormatterTest {
   private def assertIllegalFormatFlagsExceptionException(f: Formatter,
                                                          str: String): Unit = {
     assertThrows(classOf[IllegalFormatFlagsException], f.format(str))
+  }
+
+  private def assertFormatFlagsConversionMismatchException(
+      f: Formatter,
+      str: String): Unit = {
+    assertThrows(classOf[FormatFlagsConversionMismatchException], f.format(str))
   }
 
   @Test def formatForFlag(): Unit = {
@@ -865,35 +872,35 @@ class DefaultFormatterTest {
         "%#b",
         "%+b",
         "% b",
-        "%0b",
+        "%03b",
         "%,b",
         "%(b",
         "%#B",
         "%+B",
         "% B",
-        "%0B",
+        "%03B",
         "%,B",
         "%(B",
         "%#h",
         "%+h",
         "% h",
-        "%0h",
+        "%03h",
         "%,h",
         "%(h",
         "%#H",
         "%+H",
         "% H",
-        "%0H",
+        "%03H",
         "%,H",
         "%(H",
         "%+s",
         "% s",
-        "%0s",
+        "%03s",
         "%,s",
         "%(s",
         "%+S",
         "% S",
-        "%0S",
+        "%03S",
         "%,S",
         "%(S"
       )

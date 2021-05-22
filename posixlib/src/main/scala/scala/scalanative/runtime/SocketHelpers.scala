@@ -16,14 +16,19 @@ import scala.scalanative.posix.sys.timeOps._
 import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
 object SocketHelpers {
+  /*
+   * The following should be long enough and constant exists on macOS.
+   * https://www.gnu.org/software/libc/manual/html_node/Host-Identification.html
+   * https://man7.org/linux/man-pages/man2/gethostname.2.html
+   */
+  val MAXHOSTNAMELEN = 256.toUInt
 
-  def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean = {
+  def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean =
     Zone { implicit z =>
       val cIP   = toCString(ip)
-      var hints = alloc[addrinfo]
-      var ret   = alloc[Ptr[addrinfo]]
+      val hints = stackalloc[addrinfo]
+      val ret   = stackalloc[Ptr[addrinfo]]
 
-      libc.memset(hints.rawptr, 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
       hints.ai_protocol = 0
       hints.ai_addr = null
@@ -35,9 +40,9 @@ object SocketHelpers {
         return false
       }
 
-      val res = !ret
+      val ai = !ret
 
-      val sock = socket(res.ai_family, SOCK_STREAM, res.ai_protocol)
+      val sock = socket(ai.ai_family, SOCK_STREAM, ai.ai_protocol)
 
       try {
 
@@ -47,25 +52,25 @@ object SocketHelpers {
 
         fcntl(sock, F_SETFL, O_NONBLOCK)
 
-        // Zone.alloc is documented as returning zeroed memory.
-        val fdsetPtr = alloc[fd_set] //  No need to FD_ZERO
+        // stackalloc is documented as returning zeroed memory
+        val fdsetPtr = stackalloc[fd_set] //  No need to FD_ZERO
         FD_SET(sock, fdsetPtr)
 
         // calculate once and use a second time below.
         val tv_sec  = timeout / 1000
         val tv_usec = (timeout % 1000) * 1000
 
-        val time = alloc[timeval]
+        val time = stackalloc[timeval]
         time.tv_sec = tv_sec
         time.tv_usec = tv_usec
 
-        if (connect(sock, res.ai_addr, res.ai_addrlen) != 0) {
+        if (connect(sock, ai.ai_addr, ai.ai_addrlen) != 0) {
           return false
         }
 
         if (select(sock + 1, null, fdsetPtr, null, time) == 1) {
-          val so_error = alloc[CInt].asInstanceOf[Ptr[Byte]]
-          val len      = alloc[socklen_t]
+          val so_error = stackalloc[CInt].asInstanceOf[Ptr[Byte]]
+          val len      = stackalloc[socklen_t]
           !len = sizeof[CInt].toUInt
           getsockopt(sock, SOL_SOCKET, SO_ERROR, so_error, len)
           if (!(so_error.asInstanceOf[Ptr[CInt]]) != 0) {
@@ -89,7 +94,7 @@ object SocketHelpers {
         if (select(sock + 1, fdsetPtr, null, null, time) != 1) {
           return false
         } else {
-          val buf      = alloc[CChar](5.toUWord)
+          val buf      = stackalloc[CChar](5.toUWord)
           val recBytes = recv(sock, buf, 5.toUInt, 0)
           if (recBytes < 4) {
             return false
@@ -99,19 +104,17 @@ object SocketHelpers {
         case e: Throwable => e
       } finally {
         close(sock)
-        freeaddrinfo(res)
+        freeaddrinfo(ai)
       }
+      true
     }
-    true
-  }
 
-  def hostToIp(host: String): Option[String] = {
+  def hostToIp(host: String): Option[String] =
     Zone { implicit z =>
-      var hints = alloc[addrinfo]
-      var ret   = alloc[Ptr[addrinfo]]
+      val hints = stackalloc[addrinfo]
+      val ret   = stackalloc[Ptr[addrinfo]]
 
-      var ipstr = alloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
-      libc.memset(hints.rawptr, 0, sizeof[addrinfo])
+      val ipstr = stackalloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
       hints.ai_family = AF_UNSPEC
       hints.ai_socktype = 0
       hints.ai_next = null
@@ -120,32 +123,31 @@ object SocketHelpers {
       if (status != 0)
         return None
 
-      var addr = alloc[Byte]
-      if ((!ret).ai_family == AF_INET) {
-        addr = (!ret).ai_addr
-          .asInstanceOf[Ptr[sockaddr_in]]
-          .sin_addr
-          .toPtr
-          .asInstanceOf[Ptr[Byte]]
-      } else {
-        addr = (!ret).ai_addr
-          .asInstanceOf[Ptr[sockaddr_in6]]
-          .sin6_addr
-          .toPtr
-          .asInstanceOf[Ptr[Byte]]
-      }
-      inet_ntop((!ret).ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
-      freeaddrinfo(!ret)
+      val ai = !ret
+      val addr =
+        if (ai.ai_family == AF_INET) {
+          ai.ai_addr
+            .asInstanceOf[Ptr[sockaddr_in]]
+            .sin_addr
+            .toPtr
+            .asInstanceOf[Ptr[Byte]]
+        } else {
+          ai.ai_addr
+            .asInstanceOf[Ptr[sockaddr_in6]]
+            .sin6_addr
+            .toPtr
+            .asInstanceOf[Ptr[Byte]]
+        }
+      inet_ntop(ai.ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
+      freeaddrinfo(ai)
       Some(fromCString(ipstr))
     }
-  }
 
-  def hostToIpArray(host: String): scala.Array[String] = {
+  def hostToIpArray(host: String): scala.Array[String] =
     Zone { implicit z =>
-      var hints = alloc[addrinfo]
-      var ret   = alloc[Ptr[addrinfo]]
+      val hints = stackalloc[addrinfo]
+      val ret   = stackalloc[Ptr[addrinfo]]
 
-      libc.memset(hints.rawptr, 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
       hints.ai_socktype = SOCK_STREAM
       hints.ai_protocol = 0
@@ -156,67 +158,63 @@ object SocketHelpers {
       if (status != 0)
         return scala.Array.empty[String]
 
-      var p = !ret
-      while (p != null) {
-        var ipstr = alloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
-        var addr  = alloc[Byte]
-        if (p.ai_family == AF_INET) {
-          addr = p.ai_addr
-            .asInstanceOf[Ptr[sockaddr_in]]
-            .sin_addr
-            .toPtr
-            .asInstanceOf[Ptr[Byte]]
-        } else {
-          addr = p.ai_addr
-            .asInstanceOf[Ptr[sockaddr_in6]]
-            .sin6_addr
-            .toPtr
-            .asInstanceOf[Ptr[Byte]]
-        }
-        inet_ntop(p.ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
+      var ai = !ret
+      while (ai != null) {
+        val ipstr = stackalloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
+        val addr =
+          if (ai.ai_family == AF_INET) {
+            ai.ai_addr
+              .asInstanceOf[Ptr[sockaddr_in]]
+              .sin_addr
+              .toPtr
+              .asInstanceOf[Ptr[Byte]]
+          } else {
+            ai.ai_addr
+              .asInstanceOf[Ptr[sockaddr_in6]]
+              .sin6_addr
+              .toPtr
+              .asInstanceOf[Ptr[Byte]]
+          }
+        inet_ntop(ai.ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
         retArray += fromCString(ipstr)
-        p = p.ai_next.asInstanceOf[Ptr[addrinfo]]
+        ai = ai.ai_next.asInstanceOf[Ptr[addrinfo]]
       }
-      freeaddrinfo(!ret)
+      freeaddrinfo(!ret) // start from first addrinfo
       retArray.toArray
     }
-  }
 
-  def ipToHost(ip: String, isV6: Boolean): Option[String] = {
+  def ipToHost(ip: String, isV6: Boolean): Option[String] =
     Zone { implicit z =>
-      var status  = 0
-      val host    = alloc[CChar](1024.toUInt)
-      val service = alloc[CChar](20.toUInt)
-      if (isV6) {
-        val addr6 = alloc[sockaddr_in6]
-        addr6.sin6_family = AF_INET6.toUShort
-        inet_pton(AF_INET6,
-                  toCString(ip),
-                  addr6.sin6_addr.toPtr.asInstanceOf[Ptr[Byte]])
-        status = getnameinfo(addr6.asInstanceOf[Ptr[sockaddr]],
-                             sizeof[sockaddr_in6].toUInt,
-                             host,
-                             1024.toUInt,
-                             service,
-                             20.toUInt,
-                             0)
-      } else {
-        val addr4 = alloc[sockaddr_in]
-        addr4.sin_family = AF_INET.toUShort
-        inet_pton(AF_INET,
-                  toCString(ip),
-                  addr4.sin_addr.toPtr.asInstanceOf[Ptr[Byte]])
-        status = getnameinfo(addr4.asInstanceOf[Ptr[sockaddr]],
-                             sizeof[sockaddr_in].toUInt,
-                             host,
-                             1024.toUInt,
-                             service,
-                             20.toUInt,
-                             0)
-      }
-
+      val host    = stackalloc[CChar](MAXHOSTNAMELEN)
+      val service = stackalloc[CChar](20.toUInt)
+      val status =
+        if (isV6) {
+          val addr6 = stackalloc[sockaddr_in6]
+          addr6.sin6_family = AF_INET6.toUShort
+          inet_pton(AF_INET6,
+                    toCString(ip),
+                    addr6.sin6_addr.toPtr.asInstanceOf[Ptr[Byte]])
+          getnameinfo(addr6.asInstanceOf[Ptr[sockaddr]],
+                      sizeof[sockaddr_in6].toUInt,
+                      host,
+                      MAXHOSTNAMELEN,
+                      service,
+                      20.toUInt,
+                      0)
+        } else {
+          val addr4 = stackalloc[sockaddr_in]
+          addr4.sin_family = AF_INET.toUShort
+          inet_pton(AF_INET,
+                    toCString(ip),
+                    addr4.sin_addr.toPtr.asInstanceOf[Ptr[Byte]])
+          getnameinfo(addr4.asInstanceOf[Ptr[sockaddr]],
+                      sizeof[sockaddr_in].toUInt,
+                      host,
+                      1024.toUInt,
+                      service,
+                      20.toUInt,
+                      0)
+        }
       if (status == 0) Some(fromCString(host)) else None
     }
-  }
-
 }

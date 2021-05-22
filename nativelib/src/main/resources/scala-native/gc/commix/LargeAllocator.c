@@ -8,6 +8,7 @@
 #include "Sweeper.h"
 #include "Log.h"
 #include "headers/ObjectHeader.h"
+#include "util/ThreadUtil.h"
 
 inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
     assert(size >= MIN_BLOCK_SIZE);
@@ -55,7 +56,7 @@ Chunk *LargeAllocator_freeListPopOnlyThread(FreeList *freeList) {
     if (head == NULL) {
         return NULL;
     }
-    freeList->head = (word_t) head->next;
+    freeList->head = (word_t)head->next;
 
     return head;
 }
@@ -112,13 +113,14 @@ static inline Chunk *LargeAllocator_getChunkForSize(LargeAllocator *allocator,
     return NULL;
 }
 
-static inline Chunk *LargeAllocator_getChunkForSizeOnlyThread(LargeAllocator *allocator,
-                                                              size_t requiredChunkSize) {
+static inline Chunk *
+LargeAllocator_getChunkForSizeOnlyThread(LargeAllocator *allocator,
+                                         size_t requiredChunkSize) {
     for (int listIndex =
              LargeAllocator_sizeToLinkedListIndex(requiredChunkSize);
          listIndex < FREE_LIST_COUNT; listIndex++) {
-        Chunk *chunk =
-            LargeAllocator_freeListPopOnlyThread(&allocator->freeLists[listIndex]);
+        Chunk *chunk = LargeAllocator_freeListPopOnlyThread(
+            &allocator->freeLists[listIndex]);
         if (chunk != NULL) {
             return chunk;
         }
@@ -137,8 +139,8 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
         if (allocator->blockAllocator->concurrent) {
             chunk = LargeAllocator_getChunkForSize(allocator, actualBlockSize);
         } else {
-            chunk = LargeAllocator_getChunkForSizeOnlyThread(allocator, actualBlockSize);
-
+            chunk = LargeAllocator_getChunkForSizeOnlyThread(allocator,
+                                                             actualBlockSize);
         }
     }
 
@@ -205,7 +207,7 @@ word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
     while (object == NULL && !Sweeper_IsSweepDone(heap)) {
         object = LargeAllocator_tryAlloc(&largeAllocator, size);
         if (object == NULL) {
-            sched_yield();
+            thread_yield();
         }
     }
     Stats_RecordTime(stats, end_ns);

@@ -20,7 +20,7 @@ lazy val nameSettings: Seq[Setting[_]] = Seq(
 )
 
 lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
-  sources in (Compile, doc) := Nil
+  Compile / doc / sources := Nil
 )
 
 lazy val docsSettings: Seq[Setting[_]] = {
@@ -29,8 +29,8 @@ lazy val docsSettings: Seq[Setting[_]] = {
   Def.settings(
     autoAPIMappings := true,
     exportJars := true, // required so ScalaDoc linking works
-    scalacOptions in (Compile, doc) := {
-      val prev = (scalacOptions in (Compile, doc)).value
+    Compile / doc / scalacOptions := {
+      val prev = (Compile / doc / scalacOptions).value
       if (scalaVersion.value.startsWith("2.11."))
         prev.filter(_ != "-Xfatal-warnings")
       else prev
@@ -79,14 +79,6 @@ lazy val mimaSettings: Seq[Setting[_]] = Seq(
   }
 )
 
-// Sbt 1.4.0 introduced mandatory key linting.
-// The val crossSbtVersions is used in toolsSettings below.
-// toolsSettings are used by nir, test-runner, util, etc.
-// but Sbt 1.4.0 still complained about crossSbtVersions.
-// Disable the linting for it, rather than upsetting the apple cart by
-// deleting the probably essential crossSbeVersions. Minimal change.
-Global / excludeLintKeys += crossSbtVersions
-
 // Common start but individual sub-projects may add or remove scalacOptions.
 // project/build.sbt uses a less stringent set to bootstrap.
 inThisBuild(
@@ -122,7 +114,6 @@ addCommandAlias(
     "testRunner/test",
     "testInterface/test",
     "tools/test",
-    "nirparser/test",
     "tools/mimaReportBinaryIssues"
   ).mkString(";")
 )
@@ -242,9 +233,6 @@ lazy val noPublishSettings: Seq[Setting[_]] = Seq(
 
 lazy val toolSettings: Seq[Setting[_]] =
   Def.settings(
-    sbtVersion := sbt10Version,
-    crossSbtVersions := List(sbt10Version),
-    crossScalaVersions := Seq(sbt10ScalaVersion),
     javacOptions ++= Seq("-encoding", "utf8")
   )
 
@@ -302,24 +290,6 @@ lazy val nir =
     .settings(mavenPublishSettings)
     .dependsOn(util)
 
-lazy val scalacheckDep = "org.scalacheck" %% "scalacheck" % "1.14.3" % "test"
-lazy val scalatestDep  = "org.scalatest"  %% "scalatest"  % "3.1.1"  % "test"
-
-lazy val nirparser =
-  project
-    .in(file("nirparser"))
-    .settings(toolSettings)
-    .settings(noPublishSettings)
-    .settings(
-      libraryDependencies ++= Seq(
-        "com.lihaoyi" %% "fastparse"  % "1.0.0",
-        "com.lihaoyi" %% "scalaparse" % "1.0.0",
-        scalacheckDep,
-        scalatestDep
-      )
-    )
-    .dependsOn(nir)
-
 lazy val tools =
   project
     .in(file("tools"))
@@ -329,8 +299,8 @@ lazy val tools =
     .settings(buildInfoSettings)
     .settings(
       libraryDependencies ++= Seq(
-        scalacheckDep,
-        scalatestDep
+        "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
+        "org.scalatest"  %% "scalatest"  % "3.1.1"  % "test"
       ),
       Test / fork := true,
       Test / javaOptions ++= {
@@ -347,6 +317,30 @@ lazy val tools =
             allCoreLibsCp.map(_.getAbsolutePath).mkString(pathSeparator)
         )
       },
+      scalacOptions ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11 | 12)) => Nil
+          case _                  =>
+            // 2.13 and 2.11 tools are only used in partest.
+            // It looks like it's impossible to provide alternative sources - it fails to compile plugin sources,
+            // before attaching them to other build projects. We disable unsolvable fatal-warnings with filters below
+            Seq(
+              // In 2.13 lineStream_! was replaced with lazyList_!.
+              "-Wconf:cat=deprecation&msg=lineStream_!:s",
+              // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
+              // Should not be replaced with HashMap due to performance reasons.
+              "-Wconf:cat=deprecation&msg=OpenHashMap:s"
+            )
+        }
+      },
+      libraryDependencies ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11 | 12)) => Nil
+          case _ =>
+            List(
+              "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.0")
+        }
+      },
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
       Test / parallelExecution := false,
       mimaSettings
@@ -358,7 +352,6 @@ lazy val nscplugin =
     .in(file("nscplugin"))
     .settings(mavenPublishSettings)
     .settings(
-      crossScalaVersions := libCrossScalaVersions,
       crossVersion := CrossVersion.full,
       Compile / unmanagedSourceDirectories ++= Seq(
         (nir / Compile / scalaSource).value,
@@ -376,6 +369,7 @@ lazy val sbtPluginSettings: Seq[Setting[_]] =
   toolSettings ++
     bintrayPublishSettings ++
     Seq(
+      sbtVersion := sbt10Version,
       scriptedLaunchOpts := {
         scriptedLaunchOpts.value ++
           Seq("-Xmx1024M",
@@ -512,7 +506,19 @@ lazy val scalalib =
       scalacOptions += "-language:postfixOps",
       // The option below is needed since Scala 2.13.0.
       scalacOptions += "-language:implicitConversions",
-      scalacOptions += "-language:higherKinds"
+      scalacOptions += "-language:higherKinds",
+      /* Used to disable fatal warnings due to problems with compilation of `@nowarn` annotation */
+      scalacOptions --= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 12))
+              if scalaVersion.value
+                .stripPrefix("2.12.")
+                .takeWhile(_.isDigit)
+                .toInt >= 13 =>
+            Seq("-Xfatal-warnings")
+          case _ => Nil
+        }
+      }
     )
     .settings(mavenPublishSettings)
     .settings(disabledDocsSettings)
@@ -646,6 +652,8 @@ lazy val scalalib =
             !path.endsWith(".class")
         }
       },
+      // Sources in scalalib are only internal overrides, we don't include them in the resulting sources jar
+      Compile / packageSrc / mappings := Seq.empty,
       exportJars := true
     )
     .dependsOn(nscplugin % "plugin", auxlib, nativelib, javalib)
@@ -728,13 +736,32 @@ lazy val testingCompiler =
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
       ),
+      Compile / unmanagedSourceDirectories ++= {
+        val oldCompat: File = baseDirectory.value / "src/main/compat-old"
+        val newCompat: File = baseDirectory.value / "src/main/compat-new"
+        CrossVersion
+          .partialVersion(scalaVersion.value)
+          .collect {
+            case (2, 11) => oldCompat
+            case (2, 12) =>
+              val revision =
+                scalaVersion.value
+                  .stripPrefix("2.12.")
+                  .takeWhile(_.isDigit)
+                  .toInt
+              if (revision < 13) oldCompat
+              else newCompat
+            case (2, 13) => newCompat
+          }
+          .toSeq
+      },
       exportJars := true
     )
     .dependsOn(testingCompilerInterface)
 
 lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = Seq(
-  unmanagedSourceDirectories in Compile += baseDirectory.value.getParentFile / "test-interface-common/src/main/scala",
-  unmanagedSourceDirectories in Test += baseDirectory.value.getParentFile / "test-interface-common/src/test/scala"
+  Compile / unmanagedSourceDirectories += baseDirectory.value.getParentFile / "test-interface-common/src/main/scala",
+  Test / unmanagedSourceDirectories += baseDirectory.value.getParentFile / "test-interface-common/src/test/scala"
 )
 
 lazy val testInterface =
@@ -761,7 +788,6 @@ lazy val testInterfaceSbtDefs =
 lazy val testRunner =
   project
     .in(file("test-runner"))
-    .settings(toolSettings)
     .settings(mavenPublishSettings)
     .settings(testInterfaceCommonSourcesSettings)
     .settings(
@@ -790,7 +816,6 @@ lazy val junitPlugin =
     .in(file("junit-plugin"))
     .settings(mavenPublishSettings)
     .settings(
-      crossScalaVersions := libCrossScalaVersions,
       crossVersion := CrossVersion.full,
       libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       exportJars := true
@@ -834,7 +859,6 @@ lazy val junitTestOutputsJVM =
     .in(file("junit-test/output-jvm"))
     .settings(
       commonJUnitTestOutputsSettings,
-      crossScalaVersions := Seq(sbt10ScalaVersion),
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.11" % "test"
       )
@@ -855,7 +879,6 @@ lazy val junitAsyncJVM =
   project
     .in(file("junit-async/jvm"))
     .settings(
-      crossScalaVersions := Seq(sbt10ScalaVersion),
       nameSettings,
       publishArtifact := false
     )

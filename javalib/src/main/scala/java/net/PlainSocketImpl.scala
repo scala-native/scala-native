@@ -76,7 +76,6 @@ private[net] class PlainSocketImpl extends SocketImpl {
   override def bind(addr: InetAddress, port: Int): Unit = {
     val hints = stackalloc[addrinfo]
     val ret   = stackalloc[Ptr[addrinfo]]
-    string.memset(hints.asInstanceOf[Ptr[Byte]], 0, sizeof[addrinfo])
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST
     hints.ai_socktype = socket.SOCK_STREAM
@@ -272,7 +271,6 @@ private[net] class PlainSocketImpl extends SocketImpl {
     val inetAddr = address.asInstanceOf[InetSocketAddress]
     val hints    = stackalloc[addrinfo]
     val ret      = stackalloc[Ptr[addrinfo]]
-    string.memset(hints.asInstanceOf[Ptr[Byte]], 0, sizeof[addrinfo])
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
     hints.ai_socktype = socket.SOCK_STREAM
@@ -389,13 +387,17 @@ private[net] class PlainSocketImpl extends SocketImpl {
     val bytesNum = socket
       .recv(fd.fd, buffer.asInstanceOf[ByteArray].at(offset), count.toUInt, 0)
       .toInt
-    if (bytesNum <= 0) {
-      if (errno.errno == EAGAIN || errno.errno == EWOULDBLOCK) {
+
+    bytesNum match {
+      case _ if (bytesNum > 0) => bytesNum
+
+      case 0 => if (count == 0) 0 else -1
+
+      case _ if ((errno.errno == EAGAIN) || (errno.errno == EWOULDBLOCK)) =>
         throw new SocketTimeoutException("Socket timeout while reading data")
-      }
-      -1
-    } else {
-      bytesNum
+
+      case _ =>
+        throw new SocketException(s"read failed, errno: ${errno.errno}")
     }
   }
 
@@ -520,10 +522,14 @@ private[net] class PlainSocketImpl extends SocketImpl {
         val ptr    = stackalloc[socket.linger]
         val linger = value.asInstanceOf[Int]
 
-        if (linger == -1) ptr.l_onoff = 0
-        else ptr.l_onoff = 1
+        if (linger == -1) {
+          ptr.l_onoff = 0
+          ptr.l_linger = 0
+        } else {
+          ptr.l_onoff = 1
+          ptr.l_linger = linger
+        }
 
-        ptr.l_linger = linger
         ptr.asInstanceOf[Ptr[Byte]]
       case SocketOptions.SO_TIMEOUT =>
         val ptr      = stackalloc[timeval]

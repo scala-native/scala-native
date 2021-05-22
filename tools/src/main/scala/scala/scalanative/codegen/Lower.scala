@@ -35,7 +35,7 @@ object Lower {
 
     // Names of the fields of the java.lang.String in the memory layout order.
     private val stringFieldNames = {
-      val node  = ClassRef.unapply(StringName).get
+      val node  = ClassRef.unapply(Rt.StringName).get
       val names = layout(node).entries.map(_.name)
       assert(names.length == 4, "java.lang.String is expected to have 4 fields")
       names
@@ -72,7 +72,7 @@ object Lower {
           buf += onDefn(defn)
       }
 
-      buf
+      buf.toSeq
     }
 
     override def onDefn(defn: Defn): Defn = defn match {
@@ -187,15 +187,9 @@ object Lower {
       case _                             => super.onVal(value)
     }
 
-    def genClassOf(buf: Buffer, node: ScopeInfo)(
-        implicit pos: Position): Val = {
-      val tpePtr = rtti(node).const
-      buf.call(toClassTy, toClassVal, Seq(Val.Null, tpePtr), Next.None)
-    }
-
     def genVal(buf: Buffer, value: Val)(implicit pos: Position): Val =
       value match {
-        case Val.ClassOf(ScopeRef(node)) => genClassOf(buf, node)
+        case Val.ClassOf(ScopeRef(node)) => rtti(node).const
         case Val.Const(v)                => Val.Const(genVal(buf, v))
         case Val.StructValue(values) =>
           Val.StructValue(values.map(genVal(buf, _)))
@@ -483,11 +477,10 @@ object Lower {
                s"The virtual table of ${cls.name} does not contain $sig")
 
         val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
-        val methptrptr = let(
-          Op.Elem(rtti(cls).struct,
-                  typeptr,
-                  Seq(Val.Int(0), meta.vtableIndex, Val.Int(vindex))),
-          unwind)
+        val methptrptr = let(Op.Elem(rtti(cls).struct,
+                                     typeptr,
+                                     meta.RttiVtableIndex :+ Val.Int(vindex)),
+                             unwind)
 
         let(n, Op.Load(Type.Ptr, methptrptr), unwind)
       }
@@ -496,7 +489,7 @@ object Lower {
         val sigid   = dispatchTable.traitSigIds(sig)
         val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
         val idptr =
-          let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(1))), unwind)
+          let(Op.Elem(meta.Rtti, typeptr, meta.RttiTraitIdIndex), unwind)
         val id = let(Op.Load(Type.Int, idptr), unwind)
         val rowptr = let(
           Op.Elem(Type.Ptr,
@@ -522,6 +515,7 @@ object Lower {
                 genClassVirtualLookup(Object)
               case TraitRef(trt) =>
                 genTraitVirtualLookup(trt)
+              case _ => util.unreachable
             }
         }
       }
@@ -587,11 +581,8 @@ object Lower {
         // Load the type information pointer
         val typeptr = load(Type.Ptr, obj, unwind)
         // Load the dynamic hash map for given type, make sure it's not null
-        val mapelem = elem(classRttiType,
-                           typeptr,
-                           Seq(Val.Int(0), meta.dynmapIndex),
-                           unwind)
-        val mapptr = load(Type.Ptr, mapelem, unwind)
+        val mapelem = elem(classRttiType, typeptr, meta.RttiDynmapIndex, unwind)
+        val mapptr  = load(Type.Ptr, mapelem, unwind)
         // If hash map is not null, it has to contain at least one entry
         throwIfNull(mapptr)
         // Perform dynamic dispatch via dyndispatch helper
@@ -651,7 +642,7 @@ object Lower {
           val range   = meta.ranges(cls)
           val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
           val idptr =
-            let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))), unwind)
+            let(Op.Elem(meta.Rtti, typeptr, meta.RttiClassIdIndex), unwind)
           val id = let(Op.Load(Type.Int, idptr), unwind)
           val ge =
             let(Op.Comp(Comp.Sle, Type.Int, Val.Int(range.start), id), unwind)
@@ -662,7 +653,7 @@ object Lower {
         case TraitRef(trt) =>
           val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
           val idptr =
-            let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))), unwind)
+            let(Op.Elem(meta.Rtti, typeptr, meta.RttiClassIdIndex), unwind)
           val id = let(Op.Load(Type.Int, idptr), unwind)
           val boolptr = let(
             Op.Elem(hasTraitTables.classHasTraitTy,
@@ -1005,6 +996,7 @@ object Lower {
             n,
             Op.Call(sig, Val.Global(func, Type.Ptr), Seq(module, len, init)),
             unwind)
+        case _ => util.unreachable
       }
     }
 
@@ -1056,7 +1048,7 @@ object Lower {
     }
 
     def genStringVal(value: String): Val = {
-      val StringCls    = ClassRef.unapply(StringName).get
+      val StringCls    = ClassRef.unapply(Rt.StringName).get
       val CharArrayCls = ClassRef.unapply(CharArrayName).get
 
       val chars       = value.toCharArray
@@ -1066,17 +1058,17 @@ object Lower {
           Seq(
             rtti(CharArrayCls).const,
             charsLength,
-            Val.Int(0), // stride, but unused
-            Val.ArrayValue(Type.Char, chars.map(Val.Char))
+            Val.Int(0), // padding to get next field aligned properly
+            Val.ArrayValue(Type.Char, chars.toSeq.map(Val.Char))
           )
         ))
 
       val fieldValues = stringFieldNames.map {
-        case StringValueName          => charsConst
-        case StringOffsetName         => Val.Int(0)
-        case StringCountName          => charsLength
-        case StringCachedHashCodeName => Val.Int(stringHashCode(value))
-        case _                        => util.unreachable
+        case Rt.StringValueName          => charsConst
+        case Rt.StringOffsetName         => Val.Int(0)
+        case Rt.StringCountName          => charsLength
+        case Rt.StringCachedHashCodeName => Val.Int(stringHashCode(value))
+        case _                           => util.unreachable
       }
 
       Val.Const(Val.StructValue(rtti(StringCls).const +: fieldValues))
@@ -1121,13 +1113,6 @@ object Lower {
     Seq(Type.Ref(excptnGlobal), Type.Ref(Global.Top("java.lang.String"))),
     Type.Unit)
   val excInit = Val.Global(excptnInitGlobal, Type.Ptr)
-
-  val StringName       = Rt.String.name
-  val StringValueName  = StringName.member(Sig.Field("value"))
-  val StringOffsetName = StringName.member(Sig.Field("offset"))
-  val StringCountName  = StringName.member(Sig.Field("count"))
-  val StringCachedHashCodeName =
-    StringName.member(Sig.Field("cachedHashCode"))
 
   val CharArrayName =
     Global.Top("scala.scalanative.runtime.CharArray")
@@ -1287,11 +1272,6 @@ object Lower {
   val throwNoSuchMethodVal =
     Val.Global(throwNoSuchMethod, Type.Ptr)
 
-  val toClassTy = Type.Function(Seq(Type.Ptr, Type.Ptr), Rt.Class)
-  val toClass = Global.Member(Rt.Runtime.name,
-                              Sig.Method("toClass", Seq(Type.Ptr, Rt.Class)))
-  val toClassVal = Val.Global(toClass, Type.Ptr)
-
   val RuntimeNull    = Type.Ref(Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
 
@@ -1302,16 +1282,22 @@ object Lower {
     buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)
     buf += Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig)
     buf += Defn.Declare(Attrs.None, throwName, throwSig)
-    buf
+    buf.toSeq
   }
 
   val depends: Seq[Global] = {
     val buf = mutable.UnrolledBuffer.empty[Global]
-    buf += StringName
-    buf += StringValueName
-    buf += StringOffsetName
-    buf += StringCountName
-    buf += StringCachedHashCodeName
+    buf += Rt.ClassName
+    buf += Rt.ClassIdName
+    buf += Rt.ClassTraitIdName
+    buf += Rt.ClassNameName
+    buf += Rt.ClassSizeName
+    buf += Rt.ClassIdRangeUntilName
+    buf += Rt.StringName
+    buf += Rt.StringValueName
+    buf += Rt.StringOffsetName
+    buf += Rt.StringCountName
+    buf += Rt.StringCachedHashCodeName
     buf += CharArrayName
     buf += BoxesRunTime
     buf += RuntimeBoxes
@@ -1333,7 +1319,6 @@ object Lower {
     buf += throwNoSuchMethod
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
-    buf += toClassVal.name
-    buf
+    buf.toSeq
   }
 }

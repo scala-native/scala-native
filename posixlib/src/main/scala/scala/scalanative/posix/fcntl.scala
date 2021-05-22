@@ -11,8 +11,6 @@ object fcntl {
 
   def open(pathname: CString, flags: CInt, mode: mode_t): CInt = extern
 
-  def close(fd: CInt): CInt = extern
-
   def fcntl(fd: CInt, cmd: CInt, flags: CInt): CInt = extern
 
   @name("scalanative_f_dupfd")

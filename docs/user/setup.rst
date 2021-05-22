@@ -7,7 +7,7 @@ Scala Native has the following build dependencies:
 
 * Java 8 or newer
 * sbt 1.1.6 or newer
-* LLVM/Clang 3.7 or newer
+* LLVM/Clang 6.0 or newer
 
 And following completely optional runtime library dependencies:
 
@@ -19,16 +19,25 @@ These are only required if you use the corresponding feature.
 Installing sbt
 --------------
 
+**macOS and Linux**
+
 Please refer to `this link <https://www.scala-sbt.org/release/docs/Setup.html>`_
 for instructions for your operating system.
+
+**FreeBSD**
+
+.. code-block:: shell
+
+    $ pkg install sbt
 
 Installing clang and runtime dependencies
 -----------------------------------------
 
 Scala Native requires Clang, which is part of the `LLVM`_ toolchain. The
-recommended LLVM version is 3.7 or newer, however, the Scala Native sbt
-plugin uses feature detection to discover the installed version of Clang
-so older versions may also work.
+recommended LLVM version is the most recent available for your system
+provided that it works with Scala Native. The Scala Native sbt
+plugin checks to ensure that `clang` is at least the minimum version
+shown above.
 
 Scala Native uses the `immix`_ garbage collector by default.
 You can use the `Boehm`_ garbage collector instead.
@@ -53,7 +62,10 @@ Native has been used with:
     $ brew install llvm
     $ brew install bdw-gc # optional
 
-*Note:* A version of zlib that is sufficiently recent comes with the
+*Note 1:* Xcode should work as an alternative if preferred: 
+https://apps.apple.com/us/app/xcode/id497799835
+
+*Note 2:* A version of zlib that is sufficiently recent comes with the
 installation of macOS.
 
 **Ubuntu**
@@ -67,24 +79,25 @@ installation of macOS.
 
 .. code-block:: shell
 
-    $ sudo pacman -S llvm clang
+    $ sudo pacman -S llvm clang build-essential
     $ sudo pacman -S gc # optional
 
 *Note:* A version of zlib that is sufficiently recent comes with the
 installation of Arch Linux.
 
-**Fedora 26**
+**Fedora 33**
 
 .. code-block:: shell
 
     $ sudo dnf install llvm clang
+    $ sudo dnf groupinstall "Development Tools"
     $ sudo dnf install gc-devel zlib-devel # both optional
 
-**FreeBSD**
+**FreeBSD 12.2 and later**
 
 .. code-block:: shell
 
-    $ pkg install llvm38
+    $ pkg install llvm10
     $ pkg install boehm-gc # optional
 
 *Note:* A version of zlib that is sufficiently recent comes with the

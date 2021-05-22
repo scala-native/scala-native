@@ -358,7 +358,8 @@ object Base64 {
         -1
       } else {
         iterate()
-        written
+        if (written == 0 && eof) -1
+        else written
       }
     }
 

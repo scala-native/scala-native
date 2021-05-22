@@ -1,2 +1,4 @@
 -J-Xmx5G
 -J-Xms1024M
+# Needed for Scala 2.11 tools compilation. Failing in CI for test-scripted
+-J-Xss2m

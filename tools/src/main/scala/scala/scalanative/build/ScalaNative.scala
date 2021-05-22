@@ -1,7 +1,7 @@
 package scala.scalanative
 package build
 
-import java.nio.file.Path
+import java.nio.file.{Path, Files}
 import scala.collection.mutable
 import scala.scalanative.checker.Check
 import scala.scalanative.codegen.CodeGen
@@ -91,6 +91,8 @@ private[scalanative] object ScalaNative {
               linked: linker.Result,
               is32: Boolean): Seq[Path] = {
     val llPaths = config.logger.time("Generating intermediate code") {
+      // currently, always clean ll files
+      IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
       CodeGen(config, linked, is32)
     }
     config.logger.info(s"Produced ${llPaths.length} files")

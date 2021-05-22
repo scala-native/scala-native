@@ -18,59 +18,195 @@ class IntegerTest {
   val unsignedMaxValueText   = "4294967295"
   val unsignedMaxPlusOneText = "4294967296"
 
+  def assertThrowsAndMessage[T <: Throwable, U](
+      expectedThrowable: Class[T],
+      code: => U)(expectedMsg: String): Unit = {
+    val exception = expectThrows(expectedThrowable, code)
+    assertEquals(expectedMsg, exception.toString)
+  }
+
+  @Test def decodeTest(): Unit = {
+    import Integer.decode
+
+    assertEquals(-1, decode("-1"))
+    assertEquals(1, decode("+1"))
+    assertEquals(1, decode("1"))
+    assertEquals(-123, decode("-123"))
+    assertEquals(123, decode("+123"))
+    assertEquals(123, decode("123"))
+    assertEquals(0, decode("-0"))
+    assertEquals(0, decode("+0"))
+    assertEquals(0, decode("00"))
+    assertEquals(-1, decode("-0x1"))
+    assertEquals(1, decode("+0x1"))
+    assertEquals(1, decode("0x1"))
+    assertEquals(-123, decode("-0x7b"))
+    assertEquals(123, decode("+0x7b"))
+    assertEquals(123, decode("0x7b"))
+    assertEquals(0, decode("-0x0"))
+    assertEquals(0, decode("+0x0"))
+    assertEquals(0, decode("0x0"))
+    assertEquals(-1, decode("-0X1"))
+    assertEquals(1, decode("+0X1"))
+    assertEquals(1, decode("0X1"))
+    assertEquals(-123, decode("-0X7B"))
+    assertEquals(123, decode("+0X7B"))
+    assertEquals(123, decode("0X7b"))
+    assertEquals(0, decode("-0X0"))
+    assertEquals(0, decode("+0X0"))
+    assertEquals(0, decode("0X0"))
+    assertEquals(-1, decode("-#1"))
+    assertEquals(1, decode("+#1"))
+    assertEquals(1, decode("#1"))
+    assertEquals(-123, decode("-#7B"))
+    assertEquals(123, decode("+#7B"))
+    assertEquals(123, decode("#7b"))
+    assertEquals(0, decode("-#0"))
+    assertEquals(0, decode("+#0"))
+    assertEquals(0, decode("#0"))
+    assertEquals(-1, decode("-01"))
+    assertEquals(1, decode("+01"))
+    assertEquals(1, decode("01"))
+    assertEquals(-123, decode("-0173"))
+    assertEquals(123, decode("+0173"))
+    assertEquals(123, decode("0173"))
+    assertEquals(0, decode("-00"))
+    assertEquals(0, decode("+00"))
+    assertEquals(signedMaxValue, decode(signedMaxValueText))
+    assertEquals(signedMinValue, decode(signedMinValueText))
+
+    assertThrowsAndMessage(classOf[NumberFormatException], decode(null))(
+      "java.lang.NumberFormatException: null"
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode("+"))(
+      """java.lang.NumberFormatException: For input string: "+""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode("-"))(
+      """java.lang.NumberFormatException: For input string: "-""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode(""))(
+      """java.lang.NumberFormatException: For input string: """""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode("0x"))(
+      """java.lang.NumberFormatException: For input string: "0x""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode("#"))(
+      """java.lang.NumberFormatException: For input string: "#""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode("0xh"))(
+      """java.lang.NumberFormatException: For input string: "0xh""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode("0XH"))(
+      """java.lang.NumberFormatException: For input string: "0XH""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode("09"))(
+      """java.lang.NumberFormatException: For input string: "09""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode("123a"))(
+      """java.lang.NumberFormatException: For input string: "123a""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException],
+                           decode(signedMinMinusOneText))(
+      s"""java.lang.NumberFormatException: For input string: "$signedMinMinusOneText""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException],
+                           decode(signedMaxPlusOneText))(
+      s"""java.lang.NumberFormatException: For input string: "$signedMaxPlusOneText""""
+    )
+  }
+
   @Test def parseInt(): Unit = {
     import Integer.{parseInt => parse}
 
-    assertTrue(parse("-1") == -1)
-    assertTrue(parse("+1") == 1)
-    assertTrue(parse("1") == 1)
-    assertTrue(parse("-123") == -123)
-    assertTrue(parse("+123") == 123)
-    assertTrue(parse("123") == 123)
-    assertTrue(parse("-100", 2) == -4)
-    assertTrue(parse("+100", 2) == 4)
-    assertTrue(parse("100", 2) == 4)
-    assertTrue(parse("-0") == 0)
-    assertTrue(parse("+0") == 0)
-    assertTrue(parse("00") == 0)
-    assertTrue(parse(signedMaxValueText) == signedMaxValue)
-    assertTrue(parse(signedMinValueText) == signedMinValue)
+    assertEquals(-1, parse("-1"))
+    assertEquals(1, parse("+1"))
+    assertEquals(1, parse("1"))
+    assertEquals(-123, parse("-123"))
+    assertEquals(123, parse("+123"))
+    assertEquals(123, parse("123"))
+    assertEquals(-4, parse("-100", 2))
+    assertEquals(4, parse("+100", 2))
+    assertEquals(4, parse("100", 2))
+    assertEquals(0, parse("-0"))
+    assertEquals(0, parse("+0"))
+    assertEquals(0, parse("00"))
+    assertEquals(signedMaxValue, parse(signedMaxValueText))
+    assertEquals(signedMinValue, parse(signedMinValueText))
 
-    assertThrows(classOf[NumberFormatException], parse(null))
-    assertThrows(classOf[NumberFormatException], parse("+"))
-    assertThrows(classOf[NumberFormatException], parse("-"))
-    assertThrows(classOf[NumberFormatException], parse(""))
-    assertThrows(classOf[NumberFormatException],
-                 parse("123", Character.MIN_RADIX - 1))
-    assertThrows(classOf[NumberFormatException],
-                 parse("123", Character.MAX_RADIX + 1))
-    assertThrows(classOf[NumberFormatException], parse("123a", 10))
-    assertThrows(classOf[NumberFormatException], parse(signedMinMinusOneText))
-    assertThrows(classOf[NumberFormatException], parse(signedMaxPlusOneText))
+    assertThrowsAndMessage(classOf[NumberFormatException], parse(null))(
+      "java.lang.NumberFormatException: null"
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse("+"))(
+      """java.lang.NumberFormatException: For input string: "+""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse("-"))(
+      """java.lang.NumberFormatException: For input string: "-""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse(""))(
+      """java.lang.NumberFormatException: For input string: """""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException],
+                           parse("123", Character.MIN_RADIX - 1))(
+      """java.lang.NumberFormatException: radix 1 less than Character.MIN_RADIX"""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException],
+                           parse("123", Character.MAX_RADIX + 1))(
+      """java.lang.NumberFormatException: radix 37 greater than Character.MAX_RADIX"""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse("123a", 10))(
+      """java.lang.NumberFormatException: For input string: "123a""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException],
+                           parse(signedMinMinusOneText))(
+      s"""java.lang.NumberFormatException: For input string: "$signedMinMinusOneText""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException],
+                           parse(signedMaxPlusOneText))(
+      s"""java.lang.NumberFormatException: For input string: "$signedMaxPlusOneText""""
+    )
   }
 
   @Test def parseUnsignedInt(): Unit = {
     import Integer.{parseUnsignedInt => parse}
 
-    assertTrue(parse("1") == 1)
-    assertTrue(parse("+1") == 1)
-    assertTrue(parse("0") == 0)
-    assertTrue(parse("00") == 0)
-    assertTrue(parse("+100", 2) == 4)
-    assertTrue(parse("100", 2) == 4)
-    assertTrue(parse(unsignedMaxValueText) == unsignedMaxValue)
+    assertEquals(1, parse("1"))
+    assertEquals(1, parse("+1"))
+    assertEquals(0, parse("0"))
+    assertEquals(0, parse("00"))
+    assertEquals(4, parse("+100", 2))
+    assertEquals(4, parse("100", 2))
+    assertEquals(unsignedMaxValue, parse(unsignedMaxValueText))
 
-    assertThrows(classOf[NumberFormatException], parse(null))
-    assertThrows(classOf[NumberFormatException], parse("+"))
-    assertThrows(classOf[NumberFormatException], parse("-"))
-    assertThrows(classOf[NumberFormatException], parse(""))
-    assertThrows(classOf[NumberFormatException], parse("-1"))
-    assertThrows(classOf[NumberFormatException],
-                 parse("123", Character.MIN_RADIX - 1))
-    assertThrows(classOf[NumberFormatException],
-                 parse("123", Character.MAX_RADIX + 1))
-    assertThrows(classOf[NumberFormatException], parse("123a", 10))
-    assertThrows(classOf[NumberFormatException], parse(unsignedMaxPlusOneText))
+    assertThrowsAndMessage(classOf[NumberFormatException], parse(null))(
+      """java.lang.NumberFormatException: null"""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse("+"))(
+      """java.lang.NumberFormatException: For input string: "+""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse("-"))(
+      """java.lang.NumberFormatException: For input string: "-""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse(""))(
+      """java.lang.NumberFormatException: For input string: """""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse("-1"))(
+      """java.lang.NumberFormatException: Illegal leading minus sign on unsigned string -1."""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException],
+                           parse("123", Character.MIN_RADIX - 1))(
+      """java.lang.NumberFormatException: radix 1 less than Character.MIN_RADIX"""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException],
+                           parse("123", Character.MAX_RADIX + 1))(
+      """java.lang.NumberFormatException: radix 37 greater than Character.MAX_RADIX"""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse("123a", 10))(
+      """java.lang.NumberFormatException: For input string: "123a""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException],
+                           parse(unsignedMaxPlusOneText))(
+      s"""java.lang.NumberFormatException: String value $unsignedMaxPlusOneText exceeds range of unsigned int."""
+    )
 
     val octalMulOverflow = "137777777770"
     // in binary:
@@ -82,65 +218,65 @@ class IntegerTest {
   @Test def testToString(): Unit = {
     import java.lang.Integer.{toString => toStr}
 
-    assertTrue(toStr(0) == "0")
-    assertTrue(toStr(1) == "1")
-    assertTrue(toStr(12) == "12")
-    assertTrue(toStr(123) == "123")
-    assertTrue(toStr(1234) == "1234")
-    assertTrue(toStr(12345) == "12345")
-    assertTrue(toStr(10) == "10")
-    assertTrue(toStr(100) == "100")
-    assertTrue(toStr(1000) == "1000")
-    assertTrue(toStr(10000) == "10000")
-    assertTrue(toStr(100000) == "100000")
-    assertTrue(toStr(101010) == "101010")
-    assertTrue(toStr(111111) == "111111")
-    assertTrue(toStr(-1) == "-1")
-    assertTrue(toStr(-12) == "-12")
-    assertTrue(toStr(-123) == "-123")
-    assertTrue(toStr(-1234) == "-1234")
-    assertTrue(toStr(-12345) == "-12345")
-    assertTrue(toStr(signedMaxValue) == signedMaxValueText)
-    assertTrue(toStr(signedMinValue) == signedMinValueText)
+    assertEquals("0", toStr(0))
+    assertEquals("1", toStr(1))
+    assertEquals("12", toStr(12))
+    assertEquals("123", toStr(123))
+    assertEquals("1234", toStr(1234))
+    assertEquals("12345", toStr(12345))
+    assertEquals("10", toStr(10))
+    assertEquals("100", toStr(100))
+    assertEquals("1000", toStr(1000))
+    assertEquals("10000", toStr(10000))
+    assertEquals("100000", toStr(100000))
+    assertEquals("101010", toStr(101010))
+    assertEquals("111111", toStr(111111))
+    assertEquals("-1", toStr(-1))
+    assertEquals("-12", toStr(-12))
+    assertEquals("-123", toStr(-123))
+    assertEquals("-1234", toStr(-1234))
+    assertEquals("-12345", toStr(-12345))
+    assertEquals(signedMaxValueText, toStr(signedMaxValue))
+    assertEquals(signedMinValueText, toStr(signedMinValue))
   }
 
   @Test def toUnsignedString(): Unit = {
     import java.lang.Integer.{toUnsignedString => toStr}
 
-    assertTrue(toStr(0) == "0")
-    assertTrue(toStr(1) == "1")
-    assertTrue(toStr(12) == "12")
-    assertTrue(toStr(123) == "123")
-    assertTrue(toStr(1234) == "1234")
-    assertTrue(toStr(12345) == "12345")
-    assertTrue(toStr(-1) == "4294967295")
-    assertTrue(toStr(-12) == "4294967284")
-    assertTrue(toStr(-123) == "4294967173")
-    assertTrue(toStr(-1234) == "4294966062")
-    assertTrue(toStr(-12345) == "4294954951")
-    assertTrue(toStr(unsignedMaxValue) == unsignedMaxValueText)
+    assertEquals("0", toStr(0))
+    assertEquals("1", toStr(1))
+    assertEquals("12", toStr(12))
+    assertEquals("123", toStr(123))
+    assertEquals("1234", toStr(1234))
+    assertEquals("12345", toStr(12345))
+    assertEquals("4294967295", toStr(-1))
+    assertEquals("4294967284", toStr(-12))
+    assertEquals("4294967173", toStr(-123))
+    assertEquals("4294966062", toStr(-1234))
+    assertEquals("4294954951", toStr(-12345))
+    assertEquals(unsignedMaxValueText, toStr(unsignedMaxValue))
   }
 
   @Test def testEquals(): Unit = {
-    assertTrue(new Integer(0) == new Integer(0))
-    assertTrue(new Integer(1) == new Integer(1))
-    assertTrue(new Integer(-1) == new Integer(-1))
-    assertTrue(new Integer(123) == new Integer(123))
-    assertTrue(new Integer(Integer.MAX_VALUE) == new Integer(Integer.MAX_VALUE))
-    assertTrue(new Integer(Integer.MIN_VALUE) == new Integer(Integer.MIN_VALUE))
+    assertEquals(new Integer(0), new Integer(0))
+    assertEquals(new Integer(1), new Integer(1))
+    assertEquals(new Integer(-1), new Integer(-1))
+    assertEquals(new Integer(123), new Integer(123))
+    assertEquals(new Integer(Integer.MAX_VALUE), new Integer(Integer.MAX_VALUE))
+    assertEquals(new Integer(Integer.MIN_VALUE), new Integer(Integer.MIN_VALUE))
   }
 
   @Test def highestOneBit(): Unit = {
-    assertTrue(Integer.highestOneBit(1) == 1)
-    assertTrue(Integer.highestOneBit(2) == 2)
-    assertTrue(Integer.highestOneBit(3) == 2)
-    assertTrue(Integer.highestOneBit(4) == 4)
-    assertTrue(Integer.highestOneBit(5) == 4)
-    assertTrue(Integer.highestOneBit(6) == 4)
-    assertTrue(Integer.highestOneBit(7) == 4)
-    assertTrue(Integer.highestOneBit(8) == 8)
-    assertTrue(Integer.highestOneBit(9) == 8)
-    assertTrue(Integer.highestOneBit(63) == 32)
-    assertTrue(Integer.highestOneBit(64) == 64)
+    assertEquals(1, Integer.highestOneBit(1))
+    assertEquals(2, Integer.highestOneBit(2))
+    assertEquals(2, Integer.highestOneBit(3))
+    assertEquals(4, Integer.highestOneBit(4))
+    assertEquals(4, Integer.highestOneBit(5))
+    assertEquals(4, Integer.highestOneBit(6))
+    assertEquals(4, Integer.highestOneBit(7))
+    assertEquals(8, Integer.highestOneBit(8))
+    assertEquals(8, Integer.highestOneBit(9))
+    assertEquals(32, Integer.highestOneBit(63))
+    assertEquals(64, Integer.highestOneBit(64))
   }
 }

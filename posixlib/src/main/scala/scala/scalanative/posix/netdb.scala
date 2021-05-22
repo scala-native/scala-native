@@ -33,22 +33,22 @@ object netdb {
                   servlen: socket.socklen_t,
                   flags: CInt): CInt = extern
 
-  @name("scalanative_AI_NUMERICHOST")
+  @name("scalanative_ai_numerichost")
   def AI_NUMERICHOST: CInt = extern
 
-  @name("scalanative_AI_PASSIVE")
+  @name("scalanative_ai_passive")
   def AI_PASSIVE: CInt = extern
 
-  @name("scalanative_AI_NUMERICSERV")
+  @name("scalanative_ai_numericserv")
   def AI_NUMERICSERV: CInt = extern
 
-  @name("scalanative_AI_ADDRCONFIG")
+  @name("scalanative_ai_addrconfig")
   def AI_ADDRCONFIG: CInt = extern
 
-  @name("scalanative_AI_V4MAPPED")
+  @name("scalanative_ai_v4mapped")
   def AI_V4MAPPED: CInt = extern
 
-  @name("scalanative_AI_CANONNAME")
+  @name("scalanative_ai_canonname")
   def AI_CANONNAME: CInt = extern
 }
 

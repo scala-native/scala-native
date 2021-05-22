@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <sys/mman.h>
 #include <stdio.h>
 #include "Heap.h"
 #include "Log.h"
@@ -10,7 +9,8 @@
 #include "utils/MathUtils.h"
 #include "StackTrace.h"
 #include "Settings.h"
-#include "Memory.h"
+#include "MemoryInfo.h"
+#include "MemoryMap.h"
 #include "GCThread.h"
 #include "Sweeper.h"
 #include "Phase.h"
@@ -18,16 +18,8 @@
 #include <time.h>
 #include <inttypes.h>
 
-// Allow read and write
-#define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
-// Map private anonymous memory, and prevent from reserving swap
-#define HEAP_MEM_FLAGS (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
-// Map anonymous memory (not a file)
-#define HEAP_MEM_FD -1
-#define HEAP_MEM_FD_OFFSET 0
-
 void Heap_exitWithOutOfMemory() {
-    printf("Out of heap space\n");
+    fprintf(stderr, "Out of heap space\n");
     StackTrace_PrintStackTrace();
     exit(1);
 }
@@ -51,9 +43,7 @@ size_t Heap_getMemoryLimit() {
  */
 word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
     assert(alignmentSize % WORD_SIZE == 0);
-    word_t *heapStart = mmap(NULL, memoryLimit, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
-                             HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
-
+    word_t *heapStart = memoryMap(memoryLimit);
     size_t alignmentMask = ~(alignmentSize - 1);
     // Heap start not aligned on
     if (((word_t)heapStart & alignmentMask) != (word_t)heapStart) {
@@ -101,7 +91,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         fprintf(stderr,
                 "SCALANATIVE_MAX_HEAP_SIZE too small to initialize heap.\n");
         fprintf(stderr, "Minimum required: %zum \n",
-                MIN_HEAP_SIZE / 1024 / 1024);
+                (size_t)(MIN_HEAP_SIZE / 1024 / 1024));
         fflush(stderr);
         exit(1);
     }
@@ -205,7 +195,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     heap->mark.lastEnd_ns = scalanative_nano_time();
 
-    pthread_mutex_init(&heap->sweep.growMutex, NULL);
+    mutex_init(&heap->sweep.growMutex);
 }
 
 void Heap_Collect(Heap *heap) {
@@ -276,7 +266,7 @@ void Heap_GrowIfNeeded(Heap *heap) {
 }
 
 void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
-    pthread_mutex_lock(&heap->sweep.growMutex);
+    mutex_lock(&heap->sweep.growMutex);
     if (!Heap_isGrowingPossible(heap, incrementInBlocks)) {
         Heap_exitWithOutOfMemory();
     }
@@ -308,5 +298,5 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
                                  incrementInBlocks);
 
     heap->blockCount += incrementInBlocks;
-    pthread_mutex_unlock(&heap->sweep.growMutex);
+    mutex_unlock(&heap->sweep.growMutex);
 }

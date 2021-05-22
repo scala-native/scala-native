@@ -1,3 +1,8 @@
+#ifdef _WIN32
+// fopen is deprecated in WinCRT, disable warnings
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "Stats.h"
 #include "GCTypes.h"
 #include <stdio.h>

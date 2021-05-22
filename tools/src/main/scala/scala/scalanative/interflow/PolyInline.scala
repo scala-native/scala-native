@@ -29,12 +29,14 @@ trait PolyInline { self: Interflow =>
             cls.resolve(sig).foreach { g => targets += ((cls, g)) }
           }
         }
-        targets
+        targets.toSeq
       case _ =>
         Seq.empty
     }
 
-    res.sortBy(_._1.name)
+    // the only case when result won't be empty or one element seq is reading from `scop.implementors`
+    // scop.implementors are prestorted by the same way => I don't need sort here.
+    res
   }
 
   def shallPolyInline(op: Op.Method, args: Seq[Val])(
@@ -72,8 +74,12 @@ trait PolyInline { self: Interflow =>
       (0 until targets.size).map(i => impls.indexOf(targets(i)._2))
     val mergeLabel = fresh()
 
-    val objty =
-      emit.call(Rt.GetRawTypeTy, Rt.GetRawType, Seq(Val.Null, obj), Next.None)
+    val meth =
+      emit.method(obj, Rt.GetClassSig, Next.None)
+    val methty =
+      Type.Function(Seq(Rt.Object), Rt.Class)
+    val objcls =
+      emit.call(methty, meth, Seq(obj), Next.None)
 
     checkLabels.zipWithIndex.foreach {
       case (checkLabel, idx) =>
@@ -82,9 +88,9 @@ trait PolyInline { self: Interflow =>
         }
         val cls = classes(idx)
         val isCls = emit.comp(Comp.Ieq,
-                              Type.Ptr,
-                              objty,
-                              Val.Global(cls.name, Type.Ptr),
+                              Rt.Class,
+                              objcls,
+                              Val.Global(cls.name, Rt.Class),
                               Next.None)
         if (idx < targets.size - 2) {
           emit.branch(isCls,
@@ -118,7 +124,7 @@ trait PolyInline { self: Interflow =>
         emit.jump(Next.Label(mergeLabel, Seq(res)))
     }
 
-    val result = Val.Local(fresh(), Sub.lub(rettys, Some(op.resty)))
+    val result = Val.Local(fresh(), Sub.lub(rettys.toSeq, Some(op.resty)))
     emit.label(mergeLabel, Seq(result))
 
     result

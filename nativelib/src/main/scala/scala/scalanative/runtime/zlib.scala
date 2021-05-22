@@ -56,97 +56,97 @@ object zlib {
     CFuncPtr3[Ptr[Byte], Ptr[CUnsignedChar], CUnsignedInt, CInt]
   type gzFile = Ptr[Byte]
 
-  @name("scalanative_Z_NO_FLUSH")
+  @name("scalanative_z_no_flush")
   def Z_NO_FLUSH: CInt = extern
 
-  @name("scalanative_Z_PARTIAL_FLUSH")
+  @name("scalanative_z_partial_flush")
   def Z_PARTIAL_FLUSH: CInt = extern
 
-  @name("scalanative_Z_SYNC_FLUSH")
+  @name("scalanative_z_sync_flush")
   def Z_SYNC_FLUSH: CInt = extern
 
-  @name("scalanative_Z_FULL_FLUSH")
+  @name("scalanative_z_full_flush")
   def Z_FULL_FLUSH: CInt = extern
 
-  @name("scalanative_Z_FINISH")
+  @name("scalanative_z_finish")
   def Z_FINISH: CInt = extern
 
-  @name("scalanative_Z_BLOCK")
+  @name("scalanative_z_block")
   def Z_BLOCK: CInt = extern
 
-  @name("scalanative_Z_TREES")
+  @name("scalanative_z_trees")
   def Z_TREES: CInt = extern
 
-  @name("scalanative_Z_OK")
+  @name("scalanative_z_ok")
   def Z_OK: CInt = extern
 
-  @name("scalanative_Z_STREAM_END")
+  @name("scalanative_z_stream_end")
   def Z_STREAM_END: CInt = extern
 
-  @name("scalanative_Z_NEED_DICT")
+  @name("scalanative_z_need_dict")
   def Z_NEED_DICT: CInt = extern
 
-  @name("scalanative_Z_ERRNO")
+  @name("scalanative_z_errno")
   def Z_ERRNO: CInt = extern
 
-  @name("scalanative_Z_STREAM_ERROR")
+  @name("scalanative_z_stream_error")
   def Z_STREAM_ERROR: CInt = extern
 
-  @name("scalanative_Z_DATA_ERROR")
+  @name("scalanative_z_data_error")
   def Z_DATA_ERROR: CInt = extern
 
-  @name("scalanative_Z_MEM_ERROR")
+  @name("scalanative_z_mem_error")
   def Z_MEM_ERROR: CInt = extern
 
-  @name("scalanative_Z_BUF_ERROR")
+  @name("scalanative_z_buf_error")
   def Z_BUF_ERROR: CInt = extern
 
-  @name("scalanative_Z_VERSION_ERROR")
+  @name("scalanative_z_version_error")
   def Z_VERSION_ERROR: CInt = extern
 
-  @name("scalanative_Z_NO_COMPRESSION")
+  @name("scalanative_z_no_compression")
   def Z_NO_COMPRESSION: CInt = extern
 
-  @name("scalanative_Z_BEST_SPEED")
+  @name("scalanative_z_best_speed")
   def Z_BEST_SPEED: CInt = extern
 
-  @name("scalanative_Z_BEST_COMPRESSION")
+  @name("scalanative_z_best_compression")
   def Z_BEST_COMPRESSION: CInt = extern
 
-  @name("scalanative_Z_DEFAULT_COMPRESSION")
+  @name("scalanative_z_default_compression")
   def Z_DEFAULT_COMPRESSION: CInt = extern
 
-  @name("scalanative_Z_FILTERED")
+  @name("scalanative_z_filtered")
   def Z_FILTERED: CInt = extern
 
-  @name("scalanative_Z_HUFFMAN_ONLY")
+  @name("scalanative_z_huffman_only")
   def Z_HUFFMAN_ONLY: CInt = extern
 
-  @name("scalanative_Z_RLE")
+  @name("scalanative_z_rle")
   def Z_RLE: CInt = extern
 
-  @name("scalanative_Z_FIXED")
+  @name("scalanative_z_fixed")
   def Z_FIXED: CInt = extern
 
-  @name("scalanative_Z_DEFAULT_STRATEGY")
+  @name("scalanative_z_default_strategy")
   def Z_DEFAULT_STRATEGY: CInt = extern
 
-  @name("scalanative_Z_BINARY")
+  @name("scalanative_z_binary")
   def Z_BINARY: CInt = extern
 
-  @name("scalanative_Z_TEXT")
+  @name("scalanative_z_text")
   def Z_TEXT: CInt = extern
 
-  @name("scalanative_Z_ASCII")
+  @name("scalanative_z_ascii")
   def Z_ASCII: CInt = extern
 
-  @name("scalanative_Z_UNKNOWN")
+  @name("scalanative_z_unknown")
   def Z_UNKNOWN: CInt = extern
 
-  @name("scalanative_Z_DEFLATED")
+  @name("scalanative_z_deflated")
   def Z_DEFLATED: CInt = extern
 
-  @name("scalanative_Z_NULL")
+  @name("scalanative_z_null")
   def Z_NULL: CInt = extern
 
   // Basic Functions

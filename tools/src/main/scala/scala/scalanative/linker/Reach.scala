@@ -2,10 +2,14 @@ package scala.scalanative
 package linker
 
 import java.nio.file.{Path, Paths}
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scalanative.nir._
 
-class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
+class Reach(protected val config: build.Config,
+            entries: Seq[Global],
+            loader: ClassLoader)
+    extends LinktimeValueResolver {
   import Reach._
 
   val unavailable = mutable.Set.empty[Global]
@@ -22,6 +26,9 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   val dyncandidates = mutable.Map.empty[Sig, mutable.Set[Global]]
   val dynsigs       = mutable.Set.empty[Sig]
   val dynimpls      = mutable.Set.empty[Global]
+
+  private case class DelayedMethod(owner: Global.Top, sig: Sig, pos: Position)
+  private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
   entries.foreach(reachEntry)
   loader.classesWithEntryPoints.foreach(reachClinit)
@@ -41,9 +48,10 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
                unavailable.toSeq,
                from,
                links.toSeq,
-               defns,
+               defns.toSeq,
                dynsigs.toSeq,
-               dynimpls.toSeq)
+               dynimpls.toSeq,
+               resolvedNirValues)
   }
 
   def cleanup(): Unit = {
@@ -99,6 +107,36 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       }
     }
 
+  @tailrec
+  final def processDelayed(): Unit = {
+    // Recursively iterate delayed methods - processing delayed method that has existing implementation
+    // might result in calling other delayed method. Loop until no more delayedMethods are found
+    if (delayedMethods.nonEmpty) {
+      /*  Check methods that were marked to not have any defined targets yet when processing loop.
+       *  At this stage they should define at least 1 target, or should be marked as a missing symbol.
+       */
+      delayedMethods.foreach {
+        case DelayedMethod(top, sig, position) =>
+          scopeInfo(top).foreach { info =>
+            val wasAllocated = info match {
+              case value: Trait => value.implementors.exists(_.allocated)
+              case clazz: Class => clazz.allocated
+            }
+            val targets = info.targets(sig)
+            if (targets.isEmpty && wasAllocated) {
+              addMissing(top.member(sig), position)
+            } else {
+              todo ++= targets
+            }
+          }
+      }
+
+      delayedMethods.clear()
+      process()
+      processDelayed()
+    }
+  }
+
   def reachDefn(name: Global): Unit = {
     stack ::= name
     lookup(name).fold[Unit] {
@@ -107,7 +145,11 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       if (defn.attrs.isStub && !config.linkStubs) {
         reachUnavailable(name)
       } else {
-        reachDefn(defn)
+        val maybeResolvedDefn = defn match {
+          case defn: Defn.Define => resolveLinktimeDefine(defn)
+          case _                 => defn
+        }
+        reachDefn(maybeResolvedDefn)
       }
     }
     stack = stack.tail
@@ -126,7 +168,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         if (Rt.arrayAlloc.contains(sig)) {
           classInfo(Rt.arrayAlloc(sig)).foreach(reachAllocation)
         }
-        reachDefine(defn)
+        reachDefine(resolveLinktimeDefine(defn))
       case defn: Defn.Trait =>
         reachTrait(defn)
       case defn: Defn.Class =>
@@ -560,6 +602,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachNext(unwind)
     case Inst.Unreachable(unwind) =>
       reachNext(unwind)
+    case _: Inst.LinktimeIf =>
+      util.unreachable
   }
 
   def reachOp(op: Op)(implicit pos: Position): Unit = op match {
@@ -668,19 +712,26 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       ()
   }
 
-  def reachMethodTargets(ty: Type, sig: Sig): Unit = ty match {
-    case Type.Array(ty, _) =>
-      reachMethodTargets(Type.Ref(Type.toArrayClass(ty)), sig)
-    case Type.Ref(name, _, _) =>
-      scopeInfo(name).foreach { scope =>
-        if (!scope.calls.contains(sig)) {
-          scope.calls += sig
-          scope.targets(sig).foreach(reachGlobal)
+  def reachMethodTargets(ty: Type, sig: Sig)(implicit pos: Position): Unit =
+    ty match {
+      case Type.Array(ty, _) =>
+        reachMethodTargets(Type.Ref(Type.toArrayClass(ty)), sig)
+      case Type.Ref(name, _, _) =>
+        scopeInfo(name).foreach { scope =>
+          if (!scope.calls.contains(sig)) {
+            scope.calls += sig
+            val targets = scope.targets(sig)
+            if (targets.nonEmpty) targets.foreach(reachGlobal)
+            else {
+              // At this stage we cannot tell if method target is not defined or not yet reached
+              // We're delaying resolving targets to the end of Reach phase to check if this method is never defined in NIR
+              delayedMethods += DelayedMethod(name.top, sig, pos)
+            }
+          }
         }
-      }
-    case _ =>
-      ()
-  }
+      case _ =>
+        ()
+    }
 
   def reachDynamicMethodTargets(dynsig: Sig) = {
     if (!dynsigs.contains(dynsig)) {
@@ -736,7 +787,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     }
   }
 
-  private def addMissing(global: Global, pos: Position): Unit = {
+  protected def addMissing(global: Global, pos: Position): Unit = {
     val prev = missing.getOrElse(global, Set.empty)
     val position = NonReachablePosition(path = Paths.get(pos.source.getPath),
                                         line = pos.line + 1)
@@ -768,6 +819,7 @@ object Reach {
             loader: ClassLoader): Result = {
     val reachability = new Reach(config, entries, loader)
     reachability.process()
+    reachability.processDelayed()
     reachability.result()
   }
 

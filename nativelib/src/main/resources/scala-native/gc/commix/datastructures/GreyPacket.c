@@ -1,6 +1,6 @@
 #include "../Object.h"
 #include "GreyPacket.h"
-#include "../Log.h"
+#include "Log.h"
 #include <string.h>
 
 bool GreyPacket_Push(GreyPacket *packet, Stack_Type value) {

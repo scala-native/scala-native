@@ -55,32 +55,33 @@ object Build {
       val fclasspath = NativeLib.filterClasspath(config.classPath)
       val fconfig    = config.withClassPath(fclasspath)
       val is32       = config.is32
+      val workdir    = fconfig.workdir
 
-      val workdir = fconfig.workdir
+      // create optimized code and generate ll
       val entries = ScalaNative.entries(fconfig)
       val linked  = ScalaNative.link(fconfig, entries)
       ScalaNative.logLinked(fconfig, linked)
       val optimized = ScalaNative.optimize(fconfig, linked, is32)
-
-      // clean ll files
-      IO.getAll(workdir, "glob:**.ll").foreach(Files.delete)
-
       val generated = ScalaNative.codegen(fconfig, optimized, is32)
 
-      val nativelibs   = NativeLib.findNativeLibs(fconfig.classPath, workdir)
-      val nativelib    = NativeLib.findNativeLib(nativelibs)
-      val unpackedLibs = nativelibs.map(LLVM.unpackNativeCode(_))
-
       val objectPaths = config.logger.time("Compiling to native code") {
-        val nativelibConfig =
-          fconfig.withCompilerConfig(
-            _.withCompileOptions("-O2" +: fconfig.compileOptions))
-        val libObjectPaths =
-          LLVM.compileNativelibs(nativelibConfig,
-                                 linked,
-                                 unpackedLibs,
-                                 nativelib)
+        // find native libs
+        val nativelibs = NativeLib.findNativeLibs(fconfig.classPath, workdir)
+
+        // compile all libs
+        val libObjectPaths = nativelibs
+          .map { NativeLib.unpackNativeCode }
+          .map { destPath =>
+            val paths = NativeLib.findNativePaths(workdir, destPath)
+            val (projPaths, projConfig) =
+              Filter.filterNativelib(fconfig, linked, destPath, paths)
+            LLVM.compile(projConfig, projPaths)
+          }
+          .flatten
+
+        // compile generated ll
         val llObjectPaths = LLVM.compile(fconfig, generated)
+
         libObjectPaths ++ llObjectPaths
       }
 

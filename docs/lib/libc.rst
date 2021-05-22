@@ -3,18 +3,18 @@
 C Standard Library
 ==================
 
-Scala Native provides bindings for the core subset of the
+Scala Native provides bindings for a core subset of the
 `C standard library <https://en.cppreference.com/w/c/header>`_:
 
 ============== ==================================
 C Header       Scala Native Module
 ============== ==================================
-assert.h_      N/A
+assert.h_      N/A - *indicates binding not available*
 complex.h_     scala.scalanative.libc.complex_
 ctype.h_       scala.scalanative.libc.ctype_
 errno.h_       scala.scalanative.libc.errno_
 fenv.h_        N/A
-float.h_       N/A
+float.h_       scala.scalanative.libc.float_
 inttypes.h_    N/A
 iso646.h_      N/A
 limits.h_      N/A
@@ -73,6 +73,7 @@ wctype.h_      N/A
 .. _scala.scalanative.libc.complex: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/complex.scala
 .. _scala.scalanative.libc.ctype: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/ctype.scala
 .. _scala.scalanative.libc.errno: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/errno.scala
+.. _scala.scalanative.libc.float: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/float.scala
 .. _scala.scalanative.libc.math: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/math.scala
 .. _scala.scalanative.libc.stdio: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/stdio.scala
 .. _scala.scalanative.libc.stdlib: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/stdlib.scala

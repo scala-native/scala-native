@@ -20,6 +20,6 @@ object unwind {
   def get_reg(cursor: Ptr[Byte], reg: CInt, valp: Ptr[CSize]): CInt =
     extern
 
-  @name("scalanative_UNW_REG_IP")
+  @name("scalanative_unw_reg_ip")
   def UNW_REG_IP: CInt = extern
 }

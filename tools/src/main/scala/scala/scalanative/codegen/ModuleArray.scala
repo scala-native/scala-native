@@ -16,5 +16,5 @@ class ModuleArray(meta: Metadata) {
   }
   val size: Int = modules.size
   val value: Val =
-    Val.ArrayValue(Type.Ptr, Array.fill[Val](modules.length)(Val.Null))
+    Val.ArrayValue(Type.Ptr, Seq.fill[Val](modules.length)(Val.Null))
 }

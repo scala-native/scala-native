@@ -1,66 +1,66 @@
 #include <zlib.h>
 
-int scalanative_Z_NO_FLUSH() { return Z_NO_FLUSH; }
+int scalanative_z_no_flush() { return Z_NO_FLUSH; }
 
-int scalanative_Z_PARTIAL_FLUSH() { return Z_PARTIAL_FLUSH; }
+int scalanative_z_partial_flush() { return Z_PARTIAL_FLUSH; }
 
-int scalanative_Z_SYNC_FLUSH() { return Z_SYNC_FLUSH; }
+int scalanative_z_sync_flush() { return Z_SYNC_FLUSH; }
 
-int scalanative_Z_FULL_FLUSH() { return Z_FULL_FLUSH; }
+int scalanative_z_full_flush() { return Z_FULL_FLUSH; }
 
-int scalanative_Z_FINISH() { return Z_FINISH; }
+int scalanative_z_finish() { return Z_FINISH; }
 
-int scalanative_Z_BLOCK() { return Z_BLOCK; }
+int scalanative_z_block() { return Z_BLOCK; }
 
-int scalanative_Z_TREES() { return Z_TREES; }
+int scalanative_z_trees() { return Z_TREES; }
 
-int scalanative_Z_OK() { return Z_OK; }
+int scalanative_z_ok() { return Z_OK; }
 
-int scalanative_Z_STREAM_END() { return Z_STREAM_END; }
+int scalanative_z_stream_end() { return Z_STREAM_END; }
 
-int scalanative_Z_NEED_DICT() { return Z_NEED_DICT; }
+int scalanative_z_need_dict() { return Z_NEED_DICT; }
 
-int scalanative_Z_ERRNO() { return Z_ERRNO; }
+int scalanative_z_errno() { return Z_ERRNO; }
 
-int scalanative_Z_STREAM_ERROR() { return Z_STREAM_ERROR; }
+int scalanative_z_stream_error() { return Z_STREAM_ERROR; }
 
-int scalanative_Z_DATA_ERROR() { return Z_DATA_ERROR; }
+int scalanative_z_data_error() { return Z_DATA_ERROR; }
 
-int scalanative_Z_MEM_ERROR() { return Z_MEM_ERROR; }
+int scalanative_z_mem_error() { return Z_MEM_ERROR; }
 
-int scalanative_Z_BUF_ERROR() { return Z_BUF_ERROR; }
+int scalanative_z_buf_error() { return Z_BUF_ERROR; }
 
-int scalanative_Z_VERSION_ERROR() { return Z_VERSION_ERROR; }
+int scalanative_z_version_error() { return Z_VERSION_ERROR; }
 
-int scalanative_Z_NO_COMPRESSION() { return Z_NO_COMPRESSION; }
+int scalanative_z_no_compression() { return Z_NO_COMPRESSION; }
 
-int scalanative_Z_BEST_SPEED() { return Z_BEST_SPEED; }
+int scalanative_z_best_speed() { return Z_BEST_SPEED; }
 
-int scalanative_Z_BEST_COMPRESSION() { return Z_BEST_COMPRESSION; }
+int scalanative_z_best_compression() { return Z_BEST_COMPRESSION; }
 
-int scalanative_Z_DEFAULT_COMPRESSION() { return Z_DEFAULT_COMPRESSION; }
+int scalanative_z_default_compression() { return Z_DEFAULT_COMPRESSION; }
 
-int scalanative_Z_FILTERED() { return Z_FILTERED; }
+int scalanative_z_filtered() { return Z_FILTERED; }
 
-int scalanative_Z_HUFFMAN_ONLY() { return Z_HUFFMAN_ONLY; }
+int scalanative_z_huffman_only() { return Z_HUFFMAN_ONLY; }
 
-int scalanative_Z_RLE() { return Z_RLE; }
+int scalanative_z_rle() { return Z_RLE; }
 
-int scalanative_Z_FIXED() { return Z_FIXED; }
+int scalanative_z_fixed() { return Z_FIXED; }
 
-int scalanative_Z_DEFAULT_STRATEGY() { return Z_DEFAULT_STRATEGY; }
+int scalanative_z_default_strategy() { return Z_DEFAULT_STRATEGY; }
 
-int scalanative_Z_BINARY() { return Z_BINARY; }
+int scalanative_z_binary() { return Z_BINARY; }
 
-int scalanative_Z_TEXT() { return Z_TEXT; }
+int scalanative_z_text() { return Z_TEXT; }
 
-int scalanative_Z_ASCII() { return Z_ASCII; }
+int scalanative_z_ascii() { return Z_ASCII; }
 
-int scalanative_Z_UNKNOWN() { return Z_UNKNOWN; }
+int scalanative_z_unknown() { return Z_UNKNOWN; }
 
-int scalanative_Z_DEFLATED() { return Z_DEFLATED; }
+int scalanative_z_deflated() { return Z_DEFLATED; }
 
-int scalanative_Z_NULL() { return Z_NULL; }
+int scalanative_z_null() { return Z_NULL; }
 
 const char *scalanative_zlibVersion() { return zlibVersion(); }
 

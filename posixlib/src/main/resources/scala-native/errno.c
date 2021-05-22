@@ -1,6 +1,8 @@
 #include <errno.h>
 
 // Omitting EDOM EILSEQ and ERANGE since they are in clib
+// Includes errno compat with Windows errors, not all of them are actually
+// defined
 int scalanative_e2big() { return E2BIG; }
 
 int scalanative_eacces() { return EACCES; }
@@ -33,7 +35,13 @@ int scalanative_edeadlk() { return EDEADLK; }
 
 int scalanative_edestaddrreq() { return EDESTADDRREQ; }
 
-int scalanative_edquot() { return EDQUOT; }
+int scalanative_edquot() {
+#ifdef EDQUOT
+    return EDQUOT;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_eexist() { return EEXIST; }
 
@@ -65,7 +73,13 @@ int scalanative_emlink() { return EMLINK; }
 
 int scalanative_emsgsize() { return EMSGSIZE; }
 
-int scalanative_emultihup() { return EMULTIHOP; }
+int scalanative_emultihup() {
+#ifdef EMULTIHOP
+    return EMULTIHOP;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_enametoolong() { return ENAMETOOLONG; }
 
@@ -79,7 +93,13 @@ int scalanative_enfile() { return ENFILE; }
 
 int scalanative_enobufs() { return ENOBUFS; }
 
-int scalanative_enodata() { return ENODATA; }
+int scalanative_enodata() {
+#ifdef ENODATA
+    return ENODATA;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_enodev() { return ENODEV; }
 
@@ -99,9 +119,21 @@ int scalanative_enoprotoopt() { return ENOPROTOOPT; }
 
 int scalanative_enospc() { return ENOSPC; }
 
-int scalanative_enosr() { return ENOSR; }
+int scalanative_enosr() {
+#ifdef ENOSR
+    return ENOSR;
+#else
+    return 0;
+#endif
+}
 
-int scalanative_enostr() { return ENOSTR; }
+int scalanative_enostr() {
+#ifdef ENOSTR
+    return ENOSTR;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_enosys() { return ENOSYS; }
 
@@ -143,9 +175,21 @@ int scalanative_espipe() { return ESPIPE; }
 
 int scalanative_esrch() { return ESRCH; }
 
-int scalanative_estale() { return ESTALE; }
+int scalanative_estale() {
+#ifdef ESTALE
+    return ESTALE;
+#else
+    return 0;
+#endif
+}
 
-int scalanative_etime() { return ETIME; }
+int scalanative_etime() {
+#ifdef ENOTIME
+    return ETIME;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_etimedout() { return ETIMEDOUT; }
 

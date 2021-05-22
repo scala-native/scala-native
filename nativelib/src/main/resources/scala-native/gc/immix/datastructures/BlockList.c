@@ -1,7 +1,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "BlockList.h"
-#include "../Log.h"
+#include "Log.h"
 #include "../metadata/BlockMeta.h"
 
 BlockMeta *BlockList_getNextBlock(word_t *blockMetaStart,

@@ -4,7 +4,6 @@
 #include "Heap.h"
 #include "Stats.h"
 #include <stdatomic.h>
-#include <pthread.h>
 #include <stdbool.h>
 
 typedef struct {

@@ -8,7 +8,8 @@ import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.nir.serialization.{Tags => T}
 
-final class BinaryDeserializer(buffer: ByteBuffer) {
+final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
+
   import buffer._
 
   private[this] var lastPosition: Position = Position.NoPosition
@@ -18,7 +19,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
                                          Array[URI]) = {
     buffer.position(0)
 
-    val prelude = Prelude.readFrom(buffer)
+    val prelude = Prelude.readFrom(buffer, bufferName)
 
     val files = Array.fill(getInt())(new URI(getUTF8String()))
 
@@ -112,6 +113,8 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
       case T.SwitchInst      => Inst.Switch(getVal(), getNext(), getNexts())
       case T.ThrowInst       => Inst.Throw(getVal(), getNext())
       case T.UnreachableInst => Inst.Unreachable(getNext())
+      case T.LinktimeIfInst =>
+        Inst.LinktimeIf(getLinktimeCondition(), getNext(), getNext())
     }
   }
 
@@ -298,6 +301,21 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.VirtualVal    => Val.Virtual(getLong)
     case T.ClassOfVal    => Val.ClassOf(getGlobal())
     case T.SizeOfWordVal => Val.SizeOfWord
+  }
+
+  private def getLinktimeCondition(): LinktimeCondition = getInt() match {
+    case LinktimeCondition.Tag.SimpleCondition =>
+      LinktimeCondition.SimpleCondition(propertyName = getUTF8String(),
+                                        comparison = getComp(),
+                                        value = getVal())(getPosition())
+
+    case LinktimeCondition.Tag.ComplexCondition =>
+      LinktimeCondition.ComplexCondition(
+        op = getBin(),
+        left = getLinktimeCondition(),
+        right = getLinktimeCondition())(getPosition())
+
+    case n => util.unsupported(s"Unknown linktime condition tag: ${n}")
   }
 
   // Ported from Scala.js

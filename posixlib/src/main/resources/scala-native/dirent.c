@@ -1,3 +1,5 @@
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <dirent.h>
 #include <string.h>
 #include <stdio.h>
@@ -31,23 +33,22 @@ void scalanative_dirent_init(struct dirent *dirent,
     my_dirent->d_type = dirent->d_type;
 }
 
+// returns 0 in case of success, -1 in case of empty dir, errno otherwise
 int scalanative_readdir(DIR *dirp, struct scalanative_dirent *buf) {
     errno = 0;
     struct dirent *orig_buf = readdir(dirp);
-    if (orig_buf != NULL) {
+    int result = 0;
+
+    if (orig_buf != NULL)
         scalanative_dirent_init(orig_buf, buf);
-        return 0;
-    } else {
-        switch (errno) {
-        case EBADF:
-            return EBADF;
-        case EFAULT:
-            return EFAULT;
-        case EIO:
-            return EIO;
-        }
-        return -1;
-    }
+    else if (errno == 0)
+        result = -1;
+    else
+        result = errno;
+
+    return result;
 }
 
 int scalanative_closedir(DIR *dirp) { return closedir(dirp); }
+
+#endif // Unix or Mac OS

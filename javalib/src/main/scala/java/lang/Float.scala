@@ -222,8 +222,9 @@ object Float {
   @inline def intBitsToFloat(value: scala.Int): scala.Float =
     Intrinsics.castIntToFloat(value)
 
+  // Ported from Scala.js commit: 217f3a3 dated: 2021-02-19
   @inline def isFinite(f: scala.Float): scala.Boolean =
-    !isInfinite(f)
+    !isNaN(f) && !isInfinite(f)
 
   @inline def isInfinite(v: scala.Float): scala.Boolean =
     v == POSITIVE_INFINITY || v == NEGATIVE_INFINITY

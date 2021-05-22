@@ -7,7 +7,7 @@
 #include "headers/ObjectHeader.h"
 #include "datastructures/GreyPacket.h"
 #include "GCThread.h"
-#include <sched.h>
+#include "util/ThreadUtil.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -36,17 +36,17 @@ extern word_t **__stack_bottom;
 // empty packet and pushes the full one on the full packet list.
 // Marking is done when all the packets are empty and in the empty packet list.
 //
-// An object can have different number of outgoing pointers. Therefore, the number
-// of objects to check per packet varies and packets take different amount of
-// time to process. Marking cannot complete until the thread with the most work
-// is done. Very large packets (in terms of work) can slow the marking down.
-// To mitigate this we count the number of objects traced. If it goes
-// over a threshold (MARK_MAX_WORK_PER_PACKET) then we transfer half of the
-// remaining items to a packet and add that packet to the full packet list.
-// We can also get object arrays larger than most packets. The object arrays are
-// split into special fixed size (ARRAY_SPLIT_THRESHOLD) range packets which
-// are added to full packets. The remainder is processed immediately.
-// See `Marker_splitIncomingPacket` and `Marker_splitObjectArray`
+// An object can have different number of outgoing pointers. Therefore, the
+// number of objects to check per packet varies and packets take different
+// amount of time to process. Marking cannot complete until the thread with the
+// most work is done. Very large packets (in terms of work) can slow the marking
+// down. To mitigate this we count the number of objects traced. If it goes over
+// a threshold (MARK_MAX_WORK_PER_PACKET) then we transfer half of the remaining
+// items to a packet and add that packet to the full packet list. We can also
+// get object arrays larger than most packets. The object arrays are split into
+// special fixed size (ARRAY_SPLIT_THRESHOLD) range packets which are added to
+// full packets. The remainder is processed immediately. See
+// `Marker_splitIncomingPacket` and `Marker_splitObjectArray`
 //
 // Depending on the number of full packets in the list `Marker_MarkAndScale` can
 // start new threads. This is done on the master gc thread after each packet
@@ -208,7 +208,7 @@ int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
 }
 
 int Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
-                            GreyPacket **outHolder, Bytemap *bytemap) {
+                           GreyPacket **outHolder, Bytemap *bytemap) {
     ArrayHeader *arrayHeader = (ArrayHeader *)object;
     size_t length = arrayHeader->length;
     word_t **fields = (word_t **)(arrayHeader + 1);
@@ -225,7 +225,8 @@ int Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
     return objectsTraced;
 }
 
-static inline void Marker_splitIncomingPacket(Heap *heap, Stats *stats, GreyPacket *in) {
+static inline void Marker_splitIncomingPacket(Heap *heap, Stats *stats,
+                                              GreyPacket *in) {
     int toMove = in->size / 2;
     if (toMove > 0) {
         GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
@@ -358,7 +359,7 @@ void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
     while (!Marker_IsMarkDone(heap)) {
         Marker_Mark(heap, stats);
         if (!Marker_IsMarkDone(heap)) {
-            sched_yield();
+            thread_yield();
         }
     }
 }

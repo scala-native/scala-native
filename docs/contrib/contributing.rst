@@ -32,6 +32,75 @@ Scala Native is formatted via `./scripts/scalafmt` and `./scripts/clangfmt`.
 Make sure that all of your contributions are properly formatted before
 suggesting any changes.
 
+Formatting Scala via `scalafmt` downloads and runs the correct version and
+uses the `.scalafmt.conf` file at the root of the project. No configuration
+is needed.
+
+Formatting C and C++ code uses `clang-format` which requires LLVM library
+dependencies. For `clang-format` we use the same version as the minimum
+version of LLVM and `clang`. This may not be the version of `clang` used
+for development as most developers will use a newer version. In order
+to make this easier we have a environment variable, `CLANG_FORMAT_PATH`
+which can be set to the older version. Another option is to make sure the
+correct version of `clang-format` is available in your path. Refer to
+:ref:`setup` for the minimum version to install and use.
+
+The following shows examples for two common operating systems. You may add
+the environment variable to your shell startup file for convenience:
+
+**macOS**
+
+.. code-block:: shell
+
+    $ export CLANG_FORMAT_PATH=/usr/local/opt/llvm@6/bin/clang-format
+
+*Note:* Example for `brew`. Other package managers may use different locations.
+
+**Ubuntu**
+
+.. code-block:: shell
+
+    $ export CLANG_FORMAT_PATH=/usr/lib/llvm-6.0/bin/clang-format
+
+The script `./scripts/clangfmt` will use the `.clang-format` file
+at the root of the project for settings used in formatting.
+
+C / POSIX Libraries
+-------------------
+
+Both the `clib` and `posixlib` have coding styles that are unique
+compared to normal Scala coding style. Normal C code is written in
+lowercase snake case for function names and uppercase snake case for
+macro or pre-processor constants. Here is an example for Scala:
+
+.. code-block:: scala
+
+    @extern
+    object cpio {
+      @name("scalanative_c_issock")
+      def C_ISSOCK: CUnsignedShort = extern
+
+      @name("scalanative_c_islnk")
+      def C_ISLNK: CUnsignedShort = extern
+
+The following is the corresponding C file:
+
+.. code-block:: C
+
+    #include <cpio.h>
+
+    unsigned short scalanative_c_issock() { return C_ISSOCK; }
+    unsigned short scalanative_c_islnk() { return C_ISLNK; }
+
+Since C has a flat namespace most libraries have prefixes and
+in general cannot use the same symbol names so there is no
+need to add additional prefixes. For Scala Native we use
+`scalanative_` as a prefix for functions.
+
+This is the reason C++ added namespaces so that library designer
+could have a bit more freedom. The developer, however, still has to
+de-conflict duplicate symbols by using the defined namespaces.
+
 General workflow
 ----------------
 

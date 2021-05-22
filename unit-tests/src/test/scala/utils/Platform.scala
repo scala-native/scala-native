@@ -17,4 +17,6 @@ object Platform {
   final val hasCompliantArrayIndexOutOfBounds = true
 
   final val hasCompliantAsInstanceOfs = true
+
+  final val isFreeBSD = System.getProperty("os.name").equals("FreeBSD")
 }

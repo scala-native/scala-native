@@ -2,7 +2,7 @@
 package java.lang
 
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import java.util.Locale
 
 /** Additional tests for java.lang.String that require `java.util.Locale`. */
@@ -12,7 +12,6 @@ class StringTestExt {
   val Turkish    = new Locale("tr")
   val Azeri      = new Locale("Az") // randomly test the lowercase normalization
 
-  @Ignore("Handling of special, non-locale-dependant cases not implemented")
   @Test def testToLowerCaseWithLocale(): Unit = {
     assertEquals("title", "TITLE".toLowerCase(English))
     assertEquals("title", "TITLE".toLowerCase(Lithuanian))
@@ -115,10 +114,13 @@ class StringTestExt {
     assertEquals(
       "İÍÌĨI İ\u0307\u0301İ\u0307\u0300İ\u0307\u0303İ\u0307",
       "iíìĩı i\u0307\u0301i\u0307\u0300i\u0307\u0303i\u0307".toUpperCase(Azeri))
-    assertEquals(
-      "IÍÌĨI I\u0301I\u0300I\u0303I",
-      "iíìĩı i\u0307\u0301i\u0307\u0300i\u0307\u0303i\u0307".toUpperCase(
-        Lithuanian))
+    assertEquals("IÍÌĨI I\u0301I\u0300I\u0303I",
+                 "iíìĩı i\u0307\u0301i\u0307\u0300i\u0307\u0303i\u0307"
+                   .toUpperCase(Lithuanian))
+    assertEquals("\u0307\u0301I",
+                 "iíìĩı i\u0307\u0301i".substring(7).toUpperCase(Lithuanian))
+    assertEquals("I\u0301I",
+                 "iíìĩı i\u0307\u0301i".substring(6).toUpperCase(Lithuanian))
   }
 
   @Test def testToUpperCaseWithLocale_CornerCasesFor_Lithuanian(): Unit = {

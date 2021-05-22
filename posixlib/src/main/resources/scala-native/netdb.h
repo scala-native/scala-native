@@ -1,4 +1,9 @@
+#ifdef _WIN32
+#include <WinSock2.h>
+#define strdup(arg1) _strdup(arg1);
+#else
 #include <netdb.h>
+#endif
 #include "sys/socket_conversions.h"
 
 #ifndef __SYS_SOCKET_H

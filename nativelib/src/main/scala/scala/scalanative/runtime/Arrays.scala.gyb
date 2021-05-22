@@ -90,7 +90,7 @@ object Array {
            len: Int): Unit = {
     if (from == null || to == null) {
       throw new NullPointerException()
-    } else if (getRawType(from) != getRawType(to)) {
+    } else if (from.getClass != to.getClass) {
       throw new ArrayStoreException("Invalid array copy.")
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
@@ -135,7 +135,7 @@ object Array {
               len: Int): Int = {
     if (left == null || right == null) {
       throw new NullPointerException()
-    } else if (getRawType(left) != getRawType(right)) {
+    } else if (left.getClass != right.getClass) {
       throw new ArrayStoreException("Invalid array copy.")
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
@@ -204,9 +204,9 @@ final class ${T}Array private () extends Array[${T}] {
     }
 
   @inline override def clone(): ${T}Array = {
-    val arrty   = toRawType(classOf[${T}Array])
+    val arrcls  = classOf[${T}Array]
     val arrsize = new UWord(addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(length))))
-    val arr     = ${alloc}(arrty, arrsize)
+    val arr     = ${alloc}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
@@ -216,11 +216,11 @@ final class ${T}Array private () extends Array[${T}] {
 object ${T}Array {
 
   @inline def alloc(length: Int): ${T}Array = {
-    val arrty   = toRawType(classOf[${T}Array])
+    val arrcls  = classOf[${T}Array]
     val arrsize = new UWord(addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(length))))
-    val arr     = ${alloc}(arrty, arrsize)
-    storeInt(elemRawPtr(arr, ${sizePtr}), length)
-    storeInt(elemRawPtr(arr, addRawWords(${sizePtr}, castIntToRawWord(4))), ${sizeT}.toInt)
+    val arr     = ${alloc}(arrcls, arrsize)
+    storeInt(elemRawPtr(arr, castIntToRawWord(8)), length)
+    storeInt(elemRawPtr(arr, castIntToRawWord(12)), ${sizeT}.toInt)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 

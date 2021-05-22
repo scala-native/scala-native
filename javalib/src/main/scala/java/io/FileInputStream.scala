@@ -5,7 +5,7 @@ import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._, stdlib._, stdio._, string._
 import scalanative.nio.fs.UnixException
-import scalanative.posix.{fcntl, unistd}, unistd._
+import scalanative.posix.unistd, unistd.lseek
 import scalanative.runtime
 
 class FileInputStream(fd: FileDescriptor, file: Option[File])
@@ -23,7 +23,7 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
   }
 
   override def close(): Unit =
-    fcntl.close(fd.fd)
+    unistd.close(fd.fd)
 
   override protected def finalize(): Unit =
     close()

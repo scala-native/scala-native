@@ -5,20 +5,23 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include "../Constants.h"
-#include "../GCTypes.h"
+#include "GCTypes.h"
 #include "BlockRange.h"
-#include "../Log.h"
-#include "../headers/ObjectHeader.h"
+#include "Log.h"
+#include "headers/ObjectHeader.h"
 
 typedef Object *Stack_Type;
 
+// No support for 3-byte alignment in MSVC
+// https://docs.microsoft.com/en-us/cpp/c-language/padding-and-alignment-of-structure-members?redirectedfrom=MSDN&view=msvc-160
+// Would result in size of 16 bytes on Windows and 8 on Unix
 typedef union {
     struct __attribute__((packed)) {
         uint32_t idx : BLOCK_COUNT_BITS;
         // Size is kept in the reference it is in sync with the grey list.
-        // Otherwise the updates can get reordered causing the number temporarily
-        // appearing larger than it is which will trigger Marker_IsMarkDone
-        // prematurely.
+        // Otherwise the updates can get reordered causing the number
+        // temporarily appearing larger than it is which will trigger
+        // Marker_IsMarkDone prematurely.
         uint32_t size : BLOCK_COUNT_BITS;
         uint16_t timesPoped; // used to avoid ABA problems when popping
     } sep;

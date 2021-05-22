@@ -1,30 +1,57 @@
 #include <stdlib.h>
+#include "MemoryMap.h"
+#include "MemoryInfo.h"
+#include "Parsing.h"
+
 #include <sys/mman.h>
 #include <string.h>
 
-// Darwin defines MAP_ANON instead of MAP_ANONYMOUS
-#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
-#define MAP_ANONYMOUS MAP_ANON
-#endif
-
 // Dummy GC that maps chunks of 4GB and allocates but never frees.
-
-// Map 4GB
-#define CHUNK (4 * 1024 * 1024 * 1024L)
-// Allow read and write
-#define DUMMY_GC_PROT (PROT_READ | PROT_WRITE)
-// Map private anonymous memory, and prevent from reserving swap
-#define DUMMY_GC_FLAGS (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
-// Map anonymous memory (not a file)
-#define DUMMY_GC_FD -1
-#define DUMMY_GC_FD_OFFSET 0
 
 void *current = 0;
 void *end = 0;
 
+static size_t DEFAULT_CHUNK;
+static size_t PREALLOC_CHUNK;
+static size_t CHUNK;
+static size_t TO_NORMAL_MMAP = 1L;
+static size_t DO_PREALLOC = 0L; // No Preallocation.
+
+void Prealloc_Or_Default() {
+
+    if (TO_NORMAL_MMAP == 1L) { // Check if we have prealloc env varible
+                                // or execute default mmap settings
+        size_t memorySize = getMemorySize();
+
+        DEFAULT_CHUNK = // Default Maximum allocation Map 4GB
+            Choose_IF(Parse_Env_Or_Default_String("GC_MAXIMUM_HEAP_SIZE", "4G"),
+                      Less_OR_Equal, memorySize);
+
+        PREALLOC_CHUNK = // Preallocation
+            Choose_IF(Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L),
+                      Less_OR_Equal, DEFAULT_CHUNK);
+
+        if (PREALLOC_CHUNK == 0L) { // no prealloc settings.
+            CHUNK = DEFAULT_CHUNK;
+            TO_NORMAL_MMAP = 0L;
+
+        } else { // config prealloc settings and the flag to reset the
+                 // mmap settings the next iteration.
+            CHUNK = PREALLOC_CHUNK;
+            DO_PREALLOC = 1L;    // Do Preallocate.
+            TO_NORMAL_MMAP = 2L; // Return settings to normal on next iteration.
+        }
+    } else if (TO_NORMAL_MMAP == 2L) {
+        DO_PREALLOC = 0L;
+        CHUNK = DEFAULT_CHUNK;
+        TO_NORMAL_MMAP = 0L; // break the cycle and return to normal mmap alloc
+    } else {
+    }
+}
+
 void scalanative_init() {
-    current = mmap(NULL, CHUNK, DUMMY_GC_PROT, DUMMY_GC_FLAGS, DUMMY_GC_FD,
-                   DUMMY_GC_FD_OFFSET);
+    Prealloc_Or_Default();
+    current = memoryMapPrealloc(CHUNK, DO_PREALLOC);
     end = current + CHUNK;
 }
 

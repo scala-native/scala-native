@@ -253,6 +253,7 @@ class StringTest {
     assertTrue(
       splitVec(leadingPlusTrailing, splitSep, 4) == Vector("", noSep, ""))
   }
+
   @Test def split(): Unit = {
     splitTest("a")
     splitTest(".", splitExpr = Some("\\."))
@@ -270,6 +271,7 @@ class StringTest {
   def testEncoding(charset: String, expectedInts: Seq[Int]): Unit = {
     testEncoding(Charset.forName(charset), expectedInts)
   }
+
   def testEncoding(charset: Charset, expectedInts: Seq[Int]): Unit = {
     // Try to break getBytes, test with difficult characters.
     // \u00DF Greek lowercase beta; expect 2 output bytes
@@ -410,6 +412,112 @@ class StringTest {
         .toUpperCase equals "SCALA NATIVE")
   }
 
+  @Test def toUpperCaseSpecialCasing(): Unit = {
+    // Generated based on Unconditional mappings in [SpecialCasing.txt](https://unicode.org/Public/UNIDATA/SpecialCasing.txt)
+    assertEquals("\u0053\u0053", "\u00DF".toUpperCase)       // ß to SS
+    assertEquals("\u02BC\u004E", "\u0149".toUpperCase)       // ŉ to ʼN
+    assertEquals("\u004A\u030C", "\u01F0".toUpperCase)       // ǰ to J̌
+    assertEquals("\u0399\u0308\u0301", "\u0390".toUpperCase) // ΐ to Ϊ́
+    assertEquals("\u03A5\u0308\u0301", "\u03B0".toUpperCase) // ΰ to Ϋ́
+    assertEquals("\u0535\u0552", "\u0587".toUpperCase)       // և to ԵՒ
+    assertEquals("\u0048\u0331", "\u1E96".toUpperCase)       // ẖ to H̱
+    assertEquals("\u0054\u0308", "\u1E97".toUpperCase)       // ẗ to T̈
+    assertEquals("\u0057\u030A", "\u1E98".toUpperCase)       // ẘ to W̊
+    assertEquals("\u0059\u030A", "\u1E99".toUpperCase)       // ẙ to Y̊
+    assertEquals("\u0041\u02BE", "\u1E9A".toUpperCase)       // ẚ to Aʾ
+    assertEquals("\u03A5\u0313", "\u1F50".toUpperCase)       // ὐ to Υ̓
+    assertEquals("\u03A5\u0313\u0300", "\u1F52".toUpperCase) // ὒ to Υ̓̀
+    assertEquals("\u03A5\u0313\u0301", "\u1F54".toUpperCase) // ὔ to Υ̓́
+    assertEquals("\u03A5\u0313\u0342", "\u1F56".toUpperCase) // ὖ to Υ̓͂
+    assertEquals("\u1F08\u0399", "\u1F80".toUpperCase)       // ᾀ to ἈΙ
+    assertEquals("\u1F09\u0399", "\u1F81".toUpperCase)       // ᾁ to ἉΙ
+    assertEquals("\u1F0A\u0399", "\u1F82".toUpperCase)       // ᾂ to ἊΙ
+    assertEquals("\u1F0B\u0399", "\u1F83".toUpperCase)       // ᾃ to ἋΙ
+    assertEquals("\u1F0C\u0399", "\u1F84".toUpperCase)       // ᾄ to ἌΙ
+    assertEquals("\u1F0D\u0399", "\u1F85".toUpperCase)       // ᾅ to ἍΙ
+    assertEquals("\u1F0E\u0399", "\u1F86".toUpperCase)       // ᾆ to ἎΙ
+    assertEquals("\u1F0F\u0399", "\u1F87".toUpperCase)       // ᾇ to ἏΙ
+    assertEquals("\u1F08\u0399", "\u1F88".toUpperCase)       // ᾈ to ἈΙ
+    assertEquals("\u1F09\u0399", "\u1F89".toUpperCase)       // ᾉ to ἉΙ
+    assertEquals("\u1F0A\u0399", "\u1F8A".toUpperCase)       // ᾊ to ἊΙ
+    assertEquals("\u1F0B\u0399", "\u1F8B".toUpperCase)       // ᾋ to ἋΙ
+    assertEquals("\u1F0C\u0399", "\u1F8C".toUpperCase)       // ᾌ to ἌΙ
+    assertEquals("\u1F0D\u0399", "\u1F8D".toUpperCase)       // ᾍ to ἍΙ
+    assertEquals("\u1F0E\u0399", "\u1F8E".toUpperCase)       // ᾎ to ἎΙ
+    assertEquals("\u1F0F\u0399", "\u1F8F".toUpperCase)       // ᾏ to ἏΙ
+    assertEquals("\u1F28\u0399", "\u1F90".toUpperCase)       // ᾐ to ἨΙ
+    assertEquals("\u1F29\u0399", "\u1F91".toUpperCase)       // ᾑ to ἩΙ
+    assertEquals("\u1F2A\u0399", "\u1F92".toUpperCase)       // ᾒ to ἪΙ
+    assertEquals("\u1F2B\u0399", "\u1F93".toUpperCase)       // ᾓ to ἫΙ
+    assertEquals("\u1F2C\u0399", "\u1F94".toUpperCase)       // ᾔ to ἬΙ
+    assertEquals("\u1F2D\u0399", "\u1F95".toUpperCase)       // ᾕ to ἭΙ
+    assertEquals("\u1F2E\u0399", "\u1F96".toUpperCase)       // ᾖ to ἮΙ
+    assertEquals("\u1F2F\u0399", "\u1F97".toUpperCase)       // ᾗ to ἯΙ
+    assertEquals("\u1F28\u0399", "\u1F98".toUpperCase)       // ᾘ to ἨΙ
+    assertEquals("\u1F29\u0399", "\u1F99".toUpperCase)       // ᾙ to ἩΙ
+    assertEquals("\u1F2A\u0399", "\u1F9A".toUpperCase)       // ᾚ to ἪΙ
+    assertEquals("\u1F2B\u0399", "\u1F9B".toUpperCase)       // ᾛ to ἫΙ
+    assertEquals("\u1F2C\u0399", "\u1F9C".toUpperCase)       // ᾜ to ἬΙ
+    assertEquals("\u1F2D\u0399", "\u1F9D".toUpperCase)       // ᾝ to ἭΙ
+    assertEquals("\u1F2E\u0399", "\u1F9E".toUpperCase)       // ᾞ to ἮΙ
+    assertEquals("\u1F2F\u0399", "\u1F9F".toUpperCase)       // ᾟ to ἯΙ
+    assertEquals("\u1F68\u0399", "\u1FA0".toUpperCase)       // ᾠ to ὨΙ
+    assertEquals("\u1F69\u0399", "\u1FA1".toUpperCase)       // ᾡ to ὩΙ
+    assertEquals("\u1F6A\u0399", "\u1FA2".toUpperCase)       // ᾢ to ὪΙ
+    assertEquals("\u1F6B\u0399", "\u1FA3".toUpperCase)       // ᾣ to ὫΙ
+    assertEquals("\u1F6C\u0399", "\u1FA4".toUpperCase)       // ᾤ to ὬΙ
+    assertEquals("\u1F6D\u0399", "\u1FA5".toUpperCase)       // ᾥ to ὭΙ
+    assertEquals("\u1F6E\u0399", "\u1FA6".toUpperCase)       // ᾦ to ὮΙ
+    assertEquals("\u1F6F\u0399", "\u1FA7".toUpperCase)       // ᾧ to ὯΙ
+    assertEquals("\u1F68\u0399", "\u1FA8".toUpperCase)       // ᾨ to ὨΙ
+    assertEquals("\u1F69\u0399", "\u1FA9".toUpperCase)       // ᾩ to ὩΙ
+    assertEquals("\u1F6A\u0399", "\u1FAA".toUpperCase)       // ᾪ to ὪΙ
+    assertEquals("\u1F6B\u0399", "\u1FAB".toUpperCase)       // ᾫ to ὫΙ
+    assertEquals("\u1F6C\u0399", "\u1FAC".toUpperCase)       // ᾬ to ὬΙ
+    assertEquals("\u1F6D\u0399", "\u1FAD".toUpperCase)       // ᾭ to ὭΙ
+    assertEquals("\u1F6E\u0399", "\u1FAE".toUpperCase)       // ᾮ to ὮΙ
+    assertEquals("\u1F6F\u0399", "\u1FAF".toUpperCase)       // ᾯ to ὯΙ
+    assertEquals("\u1FBA\u0399", "\u1FB2".toUpperCase)       // ᾲ to ᾺΙ
+    assertEquals("\u0391\u0399", "\u1FB3".toUpperCase)       // ᾳ to ΑΙ
+    assertEquals("\u0386\u0399", "\u1FB4".toUpperCase)       // ᾴ to ΆΙ
+    assertEquals("\u0391\u0342", "\u1FB6".toUpperCase)       // ᾶ to Α͂
+    assertEquals("\u0391\u0342\u0399", "\u1FB7".toUpperCase) // ᾷ to Α͂Ι
+    assertEquals("\u0391\u0399", "\u1FBC".toUpperCase)       // ᾼ to ΑΙ
+    assertEquals("\u1FCA\u0399", "\u1FC2".toUpperCase)       // ῂ to ῊΙ
+    assertEquals("\u0397\u0399", "\u1FC3".toUpperCase)       // ῃ to ΗΙ
+    assertEquals("\u0389\u0399", "\u1FC4".toUpperCase)       // ῄ to ΉΙ
+    assertEquals("\u0397\u0342", "\u1FC6".toUpperCase)       // ῆ to Η͂
+    assertEquals("\u0397\u0342\u0399", "\u1FC7".toUpperCase) // ῇ to Η͂Ι
+    assertEquals("\u0397\u0399", "\u1FCC".toUpperCase)       // ῌ to ΗΙ
+    assertEquals("\u0399\u0308\u0300", "\u1FD2".toUpperCase) // ῒ to Ϊ̀
+    assertEquals("\u0399\u0308\u0301", "\u1FD3".toUpperCase) // ΐ to Ϊ́
+    assertEquals("\u0399\u0342", "\u1FD6".toUpperCase)       // ῖ to Ι͂
+    assertEquals("\u0399\u0308\u0342", "\u1FD7".toUpperCase) // ῗ to Ϊ͂
+    assertEquals("\u03A5\u0308\u0300", "\u1FE2".toUpperCase) // ῢ to Ϋ̀
+    assertEquals("\u03A5\u0308\u0301", "\u1FE3".toUpperCase) // ΰ to Ϋ́
+    assertEquals("\u03A1\u0313", "\u1FE4".toUpperCase)       // ῤ to Ρ̓
+    assertEquals("\u03A5\u0342", "\u1FE6".toUpperCase)       // ῦ to Υ͂
+    assertEquals("\u03A5\u0308\u0342", "\u1FE7".toUpperCase) // ῧ to Ϋ͂
+    assertEquals("\u1FFA\u0399", "\u1FF2".toUpperCase)       // ῲ to ῺΙ
+    assertEquals("\u03A9\u0399", "\u1FF3".toUpperCase)       // ῳ to ΩΙ
+    assertEquals("\u038F\u0399", "\u1FF4".toUpperCase)       // ῴ to ΏΙ
+    assertEquals("\u03A9\u0342", "\u1FF6".toUpperCase)       // ῶ to Ω͂
+    assertEquals("\u03A9\u0342\u0399", "\u1FF7".toUpperCase) // ῷ to Ω͂Ι
+    assertEquals("\u03A9\u0399", "\u1FFC".toUpperCase)       // ῼ to ΩΙ
+    assertEquals("\u0046\u0046", "\uFB00".toUpperCase)       // ﬀ to FF
+    assertEquals("\u0046\u0049", "\uFB01".toUpperCase)       // ﬁ to FI
+    assertEquals("\u0046\u004C", "\uFB02".toUpperCase)       // ﬂ to FL
+    assertEquals("\u0046\u0046\u0049", "\uFB03".toUpperCase) // ﬃ to FFI
+    assertEquals("\u0046\u0046\u004C", "\uFB04".toUpperCase) // ﬄ to FFL
+    assertEquals("\u0053\u0054", "\uFB05".toUpperCase)       // ﬅ to ST
+    assertEquals("\u0053\u0054", "\uFB06".toUpperCase)       // ﬆ to ST
+    assertEquals("\u0544\u0546", "\uFB13".toUpperCase)       // ﬓ to ՄՆ
+    assertEquals("\u0544\u0535", "\uFB14".toUpperCase)       // ﬔ to ՄԵ
+    assertEquals("\u0544\u053B", "\uFB15".toUpperCase)       // ﬕ to ՄԻ
+    assertEquals("\u054E\u0546", "\uFB16".toUpperCase)       // ﬖ to ՎՆ
+    assertEquals("\u0544\u053D", "\uFB17".toUpperCase)       // ﬗ to ՄԽ
+  }
+
   @Test def toLowerCase(): Unit = {
     assertTrue("".toLowerCase() equals "")
     assertTrue("Hello".toLowerCase() equals "hello")
@@ -423,5 +531,45 @@ class StringTest {
         .subSequence(4, 16)
         .toString
         .toLowerCase equals "scala native")
+  }
+
+  @Test def toLowerCaseSpecialCasing(): Unit = {
+    assertEquals("\u0069\u0307", "\u0130".toLowerCase) // İ to i̇
+    assertEquals("iíìĩi\u0307", "IÍÌĨİ".toLowerCase())
+
+    /* Greek lower letter sigma exists in two forms:
+     * \u03c3 'σ' - is standard lower case variant
+     * \u03c2 'ς' - is used when it's final cased character in given word
+     */
+    assertEquals("σ", "Σ".toLowerCase())
+    assertEquals("σς", "ΣΣ".toLowerCase())
+    assertEquals("dς", "DΣ".toLowerCase())
+    assertEquals("dσς aσς bσc", "DΣΣ AΣΣ BΣC".toLowerCase())
+    assertEquals(
+      "dσς a\uD804\uDC00σ\uD804\uDC00σ\uD804\uDC00 bσc",
+      "DΣΣ A\uD804\uDC00Σ\uD804\uDC00Σ\uD804\uDC00 BΣC".toLowerCase())
+    assertEquals("dσσa", "DΣΣA".toLowerCase())
+    assertEquals("dσς", "DΣΣA".substring(0, 3).toLowerCase())
+    // \u02B9 is not cased character
+    assertEquals("dσ\u02B9\u02B9ς\u02B9\u02B9",
+                 "DΣ\u02B9\u02B9Σ\u02B9\u02B9".toLowerCase)
+    assertEquals("dσ\u02B9\u02B9σ\u02B9\u02B9z",
+                 "DΣ\u02B9\u02B9Σ\u02B9\u02B9Z".toLowerCase)
+    assertEquals("dσ\u02B9\u02B9ς\u02B9\u02B9",
+                 "DΣ\u02B9\u02B9Σ\u02B9\u02B9Z".substring(0, 7).toLowerCase)
+
+    /* From Unicode 13.0.0 reference, chapter 13.3, description to table 3-17.
+     * The sets of case-ignorable and cased characters are not disjoint: for example, they both contain U+0345 ypogegrammeni.
+     * Thus, the Before condition is not satisfied if C is preceded by only U+0345,
+     * but would be satisfied by the sequence <capital-alpha, ypogegrammeni>.
+     * Similarly, the After condition is satisfied if C is only followed by ypogegrammeni,
+     * but would not satisfied by the sequence <ypogegrammeni, capital-alpha>.
+     */
+    assertEquals("\u0345σ", "\u0345Σ".toLowerCase())
+    assertEquals("\u03B1\u0345ς", "\u0391\u0345Σ".toLowerCase())
+    assertEquals("\u03B1\u0345ς\u0345", "\u0391\u0345Σ\u0345".toLowerCase())
+    assertEquals("\u03B1\u0345σ\u0345\u03B1",
+                 "\u0391\u0345Σ\u0345\u0391".toLowerCase())
+
   }
 }

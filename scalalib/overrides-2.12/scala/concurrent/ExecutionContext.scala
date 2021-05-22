@@ -39,7 +39,7 @@ import scala.annotation.implicitNotFound
  * `scala.concurrent.ExecutionContext.Implicits.global`.
  * The recommended approach is to add `(implicit ec: ExecutionContext)` to methods,
  * or class constructor parameters, which need an `ExecutionContext`.
- * 
+ *
  * Then locally import a specific `ExecutionContext` in one place for the entire
  * application or module, passing it implicitly to individual methods.
  * Alternatively define a local implicit val with the required `ExecutionContext`.
@@ -84,21 +84,21 @@ trait ExecutionContext {
   def reportFailure(@deprecatedName('t) cause: Throwable): Unit
 
   /** Prepares for the execution of a task. Returns the prepared
-     *  execution context. The recommended implementation of
-     *  `prepare` is to return `this`.
-     *
-     *  This method should no longer be overridden or called. It was
-     *  originally expected that `prepare` would be called by
-     *  all libraries that consume ExecutionContexts, in order to
-     *  capture thread local context. However, this usage has proven
-     *  difficult to implement in practice and instead it is
-     *  now better to avoid using `prepare` entirely.
-     *
-     *  Instead, if an `ExecutionContext` needs to capture thread
-     *  local context, it should capture that context when it is
-     *  constructed, so that it doesn't need any additional
-     *  preparation later.
-     */
+   *  execution context. The recommended implementation of
+   *  `prepare` is to return `this`.
+   *
+   *  This method should no longer be overridden or called. It was
+   *  originally expected that `prepare` would be called by
+   *  all libraries that consume ExecutionContexts, in order to
+   *  capture thread local context. However, this usage has proven
+   *  difficult to implement in practice and instead it is
+   *  now better to avoid using `prepare` entirely.
+   *
+   *  Instead, if an `ExecutionContext` needs to capture thread
+   *  local context, it should capture that context when it is
+   *  constructed, so that it doesn't need any additional
+   *  preparation later.
+   */
   @deprecated("preparation of ExecutionContexts will be removed", "2.12.0")
   def prepare(): ExecutionContext = this
 }
@@ -138,7 +138,7 @@ object ExecutionContext {
    *
    * @return the global `ExecutionContext`
    */
-  def global: ExecutionContext = Implicits.global
+  def global: ExecutionContextExecutor = scala.scalanative.runtime.ExecutionContext.global
 
   object Implicits {
     /**
@@ -149,8 +149,7 @@ object ExecutionContext {
      * the thread pool uses a target number of worker threads equal to the number of
      * [[https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#availableProcessors-- available processors]].
      */
-    implicit lazy val global: ExecutionContext =
-      scala.scalanative.runtime.ExecutionContext.global
+    implicit lazy val global: ExecutionContext = ExecutionContext.global
   }
 
   /** Creates an `ExecutionContext` from the given `ExecutorService`.
@@ -199,5 +198,3 @@ object ExecutionContext {
    */
   def defaultReporter: Throwable => Unit = _.printStackTrace()
 }
-
-

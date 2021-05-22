@@ -112,6 +112,9 @@ object ControlFlow {
           case Inst.If(_, next1, next2) =>
             edge(node, block(next1.name), next1)
             edge(node, block(next2.name), next2)
+          case Inst.LinktimeIf(_, next1, next2) =>
+            edge(node, block(next1.name), next1)
+            edge(node, block(next2.name), next2)
           case Inst.Switch(_, default, cases) =>
             edge(node, block(default.name), default)
             cases.foreach { case_ => edge(node, block(case_.name), case_) }
