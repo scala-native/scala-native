@@ -183,40 +183,58 @@ object SocketHelpers {
       retArray.toArray
     }
 
+  private def ipStringAddrToSockaddr(
+      ip: String,
+      isV6: Boolean,
+      addr: Ptr[sockaddr])(implicit z: Zone): Boolean = {
+
+    val src = toCString(ip)
+
+    addr.sa_family = { if (isV6) AF_INET6 else AF_INET }.toUShort
+
+    val dst =
+      if (isV6) {
+        addr
+          .asInstanceOf[Ptr[sockaddr_in6]]
+          .sin6_addr
+          .toPtr
+          .asInstanceOf[Ptr[Byte]]
+      } else {
+        addr
+          .asInstanceOf[Ptr[sockaddr_in]]
+          .sin_addr
+          .toPtr
+          .asInstanceOf[Ptr[Byte]]
+      }
+
+    // See error reporting note at bottom of sole caller ipToHost().
+    inet_pton(addr.sa_family.toInt, src, dst) == 1
+  }
+
   def ipToHost(ip: String, isV6: Boolean): Option[String] =
     Zone { implicit z =>
       val host    = stackalloc[CChar](MAXHOSTNAMELEN)
       val service = null.asInstanceOf[Ptr[CChar]]
 
-      val status =
-        if (isV6) {
-          val addr6 = stackalloc[sockaddr_in6]
-          addr6.sin6_family = AF_INET6.toUShort
-          inet_pton(AF_INET6,
-                    toCString(ip),
-                    addr6.sin6_addr.toPtr.asInstanceOf[Ptr[Byte]])
-          getnameinfo(addr6.asInstanceOf[Ptr[sockaddr]],
-                      sizeof[sockaddr_in6].toUInt,
-                      host,
-                      MAXHOSTNAMELEN,
-                      service,
-                      0.toUInt, // 'service' is never used; do not retrieve
-                      0)
-        } else {
-          val addr4 = stackalloc[sockaddr_in]
-          addr4.sin_family = AF_INET.toUShort
-          inet_pton(AF_INET,
-                    toCString(ip),
-                    addr4.sin_addr.toPtr.asInstanceOf[Ptr[Byte]])
-          getnameinfo(addr4.asInstanceOf[Ptr[sockaddr]],
-                      sizeof[sockaddr_in].toUInt,
-                      host,
-                      MAXHOSTNAMELEN,
-                      service,
-                      0.toUInt, // 'service' is never used; do not retrieve
-                      0)
-        }
+      val addr = stackalloc[sockaddr]
 
-      if (status == 0) Some(fromCString(host)) else None
+      if (!ipStringAddrToSockaddr(ip, isV6, addr)) {
+        None
+      } else {
+        val status =
+          getnameinfo(addr,
+                      sizeof[sockaddr].toUInt,
+                      host,
+                      MAXHOSTNAMELEN,
+                      service,
+                      0.toUInt, // 'service' is never used; do not retrieve
+                      0)
+
+        // Sole caller, Java 8 InetAddress#getHostName(),
+        // does not allow/specify Exceptions, so better error reporting
+        // is not feasible.
+
+        if (status == 0) Some(fromCString(host)) else None
+      }
     }
 }
