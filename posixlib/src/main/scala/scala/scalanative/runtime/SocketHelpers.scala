@@ -186,7 +186,8 @@ object SocketHelpers {
   def ipToHost(ip: String, isV6: Boolean): Option[String] =
     Zone { implicit z =>
       val host    = stackalloc[CChar](MAXHOSTNAMELEN)
-      val service = stackalloc[CChar](20.toUInt)
+      val service = null.asInstanceOf[Ptr[CChar]]
+
       val status =
         if (isV6) {
           val addr6 = stackalloc[sockaddr_in6]
@@ -199,7 +200,7 @@ object SocketHelpers {
                       host,
                       MAXHOSTNAMELEN,
                       service,
-                      20.toUInt,
+                      0.toUInt, // 'service' is never used; do not retrieve
                       0)
         } else {
           val addr4 = stackalloc[sockaddr_in]
@@ -210,11 +211,12 @@ object SocketHelpers {
           getnameinfo(addr4.asInstanceOf[Ptr[sockaddr]],
                       sizeof[sockaddr_in].toUInt,
                       host,
-                      1024.toUInt,
+                      MAXHOSTNAMELEN,
                       service,
-                      20.toUInt,
+                      0.toUInt, // 'service' is never used; do not retrieve
                       0)
         }
+
       if (status == 0) Some(fromCString(host)) else None
     }
 }
