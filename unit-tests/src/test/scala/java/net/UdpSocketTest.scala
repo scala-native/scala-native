@@ -73,7 +73,7 @@ class UdpSocketTest {
                                 0,
                                 outAddr,
                                 sizeof[sockaddr].toUInt)
-        assertEquals("sendto", outData.size, nBytesSent)
+        assertEquals("sendto", outData.size.toWord, nBytesSent)
 
         // There is a "pick your poison" design choice here.
         // inSocket is set O_NONBLOCK to eliminate the possibility
