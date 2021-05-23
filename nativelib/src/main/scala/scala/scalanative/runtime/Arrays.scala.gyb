@@ -30,7 +30,7 @@ import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
 
 % sizePtr = 'sizeOfWord'
-% sizeHeader = 'addRawWords(castIntToRawWord(8), sizeOfWord)'
+% sizeHeader = 'addRawWords(sizeOfWord, castIntToRawWord(8))'
 
 sealed abstract class Array[T]
     extends java.io.Serializable
@@ -219,8 +219,8 @@ object ${T}Array {
     val arrcls  = classOf[${T}Array]
     val arrsize = new UWord(addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(length))))
     val arr     = ${alloc}(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, castIntToRawWord(8)), length)
-    storeInt(elemRawPtr(arr, castIntToRawWord(12)), ${sizeT}.toInt)
+    storeInt(elemRawPtr(arr, ${sizePtr}), length)
+    storeInt(elemRawPtr(arr, addRawWords(${sizePtr}, castIntToRawWord(4))), ${sizeT}.toInt)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 
