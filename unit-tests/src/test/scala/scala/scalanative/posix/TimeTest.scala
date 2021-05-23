@@ -129,7 +129,7 @@ class TimeTest {
       // This test may no longer be needed or need updating.
       assertEquals("Review test! sizeof[Scala Native struct tm] changed",
                    sizeof[tm],
-                   36.toULong)
+                   36.toUWord)
 
       val ttPtr = alloc[time_t]
       !ttPtr = (1490986064740L / 1000L).toWord // Fri Mar 31 14:47:44 EDT 2017
@@ -274,7 +274,7 @@ class TimeTest {
       // This test may no longer be needed or need updating.
       assertEquals("Review test! sizeof[Scala Native struct tm] changed",
                    sizeof[tm],
-                   36.toULong)
+                   36.toUWord)
 
       val tmBufSize = 56.toUWord
       val tmBuf     = alloc[Byte](tmBufSize)
