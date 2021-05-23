@@ -17,12 +17,13 @@ int scalanative_unwind_step(void *cursor) {
 }
 
 int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
-                                     unw_word_t *offset) {
-    return unw_get_proc_name((unw_cursor_t *)cursor, buffer, length, offset);
+                                     void *offset) {
+    return unw_get_proc_name((unw_cursor_t *)cursor, buffer, length,
+                             (unw_word_t *)offset);
 }
 
-int scalanative_unwind_get_reg(void *cursor, int regnum, unw_word_t *valp) {
-    return unw_get_reg((unw_cursor_t *)cursor, regnum, valp);
+int scalanative_unwind_get_reg(void *cursor, int regnum, void *valp) {
+    return unw_get_reg((unw_cursor_t *)cursor, regnum, (unw_word_t *)valp);
 }
 
 int scalanative_unw_reg_ip() { return UNW_REG_IP; }
