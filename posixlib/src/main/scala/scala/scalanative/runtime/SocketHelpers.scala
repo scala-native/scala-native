@@ -213,9 +213,7 @@ object SocketHelpers {
 
   def ipToHost(ip: String, isV6: Boolean): Option[String] =
     Zone { implicit z =>
-      val host    = stackalloc[CChar](MAXHOSTNAMELEN)
-      val service = null.asInstanceOf[Ptr[CChar]]
-
+      val host = stackalloc[CChar](MAXHOSTNAMELEN)
       val addr = stackalloc[sockaddr]
 
       if (!ipStringAddrToSockaddr(ip, isV6, addr)) {
@@ -226,8 +224,8 @@ object SocketHelpers {
                       sizeof[sockaddr].toUInt,
                       host,
                       MAXHOSTNAMELEN,
-                      service,
-                      0.toUInt, // 'service' is never used; do not retrieve
+                      null.asInstanceOf[Ptr[CChar]],
+                      0.toUInt,
                       0)
 
         // Sole caller, Java 8 InetAddress#getHostName(),
