@@ -218,6 +218,7 @@ object SocketHelpers {
 
       ipStringAddrToSockaddr(ip, isV6, addr) match {
         case None => None
+
         case Some(sockadr) =>
           val status =
             getnameinfo(sockadr,
