@@ -7,6 +7,7 @@ import scalanative.util.unreachable
 
 /** Our subtyping can be described by a following diagram:
  *
+ *  {{{
  *    value kind        ref kind         special kind
  *    |     \           |    \
  *    |     |           |      \
@@ -18,6 +19,7 @@ import scalanative.util.unreachable
  *    |     |       /
  *    |     |   /
  *    nothing
+ *  }}}
  *
  *  Primitive and aggregate types don't participate in
  *  subtyping and they have to be explicitly boxed to become
