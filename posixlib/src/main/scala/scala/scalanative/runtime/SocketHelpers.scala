@@ -186,7 +186,7 @@ object SocketHelpers {
   private def ipStringAddrToSockaddr(
       ip: String,
       isV6: Boolean,
-      addr: Ptr[sockaddr])(implicit z: Zone): Boolean = {
+      addr: Ptr[sockaddr])(implicit z: Zone): Option[Ptr[sockaddr]] = {
 
     val src = toCString(ip)
 
@@ -208,7 +208,7 @@ object SocketHelpers {
       }
 
     // See error reporting note at bottom of sole caller ipToHost().
-    inet_pton(addr.sa_family.toInt, src, dst) == 1
+    if (inet_pton(addr.sa_family.toInt, src, dst) != 1) None else Some(addr)
   }
 
   def ipToHost(ip: String, isV6: Boolean): Option[String] =
@@ -216,23 +216,23 @@ object SocketHelpers {
       val host = stackalloc[CChar](MAXHOSTNAMELEN)
       val addr = stackalloc[sockaddr]
 
-      if (!ipStringAddrToSockaddr(ip, isV6, addr)) {
-        None
-      } else {
-        val status =
-          getnameinfo(addr,
-                      sizeof[sockaddr].toUInt,
-                      host,
-                      MAXHOSTNAMELEN,
-                      null.asInstanceOf[Ptr[CChar]],
-                      0.toUInt,
-                      0)
+      ipStringAddrToSockaddr(ip, isV6, addr) match {
+        case None => None
+        case Some(sockadr) =>
+          val status =
+            getnameinfo(sockadr,
+                        sizeof[sockaddr].toUInt,
+                        host,
+                        MAXHOSTNAMELEN,
+                        null.asInstanceOf[Ptr[CChar]],
+                        0.toUInt,
+                        0)
 
-        // Sole caller, Java 8 InetAddress#getHostName(),
-        // does not allow/specify Exceptions, so better error reporting
-        // is not feasible.
+          // Sole caller, Java 8 InetAddress#getHostName(),
+          // does not allow/specify Exceptions, so better error reporting
+          // is not feasible.
 
-        if (status == 0) Some(fromCString(host)) else None
+          if (status == 0) Some(fromCString(host)) else None
       }
     }
 }
