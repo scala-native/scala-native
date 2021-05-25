@@ -13,9 +13,7 @@ private[scalanative] object LLVM {
     Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
 
   private val asanSettings =
-    Seq(
-      /*"-fsanitize=address",
-        "-fno-omit-frame-pointer"*/ )
+    Seq("-fsanitize=address")
 
   /** Object file extension: ".o" */
   val oExt = ".o"
