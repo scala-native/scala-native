@@ -183,15 +183,11 @@ object SocketHelpers {
       retArray.toArray
     }
 
-  private def ipStringAddrToSockaddr(
-      ip: String,
-      isV6: Boolean,
-      addr: Ptr[sockaddr])(implicit z: Zone): Option[Ptr[sockaddr]] = {
-
-    val src = toCString(ip)
-
+  private def tailorSockaddr(ip: String, isV6: Boolean, addr: Ptr[sockaddr])(
+      implicit z: Zone): Boolean = {
     addr.sa_family = { if (isV6) AF_INET6 else AF_INET }.toUShort
 
+    val src = toCString(ip)
     val dst =
       if (isV6) {
         addr
@@ -207,33 +203,33 @@ object SocketHelpers {
           .asInstanceOf[Ptr[Byte]]
       }
 
-    // See error reporting note at bottom of sole caller ipToHost().
-    if (inet_pton(addr.sa_family.toInt, src, dst) != 1) None else Some(addr)
+    // Return true iff output argument addr is now fit for use by intended
+    // sole caller, ipToHost().
+    inet_pton(addr.sa_family.toInt, src, dst) == 1
   }
 
   def ipToHost(ip: String, isV6: Boolean): Option[String] =
     Zone { implicit z =>
+      // Sole caller, Java 8 InetAddress#getHostName(),
+      // does not allow/specify Exceptions, so better error reporting
+      // of C function failures here and in tailorSockaddr() is not feasible.
+
       val host = stackalloc[CChar](MAXHOSTNAMELEN)
       val addr = stackalloc[sockaddr]
 
-      ipStringAddrToSockaddr(ip, isV6, addr) match {
-        case None => None
+      if (!tailorSockaddr(ip, isV6, addr)) {
+        None
+      } else {
+        val status =
+          getnameinfo(addr,
+                      sizeof[sockaddr].toUInt,
+                      host,
+                      MAXHOSTNAMELEN,
+                      null, // 'service' is not used; do not retrieve
+                      0.toUInt,
+                      0)
 
-        case Some(sockadr) =>
-          val status =
-            getnameinfo(sockadr,
-                        sizeof[sockaddr].toUInt,
-                        host,
-                        MAXHOSTNAMELEN,
-                        null.asInstanceOf[Ptr[CChar]],
-                        0.toUInt,
-                        0)
-
-          // Sole caller, Java 8 InetAddress#getHostName(),
-          // does not allow/specify Exceptions, so better error reporting
-          // is not feasible.
-
-          if (status == 0) Some(fromCString(host)) else None
+        if (status == 0) Some(fromCString(host)) else None
       }
     }
 }
