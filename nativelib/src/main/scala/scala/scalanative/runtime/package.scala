@@ -49,11 +49,6 @@ package object runtime {
 
   /** Called by the generated code in case of incorrect class cast. */
   @noinline def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
-    if (is32) {
-      throw new java.lang.ClassCastException(
-        "unknown cannot be cast to unknown")
-    }
-
     // 64-bit systems align pointer to 8 bytes
     val fromName = loadObject(
       elemRawPtr(from, castIntToRawWord(if (is32) 12 else 16)))

@@ -34,7 +34,7 @@ private[lang] object StackTrace {
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    /*val cursor  = stackalloc[scala.Byte](2048.toUWord)
+    val cursor  = stackalloc[scala.Byte](2048.toUWord)
     val context = stackalloc[scala.Byte](2048.toUWord)
     val ip      = stackalloc[CUnsignedLong]
     var buffer  = mutable.ArrayBuffer.empty[StackTraceElement]
@@ -46,8 +46,7 @@ private[lang] object StackTrace {
       buffer += cachedStackTraceElement(cursor, !ip)
     }
 
-    buffer.toArray*/
-    Array.empty
+    buffer.toArray
   }
 }
 

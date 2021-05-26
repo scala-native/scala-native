@@ -1,10 +1,10 @@
 ARG TARGET_DOCKER_PLATFORM
 
-FROM ubuntu:20.04
+FROM ubuntu:18.04
 
 RUN apt-get update && apt-get install -y qemu-user-static
 
-FROM $TARGET_DOCKER_PLATFORM/ubuntu:20.04
+FROM $TARGET_DOCKER_PLATFORM/ubuntu:18.04
 
 ARG HOST_ARCHITECTURE
 
@@ -38,15 +38,15 @@ RUN \
   dpkg -i $SBT_INSTALL_FILE && \
   rm $SBT_INSTALL_FILE
 
-RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y clang-11 zlib1g-dev git autoconf make libtool gdb
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y clang-10 zlib1g-dev git autoconf make libtool gdb
 
-ENV CC "clang-11"
-ENV CXX "clang++-11"
+ENV CC "clang-10"
+ENV CXX "clang++-10"
 
 RUN git clone --depth=1 git://github.com/ivmai/bdwgc.git && \
     cd bdwgc && \
     ./autogen.sh && \
-    ./configure --enable-gc-assertions CFLAGS_EXTRA="-fsanitize=address" && \
+    ./configure --enable-gc-assertions && \
     make check && \
     make install
 
@@ -56,7 +56,7 @@ ENV LC_ALL "C.UTF-8"
 
 ENV LANG "C.UTF-8"
 
-ENV PATH=/usr/lib/llvm-11/bin:${PATH}
+ENV PATH=/usr/lib/llvm-10/bin:${PATH}
 
 RUN useradd -ms /bin/bash scala-native
 

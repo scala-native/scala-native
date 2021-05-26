@@ -13,7 +13,7 @@ private[scalanative] object LLVM {
     Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
 
   private val asanSettings =
-    Seq("-fsanitize=address")
+    Seq("-fsanitize=address", "-fno-omit-frame-pointer")
 
   /** Object file extension: ".o" */
   val oExt = ".o"
@@ -92,7 +92,7 @@ private[scalanative] object LLVM {
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
     val flags =
-      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ asanSettings ++ target(
+      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ target(
         config)
     val paths   = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
