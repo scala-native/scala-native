@@ -46,7 +46,7 @@ ENV CXX "clang++-11"
 RUN git clone --depth=1 git://github.com/ivmai/bdwgc.git && \
     cd bdwgc && \
     ./autogen.sh && \
-    ./configure --enable-gc-assertions CFLAGS_EXTRA="-fsanitize=address -fno-omit-frame-pointer" && \
+    ./configure --enable-gc-assertions && \
     make check && \
     make install
 
