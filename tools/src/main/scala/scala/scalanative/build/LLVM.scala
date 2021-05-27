@@ -52,7 +52,7 @@ private[scalanative] object LLVM {
         val flags = opt(config) +: stdflag ++: "-fvisibility=hidden" +:
           config.compileOptions
         val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++ unwindSettings ++ target(
+          Seq(compiler) ++ flto(config) ++ flags ++ unwindSettings ++ asanSettings ++ target(
             config) ++
             Seq("-c", inpath, "-o", outpath)
 
@@ -92,7 +92,7 @@ private[scalanative] object LLVM {
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
     val flags =
-      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ target(
+      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ asanSettings ++ target(
         config)
     val paths   = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)

@@ -138,7 +138,7 @@ class TimeTest {
       // Scala Native tm, so the linux 56 byte form is necessary here.
       val tmBufCount = 7.toUWord
 
-      val tmBuf = alloc[Ptr[Byte]](tmBufCount)
+      val tmBuf = alloc[scala.Long](tmBufCount).asInstanceOf[Ptr[Ptr[Byte]]]
 
       val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
