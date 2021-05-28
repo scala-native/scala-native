@@ -77,10 +77,9 @@ class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
 object FileOutputStream {
   private def fileDescriptor(file: File, append: Boolean) =
     Zone { implicit z =>
-      val fileName = toCString(file.getPath())
       if (isWindows) {
-        val handle = CreateFileA(
-          fileName,
+        val handle = CreateFileW(
+          toCWideStringUTF16LE(file.getPath()),
           desiredAccess = FILE_GENERIC_WRITE,
           shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
           securityAttributes = null,
