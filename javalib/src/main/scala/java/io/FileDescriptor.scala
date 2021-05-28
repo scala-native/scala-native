@@ -14,31 +14,35 @@ import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
 import scala.scalanative.windows.{ConsoleApiExt, DWord}
 
-final class FileDescriptor(fileHandle: FileHandle, readOnly: Boolean = false) {
+final class FileDescriptor private[java] (fileHandle: FileHandle,
+                                          readOnly: Boolean) {
+  def this() = {
+    this(
+      fileHandle =
+        if (isWindows) FileHandle(INVALID_HANDLE_VALUE)
+        else FileHandle(-1),
+      readOnly = true
+    )
+  }
 
-  def this() =
-    this {
-      if (isWindows) FileHandle(INVALID_HANDLE_VALUE)
-      else FileHandle(-1)
-    }
+  // ScalaNative private construcors
+  private[java] def this(fd: Int) =
+    this(FileHandle(fd), readOnly = false)
+
+  private[java] def this(fd: Int, readOnly: Boolean) =
+    this(FileHandle(fd), readOnly)
 
   override def toString(): String =
-    s"FileDescriptor(${fd}, readonly=$readOnly"
+    s"FileDescriptor($fd, readOnly=$readOnly)"
 
   /* Unix file descriptor underlying value */
   @alwaysinline
   private[java] def fd: Int = fileHandle.toInt
 
   /* Windows file handler underlying value */
-  private[java] lazy val handle: Handle =
+  @alwaysinline
+  private[java] def handle: Handle =
     fromRawPtr[Byte](Intrinsics.castLongToRawPtr(fileHandle))
-
-  // ScalaNative private construcors
-  private[java] def this(fd: Int) =
-    this(FileHandle(fd))
-
-  private[java] def this(fd: Int, readOnly: Boolean) =
-    this(FileHandle(fd), readOnly)
 
   def sync(): Unit = {
     def throwSyncFailed(): Unit = {
@@ -86,8 +90,8 @@ final class FileDescriptor(fileHandle: FileHandle, readOnly: Boolean = false) {
 object FileDescriptor {
   // Universal type allowing to store references to both Unix integer based,
   // and Windows pointer based file handles
-  type FileHandle = Long
-  object FileHandle {
+  private[java] type FileHandle = Long
+  private[java] object FileHandle {
     def apply(handle: Handle): FileHandle = handle.toLong
     def apply(unixFd: Int): FileHandle    = unixFd.toLong
   }
@@ -96,21 +100,21 @@ object FileDescriptor {
     val handle =
       if (isWindows) FileHandle(ConsoleApiExt.stdIn)
       else FileHandle(unistd.STDIN_FILENO)
-    new FileDescriptor(handle)
+    new FileDescriptor(handle, readOnly = false)
   }
 
   val out: FileDescriptor = {
     val handle =
       if (isWindows) FileHandle(ConsoleApiExt.stdOut)
       else FileHandle(unistd.STDOUT_FILENO)
-    new FileDescriptor(handle)
+    new FileDescriptor(handle, readOnly = false)
   }
 
   val err: FileDescriptor = {
     val handle =
       if (isWindows) FileHandle(ConsoleApiExt.stdErr)
       else FileHandle(unistd.STDERR_FILENO)
-    new FileDescriptor(handle)
+    new FileDescriptor(handle, readOnly = false)
   }
 
   private[io] def openReadOnly(file: File): FileDescriptor =

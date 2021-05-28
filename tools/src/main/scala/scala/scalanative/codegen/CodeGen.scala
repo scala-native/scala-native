@@ -55,8 +55,7 @@ object CodeGen {
           .map {
             case (id, defns) =>
               val sorted = defns.sortBy(_.name.show)
-              Impl(config, env, sorted)
-                .gen(id.toString, workdir)
+              Impl(config, env, sorted).gen(id.toString, workdir)
           }
           .toSeq
           .seq
@@ -66,8 +65,7 @@ object CodeGen {
       // Clang's LTO is not available.
       def single(): Seq[Path] = {
         val sorted = assembly.sortBy(_.name.show)
-        Impl(config, env, sorted)
-          .gen(id = "out", workdir) :: Nil
+        Impl(config, env, sorted).gen(id = "out", workdir) :: Nil
       }
 
       (config.mode, config.LTO) match {

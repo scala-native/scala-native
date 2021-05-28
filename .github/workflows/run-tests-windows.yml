@@ -122,7 +122,7 @@ jobs:
 
       - name: Run sandbox
         # Set heap limits manually, there seams to be bug in detection of avaiable memory
-        # which results in undefined beviour at runtime 
+        # which results in undefined behavior at runtime
         env:
           SCALANATIVE_MIN_SIZE: 128M
           SCALANATIVE_MAX_SIZE: 1G

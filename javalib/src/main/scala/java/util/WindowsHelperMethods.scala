@@ -1,11 +1,11 @@
-package scala.scalanative.windows.util
+package java.util
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.stackalloc
 import scala.scalanative.windows.HandleApi.Handle
 import scala.scalanative.windows.ProcessThreadsApi._
-import scala.scalanative.windows._
+import scala.scalanative.windows.{DWord, HandleApi}
 
-object HelperMethods {
+private[java] object WindowsHelperMethods {
   def withUserToken[T](desiredAccess: DWord)(fn: Handle => T): T = {
     val tokenHandle = stackalloc[Handle]
     def getProcessToken =

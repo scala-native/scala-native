@@ -8,9 +8,9 @@ package object windows {
   type DWord     = UInt   //uint_32
   type DWordLong = ULong  //uint_64
   /* Actually large integers are union types with size of 64-bits
-    When compiler does not support large integer types it allows to store
-    low and hight parts of number in its structure fields. In all other cases
-    its recommended to use its QuadPart field directly.
+   * When the compiler does not support large integer types it allows to store
+   * low and high parts of number in its structure fields. In all other cases
+   * its recommended to use its QuadPart field directly.
    */
   type LargeInteger  = Long
   type ULargeInteger = ULong

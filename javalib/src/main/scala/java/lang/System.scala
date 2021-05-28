@@ -2,7 +2,7 @@ package java.lang
 
 import java.io._
 import java.nio.charset.StandardCharsets
-import java.util.{Collections, HashMap, Map, Properties}
+import java.util.{Collections, HashMap, Map, Properties, WindowsHelperMethods}
 import scala.scalanative.posix.pwdOps._
 import scala.scalanative.posix.{pwd, unistd}
 import scala.scalanative.meta.LinktimeInfo.isWindows
@@ -14,7 +14,6 @@ import scala.scalanative.windows.FileApiExt.MAX_PATH
 import scala.scalanative.windows.UserEnvApi._
 import scala.scalanative.windows.WinBaseApi._
 import scala.scalanative.windows.ProcessEnv._
-import scala.scalanative.windows.util.{HelperMethods => WinHelperMethods}
 import scala.scalanative.windows.winnt.AccessToken
 
 final class System private ()
@@ -148,7 +147,7 @@ object System {
 
   private def getUserHomeDirectory(): Option[String] = {
     if (isWindows) {
-      WinHelperMethods.withUserToken(AccessToken.TOKEN_QUERY) { token =>
+      WindowsHelperMethods.withUserToken(AccessToken.TOKEN_QUERY) { token =>
         val bufSize = stackalloc[UInt]
         !bufSize = 256.toUInt
         val buf = stackalloc[CChar16](!bufSize)

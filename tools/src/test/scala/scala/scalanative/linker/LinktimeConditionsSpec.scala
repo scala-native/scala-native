@@ -51,6 +51,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
                        |}""".stripMargin
 
   case class Entry[T](propertyName: String, value: T, lintimeValue: Val)
+
   val defaultEntries = Seq(
     Entry("int", 42, Val.Int(42)),
     Entry("bool", false, Val.False),

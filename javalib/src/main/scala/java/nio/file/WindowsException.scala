@@ -12,8 +12,8 @@ import scala.scalanative.windows.ErrorCodes._
 import scala.scalanative.windows.WinBaseApi._
 import scala.scalanative.windows.WinBaseApiExt._
 
-trait WindowsException extends Exception
-object WindowsException {
+private[java] trait WindowsException extends Exception
+private[java] object WindowsException {
   def apply(msg: String): WindowsException = {
     val err = GetLastError()
     new IOException(s"$msg - ${errorMessage(err)} ($err)") with WindowsException

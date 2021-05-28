@@ -232,9 +232,8 @@ package object unsafe {
       .asInstanceOf[Ptr[CChar16]]
   }
 
-  private def toCWideStringImpl(str: String,
-                                charset: Charset,
-                                charSize: => CInt)(implicit z: Zone) = {
+  private def toCWideStringImpl(str: String, charset: Charset, charSize: CInt)(
+      implicit z: Zone) = {
     if (str == null) {
       null
     } else {
@@ -258,26 +257,25 @@ package object unsafe {
     }
   }
 
-  /** Convert a CWideString to a String using given charset, assuemes platform default wchar_t size */
+  /** Convert a CWideString to a String using given charset, assumes platform default wchar_t size */
   @alwaysinline
   def fromCWideString(cwstr: CWideString, charset: Charset): String =
     fromCWideStringImpl(bytes = cwstr.asInstanceOf[Ptr[Byte]],
                         charset = charset,
                         charSize = WideCharSize)
 
-  /** Convert a CWideString based on Ptr[CChar16] to a String using given charse, which defaults to UTF-16LE used in Windows */
+  /** Convert a CWideString based on Ptr[CChar16] to a String using given charset */
   @alwaysinline
-  def fromCWideString(cwstr: Ptr[CChar16],
-                      charset: Charset = StandardCharsets.UTF_16LE)(
+  def fromCWideString(cwstr: Ptr[CChar16], charset: Charset)(
       implicit d: DummyImplicit): String = {
     fromCWideStringImpl(bytes = cwstr.asInstanceOf[Ptr[Byte]],
                         charset = charset,
                         charSize = 2)
   }
 
-  def fromCWideStringImpl(bytes: Ptr[Byte],
-                          charset: => Charset,
-                          charSize: => Int): String = {
+  private def fromCWideStringImpl(bytes: Ptr[Byte],
+                                  charset: Charset,
+                                  charSize: Int): String = {
     if (bytes == null) {
       null
     } else {

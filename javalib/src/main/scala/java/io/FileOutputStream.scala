@@ -93,7 +93,7 @@ object FileOutputStream {
         if (handle == INVALID_HANDLE_VALUE) {
           throw new FileNotFoundException(s"$file (${GetLastError()})")
         }
-        new FileDescriptor(FileDescriptor.FileHandle(handle))
+        new FileDescriptor(FileDescriptor.FileHandle(handle), readOnly = false)
       } else {
         import scala.scalanative.posix.sys.stat._
         import scala.scalanative.posix.fcntl._
@@ -104,7 +104,7 @@ object FileOutputStream {
           throw new FileNotFoundException(
             s"$file (${fromCString(string.strerror(errno.errno))})")
         else
-          new FileDescriptor(fd)
+          new FileDescriptor(fd, readOnly = false)
       }
     }
 }

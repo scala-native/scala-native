@@ -39,12 +39,15 @@ private[scalanative] object LLVM {
       // LL is generated so always rebuild
       if (isLl || !Files.exists(objPath)) {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag =
-          if (isLl) None
+        val stdflag = {
+          if (isLl) Seq()
           else if (isCpp) {
-            if (config.targetsWindows) Some("-std=c++14")
-            else Some("-std=c++11")
-          } else Some("-std=gnu11")
+            // C++14 or newer standard is needed to compile code using Windows API
+            // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+            if (config.targetsWindows) Seq("-std=c++14")
+            else Seq("-std=c++11")
+          } else Seq("-std=gnu11")
+        }
         val flags = opt(config) +: stdflag ++: "-fvisibility=hidden" +:
           config.compileOptions
         val compilec =
