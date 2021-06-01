@@ -119,13 +119,9 @@ size_t scalanative_strftime(char *buf, size_t maxsize, const char *format,
 
 char **scalanative_tzname() { return tzname; }
 
-long scalanative_timezone() {
-    return _timezone;
-}
+long scalanative_timezone() { return _timezone; }
 
-int scalanative_daylight() {
-    return _daylight;
-}
+int scalanative_daylight() { return _daylight; }
 
 // Windows compat
 void tzset() { return _tzset(); }

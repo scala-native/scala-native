@@ -54,8 +54,9 @@ private[scalanative] object LLVM {
           if (config.targetsWindows) Seq("-g")
           else Nil
         }
-        val flags = opt(config) +: stdflag ++: platformFlags ++: "-fvisibility=hidden" +:
-          config.compileOptions
+        val flags =
+          opt(config) +: stdflag ++: platformFlags ++: "-fvisibility=hidden" +:
+            config.compileOptions
         val compilec =
           Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
             Seq("-c", inpath, "-o", outpath)
