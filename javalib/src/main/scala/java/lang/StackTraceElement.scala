@@ -53,6 +53,9 @@ private[lang] object StackTraceElement {
     var methodName = ""
 
     def readSymbol(): Boolean = {
+      // On Windows symbol names are different then on Unix platforms.
+      // Due to differences in implementation between WinDbg and libUnwind used
+      // on each platform, symbols on Windows do not contain '_' prefix.
       if (!isWindows() && read() != '_') {
         false
       } else if (read() != 'S') {
