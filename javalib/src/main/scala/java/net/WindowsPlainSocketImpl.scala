@@ -25,7 +25,10 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
     if (socket == InvalidSocket) {
       throw new IOException(s"Couldn't create a socket: ${WSAGetLastError()}")
     }
-    fd = new FileDescriptor(FileDescriptor.FileHandle(socket))
+    fd = new FileDescriptor(
+      FileDescriptor.FileHandle(socket),
+      readOnly = false
+    )
   }
 
   protected def tryPollOnConnect(timeout: Int): Unit = {

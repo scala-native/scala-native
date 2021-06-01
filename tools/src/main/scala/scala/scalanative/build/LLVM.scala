@@ -50,7 +50,11 @@ private[scalanative] object LLVM {
             else Seq("-std=c++11")
           } else Seq("-std=gnu11")
         }
-        val flags = opt(config) +: stdflag ++: "-fvisibility=hidden" +:
+        val platformFlags = {
+          if (config.targetsWindows) Seq("-g")
+          else Nil
+        }
+        val flags = opt(config) +: stdflag ++: platformFlags ++: "-fvisibility=hidden" +:
           config.compileOptions
         val compilec =
           Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
@@ -103,7 +107,7 @@ private[scalanative] object LLVM {
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
     val flags = {
       val platformFlags =
-        if (config.targetsWindows) Seq()
+        if (config.targetsWindows) Seq("-g")
         else Seq("-rdynamic")
       flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ target(config)
     }
