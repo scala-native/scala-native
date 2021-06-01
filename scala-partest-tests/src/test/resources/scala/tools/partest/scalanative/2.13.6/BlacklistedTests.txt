@@ -74,9 +74,6 @@ run/t2318.scala
 # Tries to catch java.lang.StackOverflowError
 run/t6154.scala
 
-# Tries to catch java.lang.OutOfMemoryError
-run/t7880.scala
-
 # Taking too much time >60sec
 run/t10594.scala
 run/t3989.scala
@@ -440,7 +437,6 @@ run/t9102.scala
 run/t720.scala
 run/t9408.scala
 run/t10527.scala
-run/t10650
 run/trait-default-specialize.scala
 run/lazy-locals-2.scala
 run/t5294.scala
@@ -571,7 +567,6 @@ run/t8575b.scala
 run/t8575c.scala
 run/t8944c.scala
 run/t9535.scala
-run/t9437a
 run/t9814.scala
 run/t10009.scala
 run/t10075.scala
@@ -804,7 +799,6 @@ run/settings-parse.scala
 run/sm-interpolator.scala
 run/t1501.scala
 run/t1500.scala
-run/sammy_java8.scala
 run/t1618.scala
 run/t2464
 run/t4072.scala
@@ -820,11 +814,9 @@ run/t6745-2.scala
 run/t7096.scala
 run/t7271.scala
 run/t7337.scala
-run/t7398.scala
 run/t7569.scala
 run/t7852.scala
 run/t7817-tree-gen.scala
-run/t7825.scala
 run/extend-global.scala
 
 # partest.DirectTest
@@ -898,9 +890,6 @@ run/StubErrorReturnTypePolyFunction.scala
 run/StubErrorSubclasses.scala
 run/StubErrorTypeclass.scala
 run/StubErrorTypeDef.scala
-
-# partest.CompilerTest
-run/t8852a.scala
 
 # partest.ASMConverters
 run/t9403

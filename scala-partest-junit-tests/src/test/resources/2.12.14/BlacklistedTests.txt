@@ -38,6 +38,7 @@ scala/reflect/internal/PrintersTest.scala
 scala/reflect/internal/ScopeTest.scala
 scala/reflect/internal/TreeGenTest.scala
 scala/reflect/internal/TypesTest.scala
+scala/reflect/runtime/ReflectionUtilsShowTest.scala
 scala/reflect/runtime/ThreadSafetyTest.scala
 scala/tools/cmd/CommandLineParserTest.scala
 scala/tools/nsc/Build.scala
@@ -67,6 +68,7 @@ scala/tools/nsc/backend/jvm/analysis/NullnessAnalyzerTest.scala
 scala/tools/nsc/backend/jvm/analysis/ProdConsAnalyzerTest.scala
 scala/tools/nsc/backend/jvm/opt/AnalyzerTest.scala
 scala/tools/nsc/backend/jvm/opt/BoxUnboxTest.scala
+scala/tools/nsc/backend/jvm/opt/BoxUnboxAndInlineTest.scala
 scala/tools/nsc/backend/jvm/opt/BTypesFromClassfileTest.scala
 scala/tools/nsc/backend/jvm/opt/CallGraphTest.scala
 scala/tools/nsc/backend/jvm/opt/ClosureOptimizerTest.scala

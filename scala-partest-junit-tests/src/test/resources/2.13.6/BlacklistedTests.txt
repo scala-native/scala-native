@@ -19,6 +19,7 @@ scala/collection/immutable/SortedMapTest.scala
 scala/collection/immutable/SortedSetTest.scala
 scala/collection/immutable/TreeMapTest.scala
 scala/collection/immutable/TreeSetTest.scala
+scala/collection/mutable/ArrayBufferTest.scala
 scala/lang/annotations/BytecodeTest.scala
 scala/lang/annotations/RunTest.scala
 scala/lang/traits/BytecodeTest.scala
@@ -42,6 +43,7 @@ scala/reflect/internal/util/AbstractFileClassLoaderTest.scala
 scala/reflect/internal/util/FileUtilsTest.scala
 scala/reflect/internal/util/SourceFileTest.scala
 scala/reflect/internal/util/StringOpsTest.scala
+scala/reflect/internal/SubstMapTest.scala
 scala/reflect/internal/util/WeakHashSetTest.scala
 scala/reflect/io/AbstractFileTest.scala
 scala/reflect/runtime/ThreadSafetyTest.scala
@@ -76,6 +78,7 @@ scala/tools/nsc/backend/jvm/analysis/TypeFlowAnalyzerTest.scala
 scala/tools/nsc/backend/jvm/opt/AnalyzerTest.scala
 scala/tools/nsc/backend/jvm/opt/BTypesFromClassfileTest.scala
 scala/tools/nsc/backend/jvm/opt/BoxUnboxTest.scala
+scala/tools/nsc/backend/jvm/opt/BoxUnboxAndInlineTest.scala
 scala/tools/nsc/backend/jvm/opt/CallGraphTest.scala
 scala/tools/nsc/backend/jvm/opt/ClosureOptimizerTest.scala
 scala/tools/nsc/backend/jvm/opt/CompactLocalVariablesTest.scala
@@ -126,6 +129,7 @@ scala/tools/nsc/transform/UncurryTest.scala
 scala/tools/nsc/transform/delambdafy/DelambdafyTest.scala
 scala/tools/nsc/transform/patmat/SolvingTest.scala
 scala/tools/nsc/transform/patmat/PatmatBytecodeTest.scala
+scala/tools/nsc/typechecker/ConstantFolderTest.scala
 scala/tools/nsc/typechecker/ImplicitsTest.scala
 scala/tools/nsc/typechecker/InferencerTest.scala
 scala/tools/nsc/typechecker/NamerTest.scala
@@ -138,6 +142,17 @@ scala/sys/process/ProcessTest.scala
 scala/collection/mutable/OpenHashMapTest.scala
 scala/collection/immutable/ListTest.scala
 scala/collection/Sizes.scala
+scala/runtime/BooleanBoxingTest.scala
+scala/runtime/ByteBoxingTest.scala
+scala/runtime/CharBoxingTest.scala
+scala/runtime/ShortBoxingTest.scala
+scala/runtime/IntBoxingTest.scala
+scala/runtime/LongBoxingTest.scala
+scala/runtime/FloatBoxingTest.scala
+scala/runtime/DoubleBoxingTest.scala
+
+
+
 
 ## Do not link
 scala/jdk/DurationConvertersTest.scala
@@ -163,6 +178,7 @@ scala/collection/immutable/StringLikeTest.scala
 scala/concurrent/FutureTest.scala
 scala/util/SpecVersionTest.scala
 scala/tools/testkit/AssertUtilTest.scala
+scala/tools/testkit/ReflectUtilTest.scala
 
 #s.c.c.TrieMap
 scala/collection/IterableTest.scala
@@ -189,6 +205,7 @@ scala/sys/process/PipedProcessTest.scala
 #j.u.c.ConcurrentHashMap
 scala/collection/convert/NullSafetyToScalaTest.scala
 scala/collection/convert/NullSafetyToJavaTest.scala
+scala/collection/convert/CollectionConvertersTest.scala
 
 #j.t.LocalDate
 scala/math/OrderingTest.scala
@@ -197,6 +214,11 @@ scala/math/OrderingTest.scala
 scala/concurrent/impl/DefaultPromiseTest.scala
 scala/io/SourceTest.scala
 scala/lang/stringinterpol/StringContextTest.scala
+
+# Needs newer JUnit version
+scala/util/matching/RegexTest.scala
+scala/collection/immutable/RangeTest.scala
+scala/collection/mutable/BitSetTest.scala
 
 ## Tests fail
 scala/ArrayTest.scala
