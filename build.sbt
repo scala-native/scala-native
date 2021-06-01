@@ -1072,12 +1072,14 @@ lazy val scalaPartestJunitTests = project
   .settings(
     noPublishSettings,
     scalacOptions ++= Seq(
+      // Suppress deprecation warnings for Scala partest sources
+      "-Wconf:cat=deprecation:s",
       "-language:higherKinds"
     ),
     scalacOptions --= Seq(
       "-Xfatal-warnings"
     ),
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v"),
     shouldPartest := {
       (Test / resourceDirectory).value / scalaVersion.value
     }.exists(),
