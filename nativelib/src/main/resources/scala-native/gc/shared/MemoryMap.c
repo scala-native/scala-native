@@ -20,13 +20,13 @@
 #endif
 
 // MAP_POPULATE is linux exclusive. We will use madvice.
-#ifndef  __linux__
+#ifndef __linux__
 #define MAP_POPULATE 0
 #endif
 
 // Map private anonymous memory, and prevent from reserving swap
 #define HEAP_MEM_FLAGS
-    (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
+(MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
 #define HEAP_MEM_FLAGS_PREALLOC                                                \
     (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE)
 
@@ -49,7 +49,7 @@ word_t *memoryMap(size_t memorySize) {
 }
 
 word_t *memoryMapPrealloc(size_t memorySize, size_t doPrealloc) {
-    if(!doPrealloc){
+    if (!doPrealloc) {
         return memoryMap(memorySize);
     }
 
