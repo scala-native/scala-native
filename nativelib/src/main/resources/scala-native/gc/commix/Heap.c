@@ -308,11 +308,11 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
         incrementInBlocks * LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
 
 #ifdef _WIN32
-    // Windows does not allow for over-committing, because of that we commit
-    // next chunk of memory when growing heap. Without this process might take
-    // over all available memory leading to OutOffMemory errors for other
-    // processes. Also when using UNLIMITED heap size it might try to commit
-    // more memory then it is available.
+    // Windows does not allow for over-committing, therefore we commit the
+    // next chunk of memory when growing the heap. Without this, the process
+    // might take over all available memory leading to OutOfMemory errors for
+    // other processes. Also when using UNLIMITED heap size it might try to
+    // commit more memory than is available.
     if (!memoryCommit(heapEnd, incrementInBytes)) {
         Heap_exitWithOutOfMemory();
     };

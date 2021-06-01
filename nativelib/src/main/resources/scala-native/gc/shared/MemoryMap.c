@@ -25,8 +25,7 @@
 #endif
 
 // Map private anonymous memory, and prevent from reserving swap
-#define HEAP_MEM_FLAGS
-(MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
+#define HEAP_MEM_FLAGS (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
 #define HEAP_MEM_FLAGS_PREALLOC                                                \
     (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE)
 
@@ -49,17 +48,15 @@ word_t *memoryMap(size_t memorySize) {
 }
 
 word_t *memoryMapPrealloc(size_t memorySize, size_t doPrealloc) {
-    if (!doPrealloc) {
-        return memoryMap(memorySize);
-    }
-
 #ifdef _WIN32
     // No special pre-alloc support on Windows is needed
     return memoryMap(memorySize);
 #else // Unix
-    word_t *res;
-    res = mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS_PREALLOC,
-               HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
+    if (!doPrealloc) {
+        return memoryMap(memorySize);
+    }
+    word_t *res = mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS_PREALLOC,
+                       HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
 #ifndef __linux__
     // if we are not on linux the next best thing we can do is to mark the pages
     // as MADV_WILLNEED but only if doPrealloc is enabled.
