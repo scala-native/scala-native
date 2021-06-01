@@ -4,6 +4,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+
 #else // Unix
 #include <sys/mman.h>
 // Darwin defines MAP_ANON instead of MAP_ANONYMOUS
@@ -12,37 +13,22 @@
 #endif
 
 // Allow read and write
-#define DUMMY_GC_PROT (PROT_READ | PROT_WRITE)
-// Map private anonymous memory, and prevent from reserving swap
-
-// Allow read and write
 #define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
-// Map private anonymous memory, and prevent from reserving swap
 
-#ifdef MAP_NORESERVE
-#define HEAP_MEM_FLAGS (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
-#else
-#define HEAP_MEM_FLAGS (MAP_PRIVATE | MAP_ANONYMOUS)
+#ifndef MAP_NORESERVE
+#define MAP_NORESERVE 0
 #endif
 
-#ifdef MAP_NORESERVE
-#ifndef __linux__
 // MAP_POPULATE is linux exclusive. We will use madvice.
-#define HEAP_MEM_FLAGS_PREALLOC (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
-#else
+#ifndef  __linux__
+#define MAP_POPULATE 0
+#endif
+
+// Map private anonymous memory, and prevent from reserving swap
+#define HEAP_MEM_FLAGS
+    (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
 #define HEAP_MEM_FLAGS_PREALLOC                                                \
     (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE)
-#endif
-
-#else
-#ifndef __linux__
-// MAP_POPULATE is linux exclusive. We will use madvice.
-#define HEAP_MEM_FLAGS_PREALLOC (MAP_PRIVATE | MAP_ANONYMOUS)
-#else
-#define HEAP_MEM_FLAGS_PREALLOC (MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE)
-#endif
-
-#endif
 
 // Map anonymous memory (not a file)
 #define HEAP_MEM_FD -1
@@ -51,23 +37,11 @@
 
 word_t *memoryMap(size_t memorySize) {
 #ifdef _WIN32
-    HANDLE hMapFile;
-    ULARGE_INTEGER memSize;
-    memSize.QuadPart = memorySize;
-
-    hMapFile = CreateFileMappingW(
-        INVALID_HANDLE_VALUE, // use paging file
-        NULL,                 // default security
-        PAGE_READWRITE,       // read/write access
-        memSize.u.HighPart,   // maximum object size (high-order DWORD)
-        memSize.u.LowPart,    // maximum object size (low-order DWORD)
-        NULL);                // name of mapping object
-
-    if (hMapFile == NULL) {
-        return NULL;
-    }
-    return (word_t *)(MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0,
-                                    memorySize));
+    // On Windows only reserve given chunk of memory. It should be explicitly
+    // committed later.
+    // We don't use MAP_PHYSICAL flag to prevent usage of swap file, since it
+    // supports only 32-bit address space and is in most cases not recommended.
+    return VirtualAlloc(NULL, memorySize, MEM_RESERVE, PAGE_NOACCESS);
 #else // Unix
     return mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS, HEAP_MEM_FD,
                 HEAP_MEM_FD_OFFSET);
@@ -75,42 +49,32 @@ word_t *memoryMap(size_t memorySize) {
 }
 
 word_t *memoryMapPrealloc(size_t memorySize, size_t doPrealloc) {
-#ifdef _WIN32
-    HANDLE hMapFile;
-    ULARGE_INTEGER memSize;
-    memSize.QuadPart = memorySize;
-
-    hMapFile = CreateFileMappingW(
-        INVALID_HANDLE_VALUE, // use paging file
-        NULL,                 // default security
-        PAGE_READWRITE,       // read/write access
-        memSize.u.HighPart,   // maximum object size (high-order DWORD)
-        memSize.u.LowPart,    // maximum object size (low-order DWORD)
-        NULL);                // name of mapping object
-
-    if (hMapFile == NULL) {
-        return NULL;
+    if(!doPrealloc){
+        return memoryMap(memorySize);
     }
-    return (word_t *)(MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0,
-                                    memorySize));
+
+#ifdef _WIN32
+    // No special pre-alloc support on Windows is needed
+    return memoryMap(memorySize);
 #else // Unix
     word_t *res;
-    if (doPrealloc) {
-        res = mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS_PREALLOC,
-                   HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
-    } else {
-        res = mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS, HEAP_MEM_FD,
-                   HEAP_MEM_FD_OFFSET);
-    }
-
+    res = mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS_PREALLOC,
+               HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
 #ifndef __linux__
     // if we are not on linux the next best thing we can do is to mark the pages
     // as MADV_WILLNEED but only if doPrealloc is enabled.
-    if (doPrealloc) {
-        madvise(res, memorySize, MADV_WILLNEED);
-    }
-#endif
+    madvise(res, memorySize, MADV_WILLNEED);
+#endif // __linux__
 
     return res;
+#endif // !_WIN32
+}
+
+bool memoryCommit(void *ref, size_t memorySize) {
+#ifdef _WIN32
+    return VirtualAlloc(ref, memorySize, MEM_COMMIT, PAGE_READWRITE) != NULL;
+#else
+    // No need for committing on UNIX
+    return true;
 #endif
 }

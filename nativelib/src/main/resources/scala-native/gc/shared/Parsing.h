@@ -1,3 +1,10 @@
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+// sscanf and getEnv is deprecated in WinCRT, disable warnings
+#define _CRT_SECURE_NO_WARNINGS
+#include <windows.h>
+#endif
+
 #include <string.h>
 #include <stdio.h>
 
