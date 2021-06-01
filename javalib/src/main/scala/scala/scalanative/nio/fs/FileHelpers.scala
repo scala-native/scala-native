@@ -18,7 +18,7 @@ import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
-import scala.scalanative.windows.util.HelperMethods._
+import scala.scalanative.windows._
 
 object FileHelpers {
   private[this] lazy val random = new scala.util.Random()
@@ -62,17 +62,19 @@ object FileHelpers {
     } else
       Zone { implicit z =>
         if (isWindows) {
-          withFileOpen(
-            path,
-            access = FILE_GENERIC_WRITE,
+          val handle = CreateFileW(
+            toCWideStringUTF16LE(path),
+            desiredAccess = FILE_GENERIC_WRITE,
             shareMode = FILE_SHARE_ALL,
-            disposition = CREATE_NEW,
-            allowInvalidHandle = true
-          ) { handle =>
-            GetLastError() match {
-              case ErrorCodes.ERROR_FILE_EXISTS => false
-              case _                            => handle != INVALID_HANDLE_VALUE
-            }
+            securityAttributes = null,
+            creationDisposition = CREATE_NEW,
+            flagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+            templateFile = null
+          )
+          HandleApi.CloseHandle(handle)
+          GetLastError() match {
+            case ErrorCodes.ERROR_FILE_EXISTS => false
+            case _                            => handle != INVALID_HANDLE_VALUE
           }
         } else {
           fopen(toCString(path), c"w") match {

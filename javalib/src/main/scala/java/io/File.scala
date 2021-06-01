@@ -21,8 +21,8 @@ import scala.scalanative.windows
 import windows.FileApi._
 import windows.FileApiExt._
 import scala.scalanative.windows.WinBaseApi._
-import scala.scalanative.windows.util.HelperMethods._
 import scala.scalanative.windows.winnt.AccessRights._
+import java.util.WindowsHelperMethods._
 
 class File(_path: String) extends Serializable with Comparable[File] {
   import File._
@@ -372,10 +372,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   // Ported from Apache Harmony
   def toURI(): URI = {
-    val path = getAbsolutePath().map {
-      case '\\' => '/'
-      case c    => c
-    }
+    val path = getAbsolutePath().replace('\\', '/')
     if (!path.startsWith("/")) {
       // start with sep.
       new URI(

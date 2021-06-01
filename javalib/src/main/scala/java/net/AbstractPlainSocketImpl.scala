@@ -238,6 +238,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     if (!isClosed) {
       fd.close()
       fd = InvalidSocketDescriptor
+      isClosed = true
     }
   }
 
@@ -476,7 +477,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   }
 }
 
-object AbstractPlainSocketImpl {
+private[net] object AbstractPlainSocketImpl {
   final val InvalidSocketDescriptor = new FileDescriptor
 
   def apply(): AbstractPlainSocketImpl = {

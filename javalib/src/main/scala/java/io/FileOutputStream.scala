@@ -14,7 +14,7 @@ import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
 
-class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
+class FileOutputStream(fd: FileDescriptor, file: Option[File])
     extends OutputStream {
   def this(fd: FileDescriptor) = this(fd, None)
   def this(file: File, append: Boolean) =
