@@ -15,6 +15,7 @@ import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
 import scala.util.Try
+import scala.scalanative.build.Platform
 
 object ScalaNativePluginInternal {
 
@@ -60,7 +61,8 @@ object ScalaNativePluginInternal {
       .withLTO(Discover.LTO())
       .withGC(Discover.GC())
       .withMode(Discover.mode())
-      .withOptimize(Discover.optimize()),
+      .withOptimize(Discover.optimize())
+      .withLinktimeProperties(Discover.linktimeProperties()),
     nativeWarnOldJVM := {
       val logger = streams.value.log
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -83,7 +85,8 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
     nativeLink / artifactPath := {
-      crossTarget.value / (moduleName.value + "-out")
+      val ext = if (Platform.isWindows) ".exe" else ""
+      crossTarget.value / (moduleName.value + "-out" + ext)
     },
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"

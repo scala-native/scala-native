@@ -55,7 +55,13 @@ abstract class LinkerSpec extends AnyFlatSpec {
       .withWorkdir(outDir)
       .withClassPath(classpath.toSeq)
       .withMainClass(entry)
-      .withCompilerConfig(setupNativeConfig)
+      .withCompilerConfig(setupNativeConfig.andThen(withDefaults))
+  }
+
+  private def withDefaults(config: NativeConfig): NativeConfig = {
+    config.withLinktimeProperties(
+      linker.linktimeInfoDefaults ++ config.linktimeProperties
+    )
   }
 
   protected implicit def String2MapStringString(

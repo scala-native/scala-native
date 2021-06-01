@@ -1,10 +1,9 @@
 package scala.scalanative
 
-import java.nio.charset.Charset
+import java.nio.charset.{Charset, StandardCharsets}
 import scala.language.experimental.macros
 import scalanative.annotation.alwaysinline
-import scalanative.unsigned._
-import scalanative.runtime.{libc, intrinsic, fromRawPtr}
+import scalanative.runtime.{Platform, fromRawPtr, intrinsic, libc}
 import scalanative.runtime.Intrinsics.{castIntToRawPtr, castLongToRawPtr}
 import scalanative.unsigned._
 
@@ -84,6 +83,9 @@ package object unsafe {
 
   /** C-style string with trailing 0. */
   type CString = Ptr[CChar]
+
+  /* C-style wide string with trail 0. */
+  type CWideString = Ptr[CWideChar]
 
   /** Materialize tag for given type. */
   @alwaysinline def tagof[T](implicit tag: Tag[T]): Tag[T] = tag
@@ -210,6 +212,84 @@ package object unsafe {
       !(cstr + c) = 0.toByte
 
       cstr
+    }
+  }
+
+  // wchar_t size may vary across platforms from 2 to 4 bytes.
+  private final val WideCharSize = Platform.SizeOfWChar.toInt
+
+  /** Convert a java.lang.String to a CWideString using given charset and allocator.*/
+  @alwaysinline
+  def toCWideString(str: String, charset: Charset = StandardCharsets.UTF_16LE)(
+      implicit z: Zone): Ptr[CWideString] = {
+    toCWideStringImpl(str, charset, WideCharSize)
+  }
+
+  /** Convert a java.lang.String to a CWideString using given UTF-16 LE charset.*/
+  @alwaysinline
+  def toCWideStringUTF16LE(str: String)(implicit z: Zone): Ptr[CChar16] = {
+    toCWideStringImpl(str, StandardCharsets.UTF_16LE, 2)
+      .asInstanceOf[Ptr[CChar16]]
+  }
+
+  private def toCWideStringImpl(str: String, charset: Charset, charSize: CInt)(
+      implicit z: Zone) = {
+    if (str == null) {
+      null
+    } else {
+      val bytes = str.getBytes(charset)
+      val cstr  = z.alloc((bytes.length + charSize).toULong)
+
+      var c = 0
+      while (c < bytes.length) {
+        !(cstr + c) = bytes(c)
+        c += 1
+      }
+
+      // Set null termination bytes
+      val cstrEnd = cstr + c
+      c = 0
+      while (c < charSize) {
+        !(cstrEnd + c) = 0.toByte
+        c += 1
+      }
+      cstr.asInstanceOf[Ptr[CWideString]]
+    }
+  }
+
+  /** Convert a CWideString to a String using given charset, assumes platform default wchar_t size */
+  @alwaysinline
+  def fromCWideString(cwstr: CWideString, charset: Charset): String =
+    fromCWideStringImpl(bytes = cwstr.asInstanceOf[Ptr[Byte]],
+                        charset = charset,
+                        charSize = WideCharSize)
+
+  /** Convert a CWideString based on Ptr[CChar16] to a String using given charset */
+  @alwaysinline
+  def fromCWideString(cwstr: Ptr[CChar16], charset: Charset)(
+      implicit d: DummyImplicit): String = {
+    fromCWideStringImpl(bytes = cwstr.asInstanceOf[Ptr[Byte]],
+                        charset = charset,
+                        charSize = 2)
+  }
+
+  private def fromCWideStringImpl(bytes: Ptr[Byte],
+                                  charset: Charset,
+                                  charSize: Int): String = {
+    if (bytes == null) {
+      null
+    } else {
+      val cwstr = bytes.asInstanceOf[CWideString]
+      val len   = charSize * libc.wcslen(cwstr).toInt
+      val buf   = new Array[Byte](len)
+
+      var c = 0
+      while (c < len) {
+        buf(c) = !(bytes + c)
+        c += 1
+      }
+
+      new String(buf, charset)
     }
   }
 

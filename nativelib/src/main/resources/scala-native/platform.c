@@ -78,3 +78,5 @@ void scalanative_set_os_props(void (*add_prop)(const char *, const char *)) {
     add_prop("java.io.tmpdir", "/tmp");
 #endif
 }
+
+size_t scalanative_wide_char_size() { return sizeof(wchar_t); }

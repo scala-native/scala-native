@@ -59,7 +59,9 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
     Entry("float", 3.14f, Val.Float(3.14f)),
     Entry("decimalSeparator", '-', Val.Char('-')),
     Entry("inner.countFrom", 123456L, Val.Long(123456L)),
-    Entry("secret.performance.multiplier", 9.99, Val.Double(9.99))
+    Entry("secret.performance.multiplier", 9.99, Val.Double(9.99)),
+    // Always required linktime properties
+    Entry(s"$linktimeInfoProperties.isWindows", false, Val.False)
   )
   val defaultProperties = defaultEntries.map(e => e.propertyName -> e.value)
 
