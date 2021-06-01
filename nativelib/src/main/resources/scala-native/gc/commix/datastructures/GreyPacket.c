@@ -34,10 +34,10 @@ void GreyList_Init(GreyList *list) {
     list->head.atom = GreyPacketRef_Empty();
 }
 
-UInt24 GreyList_Size(GreyList *list) {
+uint32_t GreyList_Size(GreyList *list) {
     GreyPacketRef head;
     head.atom = list->head.atom;
-    return head.sep.size;
+    return UInt24_toUInt32(head.sep.size);
 }
 
 void GreyList_Push(GreyList *list, word_t *greyPacketsStart,

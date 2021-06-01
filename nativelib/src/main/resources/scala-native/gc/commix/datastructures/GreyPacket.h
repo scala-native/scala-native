@@ -61,7 +61,7 @@ bool GreyPacket_IsEmpty(GreyPacket *packet);
 void GreyPacket_MoveItems(GreyPacket *src, GreyPacket *dst, int count);
 
 void GreyList_Init(GreyList *list);
-UInt24 GreyList_Size(GreyList *list);
+uint32_t GreyList_Size(GreyList *list);
 void GreyList_Push(GreyList *list, word_t *greyPacketsStart,
                    GreyPacket *packet);
 void GreyList_PushAll(GreyList *list, word_t *greyPacketsStart,
@@ -85,7 +85,7 @@ static inline GreyPacket *GreyPacket_FromIndex(word_t *greyPacketsStart,
 static inline uint64_t GreyPacketRef_Empty() {
     GreyPacketRef initial;
     initial.sep.idx = GREYLIST_LAST;
-    initial.sep.size = (UInt24){0};
+    initial.sep.size = UInt24_fromUInt32(0);
     initial.sep.timesPoped = 0;
     return initial.atom;
 }

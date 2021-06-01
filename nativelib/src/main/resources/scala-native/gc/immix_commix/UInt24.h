@@ -18,7 +18,7 @@ static inline uint32_t UInt24_toUInt32(UInt24 v) {
     return ((UInt24Bits)(v)).bits;
 }
 
-static inline UInt24 UInt24_plus(UInt24 value, uint32_t arg) {
+static inline UInt24 UInt24_plus(UInt24 value, int32_t arg) {
     uint32_t v = UInt24_toUInt32(value);
     return UInt24_fromUInt32(v + arg);
 }
