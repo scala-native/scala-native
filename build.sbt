@@ -928,14 +928,14 @@ lazy val scalaPartest = project
     noPublishSettings,
     shouldPartestSetting,
     resolvers += Resolver.typesafeIvyRepo("releases"),
-    artifactPath in fetchScalaSource :=
+    fetchScalaSource / artifactPath :=
       baseDirectory.value / "fetchedSources" / scalaVersion.value,
     fetchScalaSource := {
       import org.eclipse.jgit.api._
 
       val s      = streams.value
       val ver    = scalaVersion.value
-      val trgDir = (artifactPath in fetchScalaSource).value
+      val trgDir = (fetchScalaSource / artifactPath).value
 
       if (!trgDir.exists) {
         s.log.info(s"Fetching Scala source version $ver")
@@ -958,7 +958,7 @@ lazy val scalaPartest = project
 
       trgDir
     },
-    unmanagedSourceDirectories in Compile ++= {
+    Compile / unmanagedSourceDirectories ++= {
       if (!shouldPartest.value) Nil
       else {
         Seq(CrossVersion.partialVersion(scalaVersion.value) match {
@@ -980,9 +980,9 @@ lazy val scalaPartest = project
           }
         )
     },
-    sources in Compile := {
+    Compile / sources := {
       if (!shouldPartest.value) Nil
-      else (sources in Compile).value
+      else (Compile / sources).value
     }
   )
   .dependsOn(nscplugin, tools)
@@ -992,12 +992,12 @@ lazy val scalaPartestTests: Project = project
   .settings(
     noPublishSettings,
     shouldPartestSetting,
-    fork in Test := true,
-    javaOptions in Test += "-Xmx1G",
-    definedTests in Test ++= Def
+    Test / fork := true,
+    Test / javaOptions += "-Xmx1G",
+    Test / definedTests ++= Def
       .taskDyn[Seq[sbt.TestDefinition]] {
         if (shouldPartest.value) Def.task {
-          val _ = (fetchScalaSource in scalaPartest).value
+          val _ = (scalaPartest / fetchScalaSource).value
           Seq(
             new sbt.TestDefinition(
               s"partest-${scalaVersion.value}",
@@ -1040,10 +1040,10 @@ lazy val scalaPartestRuntime = project
   .enablePlugins(MyScalaNativePlugin)
   .settings(noPublishSettings)
   .settings(
-    unmanagedSources in Compile ++= {
-      if (!(shouldPartest in scalaPartest).value) Nil
+    Compile / unmanagedSources ++= {
+      if (!(scalaPartest / shouldPartest).value) Nil
       else {
-        val upstreamDir = (fetchScalaSource in scalaPartest).value
+        val upstreamDir = (scalaPartest / fetchScalaSource).value
         CrossVersion.partialVersion(scalaVersion.value) match {
           case Some((2, 11 | 12)) => Seq.empty[File]
           case _ =>
@@ -1056,8 +1056,8 @@ lazy val scalaPartestRuntime = project
         }
       }
     },
-    unmanagedSourceDirectories in Compile ++= {
-      if (!(shouldPartest in scalaPartest).value) Nil
+    Compile / unmanagedSourceDirectories ++= {
+      if (!(scalaPartest / shouldPartest).value) Nil
       else
         Seq(
           (junitRuntime / Compile / scalaSource).value / "org"
@@ -1079,12 +1079,12 @@ lazy val scalaPartestJunitTests = project
     ),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
     shouldPartest := {
-      (resourceDirectory in Test).value / scalaVersion.value
+      (Test / resourceDirectory).value / scalaVersion.value
     }.exists(),
-    unmanagedSources in Compile ++= {
+    Compile / unmanagedSources ++= {
       if (!shouldPartest.value) Nil
       else {
-        val upstreamDir = (fetchScalaSource in scalaPartest).value
+        val upstreamDir = (scalaPartest / fetchScalaSource).value
         CrossVersion.partialVersion(scalaVersion.value) match {
           case Some((2, 11 | 12)) => Seq.empty[File]
           case _ =>
@@ -1094,19 +1094,19 @@ lazy val scalaPartestJunitTests = project
         }
       }
     },
-    unmanagedSources in Test ++= {
+    Test / unmanagedSources ++= {
       if (!shouldPartest.value) Nil
       else {
         val blacklist: Set[String] = {
           val file =
-            (resourceDirectory in Test).value / scalaVersion.value / "BlacklistedTests.txt"
+            (Test / resourceDirectory).value / scalaVersion.value / "BlacklistedTests.txt"
           IO.readLines(file)
             .filter(l => l.nonEmpty && !l.startsWith("#"))
             .toSet
         }
 
         val jUnitTestsPath =
-          (fetchScalaSource in scalaPartest).value / "test" / "junit"
+          (scalaPartest / fetchScalaSource).value / "test" / "junit"
 
         val scalaScalaJUnitSources = {
           (jUnitTestsPath ** "*.scala").get.flatMap { file =>
