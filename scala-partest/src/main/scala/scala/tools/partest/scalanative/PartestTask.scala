@@ -132,6 +132,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
           .withGC(options.gc)
           .withOptimize(options.optimize)
       }
-    Build.fetchAndCompileNativeSources(config, Defaults.links)
+
+    Build.findAndCompileNativeSources(config, Defaults.links)
   }
 }

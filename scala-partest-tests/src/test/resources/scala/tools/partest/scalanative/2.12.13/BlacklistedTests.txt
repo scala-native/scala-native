@@ -457,7 +457,6 @@ run/trait_fields_volatile.scala
 run/junitForwarders
 run/reflect-java-param-names
 run/t2251b.scala
-run/5676.scala
 run/t8253.scala
 run/t9027.scala
 
