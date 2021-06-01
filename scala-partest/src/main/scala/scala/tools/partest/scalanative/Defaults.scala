@@ -1,7 +1,7 @@
 package scala.tools.partest.scalanative
 
 import java.nio.file.{Files, Path, Paths}
-import scala.scalanative.build.{Config, Discover, GC, LTO, Logger, NativeConfig}
+import scala.scalanative.build._
 import scala.scalanative.nir.Attr.Link
 
 object Defaults {
@@ -37,5 +37,10 @@ object Defaults {
           .withLTO(Discover.LTO())
           .withLinkingOptions(Discover.linkingOptions())
           .withCompileOptions(Discover.compileOptions())
+          .withLinktimeProperties {
+            Map(
+              "scala.scalanative.meta.linktimeinfo.isWindows" -> Platform.isWindows
+            )
+          }
       )
 }
