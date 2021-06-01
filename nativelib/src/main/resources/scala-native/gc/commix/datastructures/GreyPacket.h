@@ -16,7 +16,7 @@ typedef Object *Stack_Type;
 // UInt24 used instead of uint_32 bitset for cross-platform compatiblity, mainly
 // due the lack of support for 3-byte alignment in MSVC
 // https://docs.microsoft.com/en-us/cpp/c-language/padding-and-alignment-of-structure-members?redirectedfrom=MSDN&view=msvc-160
-// It would would result in size of 16 bytes on Windows and 8 on Unix
+// It would result in size of 16 bytes on Windows and 8 on Unix
 typedef union {
     struct __attribute__((packed)) {
         UInt24 idx;
