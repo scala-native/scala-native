@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.6, 2.12.13, 2.11.12]
+        scala: [2.13.6, 2.12.14, 2.11.12]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
@@ -105,7 +105,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.6, 2.12.13, 2.11.12]
+        scala: [2.13.6, 2.12.14, 2.11.12]
         build-mode: [ debug , release-fast ]
         gc: [ boehm, immix, commix ]
         # Create holes in grid to lower number of tests.
@@ -114,13 +114,19 @@ jobs:
           - scala: 2.13.6
             build-mode: debug
             gc: immix
-          - scala: 2.12.13
+          - scala: 2.12.14
             build-mode: debug
             gc: immix
           - scala: 2.11.12
             build-mode: debug
             gc: commix
         include:
+          - scala: 2.12.13
+            build-mode: debug
+            gc: immix
+          - scala: 2.12.13
+            build-mode: release-fast
+            gc: commix
           - scala: 2.13.4
             build-mode: debug
             gc: immix
@@ -174,9 +180,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [ 2.13.6, 2.12.13, 2.11.12 ]
+        scala: [ 2.13.6, 2.12.14, 2.11.12 ]
         build-mode: [ debug, release-fast ]
         include:
+          - scala: 2.12.13
+            build-mode: release-fast
           - scala: 2.13.4
             build-mode: release-fast
           - scala: 2.13.5
@@ -222,7 +230,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12.13]
+        scala: [2.12.14]
     steps:
       - uses: actions/checkout@v2
       - name: Calculate binary version

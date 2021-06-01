@@ -88,7 +88,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ windows-2019 ]
-        scala: [ 2.13.5, 2.12.13, 2.11.12 ]
+        scala: [ 2.13.6, 2.12.14, 2.11.12 ]
     steps:
       - uses: actions/checkout@v2
 
