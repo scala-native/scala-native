@@ -52,6 +52,7 @@ run/t10488.scala
 run/various-flat-classpath-types.scala
 
 # Uses j.l.Class stubs
+run/t9437a.scala
 run/t12002.scala
 run/BoxUnboxTest.scala
 run/module-serialization-proxy-class-unload.scala
@@ -121,6 +122,8 @@ run/reflection-package-name-conflict
 run/sip23-toolbox-eval.scala
 run/t6063
 run/t9644.scala
+run/t12038a
+run/t12038b
 
 run/mixin-bridge-methods.scala
 run/t5125.scala
@@ -760,6 +763,11 @@ run/repl-completions.scala
 run/t10956.scala
 run/t11564.scala
 run/invalid-lubs.scala
+run/constAnnArgs.scala
+run/interpolation-repl.scala
+run/t12292.scala
+run/t12276.scala
+run/t10943.scala
 
 # Using Scala Script (partest.ScriptTest)
 
@@ -818,6 +826,8 @@ run/t7569.scala
 run/t7852.scala
 run/t7817-tree-gen.scala
 run/extend-global.scala
+run/t12062.scala
+
 
 # partest.DirectTest
 run/t12019
@@ -876,6 +886,11 @@ run/patmat-origtp-switch.scala
 run/indyLambdaKinds
 run/t11802-pluginsdir
 run/literals-parsing.scala
+run/patmat-no-inline-isEmpty.scala
+run/patmat-no-inline-unapply.scala
+run/splain-tree.scala
+run/splain-truncrefined.scala
+run/splain.scala
 
 # Using partest.StoreReporterDirectTest
 run/t10171
@@ -1037,6 +1052,8 @@ run/java-erasure.scala
 run/productElementName-oob.scala
 run/t10290.scala
 run/t6827.scala
+run/classtags-cached.scala
+run/sip23-cast-1.scala
 
 #OutOfMemoryError
 run/stream-gc.scala
@@ -1057,3 +1074,6 @@ run/t7269.scala
 ## Other
 run/t10277.scala
 run/t10277b.scala
+
+run/t12380
+run/t7448.scala

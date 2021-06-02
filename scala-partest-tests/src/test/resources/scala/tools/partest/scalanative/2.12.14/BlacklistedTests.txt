@@ -51,6 +51,7 @@ run/various-flat-classpath-types.scala
 
 # Uses j.l.Class stubs
 run/t12002.scala
+run/t5676.scala
 
 # Uses java.math.BigDecimal / BigInteger : but failures not due to them
 run/is-valid-num.scala
@@ -129,7 +130,6 @@ run/future-flatmap-exec-count.scala
 run/t6308.scala
 
 # Using reflection
-
 run/t6063
 
 run/mixin-bridge-methods.scala
@@ -148,6 +148,8 @@ run/t7965.scala
 run/t8087.scala
 run/t8931.scala
 run/t8445.scala
+run/t12038a
+run/t12038b
 run/lambda-serialization.scala
 
 run/reflection-repl-classes.scala
@@ -896,7 +898,14 @@ run/t10552
 run/sd187.scala
 run/patmat-origtp-switch.scala
 run/indyLambdaKinds
+run/indy-via-macro-class-constant-bsa
+run/indy-via-macro-method-type-bsa
+run/indy-via-macro-reflector
 run/t11802-pluginsdir
+run/t12019
+
+# Using partest.SessionTest
+run/t12354.scala
 
 # Using partest.StoreReporterDirectTest
 run/t10171
@@ -1039,6 +1048,10 @@ run/indy-via-macro
 run/indy-via-macro-with-dynamic-args
 
 ### Bugs
+run/classtags_core.scala
+run/classmanifests_new_core.scala
+run/classmanifests_new_alias.scala
+
 ## Compiler
 run/anyval-box-types.scala
 run/structural.scala
@@ -1051,7 +1064,6 @@ run/t10069b.scala
 run/try-catch-unify.scala
 run/t2755.scala
 run/java-erasure.scala
-
 
 ## Fails
 run/t5680.scala
