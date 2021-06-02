@@ -40,8 +40,14 @@ jobs:
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" test-tools
 
+        # Running all partests would take ~2h for each Scala version, run only single test of each kind
+        # to make sure that infrastructure works correctly.
       - name: Run subset of partest tests
-        run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" scalaPartestTests/testOnly -- neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala --showDiff
+        run: |
+          sbt "++ ${{ matrix.scala }} -v" \
+          "-no-colors" \
+          "-J-Xmx3G" \
+          "scalaPartestTests/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
   # Build testing image that would be used to build and run against different platforms
   # Currently only Linux x64 is tested
