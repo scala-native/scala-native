@@ -17,15 +17,22 @@ trait ReachabilitySuite extends AnyFunSuite {
   def g(top: String, sig: Sig): Global =
     Global.Member(Global.Top(top), sig)
 
-  def testReachable(label: String)(f: => (String, Global, Seq[Global])) =
+  def testReachable(label: String,
+                    checkUnderApproximation: Boolean = true,
+                    checkOverApproximation: Boolean = true)(
+      f: => (String, Global, Seq[Global])) =
     test(label) {
       val (source, entry, expected) = f
       link(Seq(entry), Seq(source)) { res =>
         val left  = res.defns.map(_.name).toSet
         val right = expected.toSet
         assert(res.unavailable.isEmpty, "unavailable")
-        assert((left -- right).isEmpty, "underapproximation")
-        assert((right -- left).isEmpty, "overapproximation")
+        if (checkUnderApproximation) {
+          assert((left -- right).isEmpty, "underapproximation")
+        }
+        if (checkOverApproximation) {
+          assert((right -- left).isEmpty, "overapproximation")
+        }
       }
     }
 

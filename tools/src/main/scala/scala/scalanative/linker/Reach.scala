@@ -43,8 +43,21 @@ class Reach(protected val config: build.Config,
     // in reachUnavailable
     defns ++= done.valuesIterator.filter(_ != null)
 
+    val resultEntries = entries.head match {
+      case Global.Member(module, sig)
+          if module == Global.Top(config.mainClass) &&
+            sig == Rt.ScalaMainSig.mangled =>
+        //If main method is introduced via class inheritance we need resolve real entry
+        //Initial owner also needs to be passed or else it would be deleted in further steps
+        infos(module)
+          .asInstanceOf[Class]
+          .resolve(sig)
+          .toSeq ++ entries.tail :+ module
+      case _ => entries
+    }
+
     new Result(infos,
-               entries,
+               resultEntries,
                unavailable.toSeq,
                from,
                links.toSeq,
@@ -95,7 +108,23 @@ class Reach(protected val config: build.Config,
           loaded(owner) = scope
         }
     }
-    loaded.get(owner).flatMap(_.get(global))
+    def fallback = global match {
+      case Global.Member(owner, sig) =>
+        infos(owner)
+          .asInstanceOf[ScopeInfo]
+          .linearized
+          .collectFirst {
+            case info if info.responds.contains(sig) =>
+              info.responds(sig)
+          }
+          .flatMap(lookup)
+      case _ => None
+    }
+
+    loaded
+      .get(owner)
+      .flatMap(_.get(global))
+      .orElse(fallback)
   }
 
   def process(): Unit =
@@ -321,8 +350,7 @@ class Reach(protected val config: build.Config,
         info.linearized.foreach {
           case traitInfo: Trait =>
             info.defaultResponds ++= traitInfo.responds
-          case _ =>
-            ()
+          case _ => ()
         }
       case _ =>
         ()

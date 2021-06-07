@@ -3,7 +3,7 @@ package codegen
 
 import scala.collection.mutable
 import scala.scalanative.nir._
-import scala.scalanative.linker.Class
+import scala.scalanative.linker.{Class, ScopeInfo, Trait, Unavailable}
 
 object Generate {
   import Impl._
@@ -116,15 +116,14 @@ object Generate {
     }
 
     def genMain(): Unit = {
+      validateMainEntry()
+
       implicit val fresh = Fresh()
       val entryMainTy =
         Type.Function(Seq(Type.Ref(entry.top), ObjectArray), Type.Unit)
-      val entryMainName =
-        Global.Member(entry,
-                      Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
-      val entryMain = Val.Global(entryMainName, Type.Ptr)
 
-      val stackBottom = Val.Local(fresh(), Type.Ptr)
+      val entryMainMethod = Val.Local(fresh(), Type.Ptr)
+      val stackBottom     = Val.Local(fresh(), Type.Ptr)
 
       val argc    = Val.Local(fresh(), Type.Int)
       val argv    = Val.Local(fresh(), Type.Ptr)
@@ -166,7 +165,11 @@ object Generate {
                    Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
                    unwind),
           Inst.Let(module.name, Op.Module(entry.top), unwind),
-          Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr)), unwind),
+          Inst.Let(entryMainMethod.name,
+                   Op.Method(module, Rt.ScalaMainSig),
+                   unwind),
+          Inst.Let(Op.Call(entryMainTy, entryMainMethod, Seq(module, arr)),
+                   unwind),
           Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(module)), unwind),
           Inst.Ret(Val.Int(0)),
           Inst.Label(handler, Seq(exc)),
@@ -313,6 +316,22 @@ object Generate {
       buf += meta.dispatchTable.dispatchDefn
       buf += meta.hasTraitTables.classHasTraitDefn
       buf += meta.hasTraitTables.traitHasTraitDefn
+    }
+
+    private def validateMainEntry(): Unit = {
+      def fail(reason: String): Nothing =
+        util.unsupported(s"Entry ${entry.id} $reason")
+
+      val info = linked.infos.getOrElse(entry, fail("not linked"))
+      info match {
+        case cls: Class if cls.isModule =>
+          cls.resolve(Rt.ScalaMainSig).getOrElse {
+            fail(s"does not contain ${Rt.ScalaMainSig}")
+          }
+        case _: ScopeInfo   => fail("was not a module")
+        case _: Unavailable => fail("unavailable")
+        case _              => util.unreachable
+      }
     }
   }
 
