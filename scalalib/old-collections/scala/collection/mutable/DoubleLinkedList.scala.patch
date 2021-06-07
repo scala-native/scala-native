@@ -1,0 +1,8 @@
+@@ -2981,16 +2981,24 @@
+ fo */%0A  
++@inline 
+ implicit
+@@ -3116,16 +3116,24 @@
+ %5BA%5D%5D%0A%0A  
++@inline 
+ def newB

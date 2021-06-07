@@ -1,0 +1,143 @@
+@@ -4194,44 +4194,959 @@
+ %0A%0A  
+-val Byte: AnyValManifest%5BByte%5D = new
++@inline def Byte: AnyValManifest%5BByte%5D = ByteManifest%0A  @inline def Short: AnyValManifest%5BShort%5D = ShortManifest%0A  @inline def Char: AnyValManifest%5BChar%5D = CharManifest%0A  @inline def Int: AnyValManifest%5BInt%5D = IntManifest%0A  @inline def Long: AnyValManifest%5BLong%5D = LongManifest%0A  @inline def Float: AnyValManifest%5BFloat%5D = FloatManifest%0A  @inline def Double: AnyValManifest%5BDouble%5D = DoubleManifest%0A  @inline def Boolean: AnyValManifest%5BBoolean%5D = BooleanManifest%0A  @inline def Unit: AnyValManifest%5BUnit%5D = UnitManifest%0A  @inline def Any: Manifest%5Bscala.Any%5D = AnyManifest%0A  @inline def Object: Manifest%5Bjava.lang.Object%5D = ObjectManifest%0A  @inline def AnyRef: Manifest%5Bscala.AnyRef%5D = Object.asInstanceOf%5BManifest%5Bscala.AnyRef%5D%5D%0A  @inline def AnyVal: Manifest%5Bscala.AnyVal%5D = AnyValManifest%0A  @inline def Null: Manifest%5Bscala.Null%5D = NullManifest%0A  @inline def Nothing: Manifest%5Bscala.Nothing%5D = NothingManifest%0A%0A  private object ByteManifest extends
+  Any
+@@ -5550,46 +5550,44 @@
+ %0A%0A  
+-val Short: AnyValManifest%5BShort%5D = new
++private object ShortManifest extends
+  Any
+@@ -6002,44 +6002,43 @@
+ %0A%0A  
+-val Char: AnyValManifest%5BChar%5D = new
++private object CharManifest extends
+  Any
+@@ -6447,42 +6447,42 @@
+ %0A%0A  
+-val Int: AnyValManifest%5BInt%5D = new
++private object IntManifest extends
+  Any
+@@ -6879,44 +6879,43 @@
+ %0A%0A  
+-val Long: AnyValManifest%5BLong%5D = new
++private object LongManifest extends
+  Any
+@@ -7319,46 +7319,44 @@
+ %0A%0A  
+-val Float: AnyValManifest%5BFloat%5D = new
++private object FloatManifest extends
+  Any
+@@ -7771,48 +7771,45 @@
+ %0A%0A  
+-val Double: AnyValManifest%5BDouble%5D = new
++private object DoubleManifest extends
+  Any
+@@ -8235,50 +8235,46 @@
+ %0A%0A  
+-val Boolean: AnyValManifest%5BBoolean%5D = new
++private object BooleanManifest extends
+  Any
+@@ -8711,44 +8711,43 @@
+ %0A%0A  
+-val Unit: AnyValManifest%5BUnit%5D = new
++private object UnitManifest extends
+  Any
+@@ -9353,24 +9353,32 @@
+ %0A  %7D%0A%0A  
++@inline 
+ private 
+ val Obje
+@@ -9369,19 +9369,19 @@
+ private 
+-val
++def
+  ObjectT
+@@ -9410,32 +9410,40 @@
+ g.Object%5D%0A  
++@inline 
+ private 
+ val NothingT
+@@ -9430,19 +9430,19 @@
+ private 
+-val
++def
+  Nothing
+@@ -9482,24 +9482,32 @@
+ ing$%5D%0A  
++@inline 
+ private 
+ val Null
+@@ -9498,19 +9498,19 @@
+ private 
+-val
++def
+  NullTYP
+@@ -9549,25 +9549,34 @@
+ %0A%0A  
+-val
++private object
+  Any
+-: 
+ Manifest
+ %5Bsca
+@@ -9575,25 +9575,16 @@
+ fest
+-%5Bscala.Any%5D = new
++ extends
+  Pha
+@@ -9824,28 +9824,37 @@
+ %0A%0A  
+-val
++private object
+  Object
+-: 
+ Manifest
+ %5Bjav
+@@ -9853,32 +9853,16 @@
+ fest
+-%5Bjava.lang.Object%5D = new
++ extends
+  Pha
+@@ -10139,112 +10139,37 @@
+ %0A%0A  
+-val AnyRef: Manifest%5Bscala.AnyRef%5D = Object.asInstanceOf%5BManifest%5Bscala.AnyRef%5D%5D%0A%0A  val
++private object
+  AnyVal
+-: 
+ Manifest
+ %5Bsca
+@@ -10168,28 +10168,16 @@
+ fest
+-%5Bscala.AnyVal%5D = new
++ extends
+  Pha
+@@ -10446,26 +10446,35 @@
+ %0A%0A  
+-val
++private object
+  Null
+-: 
+ Manifest
+ %5Bsca
+@@ -10473,26 +10473,16 @@
+ fest
+-%5Bscala.Null%5D = new
++ extends
+  Pha
+@@ -10773,19 +10773,30 @@
+ %0A%0A  
+-val
++private object
+  Nothing
+ : Ma
+@@ -10787,34 +10787,32 @@
+ ject Nothing
+-: 
+ Manifest
+ %5Bscala.Nothi
+@@ -10803,29 +10803,16 @@
+ fest
+-%5Bscala.Nothing%5D = new
++ extends
+  Pha

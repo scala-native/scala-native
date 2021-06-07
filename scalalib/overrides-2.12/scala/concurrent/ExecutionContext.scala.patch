@@ -1,0 +1,19 @@
+@@ -6144,38 +6144,34 @@
+ r = 
+-Implicits.global.asInstanceOf%5B
++scala.scalanative.runtime.
+ Exec
+@@ -6182,25 +6182,23 @@
+ nContext
+-Executor%5D
++.global
+ %0A%0A  obje
+@@ -6733,21 +6733,16 @@
+ ntext = 
+-impl.
+ Executio
+@@ -6753,41 +6753,15 @@
+ text
+-Impl.fromExecutor(null: Executor)
++.global
+ %0A  %7D

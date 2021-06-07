@@ -1,0 +1,5 @@
+@@ -5975,63 +5975,64 @@
+ or =
+- impl.ExecutionContextImpl.fromExecutor(null: Executor)
++%0A      scala.scalanative.runtime.ExecutionContext.global
+ %0A  %7D

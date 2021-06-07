@@ -1,0 +1,124 @@
+@@ -6008,179 +6008,19 @@
+ %7B%0A  
+-private val ObjectTYPE = classOf%5Bjava.lang.Object%5D%0A  private val NothingTYPE = classOf%5Bscala.runtime.Nothing$%5D%0A  private val NullTYPE = classOf%5Bscala.runtime.Null$%5D%0A%0A  val
++@inline def
+  Byt
+@@ -6071,19 +6071,27 @@
+ .Byte%0A  
+-val
++@inline def
+  Short  
+@@ -6139,19 +6139,27 @@
+ Short%0A  
+-val
++@inline def
+  Char   
+@@ -6206,19 +6206,27 @@
+ .Char%0A  
+-val
++@inline def
+  Int    
+@@ -6272,19 +6272,27 @@
+ t.Int%0A  
+-val
++@inline def
+  Long   
+@@ -6339,19 +6339,27 @@
+ .Long%0A  
+-val
++@inline def
+  Float  
+@@ -6407,19 +6407,27 @@
+ Float%0A  
+-val
++@inline def
+  Double 
+@@ -6476,19 +6476,27 @@
+ ouble%0A  
+-val
++@inline def
+  Boolean
+@@ -6546,19 +6546,27 @@
+ olean%0A  
+-val
++@inline def
+  Unit   
+@@ -6609,27 +6609,35 @@
+ fest.Unit%0A  
+-val
++@inline def
+  Any     : C
+@@ -6679,19 +6679,27 @@
+ t.Any%0A  
+-val
++@inline def
+  Object 
+@@ -6748,19 +6748,27 @@
+ bject%0A  
+-val
++@inline def
+  AnyVal 
+@@ -6817,19 +6817,27 @@
+ nyVal%0A  
+-val
++@inline def
+  AnyRef 
+@@ -6886,19 +6886,27 @@
+ nyRef%0A  
+-val
++@inline def
+  Nothing
+@@ -6960,11 +6960,19 @@
+ g%0A  
+-val
++@inline def
+  Nul
+@@ -7020,24 +7020,32 @@
+ est.Null%0A%0A  
++@inline 
+ def apply%5BT%5D
+@@ -7844,20 +7844,94 @@
+ ase 
+-ObjectTYPE  
++_                        =%3E%0A        if (classOf%5Bjava.lang.Object%5D == runtimeClass1) %7B%0A
+     
+@@ -7927,38 +7927,32 @@
+ ss1) %7B%0A         
+-    =%3E
+  ClassTag.Object
+@@ -7988,26 +7988,73 @@
+     
+-case NothingTYPE  
++  %7D else if (classOf%5Bscala.runtime.Nothing$%5D == runtimeClass1) %7B%0A
+     
+@@ -8050,37 +8050,32 @@
+ ss1) %7B%0A         
+-   =%3E
+  ClassTag.Nothin
+@@ -8112,28 +8112,70 @@
+     
+-case NullTYPE       
++  %7D else if (classOf%5Bscala.runtime.Null$%5D == runtimeClass1) %7B%0A
+     
+@@ -8175,27 +8175,24 @@
+  %7B%0A         
+- =%3E
+  ClassTag.Nu
+@@ -8226,34 +8226,27 @@
+ %5D%0A      
+-case _            
++  %7D else %7B%0A
+         
+@@ -8246,21 +8246,16 @@
+         
+-   =%3E
+  new Cla
+@@ -8303,20 +8303,38 @@
+ 1 %7D%0A    
+-%7D%0A%0A 
++    %7D%0A    %7D%0A%0A  @inline
+  def una
+@@ -8379,16 +8379,20 @@
+ ss%5B_%5D%5D =
++%0A   
+  Some(ct

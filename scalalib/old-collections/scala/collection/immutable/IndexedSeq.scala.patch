@@ -1,0 +1,20 @@
+@@ -1507,24 +1507,32 @@
+ zable %7B%0A    
++@inline 
+ def length =
+@@ -1547,16 +1547,24 @@
+ gth%0A    
++@inline 
+ def appl
+@@ -1598,16 +1598,24 @@
+ )%0A  %7D%0A  
++@inline 
+ def newB
+@@ -1674,17 +1674,16 @@
+ lder%5BA%5D%0A
+-%0A
+   implic
+@@ -1797,11 +1797,234 @@
+ From%5BA%5D%5D
++%0A%0A  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D
+ %0A%7D%0A

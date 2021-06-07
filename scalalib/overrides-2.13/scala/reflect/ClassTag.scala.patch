@@ -1,0 +1,150 @@
+@@ -2465,20 +2465,17 @@
+ ay%5BT%5D =%0A
+-    
++%09
+ java.lan
+@@ -3112,20 +3112,17 @@
+ on%5BT%5D =%0A
+-    
++%09
+ if (runt
+@@ -3169,20 +3169,17 @@
+ eOf%5BT%5D)%0A
+-    
++%09
+ else Non
+@@ -3466,20 +3466,17 @@
+ ing = %7B%0A
+-    
++%09
+ def pret
+@@ -3511,20 +3511,17 @@
+ tring =%0A
+-    
++%09
+   if (cl
+@@ -3587,22 +3587,18 @@
+ %5D%22 else%0A
+-      
++%09%09
+ clazz.ge
+@@ -3603,20 +3603,17 @@
+ getName%0A
+-    
++%09
+ prettypr
+@@ -3755,194 +3755,8 @@
+ g %7B%0A
+-  private%5Bthis%5D val ObjectTYPE = classOf%5Bjava.lang.Object%5D%0A  private%5Bthis%5D val NothingTYPE = classOf%5Bscala.runtime.Nothing$%5D%0A  private%5Bthis%5D val NullTYPE = classOf%5Bscala.runtime.Null$%5D%0A%0A
+   im
+@@ -3781,19 +3781,27 @@
+ ry._%0A%0A  
+-val
++@inline def
+  Byte   
+@@ -3848,19 +3848,27 @@
+ .Byte%0A  
+-val
++@inline def
+  Short  
+@@ -3916,19 +3916,27 @@
+ Short%0A  
+-val
++@inline def
+  Char   
+@@ -3983,19 +3983,27 @@
+ .Char%0A  
+-val
++@inline def
+  Int    
+@@ -4049,19 +4049,27 @@
+ t.Int%0A  
+-val
++@inline def
+  Long   
+@@ -4116,19 +4116,27 @@
+ .Long%0A  
+-val
++@inline def
+  Float  
+@@ -4184,19 +4184,27 @@
+ Float%0A  
+-val
++@inline def
+  Double 
+@@ -4253,19 +4253,27 @@
+ ouble%0A  
+-val
++@inline def
+  Boolean
+@@ -4323,19 +4323,27 @@
+ olean%0A  
+-val
++@inline def
+  Unit   
+@@ -4386,27 +4386,35 @@
+ fest.Unit%0A  
+-val
++@inline def
+  Any     : C
+@@ -4456,19 +4456,27 @@
+ t.Any%0A  
+-val
++@inline def
+  Object 
+@@ -4525,19 +4525,27 @@
+ bject%0A  
+-val
++@inline def
+  AnyVal 
+@@ -4594,19 +4594,27 @@
+ nyVal%0A  
+-val
++@inline def
+  AnyRef 
+@@ -4663,19 +4663,27 @@
+ nyRef%0A  
+-val
++@inline def
+  Nothing
+@@ -4733,19 +4733,27 @@
+ thing%0A  
+-val
++@inline def
+  Null   
+@@ -5110,20 +5110,17 @@
+ ag%5BT%5D =%0A
+-    
++%09
+ runtimeC
+@@ -5865,35 +5865,72 @@
+ ase 
+-ObjectTYPE               =%3E
++_ =%3E%0A        if (classOf%5Bjava.lang.Object%5D == runtimeClass1)%0A%09%09 
+  Cla
+@@ -5978,29 +5978,69 @@
+     
+-case NothingTYPE     
++  else if (classOf%5Bscala.runtime.Nothing$%5D == runtimeClass1)%0A
+     
+@@ -6036,34 +6036,32 @@
+ lass1)%0A         
+-=%3E
+  ClassTag.Nothin
+@@ -6098,29 +6098,66 @@
+     
+-case NullTYPE        
++  else if (classOf%5Bscala.runtime.Null$%5D == runtimeClass1)%0A
+     
+@@ -6157,26 +6157,24 @@
+ 1)%0A         
+-=%3E
+  ClassTag.Nu
+@@ -6212,40 +6212,14 @@
+     
+-case _                        =%3E
++  else
+  new
+@@ -6341,9 +6341,8 @@
+ Class)%0A%7D
+-%0A

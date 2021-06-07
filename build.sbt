@@ -1,8 +1,8 @@
 import java.io.File.pathSeparator
 import scala.collection.mutable
 import scala.util.Try
-
 import build.ScalaVersions._
+import org.bitbucket.cowwoc.diffmatchpatch.DiffMatchPatch
 
 // Convert "SomeName" to "some-name".
 def convertCamelKebab(name: String): String = {
@@ -610,8 +610,14 @@ lazy val scalalib =
         }
         def dirStr(v: String) =
           if (v.isEmpty) "overrides" else s"overrides-$v"
-        val dirs = verList.map(base / dirStr(_)).filter(_.exists)
-        dirs.toSeq // most specific shadow less specific
+        val dirs = verList.map(base / dirStr(_))
+        val collectionsDir = CrossVersion.partialVersion(ver) match {
+          case Some((2, 11 | 12)) => baseDirectory.value / "old-collections"
+          case _                  => baseDirectory.value / "new-collections"
+        }
+        // most specific shadow less specific and special dirs
+        (dirs.toSeq :+ collectionsDir)
+          .filter(_.exists)
       },
       // Compute sources
       // Files in earlier src dirs shadow files in later dirs
@@ -635,18 +641,62 @@ lazy val scalalib =
         for {
           srcDir <- sourceDirectories
           normSrcDir = normPath(srcDir)
-          src <- (srcDir ** "*.scala").get
+          scalaGlob  = srcDir.toGlob / ** / "*.scala"
+          patchGlob  = srcDir.toGlob / ** / "*.scala.patch"
+
+          (sourcePath, _) <- fileTreeView.value.list(Seq(scalaGlob, patchGlob))
+          path = normPath(sourcePath.toFile).substring(normSrcDir.length)
         } {
-          val normSrc = normPath(src)
-          val path    = normSrc.substring(normSrcDir.length)
+          def addSource(path: String)(optSource: => Option[File]): Unit = {
+            if (!paths.contains(path)) {
+              optSource.foreach { source =>
+                paths += path
+                sources += source
+              }
+            } else
+              s.log.debug(s"not including $path")
+          }
+
+          def tryApplyPatch(sourceName: String): Option[File] = {
+            val scalaSourcePath = scalaSrcDir / sourceName
+            val outputFile      = crossTarget.value / "patched" / sourceName
+            val outputDir       = outputFile.getParentFile
+            if (!outputDir.exists()) {
+              IO.createDirectory(outputDir)
+            }
+
+            val Array(patched: String, results: Array[Boolean]) = {
+              type PatchList = java.util.LinkedList[DiffMatchPatch.Patch]
+              val diff    = new DiffMatchPatch()
+              val patches = diff.patchFromText(IO.read(sourcePath.toFile))
+              diff.patchApply(patches.asInstanceOf[PatchList],
+                              IO.read(scalaSourcePath))
+            }
+            if (results.forall(_ == true)) {
+              IO.write(outputFile, patched)
+              Some(outputFile)
+            } else {
+              val path = sourcePath.toFile.relativeTo(srcDir.getParentFile).get
+              sLog.value.warn(s"Cannot apply patch for $path")
+              None
+            }
+          }
+
           val useless =
             path.contains("/scala/collection/parallel/") ||
               path.contains("/scala/util/parsing/")
+
           if (!useless) {
-            if (paths.add(path))
-              sources += src
-            else
-              s.log.debug(s"not including $src")
+            if (patchGlob.matches(sourcePath)) {
+              val sourceName = path.stripSuffix(".patch")
+              addSource(sourceName) {
+                tryApplyPatch(sourceName)
+              }
+            } else {
+              addSource(path) {
+                Some(sourcePath.toFile)
+              }
+            }
           }
         }
 
