@@ -22,51 +22,15 @@ import RE2.{
 
 import Regexp.Op._
 
-class ParserTest {
+private[regex] object ParserTest {
 
-  private trait RunePredicate {
+  trait RunePredicate {
     def applies(rune: Int): Boolean
   }
 
-  private val IS_LOWER = new RunePredicate() {
-    override def applies(r: Int): Boolean = Unicode.isLower(r)
-  }
+  val TEST_FLAGS = MATCH_NL | PERL_X | UNICODE_GROUPS
 
-  private val IS_LOWER_FOLD = new RunePredicate() {
-    override def applies(r: Int): Boolean = {
-      if (Unicode.isLower(r)) return true
-      var c = Unicode.simpleFold(r)
-      while (c != r) {
-        if (Unicode.isLower(c)) return true
-
-        c = Unicode.simpleFold(c)
-      }
-      false
-    }
-  }
-
-  private val IS_TITLE = new RunePredicate() {
-    override def applies(r: Int): Boolean = Unicode.isTitle(r)
-  }
-
-  private val IS_UPPER = new RunePredicate() {
-    override def applies(r: Int): Boolean = Unicode.isUpper(r)
-  }
-
-  private val IS_UPPER_FOLD = new RunePredicate() {
-    override def applies(r: Int): Boolean = {
-      if (Unicode.isUpper(r)) return true
-      var c = Unicode.simpleFold(r)
-      while (c != r) {
-        if (Unicode.isUpper(c)) return true
-
-        c = Unicode.simpleFold(c)
-      }
-      false
-    }
-  }
-
-  private val OP_NAMES: util.HashMap[Regexp.Op, String] = {
+  val OP_NAMES: util.HashMap[Regexp.Op, String] = {
     val temp = new util.HashMap[Regexp.Op, String]()
     temp.put(Regexp.Op.NO_MATCH, "no")
     temp.put(Regexp.Op.EMPTY_MATCH, "emp")
@@ -90,7 +54,141 @@ class ParserTest {
     temp
   }
 
-  private val TEST_FLAGS = MATCH_NL | PERL_X | UNICODE_GROUPS
+  def mkCharClass(f: RunePredicate): String = {
+    val re    = new Regexp(Regexp.Op.CHAR_CLASS)
+    val runes = new util.ArrayList[Integer]
+    var lo    = -1
+    var i     = 0
+    while (i <= Unicode.MAX_RUNE) {
+
+      if (f.applies(i)) {
+        if (lo < 0) lo = i
+      } else if (lo >= 0) {
+        runes.add(lo)
+        runes.add(i - 1)
+        lo = -1
+      }
+      i += 1
+    }
+    if (lo >= 0) {
+      runes.add(lo)
+      runes.add(Unicode.MAX_RUNE)
+    }
+    re.runes = new Array[Int](runes.size)
+    var j = 0
+    runes.toScalaSeq.foreach { i =>
+      re.runes(j) = i
+      j += 1
+    }
+    dump(re)
+  }
+
+  // dumpRegexp writes an encoding of the syntax tree for the regexp |re|
+  // to |b|.  It is used during testing to distinguish between parses that
+  // might print the same using re's toString() method.
+  private def dumpRegexp(b: StringBuffer, re: Regexp): Unit = {
+    val name = OP_NAMES.get(re.op)
+    if (name == null) b.append("op").append(re.op)
+    else
+      re.op match {
+        case STAR | PLUS | QUEST | REPEAT =>
+          if ((re.flags & NON_GREEDY) != 0) b.append('n')
+          b.append(name)
+        case LITERAL =>
+          if (re.runes.length > 1) b.append("str")
+          else b.append("lit")
+          if ((re.flags & FOLD_CASE) != 0) {
+            var break = false
+            for (r <- re.runes if !break) {
+              if (Unicode.simpleFold(r) != r) {
+                b.append("fold")
+                break = true
+              }
+            }
+          }
+        case _ =>
+          b.append(name)
+      }
+    b.append('{')
+    re.op match {
+      case END_TEXT =>
+        if ((re.flags & WAS_DOLLAR) == 0) b.append("\\z")
+      case LITERAL =>
+        for (r <- re.runes) {
+          b.appendCodePoint(r)
+        }
+      case CONCAT | ALTERNATE =>
+        for (sub <- re.subs) {
+          dumpRegexp(b, sub)
+        }
+      case STAR | PLUS | QUEST =>
+        dumpRegexp(b, re.subs(0))
+      case REPEAT =>
+        b.append(re.min).append(',').append(re.max).append(' ')
+        dumpRegexp(b, re.subs(0))
+      case CAPTURE =>
+        if (re.name != null && !re.name.isEmpty) {
+          b.append(re.name)
+          b.append(':')
+        }
+        dumpRegexp(b, re.subs(0))
+      case CHAR_CLASS =>
+        var sep = ""
+        var i   = 0
+        while (i < re.runes.length) {
+          b.append(sep)
+          sep = " "
+          val lo = re.runes(i)
+          val hi = re.runes(i + 1)
+          if (lo == hi) b.append("%#x".format(lo))
+          else b.append("%#x-%#x".format(lo, hi))
+
+          i += 2
+        }
+      case _ =>
+    }
+    b.append('}')
+  }
+
+  // dump prints a string representation of the regexp showing
+  // the structure explicitly.
+  def dump(re: Regexp) = {
+    val b = new StringBuffer()
+    dumpRegexp(b, re)
+    b.toString
+  }
+}
+
+class ParserTest {
+  import ParserTest._
+
+  private val IS_LOWER = new RunePredicate() {
+    override def applies(r: Int): Boolean = {
+      Character.getType(r) == Character.LOWERCASE_LETTER
+    }
+  }
+
+  private val IS_LETTER_CASEBLIND = new RunePredicate() {
+    override def applies(r: Int): Boolean = {
+      val t = Character.getType(r)
+
+      (t == Character.LOWERCASE_LETTER) ||
+      (t == Character.UPPERCASE_LETTER) ||
+      (t == Character.TITLECASE_LETTER)
+    }
+  }
+
+  private val IS_TITLE = new RunePredicate() {
+    override def applies(r: Int): Boolean = {
+      Character.getType(r) == Character.TITLECASE_LETTER
+    }
+  }
+
+  private val IS_UPPER = new RunePredicate() {
+    override def applies(r: Int): Boolean = {
+      Character.getType(r) == Character.UPPERCASE_LETTER
+    }
+  }
 
   private val PARSE_TESTS = Array(
     // Base cases
@@ -185,12 +283,12 @@ class ParserTest {
       "cc{0x20 0xa0 0x1680 0x180e 0x2000-0x200a 0x2028-0x2029 0x202f 0x205f 0x3000}"),
     Array("\\p{Ll}", mkCharClass(IS_LOWER)),
     Array("[\\p{Ll}]", mkCharClass(IS_LOWER)),
-    Array("(?i)[\\p{Ll}]", mkCharClass(IS_LOWER_FOLD)),
+    Array("(?i)[\\p{Ll}]", mkCharClass(IS_LETTER_CASEBLIND)),
     Array("\\p{Lt}", mkCharClass(IS_TITLE)),
     Array("[\\p{Lt}]", mkCharClass(IS_TITLE)),
     Array("\\p{Lu}", mkCharClass(IS_UPPER)),
     Array("[\\p{Lu}]", mkCharClass(IS_UPPER)),
-    Array("(?i)[\\p{Lu}]", mkCharClass(IS_UPPER_FOLD)),
+    Array("(?i)[\\p{Lu}]", mkCharClass(IS_LETTER_CASEBLIND)),
     Array("\\p{Any}", "dot{}"),
     Array("\\p{^Any}", "cc{}"),
     // Hex, octal.
@@ -343,110 +441,6 @@ class ParserTest {
     }
   }
 
-  // dump prints a string representation of the regexp showing
-  // the structure explicitly.
-  private def dump(re: Regexp) = {
-    val b = new StringBuffer()
-    dumpRegexp(b, re)
-    b.toString
-  }
-
-  // dumpRegexp writes an encoding of the syntax tree for the regexp |re|
-  // to |b|.  It is used during testing to distinguish between parses that
-  // might print the same using re's toString() method.
-  private def dumpRegexp(b: StringBuffer, re: Regexp): Unit = {
-    val name = OP_NAMES.get(re.op)
-    if (name == null) b.append("op").append(re.op)
-    else
-      re.op match {
-        case STAR | PLUS | QUEST | REPEAT =>
-          if ((re.flags & NON_GREEDY) != 0) b.append('n')
-          b.append(name)
-        case LITERAL =>
-          if (re.runes.length > 1) b.append("str")
-          else b.append("lit")
-          if ((re.flags & FOLD_CASE) != 0) {
-            var break = false
-            for (r <- re.runes if !break) {
-              if (Unicode.simpleFold(r) != r) {
-                b.append("fold")
-                break = true
-              }
-            }
-          }
-        case _ =>
-          b.append(name)
-      }
-    b.append('{')
-    re.op match {
-      case END_TEXT =>
-        if ((re.flags & WAS_DOLLAR) == 0) b.append("\\z")
-      case LITERAL =>
-        for (r <- re.runes) {
-          b.appendCodePoint(r)
-        }
-      case CONCAT | ALTERNATE =>
-        for (sub <- re.subs) {
-          dumpRegexp(b, sub)
-        }
-      case STAR | PLUS | QUEST =>
-        dumpRegexp(b, re.subs(0))
-      case REPEAT =>
-        b.append(re.min).append(',').append(re.max).append(' ')
-        dumpRegexp(b, re.subs(0))
-      case CAPTURE =>
-        if (re.name != null && !re.name.isEmpty) {
-          b.append(re.name)
-          b.append(':')
-        }
-        dumpRegexp(b, re.subs(0))
-      case CHAR_CLASS =>
-        var sep = ""
-        var i   = 0
-        while (i < re.runes.length) {
-          b.append(sep)
-          sep = " "
-          val lo = re.runes(i)
-          val hi = re.runes(i + 1)
-          if (lo == hi) b.append("%#x".format(lo))
-          else b.append("%#x-%#x".format(lo, hi))
-
-          i += 2
-        }
-      case _ =>
-    }
-    b.append('}')
-  }
-
-  private def mkCharClass(f: RunePredicate): String = {
-    val re    = new Regexp(Regexp.Op.CHAR_CLASS)
-    val runes = new util.ArrayList[Integer]
-    var lo    = -1
-    var i     = 0
-    while (i <= Unicode.MAX_RUNE) {
-
-      if (f.applies(i)) {
-        if (lo < 0) lo = i
-      } else if (lo >= 0) {
-        runes.add(lo)
-        runes.add(i - 1)
-        lo = -1
-      }
-      i += 1
-    }
-    if (lo >= 0) {
-      runes.add(lo)
-      runes.add(Unicode.MAX_RUNE)
-    }
-    re.runes = new Array[Int](runes.size)
-    var j = 0
-    runes.toScalaSeq.foreach { i =>
-      re.runes(j) = i
-      j += 1
-    }
-    dump(re)
-  }
-
   @Test def appendRangeCollapse()
       : Unit = { // AppendRange should collapse each of the new ranges
     // into the earlier ones (it looks back two ranges), so that
@@ -576,5 +570,4 @@ class ParserTest {
       }
     }
   }
-
 }
