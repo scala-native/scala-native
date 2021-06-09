@@ -168,40 +168,40 @@ final class ULong private[scalanative] (
   /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
   @inline final def >=(x: ULong): Boolean = compareTo(x) >= 0
 
-  /** * Returns the bitwise OR of this value and `x`. */
+  /** Returns the bitwise OR of this value and `x`. */
   @inline final def |(x: UByte): ULong = this | x.toULong
 
-  /** * Returns the bitwise OR of this value and `x`. */
+  /** Returns the bitwise OR of this value and `x`. */
   @inline final def |(x: UShort): ULong = this | x.toULong
 
-  /** * Returns the bitwise OR of this value and `x`. */
+  /** Returns the bitwise OR of this value and `x`. */
   @inline final def |(x: UInt): ULong = this | x.toULong
 
-  /** * Returns the bitwise OR of this value and `x`. */
+  /** Returns the bitwise OR of this value and `x`. */
   @inline final def |(x: ULong): ULong = new ULong(underlying | x.underlying)
 
-  /** * Returns the bitwise AND of this value and `x`. */
+  /** Returns the bitwise AND of this value and `x`. */
   @inline final def &(x: UByte): ULong = this & x.toULong
 
-  /** * Returns the bitwise AND of this value and `x`. */
+  /** Returns the bitwise AND of this value and `x`. */
   @inline final def &(x: UShort): ULong = this & x.toULong
 
-  /** * Returns the bitwise AND of this value and `x`. */
+  /** Returns the bitwise AND of this value and `x`. */
   @inline final def &(x: UInt): ULong = this & x.toULong
 
-  /** * Returns the bitwise AND of this value and `x`. */
+  /** Returns the bitwise AND of this value and `x`. */
   @inline final def &(x: ULong): ULong = new ULong(underlying & x.underlying)
 
-  /** * Returns the bitwise XOR of this value and `x`. */
+  /** Returns the bitwise XOR of this value and `x`. */
   @inline final def ^(x: UByte): ULong = this ^ x.toULong
 
-  /** * Returns the bitwise XOR of this value and `x`. */
+  /** Returns the bitwise XOR of this value and `x`. */
   @inline final def ^(x: UShort): ULong = this ^ x.toULong
 
-  /** * Returns the bitwise XOR of this value and `x`. */
+  /** Returns the bitwise XOR of this value and `x`. */
   @inline final def ^(x: UInt): ULong = this ^ x.toULong
 
-  /** * Returns the bitwise XOR of this value and `x`. */
+  /** Returns the bitwise XOR of this value and `x`. */
   @inline final def ^(x: ULong): ULong = new ULong(underlying ^ x.underlying)
 
   /** Returns the sum of this value and `x`. */
