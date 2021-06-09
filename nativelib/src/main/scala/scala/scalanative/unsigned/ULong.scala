@@ -36,22 +36,33 @@ final class ULong private[scalanative] (
   /**
    * Returns this value bit-shifted left by the specified number of bits,
    *         filling in the new right bits with zeroes.
-   * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
+   * @example
+   *
+   * {{{
+   * 6 << 3 == 48 // in binary: 0110 << 3 == 0110000
+   * }}}
    */
   @inline final def <<(x: Int): ULong = new ULong(underlying << x)
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
    *         filling in the new right bits with zeroes.
-   * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
+   * @example
+   *
+   * {{{
+   * 6 << 3 == 48 // in binary: 0110 << 3 == 0110000
+   * }}}
    */
   @inline final def <<(x: Long): ULong = new ULong(underlying << x)
 
   /**
    * Returns this value bit-shifted right by the specified number of bits,
    *         filling the new left bits with zeroes.
-   * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
-   * @example {{{
+   * @example
+   *
+   * {{{
+   * 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010
+   *
    * 4294967275 >>> 3 == 536870909
    * // in binary: 11111111 11111111 11111111 11101011 >>> 3 ==
    * //            00011111 11111111 11111111 11111101
@@ -62,8 +73,11 @@ final class ULong private[scalanative] (
   /**
    * Returns this value bit-shifted right by the specified number of bits,
    *         filling the new left bits with zeroes.
-   * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
-   * @example {{{
+   * @example
+   *
+   * {{{
+   * 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010
+   *
    * 4294967275 >>> 3 == 536870909
    * // in binary: 11111111 11111111 11111111 11101011 >>> 3 ==
    * //            00011111 11111111 11111111 11111101
@@ -74,7 +88,9 @@ final class ULong private[scalanative] (
   /**
    * Returns this value bit-shifted left by the specified number of bits,
    *         filling in the right bits with the same value as the left-most bit of this.
-   * @example {{{
+   * @example
+   *
+   * {{{
    * 4294967275 >> 3 == 4294967293
    * // in binary: 11111111 11111111 11111111 11101011 >> 3 ==
    * //            11111111 11111111 11111111 11111101
@@ -85,7 +101,9 @@ final class ULong private[scalanative] (
   /**
    * Returns this value bit-shifted left by the specified number of bits,
    *         filling in the right bits with the same value as the left-most bit of this.
-   * @example {{{
+   * @example
+   *
+   * {{{
    * 4294967275 >> 3 == 4294967293
    * // in binary: 11111111 11111111 11111111 11101011 >> 3 ==
    * //            11111111 11111111 11111111 11111101
