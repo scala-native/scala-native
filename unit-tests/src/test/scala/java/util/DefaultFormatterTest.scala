@@ -632,8 +632,8 @@ class DefaultFormatterTest {
       val f = new Formatter()
       for (i <- (0 to 256).map(_.toChar)) {
         // test 8 bit character
-        if (Arrays.binarySearch(chars, i) >= 0 || Character.isDigit(i) || Character
-              .isLetter(i)) {
+        if (Arrays.binarySearch(chars, i) >= 0 || Character.isDigit(i)
+            || Character.isLetter(i)) {
           // Do not test 0-9, a-z, A-Z and characters in the chars array.
           // They are characters used as flags, width or conversions
         } else {

@@ -107,8 +107,9 @@ final class URI private () extends Comparable[URI] with Serializable {
         uri.append('@')
       }
       if (host != null) {
-        if (host.indexOf(':') != -1 && host.indexOf(']') == -1 && host.indexOf(
-              '[') == -1) {
+        if (host.indexOf(':') != -1 &&
+            host.indexOf(']') == -1 &&
+            host.indexOf('[') == -1) {
           hostVar = "[" + host + "]"
         }
         uri.append(hostVar)

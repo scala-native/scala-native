@@ -397,8 +397,8 @@ object File {
       i += 1
     }
 
-    if (foundSlash && (newLength > (uncIndex + 1) || (newLength == 2 && newPath(
-          0) != separatorChar))) {
+    if (foundSlash && (newLength > (uncIndex + 1) ||
+        (newLength == 2 && newPath(0) != separatorChar))) {
       newLength -= 1
     }
 

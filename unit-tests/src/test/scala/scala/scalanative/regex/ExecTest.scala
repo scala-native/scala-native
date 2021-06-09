@@ -290,7 +290,8 @@ class ExecTest {
     n = 0
     j = 0
     while (j <= len) {
-      if (j == len || res.charAt(j) == ' ') { // Process a single pair.  - means no submatch.
+      // Process a single pair.  - means no submatch.
+      if (j == len || res.charAt(j) == ' ') { 
         val pair = res.substring(i, j)
         if (pair == "-") {
           out({
@@ -612,7 +613,8 @@ class ExecTest {
       shouldCompileMatch(0) = true
       shouldCompileMatch(1) = false
       return Collections.emptyList[Integer]
-    } else if ('A' <= s.charAt(0) && s.charAt(0) <= 'Z') { // All the other error codes are compile errors.
+    } else if ('A' <= s.charAt(0) && s.charAt(0) <= 'Z') {
+      // All the other error codes are compile errors.
       shouldCompileMatch(0) = false
       return Collections.emptyList[Integer]
     }

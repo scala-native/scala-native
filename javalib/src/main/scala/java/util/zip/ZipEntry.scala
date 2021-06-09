@@ -194,8 +194,9 @@ object ZipEntry extends ZipConstants {
     myReadFully(in, hdrBuf)
 
     val sig =
-      ((hdrBuf(0) & 0xFF) | ((hdrBuf(1) & 0xFF) << 8) | ((hdrBuf(2) & 0xFF) << 16) | ((hdrBuf(
-        3) & 0xFF) << 24)).toLong & 0xFFFFFFFFL
+      ((hdrBuf(0) & 0xFF) | ((hdrBuf(1) & 0xFF) << 8) |
+      ((hdrBuf(2) & 0xFF) << 16) | ((hdrBuf(3) & 0xFF) << 24)).toLong &
+      0xFFFFFFFFL
     if (sig != CENSIG) {
       throw new ZipException("Central Directory Entry not found")
     }
@@ -281,7 +282,8 @@ object ZipEntry extends ZipConstants {
 
     def readIntLE(in: InputStream): Int =
       if (in.read(b, 0, 4) == 4) {
-        ((((b(0) & 0xFF) | ((b(1) & 0xFF) << 8) | ((b(2) & 0xFF) << 16) | ((b(3) & 0xFF) << 24))).toLong & 0xFFFFFFFFL).toInt
+        ((((b(0) & 0xFF) | ((b(1) & 0xFF) << 8) | ((b(2) & 0xFF) << 16) |
+          ((b(3) & 0xFF) << 24))).toLong & 0xFFFFFFFFL).toInt
       } else {
         throw new EOFException()
       }

@@ -188,7 +188,8 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
     writeShort(out, ZIPLocalHeaderVersionNeeded) // Extraction version
     writeShort(
       out,
-      if (currentEntry.getMethod() == STORED) 0 else ZIPDataDescriptorFlag)
+      if (currentEntry.getMethod() == STORED) 0 else ZIPDataDescriptorFlag
+    )
     writeShort(out, currentEntry.getMethod())
     if (currentEntry.getTime() == -1) {
       currentEntry.setTime(System.currentTimeMillis())

@@ -255,7 +255,8 @@ private[jar] class JarVerifier(jarName: String) {
       if (hash != null) {
         try {
           val md = MessageDigest.getInstance(algorithm)
-          if (ignoreSecondEndline && data(end - 1) == '\n' && data(end - 2) == '\n') {
+          if (ignoreSecondEndline && data(end - 1) == '\n' &&
+              data(end - 2) == '\n') {
             md.update(data, start, end - 1 - start)
           } else {
             md.update(data, start, end - start)

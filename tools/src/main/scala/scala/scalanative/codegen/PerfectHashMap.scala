@@ -60,8 +60,8 @@ object PerfectHashMap {
               if (item < bucket.size) {
                 val slot = mod(hashFunc(bucket(item), d), hashMapSize)
 
-                if (values.getOrElse(slot, None).isDefined || slots.contains(
-                      slot)) {
+                if (values.getOrElse(slot, None).isDefined ||
+                    slots.contains(slot)) {
                   findSlots(d + 1, 0, List())
                 } else {
                   findSlots(d, item + 1, slot :: slots)

@@ -283,7 +283,8 @@ class Machine(re2: RE2) {
         if (t == null) {
           () //continue
         } else {
-          if (longest && matched && t.cap.length > 0 && matchcap(0) < t.cap(0)) {
+          if (longest && matched && t.cap.length > 0 &&
+              matchcap(0) < t.cap(0)) {
             // free(t)
             pool.add(t)
             () // continue
@@ -297,7 +298,8 @@ class Machine(re2: RE2) {
                   // expectations aren't met.
                   () // break switch
                 } else {
-                  if (t.cap.length > 0 && (!longest || !matched || matchcap(1) < pos)) {
+                  if (t.cap.length > 0 && (!longest || !matched ||
+                      matchcap(1) < pos)) {
                     t.cap(1) = pos
                     System.arraycopy(t.cap, 0, matchcap, 0, t.cap.length)
                   }
