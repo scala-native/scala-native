@@ -380,10 +380,10 @@ object File {
         }
       } else {
         // check for leading slashes before a drive
-        if (currentChar == ':'
-            && uncIndex > 0
-            && (newLength == 2 || (newLength == 3 && newPath(1) == separatorChar))
-            && newPath(0) == separatorChar) {
+        if (currentChar == ':' && uncIndex > 0 &&
+            (newLength == 2 ||
+              (newLength == 3 && newPath(1) == separatorChar)) &&
+            newPath(0) == separatorChar) {
           newPath(0) = newPath(newLength - 1)
           newLength = 1
           // allow trailing slash after drive letter
@@ -397,8 +397,9 @@ object File {
       i += 1
     }
 
-    if (foundSlash && (newLength > (uncIndex + 1) ||
-        (newLength == 2 && newPath(0) != separatorChar))) {
+    if (foundSlash &&
+        (newLength > (uncIndex + 1) ||
+          (newLength == 2 && newPath(0) != separatorChar))) {
       newLength -= 1
     }
 
@@ -429,8 +430,8 @@ object File {
   def isAbsolute(path: String): Boolean =
     if (separatorChar == '\\') { // Windows. Must start with `\\` or `X:(\|/)`
       (path.length > 1 && path.startsWith(separator + separator)) ||
-      (path.length > 2 && path(0).isLetter && path(1) == ':' && (path(2) == '/' || path(
-        2) == '\\'))
+      (path.length > 2 && path(0).isLetter && path(1) == ':' &&
+        (path(2) == '/' || path(2) == '\\'))
     } else {
       path.length > 0 && path.startsWith(separator)
     }
