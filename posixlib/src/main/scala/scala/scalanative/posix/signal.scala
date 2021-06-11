@@ -121,8 +121,8 @@ object signal {
     CFuncPtr3[CInt,
               Ptr[siginfo_t],
               Ptr[Byte],
-              Unit // sa_sigaction Pointer to a signal-catching function
-    ]
+              Unit
+    ] // sa_sigaction Pointer to a signal-catching function
   ]
 
   // define the following macros which shall expand to integer constant expressions
