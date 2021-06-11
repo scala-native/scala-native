@@ -118,11 +118,12 @@ object signal {
     CFuncPtr1[CInt, Unit], // sa_handler Ptr to a signal-catching function or one of the SIG_IGN or SIG_DFL
     sigset_t,              // sa_mask Set of signals to be blocked during execution of the signal handling func
     CInt,                  // sa_flags Special flags
+    // sa_sigaction Pointer to a signal-catching function
     CFuncPtr3[CInt,
               Ptr[siginfo_t],
               Ptr[Byte],
               Unit
-    ] // sa_sigaction Pointer to a signal-catching function
+    ]
   ]
 
   // define the following macros which shall expand to integer constant expressions
