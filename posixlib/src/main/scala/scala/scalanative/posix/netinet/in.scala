@@ -17,17 +17,20 @@ object in {
   type sockaddr_in = CStruct4[socket.sa_family_t, // sin_family
                               in_port_t,        // sin_port
                               in_addr,          // sin_addr
-                              CArray[Byte, _8]] // sin_zero, Posix allowed
+                              CArray[Byte, _8] // sin_zero, Posix allowed
+  ]
 
   type in6_addr = CStruct1[CArray[uint8_t, _16]] // s6_addr
   type sockaddr_in6 = CStruct5[in6_addr, // sin6_addr
                                socket.sa_family_t, // sin6_family
                                in_port_t,          // sin6_port
                                uint32_t,           // sin6_flowinfo
-                               uint32_t]           // sin6_scope_id
+                               uint32_t           // sin6_scope_id
+  ]
 
   type ipv6_mreq = CStruct2[in6_addr, // ipv6mr_multiaddr
-                            CUnsignedInt] // ipv6mr_interface
+                            CUnsignedInt // ipv6mr_interface
+  ]
 
   @name("scalanative_ipproto_ip")
   def IPPROTO_IP: CInt = extern

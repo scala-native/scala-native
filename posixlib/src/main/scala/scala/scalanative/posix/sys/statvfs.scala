@@ -19,7 +19,8 @@ object statvfs {
                            fsfilcnt_t,    // f_favail
                            CUnsignedLong, // f_fsid
                            CUnsignedLong, // f_flag
-                           CUnsignedLong] // f_namemax
+                           CUnsignedLong // f_namemax
+  ]
 
   @name("scalanative_statvfs")
   def statvfs(path: CString, buf: Ptr[statvfs]): CInt = extern

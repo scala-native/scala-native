@@ -14,7 +14,8 @@ object poll {
 
   type struct_pollfd = CStruct3[CInt, // file descriptor
                                 pollEvent_t, // requested events
-                                pollEvent_t] // returned events
+                                pollEvent_t // returned events
+  ]
 
   def poll(fds: Ptr[struct_pollfd], nfds: nfds_t, timeout: CInt): CInt = extern
 

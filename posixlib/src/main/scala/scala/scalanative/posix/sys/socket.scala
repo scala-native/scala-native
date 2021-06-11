@@ -9,9 +9,9 @@ object socket {
   type socklen_t   = CUnsignedInt
   type sa_family_t = CUnsignedShort
   type _14         = Nat.Digit2[Nat._1, Nat._4]
-  type sockaddr =
-    CStruct2[sa_family_t,        // sa_family
-             CArray[CChar, _14]] // sa_data, size = 14 in OS X and Linux
+  type sockaddr = CStruct2[sa_family_t,        // sa_family
+             CArray[CChar, _14] // sa_data, size = 14 in OS X and Linux
+    ]
   type sockaddr_storage = CStruct1[sa_family_t] // ss_family
   type msghdr = CStruct7[Ptr[Byte], // msg_name
                          socklen_t,      // msg_namelen
@@ -19,13 +19,16 @@ object socket {
                          CInt,           // msg_iovlen
                          Ptr[Byte],      // msg_control
                          socklen_t,      // msg_crontrollen
-                         CInt]           // msg_flags
+                         CInt           // msg_flags
+  ]
   type cmsghdr = CStruct3[socklen_t, // cmsg_len
                           CInt, // cmsg_level
-                          CInt] // cmsg_type
+                          CInt // cmsg_type
+  ]
   type iovec = uio.iovec
   type linger = CStruct2[CInt, // l_onoff
-                         CInt] // l_linger
+                         CInt // l_linger
+  ]
 
   @name("scalanative_scm_rights")
   def SCM_RIGHTS: CInt = extern

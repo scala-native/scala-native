@@ -28,7 +28,8 @@ object stat {
                         blkcnt_t,  // st_blocks
                         blksize_t, // st_blksize
                         nlink_t,   // st_nlink
-                        mode_t]    // st_mode
+                        mode_t    // st_mode
+  ]
 
   @name("scalanative_stat")
   def stat(path: CString, buf: Ptr[stat]): CInt = extern

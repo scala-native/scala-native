@@ -30,7 +30,8 @@ object zlib {
                             voidpf,     // opaque
                             CInt,       // data_type
                             uLong,      // adler
-                            uLong]      // future
+                            uLong      // future
+  ]
 
   type z_streamp = Ptr[z_stream]
 
@@ -46,7 +47,8 @@ object zlib {
                              Ptr[Bytef], // comment
                              uInt,       // comm_max
                              CInt,       // gcrc
-                             CInt]       // done
+                             CInt       // done
+  ]
 
   type gz_headerp = Ptr[gz_header]
 

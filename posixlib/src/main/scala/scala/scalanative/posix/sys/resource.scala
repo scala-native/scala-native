@@ -22,10 +22,12 @@ object resource {
   type timeval = sys.time.timeval
 
   type rlimit = CStruct2[rlim_t, // rlim_cur
-                         rlim_t] // rlim_max
+                         rlim_t // rlim_max
+  ]
 
   type rusage = CStruct2[timeval, // ru_utime
-                         timeval] // ru_stime
+                         timeval // ru_stime
+  ]
 
   def getpriority(which: CInt, who: id_t): CInt = extern
 
