@@ -130,9 +130,13 @@ jobs:
           - scala: 2.12.13
             build-mode: debug
             gc: immix
+            host_arch: amd64
+            docker_arch: library
           - scala: 2.12.13
             build-mode: release-fast
             gc: commix
+            host_arch: amd64
+            docker_arch: library
           - scala: 2.13.4
             build-mode: debug
             gc: immix
@@ -202,6 +206,8 @@ jobs:
         include:
           - scala: 2.12.13
             build-mode: release-fast
+            host_arch: amd64
+            docker_arch: library
           - scala: 2.13.4
             build-mode: release-fast
             host_arch: amd64
