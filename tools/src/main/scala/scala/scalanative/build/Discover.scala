@@ -79,6 +79,14 @@ object Discover {
     libs
   }
 
+  /** Find default linktime resolve properties */
+  def linktimeProperties(): Map[String, Any] = {
+    val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
+    Map(
+      s"$linktimeInfo.isWindows" -> Platform.isWindows
+    )
+  }
+
   /** Tests whether the clang compiler is greater or equal to the
    *  minumum version required.
    */

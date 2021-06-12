@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "MemoryMap.h"
 #include "MemoryInfo.h"
 #include "Parsing.h"
@@ -6,7 +7,14 @@
 #include <sys/mman.h>
 #include <string.h>
 
-// Dummy GC that maps chunks of 4GB and allocates but never frees.
+// Dummy GC that maps chunks of memory and allocates but never frees.
+#ifdef _WIN32
+// On Windows we need to commit memory in relatively small chunks - this way
+// process would not use too much resources.
+#define DEFAULT_CHUNK_SIZE "64M"
+#else
+#define DEFAULT_CHUNK_SIZE "4G"
+#endif
 
 void *current = 0;
 void *end = 0;
@@ -17,6 +25,11 @@ static size_t CHUNK;
 static size_t TO_NORMAL_MMAP = 1L;
 static size_t DO_PREALLOC = 0L; // No Preallocation.
 
+void exitWithOutOfMemory() {
+    fprintf(stderr, "Out of heap space\n");
+    exit(1);
+}
+
 void Prealloc_Or_Default() {
 
     if (TO_NORMAL_MMAP == 1L) { // Check if we have prealloc env varible
@@ -24,7 +37,8 @@ void Prealloc_Or_Default() {
         size_t memorySize = getMemorySize();
 
         DEFAULT_CHUNK = // Default Maximum allocation Map 4GB
-            Choose_IF(Parse_Env_Or_Default_String("GC_MAXIMUM_HEAP_SIZE", "4G"),
+            Choose_IF(Parse_Env_Or_Default_String("GC_MAXIMUM_HEAP_SIZE",
+                                                  DEFAULT_CHUNK_SIZE),
                       Less_OR_Equal, memorySize);
 
         PREALLOC_CHUNK = // Preallocation
@@ -52,7 +66,15 @@ void Prealloc_Or_Default() {
 void scalanative_init() {
     Prealloc_Or_Default();
     current = memoryMapPrealloc(CHUNK, DO_PREALLOC);
+    if (current == NULL) {
+        exitWithOutOfMemory();
+    }
     end = current + CHUNK;
+#ifdef _WIN32
+    if (!memoryCommit(current, CHUNK)) {
+        exitWithOutOfMemory();
+    };
+#endif // _WIN32
 }
 
 void *scalanative_alloc(void *info, size_t size) {

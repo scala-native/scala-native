@@ -90,6 +90,13 @@ sealed trait Config {
           s"Unexpected architecture in target triple: ${o}, defaulting to 64-bit")
         false
     }
+
+  private[scalanative] def targetsWindows: Boolean = {
+    compilerConfig.targetTriple.fold(Platform.isWindows) { customTriple =>
+      customTriple.contains("win32") ||
+      customTriple.contains("windows")
+    }
+  }
 }
 
 object Config {

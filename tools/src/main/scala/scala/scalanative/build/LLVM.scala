@@ -45,10 +45,15 @@ private[scalanative] object LLVM {
       // LL is generated so always rebuild
       if (isLl || !Files.exists(objPath)) {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag =
+        val stdflag = {
           if (isLl) Seq()
-          else if (isCpp) Seq("-std=c++11")
-          else Seq("-std=gnu11")
+          else if (isCpp) {
+            // C++14 or newer standard is needed to compile code using Windows API
+            // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+            if (config.targetsWindows) Seq("-std=c++14")
+            else Seq("-std=c++11")
+          } else Seq("-std=gnu11")
+        }
         val flags = opt(config) +: stdflag ++: "-fvisibility=hidden" +:
           config.compileOptions
         val compilec =
@@ -88,12 +93,20 @@ private[scalanative] object LLVM {
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.
       // * libpthread for process APIs and parallel garbage collection.
-      "pthread" +: "dl" +: srclinks ++: gclinks
+      // * Dbghelp for windows implementation of unwind libunwind API
+      val platformsLinks =
+        if (config.targetsWindows) Seq("Dbghelp")
+        else Seq("pthread", "dl")
+      platformsLinks ++ srclinks ++ gclinks
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
-    val flags =
-      flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ asanSettings ++ target(
+    val flags = {
+      val platformFlags =
+        if (config.targetsWindows) Seq()
+        else Seq("-rdynamic")
+      flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ unwindSettings ++ asanSettings ++ target(
         config)
+    }
     val paths   = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
     val ltoName = lto(config).getOrElse("none")
