@@ -51,7 +51,6 @@ jobs:
       matrix:
         host_arch: [ amd64 ]
         docker_arch: [ library, i386 ]
-
     steps:
       - uses: actions/checkout@v2
       # In order to minimize time spend in image build loading we're caching directory of local repository
@@ -185,6 +184,7 @@ jobs:
           SCALA_VERSION: ${{ matrix.scala}}
           TEST_COMMAND: test-runtime
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
+        continue-on-error: ${{ matrix.docker_arch == 'i386' }}
 
   # This job is basically copy-paste of test-runtime.
   # Main difference is disabled optimization and fixed Immix GC
