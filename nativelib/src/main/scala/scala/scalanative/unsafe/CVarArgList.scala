@@ -30,15 +30,15 @@ object CVarArgList {
 
   private final val countGPRegisters = 6
   private final val countFPRegisters = 8
-  private final val fpRegisterWords  = 2
-  private final val registerSaveWords =
-    countGPRegisters + countFPRegisters * fpRegisterWords
+  private final val fpRegisterSizes  = 2
+  private final val registerSaveSizes =
+    countGPRegisters + countFPRegisters * fpRegisterSizes
 
   /** Construct C-style vararg list from Scala sequence. */
   private[scalanative] def fromSeq(varargs: Seq[CVarArg])(
       implicit z: Zone): CVarArgList = {
     if (!is32) {
-      var storage         = new Array[Long](registerSaveWords)
+      var storage         = new Array[Long](registerSaveSizes)
       var wordsUsed       = storage.size
       var gpRegistersUsed = 0
       var fpRegistersUsed = 0
@@ -86,7 +86,7 @@ object CVarArgList {
 
         if (isDouble && fpRegistersUsed < countFPRegisters) {
           var startIndex =
-            countGPRegisters + (fpRegistersUsed * fpRegisterWords)
+            countGPRegisters + (fpRegistersUsed * fpRegisterSizes)
           encoded.foreach { w =>
             storage(startIndex) = w
             startIndex += 1
@@ -106,13 +106,13 @@ object CVarArgList {
       val storageStart = storage.asInstanceOf[LongArray].at(0)
       libc.memcpy(toRawPtr(resultStorage),
                   toRawPtr(storageStart),
-                  wordsUsed.toUWord * sizeof[Long])
+                  wordsUsed.toUSize * sizeof[Long])
 
       val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
       resultHeader.gpOffset = 0.toUInt
-      resultHeader.fpOffset = (countGPRegisters.toUWord * sizeof[Long]).toUInt
+      resultHeader.fpOffset = (countGPRegisters.toUSize * sizeof[Long]).toUInt
       resultHeader.regSaveArea = resultStorage
-      resultHeader.overflowArgArea = resultStorage + registerSaveWords.toUWord
+      resultHeader.overflowArgArea = resultStorage + registerSaveSizes.toUSize
 
       new CVarArgList(toRawPtr(resultHeader))
     } else {
@@ -136,13 +136,13 @@ object CVarArgList {
         }
       }
 
-      var totalSize = 0.toUWord
+      var totalSize = 0.toUSize
       resizedArgs.foreach { vararg =>
         totalSize = Tag.align(totalSize, vararg.tag.alignment) + vararg.tag.size
       }
 
       val argListStorage = z.alloc(totalSize).asInstanceOf[Ptr[Byte]]
-      var currentIndex   = 0.toUWord
+      var currentIndex   = 0.toUSize
       resizedArgs.foreach { vararg =>
         currentIndex = Tag.align(currentIndex, vararg.tag.alignment)
         vararg.tag.store((argListStorage + currentIndex).asInstanceOf[Ptr[Any]],

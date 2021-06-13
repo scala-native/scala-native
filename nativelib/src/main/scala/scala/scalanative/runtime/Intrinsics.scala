@@ -6,7 +6,7 @@ import scalanative.unsafe._
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: RawWord): RawPtr = intrinsic
+  def stackalloc(size: RawSize): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
@@ -50,7 +50,7 @@ object Intrinsics {
   /** Intrinsified raw memory load of boolean. */
   def loadBoolean(rawptr: RawPtr): Boolean = intrinsic
 
-  def loadWord(rawptr: RawPtr): RawWord = intrinsic
+  def loadSize(rawptr: RawPtr): RawSize = intrinsic
 
   /** Intrinsified raw memory load of char. */
   def loadChar(rawptr: RawPtr): Char = intrinsic
@@ -82,7 +82,7 @@ object Intrinsics {
   /** Intrinsified raw memory store of boolean. */
   def storeBoolean(rawptr: RawPtr, value: Boolean): Unit = intrinsic
 
-  def storeWord(rawptr: RawPtr, value: RawWord): Unit = intrinsic
+  def storeSize(rawptr: RawPtr, value: RawSize): Unit = intrinsic
 
   /** Intrinsified raw memory store of char. */
   def storeChar(rawptr: RawPtr, value: Char): Unit = intrinsic
@@ -112,7 +112,7 @@ object Intrinsics {
   def storeObject(rawptr: RawPtr, value: Object): Unit = intrinsic
 
   /** Intrinsified computation of derived raw pointer. */
-  def elemRawPtr(rawptr: RawPtr, offset: RawWord): RawPtr =
+  def elemRawPtr(rawptr: RawPtr, offset: RawSize): RawPtr =
     intrinsic
 
   /** Intrinsified cast that reinterprets raw pointer as an object. */
@@ -146,53 +146,53 @@ object Intrinsics {
   def castLongToRawPtr(int: Long): RawPtr = intrinsic
 
   /** Intrinsified cast that reinterprets raw word as an int. */
-  def castRawWordToInt(rawWord: RawWord): Int = intrinsic
+  def castRawSizeToInt(rawSize: RawSize): Int = intrinsic
 
   /** Intrinsified cast that reinterprets raw word as a signed long. */
-  def castRawWordToLong(rawWord: RawWord): Long = intrinsic
+  def castRawSizeToLong(rawSize: RawSize): Long = intrinsic
 
   /** Intrinsified cast that reinterprets raw word as an unsigned long. */
-  def castRawWordToLongUnsigned(rawWord: RawWord): Long = intrinsic
+  def castRawSizeToLongUnsigned(rawSize: RawSize): Long = intrinsic
 
   /** Intrinsified cast that reinterprets int as a signed raw word. */
-  def castIntToRawWord(int: Int): RawWord = intrinsic
+  def castIntToRawSize(int: Int): RawSize = intrinsic
 
   /** Intrinsified cast that reinterprets int as an unsigned raw word. */
-  def castIntToRawWordUnsigned(int: Int): RawWord = intrinsic
+  def castIntToRawSizeUnsigned(int: Int): RawSize = intrinsic
 
   /** Intrinsified cast that reinterprets long as a raw word. */
-  def castLongToRawWord(long: Long): RawWord = intrinsic
+  def castLongToRawSize(long: Long): RawSize = intrinsic
 
   /** Intrinsic to get the size of a word in bytes, resolved to a constant in the linker */
-  def sizeOfWord: RawWord = intrinsic
+  def sizeOfSize: RawSize = intrinsic
 
   /** Intrinsified bitwise and on raw words. */
-  def andRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+  def andRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
 
   /** Intrinsified bitwise or on raw words. */
-  def orRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+  def orRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
 
   /** Intrinsified bitwise xor on raw words. */
-  def xorRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+  def xorRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
 
   /** Intrinsified addition on raw words. */
-  def addRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+  def addRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
 
   /** Intrinsified subtraction on raw words. */
-  def subRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+  def subRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
 
   /** Intrinsified multiplication on raw words. */
-  def multRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+  def multRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
 
   /** Intrinsified division on raw words. */
-  def divRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+  def divRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
 
   /** Intrinsified division on unsigned raw words. */
-  def divRawWordsUnsigned(a: RawWord, b: RawWord): RawWord = intrinsic
+  def divRawSizesUnsigned(a: RawSize, b: RawSize): RawSize = intrinsic
 
   /** Intrinsified modulo on raw words. */
-  def modRawWords(a: RawWord, b: RawWord): RawWord = intrinsic
+  def modRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
 
   /** Intrinsified modulo on unsignedraw words. */
-  def modRawWordsUnsigned(a: RawWord, b: RawWord): RawWord = intrinsic
+  def modRawSizesUnsigned(a: RawSize, b: RawSize): RawSize = intrinsic
 }

@@ -397,8 +397,8 @@ object Show {
     }
 
     def conv_(conv: Conv): Unit = conv match {
-      case Conv.SWordCast => str("swordcast")
-      case Conv.ZWordCast => str("zwordcast")
+      case Conv.SSizeCast => str("swordcast")
+      case Conv.ZSizeCast => str("zwordcast")
       case Conv.Trunc     => str("trunc")
       case Conv.Zext      => str("zext")
       case Conv.Sext      => str("sext")
@@ -424,7 +424,7 @@ object Show {
         str("zero[")
         type_(ty)
         str("]")
-      case Val.Word(value) =>
+      case Val.Size(value) =>
         str("word ")
         str(value)
       case Val.Char(value) =>
@@ -488,7 +488,7 @@ object Show {
         str("classOf[")
         global_(cls)
         str("]")
-      case Val.SizeOfWord =>
+      case Val.SizeOfSize =>
         str("sizeofword")
     }
 
@@ -572,7 +572,7 @@ object Show {
       case Type.Vararg => str("...")
       case Type.Bool   => str("bool")
       case Type.Ptr    => str("ptr")
-      case Type.Word   => str("word")
+      case Type.Size   => str("word")
       case Type.Char   => str("char")
       case Type.Byte   => str("byte")
       case Type.Short  => str("short")

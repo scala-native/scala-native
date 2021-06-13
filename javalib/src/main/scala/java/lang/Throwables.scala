@@ -12,10 +12,10 @@ private[lang] object StackTrace {
   private def makeStackTraceElement(
       cursor: Ptr[scala.Byte]): StackTraceElement = {
     val nameMax = 1024
-    val name    = stackalloc[CChar](nameMax.toUWord)
+    val name    = stackalloc[CChar](nameMax.toUSize)
     val offset  = stackalloc[CSize]
 
-    unwind.get_proc_name(cursor, name, nameMax.toUWord, offset)
+    unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
 
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's
@@ -34,8 +34,8 @@ private[lang] object StackTrace {
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    val cursor  = stackalloc[scala.Byte](2048.toUWord)
-    val context = stackalloc[scala.Byte](2048.toUWord)
+    val cursor  = stackalloc[scala.Byte](2048.toUSize)
+    val context = stackalloc[scala.Byte](2048.toUSize)
     val ip      = stackalloc[CUnsignedLong]
     var buffer  = mutable.ArrayBuffer.empty[StackTraceElement]
 

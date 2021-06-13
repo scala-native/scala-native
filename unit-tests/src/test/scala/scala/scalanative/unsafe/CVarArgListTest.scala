@@ -12,7 +12,7 @@ import scalanative.libc.{stdio, stdlib, string}
 class CVarArgListTest {
   def vatest(cstr: CString, varargs: Seq[CVarArg], output: String): Unit =
     Zone { implicit z =>
-      val buff = alloc[CChar](1024.toUWord)
+      val buff = alloc[CChar](1024.toUSize)
       stdio.vsprintf(buff, cstr, toCVarArgList(varargs))
       val got = fromCString(buff)
       assertTrue(s"$got != $output", got == output)

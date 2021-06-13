@@ -139,8 +139,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   }
 
   private def getConv(): Conv = getInt match {
-    case T.SWordCastConv => Conv.SWordCast
-    case T.ZWordCastConv => Conv.ZWordCast
+    case T.SSizeCastConv => Conv.SSizeCast
+    case T.ZSizeCastConv => Conv.ZSizeCast
     case T.TruncConv     => Conv.Trunc
     case T.ZextConv      => Conv.Zext
     case T.SextConv      => Conv.Sext
@@ -249,7 +249,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   private def getType(): Type = getInt match {
     case T.VarargType      => Type.Vararg
     case T.PtrType         => Type.Ptr
-    case T.WordType        => Type.Word
+    case T.SizeType        => Type.Size
     case T.BoolType        => Type.Bool
     case T.CharType        => Type.Char
     case T.ByteType        => Type.Byte
@@ -277,7 +277,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.FalseVal       => Val.False
     case T.NullVal        => Val.Null
     case T.ZeroVal        => Val.Zero(getType())
-    case T.WordVal        => Val.Word(getInt)
+    case T.SizeVal        => Val.Size(getInt)
     case T.CharVal        => Val.Char(getShort.toChar)
     case T.ByteVal        => Val.Byte(get)
     case T.ShortVal       => Val.Short(getShort)
@@ -300,7 +300,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
       }
     case T.VirtualVal    => Val.Virtual(getLong)
     case T.ClassOfVal    => Val.ClassOf(getGlobal())
-    case T.SizeOfWordVal => Val.SizeOfWord
+    case T.SizeOfSizeVal => Val.SizeOfSize
   }
 
   private def getLinktimeCondition(): LinktimeCondition = getInt() match {

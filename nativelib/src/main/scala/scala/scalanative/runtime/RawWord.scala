@@ -1,4 +1,4 @@
 package scala.scalanative
 package runtime
 
-final abstract class RawWord
+final abstract class RawSize

@@ -40,7 +40,7 @@ object Type {
   object FixedSizeI {
     def unapply(i: FixedSizeI): Some[(Int, Boolean)] = Some((i.width, i.signed))
   }
-  final case object Word extends I {
+  final case object Size extends I {
     val signed = true;
   }
   final case object Char  extends FixedSizeI(16, signed = false)
@@ -97,8 +97,8 @@ object Type {
   final case class Function(args: Seq[Type], ret: Type) extends SpecialKind
 
   val boxesTo = Seq[(Type, Type)](
-    Type.Ref(Global.Top("scala.scalanative.unsafe.Word"))        -> Type.Word,
-    Type.Ref(Global.Top("scala.scalanative.unsigned.UWord"))     -> Type.Word,
+    Type.Ref(Global.Top("scala.scalanative.unsafe.Size"))        -> Type.Size,
+    Type.Ref(Global.Top("scala.scalanative.unsigned.USize"))     -> Type.Size,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UByte"))     -> Type.Byte,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UShort"))    -> Type.Short,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UInt"))      -> Type.Int,

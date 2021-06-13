@@ -95,7 +95,7 @@ object Mangle {
       case Type.FixedSizeI(16, true) => str("s")
       case Type.FixedSizeI(32, true) => str("i")
       case Type.FixedSizeI(64, true) => str("j")
-      case Type.Word                 => str("w")
+      case Type.Size                 => str("w")
       case Type.Float                => str("f")
       case Type.Double               => str("d")
       case Type.Null                 => str("l")

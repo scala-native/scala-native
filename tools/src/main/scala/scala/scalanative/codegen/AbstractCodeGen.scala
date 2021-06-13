@@ -356,7 +356,7 @@ private[codegen] abstract class AbstractCodeGen(
       case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing => str("i8*")
       case Type.Bool                                             => str("i1")
       case i: Type.FixedSizeI                                    => str("i"); str(i.width)
-      case Type.Word =>
+      case Type.Size =>
         if (is32) {
           str("i32")
         } else {
@@ -419,7 +419,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Val.Null      => str("null")
       case Val.Zero(ty)  => str("zeroinitializer")
       case Val.Byte(v)   => str(v)
-      case Val.Word(v)   => str(v)
+      case Val.Size(v)   => str(v)
       case Val.Char(v)   => str(v.toInt)
       case Val.Short(v)  => str(v)
       case Val.Int(v)    => str(v)
@@ -445,7 +445,7 @@ private[codegen] abstract class AbstractCodeGen(
         str("* @")
         genGlobal(n)
         str(" to i8*)")
-      case Val.SizeOfWord =>
+      case Val.SizeOfSize =>
         if (is32) {
           str("4")
         } else {
@@ -951,16 +951,16 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genConv(conv: Conv, fromType: Type, toType: Type)(
       implicit sb: ShowBuilder): Unit = conv match {
-    case Conv.ZWordCast | Conv.SWordCast =>
+    case Conv.ZSizeCast | Conv.SSizeCast =>
       val fromSize = fromType match {
-        case Type.Word =>
+        case Type.Size =>
           if (is32) 32 else 64
         case Type.FixedSizeI(s, _) => s
         case o                     => unsupported(o)
       }
 
       val toSize = toType match {
-        case Type.Word =>
+        case Type.Size =>
           if (is32) 32 else 64
         case Type.FixedSizeI(s, _) => s
         case o                     => unsupported(o)
@@ -971,7 +971,7 @@ private[codegen] abstract class AbstractCodeGen(
       } else if (fromSize > toSize) {
         "trunc"
       } else {
-        if (conv == Conv.ZWordCast) "zext" else "sext"
+        if (conv == Conv.ZSizeCast) "zext" else "sext"
       }
 
       sb.str(castOp)

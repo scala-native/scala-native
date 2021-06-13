@@ -39,6 +39,6 @@ class CRC32 extends Checksum {
                          nbytes: Int,
                          crc1: Long): Long =
     zlib
-      .crc32(crc1.toUWord, buf.asInstanceOf[ByteArray].at(off), nbytes.toUInt)
+      .crc32(crc1.toUSize, buf.asInstanceOf[ByteArray].at(off), nbytes.toUInt)
       .toLong
 }

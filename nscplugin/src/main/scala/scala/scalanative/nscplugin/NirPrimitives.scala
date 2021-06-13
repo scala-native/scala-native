@@ -129,10 +129,10 @@ abstract class NirPrimitives {
   def isRawPtrCastOp(code: Int): Boolean =
     code >= CAST_RAW_PTR_TO_OBJECT && code <= CAST_LONG_TO_RAWPTR
 
-  def isRawWordCastOp(code: Int): Boolean =
+  def isRawSizeCastOp(code: Int): Boolean =
     code >= CAST_RAWWORD_TO_INT && code <= CAST_LONG_TO_RAWWORD
 
-  def isRawWordOp(code: Int): Boolean =
+  def isRawSizeOp(code: Int): Boolean =
     code >= SIZE_OF_WORD && code <= MOD_RAW_WORDS_UNSIGNED
 
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
@@ -166,7 +166,7 @@ abstract class NirPrimitives {
     }
 
     addPrimitive(LoadBoolMethod, LOAD_BOOL)
-    addPrimitive(LoadWordMethod, LOAD_WORD)
+    addPrimitive(LoadSizeMethod, LOAD_WORD)
     addPrimitive(LoadCharMethod, LOAD_CHAR)
     addPrimitive(LoadByteMethod, LOAD_BYTE)
     addPrimitive(LoadShortMethod, LOAD_SHORT)
@@ -177,7 +177,7 @@ abstract class NirPrimitives {
     addPrimitive(LoadRawPtrMethod, LOAD_RAW_PTR)
     addPrimitive(LoadObjectMethod, LOAD_OBJECT)
     addPrimitive(StoreBoolMethod, STORE_BOOL)
-    addPrimitive(StoreWordMethod, STORE_WORD)
+    addPrimitive(StoreSizeMethod, STORE_WORD)
     addPrimitive(StoreCharMethod, STORE_CHAR)
     addPrimitive(StoreByteMethod, STORE_BYTE)
     addPrimitive(StoreShortMethod, STORE_SHORT)
@@ -202,23 +202,23 @@ abstract class NirPrimitives {
     CFuncPtrApplyMethods.foreach(addPrimitive(_, CFUNCPTR_APPLY))
     CFuncPtrFromFunctionMethods.foreach(addPrimitive(_, CFUNCPTR_FROM_FUNCTION))
 
-    addPrimitive(CastRawWordToInt, CAST_RAWWORD_TO_INT)
-    addPrimitive(CastRawWordToLong, CAST_RAWWORD_TO_LONG)
-    addPrimitive(CastRawWordToLongUnsigned, CAST_RAWWORD_TO_LONG_UNSIGNED)
-    addPrimitive(CastIntToRawWord, CAST_INT_TO_RAWWORD)
-    addPrimitive(CastIntToRawWordUnsigned, CAST_INT_TO_RAWWORD_UNSIGNED)
-    addPrimitive(CastLongToRawWord, CAST_LONG_TO_RAWWORD)
+    addPrimitive(CastRawSizeToInt, CAST_RAWWORD_TO_INT)
+    addPrimitive(CastRawSizeToLong, CAST_RAWWORD_TO_LONG)
+    addPrimitive(CastRawSizeToLongUnsigned, CAST_RAWWORD_TO_LONG_UNSIGNED)
+    addPrimitive(CastIntToRawSize, CAST_INT_TO_RAWWORD)
+    addPrimitive(CastIntToRawSizeUnsigned, CAST_INT_TO_RAWWORD_UNSIGNED)
+    addPrimitive(CastLongToRawSize, CAST_LONG_TO_RAWWORD)
 
-    addPrimitive(SizeOfWord, SIZE_OF_WORD)
-    addPrimitive(AndRawWords, AND_RAW_WORDS)
-    addPrimitive(OrRawWords, OR_RAW_WORDS)
-    addPrimitive(XorRawWords, XOR_RAW_WORDS)
-    addPrimitive(AddRawWords, ADD_RAW_WORDS)
-    addPrimitive(SubRawWords, SUB_RAW_WORDS)
-    addPrimitive(MultRawWords, MULT_RAW_WORDS)
-    addPrimitive(DivRawWords, DIV_RAW_WORDS)
-    addPrimitive(DivRawWordsUnsigned, DIV_RAW_WORDS_UNSIGNED)
-    addPrimitive(ModRawWords, MOD_RAW_WORDS)
-    addPrimitive(ModRawWordsUnsigned, MOD_RAW_WORDS_UNSIGNED)
+    addPrimitive(SizeOfSize, SIZE_OF_WORD)
+    addPrimitive(AndRawSizes, AND_RAW_WORDS)
+    addPrimitive(OrRawSizes, OR_RAW_WORDS)
+    addPrimitive(XorRawSizes, XOR_RAW_WORDS)
+    addPrimitive(AddRawSizes, ADD_RAW_WORDS)
+    addPrimitive(SubRawSizes, SUB_RAW_WORDS)
+    addPrimitive(MultRawSizes, MULT_RAW_WORDS)
+    addPrimitive(DivRawSizes, DIV_RAW_WORDS)
+    addPrimitive(DivRawSizesUnsigned, DIV_RAW_WORDS_UNSIGNED)
+    addPrimitive(ModRawSizes, MOD_RAW_WORDS)
+    addPrimitive(ModRawSizesUnsigned, MOD_RAW_WORDS_UNSIGNED)
   }
 }

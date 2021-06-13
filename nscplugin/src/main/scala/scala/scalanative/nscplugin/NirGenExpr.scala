@@ -1093,10 +1093,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genCFuncPtrApply(app, code)
       } else if (code == CFUNCPTR_FROM_FUNCTION) {
         genCFuncFromScalaFunction(app)
-      } else if (nirPrimitives.isRawWordOp(code)) {
-        genRawWordOp(app, code)
-      } else if (nirPrimitives.isRawWordCastOp(code)) {
-        genRawWordCastOp(app, args.head, code)
+      } else if (nirPrimitives.isRawSizeOp(code)) {
+        genRawSizeOp(app, code)
+      } else if (nirPrimitives.isRawSizeCastOp(code)) {
+        genRawSizeCastOp(app, args.head, code)
       } else if (isCoercion(code)) {
         genCoercion(app, receiver, code)
       } else if (code == SYNCHRONIZED) {
@@ -1686,7 +1686,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val ty = code match {
         case LOAD_BOOL    => nir.Type.Bool
-        case LOAD_WORD    => nir.Type.Word
+        case LOAD_WORD    => nir.Type.Size
         case LOAD_CHAR    => nir.Type.Char
         case LOAD_BYTE    => nir.Type.Byte
         case LOAD_SHORT   => nir.Type.Short
@@ -1709,7 +1709,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val ty = code match {
         case STORE_BOOL    => nir.Type.Bool
-        case STORE_WORD    => nir.Type.Word
+        case STORE_WORD    => nir.Type.Size
         case STORE_CHAR    => nir.Type.Char
         case STORE_BYTE    => nir.Type.Byte
         case STORE_SHORT   => nir.Type.Short
@@ -1743,9 +1743,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       genCastOp(fromty, toty, value)(app.pos)
     }
 
-    def genRawWordOp(app: Apply, code: Int): Val = {
+    def genRawSizeOp(app: Apply, code: Int): Val = {
       code match {
-        case SIZE_OF_WORD => Val.SizeOfWord
+        case SIZE_OF_WORD => Val.SizeOfSize
         case _ => // just a binary op
           val Apply(_, Seq(leftp, rightp)) = app
 
@@ -1766,26 +1766,26 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                   " at: " + app.pos)
           }
 
-          buf.bin(bin, Type.Word, genExpr(leftp), genExpr(rightp), unwind)(
+          buf.bin(bin, Type.Size, genExpr(leftp), genExpr(rightp), unwind)(
             app.pos)
       }
     }
 
-    def genRawWordCastOp(app: Apply, receiver: Tree, code: Int): Val = {
+    def genRawSizeCastOp(app: Apply, receiver: Tree, code: Int): Val = {
       val rec = genExpr(receiver)
       val (fromty, toty, conv) = code match {
         case CAST_RAWWORD_TO_INT =>
-          (nir.Type.Word, nir.Type.Int, Conv.SWordCast)
+          (nir.Type.Size, nir.Type.Int, Conv.SSizeCast)
         case CAST_RAWWORD_TO_LONG =>
-          (nir.Type.Word, nir.Type.Long, Conv.SWordCast)
+          (nir.Type.Size, nir.Type.Long, Conv.SSizeCast)
         case CAST_RAWWORD_TO_LONG_UNSIGNED =>
-          (nir.Type.Word, nir.Type.Long, Conv.ZWordCast)
+          (nir.Type.Size, nir.Type.Long, Conv.ZSizeCast)
         case CAST_INT_TO_RAWWORD =>
-          (nir.Type.Int, nir.Type.Word, Conv.SWordCast)
+          (nir.Type.Int, nir.Type.Size, Conv.SSizeCast)
         case CAST_INT_TO_RAWWORD_UNSIGNED =>
-          (nir.Type.Int, nir.Type.Word, Conv.ZWordCast)
+          (nir.Type.Int, nir.Type.Size, Conv.ZSizeCast)
         case CAST_LONG_TO_RAWWORD =>
-          (nir.Type.Long, nir.Type.Word, Conv.SWordCast)
+          (nir.Type.Long, nir.Type.Size, Conv.SSizeCast)
       }
 
       buf.conv(conv, toty, rec, unwind)(app.pos)

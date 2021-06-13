@@ -725,10 +725,10 @@ trait Eval { self: Interflow =>
       case _ if ty == value.ty =>
         value
 
-      case Conv.SWordCast =>
+      case Conv.SSizeCast =>
         bailOut // TODO(shadaj)
 
-      case Conv.ZWordCast =>
+      case Conv.ZSizeCast =>
         bailOut // TODO(shadaj)
 
       case Conv.Trunc =>
@@ -867,8 +867,8 @@ trait Eval { self: Interflow =>
             ()
         }
         value
-      case Val.SizeOfWord =>
-        if (is32) Val.Word(4) else Val.Word(8)
+      case Val.SizeOfSize =>
+        if (is32) Val.Size(4) else Val.Size(8)
       case _ =>
         value.canonicalize
     }

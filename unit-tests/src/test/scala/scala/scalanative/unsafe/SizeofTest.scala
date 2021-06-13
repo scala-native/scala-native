@@ -9,64 +9,64 @@ import scalanative.unsigned._
 class SizeofTest {
 
   @Test def testByte(): Unit = {
-    assertTrue(sizeof[Byte] == 1.toUWord)
+    assertTrue(sizeof[Byte] == 1.toUSize)
   }
 
   @Test def testUByte(): Unit = {
-    assertTrue(sizeof[UByte] == 1.toUWord)
+    assertTrue(sizeof[UByte] == 1.toUSize)
   }
 
   @Test def testShort(): Unit = {
-    assertTrue(sizeof[Short] == 2.toUWord)
+    assertTrue(sizeof[Short] == 2.toUSize)
   }
 
   @Test def testUShort(): Unit = {
-    assertTrue(sizeof[UShort] == 2.toUWord)
+    assertTrue(sizeof[UShort] == 2.toUSize)
   }
 
   @Test def testInt(): Unit = {
-    assertTrue(sizeof[Int] == 4.toUWord)
+    assertTrue(sizeof[Int] == 4.toUSize)
   }
 
   @Test def testUInt(): Unit = {
-    assertTrue(sizeof[UInt] == 4.toUWord)
+    assertTrue(sizeof[UInt] == 4.toUSize)
   }
 
   @Test def testLong(): Unit = {
-    assertTrue(sizeof[Long] == 8.toUWord)
+    assertTrue(sizeof[Long] == 8.toUSize)
   }
 
   @Test def testULong(): Unit = {
-    assertTrue(sizeof[ULong] == 8.toUWord)
+    assertTrue(sizeof[ULong] == 8.toUSize)
   }
 
   @Test def testPtr(): Unit = {
-    assertTrue(sizeof[Ptr[_]] == sizeof[Word])
+    assertTrue(sizeof[Ptr[_]] == sizeof[Size])
   }
 
   @Test def testCStruct1Byte(): Unit = {
-    assertTrue(sizeof[CStruct1[Byte]] == 1.toUWord)
+    assertTrue(sizeof[CStruct1[Byte]] == 1.toUSize)
   }
 
   @Test def testCStruct2ByteByte(): Unit = {
-    assertTrue(sizeof[CStruct2[Byte, Byte]] == 2.toUWord)
+    assertTrue(sizeof[CStruct2[Byte, Byte]] == 2.toUSize)
   }
 
   @Test def testCStruct2ByteInt(): Unit = {
-    assertTrue(sizeof[CStruct2[Byte, Int]] == 8.toUWord)
+    assertTrue(sizeof[CStruct2[Byte, Int]] == 8.toUSize)
   }
 
   @Test def testCStruct3ByteShortByte(): Unit = {
-    assertTrue(sizeof[CStruct3[Byte, Short, Byte]] == 6.toUWord)
+    assertTrue(sizeof[CStruct3[Byte, Short, Byte]] == 6.toUSize)
   }
 
   @Test def testCStruct4ByteShortByteInt(): Unit = {
-    assertTrue(sizeof[CStruct4[Byte, Short, Byte, Int]] == 12.toUWord)
+    assertTrue(sizeof[CStruct4[Byte, Short, Byte, Int]] == 12.toUSize)
   }
 
   @Test def testInnerStructCStruct2ByteCStruct2LongByte(): Unit = {
     if (!is32) {
-      assertTrue(sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == 24.toUWord)
+      assertTrue(sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == 24.toUSize)
     } else {
       // TODO(shadaj)
     }
@@ -75,7 +75,7 @@ class SizeofTest {
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntByte(): Unit = {
     if (!is32) {
       assertTrue(
-        sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == 32.toUWord)
+        sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == 32.toUSize)
     } else {
       // TODO(shadaj)
     }
@@ -88,7 +88,7 @@ class SizeofTest {
         sizeof[CStruct3[
           Byte,
           Long,
-          CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]]] == 40.toUWord)
+          CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]]] == 40.toUSize)
     } else {
       // TODO(shadaj)
     }
@@ -99,19 +99,19 @@ class SizeofTest {
   type _1024 = Nat.Digit4[Nat._1, Nat._0, Nat._2, Nat._4]
 
   @Test def testCArrayByteNat32(): Unit = {
-    assertTrue(sizeof[CArray[Byte, _32]] == 32.toUWord)
+    assertTrue(sizeof[CArray[Byte, _32]] == 32.toUSize)
   }
 
   @Test def testCArrayByteNat128(): Unit = {
-    assertTrue(sizeof[CArray[Byte, _128]] == 128.toUWord)
+    assertTrue(sizeof[CArray[Byte, _128]] == 128.toUSize)
   }
 
   @Test def testCArrayByteNat1024(): Unit = {
-    assertTrue(sizeof[CArray[Byte, _1024]] == 1024.toUWord)
+    assertTrue(sizeof[CArray[Byte, _1024]] == 1024.toUSize)
   }
 
   @Test def testCArrayCStruct3ByteIntByteNat32(): Unit = {
     assertTrue(
-      sizeof[CArray[CStruct3[Byte, Int, Byte], _32]] == (12 * 32).toUWord)
+      sizeof[CArray[CStruct3[Byte, Int, Byte], _32]] == (12 * 32).toUSize)
   }
 }

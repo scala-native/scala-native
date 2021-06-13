@@ -135,7 +135,7 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
                          newFilePointer = null,
                          moveMethod = FILE_CURRENT)
       } else
-        lseek(fd.fd, bytesToSkip.toWord, SEEK_CUR)
+        lseek(fd.fd, bytesToSkip.toSize, SEEK_CUR)
       bytesToSkip
     }
 

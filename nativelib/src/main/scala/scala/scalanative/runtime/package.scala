@@ -51,9 +51,9 @@ package object runtime {
   @noinline def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
     // 64-bit systems align pointer to 8 bytes
     val fromName = loadObject(
-      elemRawPtr(from, castIntToRawWord(if (is32) 12 else 16)))
+      elemRawPtr(from, castIntToRawSize(if (is32) 12 else 16)))
     val toName = loadObject(
-      elemRawPtr(to, castIntToRawWord(if (is32) 12 else 16)))
+      elemRawPtr(to, castIntToRawSize(if (is32) 12 else 16)))
     throw new java.lang.ClassCastException(
       s"$fromName cannot be cast to $toName")
   }

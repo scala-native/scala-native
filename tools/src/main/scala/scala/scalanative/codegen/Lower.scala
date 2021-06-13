@@ -703,7 +703,7 @@ object Lower {
 
       val memorySize = MemoryLayout.sizeOf(ty, is32)
       assert(memorySize == memorySize.toInt)
-      buf.let(n, Op.Copy(Val.Word(memorySize.toInt)), unwind)
+      buf.let(n, Op.Copy(Val.Size(memorySize.toInt)), unwind)
     }
 
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(
@@ -719,7 +719,7 @@ object Lower {
               Op.Call(
                 allocSig,
                 allocMethod,
-                Seq(rtti(cls).const, Val.Word(size.toInt))
+                Seq(rtti(cls).const, Val.Size(size.toInt))
               ),
               unwind)
     }
@@ -858,13 +858,13 @@ object Lower {
         val minus1 = ty match {
           case Type.Int  => Val.Int(-1)
           case Type.Long => Val.Long(-1L)
-          case Type.Word => Val.Word(-1)
+          case Type.Size => Val.Size(-1)
           case _         => util.unreachable
         }
         val minValue = ty match {
           case Type.Int  => Val.Int(java.lang.Integer.MIN_VALUE)
           case Type.Long => Val.Long(java.lang.Long.MIN_VALUE)
-          case Type.Word => Val.Word(java.lang.Integer.MIN_VALUE)
+          case Type.Size => Val.Size(java.lang.Integer.MIN_VALUE)
           case _         => util.unreachable
         }
 
@@ -1092,7 +1092,7 @@ object Lower {
 
   val LARGE_OBJECT_MIN_SIZE = 8192
 
-  val allocSig = Type.Function(Seq(Type.Ptr, Type.Word), Type.Ptr)
+  val allocSig = Type.Function(Seq(Type.Ptr, Type.Size), Type.Ptr)
 
   val allocSmallName = extern("scalanative_alloc_small")
   val alloc          = Val.Global(allocSmallName, allocSig)

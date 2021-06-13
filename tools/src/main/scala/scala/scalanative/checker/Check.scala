@@ -467,19 +467,19 @@ final class Check(implicit linked: linker.Result) {
   }
 
   def checkConvOp(conv: Conv, ty: Type, value: Val): Unit = conv match {
-    case Conv.ZWordCast =>
+    case Conv.ZSizeCast =>
       (value.ty, ty) match {
-        case (lty: Type.FixedSizeI, Type.Word) => ok
-        case (Type.Word, rty: Type.FixedSizeI) => ok
+        case (lty: Type.FixedSizeI, Type.Size) => ok
+        case (Type.Size, rty: Type.FixedSizeI) => ok
         case _ =>
           error(
             s"can't word cast (unsigned) from ${value.ty.show} to ${ty.show}")
       }
 
-    case Conv.SWordCast =>
+    case Conv.SSizeCast =>
       (value.ty, ty) match {
-        case (lty: Type.FixedSizeI, Type.Word) => ok
-        case (Type.Word, rty: Type.FixedSizeI) => ok
+        case (lty: Type.FixedSizeI, Type.Size) => ok
+        case (Type.Size, rty: Type.FixedSizeI) => ok
         case _ =>
           error(s"can't word cast (signed) from ${value.ty.show} to ${ty.show}")
       }

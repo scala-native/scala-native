@@ -98,7 +98,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     case NullClass    => nir.Type.Null
     case NothingClass => nir.Type.Nothing
     case RawPtrClass  => nir.Type.Ptr
-    case RawWordClass => nir.Type.Word
+    case RawSizeClass => nir.Type.Size
     case _            => genRefType(st)
   }
 

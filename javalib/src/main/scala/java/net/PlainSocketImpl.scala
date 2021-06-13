@@ -165,7 +165,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     }
     val family =
       storage.asInstanceOf[Ptr[socket.sockaddr_storage]].ss_family.toInt
-    val ipstr = stackalloc[CChar](in.INET6_ADDRSTRLEN.toUWord)
+    val ipstr = stackalloc[CChar](in.INET6_ADDRSTRLEN.toUSize)
 
     if (family == socket.AF_INET) {
       val sa = storage.asInstanceOf[Ptr[in.sockaddr_in]]

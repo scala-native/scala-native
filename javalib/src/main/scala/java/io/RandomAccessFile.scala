@@ -130,14 +130,14 @@ class RandomAccessFile private (file: File,
     in.readUTF()
 
   def seek(pos: Long): Unit =
-    unistd.lseek(fd.fd, pos.toWord, stdio.SEEK_SET)
+    unistd.lseek(fd.fd, pos.toSize, stdio.SEEK_SET)
 
   def setLength(newLength: Long): Unit =
     if (!mode.contains("w")) {
       throw new IOException("Invalid argument")
     } else {
       val currentPosition = getFilePointer()
-      if (unistd.ftruncate(fd.fd, newLength.toWord) != 0) {
+      if (unistd.ftruncate(fd.fd, newLength.toSize) != 0) {
         throw new IOException()
       }
       if (currentPosition > newLength) seek(newLength)

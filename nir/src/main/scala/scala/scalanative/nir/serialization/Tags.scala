@@ -77,9 +77,9 @@ object Tags {
 
   final val Conv = Comp + 32
 
-  final val SWordCastConv = 1 + Conv
-  final val ZWordCastConv = 1 + SWordCastConv
-  final val TruncConv     = 1 + ZWordCastConv
+  final val SSizeCastConv = 1 + Conv
+  final val ZSizeCastConv = 1 + SSizeCastConv
+  final val TruncConv     = 1 + ZSizeCastConv
   final val ZextConv      = 1 + TruncConv
   final val SextConv      = 1 + ZextConv
   final val FptruncConv   = 1 + SextConv
@@ -189,8 +189,8 @@ object Tags {
   final val VarargType      = 1 + Type
   final val BoolType        = 1 + VarargType
   final val PtrType         = 1 + BoolType
-  final val WordType        = 1 + PtrType
-  final val CharType        = 1 + WordType
+  final val SizeType        = 1 + PtrType
+  final val CharType        = 1 + SizeType
   final val ByteType        = 1 + CharType
   final val ShortType       = 1 + ByteType
   final val IntType         = 1 + ShortType
@@ -216,8 +216,8 @@ object Tags {
   final val FalseVal             = 1 + TrueVal
   final val NullVal              = 1 + FalseVal
   final val ZeroVal              = 1 + NullVal
-  final val WordVal              = 1 + ZeroVal
-  final val CharVal              = 1 + WordVal
+  final val SizeVal              = 1 + ZeroVal
+  final val CharVal              = 1 + SizeVal
   final val ByteVal              = 1 + CharVal
   final val ShortVal             = 1 + ByteVal
   final val IntVal               = 1 + ShortVal
@@ -234,6 +234,6 @@ object Tags {
   final val StringVal            = 1 + ConstVal
   final val VirtualVal           = 1 + StringVal
   final val ClassOfVal           = 1 + VirtualVal
-  final val SizeOfWordVal        = 1 + ClassOfVal
-  final val LinktimeConditionVal = 1 + SizeOfWordVal
+  final val SizeOfSizeVal        = 1 + ClassOfVal
+  final val LinktimeConditionVal = 1 + SizeOfSizeVal
 }

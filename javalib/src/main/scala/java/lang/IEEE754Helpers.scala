@@ -75,10 +75,10 @@ private[java] object IEEE754Helpers {
 
         // magic: is first char one of D d F f
         var idx =
-          if ((cStr(nSeen.toUWord) & 0xdd) == 0x44) (nSeen + 1) else nSeen
+          if ((cStr(nSeen.toUSize) & 0xdd) == 0x44) (nSeen + 1) else nSeen
 
         while (idx < bytesLen) { // Check for garbage in the unparsed remnant.
-          val b = cStr(idx.toUWord)
+          val b = cStr(idx.toUSize)
           if ((b < 0) || b > 0x20) {
             throw new NumberFormatException(exceptionMsg(s))
           }

@@ -224,7 +224,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         if (stat.stat(toCString(path), statbuf) == 0) {
           val timebuf = alloc[utime.utimbuf]
           timebuf._1 = statbuf._8
-          timebuf._2 = time.toWord / 1000
+          timebuf._2 = time.toSize / 1000
           utime.utime(toCString(path), timebuf) == 0
         } else {
           false
@@ -459,7 +459,7 @@ object File {
         case link =>
           val linkLength = strlen(link)
           val pathLength = strlen(path)
-          val `1UW`      = 1.toUWord
+          val `1UW`      = 1.toUSize
           var last       = pathLength - `1UW`
           while (path(last) != separatorChar) last -= `1UW`
           last += `1UW`

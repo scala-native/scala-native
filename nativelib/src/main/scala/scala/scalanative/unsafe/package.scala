@@ -6,15 +6,15 @@ import scalanative.annotation.alwaysinline
 import scalanative.runtime.{Platform, fromRawPtr, intrinsic, libc}
 import scalanative.runtime.Intrinsics.{
   castIntToRawPtr,
-  castIntToRawWord,
+  castIntToRawSize,
   castLongToRawPtr,
-  castLongToRawWord,
-  sizeOfWord
+  castLongToRawSize,
+  sizeOfSize
 }
 import scalanative.unsigned._
 
 package object unsafe {
-  val wordSize = new UWord(sizeOfWord)
+  val wordSize = new USize(sizeOfSize)
   val is32     = wordSize.toInt == 4
 
   /** The C 'char' type. */
@@ -30,10 +30,10 @@ package object unsafe {
   type CUnsignedInt = UInt
 
   /** The C 'unsigned long' type. */
-  type CUnsignedLong = UWord
+  type CUnsignedLong = USize
 
   /** The C 'unsigned long int' type. */
-  type CUnsignedLongInt = UWord
+  type CUnsignedLongInt = USize
 
   /** The C 'unsigned long long' type. */
   type CUnsignedLongLong = ULong
@@ -48,10 +48,10 @@ package object unsafe {
   type CInt = Int
 
   /** The C 'long' type. */
-  type CLong = Word
+  type CLong = Size
 
   /** The C 'long int' type. */
-  type CLongInt = Word
+  type CLongInt = Size
 
   /** The C 'long long' type. */
   type CLongLong = Long
@@ -75,13 +75,13 @@ package object unsafe {
   type CBool = Boolean
 
   /** The C/C++ 'size_t' type. */
-  type CSize = UWord
+  type CSize = USize
 
   /** The C/C++ 'ssize_t' type. */
-  type CSSize = Word
+  type CSSize = Size
 
   /** The C/C++ 'ptrdiff_t' type. */
-  type CPtrDiff = Word
+  type CPtrDiff = Size
 
   /** C-style string with trailing 0. */
   type CString = Ptr[CChar]
@@ -96,7 +96,7 @@ package object unsafe {
   @alwaysinline def sizeof[T](implicit tag: Tag[T]): CSize = tag.size
 
   /** The C 'ssizeof' operator. */
-  @alwaysinline def ssizeof[T](implicit tag: Tag[T]): CSSize = tag.size.toWord
+  @alwaysinline def ssizeof[T](implicit tag: Tag[T]): CSSize = tag.size.toSize
 
   /** C-style alignment operator. */
   @alwaysinline def alignmentof[T](implicit tag: Tag[T]): CSize = tag.alignment
@@ -164,13 +164,13 @@ package object unsafe {
   /** Scala Native unsafe extensions to the standard Int. */
   implicit class UnsafeRichInt(val value: Int) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(value))
-    @inline def toWord: Word     = new Word(castIntToRawWord(value))
+    @inline def toSize: Size     = new Size(castIntToRawSize(value))
   }
 
   /** Scala Native unsafe extensions to the standard Long. */
   implicit class UnsafeRichLong(val value: Long) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(value))
-    @inline def toWord: Word     = new Word(castLongToRawWord(value))
+    @inline def toSize: Size     = new Size(castLongToRawSize(value))
   }
 
   /** Convert a CString to a String using given charset. */
@@ -184,7 +184,7 @@ package object unsafe {
 
       var c = 0
       while (c < len) {
-        bytes(c) = !(cstr + c.toUWord)
+        bytes(c) = !(cstr + c.toUSize)
         c += 1
       }
 
@@ -242,7 +242,7 @@ package object unsafe {
       null
     } else {
       val bytes = str.getBytes(charset)
-      val cstr  = z.alloc((bytes.length + charSize).toUWord)
+      val cstr  = z.alloc((bytes.length + charSize).toUSize)
 
       var c = 0
       while (c < bytes.length) {
@@ -342,7 +342,7 @@ package object unsafe {
 
       q"""{
         import _root_.scala.scalanative.unsigned.UnsignedRichLong
-        val $size   = (_root_.scala.scalanative.unsafe.sizeof[$T]($tag): _root_.scala.scalanative.unsigned.UWord) * $n
+        val $size   = (_root_.scala.scalanative.unsafe.sizeof[$T]($tag): _root_.scala.scalanative.unsigned.USize) * $n
         val $ptr    = $z.alloc($size)
         val $rawptr = $runtime.toRawPtr($ptr)
         $runtime.libc.memset($rawptr, 0, $size)
@@ -360,8 +360,8 @@ package object unsafe {
       val runtime = q"_root_.scala.scalanative.runtime"
 
       q"""{
-        val $size: _root_.scala.scalanative.unsigned.UWord = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
-        val $rawptr = $runtime.Intrinsics.stackalloc(_root_.scala.scalanative.runtime.Boxes.unboxToUWord($size))
+        val $size: _root_.scala.scalanative.unsigned.USize = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
+        val $rawptr = $runtime.Intrinsics.stackalloc(_root_.scala.scalanative.runtime.Boxes.unboxToUSize($size))
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)
       }"""
@@ -379,8 +379,8 @@ package object unsafe {
 
       q"""{
         import _root_.scala.scalanative.unsigned.UnsignedRichLong
-        val $size: _root_.scala.scalanative.unsigned.UWord = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
-        val $rawptr = $runtime.Intrinsics.stackalloc(_root_.scala.scalanative.runtime.Boxes.unboxToUWord($size))
+        val $size: _root_.scala.scalanative.unsigned.USize = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
+        val $rawptr = $runtime.Intrinsics.stackalloc(_root_.scala.scalanative.runtime.Boxes.unboxToUSize($size))
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)
       }"""

@@ -69,11 +69,11 @@ class UdpSocketTest {
 
         val nBytesSent = sendto(outSocket,
                                 toCString(outData),
-                                outData.length.toUWord,
+                                outData.length.toUSize,
                                 0,
                                 outAddr,
                                 sizeof[sockaddr].toUInt)
-        assertEquals("sendto", outData.size.toWord, nBytesSent)
+        assertEquals("sendto", outData.size.toSize, nBytesSent)
 
         // There is a "pick your poison" design choice here.
         // inSocket is set O_NONBLOCK to eliminate the possibility
@@ -92,7 +92,7 @@ class UdpSocketTest {
 
         // Provide extra room to allow detecting extra junk being sent.
         val maxInData = 2 * outData.length
-        val inData    = alloc[Byte](maxInData.toUWord)
+        val inData    = alloc[Byte](maxInData.toUSize)
 
         // Test not fetching remote address. Exercise last two arguments.
         val nBytesPeekedAt =

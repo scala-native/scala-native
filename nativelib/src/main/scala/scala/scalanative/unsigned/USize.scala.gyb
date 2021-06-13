@@ -1,5 +1,5 @@
 package scala.scalanative
-package unsafe
+package unsigned
 
 import scala.runtime.BoxesRunTime._
 import scala.reflect.ClassTag
@@ -9,33 +9,34 @@ import scalanative.annotation.alwaysinline
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
 import scalanative.runtime.Boxes._
+import unsafe._
 
-import scalanative.unsigned._
+import java.lang.{Long => JLong}
 
-final class Word(private[scalanative] val rawWord: RawWord) {
-  @alwaysinline def toByte: Byte   = castRawWordToInt(rawWord).toByte
-  @alwaysinline def toChar: Char   = castRawWordToInt(rawWord).toChar
-  @alwaysinline def toShort: Short = castRawWordToInt(rawWord).toShort
-  @alwaysinline def toInt: Int     = castRawWordToInt(rawWord)
-  @alwaysinline def toLong: Long   = castRawWordToLong(rawWord)
+final class USize(private[scalanative] val rawSize: RawSize) {
+  @alwaysinline def toByte: Byte        = castRawSizeToInt(rawSize).toByte
+  @alwaysinline def toChar: Char        = castRawSizeToInt(rawSize).toChar
+  @alwaysinline def toShort: Short      = castRawSizeToInt(rawSize).toShort
+  @alwaysinline def toInt: Int          = castRawSizeToInt(rawSize)
+  @alwaysinline def toLong: Long        = castRawSizeToLong(rawSize)
+  @alwaysinline def toSize: unsafe.Size = new unsafe.Size(rawSize)
 
   @alwaysinline def toUByte: UByte   = toByte.toUByte
   @alwaysinline def toUShort: UShort = toShort.toUShort
   @alwaysinline def toUInt: UInt     = toInt.toUInt
-  @alwaysinline def toULong: ULong   = toLong.toULong
-  @alwaysinline def toUWord: UWord   = new UWord(rawWord)
+  @alwaysinline def toULong: ULong   = new ULong(castRawSizeToLongUnsigned(rawSize))
 
   override def hashCode: Int = java.lang.Long.hashCode(toLong)
 
   override def equals(other: Any): Boolean =
     (this eq other.asInstanceOf[AnyRef]) || (other match {
-      case other: Word =>
-        other.rawWord == rawWord
+      case other: USize =>
+        other.rawSize == rawSize
       case _ =>
         false
     })
 
-  override def toString(): String = toLong.toString
+  override def toString(): String = JLong.toUnsignedString(toLong)
 
   /**
    * Returns the bitwise negation of this value.
@@ -45,27 +46,24 @@ final class Word(private[scalanative] val rawWord: RawWord) {
    * //             11111010
    * }}}
    */
-  @alwaysinline def unary_~ : Word =
-    (~toLong).toWord // TODO(shadaj): intrinsify
-
-  /** Returns the negated version of this value. */
-  @alwaysinline def unary_- : Word = 0 - this // TODO(shadaj): intrinsify
+  @alwaysinline def unary_~ : USize =
+    (~toLong).toUSize // TODO(shadaj): intrinsify
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
    *         filling in the new right bits with zeroes.
    * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
    */
-  @alwaysinline def <<(x: Int): Word =
-    (toLong << x).toWord // TODO(shadaj): intrinsify
+  @alwaysinline def <<(x: Int): USize =
+    (toLong << x).toUSize // TODO(shadaj): intrinsify
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
    *         filling in the new right bits with zeroes.
    * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
    */
-  @alwaysinline def <<(x: Long): Word =
-    (toLong << x).toWord // TODO(shadaj): intrinsify
+  @alwaysinline def <<(x: Long): USize =
+    (toLong << x).toUSize // TODO(shadaj): intrinsify
 
   /**
    * Returns this value bit-shifted right by the specified number of bits,
@@ -77,8 +75,8 @@ final class Word(private[scalanative] val rawWord: RawWord) {
    * //            00011111 11111111 11111111 11111101
    * }}}
    */
-  @alwaysinline def >>>(x: Int): Word =
-    (toLong >>> x).toWord // TODO(shadaj): intrinsify
+  @alwaysinline def >>>(x: Int): USize =
+    (toLong >>> x).toUSize // TODO(shadaj): intrinsify
 
   /**
    * Returns this value bit-shifted right by the specified number of bits,
@@ -90,8 +88,8 @@ final class Word(private[scalanative] val rawWord: RawWord) {
    * //            00011111 11111111 11111111 11111101
    * }}}
    */
-  @alwaysinline def >>>(x: Long): Word =
-    (toLong >>> x).toWord // TODO(shadaj): intrinsify
+  @alwaysinline def >>>(x: Long): USize =
+    (toLong >>> x).toUSize // TODO(shadaj): intrinsify
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
@@ -102,7 +100,7 @@ final class Word(private[scalanative] val rawWord: RawWord) {
    * //            11111111 11111111 11111111 11111101
    * }}}
    */
-  @inline final def >>(x: Int): Word = (toLong >> x).toWord
+  @inline final def >>(x: Int): USize = (toLong >> x).toUSize
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
@@ -113,7 +111,7 @@ final class Word(private[scalanative] val rawWord: RawWord) {
    * //            11111111 11111111 11111111 11111101
    * }}}
    */
-  @inline final def >>(x: Long): Word = (toLong >> x).toWord
+  @inline final def >>(x: Long): USize = (toLong >> x).toUSize
 
   % cmpOps = [('==', 'Returns `true` if this value is equal to x, `false` otherwise.'),
   %           ('!=', 'Returns `true` if this value is not equal to x, `false` otherwise.'),
@@ -123,57 +121,57 @@ final class Word(private[scalanative] val rawWord: RawWord) {
   %           ('>=', 'Returns `true` if this value is greater than or equal to x, `false` otherwise.')]
   % for (op, doc) in cmpOps:
   /** ${doc} */
-  @alwaysinline def ${op}(x: Byte): Boolean = this ${op} x.toWord
+  @alwaysinline def ${op}(x: UByte): Boolean = this ${op} x.toUSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Short): Boolean = this ${op} x.toWord
+  @alwaysinline def ${op}(x: UShort): Boolean = this ${op} x.toUSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Int): Boolean = this ${op} x.toWord
+  @alwaysinline def ${op}(x: UInt): Boolean = this ${op} x.toUSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Long): Boolean = this.toLong ${op} x
+  @alwaysinline def ${op}(x: ULong): Boolean = this.toULong ${op} x
 
   /** ${doc} */
-  @alwaysinline def ${op}(other: Word): Boolean =
-    this.toLong ${op} other.toLong // TODO(shadaj): intrinsify
+  @alwaysinline def ${op}(other: USize): Boolean =
+    this.toULong ${op} other.toULong // TODO(shadaj): intrinsify
 
   % end
-  % binOps = [('&', 'andRawWords', 'Returns the bitwise AND of this value and `x`.'),
-  %           ('|', 'orRawWords', 'Returns the bitwise OR of this value and `x`.'),
-  %           ('^', 'xorRawWords', 'Returns the bitwise XOR of this value and `x`.'),
-  %           ('+', 'addRawWords', 'Returns the sum of this value and `x`.'),
-  %           ('-', 'subRawWords', 'Returns the difference of this value and `x`.'),
-  %           ('*', 'multRawWords', 'Returns the product of this value and `x`.'),
-  %           ('/', 'divRawWords', 'Returns the quotient of this value and `x`.'),
-  %           ('%', 'modRawWords', 'Returns the remainder of the division of this value by `x`.')]
+  % binOps = [('&', 'andRawSizes', 'Returns the bitwise AND of this value and `x`.'),
+  %           ('|', 'orRawSizes', 'Returns the bitwise OR of this value and `x`.'),
+  %           ('^', 'xorRawSizes', 'Returns the bitwise XOR of this value and `x`.'),
+  %           ('+', 'addRawSizes', 'Returns the sum of this value and `x`.'),
+  %           ('-', 'subRawSizes', 'Returns the difference of this value and `x`.'),
+  %           ('*', 'multRawSizes', 'Returns the product of this value and `x`.'),
+  %           ('/', 'divRawSizes', 'Returns the quotient of this value and `x`.'),
+  %           ('%', 'modRawSizes', 'Returns the remainder of the division of this value by `x`.')]
   % for (op, intrinsic, doc) in binOps:
   /** ${doc} */
-  @alwaysinline def ${op}(x: Byte): Word = this ${op} x.toWord
+  @alwaysinline def ${op}(x: UByte): USize = this ${op} x.toUSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Short): Word = this ${op} x.toWord
+  @alwaysinline def ${op}(x: UShort): USize = this ${op} x.toUSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Int): Word = this ${op} x.toWord
+  @alwaysinline def ${op}(x: UInt): USize = this ${op} x.toUSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Long): Long = this.toLong ${op} x
+  @alwaysinline def ${op}(x: ULong): ULong = this.toULong ${op} x
 
   /** ${doc} */
-  @alwaysinline def ${op}(other: Word): Word =
-    new Word(${intrinsic}(rawWord, other.rawWord))
+  @alwaysinline def ${op}(other: USize): USize =
+    new USize(${intrinsic}(rawSize, other.rawSize))
 
   % end
 }
 
-object Word {
-  @alwaysinline implicit def byteToWord(x: Byte): Word =
-    new Word(castIntToRawWord(x))
-  @alwaysinline implicit def charToWord(x: Char): Word =
-    new Word(castIntToRawWord(x))
-  @alwaysinline implicit def shortToWord(x: Short): Word =
-    new Word(castIntToRawWord(x))
-  @alwaysinline implicit def intToWord(x: Int): Word =
-    new Word(castIntToRawWord(x))
+object USize {
+  @alwaysinline implicit def byteToSize(x: Byte): USize =
+    new USize(castIntToRawSize(x.toInt))
+  @alwaysinline implicit def charToSize(x: Char): USize =
+    new USize(castIntToRawSize(x.toInt))
+  @alwaysinline implicit def ushortToSize(x: UShort): USize =
+    new USize(castIntToRawSize(x.toInt))
+  @alwaysinline implicit def uintToSize(x: UInt): USize =
+    new USize(castIntToRawSize(x.toInt))
 }

@@ -222,7 +222,7 @@ object Deflater {
                            strategy: Int,
                            noHeader: Boolean): zlib.z_streamp = {
     val stream = stdlib
-      .calloc(1.toUWord, sizeof[zlib.z_stream])
+      .calloc(1.toUSize, sizeof[zlib.z_stream])
       .asInstanceOf[zlib.z_streamp]
     val wbits =
       if (noHeader) 15 / -1

@@ -34,7 +34,7 @@ object MemoryLayout {
       sizeOf(ty, is32) * n
     case Type.StructValue(tys) =>
       MemoryLayout(tys, is32).size
-    case Type.Word | Type.Nothing | Type.Ptr | _: Type.RefKind =>
+    case Type.Size | Type.Nothing | Type.Ptr | _: Type.RefKind =>
       if (is32) 4 else 8
     case _ =>
       unsupported(s"sizeof $ty")
@@ -51,7 +51,7 @@ object MemoryLayout {
       1
     case Type.StructValue(tys) =>
       tys.map(alignmentOf(_, is32)).max
-    case Type.Word | Type.Nothing | Type.Ptr | _: Type.RefKind =>
+    case Type.Size | Type.Nothing | Type.Ptr | _: Type.RefKind =>
       if (is32) 4 else 8
     case _ =>
       unsupported(s"alignment $ty")

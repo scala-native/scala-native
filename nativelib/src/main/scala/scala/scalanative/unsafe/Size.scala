@@ -12,23 +12,23 @@ import scalanative.runtime.Boxes._
 
 import scalanative.unsigned._
 
-final class Word(private[scalanative] val rawWord: RawWord) {
-  @inline def toByte: Byte   = castRawWordToInt(rawWord).toByte
-  @inline def toChar: Char   = castRawWordToInt(rawWord).toChar
-  @inline def toShort: Short = castRawWordToInt(rawWord).toShort
-  @inline def toInt: Int     = castRawWordToInt(rawWord)
-  @inline def toLong: Long   = castRawWordToLong(rawWord)
+final class Size(private[scalanative] val rawSize: RawSize) {
+  @inline def toByte: Byte   = castRawSizeToInt(rawSize).toByte
+  @inline def toChar: Char   = castRawSizeToInt(rawSize).toChar
+  @inline def toShort: Short = castRawSizeToInt(rawSize).toShort
+  @inline def toInt: Int     = castRawSizeToInt(rawSize)
+  @inline def toLong: Long   = castRawSizeToLong(rawSize)
 
-  @inline def toUByte: UByte   = toUWord.toUByte
-  @inline def toUShort: UShort = toUWord.toUShort
-  @inline def toUInt: UInt     = toUWord.toUInt
-  @inline def toULong: ULong   = toUWord.toULong
-  @inline def toUWord: UWord   = new UWord(rawWord)
+  @inline def toUByte: UByte   = toUSize.toUByte
+  @inline def toUShort: UShort = toUSize.toUShort
+  @inline def toUInt: UInt     = toUSize.toUInt
+  @inline def toULong: ULong   = toUSize.toULong
+  @inline def toUSize: USize   = new USize(rawSize)
 
   @inline override def hashCode: Int = toLong.hashCode
 
   @inline override def equals(obj: Any): Boolean = obj match {
-    case that: Word => this.rawWord == that.rawWord
+    case that: Size => this.rawSize == that.rawSize
     case _          => false
   }
 
@@ -42,27 +42,27 @@ final class Word(private[scalanative] val rawWord: RawWord) {
    * //             11111010
    * }}}
    */
-  @inline def unary_~ : Word =
-    (~toLong).toWord // TODO(shadaj): intrinsify
+  @inline def unary_~ : Size =
+    (~toLong).toSize // TODO(shadaj): intrinsify
 
   /** Returns the negated version of this value. */
-  @inline def unary_- : Word = 0 - this // TODO(shadaj): intrinsify
+  @inline def unary_- : Size = 0 - this // TODO(shadaj): intrinsify
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
    *         filling in the new right bits with zeroes.
    * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
    */
-  @inline def <<(x: Int): Word =
-    (toLong << x).toWord // TODO(shadaj): intrinsify
+  @inline def <<(x: Int): Size =
+    (toLong << x).toSize // TODO(shadaj): intrinsify
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
    *         filling in the new right bits with zeroes.
    * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
    */
-  @inline def <<(x: Long): Word =
-    (toLong << x).toWord // TODO(shadaj): intrinsify
+  @inline def <<(x: Long): Size =
+    (toLong << x).toSize // TODO(shadaj): intrinsify
 
   /**
    * Returns this value bit-shifted right by the specified number of bits,
@@ -74,8 +74,8 @@ final class Word(private[scalanative] val rawWord: RawWord) {
    * //            00011111 11111111 11111111 11111101
    * }}}
    */
-  @inline def >>>(x: Int): Word =
-    (toLong >>> x).toWord // TODO(shadaj): intrinsify
+  @inline def >>>(x: Int): Size =
+    (toLong >>> x).toSize // TODO(shadaj): intrinsify
 
   /**
    * Returns this value bit-shifted right by the specified number of bits,
@@ -87,8 +87,8 @@ final class Word(private[scalanative] val rawWord: RawWord) {
    * //            00011111 11111111 11111111 11111101
    * }}}
    */
-  @inline def >>>(x: Long): Word =
-    (toLong >>> x).toWord // TODO(shadaj): intrinsify
+  @inline def >>>(x: Long): Size =
+    (toLong >>> x).toSize // TODO(shadaj): intrinsify
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
@@ -99,7 +99,7 @@ final class Word(private[scalanative] val rawWord: RawWord) {
    * //            11111111 11111111 11111111 11111101
    * }}}
    */
-  @inline final def >>(x: Int): Word = (toLong >> x).toWord
+  @inline final def >>(x: Int): Size = (toLong >> x).toSize
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
@@ -110,241 +110,241 @@ final class Word(private[scalanative] val rawWord: RawWord) {
    * //            11111111 11111111 11111111 11111101
    * }}}
    */
-  @inline final def >>(x: Long): Word = (toLong >> x).toWord
+  @inline final def >>(x: Long): Size = (toLong >> x).toSize
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
-  @inline def ==(x: Byte): Boolean = this == x.toWord
+  @inline def ==(x: Byte): Boolean = this == x.toSize
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
-  @inline def ==(x: Short): Boolean = this == x.toWord
+  @inline def ==(x: Short): Boolean = this == x.toSize
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
-  @inline def ==(x: Int): Boolean = this == x.toWord
+  @inline def ==(x: Int): Boolean = this == x.toSize
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
   @inline def ==(x: Long): Boolean = this.toLong == x
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
-  @inline def ==(other: Word): Boolean =
+  @inline def ==(other: Size): Boolean =
     this.toLong == other.toLong // TODO(shadaj): intrinsify
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
-  @inline def !=(x: Byte): Boolean = this != x.toWord
+  @inline def !=(x: Byte): Boolean = this != x.toSize
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
-  @inline def !=(x: Short): Boolean = this != x.toWord
+  @inline def !=(x: Short): Boolean = this != x.toSize
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
-  @inline def !=(x: Int): Boolean = this != x.toWord
+  @inline def !=(x: Int): Boolean = this != x.toSize
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
   @inline def !=(x: Long): Boolean = this.toLong != x
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
-  @inline def !=(other: Word): Boolean =
+  @inline def !=(other: Size): Boolean =
     this.toLong != other.toLong // TODO(shadaj): intrinsify
 
   /** Returns `true` if this value is less than x, `false` otherwise. */
-  @inline def <(x: Byte): Boolean = this < x.toWord
+  @inline def <(x: Byte): Boolean = this < x.toSize
 
   /** Returns `true` if this value is less than x, `false` otherwise. */
-  @inline def <(x: Short): Boolean = this < x.toWord
+  @inline def <(x: Short): Boolean = this < x.toSize
 
   /** Returns `true` if this value is less than x, `false` otherwise. */
-  @inline def <(x: Int): Boolean = this < x.toWord
+  @inline def <(x: Int): Boolean = this < x.toSize
 
   /** Returns `true` if this value is less than x, `false` otherwise. */
   @inline def <(x: Long): Boolean = this.toLong < x
 
   /** Returns `true` if this value is less than x, `false` otherwise. */
-  @inline def <(other: Word): Boolean =
+  @inline def <(other: Size): Boolean =
     this.toLong < other.toLong // TODO(shadaj): intrinsify
 
   /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
-  @inline def <=(x: Byte): Boolean = this <= x.toWord
+  @inline def <=(x: Byte): Boolean = this <= x.toSize
 
   /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
-  @inline def <=(x: Short): Boolean = this <= x.toWord
+  @inline def <=(x: Short): Boolean = this <= x.toSize
 
   /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
-  @inline def <=(x: Int): Boolean = this <= x.toWord
+  @inline def <=(x: Int): Boolean = this <= x.toSize
 
   /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
   @inline def <=(x: Long): Boolean = this.toLong <= x
 
   /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
-  @inline def <=(other: Word): Boolean =
+  @inline def <=(other: Size): Boolean =
     this.toLong <= other.toLong // TODO(shadaj): intrinsify
 
   /** Returns `true` if this value is greater than x, `false` otherwise. */
-  @inline def >(x: Byte): Boolean = this > x.toWord
+  @inline def >(x: Byte): Boolean = this > x.toSize
 
   /** Returns `true` if this value is greater than x, `false` otherwise. */
-  @inline def >(x: Short): Boolean = this > x.toWord
+  @inline def >(x: Short): Boolean = this > x.toSize
 
   /** Returns `true` if this value is greater than x, `false` otherwise. */
-  @inline def >(x: Int): Boolean = this > x.toWord
+  @inline def >(x: Int): Boolean = this > x.toSize
 
   /** Returns `true` if this value is greater than x, `false` otherwise. */
   @inline def >(x: Long): Boolean = this.toLong > x
 
   /** Returns `true` if this value is greater than x, `false` otherwise. */
-  @inline def >(other: Word): Boolean =
+  @inline def >(other: Size): Boolean =
     this.toLong > other.toLong // TODO(shadaj): intrinsify
 
   /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
-  @inline def >=(x: Byte): Boolean = this >= x.toWord
+  @inline def >=(x: Byte): Boolean = this >= x.toSize
 
   /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
-  @inline def >=(x: Short): Boolean = this >= x.toWord
+  @inline def >=(x: Short): Boolean = this >= x.toSize
 
   /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
-  @inline def >=(x: Int): Boolean = this >= x.toWord
+  @inline def >=(x: Int): Boolean = this >= x.toSize
 
   /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
   @inline def >=(x: Long): Boolean = this.toLong >= x
 
   /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
-  @inline def >=(other: Word): Boolean =
+  @inline def >=(other: Size): Boolean =
     this.toLong >= other.toLong // TODO(shadaj): intrinsify
 
   /** Returns the bitwise AND of this value and `x`. */
-  @inline def &(x: Byte): Word = this & x.toWord
+  @inline def &(x: Byte): Size = this & x.toSize
 
   /** Returns the bitwise AND of this value and `x`. */
-  @inline def &(x: Short): Word = this & x.toWord
+  @inline def &(x: Short): Size = this & x.toSize
 
   /** Returns the bitwise AND of this value and `x`. */
-  @inline def &(x: Int): Word = this & x.toWord
+  @inline def &(x: Int): Size = this & x.toSize
 
   /** Returns the bitwise AND of this value and `x`. */
   @inline def &(x: Long): Long = this.toLong & x
 
   /** Returns the bitwise AND of this value and `x`. */
-  @inline def &(other: Word): Word =
-    new Word(andRawWords(rawWord, other.rawWord))
+  @inline def &(other: Size): Size =
+    new Size(andRawSizes(rawSize, other.rawSize))
 
   /** Returns the bitwise OR of this value and `x`. */
-  @inline def |(x: Byte): Word = this | x.toWord
+  @inline def |(x: Byte): Size = this | x.toSize
 
   /** Returns the bitwise OR of this value and `x`. */
-  @inline def |(x: Short): Word = this | x.toWord
+  @inline def |(x: Short): Size = this | x.toSize
 
   /** Returns the bitwise OR of this value and `x`. */
-  @inline def |(x: Int): Word = this | x.toWord
+  @inline def |(x: Int): Size = this | x.toSize
 
   /** Returns the bitwise OR of this value and `x`. */
   @inline def |(x: Long): Long = this.toLong | x
 
   /** Returns the bitwise OR of this value and `x`. */
-  @inline def |(other: Word): Word =
-    new Word(orRawWords(rawWord, other.rawWord))
+  @inline def |(other: Size): Size =
+    new Size(orRawSizes(rawSize, other.rawSize))
 
   /** Returns the bitwise XOR of this value and `x`. */
-  @inline def ^(x: Byte): Word = this ^ x.toWord
+  @inline def ^(x: Byte): Size = this ^ x.toSize
 
   /** Returns the bitwise XOR of this value and `x`. */
-  @inline def ^(x: Short): Word = this ^ x.toWord
+  @inline def ^(x: Short): Size = this ^ x.toSize
 
   /** Returns the bitwise XOR of this value and `x`. */
-  @inline def ^(x: Int): Word = this ^ x.toWord
+  @inline def ^(x: Int): Size = this ^ x.toSize
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline def ^(x: Long): Long = this.toLong ^ x
 
   /** Returns the bitwise XOR of this value and `x`. */
-  @inline def ^(other: Word): Word =
-    new Word(xorRawWords(rawWord, other.rawWord))
+  @inline def ^(other: Size): Size =
+    new Size(xorRawSizes(rawSize, other.rawSize))
 
   /** Returns the sum of this value and `x`. */
-  @inline def +(x: Byte): Word = this + x.toWord
+  @inline def +(x: Byte): Size = this + x.toSize
 
   /** Returns the sum of this value and `x`. */
-  @inline def +(x: Short): Word = this + x.toWord
+  @inline def +(x: Short): Size = this + x.toSize
 
   /** Returns the sum of this value and `x`. */
-  @inline def +(x: Int): Word = this + x.toWord
+  @inline def +(x: Int): Size = this + x.toSize
 
   /** Returns the sum of this value and `x`. */
   @inline def +(x: Long): Long = this.toLong + x
 
   /** Returns the sum of this value and `x`. */
-  @inline def +(other: Word): Word =
-    new Word(addRawWords(rawWord, other.rawWord))
+  @inline def +(other: Size): Size =
+    new Size(addRawSizes(rawSize, other.rawSize))
 
   /** Returns the difference of this value and `x`. */
-  @inline def -(x: Byte): Word = this - x.toWord
+  @inline def -(x: Byte): Size = this - x.toSize
 
   /** Returns the difference of this value and `x`. */
-  @inline def -(x: Short): Word = this - x.toWord
+  @inline def -(x: Short): Size = this - x.toSize
 
   /** Returns the difference of this value and `x`. */
-  @inline def -(x: Int): Word = this - x.toWord
+  @inline def -(x: Int): Size = this - x.toSize
 
   /** Returns the difference of this value and `x`. */
   @inline def -(x: Long): Long = this.toLong - x
 
   /** Returns the difference of this value and `x`. */
-  @inline def -(other: Word): Word =
-    new Word(subRawWords(rawWord, other.rawWord))
+  @inline def -(other: Size): Size =
+    new Size(subRawSizes(rawSize, other.rawSize))
 
   /** Returns the product of this value and `x`. */
-  @inline def *(x: Byte): Word = this * x.toWord
+  @inline def *(x: Byte): Size = this * x.toSize
 
   /** Returns the product of this value and `x`. */
-  @inline def *(x: Short): Word = this * x.toWord
+  @inline def *(x: Short): Size = this * x.toSize
 
   /** Returns the product of this value and `x`. */
-  @inline def *(x: Int): Word = this * x.toWord
+  @inline def *(x: Int): Size = this * x.toSize
 
   /** Returns the product of this value and `x`. */
   @inline def *(x: Long): Long = this.toLong * x
 
   /** Returns the product of this value and `x`. */
-  @inline def *(other: Word): Word =
-    new Word(multRawWords(rawWord, other.rawWord))
+  @inline def *(other: Size): Size =
+    new Size(multRawSizes(rawSize, other.rawSize))
 
   /** Returns the quotient of this value and `x`. */
-  @inline def /(x: Byte): Word = this / x.toWord
+  @inline def /(x: Byte): Size = this / x.toSize
 
   /** Returns the quotient of this value and `x`. */
-  @inline def /(x: Short): Word = this / x.toWord
+  @inline def /(x: Short): Size = this / x.toSize
 
   /** Returns the quotient of this value and `x`. */
-  @inline def /(x: Int): Word = this / x.toWord
+  @inline def /(x: Int): Size = this / x.toSize
 
   /** Returns the quotient of this value and `x`. */
   @inline def /(x: Long): Long = this.toLong / x
 
   /** Returns the quotient of this value and `x`. */
-  @inline def /(other: Word): Word =
-    new Word(divRawWords(rawWord, other.rawWord))
+  @inline def /(other: Size): Size =
+    new Size(divRawSizes(rawSize, other.rawSize))
 
   /** Returns the remainder of the division of this value by `x`. */
-  @inline def %(x: Byte): Word = this % x.toWord
+  @inline def %(x: Byte): Size = this % x.toSize
 
   /** Returns the remainder of the division of this value by `x`. */
-  @inline def %(x: Short): Word = this % x.toWord
+  @inline def %(x: Short): Size = this % x.toSize
 
   /** Returns the remainder of the division of this value by `x`. */
-  @inline def %(x: Int): Word = this % x.toWord
+  @inline def %(x: Int): Size = this % x.toSize
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline def %(x: Long): Long = this.toLong % x
 
   /** Returns the remainder of the division of this value by `x`. */
-  @inline def %(other: Word): Word =
-    new Word(modRawWords(rawWord, other.rawWord))
+  @inline def %(other: Size): Size =
+    new Size(modRawSizes(rawSize, other.rawSize))
 
 }
 
-object Word {
-  @inline implicit def byteToWord(x: Byte): Word =
-    new Word(castIntToRawWord(x))
-  @inline implicit def charToWord(x: Char): Word =
-    new Word(castIntToRawWord(x))
-  @inline implicit def shortToWord(x: Short): Word =
-    new Word(castIntToRawWord(x))
-  @inline implicit def intToWord(x: Int): Word =
-    new Word(castIntToRawWord(x))
+object Size {
+  @inline implicit def byteToSize(x: Byte): Size =
+    new Size(castIntToRawSize(x))
+  @inline implicit def charToSize(x: Char): Size =
+    new Size(castIntToRawSize(x))
+  @inline implicit def shortToSize(x: Short): Size =
+    new Size(castIntToRawSize(x))
+  @inline implicit def intToSize(x: Int): Size =
+    new Size(castIntToRawSize(x))
 }

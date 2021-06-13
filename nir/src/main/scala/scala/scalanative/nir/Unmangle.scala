@@ -79,7 +79,7 @@ object Unmangle {
         Type.Long
       case 'w' =>
         next()
-        Type.Word
+        Type.Size
       case 'f' =>
         next()
         Type.Float

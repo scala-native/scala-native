@@ -17,10 +17,10 @@ trait NirDefinitions {
     lazy val UShortClass = getRequiredClass("scala.scalanative.unsigned.UShort")
     lazy val UIntClass   = getRequiredClass("scala.scalanative.unsigned.UInt")
     lazy val ULongClass  = getRequiredClass("scala.scalanative.unsigned.ULong")
-    lazy val WordClass   = getRequiredClass("scala.scalanative.unsafe.Word")
-    lazy val UWordClass  = getRequiredClass("scala.scalanative.unsigned.UWord")
-    lazy val RawWordClass = getRequiredClass(
-      "scala.scalanative.runtime.RawWord")
+    lazy val SizeClass   = getRequiredClass("scala.scalanative.unsafe.Size")
+    lazy val USizeClass  = getRequiredClass("scala.scalanative.unsigned.USize")
+    lazy val RawSizeClass = getRequiredClass(
+      "scala.scalanative.runtime.RawSize")
     lazy val PtrClass    = getRequiredClass("scala.scalanative.unsafe.Ptr")
     lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")
 
@@ -73,9 +73,9 @@ trait NirDefinitions {
     lazy val UnitTagMethod = getDecl(TagModule, TermName("materializeUnitTag"))
     lazy val BooleanTagMethod =
       getDecl(TagModule, TermName("materializeBooleanTag"))
-    lazy val WordTagMethod = getDecl(TagModule, TermName("materializeWordTag"))
-    lazy val UWordTagMethod =
-      getDecl(TagModule, TermName("materializeUWordTag"))
+    lazy val SizeTagMethod = getDecl(TagModule, TermName("materializeSizeTag"))
+    lazy val USizeTagMethod =
+      getDecl(TagModule, TermName("materializeUSizeTag"))
     lazy val CharTagMethod = getDecl(TagModule, TermName("materializeCharTag"))
     lazy val ByteTagMethod = getDecl(TagModule, TermName("materializeByteTag"))
     lazy val UByteTagMethod =
@@ -162,7 +162,7 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("ulongToDouble"))
     lazy val LoadBoolMethod =
       getMember(IntrinsicsModule, TermName("loadBoolean"))
-    lazy val LoadWordMethod = getMember(IntrinsicsModule, TermName("loadWord"))
+    lazy val LoadSizeMethod = getMember(IntrinsicsModule, TermName("loadSize"))
     lazy val LoadCharMethod = getMember(IntrinsicsModule, TermName("loadChar"))
     lazy val LoadByteMethod = getMember(IntrinsicsModule, TermName("loadByte"))
     lazy val LoadShortMethod =
@@ -181,8 +181,8 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("storeBoolean"))
     lazy val StoreCharMethod =
       getMember(IntrinsicsModule, TermName("storeChar"))
-    lazy val StoreWordMethod =
-      getMember(IntrinsicsModule, TermName("storeWord"))
+    lazy val StoreSizeMethod =
+      getMember(IntrinsicsModule, TermName("storeSize"))
     lazy val StoreByteMethod =
       getMember(IntrinsicsModule, TermName("storeByte"))
     lazy val StoreShortMethod =
@@ -233,42 +233,42 @@ trait NirDefinitions {
           getMember(module, TermName(s"fromScalaFunction"))
       }
 
-    lazy val CastRawWordToInt =
-      getMember(IntrinsicsModule, TermName("castRawWordToInt"))
-    lazy val CastRawWordToLong =
-      getMember(IntrinsicsModule, TermName("castRawWordToLong"))
-    lazy val CastRawWordToLongUnsigned =
-      getMember(IntrinsicsModule, TermName("castRawWordToLongUnsigned"))
-    lazy val CastIntToRawWord =
-      getMember(IntrinsicsModule, TermName("castIntToRawWord"))
-    lazy val CastIntToRawWordUnsigned =
-      getMember(IntrinsicsModule, TermName("castIntToRawWordUnsigned"))
-    lazy val CastLongToRawWord =
-      getMember(IntrinsicsModule, TermName("castLongToRawWord"))
+    lazy val CastRawSizeToInt =
+      getMember(IntrinsicsModule, TermName("castRawSizeToInt"))
+    lazy val CastRawSizeToLong =
+      getMember(IntrinsicsModule, TermName("castRawSizeToLong"))
+    lazy val CastRawSizeToLongUnsigned =
+      getMember(IntrinsicsModule, TermName("castRawSizeToLongUnsigned"))
+    lazy val CastIntToRawSize =
+      getMember(IntrinsicsModule, TermName("castIntToRawSize"))
+    lazy val CastIntToRawSizeUnsigned =
+      getMember(IntrinsicsModule, TermName("castIntToRawSizeUnsigned"))
+    lazy val CastLongToRawSize =
+      getMember(IntrinsicsModule, TermName("castLongToRawSize"))
 
-    lazy val SizeOfWord =
-      getMember(IntrinsicsModule, TermName("sizeOfWord"))
-    lazy val AndRawWords =
-      getMember(IntrinsicsModule, TermName("andRawWords"))
-    lazy val OrRawWords =
-      getMember(IntrinsicsModule, TermName("orRawWords"))
-    lazy val XorRawWords =
-      getMember(IntrinsicsModule, TermName("xorRawWords"))
+    lazy val SizeOfSize =
+      getMember(IntrinsicsModule, TermName("sizeOfSize"))
+    lazy val AndRawSizes =
+      getMember(IntrinsicsModule, TermName("andRawSizes"))
+    lazy val OrRawSizes =
+      getMember(IntrinsicsModule, TermName("orRawSizes"))
+    lazy val XorRawSizes =
+      getMember(IntrinsicsModule, TermName("xorRawSizes"))
 
-    lazy val AddRawWords =
-      getMember(IntrinsicsModule, TermName("addRawWords"))
-    lazy val SubRawWords =
-      getMember(IntrinsicsModule, TermName("subRawWords"))
-    lazy val MultRawWords =
-      getMember(IntrinsicsModule, TermName("multRawWords"))
-    lazy val DivRawWords =
-      getMember(IntrinsicsModule, TermName("divRawWords"))
-    lazy val DivRawWordsUnsigned =
-      getMember(IntrinsicsModule, TermName("divRawWordsUnsigned"))
-    lazy val ModRawWords =
-      getMember(IntrinsicsModule, TermName("modRawWords"))
-    lazy val ModRawWordsUnsigned =
-      getMember(IntrinsicsModule, TermName("modRawWordsUnsigned"))
+    lazy val AddRawSizes =
+      getMember(IntrinsicsModule, TermName("addRawSizes"))
+    lazy val SubRawSizes =
+      getMember(IntrinsicsModule, TermName("subRawSizes"))
+    lazy val MultRawSizes =
+      getMember(IntrinsicsModule, TermName("multRawSizes"))
+    lazy val DivRawSizes =
+      getMember(IntrinsicsModule, TermName("divRawSizes"))
+    lazy val DivRawSizesUnsigned =
+      getMember(IntrinsicsModule, TermName("divRawSizesUnsigned"))
+    lazy val ModRawSizes =
+      getMember(IntrinsicsModule, TermName("modRawSizes"))
+    lazy val ModRawSizesUnsigned =
+      getMember(IntrinsicsModule, TermName("modRawSizesUnsigned"))
 
     lazy val ResolvedAtLinktimeClass = getRequiredClass(
       "scala.scalanative.unsafe.resolvedAtLinktime")
