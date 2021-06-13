@@ -445,7 +445,7 @@ private[codegen] abstract class AbstractCodeGen(
         str("* @")
         genGlobal(n)
         str(" to i8*)")
-      case Val.SizeOfSize =>
+      case Val.SizeOfPtr =>
         if (is32) {
           str("4")
         } else {

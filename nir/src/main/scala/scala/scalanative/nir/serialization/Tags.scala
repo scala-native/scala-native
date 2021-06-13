@@ -234,6 +234,6 @@ object Tags {
   final val StringVal            = 1 + ConstVal
   final val VirtualVal           = 1 + StringVal
   final val ClassOfVal           = 1 + VirtualVal
-  final val SizeOfSizeVal        = 1 + ClassOfVal
-  final val LinktimeConditionVal = 1 + SizeOfSizeVal
+  final val SizeOfPtrVal         = 1 + ClassOfVal
+  final val LinktimeConditionVal = 1 + SizeOfPtrVal
 }

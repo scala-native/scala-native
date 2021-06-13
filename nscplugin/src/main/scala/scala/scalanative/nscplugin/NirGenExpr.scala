@@ -1745,7 +1745,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genRawSizeOp(app: Apply, code: Int): Val = {
       code match {
-        case SIZE_OF_SIZE => Val.SizeOfSize
+        case SIZE_OF_PTR => Val.SizeOfPtr
         case _ => // just a binary op
           val Apply(_, Seq(leftp, rightp)) = app
 

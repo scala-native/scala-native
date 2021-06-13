@@ -248,8 +248,8 @@ trait NirDefinitions {
     lazy val CastLongToRawSize =
       getMember(IntrinsicsModule, TermName("castLongToRawSize"))
 
-    lazy val SizeOfSize =
-      getMember(IntrinsicsModule, TermName("sizeOfSize"))
+    lazy val SizeOfPtr =
+      getMember(IntrinsicsModule, TermName("sizeOfPtr"))
     lazy val AndRawSizes =
       getMember(IntrinsicsModule, TermName("andRawSizes"))
     lazy val OrRawSizes =

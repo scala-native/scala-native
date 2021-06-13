@@ -867,7 +867,7 @@ trait Eval { self: Interflow =>
             ()
         }
         value
-      case Val.SizeOfSize =>
+      case Val.SizeOfPtr =>
         if (is32) Val.Size(4) else Val.Size(8)
       case _ =>
         value.canonicalize

@@ -30,7 +30,7 @@ sealed abstract class Val {
     case Val.Virtual(_) => Type.Virtual
     case Val.ClassOf(n) => Rt.Class
 
-    case Val.SizeOfSize => Type.Size
+    case Val.SizeOfPtr => Type.Size
   }
 
   final def show: String = nir.Show(this)
@@ -49,7 +49,7 @@ sealed abstract class Val {
       true
     case _: Val.Global | Val.Null =>
       true
-    case Val.SizeOfSize =>
+    case Val.SizeOfPtr =>
       true
     case _ =>
       false
@@ -202,5 +202,5 @@ object Val {
   final case class ClassOf(name: nir.Global)       extends Val
 
   // linker-level constants
-  final case object SizeOfSize extends Val
+  final case object SizeOfPtr extends Val
 }

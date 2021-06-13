@@ -298,9 +298,9 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
         val chars = Array.fill(getInt)(getChar)
         new String(chars)
       }
-    case T.VirtualVal    => Val.Virtual(getLong)
-    case T.ClassOfVal    => Val.ClassOf(getGlobal())
-    case T.SizeOfSizeVal => Val.SizeOfSize
+    case T.VirtualVal   => Val.Virtual(getLong)
+    case T.ClassOfVal   => Val.ClassOf(getGlobal())
+    case T.SizeOfPtrVal => Val.SizeOfPtr
   }
 
   private def getLinktimeCondition(): LinktimeCondition = getInt() match {

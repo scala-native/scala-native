@@ -29,8 +29,8 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
 
-% sizePtr = 'sizeOfWord'
-% sizeHeader = 'addRawWords(sizeOfWord, castIntToRawWord(8))'
+% sizePtr = 'sizeOfPtr'
+% sizeHeader = 'addRawSizes(sizeOfPtr, castIntToRawSize(8))'
 
 sealed abstract class Array[T]
     extends java.io.Serializable
@@ -103,7 +103,7 @@ object Array {
     } else {
       val fromPtr = from.atRaw(fromPos)
       val toPtr   = to.atRaw(toPos)
-      val size    = to.stride * len.toUWord
+      val size    = to.stride * len.toUSize
       libc.memmove(toPtr, fromPtr, size)
     }
   }
@@ -148,14 +148,14 @@ object Array {
     } else {
       val leftPtr  = left.atRaw(leftPos)
       val rightPtr = right.atRaw(rightPos)
-      libc.memcmp(leftPtr, rightPtr, len.toUWord * left.stride)
+      libc.memcmp(leftPtr, rightPtr, len.toUSize * left.stride)
     }
   }
 }
 
 %{
    types = {'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
-            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'castRawWordToInt(sizeOfWord)'}
+            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'castRawSizeToInt(sizeOfPtr)'}
 }%
 % # BEWARE: Order of iteration of the dictionary depends on version of Python
 % #         used to run this script.
@@ -175,14 +175,14 @@ object Array {
 final class ${T}Array private () extends Array[${T}] {
 
   @inline def stride: CSize =
-    ${sizeT}.toUWord
+    ${sizeT}.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(i))))
+      elemRawPtr(rawptr, addRawSizes(${sizeHeader}, multRawSizes(castIntToRawSize(${sizeT}), castIntToRawSize(i))))
     }
 
   @inline def apply(i: Int): ${T} =
@@ -190,7 +190,7 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(i))))
+      val ith    = elemRawPtr(rawptr, addRawSizes(${sizeHeader}, multRawSizes(castIntToRawSize(${sizeT}), castIntToRawSize(i))))
       load${T}(ith)
     }
 
@@ -199,13 +199,13 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(i))))
+      val ith    = elemRawPtr(rawptr, addRawSizes(${sizeHeader}, multRawSizes(castIntToRawSize(${sizeT}), castIntToRawSize(i))))
       store${T}(ith, value)
     }
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arrsize = new UWord(addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(length))))
+    val arrsize = new USize(addRawSizes(${sizeHeader}, multRawSizes(castIntToRawSize(${sizeT}), castIntToRawSize(length))))
     val arr     = ${alloc}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -217,10 +217,10 @@ object ${T}Array {
 
   @inline def alloc(length: Int): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arrsize = new UWord(addRawWords(${sizeHeader}, multRawWords(castIntToRawWord(${sizeT}), castIntToRawWord(length))))
+    val arrsize = new USize(addRawSizes(${sizeHeader}, multRawSizes(castIntToRawSize(${sizeT}), castIntToRawSize(length))))
     val arr     = ${alloc}(arrcls, arrsize)
     storeInt(elemRawPtr(arr, ${sizePtr}), length)
-    storeInt(elemRawPtr(arr, addRawWords(${sizePtr}, castIntToRawWord(4))), ${sizeT}.toInt)
+    storeInt(elemRawPtr(arr, addRawSizes(${sizePtr}, castIntToRawSize(4))), ${sizeT}.toInt)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 
@@ -228,7 +228,7 @@ object ${T}Array {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (${sizeT} * length).toUWord
+    val size = (${sizeT} * length).toUSize
     libc.memcpy(dst, src, size)
     arr
   }

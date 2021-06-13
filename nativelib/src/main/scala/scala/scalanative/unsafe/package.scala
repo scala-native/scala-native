@@ -9,13 +9,13 @@ import scalanative.runtime.Intrinsics.{
   castIntToRawSize,
   castLongToRawPtr,
   castLongToRawSize,
-  sizeOfSize
+  sizeOfPtr
 }
 import scalanative.unsigned._
 
 package object unsafe {
-  val wordSize = new USize(sizeOfSize)
-  val is32     = wordSize.toInt == 4
+  val ptrSize = new USize(sizeOfPtr)
+  val is32    = ptrSize.toInt == 4
 
   /** The C 'char' type. */
   type CChar = Byte
