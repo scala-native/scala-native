@@ -1745,21 +1745,21 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genRawSizeOp(app: Apply, code: Int): Val = {
       code match {
-        case SIZE_OF_WORD => Val.SizeOfSize
+        case SIZE_OF_SIZE => Val.SizeOfSize
         case _ => // just a binary op
           val Apply(_, Seq(leftp, rightp)) = app
 
           val bin = code match {
-            case AND_RAW_WORDS          => Bin.And
-            case OR_RAW_WORDS           => Bin.Or
-            case XOR_RAW_WORDS          => Bin.Xor
-            case ADD_RAW_WORDS          => Bin.Iadd
-            case SUB_RAW_WORDS          => Bin.Isub
-            case MULT_RAW_WORDS         => Bin.Imul
-            case DIV_RAW_WORDS          => Bin.Sdiv
-            case DIV_RAW_WORDS_UNSIGNED => Bin.Udiv
-            case MOD_RAW_WORDS          => Bin.Srem
-            case MOD_RAW_WORDS_UNSIGNED => Bin.Urem
+            case AND_RAW_SIZES          => Bin.And
+            case OR_RAW_SIZES           => Bin.Or
+            case XOR_RAW_SIZES          => Bin.Xor
+            case ADD_RAW_SIZES          => Bin.Iadd
+            case SUB_RAW_SIZES          => Bin.Isub
+            case MULT_RAW_SIZES         => Bin.Imul
+            case DIV_RAW_SIZES          => Bin.Sdiv
+            case DIV_RAW_SIZES_UNSIGNED => Bin.Udiv
+            case MOD_RAW_SIZES          => Bin.Srem
+            case MOD_RAW_SIZES_UNSIGNED => Bin.Urem
             case _ =>
               abort(
                 s"Unknown word operation #$code : " + app +
@@ -1774,17 +1774,17 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genRawSizeCastOp(app: Apply, receiver: Tree, code: Int): Val = {
       val rec = genExpr(receiver)
       val (fromty, toty, conv) = code match {
-        case CAST_RAWWORD_TO_INT =>
+        case CAST_RAWSIZE_TO_INT =>
           (nir.Type.Size, nir.Type.Int, Conv.SSizeCast)
-        case CAST_RAWWORD_TO_LONG =>
+        case CAST_RAWSIZE_TO_LONG =>
           (nir.Type.Size, nir.Type.Long, Conv.SSizeCast)
-        case CAST_RAWWORD_TO_LONG_UNSIGNED =>
+        case CAST_RAWSIZE_TO_LONG_UNSIGNED =>
           (nir.Type.Size, nir.Type.Long, Conv.ZSizeCast)
-        case CAST_INT_TO_RAWWORD =>
+        case CAST_INT_TO_RAWSIZE =>
           (nir.Type.Int, nir.Type.Size, Conv.SSizeCast)
-        case CAST_INT_TO_RAWWORD_UNSIGNED =>
+        case CAST_INT_TO_RAWSIZE_UNSIGNED =>
           (nir.Type.Int, nir.Type.Size, Conv.ZSizeCast)
-        case CAST_LONG_TO_RAWWORD =>
+        case CAST_LONG_TO_RAWSIZE =>
           (nir.Type.Long, nir.Type.Size, Conv.SSizeCast)
       }
 

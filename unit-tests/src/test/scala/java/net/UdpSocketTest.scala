@@ -123,7 +123,7 @@ class UdpSocketTest {
                      localhostInetAddr,
                      srcAddr.asInstanceOf[Ptr[sockaddr_in]].sin_addr.s_addr)
 
-        assertEquals("inData NUL termination", 0, inData(nBytesRecvd))
+        assertEquals("inData NUL termination", 0, inData(nBytesRecvd.toUSize))
 
         // Contents are good.
         assertEquals("recvfrom content", outData, fromCString(inData))

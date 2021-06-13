@@ -351,8 +351,6 @@ object USize {
     new USize(castIntToRawSize(x.toInt))
   @inline implicit def intToUSize(x: Int): USize =
     new USize(castIntToRawSize(x))
-  @inline implicit def wordToUSize(x: Size): USize =
-    new USize(x.rawSize)
 
   @inline implicit def ubyteToUSize(x: UByte): USize =
     x.toUSize
@@ -361,6 +359,6 @@ object USize {
   @inline implicit def uintToUSize(x: UInt): USize =
     x.toUSize
 
-  @inline implicit def uwordToULong(x: USize): ULong =
+  @inline implicit def usizeToULong(x: USize): ULong =
     x.toULong
 }

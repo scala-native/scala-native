@@ -70,7 +70,7 @@ object Date {
         // 40 is over-provisioning.
         // Most result strings should be about 28 + 1 for terminal NULL
         // + 2 because some IANA timezone abbreviation can have 5 characters.
-        val bufSize = 40.toUSize // no toSize_t() yet
+        val bufSize = 40.toUSize
         val buf     = alloc[Byte](bufSize)
         val n       = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 

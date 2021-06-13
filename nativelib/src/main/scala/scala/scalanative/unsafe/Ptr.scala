@@ -39,12 +39,11 @@ final class Ptr[T] private[scalanative] (
     new Ptr(elemRawPtr(rawptr, (offset * sizeof[T]).rawSize))
 
   @alwaysinline def -(offset: USize)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, (-(offset * sizeof[T]).toSize).rawSize))
+    new Ptr(elemRawPtr(rawptr, (-((offset * sizeof[T]).toSize)).rawSize))
 
   @alwaysinline def -(other: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = {
-    // TODO(shadaj): use an intrinsic to go directly to a word
-    val left  = castRawPtrToLong(rawptr).toSize
-    val right = castRawPtrToLong(other.rawptr).toSize
+    val left  = new Size(castRawPtrToRawSize(rawptr))
+    val right = new Size(castRawPtrToRawSize(other.rawptr))
     (left - right) / sizeof[T].toSize
   }
 
