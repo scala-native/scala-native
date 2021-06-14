@@ -626,7 +626,32 @@ private[codegen] abstract class AbstractCodeGen(
         }
         genCall(genBind, callDef, unwind)
 
-      case Op.Load(ty, ptr) =>
+      // Special case of load needing additional converstion, since atomic operations do not support i1
+      case Op.Load(Type.Bool, ptr, true) =>
+        val pointee = fresh()
+        val loaded  = fresh()
+
+        newline()
+        str("%")
+        genLocal(pointee)
+        str(" = bitcast ")
+        genVal(ptr)
+        str(" to i8*")
+
+        newline()
+        str("%")
+        genLocal(loaded)
+        str(" = load atomic volatile i8, i8* %")
+        genLocal(pointee)
+        str(" seq_cst, align 1")
+
+        newline()
+        genBind()
+        str("trunc i8 %")
+        genLocal(loaded)
+        str(" to i1")
+
+      case Op.Load(ty, ptr, isAtomic) =>
         val pointee = fresh()
 
         newline()
@@ -641,27 +666,62 @@ private[codegen] abstract class AbstractCodeGen(
         newline()
         genBind()
         str("load ")
+        if (isAtomic) str("atomic volatile ")
         genType(ty)
         str(", ")
         genType(ty)
         str("* %")
         genLocal(pointee)
-        ty match {
-          case refty: Type.RefKind =>
-            val (nonnull, deref, size) = toDereferenceable(refty)
-            if (nonnull) {
-              str(", !nonnull !{}")
-            }
-            str(", !")
-            str(deref)
-            str(" !{i64 ")
-            str(size)
-            str("}")
-          case _ =>
-            ()
+        // Currently we don't support explicit memory order for load/store ops
+        // Assume sequentially consistent to much Java volatile behaviour
+        if (isAtomic) {
+          str(" seq_cst, align ")
+          str(MemoryLayout.alignmentOf(ty))
+        } else {
+          ty match {
+            case refty: Type.RefKind =>
+              val (nonnull, deref, size) = toDereferenceable(refty)
+              if (nonnull) {
+                str(", !nonnull !{}")
+              }
+              str(", !")
+              str(deref)
+              str(" !{i64 ")
+              str(size)
+              str("}")
+            case _ =>
+              ()
+          }
         }
 
-      case Op.Store(ty, ptr, value) =>
+      // Special case of store needing additional converstion, since atomic operations do not support i1
+      case Op.Store(Type.Bool, ptr, value, true) =>
+        val pointee  = fresh()
+        val extended = fresh()
+
+        newline()
+        str("%")
+        genLocal(pointee)
+        str(" = bitcast ")
+        genVal(ptr)
+        str(" to i8*")
+
+        newline()
+        str("%")
+        genLocal(extended)
+        str(" = zext ")
+        genVal(value)
+        str(" to i8")
+
+        newline()
+        genBind()
+        str("store atomic volatile i8 %")
+        genLocal(extended)
+        str(", i8* %")
+        genLocal(pointee)
+        str(" seq_cst, align 1")
+
+      case Op.Store(ty, ptr, value, isAtomic) =>
         val pointee = fresh()
 
         newline()
@@ -676,11 +736,16 @@ private[codegen] abstract class AbstractCodeGen(
         newline()
         genBind()
         str("store ")
+        if (isAtomic) str("atomic volatile ")
         genVal(value)
         str(", ")
         genType(ty)
         str("* %")
         genLocal(pointee)
+        if (isAtomic) {
+          str(" seq_cst, align ")
+          str(MemoryLayout.alignmentOf(ty))
+        }
 
       case Op.Elem(ty, ptr, indexes) =>
         val pointee = fresh()

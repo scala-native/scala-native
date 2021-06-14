@@ -101,6 +101,8 @@ object Show {
         str("\")")
       case Attr.Abstract =>
         str("abstract")
+      case Attr.Volatile =>
+        str("volatile")
     }
 
     def next_(next: Next): Unit = next match {
@@ -197,12 +199,14 @@ object Show {
         str("(")
         rep(args, sep = ", ")(val_)
         str(")")
-      case Op.Load(ty, ptr) =>
+      case Op.Load(ty, ptr, isAtomic) =>
+        if (isAtomic) str("atomic ")
         str("load[")
         type_(ty)
         str("] ")
         val_(ptr)
-      case Op.Store(ty, ptr, value) =>
+      case Op.Store(ty, ptr, value, isAtomic) =>
+        if (isAtomic) str("atomic ")
         str("store[")
         type_(ty)
         str("] ")

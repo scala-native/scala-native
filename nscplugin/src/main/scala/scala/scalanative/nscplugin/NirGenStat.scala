@@ -171,8 +171,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val ty                = genType(f.tpe)
         val name              = genFieldName(f)
         val pos: nir.Position = f.pos
+        val fieldAttrs        = attrs.copy(isVolatile = f.isVolatile)
 
-        buf += Defn.Var(attrs, name, ty, Val.Zero(ty))(pos)
+        buf += Defn.Var(fieldAttrs, name, ty, Val.Zero(ty))(pos)
       }
     }
 

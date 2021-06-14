@@ -7,7 +7,9 @@ import java.io.DataOutputStream
 case class Prelude(magic: Int,
                    compat: Int,
                    revision: Int,
-                   hasEntryPoints: Boolean)
+                   hasEntryPoints: Boolean) {
+  final val supportsAtomicOps = compat >= 5 && revision >= 9
+}
 
 object Prelude {
   val length = 13

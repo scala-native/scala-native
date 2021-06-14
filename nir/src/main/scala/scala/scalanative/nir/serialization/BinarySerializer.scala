@@ -105,6 +105,7 @@ final class BinarySerializer {
     case Attr.Extern   => putInt(T.ExternAttr)
     case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8String(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
+    case Attr.Volatile => putInt(T.VolatileAttr)
   }
 
   private def putBin(bin: Bin) = bin match {
@@ -311,16 +312,18 @@ final class BinarySerializer {
       putVal(v)
       putVals(args)
 
-    case Op.Load(ty, ptr) =>
+    case Op.Load(ty, ptr, isAtomic) =>
       putInt(T.LoadOp)
       putType(ty)
       putVal(ptr)
+      putBool(isAtomic)
 
-    case Op.Store(ty, value, ptr) =>
+    case Op.Store(ty, value, ptr, isAtomic) =>
       putInt(T.StoreOp)
       putType(ty)
       putVal(value)
       putVal(ptr)
+      putBool(isAtomic)
 
     case Op.Elem(ty, v, indexes) =>
       putInt(T.ElemOp)

@@ -78,7 +78,9 @@ object Generate {
                            meta.hasTraitTables.classHasTraitVal,
                            Seq(Val.Int(0), classid, traitid)),
                    Next.None),
-          Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
+          Inst.Let(result.name,
+                   Op.Load(Type.Bool, boolptr, isAtomic = false),
+                   Next.None),
           Inst.Ret(result)
         )
       )
@@ -109,7 +111,9 @@ object Generate {
                            meta.hasTraitTables.traitHasTraitVal,
                            Seq(Val.Int(0), leftid, rightid)),
                    Next.None),
-          Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
+          Inst.Let(result.name,
+                   Op.Load(Type.Bool, boolptr, isAtomic = false),
+                   Next.None),
           Inst.Ret(result)
         )
       )
@@ -149,7 +153,8 @@ object Generate {
                    unwind),
           Inst.Let(Op.Store(Type.Ptr,
                             Val.Global(stackBottomName, Type.Ptr),
-                            stackBottom),
+                            stackBottom,
+                            isAtomic = false),
                    unwind),
           Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
         ) ++ // generate the class initialisers
@@ -232,7 +237,9 @@ object Generate {
                                  Val.Global(moduleArrayName, Type.Ptr),
                                  Seq(Val.Int(meta.moduleArray.index(cls)))),
                          Next.None),
-                Inst.Let(self.name, Op.Load(clsTy, slot), Next.None),
+                Inst.Let(self.name,
+                         Op.Load(clsTy, slot, isAtomic = false),
+                         Next.None),
                 Inst.Let(cond.name,
                          Op.Comp(Comp.Ine, nir.Rt.Object, self, Val.Null),
                          Next.None),
@@ -241,7 +248,8 @@ object Generate {
                 Inst.Ret(self),
                 Inst.Label(initialize, Seq()),
                 Inst.Let(alloc.name, Op.Classalloc(name), Next.None),
-                Inst.Let(Op.Store(clsTy, slot, alloc), Next.None),
+                Inst.Let(Op.Store(clsTy, slot, alloc, isAtomic = false),
+                         Next.None),
                 Inst.Let(Op.Call(initSig, init, Seq(alloc)), Next.None),
                 Inst.Ret(alloc)
               )
