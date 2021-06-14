@@ -626,7 +626,7 @@ private[codegen] abstract class AbstractCodeGen(
         }
         genCall(genBind, callDef, unwind)
 
-      // Special case of load needing additional converstion, since atomic operations do not support i1
+      // Special case of load needing additional conversion, since atomic operations do not support i1
       case Op.Load(Type.Bool, ptr, true) =>
         val pointee = fresh()
         val loaded  = fresh()
@@ -694,7 +694,7 @@ private[codegen] abstract class AbstractCodeGen(
           }
         }
 
-      // Special case of store needing additional converstion, since atomic operations do not support i1
+      // Special case of store needing additional conversion, since atomic operations do not support i1
       case Op.Store(Type.Bool, ptr, value, true) =>
         val pointee  = fresh()
         val extended = fresh()
