@@ -1,5 +1,3 @@
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 1)
-
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
 // personally identifiable information in sourceLocation lines.
@@ -31,8 +29,6 @@ object CFuncPtr {
   }
 }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
-
 final class CFuncPtr0[R] private (rawptr: RawPtr) extends CFuncPtr(rawptr) {
   def apply()(implicit evRet: Tag[R]): R = intrinsic
 }
@@ -46,7 +42,6 @@ object CFuncPtr0 {
     new CFuncPtr0[R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr1[T1, R] private (rawptr: RawPtr) extends CFuncPtr(rawptr) {
   def apply(arg1: T1)(implicit ev1: Tag[T1], evRet: Tag[R]): R = intrinsic
@@ -61,7 +56,6 @@ object CFuncPtr1 {
     new CFuncPtr1[T1, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr2[T1, T2, R] private (rawptr: RawPtr)
     extends CFuncPtr(rawptr) {
@@ -69,8 +63,7 @@ final class CFuncPtr2[T1, T2, R] private (rawptr: RawPtr)
       ev1: Tag[T1],
       ev2: Tag[T2],
       evRet: Tag[R]
-  ): R =
-    intrinsic
+  ): R = intrinsic
 }
 
 object CFuncPtr2 {
@@ -85,7 +78,6 @@ object CFuncPtr2 {
     new CFuncPtr2[T1, T2, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr3[T1, T2, T3, R] private (rawptr: RawPtr)
     extends CFuncPtr(rawptr) {
@@ -113,7 +105,6 @@ object CFuncPtr3 {
     new CFuncPtr3[T1, T2, T3, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr4[T1, T2, T3, T4, R] private (rawptr: RawPtr)
     extends CFuncPtr(rawptr) {
@@ -123,8 +114,7 @@ final class CFuncPtr4[T1, T2, T3, T4, R] private (rawptr: RawPtr)
       ev3: Tag[T3],
       ev4: Tag[T4],
       evRet: Tag[R]
-  ): R =
-    intrinsic
+  ): R = intrinsic
 }
 
 object CFuncPtr4 {
@@ -144,7 +134,6 @@ object CFuncPtr4 {
     new CFuncPtr4[T1, T2, T3, T4, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr5[T1, T2, T3, T4, T5, R] private (rawptr: RawPtr)
     extends CFuncPtr(rawptr) {
@@ -176,7 +165,6 @@ object CFuncPtr5 {
     new CFuncPtr5[T1, T2, T3, T4, T5, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr6[T1, T2, T3, T4, T5, T6, R] private (rawptr: RawPtr)
     extends CFuncPtr(rawptr) {
@@ -210,7 +198,6 @@ object CFuncPtr6 {
     new CFuncPtr6[T1, T2, T3, T4, T5, T6, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R] private (rawptr: RawPtr)
     extends CFuncPtr(rawptr) {
@@ -254,7 +241,6 @@ object CFuncPtr7 {
     new CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] private (
     rawptr: RawPtr
@@ -302,7 +288,6 @@ object CFuncPtr8 {
     new CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] private (
     rawptr: RawPtr
@@ -345,8 +330,7 @@ object CFuncPtr9 {
       ev8: Tag[T8],
       ev9: Tag[T9],
       evRet: Tag[R]
-  ): CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] =
-    intrinsic
+  ): CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] = intrinsic
 
   private[scalanative] def fromRawPtr[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](
       ptr: RawPtr
@@ -354,7 +338,6 @@ object CFuncPtr9 {
     new CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] private (
     rawptr: RawPtr
@@ -400,8 +383,7 @@ object CFuncPtr10 {
       ev9: Tag[T9],
       ev10: Tag[T10],
       evRet: Tag[R]
-  ): CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] =
-    intrinsic
+  ): CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] = intrinsic
 
   private[scalanative] def fromRawPtr[
       T1,
@@ -419,7 +401,6 @@ object CFuncPtr10 {
     new CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr11[
     T1,
@@ -512,7 +493,6 @@ object CFuncPtr11 {
     new CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr12[
     T1,
@@ -614,7 +594,6 @@ object CFuncPtr12 {
     new CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr13[
     T1,
@@ -724,7 +703,6 @@ object CFuncPtr13 {
     )
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr14[
     T1,
@@ -899,7 +877,6 @@ object CFuncPtr14 {
     ](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr15[
     T1,
@@ -1084,7 +1061,6 @@ object CFuncPtr15 {
     ](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr16[
     T1,
@@ -1279,7 +1255,6 @@ object CFuncPtr16 {
     ](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr17[
     T1,
@@ -1484,7 +1459,6 @@ object CFuncPtr17 {
     ](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr18[
     T1,
@@ -1699,7 +1673,6 @@ object CFuncPtr18 {
     ](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr19[
     T1,
@@ -1924,7 +1897,6 @@ object CFuncPtr19 {
     ](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr20[
     T1,
@@ -2159,7 +2131,6 @@ object CFuncPtr20 {
     ](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr21[
     T1,
@@ -2404,7 +2375,6 @@ object CFuncPtr21 {
     ](ptr)
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/CFuncPtr.scala.gyb", line: 36)
 
 final class CFuncPtr22[
     T1,
