@@ -28,15 +28,15 @@ import scalanative.unsigned._
 import scalanative.unsafe._
 
 object Boxes {
-  @inline def boxToWord(v: RawWord): Word   = new Word(v)
-  @inline def boxToUWord(v: RawWord): UWord = new UWord(v)
+  @inline def boxToSize(v: RawSize): Size   = new Size(v)
+  @inline def boxToUSize(v: RawSize): USize = new USize(v)
 
-  @inline def unboxToWord(o: java.lang.Object): RawWord =
-    if (o == null) Intrinsics.castIntToRawWord(0)
-    else o.asInstanceOf[Word].rawWord
-  @inline def unboxToUWord(o: java.lang.Object): RawWord =
-    if (o == null) Intrinsics.castIntToRawWord(0)
-    else o.asInstanceOf[UWord].rawWord
+  @inline def unboxToSize(o: java.lang.Object): RawSize =
+    if (o == null) Intrinsics.castIntToRawSize(0)
+    else o.asInstanceOf[Size].rawSize
+  @inline def unboxToUSize(o: java.lang.Object): RawSize =
+    if (o == null) Intrinsics.castIntToRawSize(0)
+    else o.asInstanceOf[USize].rawSize
 
 %{
     unsigned = [

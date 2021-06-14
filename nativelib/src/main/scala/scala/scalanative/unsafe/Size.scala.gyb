@@ -1,10 +1,10 @@
 package scala.scalanative
 package unsafe
 
+import scala.language.implicitConversions
+
 import scala.runtime.BoxesRunTime._
 import scala.reflect.ClassTag
-
-import scalanative.annotation.alwaysinline
 
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
@@ -13,21 +13,24 @@ import scalanative.runtime.Boxes._
 import scalanative.unsigned._
 
 final class Size(private[scalanative] val rawSize: RawSize) {
-  @alwaysinline def toByte: Byte   = castRawSizeToInt(rawSize).toByte
-  @alwaysinline def toChar: Char   = castRawSizeToInt(rawSize).toChar
-  @alwaysinline def toShort: Short = castRawSizeToInt(rawSize).toShort
-  @alwaysinline def toInt: Int     = castRawSizeToInt(rawSize)
-  @alwaysinline def toLong: Long   = castRawSizeToLong(rawSize)
+  @inline def toByte: Byte   = castRawSizeToInt(rawSize).toByte
+  @inline def toChar: Char   = castRawSizeToInt(rawSize).toChar
+  @inline def toShort: Short = castRawSizeToInt(rawSize).toShort
+  @inline def toInt: Int     = castRawSizeToInt(rawSize)
+  @inline def toLong: Long   = castRawSizeToLong(rawSize)
 
-  @alwaysinline def toUByte: UByte   = toByte.toUByte
-  @alwaysinline def toUShort: UShort = toShort.toUShort
-  @alwaysinline def toUInt: UInt     = toInt.toUInt
-  @alwaysinline def toULong: ULong   = toLong.toULong
-  @alwaysinline def toUSize: USize   = new USize(rawSize)
+  @inline def toUByte: UByte   = toUSize.toUByte
+  @inline def toUShort: UShort = toUSize.toUShort
+  @inline def toUInt: UInt     = toUSize.toUInt
+  @inline def toULong: ULong   = toUSize.toULong
+  @inline def toUSize: USize   = new USize(rawSize)
 
-  override def hashCode: Int = java.lang.Long.hashCode(toLong)
+  // TODO(shadaj): intrinsify
+  @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(toLong))
 
-  override def equals(other: Any): Boolean =
+  @inline override def hashCode: Int = toLong.hashCode
+
+  @inline override def equals(other: Any): Boolean =
     (this eq other.asInstanceOf[AnyRef]) || (other match {
       case other: Size =>
         other.rawSize == rawSize
@@ -35,7 +38,7 @@ final class Size(private[scalanative] val rawSize: RawSize) {
         false
     })
 
-  override def toString(): String = toLong.toString
+  @inline override def toString(): String = toLong.toString
 
   /**
    * Returns the bitwise negation of this value.
@@ -45,18 +48,18 @@ final class Size(private[scalanative] val rawSize: RawSize) {
    * //             11111010
    * }}}
    */
-  @alwaysinline def unary_~ : Size =
+  @inline def unary_~ : Size =
     (~toLong).toSize // TODO(shadaj): intrinsify
 
   /** Returns the negated version of this value. */
-  @alwaysinline def unary_- : Size = 0 - this // TODO(shadaj): intrinsify
+  @inline def unary_- : Size = 0 - this // TODO(shadaj): intrinsify
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
    *         filling in the new right bits with zeroes.
    * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
    */
-  @alwaysinline def <<(x: Int): Size =
+  @inline def <<(x: Int): Size =
     (toLong << x).toSize // TODO(shadaj): intrinsify
 
   /**
@@ -64,7 +67,7 @@ final class Size(private[scalanative] val rawSize: RawSize) {
    *         filling in the new right bits with zeroes.
    * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
    */
-  @alwaysinline def <<(x: Long): Size =
+  @inline def <<(x: Long): Size =
     (toLong << x).toSize // TODO(shadaj): intrinsify
 
   /**
@@ -77,7 +80,7 @@ final class Size(private[scalanative] val rawSize: RawSize) {
    * //            00011111 11111111 11111111 11111101
    * }}}
    */
-  @alwaysinline def >>>(x: Int): Size =
+  @inline def >>>(x: Int): Size =
     (toLong >>> x).toSize // TODO(shadaj): intrinsify
 
   /**
@@ -90,7 +93,7 @@ final class Size(private[scalanative] val rawSize: RawSize) {
    * //            00011111 11111111 11111111 11111101
    * }}}
    */
-  @alwaysinline def >>>(x: Long): Size =
+  @inline def >>>(x: Long): Size =
     (toLong >>> x).toSize // TODO(shadaj): intrinsify
 
   /**
@@ -123,19 +126,19 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   %           ('>=', 'Returns `true` if this value is greater than or equal to x, `false` otherwise.')]
   % for (op, doc) in cmpOps:
   /** ${doc} */
-  @alwaysinline def ${op}(x: Byte): Boolean = this ${op} x.toSize
+  @inline def ${op}(x: Byte): Boolean = this ${op} x.toSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Short): Boolean = this ${op} x.toSize
+  @inline def ${op}(x: Short): Boolean = this ${op} x.toSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Int): Boolean = this ${op} x.toSize
+  @inline def ${op}(x: Int): Boolean = this ${op} x.toSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Long): Boolean = this.toLong ${op} x
+  @inline def ${op}(x: Long): Boolean = this.toLong ${op} x
 
   /** ${doc} */
-  @alwaysinline def ${op}(other: Size): Boolean =
+  @inline def ${op}(other: Size): Boolean =
     this.toLong ${op} other.toLong // TODO(shadaj): intrinsify
 
   % end
@@ -149,31 +152,36 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   %           ('%', 'modRawSizes', 'Returns the remainder of the division of this value by `x`.')]
   % for (op, intrinsic, doc) in binOps:
   /** ${doc} */
-  @alwaysinline def ${op}(x: Byte): Size = this ${op} x.toSize
+  @inline def ${op}(x: Byte): Size = this ${op} x.toSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Short): Size = this ${op} x.toSize
+  @inline def ${op}(x: Short): Size = this ${op} x.toSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Int): Size = this ${op} x.toSize
+  @inline def ${op}(x: Int): Size = this ${op} x.toSize
 
   /** ${doc} */
-  @alwaysinline def ${op}(x: Long): Long = this.toLong ${op} x
+  @inline def ${op}(x: Long): Long = this.toLong ${op} x
 
   /** ${doc} */
-  @alwaysinline def ${op}(other: Size): Size =
+  @inline def ${op}(other: Size): Size =
     new Size(${intrinsic}(rawSize, other.rawSize))
 
   % end
+
+  // "Rich" API
+
+  @inline final def max(that: Size): Size =
+    if (this >= that) this else that
+  @inline final def min(that: Size): Size =
+    if (this <= that) this else that
 }
 
 object Size {
-  @alwaysinline implicit def byteToSize(x: Byte): Size =
+  @inline implicit def byteToSize(x: Byte): Size =
     new Size(castIntToRawSize(x))
-  @alwaysinline implicit def charToSize(x: Char): Size =
+  @inline implicit def shortToSize(x: Short): Size =
     new Size(castIntToRawSize(x))
-  @alwaysinline implicit def shortToSize(x: Short): Size =
-    new Size(castIntToRawSize(x))
-  @alwaysinline implicit def intToSize(x: Int): Size =
+  @inline implicit def intToSize(x: Int): Size =
     new Size(castIntToRawSize(x))
 }

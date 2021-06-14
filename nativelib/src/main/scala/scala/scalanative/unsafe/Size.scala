@@ -25,12 +25,18 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   @inline def toULong: ULong   = toUSize.toULong
   @inline def toUSize: USize   = new USize(rawSize)
 
+  // TODO(shadaj): intrinsify
+  @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(toLong))
+
   @inline override def hashCode: Int = toLong.hashCode
 
-  @inline override def equals(obj: Any): Boolean = obj match {
-    case that: Size => this.rawSize == that.rawSize
-    case _          => false
-  }
+  @inline override def equals(other: Any): Boolean =
+    (this eq other.asInstanceOf[AnyRef]) || (other match {
+      case other: Size =>
+        other.rawSize == rawSize
+      case _ =>
+        false
+    })
 
   @inline override def toString(): String = toLong.toString
 
@@ -336,12 +342,16 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   @inline def %(other: Size): Size =
     new Size(modRawSizes(rawSize, other.rawSize))
 
+  // "Rich" API
+
+  @inline final def max(that: Size): Size =
+    if (this >= that) this else that
+  @inline final def min(that: Size): Size =
+    if (this <= that) this else that
 }
 
 object Size {
   @inline implicit def byteToSize(x: Byte): Size =
-    new Size(castIntToRawSize(x))
-  @inline implicit def charToSize(x: Char): Size =
     new Size(castIntToRawSize(x))
   @inline implicit def shortToSize(x: Short): Size =
     new Size(castIntToRawSize(x))

@@ -1,5 +1,3 @@
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
-
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
 // personally identifiable information in sourceLocation lines.
@@ -29,8 +27,6 @@ package runtime
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 34)
 
 sealed abstract class Array[T]
     extends java.io.Serializable
@@ -153,12 +149,6 @@ object Array {
   }
 }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 168)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
-
 final class BooleanArray private () extends Array[Boolean] {
 
   @inline def stride: CSize =
@@ -234,9 +224,6 @@ object BooleanArray {
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class CharArray private () extends Array[Char] {
 
@@ -313,9 +300,6 @@ object CharArray {
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class ByteArray private () extends Array[Byte] {
 
@@ -392,9 +376,6 @@ object ByteArray {
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class ShortArray private () extends Array[Short] {
 
@@ -471,9 +452,6 @@ object ShortArray {
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class IntArray private () extends Array[Int] {
 
@@ -550,9 +528,6 @@ object IntArray {
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class LongArray private () extends Array[Long] {
 
@@ -629,9 +604,6 @@ object LongArray {
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class FloatArray private () extends Array[Float] {
 
@@ -708,9 +680,6 @@ object FloatArray {
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class DoubleArray private () extends Array[Double] {
 
@@ -787,9 +756,6 @@ object DoubleArray {
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class ObjectArray private () extends Array[Object] {
 

@@ -35,8 +35,14 @@ final class Ptr[T] private[scalanative] (
   @alwaysinline def `unary_!_=`(value: T)(implicit tag: Tag[T]): Unit =
     tag.store(this, value)
 
+  @alwaysinline def +(offset: Size)(implicit tag: Tag[T]): Ptr[T] =
+    new Ptr(elemRawPtr(rawptr, (offset * sizeof[T].toSize).rawSize))
+
   @alwaysinline def +(offset: USize)(implicit tag: Tag[T]): Ptr[T] =
     new Ptr(elemRawPtr(rawptr, (offset * sizeof[T]).rawSize))
+
+  @alwaysinline def -(offset: Size)(implicit tag: Tag[T]): Ptr[T] =
+    new Ptr(elemRawPtr(rawptr, (-offset * sizeof[T].toSize).rawSize))
 
   @alwaysinline def -(offset: USize)(implicit tag: Tag[T]): Ptr[T] =
     new Ptr(elemRawPtr(rawptr, (-((offset * sizeof[T]).toSize)).rawSize))
@@ -50,10 +56,15 @@ final class Ptr[T] private[scalanative] (
   @alwaysinline def apply(offset: USize)(implicit tag: Tag[T]): T =
     (this + offset).`unary_!`
 
+  @alwaysinline def apply(offset: Size)(implicit tag: Tag[T]): T =
+    (this + offset).`unary_!`
+
   @alwaysinline def update(offset: USize, value: T)(
       implicit tag: Tag[T]): Unit =
     (this + offset).`unary_!_=`(value)
 
+  @alwaysinline def update(offset: Size, value: T)(implicit tag: Tag[T]): Unit =
+    (this + offset).`unary_!_=`(value)
 }
 
 object Ptr {

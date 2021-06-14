@@ -24,15 +24,20 @@ final class USize(private[scalanative] val rawSize: RawSize) {
   @inline def toUByte: UByte   = toByte.toUByte
   @inline def toUShort: UShort = toShort.toUShort
   @inline def toUInt: UInt     = toInt.toUInt
-  @inline def toULong: ULong =
-    new ULong(castRawSizeToLongUnsigned(rawSize))
+  @inline def toULong: ULong   = new ULong(castRawSizeToLongUnsigned(rawSize))
+
+  // TODO(shadaj): intrinsify
+  @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(toLong))
 
   @inline override def hashCode: Int = toULong.hashCode
 
-  @inline override def equals(obj: Any): Boolean = obj match {
-    case that: USize => this.rawSize == that.rawSize
-    case _           => false
-  }
+  @inline override def equals(other: Any): Boolean =
+    (this eq other.asInstanceOf[AnyRef]) || (other match {
+      case other: USize =>
+        other.rawSize == rawSize
+      case _ =>
+        false
+    })
 
   @inline override def toString(): String = JLong.toUnsignedString(toLong)
 
@@ -125,7 +130,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
   @inline def ==(other: USize): Boolean =
-    this.rawSize == other.rawSize
+    this.toULong == other.toULong // TODO(shadaj): intrinsify
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
   @inline def !=(x: UByte): Boolean = this != x.toUSize
@@ -335,30 +340,16 @@ final class USize(private[scalanative] val rawSize: RawSize) {
   @inline def %(other: USize): USize =
     new USize(modRawSizesUnsigned(rawSize, other.rawSize))
 
-  // TODO(shadaj): intrinsify
+  // "Rich" API
+
   @inline final def max(that: USize): USize =
-    this.toULong.max(that.toULong).toUSize
+    if (this >= that) this else that
   @inline final def min(that: USize): USize =
-    this.toULong.min(that.toULong).toUSize
+    if (this <= that) this else that
 }
 
 object USize {
-  @inline implicit def byteToUSize(x: Byte): USize =
-    new USize(castIntToRawSize(x.toInt))
-  @inline implicit def charToUSize(x: Char): USize =
-    new USize(castIntToRawSize(x.toInt))
-  @inline implicit def shortToUSize(x: Short): USize =
-    new USize(castIntToRawSize(x.toInt))
-  @inline implicit def intToUSize(x: Int): USize =
-    new USize(castIntToRawSize(x))
-
-  @inline implicit def ubyteToUSize(x: UByte): USize =
-    x.toUSize
-  @inline implicit def ushortToUSize(x: UShort): USize =
-    x.toUSize
-  @inline implicit def uintToUSize(x: UInt): USize =
-    x.toUSize
-
-  @inline implicit def usizeToULong(x: USize): ULong =
-    x.toULong
+  @inline implicit def ubyteToUSize(x: UByte): USize   = x.toUSize
+  @inline implicit def ushortToUSize(x: UShort): USize = x.toUSize
+  @inline implicit def uintToUSize(x: UInt): USize     = x.toUSize
 }

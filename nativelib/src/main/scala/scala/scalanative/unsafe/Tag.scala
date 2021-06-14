@@ -1,5 +1,3 @@
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 1)
-
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
 // personally identifiable information in sourceLocation lines.
@@ -67,228 +65,146 @@ object Tag {
       storeObject(toRawPtr(ptr), value.asInstanceOf[Object])
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
-
   object Unit extends Tag[scala.Unit] {
-    @alwaysinline def size: CSize                                            = ptrSize
-    @alwaysinline def alignment: CSize                                       = ptrSize
+    @alwaysinline def size: CSize      = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Unit]): scala.Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 86)
       loadObject(toRawPtr(ptr)).asInstanceOf[Unit]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Unit],
                                      value: scala.Unit): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 95)
       storeObject(toRawPtr(ptr), value.asInstanceOf[Object])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object Boolean extends Tag[scala.Boolean] {
     @alwaysinline def size: CSize      = 1.toUSize
     @alwaysinline def alignment: CSize = 1.toUSize
     @alwaysinline override def load(
         ptr: unsafe.Ptr[scala.Boolean]): scala.Boolean =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)
       loadBoolean(toRawPtr(ptr))
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Boolean],
                                      value: scala.Boolean): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 100)
       storeBoolean(toRawPtr(ptr), value)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object Char extends Tag[scala.Char] {
-    @alwaysinline def size: CSize                                            = 2.toUSize
-    @alwaysinline def alignment: CSize                                       = 2.toUSize
+    @alwaysinline def size: CSize      = 2.toUSize
+    @alwaysinline def alignment: CSize = 2.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Char]): scala.Char =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)
       loadChar(toRawPtr(ptr))
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Char],
                                      value: scala.Char): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 100)
       storeChar(toRawPtr(ptr), value)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object Byte extends Tag[scala.Byte] {
-    @alwaysinline def size: CSize                                            = 1.toUSize
-    @alwaysinline def alignment: CSize                                       = 1.toUSize
+    @alwaysinline def size: CSize      = 1.toUSize
+    @alwaysinline def alignment: CSize = 1.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Byte]): scala.Byte =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)
       loadByte(toRawPtr(ptr))
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Byte],
                                      value: scala.Byte): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 100)
       storeByte(toRawPtr(ptr), value)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object UByte extends Tag[unsigned.UByte] {
     @alwaysinline def size: CSize      = 1.toUSize
     @alwaysinline def alignment: CSize = 1.toUSize
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsigned.UByte]): unsigned.UByte =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 89)
       loadByte(toRawPtr(ptr)).toUByte
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.UByte],
                                      value: unsigned.UByte): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 98)
       storeByte(toRawPtr(ptr), value.toByte)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object Short extends Tag[scala.Short] {
-    @alwaysinline def size: CSize                                              = 2.toUSize
-    @alwaysinline def alignment: CSize                                         = 2.toUSize
+    @alwaysinline def size: CSize      = 2.toUSize
+    @alwaysinline def alignment: CSize = 2.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Short]): scala.Short =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)
       loadShort(toRawPtr(ptr))
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Short],
                                      value: scala.Short): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 100)
       storeShort(toRawPtr(ptr), value)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object UShort extends Tag[unsigned.UShort] {
     @alwaysinline def size: CSize      = 2.toUSize
     @alwaysinline def alignment: CSize = 2.toUSize
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsigned.UShort]): unsigned.UShort =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 89)
       loadShort(toRawPtr(ptr)).toUShort
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.UShort],
                                      value: unsigned.UShort): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 98)
       storeShort(toRawPtr(ptr), value.toShort)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object Int extends Tag[scala.Int] {
-    @alwaysinline def size: CSize                                          = 4.toUSize
-    @alwaysinline def alignment: CSize                                     = 4.toUSize
+    @alwaysinline def size: CSize      = 4.toUSize
+    @alwaysinline def alignment: CSize = 4.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Int]): scala.Int =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)
       loadInt(toRawPtr(ptr))
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Int],
                                      value: scala.Int): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 100)
       storeInt(toRawPtr(ptr), value)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object UInt extends Tag[unsigned.UInt] {
     @alwaysinline def size: CSize      = 4.toUSize
     @alwaysinline def alignment: CSize = 4.toUSize
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsigned.UInt]): unsigned.UInt =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 89)
       loadInt(toRawPtr(ptr)).toUInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.UInt],
                                      value: unsigned.UInt): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 98)
       storeInt(toRawPtr(ptr), value.toInt)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object Long extends Tag[scala.Long] {
-    @alwaysinline def size: CSize                                            = 8.toUSize
-    @alwaysinline def alignment: CSize                                       = ptrSize
+    @alwaysinline def size: CSize      = 8.toUSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Long]): scala.Long =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)
       loadLong(toRawPtr(ptr))
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Long],
                                      value: scala.Long): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 100)
       storeLong(toRawPtr(ptr), value)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object ULong extends Tag[unsigned.ULong] {
     @alwaysinline def size: CSize      = 8.toUSize
     @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsigned.ULong]): unsigned.ULong =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 89)
       loadLong(toRawPtr(ptr)).toULong
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.ULong],
                                      value: unsigned.ULong): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 98)
       storeLong(toRawPtr(ptr), value.toLong)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object Float extends Tag[scala.Float] {
-    @alwaysinline def size: CSize                                              = 4.toUSize
-    @alwaysinline def alignment: CSize                                         = 4.toUSize
+    @alwaysinline def size: CSize      = 4.toUSize
+    @alwaysinline def alignment: CSize = 4.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Float]): scala.Float =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)
       loadFloat(toRawPtr(ptr))
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Float],
                                      value: scala.Float): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 100)
       storeFloat(toRawPtr(ptr), value)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 80)
 
   object Double extends Tag[scala.Double] {
     @alwaysinline def size: CSize      = 8.toUSize
     @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(
         ptr: unsafe.Ptr[scala.Double]): scala.Double =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 91)
       loadDouble(toRawPtr(ptr))
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 93)
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Double],
                                      value: scala.Double): Unit =
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 100)
       storeDouble(toRawPtr(ptr), value)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 102)
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 105)
 
   private[scalanative] sealed trait NatTag {
     def toInt: Int
     def toUInt: UInt = toInt.toUInt
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 112)
 
   object Nat0 extends Tag[unsafe.Nat._0] with NatTag {
     @noinline def size: CSize      = throwUndefined()
@@ -296,15 +212,11 @@ object Tag {
     @alwaysinline def toInt: Int   = 0
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 112)
-
   object Nat1 extends Tag[unsafe.Nat._1] with NatTag {
     @noinline def size: CSize      = throwUndefined()
     @noinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int   = 1
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 112)
 
   object Nat2 extends Tag[unsafe.Nat._2] with NatTag {
     @noinline def size: CSize      = throwUndefined()
@@ -312,15 +224,11 @@ object Tag {
     @alwaysinline def toInt: Int   = 2
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 112)
-
   object Nat3 extends Tag[unsafe.Nat._3] with NatTag {
     @noinline def size: CSize      = throwUndefined()
     @noinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int   = 3
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 112)
 
   object Nat4 extends Tag[unsafe.Nat._4] with NatTag {
     @noinline def size: CSize      = throwUndefined()
@@ -328,15 +236,11 @@ object Tag {
     @alwaysinline def toInt: Int   = 4
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 112)
-
   object Nat5 extends Tag[unsafe.Nat._5] with NatTag {
     @noinline def size: CSize      = throwUndefined()
     @noinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int   = 5
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 112)
 
   object Nat6 extends Tag[unsafe.Nat._6] with NatTag {
     @noinline def size: CSize      = throwUndefined()
@@ -344,15 +248,11 @@ object Tag {
     @alwaysinline def toInt: Int   = 6
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 112)
-
   object Nat7 extends Tag[unsafe.Nat._7] with NatTag {
     @noinline def size: CSize      = throwUndefined()
     @noinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int   = 7
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 112)
 
   object Nat8 extends Tag[unsafe.Nat._8] with NatTag {
     @noinline def size: CSize      = throwUndefined()
@@ -360,17 +260,11 @@ object Tag {
     @alwaysinline def toInt: Int   = 8
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 112)
-
   object Nat9 extends Tag[unsafe.Nat._9] with NatTag {
     @noinline def size: CSize      = throwUndefined()
     @noinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int   = 9
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 120)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 127)
 
   final case class Digit2[N1 <: Nat.Base, N2 <: Nat.Base](_1: Tag[N1],
                                                           _2: Tag[N2])
@@ -380,16 +274,11 @@ object Tag {
     @alwaysinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int = {
       var res = 0
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _1.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _2.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 139)
       res
     }
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 127)
 
   final case class Digit3[N1 <: Nat.Base, N2 <: Nat.Base, N3 <: Nat.Base](
       _1: Tag[N1],
@@ -401,18 +290,12 @@ object Tag {
     @alwaysinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int = {
       var res = 0
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _1.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _2.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _3.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 139)
       res
     }
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 127)
 
   final case class Digit4[N1 <: Nat.Base,
                           N2 <: Nat.Base,
@@ -427,20 +310,13 @@ object Tag {
     @alwaysinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int = {
       var res = 0
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _1.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _2.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _3.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _4.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 139)
       res
     }
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 127)
 
   final case class Digit5[N1 <: Nat.Base,
                           N2 <: Nat.Base,
@@ -457,22 +333,14 @@ object Tag {
     @alwaysinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int = {
       var res = 0
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _1.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _2.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _3.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _4.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _5.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 139)
       res
     }
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 127)
 
   final case class Digit6[N1 <: Nat.Base,
                           N2 <: Nat.Base,
@@ -491,24 +359,15 @@ object Tag {
     @alwaysinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int = {
       var res = 0
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _1.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _2.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _3.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _4.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _5.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _6.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 139)
       res
     }
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 127)
 
   final case class Digit7[N1 <: Nat.Base,
                           N2 <: Nat.Base,
@@ -529,26 +388,16 @@ object Tag {
     @alwaysinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int = {
       var res = 0
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _1.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _2.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _3.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _4.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _5.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _6.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _7.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 139)
       res
     }
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 127)
 
   final case class Digit8[N1 <: Nat.Base,
                           N2 <: Nat.Base,
@@ -571,28 +420,17 @@ object Tag {
     @alwaysinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int = {
       var res = 0
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _1.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _2.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _3.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _4.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _5.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _6.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _7.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _8.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 139)
       res
     }
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 127)
 
   final case class Digit9[N1 <: Nat.Base,
                           N2 <: Nat.Base,
@@ -617,30 +455,18 @@ object Tag {
     @alwaysinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int = {
       var res = 0
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _1.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _2.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _3.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _4.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _5.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _6.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _7.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _8.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 137)
       res = res * 10 + _9.asInstanceOf[NatTag].toInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 139)
       res
     }
   }
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 144)
 
   final case class CArray[T, N <: unsafe.Nat](of: Tag[T], n: Tag[N])
       extends Tag[unsafe.CArray[T, N]] {
@@ -671,21 +497,16 @@ object Tag {
     offset + padding
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct0() extends Tag[unsafe.CStruct0] with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -701,32 +522,23 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct1[T1](_1: Tag[T1])
       extends Tag[unsafe.CStruct1[T1]]
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -742,43 +554,29 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct2[T1, T2](_1: Tag[T1], _2: Tag[T2])
       extends Tag[unsafe.CStruct2[T1, T2]]
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -794,56 +592,36 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct3[T1, T2, T3](_1: Tag[T1], _2: Tag[T2], _3: Tag[T3])
       extends Tag[unsafe.CStruct3[T1, T2, T3]]
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -861,8 +639,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct4[T1, T2, T3, T4](_1: Tag[T1],
                                             _2: Tag[T2],
                                             _3: Tag[T3],
@@ -871,64 +647,39 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -946,8 +697,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct5[T1, T2, T3, T4, T5](_1: Tag[T1],
                                                 _2: Tag[T2],
                                                 _3: Tag[T3],
@@ -957,81 +706,48 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -1049,8 +765,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct6[T1, T2, T3, T4, T5, T6](_1: Tag[T1],
                                                     _2: Tag[T2],
                                                     _3: Tag[T3],
@@ -1061,100 +775,58 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -1172,8 +844,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct7[T1, T2, T3, T4, T5, T6, T7](_1: Tag[T1],
                                                         _2: Tag[T2],
                                                         _3: Tag[T3],
@@ -1185,121 +855,69 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -1317,8 +935,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct8[T1, T2, T3, T4, T5, T6, T7, T8](_1: Tag[T1],
                                                             _2: Tag[T2],
                                                             _3: Tag[T3],
@@ -1331,144 +947,81 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -1486,8 +1039,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9](_1: Tag[T1],
                                                                 _2: Tag[T2],
                                                                 _3: Tag[T3],
@@ -1501,169 +1052,94 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -1681,8 +1157,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10](
       _1: Tag[T1],
       _2: Tag[T2],
@@ -1698,196 +1172,108 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -1908,8 +1294,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11](
       _1: Tag[T1],
       _2: Tag[T2],
@@ -1927,225 +1311,123 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -2167,8 +1449,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12](
       _1: Tag[T1],
       _2: Tag[T2],
@@ -2187,256 +1467,139 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 11 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -2488,8 +1651,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct13[T1,
                              T2,
                              T3,
@@ -2532,289 +1693,156 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 11 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 12 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -2880,8 +1908,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct14[T1,
                              T2,
                              T3,
@@ -2927,324 +1953,174 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 11 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 12 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 13 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -3327,8 +2203,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct15[T1,
                              T2,
                              T3,
@@ -3377,361 +2251,193 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 11 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 12 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 13 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 14 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -3819,8 +2525,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct16[T1,
                              T2,
                              T3,
@@ -3872,400 +2576,213 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 11 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 12 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 13 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 14 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 15 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -4358,8 +2875,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct17[T1,
                              T2,
                              T3,
@@ -4414,441 +2929,234 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 11 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 12 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 13 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 14 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 15 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 16 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -4946,8 +3254,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct18[T1,
                              T2,
                              T3,
@@ -5005,484 +3311,256 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_18.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 11 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 12 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 13 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 14 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 15 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 16 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 17 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _18.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -5585,8 +3663,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct19[T1,
                              T2,
                              T3,
@@ -5647,529 +3723,279 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _19.alignment) + _19.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_18.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_19.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 11 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 12 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 13 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 14 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 15 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 16 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 17 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _18.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 18 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _19.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -6277,8 +4103,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct20[T1,
                              T2,
                              T3,
@@ -6342,576 +4166,303 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _19.alignment) + _19.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _20.alignment) + _20.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_18.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_19.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_20.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 11 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 12 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 13 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 14 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 15 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 16 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 17 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _18.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 18 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _19.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 19 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _19.alignment) + _19.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _20.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -7024,8 +4575,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct21[T1,
                              T2,
                              T3,
@@ -7092,625 +4641,328 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _19.alignment) + _19.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _20.alignment) + _20.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _21.alignment) + _21.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_18.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_19.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_20.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_21.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 11 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 12 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 13 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 14 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 15 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 16 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 17 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _18.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 18 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _19.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 19 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _19.alignment) + _19.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _20.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 20 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _19.alignment) + _19.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _20.alignment) + _20.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _21.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -7828,8 +5080,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 177)
-
   final case class CStruct22[T1,
                              T2,
                              T3,
@@ -7899,676 +5149,354 @@ object Tag {
       with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _19.alignment) + _19.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _20.alignment) + _20.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _21.alignment) + _21.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 185)
       res = align(res, _22.alignment) + _22.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 187)
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
       var res = 1.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_18.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_19.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_20.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_21.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 192)
       res = res.max(_22.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 194)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 0 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _1.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 1 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _2.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 2 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _3.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 3 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _4.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 4 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _5.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 5 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _6.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 6 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _7.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 7 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _8.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 8 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _9.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 9 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _10.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 10 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _11.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 11 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _12.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 12 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _13.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 13 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _14.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 14 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _15.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 15 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _16.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 16 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _17.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 17 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _18.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 18 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _19.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 19 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _19.alignment) + _19.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _20.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 20 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _19.alignment) + _19.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _20.alignment) + _20.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _21.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 198)
       case 21 =>
         var res = 0.toUSize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _1.alignment) + _1.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _2.alignment) + _2.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _3.alignment) + _3.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _4.alignment) + _4.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _5.alignment) + _5.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _6.alignment) + _6.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _7.alignment) + _7.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _8.alignment) + _8.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _9.alignment) + _9.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _10.alignment) + _10.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _11.alignment) + _11.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _12.alignment) + _12.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _13.alignment) + _13.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _14.alignment) + _14.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _15.alignment) + _15.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _16.alignment) + _16.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _17.alignment) + _17.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _18.alignment) + _18.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _19.alignment) + _19.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _20.alignment) + _20.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 201)
         res = align(res, _21.alignment) + _21.size
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 203)
         align(res, _22.alignment)
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 205)
       case _ =>
         throwUndefined()
     }
@@ -8691,8 +5619,6 @@ object Tag {
     }
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 219)
-
   abstract class CFuncPtrTag[F <: unsafe.CFuncPtr] private[unsafe] ()
       extends Tag[F] {
 
@@ -8709,49 +5635,35 @@ object Tag {
       storeRawPtr(toRawPtr(ptr), value.rawptr)
   }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
-  abstract class CFuncPtr0[R] extends CFuncPtrTag[unsafe.CFuncPtr0[R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
+  abstract class CFuncPtr0[R]     extends CFuncPtrTag[unsafe.CFuncPtr0[R]]
   abstract class CFuncPtr1[T1, R] extends CFuncPtrTag[unsafe.CFuncPtr1[T1, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr2[T1, T2, R]
       extends CFuncPtrTag[unsafe.CFuncPtr2[T1, T2, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr3[T1, T2, T3, R]
       extends CFuncPtrTag[unsafe.CFuncPtr3[T1, T2, T3, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr4[T1, T2, T3, T4, R]
       extends CFuncPtrTag[unsafe.CFuncPtr4[T1, T2, T3, T4, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr5[T1, T2, T3, T4, T5, R]
       extends CFuncPtrTag[unsafe.CFuncPtr5[T1, T2, T3, T4, T5, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr6[T1, T2, T3, T4, T5, T6, R]
       extends CFuncPtrTag[unsafe.CFuncPtr6[T1, T2, T3, T4, T5, T6, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]
       extends CFuncPtrTag[unsafe.CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]
       extends CFuncPtrTag[unsafe.CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]
       extends CFuncPtrTag[
         unsafe.CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]
       extends CFuncPtrTag[
         unsafe.CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]
       extends CFuncPtrTag[
         unsafe.CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr12[
       T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R]
       extends CFuncPtrTag[
         unsafe.CFuncPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr13[
       T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R]
       extends CFuncPtrTag[
@@ -8769,7 +5681,6 @@ object Tag {
                           T12,
                           T13,
                           R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr14[
       T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R]
       extends CFuncPtrTag[
@@ -8788,7 +5699,6 @@ object Tag {
                           T13,
                           T14,
                           R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr15[
       T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R]
       extends CFuncPtrTag[
@@ -8808,7 +5718,6 @@ object Tag {
                           T14,
                           T15,
                           R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr16[
       T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, R]
       extends CFuncPtrTag[
@@ -8829,7 +5738,6 @@ object Tag {
                           T15,
                           T16,
                           R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr17[
       T1,
       T2,
@@ -8868,7 +5776,6 @@ object Tag {
                           T16,
                           T17,
                           R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr18[
       T1,
       T2,
@@ -8909,7 +5816,6 @@ object Tag {
                           T17,
                           T18,
                           R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr19[
       T1,
       T2,
@@ -8952,7 +5858,6 @@ object Tag {
                           T18,
                           T19,
                           R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr20[
       T1,
       T2,
@@ -8997,7 +5902,6 @@ object Tag {
                           T19,
                           T20,
                           R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr21[
       T1,
       T2,
@@ -9044,7 +5948,6 @@ object Tag {
                           T20,
                           T21,
                           R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 239)
   abstract class CFuncPtr22[
       T1,
       T2,
@@ -9093,7 +5996,6 @@ object Tag {
                           T21,
                           T22,
                           R]]
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 242)
 
   @alwaysinline implicit def materializePtrTag[T](
       implicit tag: Tag[T]): Tag[unsafe.Ptr[T]] =
@@ -9106,87 +6008,61 @@ object Tag {
     Tag.Size
   @alwaysinline implicit def materializeUSizeTag: Tag[unsigned.USize] =
     Tag.USize
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeUnitTag: Tag[scala.Unit] =
     Unit
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeBooleanTag: Tag[scala.Boolean] =
     Boolean
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeCharTag: Tag[scala.Char] =
     Char
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeByteTag: Tag[scala.Byte] =
     Byte
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeUByteTag: Tag[unsigned.UByte] =
     UByte
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeShortTag: Tag[scala.Short] =
     Short
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeUShortTag: Tag[unsigned.UShort] =
     UShort
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeIntTag: Tag[scala.Int] =
     Int
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeUIntTag: Tag[unsigned.UInt] =
     UInt
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeLongTag: Tag[scala.Long] =
     Long
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeULongTag: Tag[unsigned.ULong] =
     ULong
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeFloatTag: Tag[scala.Float] =
     Float
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 252)
   @alwaysinline implicit def materializeDoubleTag: Tag[scala.Double] =
     Double
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
   @alwaysinline implicit def materializeNat0Tag: Tag[unsafe.Nat._0] =
     Nat0
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
   @alwaysinline implicit def materializeNat1Tag: Tag[unsafe.Nat._1] =
     Nat1
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
   @alwaysinline implicit def materializeNat2Tag: Tag[unsafe.Nat._2] =
     Nat2
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
   @alwaysinline implicit def materializeNat3Tag: Tag[unsafe.Nat._3] =
     Nat3
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
   @alwaysinline implicit def materializeNat4Tag: Tag[unsafe.Nat._4] =
     Nat4
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
   @alwaysinline implicit def materializeNat5Tag: Tag[unsafe.Nat._5] =
     Nat5
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
   @alwaysinline implicit def materializeNat6Tag: Tag[unsafe.Nat._6] =
     Nat6
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
   @alwaysinline implicit def materializeNat7Tag: Tag[unsafe.Nat._7] =
     Nat7
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
   @alwaysinline implicit def materializeNat8Tag: Tag[unsafe.Nat._8] =
     Nat8
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 256)
   @alwaysinline implicit def materializeNat9Tag: Tag[unsafe.Nat._9] =
     Nat9
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 264)
   @alwaysinline implicit def materializeNatDigit2Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag]
       : Tag.Digit2[N1, N2] =
     Tag.Digit2(implicitly[Tag[N1]], implicitly[Tag[N2]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 264)
   @alwaysinline implicit def materializeNatDigit3Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag]
       : Tag.Digit3[N1, N2, N3] =
     Tag.Digit3(implicitly[Tag[N1]], implicitly[Tag[N2]], implicitly[Tag[N3]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 264)
   @alwaysinline implicit def materializeNatDigit4Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -9196,7 +6072,6 @@ object Tag {
                implicitly[Tag[N2]],
                implicitly[Tag[N3]],
                implicitly[Tag[N4]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 264)
   @alwaysinline implicit def materializeNatDigit5Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -9208,7 +6083,6 @@ object Tag {
                implicitly[Tag[N3]],
                implicitly[Tag[N4]],
                implicitly[Tag[N5]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 264)
   @alwaysinline implicit def materializeNatDigit6Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -9222,7 +6096,6 @@ object Tag {
                implicitly[Tag[N4]],
                implicitly[Tag[N5]],
                implicitly[Tag[N6]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 264)
   @alwaysinline implicit def materializeNatDigit7Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -9238,7 +6111,6 @@ object Tag {
                implicitly[Tag[N5]],
                implicitly[Tag[N6]],
                implicitly[Tag[N7]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 264)
   @alwaysinline implicit def materializeNatDigit8Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -9258,7 +6130,6 @@ object Tag {
       implicitly[Tag[N7]],
       implicitly[Tag[N8]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 264)
   @alwaysinline implicit def materializeNatDigit9Tag[N1 <: Nat.Base: Tag,
                                                      N2 <: Nat.Base: Tag,
                                                      N3 <: Nat.Base: Tag,
@@ -9280,21 +6151,16 @@ object Tag {
       implicitly[Tag[N8]],
       implicitly[Tag[N9]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct0Tag: Tag.CStruct0 =
     Tag.CStruct0()
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct1Tag[T1: Tag]: Tag.CStruct1[T1] =
     Tag.CStruct1(implicitly[Tag[T1]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct2Tag[T1: Tag, T2: Tag]
       : Tag.CStruct2[T1, T2] =
     Tag.CStruct2(implicitly[Tag[T1]], implicitly[Tag[T2]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct3Tag[T1: Tag, T2: Tag, T3: Tag]
       : Tag.CStruct3[T1, T2, T3] =
     Tag.CStruct3(implicitly[Tag[T1]], implicitly[Tag[T2]], implicitly[Tag[T3]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct4Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -9304,7 +6170,6 @@ object Tag {
                  implicitly[Tag[T2]],
                  implicitly[Tag[T3]],
                  implicitly[Tag[T4]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct5Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -9316,7 +6181,6 @@ object Tag {
                  implicitly[Tag[T3]],
                  implicitly[Tag[T4]],
                  implicitly[Tag[T5]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct6Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -9330,7 +6194,6 @@ object Tag {
                  implicitly[Tag[T4]],
                  implicitly[Tag[T5]],
                  implicitly[Tag[T6]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct7Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -9346,7 +6209,6 @@ object Tag {
                  implicitly[Tag[T5]],
                  implicitly[Tag[T6]],
                  implicitly[Tag[T7]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct8Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -9366,7 +6228,6 @@ object Tag {
       implicitly[Tag[T7]],
       implicitly[Tag[T8]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct9Tag[T1: Tag,
                                                     T2: Tag,
                                                     T3: Tag,
@@ -9388,7 +6249,6 @@ object Tag {
       implicitly[Tag[T8]],
       implicitly[Tag[T9]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct10Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9412,7 +6272,6 @@ object Tag {
       implicitly[Tag[T9]],
       implicitly[Tag[T10]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct11Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9438,7 +6297,6 @@ object Tag {
       implicitly[Tag[T10]],
       implicitly[Tag[T11]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct12Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9466,7 +6324,6 @@ object Tag {
       implicitly[Tag[T11]],
       implicitly[Tag[T12]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct13Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9496,7 +6353,6 @@ object Tag {
       implicitly[Tag[T12]],
       implicitly[Tag[T13]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct14Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9541,7 +6397,6 @@ object Tag {
       implicitly[Tag[T13]],
       implicitly[Tag[T14]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct15Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9589,7 +6444,6 @@ object Tag {
       implicitly[Tag[T14]],
       implicitly[Tag[T15]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct16Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9640,7 +6494,6 @@ object Tag {
       implicitly[Tag[T15]],
       implicitly[Tag[T16]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct17Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9694,7 +6547,6 @@ object Tag {
       implicitly[Tag[T16]],
       implicitly[Tag[T17]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct18Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9751,7 +6603,6 @@ object Tag {
       implicitly[Tag[T17]],
       implicitly[Tag[T18]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct19Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9811,7 +6662,6 @@ object Tag {
       implicitly[Tag[T18]],
       implicitly[Tag[T19]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct20Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9874,7 +6724,6 @@ object Tag {
       implicitly[Tag[T19]],
       implicitly[Tag[T20]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct21Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -9940,7 +6789,6 @@ object Tag {
       implicitly[Tag[T20]],
       implicitly[Tag[T21]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 272)
   @alwaysinline implicit def materializeCStruct22Tag[T1: Tag,
                                                      T2: Tag,
                                                      T3: Tag,
@@ -10009,11 +6857,9 @@ object Tag {
       implicitly[Tag[T21]],
       implicitly[Tag[T22]]
     )
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 275)
   @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]
       : Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr0[R: Tag]
       : CFuncPtrTag[unsafe.CFuncPtr0[R]] = {
@@ -10024,7 +6870,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr1[T1: Tag, R: Tag]
       : CFuncPtrTag[unsafe.CFuncPtr1[T1, R]] = {
@@ -10035,7 +6880,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr2[T1: Tag, T2: Tag, R: Tag]
       : CFuncPtrTag[unsafe.CFuncPtr2[T1, T2, R]] = {
@@ -10046,7 +6890,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr3[T1: Tag,
                                                   T2: Tag,
@@ -10060,7 +6903,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr4[T1: Tag,
                                                   T2: Tag,
@@ -10075,7 +6917,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr5[T1: Tag,
                                                   T2: Tag,
@@ -10091,7 +6932,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr6[T1: Tag,
                                                   T2: Tag,
@@ -10108,7 +6948,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr7[T1: Tag,
                                                   T2: Tag,
@@ -10126,7 +6965,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr8[T1: Tag,
                                                   T2: Tag,
@@ -10145,7 +6983,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr9[T1: Tag,
                                                   T2: Tag,
@@ -10166,7 +7003,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr10[T1: Tag,
                                                    T2: Tag,
@@ -10189,7 +7025,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr11[T1: Tag,
                                                    T2: Tag,
@@ -10224,7 +7059,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr12[T1: Tag,
                                                    T2: Tag,
@@ -10262,7 +7096,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr13[T1: Tag,
                                                    T2: Tag,
@@ -10339,7 +7172,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr14[T1: Tag,
                                                    T2: Tag,
@@ -10421,7 +7253,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr15[T1: Tag,
                                                    T2: Tag,
@@ -10508,7 +7339,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr16[T1: Tag,
                                                    T2: Tag,
@@ -10600,7 +7430,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr17[T1: Tag,
                                                    T2: Tag,
@@ -10697,7 +7526,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr18[T1: Tag,
                                                    T2: Tag,
@@ -10799,7 +7627,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr19[T1: Tag,
                                                    T2: Tag,
@@ -10906,7 +7733,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr20[T1: Tag,
                                                    T2: Tag,
@@ -11018,7 +7844,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr21[T1: Tag,
                                                    T2: Tag,
@@ -11135,7 +7960,6 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 284)
 
   @alwaysinline implicit def materializeCFuncPtr22[T1: Tag,
                                                    T2: Tag,
@@ -11257,5 +8081,4 @@ object Tag {
       }
     }
   }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/unsafe/Tag.scala.gyb", line: 293)
 }

@@ -161,6 +161,16 @@ package object unsafe {
     def c(): CString = intrinsic
   }
 
+  /** Scala Native unsafe extensions to the standard Byte. */
+  implicit class UnsafeRichByte(val value: Byte) extends AnyVal {
+    @inline def toSize: Size = new Size(castIntToRawSize(value))
+  }
+
+  /** Scala Native unsafe extensions to the standard Short. */
+  implicit class UnsafeRichShort(val value: Short) extends AnyVal {
+    @inline def toSize: Size = new Size(castIntToRawSize(value))
+  }
+
   /** Scala Native unsafe extensions to the standard Int. */
   implicit class UnsafeRichInt(val value: Int) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(value))
@@ -184,7 +194,7 @@ package object unsafe {
 
       var c = 0
       while (c < len) {
-        bytes(c) = !(cstr + c.toUSize)
+        bytes(c) = !(cstr + c)
         c += 1
       }
 
@@ -205,7 +215,7 @@ package object unsafe {
       null
     } else {
       val bytes = str.getBytes(charset)
-      val cstr  = z.alloc(bytes.length + 1)
+      val cstr  = z.alloc((bytes.length + 1).toUSize)
 
       var c = 0
       while (c < bytes.length) {

@@ -1,4 +1,3 @@
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 1)
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
 // personally identifiable information in sourceLocation lines.
@@ -39,28 +38,21 @@ object Boxes {
     if (o == null) Intrinsics.castIntToRawSize(0)
     else o.asInstanceOf[USize].rawSize
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 50)
   @inline def boxToUByte(v: Byte): UByte = new UByte(v)
   @inline def unboxToUByte(o: java.lang.Object): Byte =
     if (o == null) 0.toByte else o.asInstanceOf[UByte].underlying
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 50)
   @inline def boxToUShort(v: Short): UShort = new UShort(v)
   @inline def unboxToUShort(o: java.lang.Object): Short =
     if (o == null) 0.toShort else o.asInstanceOf[UShort].underlying
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 50)
   @inline def boxToUInt(v: Int): UInt = new UInt(v)
   @inline def unboxToUInt(o: java.lang.Object): Int =
     if (o == null) 0.toInt else o.asInstanceOf[UInt].underlying
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 50)
   @inline def boxToULong(v: Long): ULong = new ULong(v)
   @inline def unboxToULong(o: java.lang.Object): Long =
     if (o == null) 0.toLong else o.asInstanceOf[ULong].underlying
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 55)
-
   @inline def boxToPtr[T](v: RawPtr): Ptr[T] =
     if (v == null) null else new Ptr[T](v)
   @inline def unboxToPtr(o: java.lang.Object): RawPtr =
@@ -76,39 +68,33 @@ object Boxes {
   @inline def unboxToCVarArgList(o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CVarArgList].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr0[R](v: RawPtr): CFuncPtr0[R] =
     if (v == null) null else CFuncPtr0.fromRawPtr[R](v)
   @inline def unboxToCFuncPtr0[R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr1[T1, R](v: RawPtr): CFuncPtr1[T1, R] =
     if (v == null) null else CFuncPtr1.fromRawPtr[T1, R](v)
   @inline def unboxToCFuncPtr1[T1, R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr2[T1, T2, R](v: RawPtr): CFuncPtr2[T1, T2, R] =
     if (v == null) null else CFuncPtr2.fromRawPtr[T1, T2, R](v)
   @inline def unboxToCFuncPtr2[T1, T2, R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr3[T1, T2, T3, R](
       v: RawPtr): CFuncPtr3[T1, T2, T3, R] =
     if (v == null) null else CFuncPtr3.fromRawPtr[T1, T2, T3, R](v)
   @inline def unboxToCFuncPtr3[T1, T2, T3, R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr4[T1, T2, T3, T4, R](
       v: RawPtr): CFuncPtr4[T1, T2, T3, T4, R] =
     if (v == null) null else CFuncPtr4.fromRawPtr[T1, T2, T3, T4, R](v)
   @inline def unboxToCFuncPtr4[T1, T2, T3, T4, R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr5[T1, T2, T3, T4, T5, R](
       v: RawPtr): CFuncPtr5[T1, T2, T3, T4, T5, R] =
     if (v == null) null else CFuncPtr5.fromRawPtr[T1, T2, T3, T4, T5, R](v)
@@ -116,7 +102,6 @@ object Boxes {
       o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr6[T1, T2, T3, T4, T5, T6, R](
       v: RawPtr): CFuncPtr6[T1, T2, T3, T4, T5, T6, R] =
     if (v == null) null else CFuncPtr6.fromRawPtr[T1, T2, T3, T4, T5, T6, R](v)
@@ -124,7 +109,6 @@ object Boxes {
       o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R](
       v: RawPtr): CFuncPtr7[T1, T2, T3, T4, T5, T6, T7, R] =
     if (v == null) null
@@ -133,7 +117,6 @@ object Boxes {
       o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R](
       v: RawPtr): CFuncPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] =
     if (v == null) null
@@ -142,7 +125,6 @@ object Boxes {
       o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R](
       v: RawPtr): CFuncPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] =
     if (v == null) null
@@ -151,7 +133,6 @@ object Boxes {
       o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R](
       v: RawPtr): CFuncPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] =
     if (v == null) null
@@ -160,7 +141,6 @@ object Boxes {
       o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R](
       v: RawPtr): CFuncPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R] =
     if (v == null) null
@@ -180,7 +160,6 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr12[T1,
                               T2,
                               T3,
@@ -214,7 +193,6 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr13[T1,
                               T2,
                               T3,
@@ -251,7 +229,6 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr14[T1,
                               T2,
                               T3,
@@ -315,7 +292,6 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr15[T1,
                               T2,
                               T3,
@@ -383,7 +359,6 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr16[T1,
                               T2,
                               T3,
@@ -455,7 +430,6 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr17[T1,
                               T2,
                               T3,
@@ -531,7 +505,6 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr18[T1,
                               T2,
                               T3,
@@ -611,7 +584,6 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr19[T1,
                               T2,
                               T3,
@@ -695,7 +667,6 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr20[T1,
                               T2,
                               T3,
@@ -783,7 +754,6 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr21[T1,
                               T2,
                               T3,
@@ -875,7 +845,6 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 76)
   @inline def boxToCFuncPtr22[T1,
                               T2,
                               T3,
@@ -971,5 +940,4 @@ object Boxes {
                                 R](o: java.lang.Object): RawPtr =
     if (o == null) null else o.asInstanceOf[CFuncPtr].rawptr
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Boxes.scala.gyb", line: 82)
 }
