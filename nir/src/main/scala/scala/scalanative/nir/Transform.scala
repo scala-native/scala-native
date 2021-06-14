@@ -58,10 +58,10 @@ trait Transform {
   def onOp(op: Op): Op = op match {
     case Op.Call(ty, ptrv, argvs) =>
       Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal))
-    case Op.Load(ty, ptrv) =>
-      Op.Load(onType(ty), onVal(ptrv))
-    case Op.Store(ty, ptrv, v) =>
-      Op.Store(onType(ty), onVal(ptrv), onVal(v))
+    case Op.Load(ty, ptrv, isAtomic) =>
+      Op.Load(onType(ty), onVal(ptrv), isAtomic)
+    case Op.Store(ty, ptrv, v, isAtomic) =>
+      Op.Store(onType(ty), onVal(ptrv), onVal(v), isAtomic)
     case Op.Elem(ty, ptrv, indexvs) =>
       Op.Elem(onType(ty), onVal(ptrv), indexvs.map(onVal))
     case Op.Extract(aggrv, indexvs) =>

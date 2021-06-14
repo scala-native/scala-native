@@ -11,8 +11,8 @@ sealed abstract class Op {
   final def resty: Type = this match {
     case Op.Call(Type.Function(_, ret), _, _) => ret
     case Op.Call(_, _, _)                     => unreachable
-    case Op.Load(ty, _)                       => ty
-    case Op.Store(_, _, _)                    => Type.Unit
+    case Op.Load(ty, _, _)                    => ty
+    case Op.Store(_, _, _, _)                 => Type.Unit
     case Op.Elem(_, _, _)                     => Type.Ptr
     case Op.Extract(aggr, indexes)            => aggr.ty.elemty(indexes.map(Val.Int(_)))
     case Op.Insert(aggr, _, _)                => aggr.ty
@@ -114,9 +114,10 @@ sealed abstract class Op {
 }
 object Op {
   // low-level
-  final case class Call(ty: Type, ptr: Val, args: Seq[Val])         extends Op
-  final case class Load(ty: Type, ptr: Val)                         extends Op
-  final case class Store(ty: Type, ptr: Val, value: Val)            extends Op
+  final case class Call(ty: Type, ptr: Val, args: Seq[Val])    extends Op
+  final case class Load(ty: Type, ptr: Val, isAtomic: Boolean) extends Op
+  final case class Store(ty: Type, ptr: Val, value: Val, isAtomic: Boolean)
+      extends Op
   final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val])      extends Op
   final case class Extract(aggr: Val, indexes: Seq[Int])            extends Op
   final case class Insert(aggr: Val, value: Val, indexes: Seq[Int]) extends Op

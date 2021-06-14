@@ -51,11 +51,12 @@ class Buffer(implicit fresh: Fresh) {
   def call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next)(
       implicit pos: Position): Val =
     let(Op.Call(ty, ptr, args), unwind)
-  def load(ty: Type, ptr: Val, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Load(ty, ptr), unwind)
-  def store(ty: Type, ptr: Val, value: Val, unwind: Next)(
+  def load(ty: Type, ptr: Val, unwind: Next, isAtomic: Boolean)(
       implicit pos: Position): Val =
-    let(Op.Store(ty, ptr, value), unwind)
+    let(Op.Load(ty, ptr, isAtomic), unwind)
+  def store(ty: Type, ptr: Val, value: Val, unwind: Next, isAtomic: Boolean)(
+      implicit pos: Position): Val =
+    let(Op.Store(ty, ptr, value, isAtomic), unwind)
   def elem(ty: Type, ptr: Val, indexes: Seq[Val], unwind: Next)(
       implicit pos: Position): Val =
     let(Op.Elem(ty, ptr, indexes), unwind)
