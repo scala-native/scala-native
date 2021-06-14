@@ -4,16 +4,18 @@ import java.nio.charset.{Charset, StandardCharsets}
 import scala.language.experimental.macros
 import scalanative.annotation.alwaysinline
 import scalanative.runtime.{Platform, fromRawPtr, intrinsic, libc}
-import scalanative.runtime.Intrinsics.{castIntToRawPtr, castLongToRawPtr}
+import scalanative.runtime.Intrinsics.{
+  castIntToRawPtr,
+  castIntToRawSize,
+  castLongToRawPtr,
+  castLongToRawSize,
+  sizeOfPtr
+}
 import scalanative.unsigned._
 
 package object unsafe {
-
-  /** Int on 32-bit architectures and Long on 64-bit ones. */
-  type Word = Long
-
-  /** UInt on 32-bit architectures and ULong on 64-bit ones. */
-  type UWord = ULong
+  val ptrSize = new USize(sizeOfPtr)
+  val is32    = ptrSize.toInt == 4
 
   /** The C 'char' type. */
   type CChar = Byte
@@ -28,10 +30,10 @@ package object unsafe {
   type CUnsignedInt = UInt
 
   /** The C 'unsigned long' type. */
-  type CUnsignedLong = UWord
+  type CUnsignedLong = USize
 
   /** The C 'unsigned long int' type. */
-  type CUnsignedLongInt = ULong
+  type CUnsignedLongInt = USize
 
   /** The C 'unsigned long long' type. */
   type CUnsignedLongLong = ULong
@@ -46,10 +48,10 @@ package object unsafe {
   type CInt = Int
 
   /** The C 'long' type. */
-  type CLong = Word
+  type CLong = Size
 
   /** The C 'long int' type. */
-  type CLongInt = Long
+  type CLongInt = Size
 
   /** The C 'long long' type. */
   type CLongLong = Long
@@ -73,13 +75,13 @@ package object unsafe {
   type CBool = Boolean
 
   /** The C/C++ 'size_t' type. */
-  type CSize = UWord
+  type CSize = USize
 
   /** The C/C++ 'ssize_t' type. */
-  type CSSize = Word
+  type CSSize = Size
 
   /** The C/C++ 'ptrdiff_t' type. */
-  type CPtrDiff = Long
+  type CPtrDiff = Size
 
   /** C-style string with trailing 0. */
   type CString = Ptr[CChar]
@@ -94,7 +96,7 @@ package object unsafe {
   @alwaysinline def sizeof[T](implicit tag: Tag[T]): CSize = tag.size
 
   /** The C 'ssizeof' operator. */
-  @alwaysinline def ssizeof[T](implicit tag: Tag[T]): CSSize = tag.size.toLong
+  @alwaysinline def ssizeof[T](implicit tag: Tag[T]): CSSize = tag.size.toSize
 
   /** C-style alignment operator. */
   @alwaysinline def alignmentof[T](implicit tag: Tag[T]): CSize = tag.alignment
@@ -159,14 +161,26 @@ package object unsafe {
     def c(): CString = intrinsic
   }
 
+  /** Scala Native unsafe extensions to the standard Byte. */
+  implicit class UnsafeRichByte(val value: Byte) extends AnyVal {
+    @inline def toSize: Size = new Size(castIntToRawSize(value))
+  }
+
+  /** Scala Native unsafe extensions to the standard Short. */
+  implicit class UnsafeRichShort(val value: Short) extends AnyVal {
+    @inline def toSize: Size = new Size(castIntToRawSize(value))
+  }
+
   /** Scala Native unsafe extensions to the standard Int. */
   implicit class UnsafeRichInt(val value: Int) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(value))
+    @inline def toSize: Size     = new Size(castIntToRawSize(value))
   }
 
   /** Scala Native unsafe extensions to the standard Long. */
   implicit class UnsafeRichLong(val value: Long) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(value))
+    @inline def toSize: Size     = new Size(castLongToRawSize(value))
   }
 
   /** Convert a CString to a String using given charset. */
@@ -201,7 +215,7 @@ package object unsafe {
       null
     } else {
       val bytes = str.getBytes(charset)
-      val cstr  = z.alloc((bytes.length + 1).toULong)
+      val cstr  = z.alloc((bytes.length + 1).toUSize)
 
       var c = 0
       while (c < bytes.length) {
@@ -238,7 +252,7 @@ package object unsafe {
       null
     } else {
       val bytes = str.getBytes(charset)
-      val cstr  = z.alloc((bytes.length + charSize).toULong)
+      val cstr  = z.alloc((bytes.length + charSize).toUSize)
 
       var c = 0
       while (c < bytes.length) {
@@ -338,7 +352,7 @@ package object unsafe {
 
       q"""{
         import _root_.scala.scalanative.unsigned.UnsignedRichLong
-        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n.toULong
+        val $size   = (_root_.scala.scalanative.unsafe.sizeof[$T]($tag): _root_.scala.scalanative.unsigned.USize) * $n
         val $ptr    = $z.alloc($size)
         val $rawptr = $runtime.toRawPtr($ptr)
         $runtime.libc.memset($rawptr, 0, $size)
@@ -356,8 +370,8 @@ package object unsafe {
       val runtime = q"_root_.scala.scalanative.runtime"
 
       q"""{
-        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
-        val $rawptr = $runtime.Intrinsics.stackalloc($size)
+        val $size: _root_.scala.scalanative.unsigned.USize = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
+        val $rawptr = $runtime.Intrinsics.stackalloc(_root_.scala.scalanative.runtime.Boxes.unboxToUSize($size))
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)
       }"""
@@ -375,8 +389,8 @@ package object unsafe {
 
       q"""{
         import _root_.scala.scalanative.unsigned.UnsignedRichLong
-        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n.toULong
-        val $rawptr = $runtime.Intrinsics.stackalloc($size)
+        val $size: _root_.scala.scalanative.unsigned.USize = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
+        val $rawptr = $runtime.Intrinsics.stackalloc(_root_.scala.scalanative.runtime.Boxes.unboxToUSize($size))
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)
       }"""

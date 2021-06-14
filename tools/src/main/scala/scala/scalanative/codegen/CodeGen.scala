@@ -14,16 +14,18 @@ import scala.scalanative.compat.CompatParColls.Converters._
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
-  def apply(config: build.Config, linked: linker.Result): Seq[Path] = {
+  def apply(config: build.Config,
+            linked: linker.Result,
+            is32: Boolean): Seq[Path] = {
     val defns   = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
-    implicit val meta: Metadata = new Metadata(linked, proxies)
+    implicit val meta: Metadata = new Metadata(linked, proxies, is32)
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
     val lowered   = lower(generated)
     dumpDefns(config, "lowered", lowered)
-    emit(config, lowered)
+    emit(config, lowered, is32)
   }
 
   private def lower(defns: Seq[Defn])(implicit meta: Metadata): Seq[Defn] = {
@@ -41,7 +43,7 @@ object CodeGen {
   }
 
   /** Generate code for given assembly. */
-  private def emit(config: build.Config, assembly: Seq[Defn])(
+  private def emit(config: build.Config, assembly: Seq[Defn], is32: Boolean)(
       implicit meta: Metadata): Seq[Path] =
     Scope { implicit in =>
       val env     = assembly.map(defn => defn.name -> defn).toMap
@@ -55,7 +57,7 @@ object CodeGen {
           .map {
             case (id, defns) =>
               val sorted = defns.sortBy(_.name.show)
-              Impl(config, env, sorted).gen(id.toString, workdir)
+              Impl(config, is32, env, sorted).gen(id.toString, workdir)
           }
           .toSeq
           .seq
@@ -65,7 +67,7 @@ object CodeGen {
       // Clang's LTO is not available.
       def single(): Seq[Path] = {
         val sorted = assembly.sortBy(_.name.show)
-        Impl(config, env, sorted).gen(id = "out", workdir) :: Nil
+        Impl(config, is32, env, sorted).gen(id = "out", workdir) :: Nil
       }
 
       (config.mode, config.LTO) match {
@@ -79,9 +81,11 @@ object CodeGen {
     import scala.scalanative.codegen.AbstractCodeGen
     import scala.scalanative.codegen.compat.os._
 
-    def apply(config: Config, env: Map[Global, Defn], defns: Seq[Defn])(
-        implicit meta: Metadata): AbstractCodeGen = {
-      new AbstractCodeGen(config, env, defns) {
+    def apply(config: Config,
+              is32: Boolean,
+              env: Map[Global, Defn],
+              defns: Seq[Defn])(implicit meta: Metadata): AbstractCodeGen = {
+      new AbstractCodeGen(config, is32, env, defns) {
         override val os: OsCompat = {
           if (config.targetsWindows) new WindowsCompat(this)
           else new UnixCompat(this)

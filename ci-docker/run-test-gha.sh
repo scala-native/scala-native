@@ -50,4 +50,5 @@ docker run --mount type=bind,source=$HOME/.cache/coursier,target=/home/scala-nat
            -e SCALANATIVE_OPTIMIZE="$SCALANATIVE_OPTIMIZE" \
            -e TEST_COMMAND="$TEST_COMMAND" \
            -e SCALA_VERSION="$SCALA_VERSION" \
+           -e ASAN_OPTIONS="detect_leaks=0" \
            -i "${FULL_IMAGE_NAME}"

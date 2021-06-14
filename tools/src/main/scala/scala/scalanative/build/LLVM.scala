@@ -8,6 +8,12 @@ import scalanative.compat.CompatParColls.Converters._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
+  // settings to make sure that exceptions can be caught and unwinded
+  private val unwindSettings =
+    Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
+
+  private val asanSettings =
+    Seq.empty // Seq("-fsanitize=address", "-fno-omit-frame-pointer")
 
   /** Object file extension: ".o" */
   val oExt = ".o"
@@ -51,7 +57,8 @@ private[scalanative] object LLVM {
         val flags = opt(config) +: stdflag ++: "-fvisibility=hidden" +:
           config.compileOptions
         val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
+          Seq(compiler) ++ flto(config) ++ flags ++ unwindSettings ++ asanSettings ++ target(
+            config) ++
             Seq("-c", inpath, "-o", outpath)
 
         config.logger.running(compilec)
@@ -97,7 +104,8 @@ private[scalanative] object LLVM {
       val platformFlags =
         if (config.targetsWindows) Seq()
         else Seq("-rdynamic")
-      flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ target(config)
+      flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ unwindSettings ++ asanSettings ++ target(
+        config)
     }
     val paths   = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)

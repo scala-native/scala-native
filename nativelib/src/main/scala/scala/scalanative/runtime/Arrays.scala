@@ -1,5 +1,3 @@
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
-
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
 // personally identifiable information in sourceLocation lines.
@@ -30,8 +28,6 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 34)
-
 sealed abstract class Array[T]
     extends java.io.Serializable
     with java.lang.Cloneable {
@@ -39,7 +35,7 @@ sealed abstract class Array[T]
   /** Number of elements of the array. */
   @inline def length: Int = {
     val rawptr = castObjectToRawPtr(this)
-    val lenptr = elemRawPtr(rawptr, 8)
+    val lenptr = elemRawPtr(rawptr, sizeOfPtr)
     loadInt(lenptr)
   }
 
@@ -103,7 +99,7 @@ object Array {
     } else {
       val fromPtr = from.atRaw(fromPos)
       val toPtr   = to.atRaw(toPos)
-      val size    = to.stride * len.toULong
+      val size    = to.stride * len.toUSize
       libc.memmove(toPtr, fromPtr, size)
     }
   }
@@ -148,28 +144,25 @@ object Array {
     } else {
       val leftPtr  = left.atRaw(leftPos)
       val rightPtr = right.atRaw(rightPos)
-      libc.memcmp(leftPtr, rightPtr, len.toULong * left.stride)
+      libc.memcmp(leftPtr, rightPtr, len.toUSize * left.stride)
     }
   }
 }
 
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 168)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
-
 final class BooleanArray private () extends Array[Boolean] {
 
   @inline def stride: CSize =
-    1.toULong
+    1.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, 16 + 1 * i)
+      elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(1), castIntToRawSize(i))))
     }
 
   @inline def apply(i: Int): Boolean =
@@ -177,7 +170,10 @@ final class BooleanArray private () extends Array[Boolean] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 1 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(1), castIntToRawSize(i))))
       loadBoolean(ith)
     }
 
@@ -186,15 +182,20 @@ final class BooleanArray private () extends Array[Boolean] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 1 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(1), castIntToRawSize(i))))
       storeBoolean(ith, value)
     }
 
   @inline override def clone(): BooleanArray = {
-    val arrcls  = classOf[BooleanArray]
-    val arrsize = (16 + 1 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    val src     = castObjectToRawPtr(this)
+    val arrcls = classOf[BooleanArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(1), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    val src = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[BooleanArray]
   }
@@ -203,11 +204,14 @@ final class BooleanArray private () extends Array[Boolean] {
 object BooleanArray {
 
   @inline def alloc(length: Int): BooleanArray = {
-    val arrcls  = classOf[BooleanArray]
-    val arrsize = (16 + 1 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), 1.toInt)
+    val arrcls = classOf[BooleanArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(1), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    storeInt(elemRawPtr(arr, sizeOfPtr), length)
+    storeInt(elemRawPtr(arr, addRawSizes(sizeOfPtr, castIntToRawSize(4))),
+             1.toInt)
     castRawPtrToObject(arr).asInstanceOf[BooleanArray]
   }
 
@@ -215,26 +219,26 @@ object BooleanArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (1 * length).toULong
+    val size = (1 * length).toUSize
     libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class CharArray private () extends Array[Char] {
 
   @inline def stride: CSize =
-    2.toULong
+    2.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, 16 + 2 * i)
+      elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(2), castIntToRawSize(i))))
     }
 
   @inline def apply(i: Int): Char =
@@ -242,7 +246,10 @@ final class CharArray private () extends Array[Char] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 2 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(2), castIntToRawSize(i))))
       loadChar(ith)
     }
 
@@ -251,15 +258,20 @@ final class CharArray private () extends Array[Char] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 2 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(2), castIntToRawSize(i))))
       storeChar(ith, value)
     }
 
   @inline override def clone(): CharArray = {
-    val arrcls  = classOf[CharArray]
-    val arrsize = (16 + 2 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    val src     = castObjectToRawPtr(this)
+    val arrcls = classOf[CharArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(2), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    val src = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[CharArray]
   }
@@ -268,11 +280,14 @@ final class CharArray private () extends Array[Char] {
 object CharArray {
 
   @inline def alloc(length: Int): CharArray = {
-    val arrcls  = classOf[CharArray]
-    val arrsize = (16 + 2 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), 2.toInt)
+    val arrcls = classOf[CharArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(2), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    storeInt(elemRawPtr(arr, sizeOfPtr), length)
+    storeInt(elemRawPtr(arr, addRawSizes(sizeOfPtr, castIntToRawSize(4))),
+             2.toInt)
     castRawPtrToObject(arr).asInstanceOf[CharArray]
   }
 
@@ -280,26 +295,26 @@ object CharArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (2 * length).toULong
+    val size = (2 * length).toUSize
     libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class ByteArray private () extends Array[Byte] {
 
   @inline def stride: CSize =
-    1.toULong
+    1.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, 16 + 1 * i)
+      elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(1), castIntToRawSize(i))))
     }
 
   @inline def apply(i: Int): Byte =
@@ -307,7 +322,10 @@ final class ByteArray private () extends Array[Byte] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 1 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(1), castIntToRawSize(i))))
       loadByte(ith)
     }
 
@@ -316,15 +334,20 @@ final class ByteArray private () extends Array[Byte] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 1 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(1), castIntToRawSize(i))))
       storeByte(ith, value)
     }
 
   @inline override def clone(): ByteArray = {
-    val arrcls  = classOf[ByteArray]
-    val arrsize = (16 + 1 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    val src     = castObjectToRawPtr(this)
+    val arrcls = classOf[ByteArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(1), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    val src = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[ByteArray]
   }
@@ -333,11 +356,14 @@ final class ByteArray private () extends Array[Byte] {
 object ByteArray {
 
   @inline def alloc(length: Int): ByteArray = {
-    val arrcls  = classOf[ByteArray]
-    val arrsize = (16 + 1 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), 1.toInt)
+    val arrcls = classOf[ByteArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(1), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    storeInt(elemRawPtr(arr, sizeOfPtr), length)
+    storeInt(elemRawPtr(arr, addRawSizes(sizeOfPtr, castIntToRawSize(4))),
+             1.toInt)
     castRawPtrToObject(arr).asInstanceOf[ByteArray]
   }
 
@@ -345,26 +371,26 @@ object ByteArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (1 * length).toULong
+    val size = (1 * length).toUSize
     libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class ShortArray private () extends Array[Short] {
 
   @inline def stride: CSize =
-    2.toULong
+    2.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, 16 + 2 * i)
+      elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(2), castIntToRawSize(i))))
     }
 
   @inline def apply(i: Int): Short =
@@ -372,7 +398,10 @@ final class ShortArray private () extends Array[Short] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 2 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(2), castIntToRawSize(i))))
       loadShort(ith)
     }
 
@@ -381,15 +410,20 @@ final class ShortArray private () extends Array[Short] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 2 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(2), castIntToRawSize(i))))
       storeShort(ith, value)
     }
 
   @inline override def clone(): ShortArray = {
-    val arrcls  = classOf[ShortArray]
-    val arrsize = (16 + 2 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    val src     = castObjectToRawPtr(this)
+    val arrcls = classOf[ShortArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(2), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    val src = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[ShortArray]
   }
@@ -398,11 +432,14 @@ final class ShortArray private () extends Array[Short] {
 object ShortArray {
 
   @inline def alloc(length: Int): ShortArray = {
-    val arrcls  = classOf[ShortArray]
-    val arrsize = (16 + 2 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), 2.toInt)
+    val arrcls = classOf[ShortArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(2), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    storeInt(elemRawPtr(arr, sizeOfPtr), length)
+    storeInt(elemRawPtr(arr, addRawSizes(sizeOfPtr, castIntToRawSize(4))),
+             2.toInt)
     castRawPtrToObject(arr).asInstanceOf[ShortArray]
   }
 
@@ -410,26 +447,26 @@ object ShortArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (2 * length).toULong
+    val size = (2 * length).toUSize
     libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class IntArray private () extends Array[Int] {
 
   @inline def stride: CSize =
-    4.toULong
+    4.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, 16 + 4 * i)
+      elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(4), castIntToRawSize(i))))
     }
 
   @inline def apply(i: Int): Int =
@@ -437,7 +474,10 @@ final class IntArray private () extends Array[Int] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 4 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(4), castIntToRawSize(i))))
       loadInt(ith)
     }
 
@@ -446,15 +486,20 @@ final class IntArray private () extends Array[Int] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 4 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(4), castIntToRawSize(i))))
       storeInt(ith, value)
     }
 
   @inline override def clone(): IntArray = {
-    val arrcls  = classOf[IntArray]
-    val arrsize = (16 + 4 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    val src     = castObjectToRawPtr(this)
+    val arrcls = classOf[IntArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(4), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    val src = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[IntArray]
   }
@@ -463,11 +508,14 @@ final class IntArray private () extends Array[Int] {
 object IntArray {
 
   @inline def alloc(length: Int): IntArray = {
-    val arrcls  = classOf[IntArray]
-    val arrsize = (16 + 4 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), 4.toInt)
+    val arrcls = classOf[IntArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(4), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    storeInt(elemRawPtr(arr, sizeOfPtr), length)
+    storeInt(elemRawPtr(arr, addRawSizes(sizeOfPtr, castIntToRawSize(4))),
+             4.toInt)
     castRawPtrToObject(arr).asInstanceOf[IntArray]
   }
 
@@ -475,26 +523,26 @@ object IntArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (4 * length).toULong
+    val size = (4 * length).toUSize
     libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class LongArray private () extends Array[Long] {
 
   @inline def stride: CSize =
-    8.toULong
+    8.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, 16 + 8 * i)
+      elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(8), castIntToRawSize(i))))
     }
 
   @inline def apply(i: Int): Long =
@@ -502,7 +550,10 @@ final class LongArray private () extends Array[Long] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 8 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(8), castIntToRawSize(i))))
       loadLong(ith)
     }
 
@@ -511,15 +562,20 @@ final class LongArray private () extends Array[Long] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 8 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(8), castIntToRawSize(i))))
       storeLong(ith, value)
     }
 
   @inline override def clone(): LongArray = {
-    val arrcls  = classOf[LongArray]
-    val arrsize = (16 + 8 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    val src     = castObjectToRawPtr(this)
+    val arrcls = classOf[LongArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(8), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    val src = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[LongArray]
   }
@@ -528,11 +584,14 @@ final class LongArray private () extends Array[Long] {
 object LongArray {
 
   @inline def alloc(length: Int): LongArray = {
-    val arrcls  = classOf[LongArray]
-    val arrsize = (16 + 8 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), 8.toInt)
+    val arrcls = classOf[LongArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(8), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    storeInt(elemRawPtr(arr, sizeOfPtr), length)
+    storeInt(elemRawPtr(arr, addRawSizes(sizeOfPtr, castIntToRawSize(4))),
+             8.toInt)
     castRawPtrToObject(arr).asInstanceOf[LongArray]
   }
 
@@ -540,26 +599,26 @@ object LongArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (8 * length).toULong
+    val size = (8 * length).toUSize
     libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class FloatArray private () extends Array[Float] {
 
   @inline def stride: CSize =
-    4.toULong
+    4.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, 16 + 4 * i)
+      elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(4), castIntToRawSize(i))))
     }
 
   @inline def apply(i: Int): Float =
@@ -567,7 +626,10 @@ final class FloatArray private () extends Array[Float] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 4 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(4), castIntToRawSize(i))))
       loadFloat(ith)
     }
 
@@ -576,15 +638,20 @@ final class FloatArray private () extends Array[Float] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 4 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(4), castIntToRawSize(i))))
       storeFloat(ith, value)
     }
 
   @inline override def clone(): FloatArray = {
-    val arrcls  = classOf[FloatArray]
-    val arrsize = (16 + 4 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    val src     = castObjectToRawPtr(this)
+    val arrcls = classOf[FloatArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(4), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    val src = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[FloatArray]
   }
@@ -593,11 +660,14 @@ final class FloatArray private () extends Array[Float] {
 object FloatArray {
 
   @inline def alloc(length: Int): FloatArray = {
-    val arrcls  = classOf[FloatArray]
-    val arrsize = (16 + 4 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), 4.toInt)
+    val arrcls = classOf[FloatArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(4), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    storeInt(elemRawPtr(arr, sizeOfPtr), length)
+    storeInt(elemRawPtr(arr, addRawSizes(sizeOfPtr, castIntToRawSize(4))),
+             4.toInt)
     castRawPtrToObject(arr).asInstanceOf[FloatArray]
   }
 
@@ -605,26 +675,26 @@ object FloatArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (4 * length).toULong
+    val size = (4 * length).toUSize
     libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class DoubleArray private () extends Array[Double] {
 
   @inline def stride: CSize =
-    8.toULong
+    8.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, 16 + 8 * i)
+      elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(8), castIntToRawSize(i))))
     }
 
   @inline def apply(i: Int): Double =
@@ -632,7 +702,10 @@ final class DoubleArray private () extends Array[Double] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 8 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(8), castIntToRawSize(i))))
       loadDouble(ith)
     }
 
@@ -641,15 +714,20 @@ final class DoubleArray private () extends Array[Double] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 8 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(8), castIntToRawSize(i))))
       storeDouble(ith, value)
     }
 
   @inline override def clone(): DoubleArray = {
-    val arrcls  = classOf[DoubleArray]
-    val arrsize = (16 + 8 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    val src     = castObjectToRawPtr(this)
+    val arrcls = classOf[DoubleArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(8), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    val src = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[DoubleArray]
   }
@@ -658,11 +736,14 @@ final class DoubleArray private () extends Array[Double] {
 object DoubleArray {
 
   @inline def alloc(length: Int): DoubleArray = {
-    val arrcls  = classOf[DoubleArray]
-    val arrsize = (16 + 8 * length).toULong
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), 8.toInt)
+    val arrcls = classOf[DoubleArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(8), castIntToRawSize(length))))
+    val arr = GC.alloc_atomic(arrcls, arrsize)
+    storeInt(elemRawPtr(arr, sizeOfPtr), length)
+    storeInt(elemRawPtr(arr, addRawSizes(sizeOfPtr, castIntToRawSize(4))),
+             8.toInt)
     castRawPtrToObject(arr).asInstanceOf[DoubleArray]
   }
 
@@ -670,26 +751,27 @@ object DoubleArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (8 * length).toULong
+    val size = (8 * length).toUSize
     libc.memcpy(dst, src, size)
     arr
   }
 }
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 170)
-
-// ###sourceLocation(file: "nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 174)
 
 final class ObjectArray private () extends Array[Object] {
 
   @inline def stride: CSize =
-    8.toULong
+    castRawSizeToInt(sizeOfPtr).toUSize
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, 16 + 8 * i)
+      elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(castRawSizeToInt(sizeOfPtr)),
+                                 castIntToRawSize(i))))
     }
 
   @inline def apply(i: Int): Object =
@@ -697,7 +779,11 @@ final class ObjectArray private () extends Array[Object] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 8 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(castRawSizeToInt(sizeOfPtr)),
+                                 castIntToRawSize(i))))
       loadObject(ith)
     }
 
@@ -706,15 +792,22 @@ final class ObjectArray private () extends Array[Object] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, 16 + 8 * i)
+      val ith = elemRawPtr(
+        rawptr,
+        addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                    multRawSizes(castIntToRawSize(castRawSizeToInt(sizeOfPtr)),
+                                 castIntToRawSize(i))))
       storeObject(ith, value)
     }
 
   @inline override def clone(): ObjectArray = {
-    val arrcls  = classOf[ObjectArray]
-    val arrsize = (16 + 8 * length).toULong
-    val arr     = GC.alloc(arrcls, arrsize)
-    val src     = castObjectToRawPtr(this)
+    val arrcls = classOf[ObjectArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(castRawSizeToInt(sizeOfPtr)),
+                               castIntToRawSize(length))))
+    val arr = GC.alloc(arrcls, arrsize)
+    val src = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]
   }
@@ -723,11 +816,15 @@ final class ObjectArray private () extends Array[Object] {
 object ObjectArray {
 
   @inline def alloc(length: Int): ObjectArray = {
-    val arrcls  = classOf[ObjectArray]
-    val arrsize = (16 + 8 * length).toULong
-    val arr     = GC.alloc(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), 8.toInt)
+    val arrcls = classOf[ObjectArray]
+    val arrsize = new USize(
+      addRawSizes(addRawSizes(sizeOfPtr, castIntToRawSize(8)),
+                  multRawSizes(castIntToRawSize(castRawSizeToInt(sizeOfPtr)),
+                               castIntToRawSize(length))))
+    val arr = GC.alloc(arrcls, arrsize)
+    storeInt(elemRawPtr(arr, sizeOfPtr), length)
+    storeInt(elemRawPtr(arr, addRawSizes(sizeOfPtr, castIntToRawSize(4))),
+             castRawSizeToInt(sizeOfPtr).toInt)
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]
   }
 
@@ -735,7 +832,7 @@ object ObjectArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (8 * length).toULong
+    val size = (castRawSizeToInt(sizeOfPtr) * length).toUSize
     libc.memcpy(dst, src, size)
     arr
   }

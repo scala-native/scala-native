@@ -4,6 +4,9 @@
 #include "MemoryInfo.h"
 #include "Parsing.h"
 
+#include <sys/mman.h>
+#include <string.h>
+
 // Dummy GC that maps chunks of memory and allocates but never frees.
 #ifdef _WIN32
 // On Windows we need to commit memory in relatively small chunks - this way
@@ -76,15 +79,18 @@ void scalanative_init() {
 
 void *scalanative_alloc(void *info, size_t size) {
     size = size + (8 - size % 8);
-    if (current + size < end) {
-        void **alloc = current;
-        *alloc = info;
-        current += size;
-        return alloc;
-    } else {
-        scalanative_init();
-        return scalanative_alloc(info, size);
-    }
+    void **alloc = calloc(size, 1);
+    *alloc = info;
+    return alloc;
+    // if (current + size < end) {
+    //     void **alloc = current;
+    //     *alloc = info;
+    //     current += size;
+    //     return alloc;
+    // } else {
+    //     scalanative_init();
+    //     return scalanative_alloc(info, size);
+    // }
 }
 
 void *scalanative_alloc_small(void *info, size_t size) {

@@ -77,6 +77,9 @@ object Unmangle {
       case 'j' =>
         next()
         Type.Long
+      case 'w' =>
+        next()
+        Type.Size
       case 'f' =>
         next()
         Type.Float

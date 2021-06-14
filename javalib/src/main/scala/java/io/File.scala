@@ -224,7 +224,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         if (stat.stat(toCString(path), statbuf) == 0) {
           val timebuf = alloc[utime.utimbuf]
           timebuf._1 = statbuf._8
-          timebuf._2 = time / 1000L
+          timebuf._2 = time.toSize / 1000
           utime.utime(toCString(path), timebuf) == 0
         } else {
           false
@@ -244,7 +244,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     Zone { implicit z =>
       val buf = alloc[stat.stat]
       if (stat.stat(toCString(path), buf) == 0) {
-        buf._6
+        buf._6.toLong
       } else {
         0L
       }
@@ -459,13 +459,13 @@ object File {
         case link =>
           val linkLength = strlen(link)
           val pathLength = strlen(path)
-          val `1UL`      = 1.toULong
-          var last       = pathLength - `1UL`
-          while (path(last) != separatorChar) last -= `1UL`
-          last += `1UL`
+          val `1UW`      = 1.toUSize
+          var last       = pathLength - `1UW`
+          while (path(last) != separatorChar) last -= `1UW`
+          last += `1UW`
 
           // previous path up to last /, plus result of resolving the link.
-          val newPathLength = last + linkLength + `1UL`
+          val newPathLength = last + linkLength + `1UW`
           val newPath       = alloc[Byte](newPathLength)
           strncpy(newPath, path, last)
           strncat(newPath, link, linkLength)
@@ -485,7 +485,7 @@ object File {
     var i = start
     while (i < strlen(path) && path(i) != separatorChar) i += `1U`
 
-    if (i == strlen(path)) resolveLink(path, resolveAbsolute = true)
+    if (i == strlen(path).toUInt) resolveLink(path, resolveAbsolute = true)
     else {
       // copy path from start to next separator.
       // and resolve that subpart.

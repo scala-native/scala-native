@@ -5,6 +5,7 @@ import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime._
+import scala.scalanative.unsigned.{USize, UnsignedRichLong}
 
 final class Ptr[T] private[scalanative] (
     private[scalanative] val rawptr: RawPtr) {
@@ -34,36 +35,36 @@ final class Ptr[T] private[scalanative] (
   @alwaysinline def `unary_!_=`(value: T)(implicit tag: Tag[T]): Unit =
     tag.store(this, value)
 
-  @alwaysinline def +(offset: Word)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, offset * sizeof[T].toLong))
+  @alwaysinline def +(offset: Size)(implicit tag: Tag[T]): Ptr[T] =
+    new Ptr(elemRawPtr(rawptr, (offset * sizeof[T].toSize).rawSize))
 
-  @alwaysinline def +(offset: UWord)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, (offset * sizeof[T]).toLong))
+  @alwaysinline def +(offset: USize)(implicit tag: Tag[T]): Ptr[T] =
+    new Ptr(elemRawPtr(rawptr, (offset * sizeof[T]).rawSize))
 
-  @alwaysinline def -(offset: Word)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, -offset * sizeof[T].toLong))
+  @alwaysinline def -(offset: Size)(implicit tag: Tag[T]): Ptr[T] =
+    new Ptr(elemRawPtr(rawptr, (-offset * sizeof[T].toSize).rawSize))
 
-  @alwaysinline def -(offset: UWord)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, -(offset * sizeof[T]).toLong))
+  @alwaysinline def -(offset: USize)(implicit tag: Tag[T]): Ptr[T] =
+    new Ptr(elemRawPtr(rawptr, (-((offset * sizeof[T]).toSize)).rawSize))
 
   @alwaysinline def -(other: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = {
-    val left  = castRawPtrToLong(rawptr)
-    val right = castRawPtrToLong(other.rawptr)
-    (left - right) / sizeof[T].toLong
+    val left  = new Size(castRawPtrToRawSize(rawptr))
+    val right = new Size(castRawPtrToRawSize(other.rawptr))
+    (left - right) / sizeof[T].toSize
   }
 
-  @alwaysinline def apply(offset: UWord)(implicit tag: Tag[T]): T =
-    apply(offset.toLong)
+  @alwaysinline def apply(offset: USize)(implicit tag: Tag[T]): T =
+    (this + offset).`unary_!`
 
-  @alwaysinline def apply(offset: Word)(implicit tag: Tag[T]): T =
-    (this + offset).unary_!
-  @alwaysinline def update(offset: Word, value: T)(implicit tag: Tag[T]): Unit =
-    (this + offset).`unary_!_=`(value)
+  @alwaysinline def apply(offset: Size)(implicit tag: Tag[T]): T =
+    (this + offset).`unary_!`
 
-  @alwaysinline def update(offset: UWord, value: T)(
+  @alwaysinline def update(offset: USize, value: T)(
       implicit tag: Tag[T]): Unit =
     (this + offset).`unary_!_=`(value)
 
+  @alwaysinline def update(offset: Size, value: T)(implicit tag: Tag[T]): Unit =
+    (this + offset).`unary_!_=`(value)
 }
 
 object Ptr {

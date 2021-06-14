@@ -25,6 +25,7 @@ object Lower {
     import meta._
 
     implicit val linked = meta.linked
+    val is32            = meta.is32
 
     val Object = linked.infos(Rt.Object.name).asInstanceOf[Class]
 
@@ -700,21 +701,27 @@ object Lower {
         implicit pos: Position): Unit = {
       val Op.Sizeof(ty) = op
 
-      buf.let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty))), unwind)
+      val memorySize = MemoryLayout.sizeOf(ty, is32)
+      assert(memorySize == memorySize.toInt)
+      buf.let(n, Op.Copy(Val.Size(memorySize.toInt)), unwind)
     }
 
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(
         implicit pos: Position): Unit = {
       val Op.Classalloc(ClassRef(cls)) = op
 
-      val size = MemoryLayout.sizeOf(layout(cls).struct)
+      val size = MemoryLayout.sizeOf(layout(cls).struct, is32)
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
-      buf.let(
-        n,
-        Op.Call(allocSig, allocMethod, Seq(rtti(cls).const, Val.Long(size))),
-        unwind)
+      assert(size == size.toInt)
+      buf.let(n,
+              Op.Call(
+                allocSig,
+                allocMethod,
+                Seq(rtti(cls).const, Val.Size(size.toInt))
+              ),
+              unwind)
     }
 
     def genConvOp(buf: Buffer, n: Local, op: Op.Conv)(
@@ -851,11 +858,13 @@ object Lower {
         val minus1 = ty match {
           case Type.Int  => Val.Int(-1)
           case Type.Long => Val.Long(-1L)
+          case Type.Size => Val.Size(-1)
           case _         => util.unreachable
         }
         val minValue = ty match {
           case Type.Int  => Val.Int(java.lang.Integer.MIN_VALUE)
           case Type.Long => Val.Long(java.lang.Long.MIN_VALUE)
+          case Type.Size => Val.Size(java.lang.Integer.MIN_VALUE)
           case _         => util.unreachable
         }
 
@@ -1083,7 +1092,7 @@ object Lower {
 
   val LARGE_OBJECT_MIN_SIZE = 8192
 
-  val allocSig = Type.Function(Seq(Type.Ptr, Type.Long), Type.Ptr)
+  val allocSig = Type.Function(Seq(Type.Ptr, Type.Size), Type.Ptr)
 
   val allocSmallName = extern("scalanative_alloc_small")
   val alloc          = Val.Global(allocSmallName, allocSig)

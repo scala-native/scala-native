@@ -28,7 +28,8 @@ object NirPrimitives {
   final val ULONG_TO_DOUBLE = 1 + UINT_TO_DOUBLE
 
   final val LOAD_BOOL    = 1 + ULONG_TO_DOUBLE
-  final val LOAD_CHAR    = 1 + LOAD_BOOL
+  final val LOAD_WORD    = 1 + LOAD_BOOL
+  final val LOAD_CHAR    = 1 + LOAD_WORD
   final val LOAD_BYTE    = 1 + LOAD_CHAR
   final val LOAD_SHORT   = 1 + LOAD_BYTE
   final val LOAD_INT     = 1 + LOAD_SHORT
@@ -39,7 +40,8 @@ object NirPrimitives {
   final val LOAD_OBJECT  = 1 + LOAD_RAW_PTR
 
   final val STORE_BOOL    = 1 + LOAD_OBJECT
-  final val STORE_CHAR    = 1 + STORE_BOOL
+  final val STORE_WORD    = 1 + STORE_BOOL
+  final val STORE_CHAR    = 1 + STORE_WORD
   final val STORE_BYTE    = 1 + STORE_CHAR
   final val STORE_SHORT   = 1 + STORE_BYTE
   final val STORE_INT     = 1 + STORE_SHORT
@@ -51,19 +53,38 @@ object NirPrimitives {
 
   final val ELEM_RAW_PTR = 1 + STORE_OBJECT
 
-  final val CAST_RAW_PTR_TO_OBJECT = 1 + ELEM_RAW_PTR
-  final val CAST_OBJECT_TO_RAW_PTR = 1 + CAST_RAW_PTR_TO_OBJECT
-  final val CAST_INT_TO_FLOAT      = 1 + CAST_OBJECT_TO_RAW_PTR
-  final val CAST_FLOAT_TO_INT      = 1 + CAST_INT_TO_FLOAT
-  final val CAST_LONG_TO_DOUBLE    = 1 + CAST_FLOAT_TO_INT
-  final val CAST_DOUBLE_TO_LONG    = 1 + CAST_LONG_TO_DOUBLE
-  final val CAST_RAWPTR_TO_INT     = 1 + CAST_DOUBLE_TO_LONG
-  final val CAST_RAWPTR_TO_LONG    = 1 + CAST_RAWPTR_TO_INT
-  final val CAST_INT_TO_RAWPTR     = 1 + CAST_RAWPTR_TO_LONG
-  final val CAST_LONG_TO_RAWPTR    = 1 + CAST_INT_TO_RAWPTR
+  final val CAST_RAW_PTR_TO_OBJECT        = 1 + ELEM_RAW_PTR
+  final val CAST_OBJECT_TO_RAW_PTR        = 1 + CAST_RAW_PTR_TO_OBJECT
+  final val CAST_INT_TO_FLOAT             = 1 + CAST_OBJECT_TO_RAW_PTR
+  final val CAST_FLOAT_TO_INT             = 1 + CAST_INT_TO_FLOAT
+  final val CAST_LONG_TO_DOUBLE           = 1 + CAST_FLOAT_TO_INT
+  final val CAST_DOUBLE_TO_LONG           = 1 + CAST_LONG_TO_DOUBLE
+  final val CAST_RAWPTR_TO_INT            = 1 + CAST_DOUBLE_TO_LONG
+  final val CAST_RAWPTR_TO_LONG           = 1 + CAST_RAWPTR_TO_INT
+  final val CAST_RAWPTR_TO_RAWSIZE        = 1 + CAST_RAWPTR_TO_LONG
+  final val CAST_INT_TO_RAWPTR            = 1 + CAST_RAWPTR_TO_RAWSIZE
+  final val CAST_LONG_TO_RAWPTR           = 1 + CAST_INT_TO_RAWPTR
+  final val CAST_RAWSIZE_TO_INT           = 1 + CAST_LONG_TO_RAWPTR
+  final val CAST_RAWSIZE_TO_LONG          = 1 + CAST_RAWSIZE_TO_INT
+  final val CAST_RAWSIZE_TO_LONG_UNSIGNED = 1 + CAST_RAWSIZE_TO_LONG
+  final val CAST_INT_TO_RAWSIZE           = 1 + CAST_RAWSIZE_TO_LONG_UNSIGNED
+  final val CAST_INT_TO_RAWSIZE_UNSIGNED  = 1 + CAST_INT_TO_RAWSIZE
+  final val CAST_LONG_TO_RAWSIZE          = 1 + CAST_INT_TO_RAWSIZE_UNSIGNED
 
-  final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWPTR
+  final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWSIZE
   final val CFUNCPTR_APPLY         = 1 + CFUNCPTR_FROM_FUNCTION
+
+  final val SIZE_OF_PTR            = 1 + CFUNCPTR_APPLY
+  final val AND_RAW_SIZES          = 1 + SIZE_OF_PTR
+  final val OR_RAW_SIZES           = 1 + AND_RAW_SIZES
+  final val XOR_RAW_SIZES          = 1 + OR_RAW_SIZES
+  final val ADD_RAW_SIZES          = 1 + XOR_RAW_SIZES
+  final val SUB_RAW_SIZES          = 1 + ADD_RAW_SIZES
+  final val MULT_RAW_SIZES         = 1 + SUB_RAW_SIZES
+  final val DIV_RAW_SIZES          = 1 + MULT_RAW_SIZES
+  final val DIV_RAW_SIZES_UNSIGNED = 1 + DIV_RAW_SIZES
+  final val MOD_RAW_SIZES          = 1 + DIV_RAW_SIZES_UNSIGNED
+  final val MOD_RAW_SIZES_UNSIGNED = 1 + MOD_RAW_SIZES
 }
 
 abstract class NirPrimitives {
@@ -106,8 +127,14 @@ abstract class NirPrimitives {
   def isRawPtrStoreOp(code: Int): Boolean =
     code >= STORE_BOOL && code <= STORE_OBJECT
 
-  def isRawCastOp(code: Int): Boolean =
+  def isRawPtrCastOp(code: Int): Boolean =
     code >= CAST_RAW_PTR_TO_OBJECT && code <= CAST_LONG_TO_RAWPTR
+
+  def isRawSizeCastOp(code: Int): Boolean =
+    code >= CAST_RAWSIZE_TO_INT && code <= CAST_LONG_TO_RAWSIZE
+
+  def isRawSizeOp(code: Int): Boolean =
+    code >= SIZE_OF_PTR && code <= MOD_RAW_SIZES_UNSIGNED
 
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
@@ -140,6 +167,7 @@ abstract class NirPrimitives {
     }
 
     addPrimitive(LoadBoolMethod, LOAD_BOOL)
+    addPrimitive(LoadSizeMethod, LOAD_WORD)
     addPrimitive(LoadCharMethod, LOAD_CHAR)
     addPrimitive(LoadByteMethod, LOAD_BYTE)
     addPrimitive(LoadShortMethod, LOAD_SHORT)
@@ -150,6 +178,7 @@ abstract class NirPrimitives {
     addPrimitive(LoadRawPtrMethod, LOAD_RAW_PTR)
     addPrimitive(LoadObjectMethod, LOAD_OBJECT)
     addPrimitive(StoreBoolMethod, STORE_BOOL)
+    addPrimitive(StoreSizeMethod, STORE_WORD)
     addPrimitive(StoreCharMethod, STORE_CHAR)
     addPrimitive(StoreByteMethod, STORE_BYTE)
     addPrimitive(StoreShortMethod, STORE_SHORT)
@@ -160,6 +189,7 @@ abstract class NirPrimitives {
     addPrimitive(StoreRawPtrMethod, STORE_RAW_PTR)
     addPrimitive(StoreObjectMethod, STORE_OBJECT)
     addPrimitive(ElemRawPtrMethod, ELEM_RAW_PTR)
+
     addPrimitive(CastRawPtrToObjectMethod, CAST_RAW_PTR_TO_OBJECT)
     addPrimitive(CastObjectToRawPtrMethod, CAST_OBJECT_TO_RAW_PTR)
     addPrimitive(CastIntToFloatMethod, CAST_INT_TO_FLOAT)
@@ -168,9 +198,29 @@ abstract class NirPrimitives {
     addPrimitive(CastDoubleToLongMethod, CAST_DOUBLE_TO_LONG)
     addPrimitive(CastRawPtrToIntMethod, CAST_RAWPTR_TO_INT)
     addPrimitive(CastRawPtrToLongMethod, CAST_RAWPTR_TO_LONG)
+    addPrimitive(CastRawPtrToRawSizeMethod, CAST_RAWPTR_TO_RAWSIZE)
     addPrimitive(CastIntToRawPtrMethod, CAST_INT_TO_RAWPTR)
     addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
     CFuncPtrApplyMethods.foreach(addPrimitive(_, CFUNCPTR_APPLY))
     CFuncPtrFromFunctionMethods.foreach(addPrimitive(_, CFUNCPTR_FROM_FUNCTION))
+
+    addPrimitive(CastRawSizeToInt, CAST_RAWSIZE_TO_INT)
+    addPrimitive(CastRawSizeToLong, CAST_RAWSIZE_TO_LONG)
+    addPrimitive(CastRawSizeToLongUnsigned, CAST_RAWSIZE_TO_LONG_UNSIGNED)
+    addPrimitive(CastIntToRawSize, CAST_INT_TO_RAWSIZE)
+    addPrimitive(CastIntToRawSizeUnsigned, CAST_INT_TO_RAWSIZE_UNSIGNED)
+    addPrimitive(CastLongToRawSize, CAST_LONG_TO_RAWSIZE)
+
+    addPrimitive(SizeOfPtr, SIZE_OF_PTR)
+    addPrimitive(AndRawSizes, AND_RAW_SIZES)
+    addPrimitive(OrRawSizes, OR_RAW_SIZES)
+    addPrimitive(XorRawSizes, XOR_RAW_SIZES)
+    addPrimitive(AddRawSizes, ADD_RAW_SIZES)
+    addPrimitive(SubRawSizes, SUB_RAW_SIZES)
+    addPrimitive(MultRawSizes, MULT_RAW_SIZES)
+    addPrimitive(DivRawSizes, DIV_RAW_SIZES)
+    addPrimitive(DivRawSizesUnsigned, DIV_RAW_SIZES_UNSIGNED)
+    addPrimitive(ModRawSizes, MOD_RAW_SIZES)
+    addPrimitive(ModRawSizesUnsigned, MOD_RAW_SIZES_UNSIGNED)
   }
 }

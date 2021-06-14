@@ -8,13 +8,14 @@ import scalanative.util.unsupported
 import scalanative.codegen.MemoryLayout.PositionedType
 
 final case class MemoryLayout(size: Long,
-                              tys: Seq[MemoryLayout.PositionedType]) {
-  lazy val offsetArray: Seq[Val] = {
+                              tys: Seq[MemoryLayout.PositionedType],
+                              is32: Boolean) {
+  lazy val offsetArray: Seq[Val.Long] = {
     val ptrOffsets =
       tys.collect {
         // offset in words without rtti
         case MemoryLayout.PositionedType(_: RefKind, offset) =>
-          Val.Long(offset / MemoryLayout.WORD_SIZE - 1)
+          Val.Long(offset / 8 - 1) // refMapStruct is int64_t*
       }
 
     ptrOffsets :+ Val.Long(-1)
@@ -22,34 +23,36 @@ final case class MemoryLayout(size: Long,
 }
 
 object MemoryLayout {
-  final val WORD_SIZE = 8
+  final val BITS_IN_BYTE = 8
 
   final case class PositionedType(ty: Type, offset: Long)
 
-  def sizeOf(ty: Type): Long = ty match {
+  def sizeOf(ty: Type, is32: Boolean): Long = ty match {
     case primitive: Type.PrimitiveKind =>
-      math.max(primitive.width / WORD_SIZE, 1)
+      math.max(primitive.width / BITS_IN_BYTE, 1)
     case Type.ArrayValue(ty, n) =>
-      sizeOf(ty) * n
+      sizeOf(ty, is32) * n
     case Type.StructValue(tys) =>
-      MemoryLayout(tys).size
-    case Type.Nothing | Type.Ptr | _: Type.RefKind =>
-      8
+      MemoryLayout(tys, is32).size
+    case Type.Size | Type.Nothing | Type.Ptr | _: Type.RefKind =>
+      if (is32) 4 else 8
     case _ =>
       unsupported(s"sizeof $ty")
   }
 
-  def alignmentOf(ty: Type): Long = ty match {
+  def alignmentOf(ty: Type, is32: Boolean): Long = ty match {
+    case Type.Long | Type.Double =>
+      if (is32) 4 else 8
     case primitive: Type.PrimitiveKind =>
-      math.max(primitive.width / WORD_SIZE, 1)
+      math.max(primitive.width / BITS_IN_BYTE, 1)
     case Type.ArrayValue(ty, n) =>
-      alignmentOf(ty)
+      alignmentOf(ty, is32)
     case Type.StructValue(Seq()) =>
       1
     case Type.StructValue(tys) =>
-      tys.map(alignmentOf).max
-    case Type.Nothing | Type.Ptr | _: Type.RefKind =>
-      8
+      tys.map(alignmentOf(_, is32)).max
+    case Type.Size | Type.Nothing | Type.Ptr | _: Type.RefKind =>
+      if (is32) 4 else 8
     case _ =>
       unsupported(s"alignment $ty")
   }
@@ -62,18 +65,18 @@ object MemoryLayout {
     offset + padding
   }
 
-  def apply(tys: Seq[Type]): MemoryLayout = {
+  def apply(tys: Seq[Type], is32: Boolean): MemoryLayout = {
     val pos    = mutable.UnrolledBuffer.empty[PositionedType]
     var offset = 0L
 
     tys.foreach { ty =>
-      offset = align(offset, alignmentOf(ty))
+      offset = align(offset, alignmentOf(ty, is32))
       pos += PositionedType(ty, offset)
-      offset += sizeOf(ty)
+      offset += sizeOf(ty, is32)
     }
 
-    val alignment = if (tys.isEmpty) 1 else tys.map(alignmentOf).max
+    val alignment = if (tys.isEmpty) 1 else tys.map(alignmentOf(_, is32)).max
 
-    MemoryLayout(align(offset, alignment), pos.toSeq)
+    MemoryLayout(align(offset, alignment), pos.toSeq, is32)
   }
 }

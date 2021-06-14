@@ -206,18 +206,20 @@ final class BinarySerializer {
   }
 
   private def putConv(conv: Conv) = conv match {
-    case Conv.Trunc    => putInt(T.TruncConv)
-    case Conv.Zext     => putInt(T.ZextConv)
-    case Conv.Sext     => putInt(T.SextConv)
-    case Conv.Fptrunc  => putInt(T.FptruncConv)
-    case Conv.Fpext    => putInt(T.FpextConv)
-    case Conv.Fptoui   => putInt(T.FptouiConv)
-    case Conv.Fptosi   => putInt(T.FptosiConv)
-    case Conv.Uitofp   => putInt(T.UitofpConv)
-    case Conv.Sitofp   => putInt(T.SitofpConv)
-    case Conv.Ptrtoint => putInt(T.PtrtointConv)
-    case Conv.Inttoptr => putInt(T.InttoptrConv)
-    case Conv.Bitcast  => putInt(T.BitcastConv)
+    case Conv.SSizeCast => putInt(T.SSizeCastConv)
+    case Conv.ZSizeCast => putInt(T.ZSizeCastConv)
+    case Conv.Trunc     => putInt(T.TruncConv)
+    case Conv.Zext      => putInt(T.ZextConv)
+    case Conv.Sext      => putInt(T.SextConv)
+    case Conv.Fptrunc   => putInt(T.FptruncConv)
+    case Conv.Fpext     => putInt(T.FpextConv)
+    case Conv.Fptoui    => putInt(T.FptouiConv)
+    case Conv.Fptosi    => putInt(T.FptosiConv)
+    case Conv.Uitofp    => putInt(T.UitofpConv)
+    case Conv.Sitofp    => putInt(T.SitofpConv)
+    case Conv.Ptrtoint  => putInt(T.PtrtointConv)
+    case Conv.Inttoptr  => putInt(T.InttoptrConv)
+    case Conv.Bitcast   => putInt(T.BitcastConv)
   }
 
   private def putDefn(value: Defn): Unit = {
@@ -470,6 +472,7 @@ final class BinarySerializer {
     case Type.Vararg => putInt(T.VarargType)
     case Type.Ptr    => putInt(T.PtrType)
     case Type.Bool   => putInt(T.BoolType)
+    case Type.Size   => putInt(T.SizeType)
     case Type.Char   => putInt(T.CharType)
     case Type.Byte   => putInt(T.ByteType)
     case Type.Short  => putInt(T.ShortType)
@@ -506,6 +509,7 @@ final class BinarySerializer {
     case Val.False           => putInt(T.FalseVal)
     case Val.Null            => putInt(T.NullVal)
     case Val.Zero(ty)        => putInt(T.ZeroVal); putType(ty)
+    case Val.Size(v)         => putInt(T.SizeVal); putInt(v)
     case Val.Char(v)         => putInt(T.CharVal); putShort(v.toShort)
     case Val.Byte(v)         => putInt(T.ByteVal); put(v)
     case Val.Short(v)        => putInt(T.ShortVal); putShort(v)
@@ -528,6 +532,7 @@ final class BinarySerializer {
       v.foreach(putChar(_))
     case Val.Virtual(v)   => putInt(T.VirtualVal); putLong(v)
     case Val.ClassOf(cls) => putInt(T.ClassOfVal); putGlobal(cls)
+    case Val.SizeOfPtr    => putInt(T.SizeOfPtrVal)
   }
 
   private def putLinktimeCondition(cond: LinktimeCondition): Unit = cond match {

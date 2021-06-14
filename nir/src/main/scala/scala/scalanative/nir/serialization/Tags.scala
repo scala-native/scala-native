@@ -77,18 +77,20 @@ object Tags {
 
   final val Conv = Comp + 32
 
-  final val TruncConv    = 1 + Conv
-  final val ZextConv     = 1 + TruncConv
-  final val SextConv     = 1 + ZextConv
-  final val FptruncConv  = 1 + SextConv
-  final val FpextConv    = 1 + FptruncConv
-  final val FptouiConv   = 1 + FpextConv
-  final val FptosiConv   = 1 + FptouiConv
-  final val UitofpConv   = 1 + FptosiConv
-  final val SitofpConv   = 1 + UitofpConv
-  final val PtrtointConv = 1 + SitofpConv
-  final val InttoptrConv = 1 + PtrtointConv
-  final val BitcastConv  = 1 + InttoptrConv
+  final val SSizeCastConv = 1 + Conv
+  final val ZSizeCastConv = 1 + SSizeCastConv
+  final val TruncConv     = 1 + ZSizeCastConv
+  final val ZextConv      = 1 + TruncConv
+  final val SextConv      = 1 + ZextConv
+  final val FptruncConv   = 1 + SextConv
+  final val FpextConv     = 1 + FptruncConv
+  final val FptouiConv    = 1 + FpextConv
+  final val FptosiConv    = 1 + FptouiConv
+  final val UitofpConv    = 1 + FptosiConv
+  final val SitofpConv    = 1 + UitofpConv
+  final val PtrtointConv  = 1 + SitofpConv
+  final val InttoptrConv  = 1 + PtrtointConv
+  final val BitcastConv   = 1 + InttoptrConv
 
   // Definitions
 
@@ -187,7 +189,8 @@ object Tags {
   final val VarargType      = 1 + Type
   final val BoolType        = 1 + VarargType
   final val PtrType         = 1 + BoolType
-  final val CharType        = 1 + PtrType
+  final val SizeType        = 1 + PtrType
+  final val CharType        = 1 + SizeType
   final val ByteType        = 1 + CharType
   final val ShortType       = 1 + ByteType
   final val IntType         = 1 + ShortType
@@ -209,27 +212,28 @@ object Tags {
 
   final val Val = Type + 32
 
-  final val TrueVal        = 1 + Val
-  final val FalseVal       = 1 + TrueVal
-  final val NullVal        = 1 + FalseVal
-  final val ZeroVal        = 1 + NullVal
-  final val CharVal        = 1 + ZeroVal
-  final val ByteVal        = 1 + CharVal
-  final val ShortVal       = 1 + ByteVal
-  final val IntVal         = 1 + ShortVal
-  final val LongVal        = 1 + IntVal
-  final val FloatVal       = 1 + LongVal
-  final val DoubleVal      = 1 + FloatVal
-  final val StructValueVal = 1 + DoubleVal
-  final val ArrayValueVal  = 1 + StructValueVal
-  final val CharsVal       = 1 + ArrayValueVal
-  final val LocalVal       = 1 + CharsVal
-  final val GlobalVal      = 1 + LocalVal
-  final val UnitVal        = 1 + GlobalVal
-  final val ConstVal       = 1 + UnitVal
-  final val StringVal      = 1 + ConstVal
-  final val VirtualVal     = 1 + StringVal
-  final val ClassOfVal     = 1 + VirtualVal
-
-  final val LinktimeConditionVal = 1 + ClassOfVal
+  final val TrueVal              = 1 + Val
+  final val FalseVal             = 1 + TrueVal
+  final val NullVal              = 1 + FalseVal
+  final val ZeroVal              = 1 + NullVal
+  final val SizeVal              = 1 + ZeroVal
+  final val CharVal              = 1 + SizeVal
+  final val ByteVal              = 1 + CharVal
+  final val ShortVal             = 1 + ByteVal
+  final val IntVal               = 1 + ShortVal
+  final val LongVal              = 1 + IntVal
+  final val FloatVal             = 1 + LongVal
+  final val DoubleVal            = 1 + FloatVal
+  final val StructValueVal       = 1 + DoubleVal
+  final val ArrayValueVal        = 1 + StructValueVal
+  final val CharsVal             = 1 + ArrayValueVal
+  final val LocalVal             = 1 + CharsVal
+  final val GlobalVal            = 1 + LocalVal
+  final val UnitVal              = 1 + GlobalVal
+  final val ConstVal             = 1 + UnitVal
+  final val StringVal            = 1 + ConstVal
+  final val VirtualVal           = 1 + StringVal
+  final val ClassOfVal           = 1 + VirtualVal
+  final val SizeOfPtrVal         = 1 + ClassOfVal
+  final val LinktimeConditionVal = 1 + SizeOfPtrVal
 }

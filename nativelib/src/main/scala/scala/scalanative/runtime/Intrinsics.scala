@@ -6,7 +6,7 @@ import scalanative.unsafe._
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: CSize): RawPtr = intrinsic
+  def stackalloc(size: RawSize): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
@@ -50,6 +50,8 @@ object Intrinsics {
   /** Intrinsified raw memory load of boolean. */
   def loadBoolean(rawptr: RawPtr): Boolean = intrinsic
 
+  def loadSize(rawptr: RawPtr): RawSize = intrinsic
+
   /** Intrinsified raw memory load of char. */
   def loadChar(rawptr: RawPtr): Char = intrinsic
 
@@ -80,6 +82,8 @@ object Intrinsics {
   /** Intrinsified raw memory store of boolean. */
   def storeBoolean(rawptr: RawPtr, value: Boolean): Unit = intrinsic
 
+  def storeSize(rawptr: RawPtr, value: RawSize): Unit = intrinsic
+
   /** Intrinsified raw memory store of char. */
   def storeChar(rawptr: RawPtr, value: Char): Unit = intrinsic
 
@@ -108,7 +112,8 @@ object Intrinsics {
   def storeObject(rawptr: RawPtr, value: Object): Unit = intrinsic
 
   /** Intrinsified computation of derived raw pointer. */
-  def elemRawPtr(rawptr: RawPtr, offset: Long): RawPtr = intrinsic
+  def elemRawPtr(rawptr: RawPtr, offset: RawSize): RawPtr =
+    intrinsic
 
   /** Intrinsified cast that reinterprets raw pointer as an object. */
   def castRawPtrToObject(rawptr: RawPtr): Object = intrinsic
@@ -134,9 +139,63 @@ object Intrinsics {
   /** Intrinsified cast that reinterprets raw pointer as an long. */
   def castRawPtrToLong(rawptr: RawPtr): Long = intrinsic
 
+  /** Intrinsified cast that reinterprets raw pointer as a raw size. */
+  def castRawPtrToRawSize(rawptr: RawPtr): RawSize = intrinsic
+
   /** Intrinsified cast that reinterprets int as a raw pointer. */
   def castIntToRawPtr(int: Int): RawPtr = intrinsic
 
   /** Intrinsified cast that reinterprets long as a raw pointer. */
   def castLongToRawPtr(int: Long): RawPtr = intrinsic
+
+  /** Intrinsified cast that reinterprets raw size as an int. */
+  def castRawSizeToInt(rawSize: RawSize): Int = intrinsic
+
+  /** Intrinsified cast that reinterprets raw size as a signed long. */
+  def castRawSizeToLong(rawSize: RawSize): Long = intrinsic
+
+  /** Intrinsified cast that reinterprets raw size as an unsigned long. */
+  def castRawSizeToLongUnsigned(rawSize: RawSize): Long = intrinsic
+
+  /** Intrinsified cast that reinterprets int as a signed raw size. */
+  def castIntToRawSize(int: Int): RawSize = intrinsic
+
+  /** Intrinsified cast that reinterprets int as an unsigned raw size. */
+  def castIntToRawSizeUnsigned(int: Int): RawSize = intrinsic
+
+  /** Intrinsified cast that reinterprets long as a raw size. */
+  def castLongToRawSize(long: Long): RawSize = intrinsic
+
+  /** Intrinsic to get the size of a size in bytes, resolved to a constant in the linker */
+  def sizeOfPtr: RawSize = intrinsic
+
+  /** Intrinsified bitwise and on raw sizes. */
+  def andRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
+
+  /** Intrinsified bitwise or on raw sizes. */
+  def orRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
+
+  /** Intrinsified bitwise xor on raw sizes. */
+  def xorRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
+
+  /** Intrinsified addition on raw sizes. */
+  def addRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
+
+  /** Intrinsified subtraction on raw sizes. */
+  def subRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
+
+  /** Intrinsified multiplication on raw sizes. */
+  def multRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
+
+  /** Intrinsified division on raw sizes. */
+  def divRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
+
+  /** Intrinsified division on unsigned raw sizes. */
+  def divRawSizesUnsigned(a: RawSize, b: RawSize): RawSize = intrinsic
+
+  /** Intrinsified modulo on raw sizes. */
+  def modRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
+
+  /** Intrinsified modulo on unsignedraw sizes. */
+  def modRawSizesUnsigned(a: RawSize, b: RawSize): RawSize = intrinsic
 }

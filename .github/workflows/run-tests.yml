@@ -49,8 +49,8 @@ jobs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
       matrix:
-        arch: [ amd64 ]
-
+        host_arch: [ amd64 ]
+        docker_arch: [ library, i386 ]
     steps:
       - uses: actions/checkout@v2
       # In order to minimize time spend in image build loading we're caching directory of local repository
@@ -66,7 +66,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.host_arch }}-${{ matrix.docker_arch }}
       - name: Run local image registry
         run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
 
@@ -75,7 +75,7 @@ jobs:
         id: build-image
         run: |
           imageBase="scala-native-testing:linux"
-          imageName="${imageBase}-${{ matrix.arch }}"
+          imageName="${imageBase}-${{ matrix.docker_arch }}"
           echo "::set-output name=image-base-name::${imageBase}"
           echo "::set-output name=image-full-name::${imageName}"
 
@@ -84,8 +84,8 @@ jobs:
           docker build \
           -t ${imageName} \
           --cache-from=localhost:5000/${imageName} \
-          --build-arg TARGET_DOCKER_PLATFORM=library \
-          --build-arg HOST_ARCHITECTURE=${{ matrix.arch }}  \
+          --build-arg TARGET_DOCKER_PLATFORM=${{ matrix.docker_arch }} \
+          --build-arg HOST_ARCHITECTURE=${{ matrix.host_arch }}  \
           --cpuset-cpus=0 \
           ci-docker
 
@@ -108,6 +108,8 @@ jobs:
         scala: [2.13.6, 2.12.14, 2.11.12]
         build-mode: [ debug , release-fast ]
         gc: [ boehm, immix, commix ]
+        host_arch: [ amd64 ]
+        docker_arch: [ library, i386 ]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
@@ -120,25 +122,41 @@ jobs:
           - scala: 2.11.12
             build-mode: debug
             gc: commix
+          - docker_arch: i386
+            gc: immix
+          - docker_arch: i386
+            gc: commix
         include:
           - scala: 2.12.13
             build-mode: debug
             gc: immix
+            host_arch: amd64
+            docker_arch: library
           - scala: 2.12.13
             build-mode: release-fast
             gc: commix
+            host_arch: amd64
+            docker_arch: library
           - scala: 2.13.4
             build-mode: debug
             gc: immix
+            host_arch: amd64
+            docker_arch: library
           - scala: 2.13.4
             build-mode: release-fast
             gc: commix
+            host_arch: amd64
+            docker_arch: library
           - scala: 2.13.5
             build-mode: debug
             gc: immix
+            host_arch: amd64
+            docker_arch: library
           - scala: 2.13.5
             build-mode: release-fast
             gc: commix
+            host_arch: amd64
+            docker_arch: library
     steps:
       - uses: actions/checkout@v2
       - name: Calculate binary version
@@ -160,7 +178,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.host_arch }}-${{ matrix.docker_arch }}
 
       - name: Run tests
         env:
@@ -169,7 +187,8 @@ jobs:
           SCALANATIVE_OPTIMIZE: true
           SCALA_VERSION: ${{ matrix.scala}}
           TEST_COMMAND: test-runtime
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-amd64"
+        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
+        continue-on-error: ${{ matrix.docker_arch == 'i386' }}
 
   # This job is basically copy-paste of test-runtime.
   # Main difference is disabled optimization and fixed Immix GC
@@ -182,13 +201,21 @@ jobs:
       matrix:
         scala: [ 2.13.6, 2.12.14, 2.11.12 ]
         build-mode: [ debug, release-fast ]
+        host_arch: [ amd64 ]
+        docker_arch: [ library ]
         include:
           - scala: 2.12.13
             build-mode: release-fast
+            host_arch: amd64
+            docker_arch: library
           - scala: 2.13.4
             build-mode: release-fast
+            host_arch: amd64
+            docker_arch: library
           - scala: 2.13.5
             build-mode: release-fast
+            host_arch: amd64
+            docker_arch: library
     steps:
       - uses: actions/checkout@v2
       - name: Calculate binary version
@@ -210,7 +237,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.host_arch }}-${{ matrix.docker_arch }}
 
       - name: Run tests
         env:
@@ -219,7 +246,7 @@ jobs:
           SCALANATIVE_OPTIMIZE: false
           SCALA_VERSION: ${{ matrix.scala}}
           TEST_COMMAND: test-runtime
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-amd64"
+        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
 
   # This job is basically copy-paste of test-runtime.
   # Scripted tests take a long time to run, ~30 minutes, and should be limited and absolute minimum.
@@ -231,6 +258,8 @@ jobs:
       fail-fast: false
       matrix:
         scala: [2.12.14]
+        host_arch: [ amd64 ]
+        docker_arch: [ library ]
     steps:
       - uses: actions/checkout@v2
       - name: Calculate binary version
@@ -252,7 +281,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.host_arch }}-${{ matrix.docker_arch }}
 
       - name: Run tests
         env:
@@ -261,4 +290,4 @@ jobs:
           SCALANATIVE_OPTIMIZE: true
           SCALA_VERSION: ${{ matrix.scala}}
           TEST_COMMAND: test-scripted
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-amd64"
+        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"

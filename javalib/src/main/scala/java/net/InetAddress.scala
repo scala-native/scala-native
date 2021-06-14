@@ -251,7 +251,7 @@ private[net] trait InetAddressBase {
           if (numberOfPeriods > 3) {
             return false
           }
-          if (!isValidIP4Word(word)) {
+          if (!isValidIP4Size(word)) {
             return false
           }
           if (numberOfColons != 6 && !doubleColon) {
@@ -308,7 +308,7 @@ private[net] trait InetAddressBase {
     }
     // Check if we have an IPv4 ending
     if (numberOfPeriods > 0) {
-      if (numberOfPeriods != 3 || !isValidIP4Word(word)) {
+      if (numberOfPeriods != 3 || !isValidIP4Size(word)) {
         return false
       }
     } else {
@@ -328,7 +328,7 @@ private[net] trait InetAddressBase {
   private def isValidHexChar(c: Char): Boolean =
     (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')
 
-  private def isValidIP4Word(word: String): Boolean = {
+  private def isValidIP4Size(word: String): Boolean = {
     if (word.length < 1 || word.length > 3) {
       return false
     }
@@ -436,34 +436,34 @@ private[net] trait InetAddressBase {
     return ipByteArray
   }
 
-  private def convertToBytes(hexWord: String,
+  private def convertToBytes(hexSize: String,
                              ipByteArray: Array[Byte],
                              byteIndex: Int): Unit = {
-    val hexWordLength = hexWord.length
-    var hexWordIndex  = 0
+    val hexSizeLength = hexSize.length
+    var hexSizeIndex  = 0
     ipByteArray(byteIndex) = 0
     ipByteArray(byteIndex + 1) = 0
 
     var charValue = 0
-    if (hexWordLength > 3) {
-      charValue = getIntValue(hexWord.charAt(hexWordIndex))
-      hexWordIndex += 1
+    if (hexSizeLength > 3) {
+      charValue = getIntValue(hexSize.charAt(hexSizeIndex))
+      hexSizeIndex += 1
       ipByteArray(byteIndex) =
         (ipByteArray(byteIndex) | (charValue << 4)).toByte
     }
-    if (hexWordLength > 2) {
-      charValue = getIntValue(hexWord.charAt(hexWordIndex))
-      hexWordIndex += 1
+    if (hexSizeLength > 2) {
+      charValue = getIntValue(hexSize.charAt(hexSizeIndex))
+      hexSizeIndex += 1
       ipByteArray(byteIndex) = (ipByteArray(byteIndex) | charValue).toByte
     }
-    if (hexWordLength > 1) {
-      charValue = getIntValue(hexWord.charAt(hexWordIndex))
-      hexWordIndex += 1
+    if (hexSizeLength > 1) {
+      charValue = getIntValue(hexSize.charAt(hexSizeIndex))
+      hexSizeIndex += 1
       ipByteArray(byteIndex + 1) =
         (ipByteArray(byteIndex + 1) | (charValue << 4)).toByte
     }
 
-    charValue = getIntValue(hexWord.charAt(hexWordIndex))
+    charValue = getIntValue(hexSize.charAt(hexSizeIndex))
     ipByteArray(byteIndex + 1) =
       (ipByteArray(byteIndex + 1) | charValue & 15).toByte
   }

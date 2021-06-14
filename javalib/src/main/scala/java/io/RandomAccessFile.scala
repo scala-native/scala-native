@@ -2,7 +2,7 @@ package java.io
 
 import java.{lang => jl}
 
-import scalanative.unsafe.{toCString, Zone}
+import scalanative.unsafe.{toCString, Zone, UnsafeRichLong}
 import scalanative.libc.stdio
 import scalanative.posix.{fcntl, unistd}
 import scalanative.posix.sys.stat
@@ -130,14 +130,14 @@ class RandomAccessFile private (file: File,
     in.readUTF()
 
   def seek(pos: Long): Unit =
-    unistd.lseek(fd.fd, pos, stdio.SEEK_SET)
+    unistd.lseek(fd.fd, pos.toSize, stdio.SEEK_SET)
 
   def setLength(newLength: Long): Unit =
     if (!mode.contains("w")) {
       throw new IOException("Invalid argument")
     } else {
       val currentPosition = getFilePointer()
-      if (unistd.ftruncate(fd.fd, newLength) != 0) {
+      if (unistd.ftruncate(fd.fd, newLength.toSize) != 0) {
         throw new IOException()
       }
       if (currentPosition > newLength) seek(newLength)

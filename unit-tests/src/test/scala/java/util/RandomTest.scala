@@ -1,7 +1,10 @@
 package java.util
 
+import scala.scalanative.unsafe.is32
+
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 class RandomTest {
 
@@ -63,6 +66,7 @@ class RandomTest {
   }
 
   @Test def resetNextGaussian(): Unit = {
+    assumeTrue(!is32)
     val random = new Random(-1)
     assertTrue(random.nextGaussian() == 1.7853314409882288)
     random.setSeed(-1)
@@ -204,6 +208,7 @@ class RandomTest {
   }
 
   @Test def nextGaussian(): Unit = {
+    assumeTrue(!is32)
     val random = new Random(2446004)
     assertTrue(random.nextGaussian() == -0.5043346938630431)
     assertTrue(random.nextGaussian() == -0.3250983270156675)

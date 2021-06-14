@@ -3,6 +3,7 @@ package scala.scalanative
 import scalanative.annotation.alwaysinline
 import scalanative.unsafe._
 import scalanative.runtime.Intrinsics._
+import scalanative.unsigned._
 
 package object runtime {
 
@@ -48,8 +49,11 @@ package object runtime {
 
   /** Called by the generated code in case of incorrect class cast. */
   @noinline def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
-    val fromName = loadObject(elemRawPtr(from, 16))
-    val toName   = loadObject(elemRawPtr(to, 16))
+    // 64-bit systems align pointer to 8 bytes
+    val fromName = loadObject(
+      elemRawPtr(from, castIntToRawSize(if (is32) 12 else 16)))
+    val toName = loadObject(
+      elemRawPtr(to, castIntToRawSize(if (is32) 12 else 16)))
     throw new java.lang.ClassCastException(
       s"$fromName cannot be cast to $toName")
   }
