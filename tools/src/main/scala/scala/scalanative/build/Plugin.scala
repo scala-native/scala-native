@@ -6,6 +6,6 @@ import java.nio.file.Path
 trait Plugin {
   def filterNativelib(config: Config,
                       linkerResult: linker.Result,
-                      destPath: Path,
+                      nativeCodePath: Path,
                       allPaths: Seq[Path]): (Seq[Path], Config)
 }
