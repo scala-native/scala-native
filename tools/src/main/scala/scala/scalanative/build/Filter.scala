@@ -38,49 +38,16 @@ private[scalanative] object Filter {
     val nativeCodePath = destPath.resolve(nativeCodeDir)
     // check if filtering is needed, o.w. return all paths
     findFilterProperties(nativeCodePath).fold((allPaths, config)) { file =>
-      // predicate to check if given file path shall be compiled
-      // we only include sources of the current gc and exclude
-      // all optional dependencies if they are not necessary
+      // this should use portable-scala reflect
+      // currently devoid of error handling
       val props = new Properties()
       props.load(new FileInputStream(file.toFile()))
       val plugin = props.getProperty("plugin")
-      println(plugin)
-      val optPath = nativeCodePath.resolve("optional").abs
-      val (gcPath, gcIncludePaths, gcSelectedPaths) = {
-        val gcPath = nativeCodePath.resolve("gc")
-        val gcIncludePaths = config.gc.include.map(gcPath.resolve(_).abs)
-        val selectedGC = gcPath.resolve(config.gc.name).abs
-        val selectedGCPath = selectedGC +: gcIncludePaths
-        (gcPath.abs, gcIncludePaths, selectedGCPath)
-      }
-
-      def include(path: String) = {
-        if (path.contains(optPath)) {
-          val name = Paths.get(path).toFile.getName.split("\\.").head
-          linkerResult.links.map(_.name).contains(name)
-        } else if (path.contains(gcPath)) {
-          gcSelectedPaths.exists(path.contains)
-        } else {
-          true
-        }
-      }
-
-      val (includePaths, excludePaths) = allPaths.map(_.abs).partition(include)
-
-      // delete .o files for all excluded source files
-      // avoids deleting .o files except when changing
-      // optional or garbage collectors
-      excludePaths.foreach { path =>
-        val opath = Paths.get(path + oExt)
-        Files.deleteIfExists(opath)
-      }
-      val projectConfig = config.withCompilerConfig(
-        _.withCompileOptions(
-          config.compileOptions ++ gcIncludePaths.map("-I" + _)
-        )
-      )
-      val projectPaths = includePaths.map(Paths.get(_))
-      (projectPaths, projectConfig)
+      println(s"Found plugin: $plugin")
+      val cls  = Class.forName(plugin)
+      val ctor = cls.getConstructor()
+      val obj  = ctor.newInstance().asInstanceOf[Plugin]
+      obj.filterNativelib(config, linkerResult, nativeCodePath, allPaths)
     }
   }
 
