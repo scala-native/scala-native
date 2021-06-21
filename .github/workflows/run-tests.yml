@@ -46,6 +46,8 @@ jobs:
         with:
           ammonite-version: 2.3.8
           scala-version: 2.13
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
 
       - name: Check partest disabled tests list
         run: |
