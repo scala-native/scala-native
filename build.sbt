@@ -1072,10 +1072,16 @@ lazy val scalaPartestJunitTests = project
   .settings(
     noPublishSettings,
     scalacOptions ++= Seq(
-      // Suppress deprecation warnings for Scala partest sources
-      "-Wconf:cat=deprecation:s",
       "-language:higherKinds"
     ),
+    scalacOptions ++= {
+      // Suppress deprecation warnings for Scala partest sources
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 11)) => Nil
+        case _ =>
+          Seq("-Wconf:cat=deprecation:s")
+      }
+    },
     scalacOptions --= Seq(
       "-Xfatal-warnings"
     ),
