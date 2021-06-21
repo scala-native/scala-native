@@ -15,6 +15,7 @@ import _root_.sbt.testing._
 import java.net.URLClassLoader
 import java.io.File
 import scala.scalanative.build.Build
+import scala.scalanative.linker.Result
 
 /** Run partest in this VM. Assumes we're running in a forked VM! */
 case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
@@ -133,6 +134,17 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
           .withOptimize(options.optimize)
       }
 
-    Build.findAndCompileNativeSources(config, Defaults.links)
+    import scala.collection.mutable
+    val linkerResult = new Result(infos = mutable.Map.empty,
+                                  entries = Nil,
+                                  unavailable = Nil,
+                                  referencedFrom = mutable.Map.empty,
+                                  links = Defaults.links,
+                                  defns = Nil,
+                                  dynsigs = Nil,
+                                  dynimpls = Nil,
+                                  resolvedVals = mutable.Map.empty)
+
+    Build.findAndCompileNativeSources(config, linkerResult)
   }
 }

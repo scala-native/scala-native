@@ -45,7 +45,7 @@ class MainGenericRunner {
             .withLinkingOptions {
               // If we precompile libs we need to make sure, that we link libraries needed by Scala Native
               Defaults.config.linkingOptions ++
-                Option(System.getProperty("scalanative.build.paths.libObj"))
+                Option(System.getProperty("scalanative.build.paths.libobj"))
                   .filter(_.nonEmpty)
                   .fold(Seq.empty[String]) { _ =>
                     Defaults.links.map(_.name).map("-l" + _)

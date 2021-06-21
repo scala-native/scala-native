@@ -210,7 +210,7 @@ The build has roughly five groups of sub-projects as follows:
 
     - ``scalaPartest (scala-partest)`` (JVM project, uses Scala Native artifacts)
 
-		- ``scalaPartestRuntime (scala-partest-runtime)`` (Scala native project)
+    - ``scalaPartestRuntime (scala-partest-runtime)`` (Scala native project)
 
     - ``scalaPartestTests (scala-partest-tests)`` (JVM project)
 

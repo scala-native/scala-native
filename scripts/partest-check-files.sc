@@ -3,9 +3,9 @@ import java.io.File
 
 @main(
   doc = """" +
-  "Tool used to check integrity of files defined in partest tests and 
-  actually defined in partest repo. Allow to check which blacklisted files
-  are not existing and can suggest correct blacklisted item name.
+  "Tool used to check integrity of files defined in partest tests and thoose 
+  actually defined in Scala (partest) repository. 
+  It allows to check which blacklisted files are not existing and can suggest correct blacklisted item name.
   Also checks for duplicates in blacklisted items.""")
 def main(
     @arg(doc = "Scala version used for fetching sources")

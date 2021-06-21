@@ -77,33 +77,14 @@ private[scalanative] object Filter {
     }
   }
 
-  /** Filter the `nativelib` source files with special logic to select GC and
-   *  optional components.
+  /** Check for a filtering properties file in destination native code
+   *  directory.
    *
-   *  @param config
-   *    The configuration of the toolchain.
-   *  @param linkerResult
-   *    The results from the linker.
-   *  @param destPath
-   *    The unpacked location of the Scala Native nativelib.
-   *  @param allPaths
-   *    The native paths found for this library
+   *  @param nativeCodePath
+   *    The native code directory
    *  @return
-   *    The paths filtered to be included in the compile.
+   *    The optional path to the file or none
    */
-  def filterNativelib(config: Config,
-                      linked: Seq[nir.Attr.Link],
-                      destPath: Path,
-                      allPaths: Seq[Path]): (Seq[Path], Config) = {
-
-    /** Check for a filtering properties file in destination native code
-     *  directory.
-     *
-     *  @param nativeCodePath
-     *    The native code directory
-     *  @return
-     *    The optional path to the file or none
-     */
   private def findFilterProperties(nativeCodePath: Path): Option[Path] = {
     val file = nativeCodePath.resolve(nativeProjectProps)
     if (Files.exists(file)) Some(file)
