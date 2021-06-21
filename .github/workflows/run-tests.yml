@@ -42,7 +42,7 @@ jobs:
 
         # Make sure that Scala partest blacklisted tests contain only valid test names
       - name: Setup Ammonite
-        uses: yilinwei/setup-ammonite@master
+        uses: yilinwei/setup-ammonite@0.1.0
         with:
           ammonite-version: 2.3.8
           scala-version: 2.13
