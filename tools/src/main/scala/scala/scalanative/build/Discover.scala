@@ -19,6 +19,9 @@ object Discover {
   def optimize(): Boolean =
     getenv("SCALANATIVE_OPTIMIZE").forall(_.toBoolean)
 
+  def multithreadingSupport(): Boolean =
+    getenv("SCALANATIVE_MULTITHREADING_ENABLED").exists(_.toBoolean)
+
   /** LTO variant used for release mode from SCALANATIVE_LTO env var or default.
    */
   def LTO(): LTO =
@@ -99,8 +102,9 @@ object Discover {
         .lineStream_!(silentLogger())
         .headOption
         .getOrElse {
-          throw new BuildException(s"""Problem running '${versionCommand
-            .mkString(" ")}'. Please check clang setup.
+          throw new BuildException(
+            s"""Problem running '${versionCommand
+                 .mkString(" ")}'. Please check clang setup.
                |Refer to ($docSetup)""".stripMargin)
         }
       // Apple macOS clang is different vs brew installed or Linux
@@ -109,7 +113,7 @@ object Discover {
       try {
         val versionArray = versionString.split(" ")
         val versionIndex = versionArray.indexWhere(_.equals("version"))
-        val version = versionArray(versionIndex + 1)
+        val version      = versionArray(versionIndex + 1)
         val majorVersion = version.split("\\.").head
         (majorVersion.toInt, version)
       } catch {
@@ -147,7 +151,7 @@ object Discover {
       envPath: String
   ): Path = {
     val binaryNameOrPath = sys.env.getOrElse(envPath, binaryName)
-    val locateCmd = if (Platform.isWindows) "where" else "which"
+    val locateCmd        = if (Platform.isWindows) "where" else "which"
     val path = Process(Seq(locateCmd, binaryNameOrPath))
       .lineStream_!(silentLogger())
       .map { p => Paths.get(p) }
