@@ -41,11 +41,13 @@ jobs:
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" test-tools
 
         # Make sure that Scala partest blacklisted tests contain only valid test names
-      - name: Check disabled tests list
+      - name: Setup Ammonite
         uses: yilinwei/setup-ammonite@master
         with:
           ammonite-version: 2.3.8
           scala-version: 2.13
+
+      - name: Check partest disabled tests list
         run: |
           sbt "++ ${{ matrix.scala }} -v" \
           "-no-colors" \
