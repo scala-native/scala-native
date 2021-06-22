@@ -9,11 +9,15 @@ import java.io.FileInputStream
 import scalanative.build.IO.RichPath
 import scalanative.build.NativeLib._
 import scalanative.build.LLVM._
+import scalanative.build.plugin._
 
 private[scalanative] object Filter {
 
   /** To find filter file */
-  private val nativeProjectProps = s"${nativeCodeDir}.properties"
+  private[build] val nativeProjectProps = s"${nativeCodeDir}.properties"
+
+  /** Build plugin factory key */
+  private[build] val buildPluginKey = "buildplugin"
 
   /** Filter the `nativelib` source files with special logic to select GC and
    *  optional components.
@@ -37,17 +41,20 @@ private[scalanative] object Filter {
   ): (Seq[Path], Config) = {
     val nativeCodePath = destPath.resolve(nativeCodeDir)
     // check if filtering is needed, o.w. return all paths
-    findFilterProperties(nativeCodePath).fold((allPaths, config)) { file =>
-      // this should use portable-scala reflect
-      // currently devoid of error handling
-      val props = new Properties()
-      props.load(new FileInputStream(file.toFile()))
-      val plugin = props.getProperty("plugin")
-      println(s"Found plugin: $plugin")
-      val cls  = Class.forName(plugin)
-      val ctor = cls.getConstructor()
-      val obj  = ctor.newInstance().asInstanceOf[Plugin]
-      obj.filterNativelib(config, linkerResult, nativeCodePath, allPaths)
+    findFilterProperties(nativeCodePath).fold((allPaths, config)) { path =>
+      val file = path.toFile()
+      val props =
+        try {
+          val props = new Properties()
+          props.load(new FileInputStream(file))
+          props
+        } catch {
+          case t: Throwable =>
+            sys.error(s"Unable to read properties: ${file}")
+        }
+      val pluginName = props.getProperty(buildPluginKey)
+      val plugin     = BuildPluginFactory.create(pluginName)
+      plugin.filterNativelib(config, linkerResult, nativeCodePath, allPaths)
     }
   }
 

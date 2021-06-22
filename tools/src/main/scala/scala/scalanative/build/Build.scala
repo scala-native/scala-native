@@ -74,7 +74,7 @@ object Build {
       }
 
       val objectPaths = config.logger.time("Compiling to native code") {
-        // compile generated LLVM IR
+        // compile generated ll
         val llObjectPaths = LLVM.compile(fconfig, generated)
 
         /* Used to pass alternative paths of compiled native (lib) sources,

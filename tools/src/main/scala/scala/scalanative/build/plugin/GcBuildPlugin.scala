@@ -1,19 +1,19 @@
-package scala.scalanative
-package build.nativelib
+package scala.scalanative.build
+package plugin
 
-import scala.scalanative.build.Plugin
 import java.nio.file.{Files, Path, Paths}
-import scala.scalanative.build.Config
-import scala.scalanative.build.IO.RichPath
-import scala.scalanative.build.LLVM.oExt
-import scala.scalanative.linker.Result
 
-class FilterPlugin extends Plugin {
+import scalanative.build.Config
+import scalanative.build.IO.RichPath
+import scalanative.build.LLVM.oExt
+import scalanative.linker.Result
+
+/** Includes the GC code and filters unused code. */
+class GcBuildPlugin extends BuildPlugin {
   override def filterNativelib(config: Config,
                                linkerResult: Result,
                                nativeCodePath: Path,
                                allPaths: Seq[Path]): (Seq[Path], Config) = {
-    println("Filtering native lib...")
     // predicate to check if given file path shall be compiled
     // we only include sources of the current gc and exclude
     // all optional (javalib zlib) dependencies if they are not necessary
