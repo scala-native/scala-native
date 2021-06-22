@@ -15,9 +15,7 @@ class GcBuildPlugin extends BuildPlugin {
                                nativeCodePath: Path,
                                allPaths: Seq[Path]): (Seq[Path], Config) = {
     // predicate to check if given file path shall be compiled
-    // we only include sources of the current gc and exclude
-    // all optional (javalib zlib) dependencies if they are not necessary
-    val optPath = nativeCodePath.resolve("optional").abs
+    // we only include sources of the current gc
     val (gcPath, gcIncludePaths, gcSelectedPaths) = {
       val gcPath         = nativeCodePath.resolve("gc")
       val gcIncludePaths = config.gc.include.map(gcPath.resolve(_).abs)
@@ -27,10 +25,7 @@ class GcBuildPlugin extends BuildPlugin {
     }
 
     def include(path: String) = {
-      if (path.contains(optPath)) {
-        val name = Paths.get(path).toFile.getName.split("\\.").head
-        linkerResult.links.map(_.name).contains(name)
-      } else if (path.contains(gcPath)) {
+      if (path.contains(gcPath)) {
         gcSelectedPaths.exists(path.contains)
       } else {
         true
@@ -40,12 +35,12 @@ class GcBuildPlugin extends BuildPlugin {
     val (includePaths, excludePaths) = allPaths.map(_.abs).partition(include)
 
     // delete .o files for all excluded source files
-    // avoids deleting .o files except when changing
-    // optional or garbage collectors
+    // avoids deleting .o files except when changing garbage collectors
     excludePaths.foreach { path =>
       val opath = Paths.get(path + oExt)
       Files.deleteIfExists(opath)
     }
+
     val projectConfig = config.withCompilerConfig(
       _.withCompileOptions(
         config.compileOptions ++ gcIncludePaths.map("-I" + _)))
