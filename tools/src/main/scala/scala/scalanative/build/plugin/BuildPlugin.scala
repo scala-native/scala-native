@@ -1,9 +1,11 @@
-package scala.scalanative
-package build
+package scala.scalanative.build
+package plugin
 
 import java.nio.file.Path
 
-trait Plugin {
+import scalanative.linker
+
+trait BuildPlugin {
   def filterNativelib(config: Config,
                       linkerResult: linker.Result,
                       nativeCodePath: Path,
