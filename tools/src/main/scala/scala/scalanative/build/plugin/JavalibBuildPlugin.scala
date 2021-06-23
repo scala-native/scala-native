@@ -36,7 +36,7 @@ class JavalibBuildPlugin extends BuildPlugin {
       val opath = Paths.get(path + oExt)
       Files.deleteIfExists(opath)
     }
-   
+
     val projectPaths = includePaths.map(Paths.get(_))
     (projectPaths, config)
   }
