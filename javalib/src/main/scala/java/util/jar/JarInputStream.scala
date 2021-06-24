@@ -9,12 +9,12 @@ class JarInputStream(in: InputStream, verify: Boolean)
     extends ZipInputStream(in) {
   def this(in: InputStream) = this(in, true)
 
-  private var manifest: Manifest      = null
-  private var eos: Boolean            = false
-  private var mEntry: JarEntry        = null
-  private var jarEntry: JarEntry      = null
-  private var isMeta: Boolean         = false
-  private var verifier: JarVerifier   = null
+  private var manifest: Manifest = null
+  private var eos: Boolean = false
+  private var mEntry: JarEntry = null
+  private var jarEntry: JarEntry = null
+  private var isMeta: Boolean = false
+  private var verifier: JarVerifier = null
   private var verStream: OutputStream = null
 
   if (verify) {
@@ -71,7 +71,8 @@ class JarInputStream(in: InputStream, verify: Boolean)
             if (isMeta) {
               verifier.addMetaEntry(
                 jarEntry.getName(),
-                verStream.asInstanceOf[ByteArrayOutputStream].toByteArray())
+                verStream.asInstanceOf[ByteArrayOutputStream].toByteArray()
+              )
               try verifier.readCertificates()
               catch { case e: SecurityException => verifier = null; throw e }
             } else {

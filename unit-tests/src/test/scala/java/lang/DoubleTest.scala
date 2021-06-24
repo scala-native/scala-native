@@ -226,36 +226,50 @@ class DoubleTest {
     assertTrue("a12", Double.parseDouble("7.77f") == 7.77)
 
     // Does not parse characters beyond IEEE754 spec.
-    assertTrue("a13",
-               Double.parseDouble("1.7976931348623157999999999")
-                 == 1.7976931348623157)
+    assertTrue(
+      "a13",
+      Double.parseDouble("1.7976931348623157999999999")
+        == 1.7976931348623157
+    )
 
     assertThrows(classOf[NumberFormatException], Double.parseDouble(""))
     assertThrows(classOf[NumberFormatException], Double.parseDouble("D"))
     assertThrows(classOf[NumberFormatException], Double.parseDouble("potato"))
-    assertThrows(classOf[NumberFormatException],
-                 Double.parseDouble("0.0potato"))
+    assertThrows(
+      classOf[NumberFormatException],
+      Double.parseDouble("0.0potato")
+    )
     assertThrows(classOf[NumberFormatException], Double.parseDouble("0.potato"))
 
     assertThrows(classOf[NumberFormatException], Double.parseDouble("6.66 D"))
-    assertThrows(classOf[NumberFormatException],
-                 Double.parseDouble("6.66D  Bad  "))
-    assertThrows(classOf[NumberFormatException],
-                 Double.parseDouble("6.66D\u0000a"))
-    assertThrows(classOf[NumberFormatException],
-                 Double.parseDouble("6.66D \u0100"))
+    assertThrows(
+      classOf[NumberFormatException],
+      Double.parseDouble("6.66D  Bad  ")
+    )
+    assertThrows(
+      classOf[NumberFormatException],
+      Double.parseDouble("6.66D\u0000a")
+    )
+    assertThrows(
+      classOf[NumberFormatException],
+      Double.parseDouble("6.66D \u0100")
+    )
 
     // Out of IEE754 range handling
 
     //   Too big - java.lang.Double.MAX_VALUE times 10
-    assertTrue("a20",
-               Double.parseDouble("1.7976931348623157E309") ==
-                 Double.POSITIVE_INFINITY)
+    assertTrue(
+      "a20",
+      Double.parseDouble("1.7976931348623157E309") ==
+        Double.POSITIVE_INFINITY
+    )
 
     //   Too big - Negative java.lang.Double.MAX_VALUE times 10
-    assertTrue("a21",
-               Double.parseDouble("-1.7976931348623157E309") ==
-                 Double.NEGATIVE_INFINITY)
+    assertTrue(
+      "a21",
+      Double.parseDouble("-1.7976931348623157E309") ==
+        Double.NEGATIVE_INFINITY
+    )
 
     //   Too close to 0 - java.lang.Double.MIN_VALUE divided by 10
     assertTrue("a22", Double.parseDouble("4.9E-325") == 0.0)
@@ -307,26 +321,28 @@ class DoubleTest {
 
     // Test correctness least significant digits  & number of digits after the
     // decimal point of values with 'infinite' number of fraction digits.
-    assertD2sEquals("3.141592653589793", (math.Pi * 1.0E+0))
-    assertD2sEquals("31.41592653589793", (math.Pi * 1.0E+1))
-    assertD2sEquals("0.3141592653589793", (math.Pi * 1.0E-1))
+    assertD2sEquals("3.141592653589793", (math.Pi * 1.0e+0))
+    assertD2sEquals("31.41592653589793", (math.Pi * 1.0e+1))
+    assertD2sEquals("0.3141592653589793", (math.Pi * 1.0e-1))
 
     // Test transitions to scientific notation.
-    assertD2sEquals("3141592.653589793", (math.Pi * 1.0E+6))
-    assertD2sEquals("3.1415926535897933E7", (math.Pi * 1.0E+7))
-    assertD2sEquals("0.0031415926535897933", (math.Pi * 1.0E-3))
-    assertD2sEquals("3.141592653589793E-4", (math.Pi * 1.0E-4))
+    assertD2sEquals("3141592.653589793", (math.Pi * 1.0e+6))
+    assertD2sEquals("3.1415926535897933E7", (math.Pi * 1.0e+7))
+    assertD2sEquals("0.0031415926535897933", (math.Pi * 1.0e-3))
+    assertD2sEquals("3.141592653589793E-4", (math.Pi * 1.0e-4))
   }
 
   @Test def toHexStringMinValueIssue1341(): Unit = {
     assertTrue(
-      toHexString(java.lang.Double.MIN_VALUE).equals("0x0.0000000000001p-1022"))
+      toHexString(java.lang.Double.MIN_VALUE).equals("0x0.0000000000001p-1022")
+    )
   }
 
   @Test def toHexStringAssortedOtherValues(): Unit = {
 
     assertTrue(
-      toHexString(java.lang.Double.MAX_VALUE).equals("0x1.fffffffffffffp1023"))
+      toHexString(java.lang.Double.MAX_VALUE).equals("0x1.fffffffffffffp1023")
+    )
 
     // A value > 1.0 requiring lots of, but not all,  zeros.
     assertTrue(toHexString(1.00000000000003).equals("0x1.0000000000087p0"))

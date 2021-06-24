@@ -55,23 +55,30 @@ class UnixFileSystemProvider extends FileSystemProvider {
   override def newFileSystem(path: Path, env: Map[String, _]): FileSystem =
     newFileSystem(path.toUri(), env)
 
-  override def newFileChannel(path: Path,
-                              options: Set[_ <: OpenOption],
-                              attrs: Array[FileAttribute[_]]): FileChannel =
+  override def newFileChannel(
+      path: Path,
+      options: Set[_ <: OpenOption],
+      attrs: Array[FileAttribute[_]]
+  ): FileChannel =
     FileChannel.open(path, options, attrs)
 
   override def newDirectoryStream(
       dir: Path,
-      filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path] =
+      filter: DirectoryStream.Filter[_ >: Path]
+  ): DirectoryStream[Path] =
     new DirectoryStreamImpl[Path](Files.list(dir), filter)
 
-  override def createDirectory(dir: Path,
-                               attrs: Array[FileAttribute[_]]): Unit =
+  override def createDirectory(
+      dir: Path,
+      attrs: Array[FileAttribute[_]]
+  ): Unit =
     Files.createDirectory(dir, attrs)
 
-  override def createSymbolicLink(link: Path,
-                                  target: Path,
-                                  attrs: Array[FileAttribute[_]]): Unit =
+  override def createSymbolicLink(
+      link: Path,
+      target: Path,
+      attrs: Array[FileAttribute[_]]
+  ): Unit =
     Files.createSymbolicLink(link, target, attrs)
 
   override def createLink(link: Path, existing: Path): Unit =
@@ -83,14 +90,18 @@ class UnixFileSystemProvider extends FileSystemProvider {
   override def readSymbolicLink(link: Path): Path =
     readSymbolicLink(link)
 
-  override def copy(source: Path,
-                    target: Path,
-                    options: Array[CopyOption]): Unit =
+  override def copy(
+      source: Path,
+      target: Path,
+      options: Array[CopyOption]
+  ): Unit =
     Files.copy(source, target, options)
 
-  override def move(source: Path,
-                    target: Path,
-                    options: Array[CopyOption]): Unit =
+  override def move(
+      source: Path,
+      target: Path,
+      options: Array[CopyOption]
+  ): Unit =
     Files.move(source, target, options)
 
   override def isSameFile(path: Path, path2: Path): Boolean =
@@ -114,7 +125,8 @@ class UnixFileSystemProvider extends FileSystemProvider {
   override def getFileAttributeView[V <: FileAttributeView](
       path: Path,
       tpe: Class[V],
-      options: Array[LinkOption]): V =
+      options: Array[LinkOption]
+  ): V =
     (knownFileAttributeViews.get(tpe) match {
       case None     => null
       case Some(fn) => fn(path, options)
@@ -123,38 +135,48 @@ class UnixFileSystemProvider extends FileSystemProvider {
   override def readAttributes[A <: BasicFileAttributes](
       path: Path,
       tpe: Class[A],
-      options: Array[LinkOption]): A =
+      options: Array[LinkOption]
+  ): A =
     Files.readAttributes(path, tpe, options)
 
-  override def readAttributes(path: Path,
-                              attributes: String,
-                              options: Array[LinkOption]): Map[String, Object] =
+  override def readAttributes(
+      path: Path,
+      attributes: String,
+      options: Array[LinkOption]
+  ): Map[String, Object] =
     Files.readAttributes(path, attributes, options)
 
-  override def setAttribute(path: Path,
-                            attribute: String,
-                            value: Object,
-                            options: Array[LinkOption]): Unit =
+  override def setAttribute(
+      path: Path,
+      attribute: String,
+      value: Object,
+      options: Array[LinkOption]
+  ): Unit =
     Files.setAttribute(path, attribute, value, options)
 
   private def getUserDir(): String = {
     val buff = stackalloc[CChar](4096.toUInt)
-    val res  = unistd.getcwd(buff, 4095.toUInt)
+    val res = unistd.getcwd(buff, 4095.toUInt)
     if (res == null)
-      throw UnixException("Could not determine current working directory",
-                          errno.errno)
+      throw UnixException(
+        "Could not determine current working directory",
+        errno.errno
+      )
     fromCString(res)
   }
 
-  private val knownFileAttributeViews
-      : SMap[Class[_ <: FileAttributeView],
-             (Path, Array[LinkOption]) => FileAttributeView] =
+  private val knownFileAttributeViews: SMap[Class[
+    _ <: FileAttributeView
+  ], (Path, Array[LinkOption]) => FileAttributeView] =
     SMap(
       classOf[BasicFileAttributeView] -> ((p, l) =>
-        new PosixFileAttributeViewImpl(p, l)),
+        new PosixFileAttributeViewImpl(p, l)
+      ),
       classOf[PosixFileAttributeView] -> ((p, l) =>
-        new PosixFileAttributeViewImpl(p, l)),
+        new PosixFileAttributeViewImpl(p, l)
+      ),
       classOf[FileOwnerAttributeView] -> ((p, l) =>
-        new PosixFileAttributeViewImpl(p, l))
+        new PosixFileAttributeViewImpl(p, l)
+      )
     )
 }

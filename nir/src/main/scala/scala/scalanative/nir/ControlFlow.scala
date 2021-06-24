@@ -14,11 +14,13 @@ import nir._
 object ControlFlow {
   final case class Edge(from: Block, to: Block, next: Next)
 
-  final case class Block(name: Local,
-                         params: Seq[Val.Local],
-                         insts: Seq[Inst],
-                         isEntry: Boolean)(implicit val pos: Position) {
-    val inEdges  = mutable.UnrolledBuffer.empty[Edge]
+  final case class Block(
+      name: Local,
+      params: Seq[Val.Local],
+      insts: Seq[Inst],
+      isEntry: Boolean
+  )(implicit val pos: Position) {
+    val inEdges = mutable.UnrolledBuffer.empty[Edge]
     val outEdges = mutable.UnrolledBuffer.empty[Edge]
 
     lazy val splitCount: Int = {
@@ -32,15 +34,17 @@ object ControlFlow {
       count
     }
 
-    def pred  = inEdges.map(_.from)
-    def succ  = outEdges.map(_.to)
+    def pred = inEdges.map(_.from)
+    def succ = outEdges.map(_.to)
     def label = Inst.Label(name, params)
-    def show  = name.show
+    def show = name.show
   }
 
-  final class Graph(val entry: Block,
-                    val all: Seq[Block],
-                    val find: mutable.Map[Local, Block])
+  final class Graph(
+      val entry: Block,
+      val all: Seq[Block],
+      val find: mutable.Map[Local, Block]
+  )
 
   object Graph {
     def apply(insts: Seq[Inst]): Graph = {
@@ -48,7 +52,7 @@ object ControlFlow {
 
       val locations = {
         val entries = mutable.Map.empty[Local, Int]
-        var i       = 0
+        var i = 0
 
         insts.foreach { inst =>
           inst match {
@@ -64,7 +68,7 @@ object ControlFlow {
       }
 
       val blocks = mutable.Map.empty[Local, Block]
-      var todo   = List.empty[Block]
+      var todo = List.empty[Block]
 
       def edge(from: Block, to: Block, next: Next) = {
         val e = Edge(from, to, next)
@@ -75,13 +79,13 @@ object ControlFlow {
       def block(local: Local)(implicit pos: Position): Block =
         blocks.getOrElse(
           local, {
-            val k                     = locations(local)
+            val k = locations(local)
             val Inst.Label(n, params) = insts(k)
 
             // copy all instruction up until and including
             // first control-flow instruction after the label
             val body = mutable.UnrolledBuffer.empty[Inst]
-            var i    = k
+            var i = k
             do {
               i += 1
               body += insts(i)
@@ -132,8 +136,8 @@ object ControlFlow {
       }
 
       val entryInst = insts.head.asInstanceOf[Inst.Label]
-      val entry     = block(entryInst.name)(entryInst.pos)
-      val visited   = mutable.Set.empty[Local]
+      val entry = block(entryInst.name)(entryInst.pos)
+      val visited = mutable.Set.empty[Local]
 
       while (todo.nonEmpty) {
         val block = todo.head

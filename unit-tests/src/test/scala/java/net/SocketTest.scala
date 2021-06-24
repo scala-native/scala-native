@@ -143,7 +143,8 @@ class SocketTest {
     try {
       assertThrows(
         classOf[SocketTimeoutException],
-        s.connect(new InetSocketAddress("123.123.123.123", 12341), 100))
+        s.connect(new InetSocketAddress("123.123.123.123", 12341), 100)
+      )
     } finally {
       s.close()
     }
@@ -163,8 +164,10 @@ class SocketTest {
     try {
       s2.bind(new InetSocketAddress(InetAddress.getLoopbackAddress, 0))
       val port = s2.getLocalPort
-      assertEquals(new InetSocketAddress(InetAddress.getLoopbackAddress, port),
-                   s2.getLocalSocketAddress)
+      assertEquals(
+        new InetSocketAddress(InetAddress.getLoopbackAddress, port),
+        s2.getLocalSocketAddress
+      )
     } finally {
       s2.close()
     }
@@ -193,8 +196,10 @@ class SocketTest {
     class UnsupportedSocketAddress extends SocketAddress
     val s6 = new Socket
     try {
-      assertThrows(classOf[IllegalArgumentException],
-                   s6.bind(new UnsupportedSocketAddress))
+      assertThrows(
+        classOf[IllegalArgumentException],
+        s6.bind(new UnsupportedSocketAddress)
+      )
     } finally {
       s6.close()
     }

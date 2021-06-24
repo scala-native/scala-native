@@ -9,7 +9,7 @@ private[lang] object MathRand {
 }
 
 object Math {
-  final val E  = 2.718281828459045
+  final val E = 2.718281828459045
   final val PI = 3.141592653589793
 
   @alwaysinline def abs(a: scala.Double): scala.Double =
@@ -270,8 +270,10 @@ object Math {
   @alwaysinline def scalb(a: scala.Float, scaleFactor: scala.Int): scala.Float =
     cmath.scalbnf(a, scaleFactor)
 
-  @alwaysinline def scalb(a: scala.Double,
-                          scaleFactor: scala.Int): scala.Double =
+  @alwaysinline def scalb(
+      a: scala.Double,
+      scaleFactor: scala.Int
+  ): scala.Double =
     cmath.scalbn(a, scaleFactor)
 
   @alwaysinline def signum(a: scala.Float): scala.Float = {
@@ -327,7 +329,7 @@ object Math {
     } else if (Float.isInfinite(a)) {
       Float.POSITIVE_INFINITY
     } else if (abs(a) == Float.MAX_VALUE) {
-      2.028241E31F // pow(2, 104).toFloat
+      2.028241e31f // pow(2, 104).toFloat
     } else {
       val f = abs(a)
       cmath.nextafterf(f, Float.MAX_VALUE) - f
@@ -338,7 +340,7 @@ object Math {
     if (Double.isInfinite(a)) {
       scala.Double.PositiveInfinity
     } else if (a == scala.Double.MaxValue || a == -Double.MAX_VALUE) {
-      1.9958403095347198E292D // pow(2, 971)
+      1.9958403095347198e292d // pow(2, 971)
     } else {
       val d = abs(a)
       cmath.nextafter(d, scala.Double.MaxValue) - d

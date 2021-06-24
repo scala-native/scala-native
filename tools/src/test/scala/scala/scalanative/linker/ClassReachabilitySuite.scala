@@ -4,20 +4,20 @@ import org.scalatest._
 import scalanative.nir.{Sig, Type, Global}
 
 class ClassReachabilitySuite extends ReachabilitySuite {
-  val Parent       = g("Parent")
-  val ParentInit   = g("Parent", Sig.Ctor(Seq.empty))
-  val ParentFoo    = g("Parent", Sig.Method("foo", Seq(Type.Unit)))
-  val ParentBar    = g("Parent", Sig.Field("bar"))
+  val Parent = g("Parent")
+  val ParentInit = g("Parent", Sig.Ctor(Seq.empty))
+  val ParentFoo = g("Parent", Sig.Method("foo", Seq(Type.Unit)))
+  val ParentBar = g("Parent", Sig.Field("bar"))
   val ParentBarSet = g("Parent", Sig.Method("bar_=", Seq(Type.Int, Type.Unit)))
   val ParentBarGet = g("Parent", Sig.Method("bar", Seq(Type.Int)))
-  val Child        = g("Child")
-  val ChildInit    = g("Child", Sig.Ctor(Seq.empty))
-  val ChildFoo     = g("Child", Sig.Method("foo", Seq(Type.Unit)))
-  val Object       = g("java.lang.Object")
-  val ObjectInit   = g("java.lang.Object", Sig.Ctor(Seq.empty))
-  val Test         = g("Test$")
-  val TestInit     = g("Test$", Sig.Ctor(Seq.empty))
-  val TestMain     = g("Test$", Sig.Method("main", Seq(Type.Unit)))
+  val Child = g("Child")
+  val ChildInit = g("Child", Sig.Ctor(Seq.empty))
+  val ChildFoo = g("Child", Sig.Method("foo", Seq(Type.Unit)))
+  val Object = g("java.lang.Object")
+  val ObjectInit = g("java.lang.Object", Sig.Ctor(Seq.empty))
+  val Test = g("Test$")
+  val TestInit = g("Test$", Sig.Ctor(Seq.empty))
+  val TestMain = g("Test$", Sig.Method("main", Seq(Type.Unit)))
   val TestCallFoo =
     g("Test$", Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
 
@@ -30,7 +30,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
         def main: Unit = ()
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -51,7 +51,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
         def main: Unit = new Parent
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -74,7 +74,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
         def main: Unit = new Parent
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -98,7 +98,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
         }
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -120,7 +120,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
         def main: Unit = new Child
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -136,7 +136,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   testReachable(
-    "calling a method on parent, with neither child nor parent allocated, discards both impls") {
+    "calling a method on parent, with neither child nor parent allocated, discards both impls"
+  ) {
     val source = """
       class Parent {
         def foo: Unit = ()
@@ -152,7 +153,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
           callFoo(null)
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -166,7 +167,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   testReachable(
-    "calling a method on parent, with only child allocated, discards parent impl") {
+    "calling a method on parent, with only child allocated, discards parent impl"
+  ) {
     val source = """
       class Parent {
         def foo: Unit = ()
@@ -182,7 +184,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
           callFoo(new Child)
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -200,7 +202,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   testReachable(
-    "calling a method on parent, with only parent allocated, discards child impl") {
+    "calling a method on parent, with only parent allocated, discards child impl"
+  ) {
     val source = """
       class Parent {
         def foo: Unit = ()
@@ -216,7 +219,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
           callFoo(new Parent)
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -232,7 +235,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   testReachable(
-    "calling a method on parent, with both child and parent allocated, loads both impls") {
+    "calling a method on parent, with both child and parent allocated, loads both impls"
+  ) {
     val source = """
       class Parent {
         def foo: Unit = ()
@@ -250,7 +254,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
         }
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -281,7 +285,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
         }
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -309,7 +313,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
         }
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,

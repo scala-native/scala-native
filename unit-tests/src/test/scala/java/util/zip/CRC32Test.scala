@@ -37,7 +37,7 @@ class CRC32Test {
 
   @Test def updateArrayByte(): Unit = {
     val byteArray = Array[Byte](1, 2)
-    val crc       = new CRC32()
+    val crc = new CRC32()
     crc.update(byteArray)
     assertTrue(crc.getValue() == 3066839698L)
 
@@ -49,19 +49,23 @@ class CRC32Test {
 
   @Test def updateArrayByteIntInt(): Unit = {
     val byteArray = Array[Byte](1, 2, 3)
-    val crc       = new CRC32()
-    val off       = 2
-    val len       = 1
-    val lenError  = 3
-    val offError  = 4
+    val crc = new CRC32()
+    val off = 2
+    val len = 1
+    val lenError = 3
+    val offError = 4
     crc.update(byteArray, off, len)
     assertTrue(crc.getValue() == 1259060791L)
 
-    assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                 crc.update(byteArray, off, lenError))
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException],
+      crc.update(byteArray, off, lenError)
+    )
 
-    assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                 crc.update(byteArray, offError, len))
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException],
+      crc.update(byteArray, offError, len)
+    )
   }
 
 }

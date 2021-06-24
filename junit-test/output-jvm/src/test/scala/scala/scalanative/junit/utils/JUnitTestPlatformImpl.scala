@@ -14,8 +14,10 @@ object JUnitTestPlatformImpl {
   def getClassLoader: ClassLoader = getClass.getClassLoader
 
   @tailrec
-  def executeLoop(tasks: Array[Task],
-                  recorder: Logger with EventHandler): Future[Unit] = {
+  def executeLoop(
+      tasks: Array[Task],
+      recorder: Logger with EventHandler
+  ): Future[Unit] = {
     if (tasks.nonEmpty) {
       executeLoop(tasks.flatMap(_.execute(recorder, Array(recorder))), recorder)
     } else {
@@ -31,7 +33,7 @@ object JUnitTestPlatformImpl {
 
   def readLines(file: String): List[String] = {
     val builder = List.newBuilder[String]
-    val it      = Files.readAllLines(Paths.get(file), UTF_8).iterator()
+    val it = Files.readAllLines(Paths.get(file), UTF_8).iterator()
     while (it.hasNext) {
       builder += it.next()
     }

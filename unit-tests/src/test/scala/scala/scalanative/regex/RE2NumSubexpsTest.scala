@@ -21,8 +21,10 @@ class RE2NumSubexpsTest {
   @Test def numSubexp(): Unit = {
     for (Array(input, _expected) <- NUM_SUBEXP_CASES) {
       val expected = _expected.toInt
-      assertTrue("numberOfCapturingGroups(" + input + ")",
-                 expected == RE2.compile(input).numberOfCapturingGroups)
+      assertTrue(
+        "numberOfCapturingGroups(" + input + ")",
+        expected == RE2.compile(input).numberOfCapturingGroups
+      )
     }
   }
 }

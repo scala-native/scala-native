@@ -21,12 +21,14 @@ object resource {
 
   type timeval = sys.time.timeval
 
-  type rlimit = CStruct2[rlim_t, // rlim_cur
-                         rlim_t // rlim_max
+  type rlimit = CStruct2[
+    rlim_t, // rlim_cur
+    rlim_t // rlim_max
   ]
 
-  type rusage = CStruct2[timeval, // ru_utime
-                         timeval // ru_stime
+  type rusage = CStruct2[
+    timeval, // ru_utime
+    timeval // ru_stime
   ]
 
   def getpriority(which: CInt, who: id_t): CInt = extern
@@ -94,15 +96,15 @@ object resourceOps {
   import resource.{rlimit, rlim_t, rusage, timeval}
 
   implicit class rlimitOps(val ptr: Ptr[rlimit]) extends AnyVal {
-    def rlim_cur: rlim_t            = ptr._1
-    def rlim_max: rlim_t            = ptr._2
+    def rlim_cur: rlim_t = ptr._1
+    def rlim_max: rlim_t = ptr._2
     def rlim_cur_=(v: rlim_t): Unit = ptr._1 = v
     def rlim_max_=(v: rlim_t): Unit = ptr._2 = v
   }
 
   implicit class rusageOps(val ptr: Ptr[rusage]) extends AnyVal {
-    def ru_utime: timeval            = ptr._1
-    def ru_stime: timeval            = ptr._2
+    def ru_utime: timeval = ptr._1
+    def ru_stime: timeval = ptr._2
     def ru_utime_=(v: timeval): Unit = ptr._1 = v
     def ru_stime_=(v: timeval): Unit = ptr._2 = v
   }

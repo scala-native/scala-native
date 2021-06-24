@@ -25,11 +25,13 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeCompileOptions =
       taskKey[Seq[String]](
-        "Additional options are passed to clang during compilation.")
+        "Additional options are passed to clang during compilation."
+      )
 
     val nativeLinkingOptions =
       taskKey[Seq[String]](
-        "Additional options that are passed to clang during linking.")
+        "Additional options that are passed to clang during linking."
+      )
 
     val nativeLinkStubs =
       taskKey[Boolean]("Whether to link `@stub` methods, or ignore them.")
@@ -42,18 +44,21 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeGC =
       taskKey[String](
-        "GC choice, either \"none\", \"boehm\", \"immix\" or \"commix\".")
+        "GC choice, either \"none\", \"boehm\", \"immix\" or \"commix\"."
+      )
 
     val nativeLTO =
       taskKey[String](
-        "LTO variant used for release mode (either \"none\", \"thin\" or \"full\").")
+        "LTO variant used for release mode (either \"none\", \"thin\" or \"full\")."
+      )
 
     val nativeCheck =
       taskKey[Boolean]("Shall native toolchain check NIR during linking?")
 
     val nativeDump =
       taskKey[Boolean](
-        "Shall native toolchain dump intermediate NIR to disk during linking?")
+        "Shall native toolchain dump intermediate NIR to disk during linking?"
+      )
   }
 
   @deprecated("use autoImport instead", "0.3.7")

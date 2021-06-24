@@ -31,7 +31,8 @@ class SystemTest {
     assert(
       System
         .getenv()
-        .get("SCALA_NATIVE_ENV_WITH_UNICODE") == 0x2192.toChar.toString)
+        .get("SCALA_NATIVE_ENV_WITH_UNICODE") == 0x2192.toChar.toString
+    )
   }
 
   @Test def systemGetenvKeyShouldReadKnownEnvVariables(): Unit = {
@@ -58,7 +59,7 @@ class SystemTest {
     val tolerance = 3
 
     val ctmMillis = System.currentTimeMillis()
-    val cSeconds  = time(null)
+    val cSeconds = time(null)
 
     // Truncate down to keep math simple & reduce number of bits in play.
     val ctmSeconds = ctmMillis / 1000
@@ -73,8 +74,10 @@ class SystemTest {
   }
 
   @Test def propertyUserDirShouldBeSet(): Unit = {
-    assertEquals(System.getProperty("user.dir"),
-                 System.getenv("SCALA_NATIVE_USER_DIR"))
+    assertEquals(
+      System.getProperty("user.dir"),
+      System.getenv("SCALA_NATIVE_USER_DIR")
+    )
   }
 
 }

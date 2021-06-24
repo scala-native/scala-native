@@ -45,10 +45,10 @@ object AbstractCollectionFactory {
       new AbstractCollectionImplIterator(inner)
 
     private final class AbstractCollectionImplIterator[E](
-        private var iterInner: Array[AnyRef])
-        extends ju.Iterator[E] {
+        private var iterInner: Array[AnyRef]
+    ) extends ju.Iterator[E] {
 
-      private[this] var nextIndex: Int     = 0
+      private[this] var nextIndex: Int = 0
       private[this] var canRemove: Boolean = false
 
       def hasNext(): Boolean = {
@@ -74,7 +74,7 @@ object AbstractCollectionFactory {
 
         nextIndex -= 1
         val newInner = ju.Arrays.copyOf(iterInner, iterInner.length - 1)
-        var i        = nextIndex
+        var i = nextIndex
         while (i != newInner.length) {
           newInner(i) = iterInner(i + 1)
           i += 1

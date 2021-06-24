@@ -28,7 +28,7 @@ object Position {
 
   object SourceFile {
     def apply(f: java.io.File): SourceFile = f.toURI
-    def apply(f: String): SourceFile       = new java.net.URI(f)
+    def apply(f: String): SourceFile = new java.net.URI(f)
   }
   val NoPosition = Position(SourceFile(""), 0, 0)
 }

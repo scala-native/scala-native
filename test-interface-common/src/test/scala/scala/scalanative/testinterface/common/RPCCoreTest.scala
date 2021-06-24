@@ -18,9 +18,9 @@ class RPCCoreTest {
 
   object eps {
     val simple: RPCEndpoint.EP[Unit, Unit] = RPCEndpoint[Unit, Unit](2)
-    val number: RPCEndpoint.EP[Unit, Int]  = RPCEndpoint[Unit, Int](3)
-    val msg0: MsgEndpoint.EP[Int]          = MsgEndpoint[Int](4)
-    val msg1: MsgEndpoint.EP[Int]          = MsgEndpoint[Int](5)
+    val number: RPCEndpoint.EP[Unit, Int] = RPCEndpoint[Unit, Int](3)
+    val msg0: MsgEndpoint.EP[Int] = MsgEndpoint[Int](4)
+    val msg1: MsgEndpoint.EP[Int] = MsgEndpoint[Int](5)
   }
 
   @Test
@@ -72,8 +72,10 @@ class RPCCoreTest {
       c <- 0 to 1
     } yield (c, i)
 
-    assertArrayEquals(expected.toArray.asInstanceOf[Array[Object]],
-                      calls.reverse.toArray.asInstanceOf[Array[Object]])
+    assertArrayEquals(
+      expected.toArray.asInstanceOf[Array[Object]],
+      calls.reverse.toArray.asInstanceOf[Array[Object]]
+    )
   }
 
   @Test
@@ -122,7 +124,8 @@ class RPCCoreTest {
     val msg0 = "My message for the outer exception"
     val msg1 = "My message for the inner exception"
     x.attach(eps.simple)((_: Unit) =>
-      throw new Exception(msg0, new Exception(msg1)))
+      throw new Exception(msg0, new Exception(msg1))
+    )
 
     y.call(eps.simple)(())
       .map(_ => fail("Expected exception"))
@@ -140,7 +143,7 @@ class RPCCoreTest {
     // Attach something that never completes.
     x.attachAsync(eps.number)((_: Unit) => Promise[Int]().future)
     val future = y.call(eps.number)(())
-    val cause  = new Throwable("blah")
+    val cause = new Throwable("blah")
     y.close(cause)
     future
       .map(_ => fail("Expected exception"))
@@ -153,7 +156,7 @@ class RPCCoreTest {
 
 object RPCCoreTest {
   class TestRPC(otherThunk: => TestRPC) extends RPCCore {
-    private lazy val other                = otherThunk
+    private lazy val other = otherThunk
     protected def send(msg: String): Unit = other.handleMessage(msg)
   }
 }

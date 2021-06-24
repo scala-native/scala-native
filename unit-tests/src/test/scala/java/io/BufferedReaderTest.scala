@@ -13,14 +13,14 @@ class BufferedReaderTest {
   }
 
   @Test def closingBufferedReaderClosesInnerReader(): Unit = {
-    val inner  = new MockReader
+    val inner = new MockReader
     val reader = new BufferedReader(inner)
     reader.close()
     assertTrue(inner.isClosed)
   }
 
   @Test def closingTwiceIsHarmless(): Unit = {
-    val inner  = new MockReader
+    val inner = new MockReader
     val reader = new BufferedReader(inner)
     reader.close()
     reader.close()

@@ -16,7 +16,7 @@ object ExceptionEverywhere {
 
 class ExceptionEverywhere {
   @Before def before(): Unit = throw new AssertionError("before")
-  @After def after(): Unit   = throw new AssertionError("after")
+  @After def after(): Unit = throw new AssertionError("after")
 
   @Test def test1(): Unit = throw new AssertionError("test 1")
   @Test def test2(): Unit = throw new AssertionError("test 2")

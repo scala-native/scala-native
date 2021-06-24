@@ -29,16 +29,20 @@ class RandomAccessFileTest {
   }
 
   @Test def creatingRandomAccessFileWithInvalidModeThrowsException(): Unit = {
-    assertThrows(classOf[IllegalArgumentException],
-                 new RandomAccessFile("file", "foo"))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new RandomAccessFile("file", "foo")
+    )
   }
 
   @Test def creatingRandomAccessFileWithModeReadOnNonExistentFileThrowsException()
       : Unit = {
     val file = new File("i-dont-exist")
     assertFalse(file.exists)
-    assertThrows(classOf[FileNotFoundException],
-                 new RandomAccessFile(file, "r"))
+    assertThrows(
+      classOf[FileNotFoundException],
+      new RandomAccessFile(file, "r")
+    )
   }
 
   @Test def validFileDescriptorAndSyncSuccess(): Unit = {
@@ -66,7 +70,7 @@ class RandomAccessFileTest {
   }
 
   @Test def canWriteAndReadUnsignedByte(): Unit = {
-    val value: Int = 0xFE
+    val value: Int = 0xfe
     raf.writeByte(value.toByte)
     raf.seek(0)
     assertTrue(raf.readUnsignedByte() == value)

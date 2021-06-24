@@ -37,8 +37,8 @@ class FunctionTest {
 
 object FunctionTest {
   private val identityFunc: Function[Int, Int] = Function.identity[Int]()
-  private val doubleFunc: Function[Int, Int]   = makeFunction(x => x * 2)
-  private val incFunc: Function[Int, Int]      = makeFunction(x => x + 1)
+  private val doubleFunc: Function[Int, Int] = makeFunction(x => x * 2)
+  private val incFunc: Function[Int, Int] = makeFunction(x => x + 1)
 
   private[this] def makeFunction[T, R](f: T => R): Function[T, R] = {
     new Function[T, R] {

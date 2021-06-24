@@ -88,9 +88,11 @@ final class StringBuffer
     this
   }
 
-  def append(chars: Array[scala.Char],
-             start: scala.Int,
-             length: scala.Int): StringBuffer =
+  def append(
+      chars: Array[scala.Char],
+      start: scala.Int,
+      length: scala.Int
+  ): StringBuffer =
     synchronized {
       append0(chars, start, length)
       this
@@ -130,8 +132,10 @@ final class StringBuffer
       super.codePointBefore(index)
     }
 
-  override def codePointCount(beginIndex: scala.Int,
-                              endIndex: scala.Int): scala.Int =
+  override def codePointCount(
+      beginIndex: scala.Int,
+      endIndex: scala.Int
+  ): scala.Int =
     synchronized {
       super.codePointCount(beginIndex, endIndex)
     }
@@ -153,10 +157,12 @@ final class StringBuffer
       super.ensureCapacity(min)
     }
 
-  override def getChars(start: scala.Int,
-                        end: scala.Int,
-                        buffer: Array[scala.Char],
-                        idx: scala.Int): Unit =
+  override def getChars(
+      start: scala.Int,
+      end: scala.Int,
+      buffer: Array[scala.Char],
+      idx: scala.Int
+  ): Unit =
     synchronized {
       super.getChars(start, end, buffer, idx)
     }
@@ -202,10 +208,12 @@ final class StringBuffer
       return this
     }
 
-  def insert(index: scala.Int,
-             chars: Array[scala.Char],
-             start: scala.Int,
-             length: scala.Int): StringBuffer =
+  def insert(
+      index: scala.Int,
+      chars: Array[scala.Char],
+      start: scala.Int,
+      length: scala.Int
+  ): StringBuffer =
     synchronized {
       insert0(index, chars, start, length)
       return this
@@ -217,10 +225,12 @@ final class StringBuffer
       return this
     }
 
-  def insert(index: scala.Int,
-             seq: CharSequence,
-             start: scala.Int,
-             end: scala.Int): StringBuffer =
+  def insert(
+      index: scala.Int,
+      seq: CharSequence,
+      start: scala.Int,
+      end: scala.Int
+  ): StringBuffer =
     synchronized {
       insert0(index, seq, start, end)
       return this
@@ -231,8 +241,10 @@ final class StringBuffer
       return super.lastIndexOf(subString, start)
     }
 
-  override def offsetByCodePoints(index: scala.Int,
-                                  codePointOffset: scala.Int): scala.Int =
+  override def offsetByCodePoints(
+      index: scala.Int,
+      codePointOffset: scala.Int
+  ): scala.Int =
     synchronized {
       return super.offsetByCodePoints(index, codePointOffset)
     }

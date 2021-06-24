@@ -14,7 +14,7 @@ private[net] class SocketInputStream(socket: PlainSocketImpl)
     val buffer = new Array[Byte](1)
     socket.read(buffer, 0, 1) match {
       case -1 => -1
-      case _  => buffer(0) & 0xFF // Convert to Int with _no_ sign extension.
+      case _  => buffer(0) & 0xff // Convert to Int with _no_ sign extension.
     }
   }
 
@@ -27,11 +27,13 @@ private[net] class SocketInputStream(socket: PlainSocketImpl)
 
     if (offset < 0 || offset >= buffer.length)
       throw new ArrayIndexOutOfBoundsException(
-        "Offset out of bounds: " + offset)
+        "Offset out of bounds: " + offset
+      )
 
     if (count < 0 || offset + count > buffer.length)
       throw new ArrayIndexOutOfBoundsException(
-        "Reading would result in buffer overflow")
+        "Reading would result in buffer overflow"
+      )
 
     socket.read(buffer, offset, count)
   }

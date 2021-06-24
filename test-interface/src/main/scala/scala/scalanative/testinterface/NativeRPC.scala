@@ -12,7 +12,8 @@ import java.nio.charset.StandardCharsets
 private[testinterface] class NativeRPC(clientSocket: Socket) extends RPCCore {
   private lazy val inStream = new DataInputStream(clientSocket.getInputStream)
   private lazy val outStream = new DataOutputStream(
-    clientSocket.getOutputStream)
+    clientSocket.getOutputStream
+  )
 
   override def send(msg: String): Unit = {
     outStream.writeInt(msg.length)

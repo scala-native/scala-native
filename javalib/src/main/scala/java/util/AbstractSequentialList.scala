@@ -30,8 +30,8 @@ abstract class AbstractSequentialList[E] protected () extends AbstractList[E] {
   }
 
   override def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
-    val iter    = listIterator(index)
-    val citer   = c.iterator()
+    val iter = listIterator(index)
+    val citer = c.iterator()
     val changed = citer.hasNext()
     while (citer.hasNext()) {
       iter.add(citer.next())

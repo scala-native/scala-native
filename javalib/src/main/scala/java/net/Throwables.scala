@@ -13,8 +13,8 @@ class URISyntaxException(input: String, reason: String, index: Int)
   if (index < -1)
     throw new IllegalArgumentException()
 
-  def getIndex(): Int     = index
-  def getInput(): String  = input
+  def getIndex(): Int = index
+  def getInput(): String = input
   def getReason(): String = reason
 
 }

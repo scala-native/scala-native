@@ -10,8 +10,8 @@ import scalanative.junit.utils.AssertThrows.assertThrows
 import scala.language.reflectiveCalls
 
 class AnyValWithAnyRefPrimitiveMethods(val x: Int) extends AnyVal {
-  def eq(that: AnyRef): Boolean  = (x + 1) == that
-  def ne(that: AnyRef): Boolean  = (x + 1) != that
+  def eq(that: AnyRef): Boolean = (x + 1) == that
+  def ne(that: AnyRef): Boolean = (x + 1) != that
   def synchronized[T](f: T): Any = f + "there"
 }
 
@@ -35,7 +35,7 @@ class ReflectiveProxyTest {
     def f(x: ValueType): ValueType = x.value
 
     class StringValue(x: String) {
-      def value: this.type            = this
+      def value: this.type = this
       override def toString(): String = s"StringValue($x)"
     }
 
@@ -150,15 +150,15 @@ class ReflectiveProxyTest {
   }
 
   @Test def shouldWorkWithArrays(): Unit = {
-    type UPD   = { def update(i: Int, x: String): Unit }
-    type APL   = { def apply(i: Int): String }
-    type LEN   = { def length: Int }
+    type UPD = { def update(i: Int, x: String): Unit }
+    type APL = { def apply(i: Int): String }
+    type LEN = { def length: Int }
     type CLONE = Any { def clone(): Object }
 
     def upd(obj: UPD, i: Int, x: String): Unit = obj.update(i, x)
-    def apl(obj: APL, i: Int): String          = obj.apply(i)
-    def len(obj: LEN): Int                     = obj.length
-    def clone(obj: CLONE): Object              = obj.clone
+    def apl(obj: APL, i: Int): String = obj.apply(i)
+    def len(obj: LEN): Int = obj.length
+    def clone(obj: CLONE): Object = obj.clone
 
     val x = Array("asdf", "foo", "bar")
     val y = clone(x).asInstanceOf[Array[String]]
@@ -171,15 +171,15 @@ class ReflectiveProxyTest {
   }
 
   @Test def shouldWorkWithArraysOfPrimitiveValues(): Unit = {
-    type UPD   = { def update(i: Int, x: Int): Unit }
-    type APL   = { def apply(i: Int): Int }
-    type LEN   = { def length: Int }
+    type UPD = { def update(i: Int, x: Int): Unit }
+    type APL = { def apply(i: Int): Int }
+    type LEN = { def length: Int }
     type CLONE = Any { def clone(): Object }
 
     def upd(obj: UPD, i: Int, x: Int): Unit = obj.update(i, x)
-    def apl(obj: APL, i: Int): Int          = obj.apply(i)
-    def len(obj: LEN): Int                  = obj.length
-    def clone(obj: CLONE): Object           = obj.clone
+    def apl(obj: APL, i: Int): Int = obj.apply(i)
+    def len(obj: LEN): Int = obj.length
+    def clone(obj: CLONE): Object = obj.clone
 
     val x = Array(5, 2, 8)
     val y = clone(x).asInstanceOf[Array[Int]]
@@ -262,7 +262,7 @@ class ReflectiveProxyTest {
       override def clone(): AnyRef = super.clone()
     }
 
-    val b      = new B(1)
+    val b = new B(1)
     val bClone = objCloneTest(b).asInstanceOf[B]
 
     assertFalse((b eq bClone))
@@ -290,8 +290,10 @@ class ReflectiveProxyTest {
 
     assertThrows(classOf[java.lang.NoSuchMethodException], objEqTest(a1, a1))
     assertThrows(classOf[java.lang.NoSuchMethodException], objNeTest(a1, a2))
-    assertThrows(classOf[java.lang.NoSuchMethodException],
-                 objSynchronizedTest(a1, "hello"))
+    assertThrows(
+      classOf[java.lang.NoSuchMethodException],
+      objSynchronizedTest(a1, "hello")
+    )
   }
 
   @Test def shouldWorkWithEqNeSynchronizedOnAnyVal(): Unit = {
@@ -330,10 +332,10 @@ class ReflectiveProxyTest {
 
   @Test def shouldUnboxAllTypesOfArguments(): Unit = {
     class Foo {
-      def makeInt: Int          = 5
+      def makeInt: Int = 5
       def testInt(x: Int): Unit = assertTrue(x == 5)
 
-      def makeRef: Option[String]          = Some("hi")
+      def makeRef: Option[String] = Some("hi")
       def testRef(x: Option[String]): Unit = assertTrue(x == Some("hi"))
     }
 
@@ -358,8 +360,10 @@ class ReflectiveProxyTest {
   @Test def throwsNoSuchMethodExceptionWithNoDynMethod(): Unit = {
     class A
     def callFoo(obj: { def foo(): Int }) = obj.foo()
-    assertThrows(classOf[java.lang.NoSuchMethodException],
-                 callFoo((new A).asInstanceOf[{ def foo(): Int }]))
+    assertThrows(
+      classOf[java.lang.NoSuchMethodException],
+      callFoo((new A).asInstanceOf[{ def foo(): Int }])
+    )
   }
 
   @Test def throwsNoSuchMethodExceptionWithOneDynMethod(): Unit = {
@@ -371,8 +375,10 @@ class ReflectiveProxyTest {
 
     assertTrue(callBar(new A()) == 42)
 
-    assertThrows(classOf[java.lang.NoSuchMethodException],
-                 callFoo((new A).asInstanceOf[{ def foo(): Int }]))
+    assertThrows(
+      classOf[java.lang.NoSuchMethodException],
+      callFoo((new A).asInstanceOf[{ def foo(): Int }])
+    )
   }
 
   @Test def throwsNoSuchMethodExceptionWithMethodDefinedInOtherClass(): Unit = {
@@ -389,8 +395,10 @@ class ReflectiveProxyTest {
 
     assertTrue(callBar(new A()) == 42)
 
-    assertThrows(classOf[java.lang.NoSuchMethodException],
-                 callFoo((new A).asInstanceOf[{ def foo(): Int }]))
+    assertThrows(
+      classOf[java.lang.NoSuchMethodException],
+      callFoo((new A).asInstanceOf[{ def foo(): Int }])
+    )
   }
 
   @Test def returnNothingIssue643(): Unit = {

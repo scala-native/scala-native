@@ -9,17 +9,17 @@ class ArrayGenericMethodsTest {
 
   val arrayLength = 2
 
-  val byteArray   = Array(1.toByte, 2.toByte)
-  val charArray   = Array('a', 'b')
-  val shortArray  = Array(1.toShort, 2.toShort)
-  val intArray    = Array(1, 2)
-  val longArray   = Array(1L, 2L)
-  val floatArray  = Array(1.0f, 2.0f)
+  val byteArray = Array(1.toByte, 2.toByte)
+  val charArray = Array('a', 'b')
+  val shortArray = Array(1.toShort, 2.toShort)
+  val intArray = Array(1, 2)
+  val longArray = Array(1L, 2L)
+  val floatArray = Array(1.0f, 2.0f)
   val doubleArray = Array(1.0, 2.0)
 
   val booleanArray = Array(false, true)
-  val unitArray    = Array((), ())
-  val objectArray  = Array(new Object, "hello")
+  val unitArray = Array((), ())
+  val objectArray = Array(new Object, "hello")
 
   @Test
   def shouldSupportGenericLength(): Unit = {
@@ -77,7 +77,7 @@ class ArrayGenericMethodsTest {
   @Test
   def shouldSupportGenericUpdate(): Unit = {
     def testUpdate[T](arr: Array[T], newValue: T): Unit = {
-      val idx      = 1
+      val idx = 1
       val oldValue = arr(idx)
       arr.update(idx, newValue)
       assertNotEquals(oldValue, newValue)
@@ -102,8 +102,10 @@ class ArrayGenericMethodsTest {
 
       List(-1, arrayLength + 1).foreach { idx =>
         assertThrows(classOf[ArrayIndexOutOfBoundsException], arr(idx))
-        assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                     arr.update(idx, elem))
+        assertThrows(
+          classOf[ArrayIndexOutOfBoundsException],
+          arr.update(idx, elem)
+        )
       }
 
       val targetArray = arr.clone()
@@ -118,7 +120,8 @@ class ArrayGenericMethodsTest {
         case (fromPos, toPos, length) =>
           assertThrows(
             classOf[ArrayIndexOutOfBoundsException],
-            System.arraycopy(arr, fromPos, targetArray, toPos, length))
+            System.arraycopy(arr, fromPos, targetArray, toPos, length)
+          )
       }
     }
 

@@ -16,8 +16,11 @@ class FindTest {
       val re: RE2 = RE2.compile(test.pat)
       if (!(re.toString == test.pat)) {
         fail(
-          "RE2.toString() = \"%s\"; should be \"%s\"".format(re.toString,
-                                                             test.pat))
+          "RE2.toString() = \"%s\"; should be \"%s\"".format(
+            re.toString,
+            test.pat
+          )
+        )
       }
       val result: Array[Byte] = re.findUTF8(test.textUTF8)
       if (test.matches.length == 0 && GoTestUtils.len(result) == 0) {
@@ -33,7 +36,9 @@ class FindTest {
             "findUTF8: expected %s; got %s: %s".format(
               GoTestUtils.fromUTF8(expect),
               GoTestUtils.fromUTF8(result),
-              test))
+              test
+            )
+          )
         }
       }
     }
@@ -62,10 +67,12 @@ class FindTest {
     }
   }
 
-  private def testFindIndexCommon(testName: String,
-                                  test: RETest,
-                                  _result: Array[Int],
-                                  resultIndicesAreUTF8: Boolean): Unit = {
+  private def testFindIndexCommon(
+      testName: String,
+      test: RETest,
+      _result: Array[Int],
+      resultIndicesAreUTF8: Boolean
+  ): Unit = {
     var result = _result
     if (test.matches.length == 0 && GoTestUtils.len(result) == 0) {
       // no op
@@ -80,20 +87,25 @@ class FindTest {
       val expect: Array[Int] = test.matches(0) // UTF-8 indices
       if (expect(0) != result(0) || expect(1) != result(1)) {
         fail(
-          "%s: expected %s got %s: %s".format(testName,
-                                              util.Arrays.toString(expect),
-                                              util.Arrays.toString(result),
-                                              test))
+          "%s: expected %s got %s: %s".format(
+            testName,
+            util.Arrays.toString(expect),
+            util.Arrays.toString(result),
+            test
+          )
+        )
       }
     }
   }
 
   @Test def findUTF8Index(): Unit = {
     for (test <- FIND_TESTS) {
-      testFindIndexCommon("testFindUTF8Index",
-                          test,
-                          RE2.compile(test.pat).findUTF8Index(test.textUTF8),
-                          true)
+      testFindIndexCommon(
+        "testFindUTF8Index",
+        test,
+        RE2.compile(test.pat).findUTF8Index(test.textUTF8),
+        true
+      )
     }
   }
 
@@ -115,11 +127,13 @@ class FindTest {
         fail("findAllUTF8: expected no match; got one: %s".format(test))
       } else if (test.matches.length > 0 && result == null) {
         throw new AssertionError(
-          "findAllUTF8: expected match; got none: " + test)
+          "findAllUTF8: expected match; got none: " + test
+        )
       } else if (test.matches.length != result.size) {
         fail(
           "findAllUTF8: expected %d matches; got %d: %s"
-            .format(test.matches.length, result.size, test))
+            .format(test.matches.length, result.size, test)
+        )
       }
       var i: Int = 0
       while (i < test.matches.length) {
@@ -130,7 +144,9 @@ class FindTest {
               i / 2,
               GoTestUtils.fromUTF8(expect),
               GoTestUtils.fromUTF8(result.get(i)),
-              test))
+              test
+            )
+          )
         }
         i += 1
       }
@@ -149,7 +165,8 @@ class FindTest {
       } else if (test.matches.length != result.size) {
         fail(
           "findAll: expected %d matches; got %d: %s"
-            .format(test.matches.length, result.size, test))
+            .format(test.matches.length, result.size, test)
+        )
       }
       var i: Int = 0
       while (i < test.matches.length) {
@@ -162,10 +179,12 @@ class FindTest {
     }
   }
 
-  private def testFindAllIndexCommon(testName: String,
-                                     test: RETest,
-                                     result: util.List[Array[Int]],
-                                     resultIndicesAreUTF8: Boolean): Unit = {
+  private def testFindAllIndexCommon(
+      testName: String,
+      test: RETest,
+      result: util.List[Array[Int]],
+      resultIndicesAreUTF8: Boolean
+  ): Unit = {
     if (test.matches.length == 0 && result == null) {
       // no op
     } else if (test.matches.length == 0 && result != null) {
@@ -175,11 +194,12 @@ class FindTest {
     } else if (test.matches.length != result.size) {
       fail(
         "%s: expected %d matches; got %d: %s"
-          .format(testName, test.matches.length, result.size, test))
+          .format(testName, test.matches.length, result.size, test)
+      )
     }
     var k: Int = 0
     while (k < test.matches.length) {
-      val e: Array[Int]   = test.matches(k)
+      val e: Array[Int] = test.matches(k)
       var res: Array[Int] = result.get(k)
       if (!resultIndicesAreUTF8) {
         res = GoTestUtils.utf16IndicesToUtf8(res, test.text)
@@ -191,7 +211,9 @@ class FindTest {
             k,
             util.Arrays.toString(e), // (only 1st two elements matter here)
             util.Arrays.toString(res),
-            test))
+            test
+          )
+        )
       }
       k += 1
     }
@@ -203,7 +225,8 @@ class FindTest {
         "testFindAllUTF8Index",
         test,
         RE2.compile(test.pat).findAllUTF8Index(test.textUTF8, -(1)),
-        true)
+        true
+      )
     }
   }
 
@@ -213,16 +236,19 @@ class FindTest {
         "testFindAllIndex",
         test,
         RE2.compile(test.pat).findAllIndex(test.text, -(1)),
-        false)
+        false
+      )
     }
   }
 
   // Now come the Submatch cases.
 
-  def testSubmatchBytes(testName: String,
-                        test: RETest,
-                        n: Int,
-                        result: Array[Array[Byte]]): Unit = {
+  def testSubmatchBytes(
+      testName: String,
+      test: RETest,
+      n: Int,
+      result: Array[Array[Byte]]
+  ): Unit = {
     val submatches: Array[Int] = test.matches(n)
     if (submatches.length != GoTestUtils.len(result) * 2) {
       fail(
@@ -231,7 +257,9 @@ class FindTest {
           n,
           submatches.length / 2,
           GoTestUtils.len(result),
-          test))
+          test
+        )
+      )
     }
     var k: Int = 0
     while (k < GoTestUtils.len(result)) {
@@ -239,7 +267,8 @@ class FindTest {
       if (submatches(k * 2) == -(1)) {
         if (result(k) != null) {
           fail(
-            "%s %d: expected null got %s: %s".format(testName, n, result, test))
+            "%s %d: expected null got %s: %s".format(testName, n, result, test)
+          )
         }
         continue = true
       }
@@ -252,7 +281,9 @@ class FindTest {
               n,
               GoTestUtils.fromUTF8(expect),
               GoTestUtils.fromUTF8(result(k)),
-              test))
+              test
+            )
+          )
         }
       }
       k += 1
@@ -276,10 +307,12 @@ class FindTest {
   }
 
   // (Go: testSubmatchString)
-  private def testSubmatch(testName: String,
-                           test: RETest,
-                           n: Int,
-                           result: Array[String]): Unit = {
+  private def testSubmatch(
+      testName: String,
+      test: RETest,
+      n: Int,
+      result: Array[String]
+  ): Unit = {
     val submatches: Array[Int] = test.matches(n)
     if (submatches.length != GoTestUtils.len(result) * 2) {
       fail(
@@ -288,7 +321,9 @@ class FindTest {
           n,
           submatches.length / 2,
           GoTestUtils.len(result),
-          test))
+          test
+        )
+      )
     }
     var k: Int = 0
     while (k < submatches.length) {
@@ -297,7 +332,8 @@ class FindTest {
         if (result(k / 2) != null && !(result(k / 2).isEmpty)) {
           fail(
             "%s %d: expected null got %s: %s"
-              .format(testName, n, result.mkString(", "), test))
+              .format(testName, n, result.mkString(", "), test)
+          )
         }
         continue = true
       }
@@ -307,7 +343,8 @@ class FindTest {
         if (!(expect == result(k / 2))) {
           fail(
             "%s %d: expected %s got %s: %s"
-              .format(testName, n, expect, result, test))
+              .format(testName, n, expect, result, test)
+          )
         }
       }
       k += 2
@@ -330,12 +367,14 @@ class FindTest {
     }
   }
 
-  private def testSubmatchIndices(testName: String,
-                                  test: RETest,
-                                  n: Int,
-                                  _result: Array[Int],
-                                  resultIndicesAreUTF8: Boolean): Unit = {
-    var result             = _result
+  private def testSubmatchIndices(
+      testName: String,
+      test: RETest,
+      n: Int,
+      _result: Array[Int],
+      resultIndicesAreUTF8: Boolean
+  ): Unit = {
+    var result = _result
     val expect: Array[Int] = test.matches(n)
     if (expect.length != GoTestUtils.len(result)) {
       fail(
@@ -344,7 +383,9 @@ class FindTest {
           n,
           expect.length / 2,
           GoTestUtils.len(result) / 2,
-          test))
+          test
+        )
+      )
       return
     }
     if (!resultIndicesAreUTF8) {
@@ -359,7 +400,9 @@ class FindTest {
             n,
             util.Arrays.toString(expect),
             util.Arrays.toString(result),
-            test))
+            test
+          )
+        )
       }
       k += 1
     }
@@ -369,7 +412,8 @@ class FindTest {
       testName: String,
       test: RETest,
       result: Array[Int],
-      resultIndicesAreUTF8: Boolean): Unit = {
+      resultIndicesAreUTF8: Boolean
+  ): Unit = {
     if (test.matches.length == 0 && result == null) {
       // no op
     } else if (test.matches.length == 0 && result != null) {
@@ -387,7 +431,8 @@ class FindTest {
         "testFindSubmatchIndex",
         test,
         RE2.compile(test.pat).findUTF8SubmatchIndex(test.textUTF8),
-        true)
+        true
+      )
     }
   }
 
@@ -398,7 +443,8 @@ class FindTest {
         "testFindStringSubmatchIndex",
         test,
         RE2.compile(test.pat).findSubmatchIndex(test.text),
-        false)
+        false
+      )
     }
   }
 
@@ -417,7 +463,8 @@ class FindTest {
         } else if (test.matches.length != result.size) {
           fail(
             "expected %d matches; got %d: %s"
-              .format(test.matches.length, result.size, test))
+              .format(test.matches.length, result.size, test)
+          )
         } else {
           var k: Int = 0
           while (k < test.matches.length) {
@@ -441,7 +488,8 @@ class FindTest {
         } else if (test.matches.length != result.size) {
           fail(
             "expected %d matches; got %d: %s"
-              .format(test.matches.length, result.size, test))
+              .format(test.matches.length, result.size, test)
+          )
         } else {
           var k: Int = 0
           while (k < test.matches.length) {
@@ -458,7 +506,8 @@ class FindTest {
       testName: String,
       test: RETest,
       result: util.List[Array[Int]],
-      resultIndicesAreUTF8: Boolean): Unit = {
+      resultIndicesAreUTF8: Boolean
+  ): Unit = {
     if (test.matches.length == 0 && result == null) {
       // no op
     } else {
@@ -469,15 +518,18 @@ class FindTest {
       } else if (test.matches.length != result.size) {
         fail(
           "%s: expected %d matches; got %d: %s"
-            .format(testName, test.matches.length, result.size, test))
+            .format(testName, test.matches.length, result.size, test)
+        )
       } else {
         var k: Int = 0
         while (k < test.matches.length) {
-          testSubmatchIndices(testName,
-                              test,
-                              k,
-                              result.get(k),
-                              resultIndicesAreUTF8)
+          testSubmatchIndices(
+            testName,
+            test,
+            k,
+            result.get(k),
+            resultIndicesAreUTF8
+          )
           k += 1
         }
       }
@@ -491,7 +543,8 @@ class FindTest {
         "testFindAllUTF8SubmatchIndex",
         test,
         RE2.compile(test.pat).findAllUTF8SubmatchIndex(test.textUTF8, -(1)),
-        true)
+        true
+      )
     }
   }
 
@@ -502,7 +555,8 @@ class FindTest {
         "testFindAllSubmatchIndex",
         test,
         RE2.compile(test.pat).findAllSubmatchIndex(test.text, -(1)),
-        false)
+        false
+      )
     }
   }
 
@@ -527,8 +581,8 @@ object FindTest {
     val matches = new Array[Array[Int]](n)
     if (n > 0) {
       val runLength = x.length / n
-      var j         = 0
-      var i         = 0
+      var j = 0
+      var i = 0
       while (i < n) {
         matches(i) = new Array[Int](runLength)
         System.arraycopy(x, j, matches(i), 0, runLength)
@@ -627,13 +681,15 @@ object FindTest {
       "!\"#$%&'()*+,-./:;<=>?@[\\]^_{|}~",
       1,
       0,
-      31),
+      31
+    ),
     RETest(
       "[\\!\\\"\\#\\$\\%\\&\\'\\(\\)\\*\\+\\,\\-\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\\\\\]\\^\\_\\{\\|\\}\\~]+",
       "!\"#$%&'()*+,-./:;<=>?@[\\]^_{|}~",
       1,
       0,
-      31),
+      31
+    ),
     RETest("\\`", "`", 1, 0, 1),
     RETest("[\\`]+", "`", 1, 0, 1), // long set of matches
     RETest(

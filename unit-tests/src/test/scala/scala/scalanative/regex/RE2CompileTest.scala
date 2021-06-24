@@ -53,7 +53,8 @@ class RE2CompileTest {
         RE2.compile(input)
         if (expectedError != null)
           fail(
-            "RE2.compile(" + input + ") was successful, expected " + expectedError)
+            "RE2.compile(" + input + ") was successful, expected " + expectedError
+          )
       } catch {
         case e: PatternSyntaxException =>
           if (expectedError == null || !(e.getMessage == expectedError))

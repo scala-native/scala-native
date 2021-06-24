@@ -165,7 +165,8 @@ class ParserTest {
     Array("(?i)\\w", "cc{0x30-0x39 0x41-0x5a 0x5f 0x61-0x7a 0x17f 0x212a}"),
     Array(
       "(?i)\\W",
-      "cc{0x0-0x2f 0x3a-0x40 0x5b-0x5e 0x60 0x7b-0x17e 0x180-0x2129 0x212b-0x10ffff}"),
+      "cc{0x0-0x2f 0x3a-0x40 0x5b-0x5e 0x60 0x7b-0x17e 0x180-0x2129 0x212b-0x10ffff}"
+    ),
     Array("[^\\\\]", "cc{0x0-0x5b 0x5d-0x10ffff}"),
     //  { "\\C", "byte{}" },  // probably never
     // Unicode, negatives, and a double negative.
@@ -175,14 +176,16 @@ class ParserTest {
     Array("\\P{^Braille}", "cc{0x2800-0x28ff}"),
     Array(
       "\\pZ",
-      "cc{0x20 0xa0 0x1680 0x180e 0x2000-0x200a 0x2028-0x2029 0x202f 0x205f 0x3000}"),
+      "cc{0x20 0xa0 0x1680 0x180e 0x2000-0x200a 0x2028-0x2029 0x202f 0x205f 0x3000}"
+    ),
     Array("[\\p{Braille}]", "cc{0x2800-0x28ff}"),
     Array("[\\P{Braille}]", "cc{0x0-0x27ff 0x2900-0x10ffff}"),
     Array("[\\p{^Braille}]", "cc{0x0-0x27ff 0x2900-0x10ffff}"),
     Array("[\\P{^Braille}]", "cc{0x2800-0x28ff}"),
     Array(
       "[\\pZ]",
-      "cc{0x20 0xa0 0x1680 0x180e 0x2000-0x200a 0x2028-0x2029 0x202f 0x205f 0x3000}"),
+      "cc{0x20 0xa0 0x1680 0x180e 0x2000-0x200a 0x2028-0x2029 0x202f 0x205f 0x3000}"
+    ),
     Array("\\p{Ll}", mkCharClass(IS_LOWER)),
     Array("[\\p{Ll}]", mkCharClass(IS_LOWER)),
     Array("(?i)[\\p{Ll}]", mkCharClass(IS_LOWER_FOLD)),
@@ -212,15 +215,21 @@ class ParserTest {
     // Test flattening.
     Array("(?:a)", "lit{a}"),
     Array("(?:ab)(?:cd)", "str{abcd}"),
-    Array("(?:a+b+)(?:c+d+)",
-          "cat{plus{lit{a}}plus{lit{b}}plus{lit{c}}plus{lit{d}}}"),
-    Array("(?:a+|b+)|(?:c+|d+)",
-          "alt{plus{lit{a}}plus{lit{b}}plus{lit{c}}plus{lit{d}}}"),
+    Array(
+      "(?:a+b+)(?:c+d+)",
+      "cat{plus{lit{a}}plus{lit{b}}plus{lit{c}}plus{lit{d}}}"
+    ),
+    Array(
+      "(?:a+|b+)|(?:c+|d+)",
+      "alt{plus{lit{a}}plus{lit{b}}plus{lit{c}}plus{lit{d}}}"
+    ),
     Array("(?:a|b)|(?:c|d)", "cc{0x61-0x64}"),
     Array("a|.", "dot{}"),
     Array(".|a", "dot{}"),
-    Array("(?:[abc]|A|Z|hello|world)",
-          "alt{cc{0x41 0x5a 0x61-0x63}str{hello}str{world}}"),
+    Array(
+      "(?:[abc]|A|Z|hello|world)",
+      "alt{cc{0x41 0x5a 0x61-0x63}str{hello}str{world}}"
+    ),
     Array("(?:[abc]|A|Z)", "cc{0x41 0x5a 0x61-0x63}"),
     // Test Perl quoted literals
     Array("\\Q+|*?{[\\E", "str{+|*?{[}"),
@@ -248,7 +257,8 @@ class ParserTest {
     // Factoring.
     Array(
       "abc|abd|aef|bcx|bcy",
-      "alt{cat{lit{a}alt{cat{lit{b}cc{0x63-0x64}}str{ef}}}cat{str{bc}cc{0x78-0x79}}}"),
+      "alt{cat{lit{a}alt{cat{lit{b}cc{0x63-0x64}}str{ef}}}cat{str{bc}cc{0x78-0x79}}}"
+    ),
 //    Array("ax+y|ax+z|ay+w", "cat{lit{a}alt{cat{plus{lit{x}}cc{0x79-0x7a}}cat{plus{lit{y}}lit{w}}}}"), // TODO: fails because of equals  if (first != null && first.equals(ifirst)) {
     // Bug fixes.
     Array("(?:.)", "dot{}"),
@@ -269,7 +279,8 @@ class ParserTest {
     Array("a(?:b)c|abd", "cat{str{ab}cc{0x63-0x64}}"),
     Array(
       "abc|abd|aef|bcx|bcy",
-      "alt{cat{lit{a}alt{cat{lit{b}cc{0x63-0x64}}str{ef}}}" + "cat{str{bc}cc{0x78-0x79}}}"),
+      "alt{cat{lit{a}alt{cat{lit{b}cc{0x63-0x64}}str{ef}}}" + "cat{str{bc}cc{0x78-0x79}}}"
+    ),
     Array("abc|x|abd", "alt{str{abc}lit{x}str{abd}}"),
     Array("(?i)abc|ABD", "cat{strfold{AB}cc{0x43-0x44 0x63-0x64}}")
 //    Array("[ab]c|[ab]d", "cat{cc{0x61-0x62}cc{0x63-0x64}}")
@@ -300,16 +311,19 @@ class ParserTest {
   }
 
   private val LITERAL_TESTS = Array(
-    Array("(|)^$.[*+?]{5,10},\\", "str{(|)^$.[*+?]{5,10},\\}"))
+    Array("(|)^$.[*+?]{5,10},\\", "str{(|)^$.[*+?]{5,10},\\}")
+  )
 
   @Test def parseLiteral(): Unit = {
     testParseDump(LITERAL_TESTS, LITERAL)
   }
 
-  private val MATCHNL_TESTS = Array(Array(".", "dot{}"),
-                                    Array("\n", "lit{\n}"),
-                                    Array("[^a]", "cc{0x0-0x60 0x62-0x10ffff}"),
-                                    Array("[a\\n]", "cc{0xa 0x61}"))
+  private val MATCHNL_TESTS = Array(
+    Array(".", "dot{}"),
+    Array("\n", "lit{\n}"),
+    Array("[^a]", "cc{0x0-0x60 0x62-0x10ffff}"),
+    Array("[a\\n]", "cc{0xa 0x61}")
+  )
 
   @Test def parseMatchNL(): Unit = {
     testParseDump(MATCHNL_TESTS, MATCH_NL)
@@ -319,7 +333,8 @@ class ParserTest {
     Array(".", "dnl{}"),
     Array("\n", "lit{\n}"),
     Array("[^a]", "cc{0x0-0x9 0xb-0x60 0x62-0x10ffff}"),
-    Array("[a\\n]", "cc{0xa 0x61}"))
+    Array("[a\\n]", "cc{0xa 0x61}")
+  )
 
   @Test def parseNoMatchNL(): Unit = {
     testParseDump(NOMATCHNL_TESTS, 0)
@@ -330,11 +345,14 @@ class ParserTest {
     for (test <- tests) {
       try {
         val re = Parser.parse(test(0), flags)
-        val d  = dump(re)
+        val d = dump(re)
         if (!(test(1) == d)) {
           fail(
-            String.format("parse/dump of " + test(0) + " expected " + test(1) +
-              ", got " + d))
+            String.format(
+              "parse/dump of " + test(0) + " expected " + test(1) +
+                ", got " + d
+            )
+          )
         }
       } catch {
         case e: PatternSyntaxException =>
@@ -402,7 +420,7 @@ class ParserTest {
         dumpRegexp(b, re.subs(0))
       case CHAR_CLASS =>
         var sep = ""
-        var i   = 0
+        var i = 0
         while (i < re.runes.length) {
           b.append(sep)
           sep = " "
@@ -419,10 +437,10 @@ class ParserTest {
   }
 
   private def mkCharClass(f: RunePredicate): String = {
-    val re    = new Regexp(Regexp.Op.CHAR_CLASS)
+    val re = new Regexp(Regexp.Op.CHAR_CLASS)
     val runes = new util.ArrayList[Integer]
-    var lo    = -1
-    var i     = 0
+    var lo = -1
+    var i = 0
     while (i <= Unicode.MAX_RUNE) {
 
       if (f.applies(i)) {
@@ -497,15 +515,17 @@ class ParserTest {
     "a{100000,}"
   )
 
-  private val ONLY_PERL = Array("[a-b-c]",
-                                "\\Qabc\\E",
-                                "\\Q*+?{[\\E",
-                                "\\Q\\\\E",
-                                "\\Q\\\\\\E",
-                                "\\Q\\\\\\\\E",
-                                "\\Q\\\\\\\\\\E",
-                                "(?:a)",
-                                "(?<name>a)")
+  private val ONLY_PERL = Array(
+    "[a-b-c]",
+    "\\Qabc\\E",
+    "\\Q*+?{[\\E",
+    "\\Q\\\\E",
+    "\\Q\\\\\\E",
+    "\\Q\\\\\\\\E",
+    "\\Q\\\\\\\\\\E",
+    "(?:a)",
+    "(?<name>a)"
+  )
 
   private val ONLY_POSIX =
     Array("a++", "a**", "a?*", "a+*", "a{1}*", ".{1}{2}.{3}")
@@ -516,7 +536,8 @@ class ParserTest {
         val re = Parser.parse(regexp, PERL)
         fail(
           "Parsing (PERL) " + regexp + " should have failed, instead got " +
-            dump(re))
+            dump(re)
+        )
       } catch {
         case e: PatternSyntaxException =>
         /* ok */
@@ -525,7 +546,8 @@ class ParserTest {
         val re = Parser.parse(regexp, POSIX)
         fail(
           "parsing (POSIX) " + regexp + " should have failed, instead got " +
-            dump(re))
+            dump(re)
+        )
       } catch {
         case e: PatternSyntaxException =>
       }
@@ -536,7 +558,8 @@ class ParserTest {
         val re = Parser.parse(regexp, POSIX)
         fail(
           "parsing (POSIX) " + regexp + " should have failed, instead got " +
-            dump(re))
+            dump(re)
+        )
       } catch {
         case _: PatternSyntaxException =>
       }
@@ -546,7 +569,8 @@ class ParserTest {
         val re = Parser.parse(regexp, PERL)
         fail(
           "parsing (PERL) " + regexp + " should have failed, instead got " +
-            dump(re))
+            dump(re)
+        )
       } catch {
         case _: PatternSyntaxException =>
       }
@@ -557,7 +581,7 @@ class ParserTest {
   @Test def toStringEquivalentParse(): Unit = {
     for (tt <- PARSE_TESTS) {
       val re = Parser.parse(tt(0), TEST_FLAGS)
-      val d  = dump(re)
+      val d = dump(re)
 
       // (already ensured by testParseSimple)
       assertTrue("ParseSimple failure", d == tt(1))
@@ -569,7 +593,7 @@ class ParserTest {
         // toString produces "\\{" for a literal brace,
         // but "{" is a shorter equivalent in some contexts.
         val nre = Parser.parse(s, TEST_FLAGS)
-        val nd  = dump(nre)
+        val nd = dump(nre)
         assertTrue("parse(%s) -> %s".format(tt(0), s), d == nd)
         val ns = nre.toString
         assertTrue("parse(%s) -> %s".format(tt(0), s), s == ns)

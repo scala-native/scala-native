@@ -40,7 +40,7 @@ sealed trait ShowBuilder {
 object ShowBuilder {
   final class InMemoryShowBuilder extends ShowBuilder {
     override protected val out: Appendable = new java.lang.StringBuilder
-    override def toString: String          = out.toString
+    override def toString: String = out.toString
   }
 
   final class FileShowBuilder(protected val out: java.io.Writer)

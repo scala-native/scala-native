@@ -19,8 +19,8 @@ private[niocharset] abstract class UTF_16_Common protected (
     // scalastyle:ignore
     name: String,
     aliases: Array[String],
-    private val endianness: Int)
-    extends Charset(name, aliases) {
+    private val endianness: Int
+) extends Charset(name, aliases) {
 
   import UTF_16_Common._
 
@@ -205,7 +205,7 @@ private[niocharset] abstract class UTF_16_Common protected (
 
 private[niocharset] object UTF_16_Common {
   // scalastyle:ignore
-  final val AutoEndian   = 0
-  final val BigEndian    = 1
+  final val AutoEndian = 0
+  final val BigEndian = 1
   final val LittleEndian = 2
 }

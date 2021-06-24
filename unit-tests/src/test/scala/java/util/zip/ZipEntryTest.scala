@@ -12,13 +12,13 @@ import ZipBytes._
 
 class ZipEntryTest {
 
-  var zfile: ZipFile          = null
-  var zentry: ZipEntry        = null
-  var orgSize: Long           = 0L
+  var zfile: ZipFile = null
+  var zentry: ZipEntry = null
+  var orgSize: Long = 0L
   var orgCompressedSize: Long = 0L
-  var orgCrc: Long            = 0L
-  var orgTime: Long           = 0L
-  var orgComment: String      = null
+  var orgCrc: Long = 0L
+  var orgTime: Long = 0L
+  var orgComment: String = null
 
   @Test def constructorString(): Unit = {
     zentry = zfile.getEntry("File3.txt")
@@ -111,15 +111,17 @@ class ZipEntryTest {
     assertTrue(zentry.getComment() == null)
     val s = new StringBuffer()
     var i = 0
-    while (i < 0xFFFF) {
+    while (i < 0xffff) {
       s.append('a')
       i += 1
     }
     zentry.setComment(s.toString)
 
     s.append('a')
-    assertThrows(classOf[IllegalArgumentException],
-                 zentry.setComment(s.toString))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      zentry.setComment(s.toString)
+    )
   }
 
   @Test def setCompressedSizeLong(): Unit = {
@@ -155,20 +157,27 @@ class ZipEntryTest {
     zentry = zfile.getEntry("File1.txt")
     zentry.setExtra("Test setting extra information".getBytes())
     assertTrue(
-      new String(zentry.getExtra(), 0, zentry.getExtra().length) == "Test setting extra information")
+      new String(
+        zentry.getExtra(),
+        0,
+        zentry.getExtra().length
+      ) == "Test setting extra information"
+    )
 
     zentry = new ZipEntry("test.tst")
-    var ba = new Array[Byte](0xFFFF)
+    var ba = new Array[Byte](0xffff)
     zentry.setExtra(ba)
     assertTrue(zentry.getExtra() == ba)
 
-    assertThrows(classOf[IllegalArgumentException], {
-      ba = new Array[Byte](0xFFFF + 1)
-      zentry.setExtra(ba)
-    })
+    assertThrows(
+      classOf[IllegalArgumentException], {
+        ba = new Array[Byte](0xffff + 1)
+        zentry.setExtra(ba)
+      }
+    )
 
     val zeInput = new ZipEntry("InputZip")
-    val extraB  = Array[Byte]('a', 'b', 'd', 'e')
+    val extraB = Array[Byte]('a', 'b', 'd', 'e')
     zeInput.setExtra(extraB)
     assertTrue(extraB == zeInput.getExtra())
     assertTrue(extraB(3) == zeInput.getExtra()(3))
@@ -190,10 +199,12 @@ class ZipEntryTest {
     assertTrue(zentry.getMethod() == ZipEntry.DEFLATED)
 
     val error = 1
-    assertThrows(classOf[IllegalArgumentException], {
-      zentry = new ZipEntry("test.tst")
-      zentry.setMethod(error)
-    })
+    assertThrows(
+      classOf[IllegalArgumentException], {
+        zentry = new ZipEntry("test.tst")
+        zentry.setMethod(error)
+      }
+    )
   }
 
   @Test def setSizeLong(): Unit = {

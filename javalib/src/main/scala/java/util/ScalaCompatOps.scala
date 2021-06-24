@@ -5,15 +5,15 @@ import scala.collection.mutable
 private[util] object ScalaCompatOps {
 
   implicit class ToScalaMutableSortedSetCompatOps[A] private[ScalaCompatOps] (
-      private val self: mutable.SortedSet[A])
-      extends AnyVal {
+      private val self: mutable.SortedSet[A]
+  ) extends AnyVal {
     def compatOps: ScalaMutableSetCompatOps[A] =
       new ScalaMutableSetCompatOps[A](self)
   }
 
   class ScalaMutableSetCompatOps[A] private[ScalaCompatOps] (
-      private val self: mutable.SortedSet[A])
-      extends AnyVal {
+      private val self: mutable.SortedSet[A]
+  ) extends AnyVal {
 
     def rangeUntil(until: A): mutable.SortedSet[A] =
       self.rangeImpl(None, Some(until))

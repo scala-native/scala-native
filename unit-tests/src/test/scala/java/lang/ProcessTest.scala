@@ -30,18 +30,20 @@ class ProcessTest {
     // completion time.  If a process expected to exit in milliseconds
     // takes that three orders of magnitude longer, it must be reported.
 
-    val tmo    = 10
+    val tmo = 10
     val tmUnit = TimeUnit.SECONDS
 
-    assertTrue(s"Process took more than $tmo ${tmUnit.name} to exit.",
-               process.waitFor(tmo, tmUnit))
+    assertTrue(
+      s"Process took more than $tmo ${tmUnit.name} to exit.",
+      process.waitFor(tmo, tmUnit)
+    )
   }
 
   val scripts = Set("echo.sh", "err.sh", "ls", "hello.sh")
 
   @Test def ls(): Unit = {
     val proc = new ProcessBuilder("ls", resourceDir).start()
-    val out  = readInputStream(proc.getInputStream)
+    val out = readInputStream(proc.getInputStream)
 
     assertProcessExitOrTimeout(proc)
 
@@ -49,9 +51,9 @@ class ProcessTest {
   }
 
   @Test def inherit(): Unit = {
-    val f       = Files.createTempFile("/tmp", "out")
+    val f = Files.createTempFile("/tmp", "out")
     val savedFD = unistd.dup(unistd.STDOUT_FILENO)
-    val flags   = fcntl.O_RDWR | fcntl.O_TRUNC | fcntl.O_CREAT
+    val flags = fcntl.O_RDWR | fcntl.O_TRUNC | fcntl.O_CREAT
     val fd = Zone { implicit z =>
       fcntl.open(toCString(f.toAbsolutePath.toString), flags, 0.toUInt)
     }
@@ -73,7 +75,7 @@ class ProcessTest {
 
   private def checkPathOverride(pb: ProcessBuilder) = {
     val proc = pb.start()
-    val out  = readInputStream(proc.getInputStream) // must read before exit
+    val out = readInputStream(proc.getInputStream) // must read before exit
 
     assertProcessExitOrTimeout(proc)
 
@@ -93,7 +95,7 @@ class ProcessTest {
   }
 
   @Test def inputAndErrorStream(): Unit = {
-    val pb  = new ProcessBuilder("err.sh")
+    val pb = new ProcessBuilder("err.sh")
     val cwd = System.getProperty("user.dir")
     pb.environment.put("PATH", s"$cwd/unit-tests/src/test/resources/process")
     val proc = pb.start()
@@ -133,7 +135,7 @@ class ProcessTest {
 
     try {
       val proc = pb.start()
-      val os   = new FileOutputStream(file)
+      val os = new FileOutputStream(file)
       os.write("hello\n".getBytes)
       os.write("quit\n".getBytes)
 
@@ -146,7 +148,7 @@ class ProcessTest {
   }
 
   @Test def redirectErrorStream(): Unit = {
-    val pb  = new ProcessBuilder("err.sh")
+    val pb = new ProcessBuilder("err.sh")
     val cwd = System.getProperty("user.dir")
     pb.environment.put("PATH", s"$cwd/unit-tests/src/test/resources/process")
     pb.redirectErrorStream(true)
@@ -161,8 +163,10 @@ class ProcessTest {
   @Test def waitForWithTimeoutCompletes(): Unit = {
     val proc = new ProcessBuilder("sleep", "0.1").start()
 
-    assertTrue("process should have exited but timed out",
-               proc.waitFor(1, TimeUnit.SECONDS))
+    assertTrue(
+      "process should have exited but timed out",
+      proc.waitFor(1, TimeUnit.SECONDS)
+    )
     assertEquals(0, proc.exitValue)
   }
 
@@ -190,8 +194,10 @@ class ProcessTest {
   @Test def waitForWithTimeoutTimesOut(): Unit = {
     val proc = new ProcessBuilder("sleep", "2.0").start()
 
-    assertTrue("process should have timed out but exited",
-               !proc.waitFor(500, TimeUnit.MILLISECONDS))
+    assertTrue(
+      "process should have timed out but exited",
+      !proc.waitFor(500, TimeUnit.MILLISECONDS)
+    )
     assertTrue("process should be alive", proc.isAlive)
 
     // await exit code to release resources. Attempt to force
@@ -205,8 +211,10 @@ class ProcessTest {
 
     assertTrue("process should be alive", proc.isAlive)
     proc.destroy()
-    assertTrue("process should have exited but timed out",
-               proc.waitFor(500, TimeUnit.MILLISECONDS))
+    assertTrue(
+      "process should have exited but timed out",
+      proc.waitFor(500, TimeUnit.MILLISECONDS)
+    )
     assertEquals(0x80 + 9, proc.exitValue) // SIGKILL, excess 128
   }
 
@@ -215,8 +223,10 @@ class ProcessTest {
 
     assertTrue("process should be alive", proc.isAlive)
     val p = proc.destroyForcibly()
-    assertTrue("process should have exited but timed out",
-               p.waitFor(500, TimeUnit.MILLISECONDS))
+    assertTrue(
+      "process should have exited but timed out",
+      p.waitFor(500, TimeUnit.MILLISECONDS)
+    )
     assertEquals(0x80 + 9, p.exitValue) // SIGKILL, excess 128
   }
 

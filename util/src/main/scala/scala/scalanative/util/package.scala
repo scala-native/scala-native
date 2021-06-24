@@ -2,14 +2,14 @@ package scala.scalanative
 
 package object util {
 
-  /** Marker methods, called whenever a specific control-flow branch
-   *  should never happen.
+  /** Marker methods, called whenever a specific control-flow branch should
+   *  never happen.
    */
   def unreachable: Nothing =
     throw UnreachableException
 
-  /** Marker method, called whenever a specific control-flow branch
-   *  is not supported.
+  /** Marker method, called whenever a specific control-flow branch is not
+   *  supported.
    */
   def unsupported(v: Any): Nothing =
     throw UnsupportedException(s"$v (${v.getClass})")
@@ -37,8 +37,8 @@ package object util {
   def time[T](msg: String)(f: => T): T = {
     import java.lang.System.nanoTime
     val start = nanoTime()
-    val res   = f
-    val end   = nanoTime()
+    val res = f
+    val end = nanoTime()
     println(s"$msg (${(end - start).toFloat / 1000000} ms)")
     res
   }
@@ -50,6 +50,7 @@ package object util {
     partitionBy(elems, procs * procs)(f)
 
   def partitionBy[T](elems: Seq[T], batches: Int)(
-      f: T => Any): Map[Int, Seq[T]] =
+      f: T => Any
+  ): Map[Int, Seq[T]] =
     elems.groupBy { elem => Math.abs(f(elem).##) % batches }
 }

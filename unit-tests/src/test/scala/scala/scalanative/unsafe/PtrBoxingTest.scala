@@ -15,13 +15,13 @@ class PtrBoxingTest {
   var any: Any = null
 
   @noinline lazy val nullPtr: Ptr[Byte] = null
-  @noinline lazy val ptr: Ptr[Byte]     = malloc(64.toULong)
-  @noinline lazy val ptr2: Ptr[Byte]    = malloc(64.toULong)
+  @noinline lazy val ptr: Ptr[Byte] = malloc(64.toULong)
+  @noinline lazy val ptr2: Ptr[Byte] = malloc(64.toULong)
 
-  @noinline def f[T](x: T): T      = x
-  @noinline def cond(): Boolean    = true
+  @noinline def f[T](x: T): T = x
+  @noinline def cond(): Boolean = true
   @noinline def retPtrAsAny(): Any = ptr
-  @noinline def retPtrAsT[T](): T  = ptr.asInstanceOf[T]
+  @noinline def retPtrAsT[T](): T = ptr.asInstanceOf[T]
 
   @Test def returnAsAny(): Unit = {
     assertTrue(retPtrAsAny() == ptr)
@@ -83,7 +83,7 @@ class PtrBoxingTest {
 
   @Test def nullCastPtr(): Unit = {
     val nullPtr: Ptr[Byte] = null
-    val nullRef: Object    = null
+    val nullRef: Object = null
     assertTrue(nullRef.asInstanceOf[Ptr[Byte]] == nullPtr)
   }
 
@@ -156,10 +156,12 @@ class PtrBoxingTest {
   }
 
   @Test def testToString(): Unit = {
-    assertThrows(classOf[NullPointerException], {
-      val nullBoxed: Any = nullPtr
-      nullBoxed.toString
-    })
+    assertThrows(
+      classOf[NullPointerException], {
+        val nullBoxed: Any = nullPtr
+        nullBoxed.toString
+      }
+    )
     val boxed1: Any = ptr
     assertTrue(boxed1.toString == ("Ptr@" + toHexString(ptr.toLong)))
     val boxed2: Any = ptr2
@@ -177,7 +179,7 @@ class PtrBoxingTest {
     }
 
     Zone { implicit z =>
-      val out  = collection.mutable.ListBuffer.empty[Int]
+      val out = collection.mutable.ListBuffer.empty[Int]
       var head = cons(10, cons(20, cons(30, null)))
       while (head != null) {
         out += head._1
@@ -193,11 +195,11 @@ class PtrBoxingTest {
       x._1 = CFuncPtr0.fromScalaFunction(getInt)
       x._2 = CFuncPtr1.fromScalaFunction(stringLength)
 
-      val loadedGetInt: GetInt             = x._1
+      val loadedGetInt: GetInt = x._1
       val loadedStringLength: StringLength = x._2
 
-      val testStr        = toCString("hello_native")
-      val expectedInt    = 42
+      val testStr = toCString("hello_native")
+      val expectedInt = 42
       val expectedLength = 12.toULong
 
       assertEquals(expectedInt, x._1.apply())

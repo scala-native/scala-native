@@ -1,5 +1,4 @@
-/**
- * Ported from Scala.js and Harmony
+/** Ported from Scala.js and Harmony
  */
 package java.util
 
@@ -109,7 +108,8 @@ class PropertiesTest {
 
     prop2.put("1", 1.asInstanceOf[AnyRef])
     assertEnumSameElementsAsSet[Any]("a", "b", "c", "d", "1")(
-      prop2.propertyNames())
+      prop2.propertyNames()
+    )
   }
 
   @Test def stringPropertyNames(): Unit = {
@@ -181,15 +181,17 @@ class PropertiesTest {
 
     properties.put("age", new Integer(18))
     assertNull(properties.getProperty("age"))
-    assertThrows(classOf[ClassCastException],
-                 properties.list(new PrintWriter(new ByteArrayOutputStream())))
+    assertThrows(
+      classOf[ClassCastException],
+      properties.list(new PrintWriter(new ByteArrayOutputStream()))
+    )
   }
 
   @Test def list(): Unit = {
 
     def assertResult(props: Properties, result: String): Unit = {
       val out = new ByteArrayOutputStream()
-      val ps  = new PrintStream(out)
+      val ps = new PrintStream(out)
       props.list(ps)
       ps.close()
       assertEquals(out.toString.trim, result.trim)
@@ -234,8 +236,10 @@ class PropertiesTest {
 
   @Test def loadInputStreamWithNullInput(): Unit = {
     val prop = new java.util.Properties()
-    assertThrows(classOf[NullPointerException],
-                 prop.load(null: java.io.InputStream))
+    assertThrows(
+      classOf[NullPointerException],
+      prop.load(null: java.io.InputStream)
+    )
   }
 
   @Test def loadInputStream(): Unit = {
@@ -243,8 +247,10 @@ class PropertiesTest {
 
     assertEquals("value1", prop.getProperty("key1"))
     assertNull(prop.getProperty("commented.key"))
-    assertEquals("default_value",
-                 prop.getProperty("commented.key", "default_value"))
+    assertEquals(
+      "default_value",
+      prop.getProperty("commented.key", "default_value")
+    )
   }
 
   @Test def loadInputStreamForEmptyKeys(): Unit = {
@@ -293,7 +299,7 @@ class PropertiesTest {
 
   @Test def loadInputStreamWithFileInput(): Unit = {
     // String input for Scala.js
-    val is   = new ByteArrayInputStream(filestr.getBytes())
+    val is = new ByteArrayInputStream(filestr.getBytes())
     val prop = new Properties()
     prop.load(is)
     is.close()
@@ -310,8 +316,10 @@ class PropertiesTest {
 
     assertEquals("value1", prop.getProperty("key1"))
     assertNull(prop.getProperty("commented.key"))
-    assertEquals("default_value",
-                 prop.getProperty("commented.key", "default_value"))
+    assertEquals(
+      "default_value",
+      prop.getProperty("commented.key", "default_value")
+    )
   }
 
   @Test def loadReaderHandleSpecialChars(): Unit = {
@@ -324,7 +332,7 @@ class PropertiesTest {
 
   @Test def loadReaderWithFileInput(): Unit = {
     // string input for Scala.js
-    val is   = new ByteArrayInputStream(filestr.getBytes())
+    val is = new ByteArrayInputStream(filestr.getBytes())
     val prop = new Properties()
     prop.load(new InputStreamReader(is))
     is.close()
@@ -333,8 +341,10 @@ class PropertiesTest {
 
   @Test def storeOutputStreamCommentsWithNullInput(): Unit = {
     val prop = new java.util.Properties()
-    assertThrows(classOf[NullPointerException],
-                 prop.store(null: OutputStream, ""))
+    assertThrows(
+      classOf[NullPointerException],
+      prop.store(null: OutputStream, "")
+    )
   }
 
   @Test def storeOutputStreamCommentsLoadInputStreamRoundtrip(): Unit = {
@@ -391,14 +401,15 @@ class PropertiesTest {
     prop1.put("Property A", " aye\\\f\t\n\r\b")
     prop1.put("Property B", "b ee#!=:")
     prop1.put("Property C", "see")
-    val out   = storeWriter(prop1, "A Header")
+    val out = storeWriter(prop1, "A Header")
     val prop2 = loadByteArrayOutputStream(out)
     assertAll(prop1, prop2)
   }
 
   @Test def checkUnicodeParsing(): Unit = {
     val is = new ByteArrayInputStream(
-      Array('h', '\\', 'u', '0', '0', '2', '0', 'h'))
+      Array('h', '\\', 'u', '0', '0', '2', '0', 'h')
+    )
     val prop = new Properties()
     prop.load(is)
     assertEquals("", prop.get("h h"))
@@ -406,15 +417,19 @@ class PropertiesTest {
 
   // helper functions
 
-  def storeStream(props: Properties,
-                  header: String = ""): ByteArrayOutputStream = {
+  def storeStream(
+      props: Properties,
+      header: String = ""
+  ): ByteArrayOutputStream = {
     val out = new ByteArrayOutputStream()
     props.store(out, header)
     out
   }
 
-  def storeWriter(props: Properties,
-                  header: String = ""): ByteArrayOutputStream = {
+  def storeWriter(
+      props: Properties,
+      header: String = ""
+  ): ByteArrayOutputStream = {
     val out = new ByteArrayOutputStream()
     props.store(new OutputStreamWriter(out), header)
     out.close()
@@ -438,7 +453,8 @@ class PropertiesTest {
   def loadStream(in: String): Properties = {
     val prop = new java.util.Properties()
     prop.load(
-      new ByteArrayInputStream(in.getBytes(StandardCharsets.ISO_8859_1)))
+      new ByteArrayInputStream(in.getBytes(StandardCharsets.ISO_8859_1))
+    )
     prop
   }
 
@@ -446,7 +462,9 @@ class PropertiesTest {
     val prop = new java.util.Properties()
     prop.load(
       new InputStreamReader(
-        new ByteArrayInputStream(in.getBytes(StandardCharsets.UTF_8))))
+        new ByteArrayInputStream(in.getBytes(StandardCharsets.UTF_8))
+      )
+    )
     prop
   }
 

@@ -10,21 +10,21 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
     }
   """)
 
-  val Test         = g("Test$")
-  val TestInit     = g("Test$", Sig.Ctor(Seq.empty))
-  val TestMain     = g("Test$", Sig.Method("main", Seq(Type.Unit)))
-  val Module       = g("Module$")
-  val ModuleInit   = g("Module$", Sig.Ctor(Seq.empty))
-  val ModuleFoo    = g("Module$", Sig.Method("foo", Seq(Type.Unit)))
-  val ModuleBar    = g("Module$", Sig.Field("bar"))
+  val Test = g("Test$")
+  val TestInit = g("Test$", Sig.Ctor(Seq.empty))
+  val TestMain = g("Test$", Sig.Method("main", Seq(Type.Unit)))
+  val Module = g("Module$")
+  val ModuleInit = g("Module$", Sig.Ctor(Seq.empty))
+  val ModuleFoo = g("Module$", Sig.Method("foo", Seq(Type.Unit)))
+  val ModuleBar = g("Module$", Sig.Field("bar"))
   val ModuleBarSet = g("Module$", Sig.Method("bar_=", Seq(Type.Int, Type.Unit)))
   val ModuleBarGet = g("Module$", Sig.Method("bar", Seq(Type.Int)))
-  val Parent       = g("Parent")
-  val ParentInit   = g("Parent", Sig.Ctor(Seq.empty))
-  val ParentFoo    = g("Parent", Sig.Method("foo", Seq(Type.Unit)))
-  val Trait        = g("Trait")
-  val Object       = g("java.lang.Object")
-  val ObjectInit   = g("java.lang.Object", Sig.Ctor(Seq.empty))
+  val Parent = g("Parent")
+  val ParentInit = g("Parent", Sig.Ctor(Seq.empty))
+  val ParentFoo = g("Parent", Sig.Method("foo", Seq(Type.Unit)))
+  val Trait = g("Trait")
+  val Object = g("java.lang.Object")
+  val ObjectInit = g("java.lang.Object", Sig.Ctor(Seq.empty))
 
   testReachable("unused modules are discarded") {
     val source = """
@@ -34,7 +34,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
         def main: Unit = ()
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -55,7 +55,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
         def main: Unit = Module
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -78,7 +78,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
         def main: Unit = Module
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -99,7 +99,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
         def main: Unit = Module
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -124,7 +124,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
         def main: Unit = Module
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -151,7 +151,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
         def main: Unit = Module
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -175,7 +175,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
         def main: Unit = { Module.bar = 42 }
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -200,7 +200,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
         def main: Unit = Module.bar
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -225,7 +225,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
         def main: Unit = Module.foo
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,

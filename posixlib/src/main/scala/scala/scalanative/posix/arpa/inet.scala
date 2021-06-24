@@ -26,10 +26,12 @@ object inet {
   def inet_ntoa(in: Ptr[in_addr]): CString = extern
 
   @name("scalanative_inet_ntop")
-  def inet_ntop(af: CInt,
-                src: Ptr[Byte],
-                dst: CString,
-                size: socklen_t): CString = extern
+  def inet_ntop(
+      af: CInt,
+      src: Ptr[Byte],
+      dst: CString,
+      size: socklen_t
+  ): CString = extern
 
   @name("scalanative_inet_pton")
   def inet_pton(af: CInt, src: CString, dst: Ptr[Byte]): CInt = extern

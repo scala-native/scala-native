@@ -21,27 +21,41 @@ class BiPredicateTest {
     assertFalse("First false, Second true", evenAndInRange.test(6, 6))
     assertFalse("First false, Second false", evenAndInRange.test(21, 42))
 
-    assertFalse("Short-circuit: First false",
-                largerThan10LessThan30.and(dontCallPredicate).test(5, 5))
-    assertThrows(classOf[ThrowingPredicateException],
-                 throwingPredicate.and(dontCallPredicate).test(5, 5))
+    assertFalse(
+      "Short-circuit: First false",
+      largerThan10LessThan30.and(dontCallPredicate).test(5, 5)
+    )
+    assertThrows(
+      classOf[ThrowingPredicateException],
+      throwingPredicate.and(dontCallPredicate).test(5, 5)
+    )
   }
 
   @Test def negate(): Unit = {
     val notLeftLargerThan10AndRightLessThan30 = largerThan10LessThan30.negate()
 
     // Truth table
-    assertFalse("First true, Second true",
-                notLeftLargerThan10AndRightLessThan30.test(40, 20))
-    assertTrue("First true, Second false",
-               notLeftLargerThan10AndRightLessThan30.test(20, 40))
-    assertTrue("First false, Second true",
-               notLeftLargerThan10AndRightLessThan30.test(5, 20))
-    assertTrue("First false, Second false",
-               notLeftLargerThan10AndRightLessThan30.test(5, 40))
+    assertFalse(
+      "First true, Second true",
+      notLeftLargerThan10AndRightLessThan30.test(40, 20)
+    )
+    assertTrue(
+      "First true, Second false",
+      notLeftLargerThan10AndRightLessThan30.test(20, 40)
+    )
+    assertTrue(
+      "First false, Second true",
+      notLeftLargerThan10AndRightLessThan30.test(5, 20)
+    )
+    assertTrue(
+      "First false, Second false",
+      notLeftLargerThan10AndRightLessThan30.test(5, 40)
+    )
 
-    assertThrows(classOf[ThrowingPredicateException],
-                 throwingPredicate.negate().test(5, 5))
+    assertThrows(
+      classOf[ThrowingPredicateException],
+      throwingPredicate.negate().test(5, 5)
+    )
   }
 
   @Test def or(): Unit = {
@@ -53,10 +67,14 @@ class BiPredicateTest {
     assertTrue("First false, Second true", evenOrLargerThan10.test(6, 42))
     assertFalse("First false, Second false", evenOrLargerThan10.test(5, 21))
 
-    assertTrue("Short-circuit: First false",
-               largerThan10LessThan30.or(dontCallPredicate).test(42, 22))
-    assertThrows(classOf[ThrowingPredicateException],
-                 throwingPredicate.or(dontCallPredicate).test(42, 22))
+    assertTrue(
+      "Short-circuit: First false",
+      largerThan10LessThan30.or(dontCallPredicate).test(42, 22)
+    )
+    assertThrows(
+      classOf[ThrowingPredicateException],
+      throwingPredicate.or(dontCallPredicate).test(42, 22)
+    )
   }
 }
 
@@ -80,7 +98,8 @@ object BiPredicateTest {
   }
 
   private[this] def makeBiPredicate[T, U](
-      f: (T, U) => Boolean): BiPredicate[T, U] = {
+      f: (T, U) => Boolean
+  ): BiPredicate[T, U] = {
     new BiPredicate[T, U] {
       def test(t: T, u: U): Boolean = f(t, u)
     }

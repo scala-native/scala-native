@@ -12,8 +12,9 @@ class CFuncPtrOpsTest {
   def randFunc: CFuncPtr0[Int] = () => stdlib.rand()
 
   @Test def cFuncPtrCastAndCallWithGivenSignature(): Unit = {
-    assertThrows(classOf[ClassCastException],
-                 randFunc.asInstanceOf[CFuncPtr1[Int, Int]] // wrong arity
+    assertThrows(
+      classOf[ClassCastException],
+      randFunc.asInstanceOf[CFuncPtr1[Int, Int]] // wrong arity
     )
   }
 }

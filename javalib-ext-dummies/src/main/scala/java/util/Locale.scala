@@ -2,16 +2,17 @@ package java.util
 
 /** Ported from Harmony, Scala.js and using Java API docs.
  *
- * TODO: Commented out code needed to finish implementation.
+ *  TODO: Commented out code needed to finish implementation.
  *
- * Harmony defers much of the work to icu4j from
- * [[http://site.icu-project.org/ ICU - International Components for Unicode]]
+ *  Harmony defers much of the work to icu4j from
+ *  [[http://site.icu-project.org/ ICU - International Components for Unicode]]
  */
-final class Locale(languageRaw: String,
-                   countryRaw: String,
-                   variant: String,
-                   private val extensions: Map[Char, String])
-    extends Serializable
+final class Locale(
+    languageRaw: String,
+    countryRaw: String,
+    variant: String,
+    private val extensions: Map[Char, String]
+) extends Serializable
     with Cloneable {
 
   private[this] val language: String = languageRaw.toLowerCase()
@@ -86,38 +87,38 @@ final class Locale(languageRaw: String,
 
 object Locale {
 
-  lazy val CANADA                   = new Locale("en", "CA")
-  lazy val CANADA_FRENCH            = new Locale("fr", "CA")
-  lazy val CHINA                    = new Locale("zh", "CN")
-  lazy val CHINESE                  = new Locale("zh", "")
-  lazy val ENGLISH                  = new Locale("en", "")
-  lazy val FRANCE                   = new Locale("fr", "FR")
-  lazy val FRENCH                   = new Locale("fr", "")
-  lazy val GERMAN                   = new Locale("de", "")
-  lazy val GERMANY                  = new Locale("de", "DE")
-  lazy val ITALIAN                  = new Locale("it", "")
-  lazy val ITALY                    = new Locale("it", "IT")
-  lazy val JAPAN                    = new Locale("ja", "JP")
-  lazy val JAPANESE                 = new Locale("ja", "")
-  lazy val KOREA                    = new Locale("ko", "KR")
-  lazy val KOREAN                   = new Locale("ko", "")
-  lazy val PRC                      = new Locale("zh", "CN")
-  lazy val PRIVATE_USE_EXTENSION    = 'x'
-  lazy val ROOT                     = new Locale("", "", "")
-  lazy val SIMPLIFIED_CHINESE       = new Locale("zh", "CN")
-  lazy val TAIWAN                   = new Locale("zh", "TW")
-  lazy val TRADITIONAL_CHINESE      = new Locale("zh", "TW")
-  lazy val UK                       = new Locale("en", "GB")
+  lazy val CANADA = new Locale("en", "CA")
+  lazy val CANADA_FRENCH = new Locale("fr", "CA")
+  lazy val CHINA = new Locale("zh", "CN")
+  lazy val CHINESE = new Locale("zh", "")
+  lazy val ENGLISH = new Locale("en", "")
+  lazy val FRANCE = new Locale("fr", "FR")
+  lazy val FRENCH = new Locale("fr", "")
+  lazy val GERMAN = new Locale("de", "")
+  lazy val GERMANY = new Locale("de", "DE")
+  lazy val ITALIAN = new Locale("it", "")
+  lazy val ITALY = new Locale("it", "IT")
+  lazy val JAPAN = new Locale("ja", "JP")
+  lazy val JAPANESE = new Locale("ja", "")
+  lazy val KOREA = new Locale("ko", "KR")
+  lazy val KOREAN = new Locale("ko", "")
+  lazy val PRC = new Locale("zh", "CN")
+  lazy val PRIVATE_USE_EXTENSION = 'x'
+  lazy val ROOT = new Locale("", "", "")
+  lazy val SIMPLIFIED_CHINESE = new Locale("zh", "CN")
+  lazy val TAIWAN = new Locale("zh", "TW")
+  lazy val TRADITIONAL_CHINESE = new Locale("zh", "TW")
+  lazy val UK = new Locale("en", "GB")
   lazy val UNICODE_LOCALE_EXTENSION = 'u'
-  lazy val US                       = new Locale("en", "US")
+  lazy val US = new Locale("en", "US")
 
   def getDefault(): Locale = Locale.ROOT
 
   final class Builder {
     private var language: String = ""
-    private var country: String  = ""
-    private var variant: String  = ""
-    private val extensions       = new java.util.HashMap[Char, String]
+    private var country: String = ""
+    private var variant: String = ""
+    private val extensions = new java.util.HashMap[Char, String]
 
     def setLanguage(language: String): Builder = {
       this.language = language.toLowerCase()
@@ -140,10 +141,12 @@ object Locale {
     }
 
     def build(): Locale = {
-      new Locale(language,
-                 country,
-                 variant,
-                 extensions.clone().asInstanceOf[Map[Char, String]])
+      new Locale(
+        language,
+        country,
+        variant,
+        extensions.clone().asInstanceOf[Map[Char, String]]
+      )
     }
   }
 }

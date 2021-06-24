@@ -32,14 +32,18 @@ class BigDecimalToStringTest {
     assertEquals("0.01", new BigDecimal(bigIntOne, 2).toString())
     assertEquals("0.000001", new BigDecimal(bigIntOne, 6).toString())
     assertEquals("1E-7", new BigDecimal(bigIntOne, 7).toString())
-    assertEquals("1E-2147483647",
-                 new BigDecimal(bigIntOne, 2147483647).toString())
+    assertEquals(
+      "1E-2147483647",
+      new BigDecimal(bigIntOne, 2147483647).toString()
+    )
 
     assertEquals("1E+1", new BigDecimal(bigIntOne, -1).toString())
     assertEquals("1E+2", new BigDecimal(bigIntOne, -2).toString())
     assertEquals("1E+15", new BigDecimal(bigIntOne, -15).toString())
-    assertEquals("1E+2147483647",
-                 new BigDecimal(bigIntOne, -2147483647).toString())
+    assertEquals(
+      "1E+2147483647",
+      new BigDecimal(bigIntOne, -2147483647).toString()
+    )
     assertEquals(
       "1E+2147483648",
       new BigDecimal(bigIntOne, -2147483648).toString()
@@ -53,8 +57,10 @@ class BigDecimalToStringTest {
     assertEquals("0.000123", new BigDecimal(bigInt123, 6).toString())
     assertEquals("0.00000123", new BigDecimal(bigInt123, 8).toString())
     assertEquals("1.23E-7", new BigDecimal(bigInt123, 9).toString())
-    assertEquals("1.23E-2147483645",
-                 new BigDecimal(bigInt123, 2147483647).toString())
+    assertEquals(
+      "1.23E-2147483645",
+      new BigDecimal(bigInt123, 2147483647).toString()
+    )
 
     assertEquals("1.23E+3", new BigDecimal(bigInt123, -1).toString())
     assertEquals("1.23E+4", new BigDecimal(bigInt123, -2).toString())

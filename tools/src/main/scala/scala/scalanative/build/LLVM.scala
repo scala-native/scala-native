@@ -21,20 +21,22 @@ private[scalanative] object LLVM {
   /** List of source patterns used: ".c, .cpp, .S" */
   val srcExtensions = Seq(".c", cppExt, ".S")
 
-  /**
-   * Compile the given files to object files
+  /** Compile the given files to object files
    *
-   * @param config The configuration of the toolchain.
-   * @param paths The directory paths containing native files to compile.
-   * @return The paths of the `.o` files.
+   *  @param config
+   *    The configuration of the toolchain.
+   *  @param paths
+   *    The directory paths containing native files to compile.
+   *  @return
+   *    The paths of the `.o` files.
    */
   def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
     // generate .o files for all included source files in parallel
     paths.par.map { path =>
-      val inpath  = path.abs
+      val inpath = path.abs
       val outpath = inpath + oExt
-      val isCpp   = inpath.endsWith(cppExt)
-      val isLl    = inpath.endsWith(llExt)
+      val isCpp = inpath.endsWith(cppExt)
+      val isLl = inpath.endsWith(llExt)
       val objPath = Paths.get(outpath)
       // LL is generated so always rebuild
       if (isLl || !Files.exists(objPath)) {
@@ -65,24 +67,30 @@ private[scalanative] object LLVM {
     }.seq
   }
 
-  /**
-   * Links a collection of `.ll.o` files and the `.o` files
-   * from the `nativelib`, other libaries, and the
-   * application project into the native binary.
+  /** Links a collection of `.ll.o` files and the `.o` files from the
+   *  `nativelib`, other libaries, and the application project into the native
+   *  binary.
    *
-   * @param config The configuration of the toolchain.
-   * @param linkerResult The results from the linker.
-   * @param objectPaths The paths to all the `.o` files.
-   * @param outpath The path where to write the resulting binary.
-   * @return `outpath`
+   *  @param config
+   *    The configuration of the toolchain.
+   *  @param linkerResult
+   *    The results from the linker.
+   *  @param objectPaths
+   *    The paths to all the `.o` files.
+   *  @param outpath
+   *    The path where to write the resulting binary.
+   *  @return
+   *    `outpath`
    */
-  def link(config: Config,
-           linkerResult: linker.Result,
-           objectsPaths: Seq[Path],
-           outpath: Path): Path = {
+  def link(
+      config: Config,
+      linkerResult: linker.Result,
+      objectsPaths: Seq[Path],
+      outpath: Path
+  ): Path = {
     val links = {
       val srclinks = linkerResult.links.map(_.name)
-      val gclinks  = config.gc.links
+      val gclinks = config.gc.links
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.
       // * libpthread for process APIs and parallel garbage collection.
@@ -99,15 +107,17 @@ private[scalanative] object LLVM {
         else Seq("-rdynamic")
       flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ target(config)
     }
-    val paths   = objectsPaths.map(_.abs)
+    val paths = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
     val ltoName = lto(config).getOrElse("none")
 
     config.logger.time(
-      s"Linking native code (${config.gc.name} gc, $ltoName lto)") {
+      s"Linking native code (${config.gc.name} gc, $ltoName lto)"
+    ) {
       config.logger.running(compile)
       Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
-        config.logger)
+        config.logger
+      )
     }
     outpath
   }

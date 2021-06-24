@@ -25,8 +25,8 @@ abstract class AbstractList[E] protected ()
     throw new UnsupportedOperationException
 
   def indexOf(o: Any): Int = {
-    var idx  = -1
-    var i    = 0
+    var idx = -1
+    var i = 0
     val iter = listIterator()
     while (idx == -1 && iter.hasNext()) {
       if (iter.next() === o) idx = i
@@ -50,7 +50,7 @@ abstract class AbstractList[E] protected ()
 
   def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
     checkIndexOnBounds(index)
-    var i    = index
+    var i = index
     val iter = c.iterator()
     while (iter.hasNext()) {
       add(i, iter.next())
@@ -88,10 +88,12 @@ abstract class AbstractList[E] protected ()
           override def listIterator(index: Int): ListIterator[E] = {
             checkIndexOnBounds(index)
             // Iterator that accesses the original list directly
-            new RandomAccessListIterator(self,
-                                         fromIndex + index,
-                                         fromIndex,
-                                         selfView.toIndex) {
+            new RandomAccessListIterator(
+              self,
+              fromIndex + index,
+              fromIndex,
+              selfView.toIndex
+            ) {
               override protected def onSizeChanged(delta: Int): Unit =
                 changeViewSize(delta)
             }
@@ -102,9 +104,11 @@ abstract class AbstractList[E] protected ()
           override def listIterator(index: Int): ListIterator[E] = {
             checkIndexOnBounds(index)
             // Iterator that accesses the original list using it's iterator
-            new BackedUpListIterator(list.listIterator(fromIndex + index),
-                                     fromIndex,
-                                     selfView.toIndex - fromIndex) {
+            new BackedUpListIterator(
+              list.listIterator(fromIndex + index),
+              fromIndex,
+              selfView.toIndex - fromIndex
+            ) {
               override protected def onSizeChanged(delta: Int): Unit =
                 changeViewSize(delta)
             }
@@ -119,8 +123,8 @@ abstract class AbstractList[E] protected ()
     } else {
       o match {
         case o: List[_] =>
-          val oIter  = o.listIterator()
-          val iter   = listIterator()
+          val oIter = o.listIterator()
+          val iter = listIterator()
           var result = true
 
           while (result && iter.hasNext() && oIter.hasNext()) {
@@ -144,7 +148,7 @@ abstract class AbstractList[E] protected ()
   }
 
   protected def removeRange(fromIndex: Int, toIndex: Int): Unit = {
-    var i    = 0
+    var i = 0
     val iter = listIterator(fromIndex)
     while (iter.hasNext() && i <= toIndex) {
       iter.remove()
@@ -163,10 +167,11 @@ abstract class AbstractList[E] protected ()
   }
 }
 
-private abstract class AbstractListView[E](protected val list: List[E],
-                                           fromIndex: Int,
-                                           protected var toIndex: Int)
-    extends AbstractList[E] {
+private abstract class AbstractListView[E](
+    protected val list: List[E],
+    fromIndex: Int,
+    protected var toIndex: Int
+) extends AbstractList[E] {
 
   override def add(index: Int, e: E): Unit = {
     checkIndexOnBounds(index)
@@ -215,10 +220,11 @@ private abstract class AbstractListView[E](protected val list: List[E],
  * iterator and assumes that this one is more efficient than accessing
  * elements by index.
  */
-private class BackedUpListIterator[E](innerIterator: ListIterator[E],
-                                      fromIndex: Int,
-                                      override protected var end: Int)
-    extends ListIterator[E]
+private class BackedUpListIterator[E](
+    innerIterator: ListIterator[E],
+    fromIndex: Int,
+    override protected var end: Int
+) extends ListIterator[E]
     with SizeChangeEvent {
 
   def hasNext(): Boolean =
@@ -257,11 +263,12 @@ private class BackedUpListIterator[E](innerIterator: ListIterator[E],
 /* RandomAccessListIterator implementation assumes that the has an efficient
  * .get(index) implementation.
  */
-private class RandomAccessListIterator[E](list: List[E],
-                                          i: Int,
-                                          start: Int,
-                                          end: Int)
-    extends AbstractRandomAccessListIterator[E](i, start, end) {
+private class RandomAccessListIterator[E](
+    list: List[E],
+    i: Int,
+    start: Int,
+    end: Int
+) extends AbstractRandomAccessListIterator[E](i, start, end) {
 
   protected def get(index: Int): E =
     list.get(index)

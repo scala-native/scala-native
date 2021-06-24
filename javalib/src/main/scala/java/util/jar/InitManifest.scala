@@ -7,16 +7,18 @@ import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.charset.{CoderResult, StandardCharsets}
 import java.util.Map
 
-class InitManifest private[jar] (buf: Array[Byte],
-                                 main: Attributes,
-                                 ver: Attributes.Name) {
+class InitManifest private[jar] (
+    buf: Array[Byte],
+    main: Attributes,
+    ver: Attributes.Name
+) {
 
-  private var pos: Int                   = 0
-  private[jar] var linebreak             = 0
+  private var pos: Int = 0
+  private[jar] var linebreak = 0
   private[jar] var name: Attributes.Name = null
-  private[jar] var value: String         = null
-  private[jar] val decoder               = StandardCharsets.UTF_8.newDecoder()
-  private[jar] var cBuf                  = CharBuffer.allocate(4096)
+  private[jar] var value: String = null
+  private[jar] val decoder = StandardCharsets.UTF_8.newDecoder()
+  private[jar] var cBuf = CharBuffer.allocate(4096)
 
   if (!readHeader() || (ver != null && !name.equals(ver))) {
     throw new IOException(s"Missing version attribute: $ver")
@@ -26,15 +28,17 @@ class InitManifest private[jar] (buf: Array[Byte],
     main.put(name, value)
   }
 
-  private[jar] def initEntries(entries: Map[String, Attributes],
-                               chunks: Map[String, Manifest.Chunk]): Unit = {
+  private[jar] def initEntries(
+      entries: Map[String, Attributes],
+      chunks: Map[String, Manifest.Chunk]
+  ): Unit = {
     var mark = pos
     while (readHeader()) {
       if (!Attributes.Name.NAME.equals(name)) {
         throw new IOException("Entry is not named")
       }
       val entryNameValue = value
-      var entry          = entries.get(entryNameValue)
+      var entry = entries.get(entryNameValue)
       if (entry == null) {
         entry = new Attributes(12)
       }
@@ -51,7 +55,8 @@ class InitManifest private[jar] (buf: Array[Byte],
           // signature algorithm in advance and reread the chunks while
           // updating the signature; for now a defensive error is thrown
           throw new IOException(
-            "A jar verifier does not support more than one entry with the same name")
+            "A jar verifier does not support more than one entry with the same name"
+          )
         }
         chunks.put(entryNameValue, new Manifest.Chunk(mark, pos))
         mark = pos
@@ -82,7 +87,7 @@ class InitManifest private[jar] (buf: Array[Byte],
   }
 
   private def readName(): Unit = {
-    var i    = 0
+    var i = 0
     var mark = pos
 
     while (pos < buf.length) {
@@ -113,10 +118,10 @@ class InitManifest private[jar] (buf: Array[Byte],
 
   private def readValue(): Unit = {
     var next: Byte = 0
-    var lastCr     = false
-    var mark       = pos
-    var last       = pos
-    var done       = false
+    var lastCr = false
+    var mark = pos
+    var last = pos
+    var done = false
 
     decoder.reset()
     cBuf.clear()

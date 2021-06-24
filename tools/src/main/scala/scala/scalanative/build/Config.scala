@@ -95,13 +95,14 @@ object Config {
       compilerConfig = NativeConfig.empty
     )
 
-  private final case class Impl(nativelib: Path,
-                                mainClass: String,
-                                classPath: Seq[Path],
-                                workdir: Path,
-                                logger: Logger,
-                                compilerConfig: NativeConfig)
-      extends Config {
+  private final case class Impl(
+      nativelib: Path,
+      mainClass: String,
+      classPath: Seq[Path],
+      workdir: Path,
+      logger: Logger,
+      compilerConfig: NativeConfig
+  ) extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
 

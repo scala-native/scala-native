@@ -6,10 +6,10 @@ import scalanative.nir._
 import scalanative.linker.{Method, Trait, Class}
 
 class TraitDispatchTable(meta: Metadata) {
-  val dispatchName                          = Global.Top("__dispatch")
-  val dispatchVal                           = Val.Global(dispatchName, Type.Ptr)
-  var dispatchTy: Type                      = _
-  var dispatchDefn: Defn                    = _
+  val dispatchName = Global.Top("__dispatch")
+  val dispatchVal = Val.Global(dispatchName, Type.Ptr)
+  var dispatchTy: Type = _
+  var dispatchDefn: Defn = _
   var dispatchOffset: mutable.Map[Int, Int] = _
 
   val traitSigIds = {
@@ -42,7 +42,8 @@ class TraitDispatchTable(meta: Metadata) {
 
     def implementsTrait(cls: Class): Boolean =
       cls.traits.exists(activeTraits.contains(_)) || cls.parent.exists(
-        implementsTrait)
+        implementsTrait
+      )
     def include(cls: Class): Boolean =
       cls.allocated && implementsTrait(cls)
 
@@ -55,14 +56,14 @@ class TraitDispatchTable(meta: Metadata) {
   initDispatch()
 
   def initDispatch(): Unit = {
-    val sigs          = traitSigIds
-    val sigsLength    = traitSigIds.size
-    val classes       = traitClassIds
+    val sigs = traitSigIds
+    val sigsLength = traitSigIds.size
+    val classes = traitClassIds
     val classesLength = traitClassIds.size
     val table =
       Array.fill[Val](classesLength * sigsLength)(Val.Null)
-    val mins  = Array.fill[Int](sigsLength)(Int.MaxValue)
-    val maxs  = Array.fill[Int](sigsLength)(Int.MinValue)
+    val mins = Array.fill[Int](sigsLength)(Int.MaxValue)
+    val maxs = Array.fill[Int](sigsLength)(Int.MinValue)
     val sizes = Array.fill[Int](sigsLength)(0)
 
     def put(cls: Int, meth: Int, value: Val) = {
@@ -99,23 +100,25 @@ class TraitDispatchTable(meta: Metadata) {
   // Generate a compressed representation of the dispatch table
   // that displaces method rows one of top of the other to miniminize
   // number of nulls in the table.
-  def compressTable(table: Array[Val],
-                    mins: Array[Int],
-                    sizes: Array[Int]): (Array[Val], mutable.Map[Int, Int]) = {
+  def compressTable(
+      table: Array[Val],
+      mins: Array[Int],
+      sizes: Array[Int]
+  ): (Array[Val], mutable.Map[Int, Int]) = {
     val classesLength = traitClassIds.size
-    val sigsLength    = traitSigIds.size
-    val maxSize       = sizes.max
-    val totalSize     = sizes.sum
+    val sigsLength = traitSigIds.size
+    val maxSize = sizes.max
+    val totalSize = sizes.sum
 
-    val free       = Array.fill[List[Int]](maxSize + 1)(List())
-    val offsets    = mutable.Map.empty[Int, Int]
+    val free = Array.fill[List[Int]](maxSize + 1)(List())
+    val offsets = mutable.Map.empty[Int, Int]
     val compressed = new Array[Val](totalSize)
-    var current    = 0
+    var current = 0
 
     def updateFree(from: Int, total: Int): Unit = {
       var start = -1
-      var size  = 0
-      var i     = 0
+      var size = 0
+      var i = 0
       while (i < total) {
         val isNull = compressed(from + i) eq Val.Null
         val inFree = start != -1
@@ -159,18 +162,20 @@ class TraitDispatchTable(meta: Metadata) {
 
     def allocate(sig: Int): Int = {
       val start = mins(sig)
-      val size  = sizes(sig)
+      val size = sizes(sig)
       val offset =
         findFree(size).getOrElse {
           val offset = current
           current += sizes(sig)
           offset
         }
-      java.lang.System.arraycopy(table,
-                                 sig * classesLength + start,
-                                 compressed,
-                                 offset,
-                                 size)
+      java.lang.System.arraycopy(
+        table,
+        sig * classesLength + start,
+        compressed,
+        offset,
+        size
+      )
       updateFree(offset, size)
       offset
     }

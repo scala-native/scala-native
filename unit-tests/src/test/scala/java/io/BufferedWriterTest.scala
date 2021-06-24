@@ -9,8 +9,10 @@ class BufferedWriterTest {
 
   @Test def creatingBufferedWriterWithBufferSizeZeroThrowsException(): Unit = {
     val writer = new OutputStreamWriter(new ByteArrayOutputStream)
-    assertThrows(classOf[IllegalArgumentException],
-                 new BufferedWriter(writer, -1))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new BufferedWriter(writer, -1)
+    )
   }
 
   @Test def canWriteSmallChunksToBufferedWriter(): Unit = {

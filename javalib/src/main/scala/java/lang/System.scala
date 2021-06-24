@@ -19,11 +19,13 @@ import scala.scalanative.windows.winnt.AccessToken
 final class System private ()
 
 object System {
-  def arraycopy(src: Object,
-                srcPos: scala.Int,
-                dest: Object,
-                destPos: scala.Int,
-                length: scala.Int): Unit =
+  def arraycopy(
+      src: Object,
+      srcPos: scala.Int,
+      dest: Object,
+      destPos: scala.Int,
+      length: scala.Int
+  ): Unit =
     scalanative.runtime.Array.copy(src, srcPos, dest, destPos, length)
 
   def exit(status: Int): Unit =
@@ -38,13 +40,17 @@ object System {
     sysProps.setProperty("java.version", "1.8")
     sysProps.setProperty("java.vm.specification.version", "1.8")
     sysProps.setProperty("java.vm.specification.vendor", "Oracle Corporation")
-    sysProps.setProperty("java.vm.specification.name",
-                         "Java Virtual Machine Specification")
+    sysProps.setProperty(
+      "java.vm.specification.name",
+      "Java Virtual Machine Specification"
+    )
     sysProps.setProperty("java.vm.name", "Scala Native")
     sysProps.setProperty("java.specification.version", "1.8")
     sysProps.setProperty("java.specification.vendor", "Oracle Corporation")
-    sysProps.setProperty("java.specification.name",
-                         "Java Platform API Specification")
+    sysProps.setProperty(
+      "java.specification.name",
+      "Java Platform API Specification"
+    )
     sysProps.setProperty("line.separator", lineSeparator())
     getCurrentDirectory().map(sysProps.setProperty("user.dir", _))
     getUserHomeDirectory().map(sysProps.setProperty("user.home", _))
@@ -52,13 +58,15 @@ object System {
     if (isWindows) {
       sysProps.setProperty("file.separator", "\\")
       sysProps.setProperty("path.separator", ";")
-      sysProps.setProperty("java.io.tmpdir", {
-        val buffer = stackalloc[scala.Byte](MAX_PATH)
-        GetTempPathA(MAX_PATH, buffer)
-        fromCString(buffer)
-      })
+      sysProps.setProperty(
+        "java.io.tmpdir", {
+          val buffer = stackalloc[scala.Byte](MAX_PATH)
+          GetTempPathA(MAX_PATH, buffer)
+          fromCString(buffer)
+        }
+      )
 
-      val userLang    = fromCString(Platform.windowsGetUserLang())
+      val userLang = fromCString(Platform.windowsGetUserLang())
       val userCountry = fromCString(Platform.windowsGetUserCountry())
       sysProps.setProperty("user.language", userLang)
       sysProps.setProperty("user.country", userCountry)
@@ -114,11 +122,11 @@ object System {
   def setProperty(key: String, value: String): String =
     systemProperties.setProperty(key, value).asInstanceOf[String]
 
-  def nanoTime(): scala.Long          = time.scalanative_nano_time
+  def nanoTime(): scala.Long = time.scalanative_nano_time
   def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis
 
   def getenv(): Map[String, String] = envVars
-  def getenv(key: String): String   = envVars.get(key)
+  def getenv(key: String): String = envVars.get(key)
 
   def setIn(in: InputStream): Unit =
     this.in = in
@@ -174,18 +182,18 @@ object System {
       }
 
       // Count to preallocate the map
-      var size    = 0
+      var size = 0
       var sizePtr = unistd.environ
       while (isDefined(sizePtr)) {
         size += 1
         sizePtr += 1
       }
 
-      val map               = new HashMap[String, String](10)
+      val map = new HashMap[String, String](10)
       var ptr: Ptr[CString] = unistd.environ
       while (isDefined(ptr)) {
         val variable = fromCString(ptr(0))
-        val name     = variable.takeWhile(_ != '=')
+        val name = variable.takeWhile(_ != '=')
         val value =
           if (name.length < variable.length)
             variable.substring(name.length + 1, variable.length)
@@ -198,10 +206,10 @@ object System {
     }
 
     def getEnvsWindows(): Map[String, String] = {
-      val envsMap      = new HashMap[String, String]()
+      val envsMap = new HashMap[String, String]()
       val envBlockHead = GetEnvironmentStringsW()
 
-      var blockPtr    = envBlockHead
+      var blockPtr = envBlockHead
       var env: String = null
 
       while ({
@@ -212,7 +220,7 @@ object System {
         /// Some Windows internal variables start with =
         val eqIdx = env.indexOf('=', 1)
         // Env variables in Windows are case insenstive - normalize them
-        val name  = env.substring(0, eqIdx).toUpperCase()
+        val name = env.substring(0, eqIdx).toUpperCase()
         val value = env.substring(eqIdx + 1)
         envsMap.put(name, value)
       }

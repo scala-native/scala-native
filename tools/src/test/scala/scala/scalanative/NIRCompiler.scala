@@ -26,11 +26,11 @@ object NIRCompiler {
     new URLClassLoader(parts.toArray, parent)
   }
 
-  /**
-   * Returns an instance of the NIRCompiler that will compile to a temporary
-   * directory.
+  /** Returns an instance of the NIRCompiler that will compile to a temporary
+   *  directory.
    *
-   * @return An NIRCompiler that will compile to a temporary directory.
+   *  @return
+   *    An NIRCompiler that will compile to a temporary directory.
    */
   def getCompiler(): api.NIRCompiler = {
     val clazz =
@@ -40,15 +40,17 @@ object NIRCompiler {
       case other =>
         throw new ReflectiveOperationException(
           "Expected an object of type `scala.scalanative.NIRCompiler`, " +
-            s"but found `${other.getClass.getName}`.")
+            s"but found `${other.getClass.getName}`."
+        )
     }
   }
 
-  /**
-   * Returns an instance of the NIRCompiler that will compile to `outDir`.
+  /** Returns an instance of the NIRCompiler that will compile to `outDir`.
    *
-   * @param outDir Where to write all products of compilation.
-   * @return An NIRCompiler that will compile to `outDir`.
+   *  @param outDir
+   *    Where to write all products of compilation.
+   *  @return
+   *    An NIRCompiler that will compile to `outDir`.
    */
   def getCompiler(outDir: Path): api.NIRCompiler = {
     val clazz =
@@ -59,65 +61,77 @@ object NIRCompiler {
       case other =>
         throw new ReflectiveOperationException(
           "Expected an object of type `scala.scalanative.NIRCompiler`, but " +
-            s"found `${other.getClass.getName}`.")
+            s"found `${other.getClass.getName}`."
+        )
     }
   }
 
-  /**
-   * Applies `fn` to an NIRCompiler that compiles to `outDir`.
+  /** Applies `fn` to an NIRCompiler that compiles to `outDir`.
    *
-   * @param outDir Where to write all products of compilation.
-   * @param fn     The function to apply to the NIRCompiler.
-   * @return The result of applying fn to the NIRCompiler
+   *  @param outDir
+   *    Where to write all products of compilation.
+   *  @param fn
+   *    The function to apply to the NIRCompiler.
+   *  @return
+   *    The result of applying fn to the NIRCompiler
    */
   def apply[T](outDir: Path)(fn: api.NIRCompiler => T): T =
     withSources(outDir)(Map.empty) { case (_, compiler) => fn(compiler) }
 
-  /**
-   * Applies `fn` to an NIRCompiler that compiles to a temporary directory.
+  /** Applies `fn` to an NIRCompiler that compiles to a temporary directory.
    *
-   * @param fn     The function to apply to the NIRCompiler.
-   * @return The result of applying fn to the NIRCompiler
+   *  @param fn
+   *    The function to apply to the NIRCompiler.
+   *  @return
+   *    The result of applying fn to the NIRCompiler
    */
   def apply[T](fn: api.NIRCompiler => T): T =
     withSources(Map.empty[String, String]) {
       case (_, compiler) => fn(compiler)
     }
 
-  /**
-   * Writes the sources `sources` and applies `fn` to the base directory
-   * holding the sources and the NIRCompiler.
+  /** Writes the sources `sources` and applies `fn` to the base directory
+   *  holding the sources and the NIRCompiler.
    *
-   * @param outDir  Where to write all products of compilation.
-   * @param sources Map from file name to file content representing the sources.
-   * @param fn      The function to apply to the NIRCompiler and the base dir.
-   * @return The result of applying `fn` to the NIRCompiler and the base dir.
+   *  @param outDir
+   *    Where to write all products of compilation.
+   *  @param sources
+   *    Map from file name to file content representing the sources.
+   *  @param fn
+   *    The function to apply to the NIRCompiler and the base dir.
+   *  @return
+   *    The result of applying `fn` to the NIRCompiler and the base dir.
    */
-  def withSources[T](outDir: Path)(sources: Map[String, String])(
-      fn: (Path, api.NIRCompiler) => T): T = {
+  def withSources[T](
+      outDir: Path
+  )(sources: Map[String, String])(fn: (Path, api.NIRCompiler) => T): T = {
     val sourcesDir = writeSources(sources)
     fn(sourcesDir, getCompiler(outDir))
   }
 
-  /**
-   * Writes the sources `sources` and applies `fn` to the base directory
-   * holding the sources and the NIRCompiler.
+  /** Writes the sources `sources` and applies `fn` to the base directory
+   *  holding the sources and the NIRCompiler.
    *
-   * @param sources Map from file name to file content representing the sources.
-   * @param fn      The function to apply to the NIRCompiler and the base dir.
-   * @return The result of applying `fn` to the NIRCompiler and the base dir.
+   *  @param sources
+   *    Map from file name to file content representing the sources.
+   *  @param fn
+   *    The function to apply to the NIRCompiler and the base dir.
+   *  @return
+   *    The result of applying `fn` to the NIRCompiler and the base dir.
    */
-  def withSources[T](sources: Map[String, String])(
-      fn: (Path, api.NIRCompiler) => T): T = {
+  def withSources[T](
+      sources: Map[String, String]
+  )(fn: (Path, api.NIRCompiler) => T): T = {
     val sourcesDir = writeSources(sources)
     fn(sourcesDir, getCompiler())
   }
 
-  /**
-   * Writes the sources `sources` to a temporary directory.
+  /** Writes the sources `sources` to a temporary directory.
    *
-   * @param sources Map from file name to file content representing the sources.
-   * @return The base directory that contains the sources.
+   *  @param sources
+   *    Map from file name to file content representing the sources.
+   *  @return
+   *    The base directory that contains the sources.
    */
   def writeSources(sources: Map[String, String]): Path = {
     val baseDir = Files.createTempDirectory("scala-native-sources")

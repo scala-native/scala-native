@@ -19,10 +19,10 @@ class CStructBoxingTest {
   @noinline lazy val struct2: CStruct2[Int, Int] = !malloc(64.toULong)
     .asInstanceOf[Ptr[CStruct2[Int, Int]]]
 
-  @noinline def f[T](x: T): T      = x
-  @noinline def cond(): Boolean    = true
+  @noinline def f[T](x: T): T = x
+  @noinline def cond(): Boolean = true
   @noinline def retArrAsAny(): Any = struct
-  @noinline def retArrAsT[T](): T  = struct.asInstanceOf[T]
+  @noinline def retArrAsT[T](): T = struct.asInstanceOf[T]
 
   @Test def returnAsAny(): Unit = {
     assertTrue(retArrAsAny() == struct)
@@ -84,7 +84,7 @@ class CStructBoxingTest {
 
   @Test def nullCastStruct(): Unit = {
     val nullStruct: Ptr[Byte] = null
-    val nullRef: Object       = null
+    val nullRef: Object = null
     assertTrue(nullRef.asInstanceOf[Ptr[Byte]] == nullStruct)
   }
 
@@ -157,15 +157,19 @@ class CStructBoxingTest {
   }
 
   @Test def testToString(): Unit = {
-    assertThrows(classOf[NullPointerException], {
-      val nullBoxed: Any = nullStruct
-      nullBoxed.toString
-    })
+    assertThrows(
+      classOf[NullPointerException], {
+        val nullBoxed: Any = nullStruct
+        nullBoxed.toString
+      }
+    )
     val boxed1: Any = struct
     assertTrue(
-      boxed1.toString == ("CStruct2@" + toHexString(struct.at1.toLong)))
+      boxed1.toString == ("CStruct2@" + toHexString(struct.at1.toLong))
+    )
     val boxed2: Any = struct2
     assertTrue(
-      boxed2.toString == ("CStruct2@" + toHexString(struct2.at1.toLong)))
+      boxed2.toString == ("CStruct2@" + toHexString(struct2.at1.toLong))
+    )
   }
 }

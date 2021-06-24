@@ -28,10 +28,11 @@ import scala.scalanative.posix.sys.statvfs
 
 import scalanative.annotation.stub
 
-class UnixFileSystem(override val provider: FileSystemProvider,
-                     val root: String,
-                     val defaultDirectory: String)
-    extends FileSystem {
+class UnixFileSystem(
+    override val provider: FileSystemProvider,
+    val root: String,
+    val defaultDirectory: String
+) extends FileSystem {
   private var closed: Boolean = false
 
   override def close(): Unit =
@@ -63,12 +64,12 @@ class UnixFileSystem(override val provider: FileSystemProvider,
 
   override def isReadOnly(): Boolean = Zone { implicit z =>
     val stat = alloc[statvfs.statvfs]
-    val err  = statvfs.statvfs(toCString(root), stat)
+    val err = statvfs.statvfs(toCString(root), stat)
     if (err != 0) {
       throw new IOException()
     } else {
       val flags = stat._10
-      val mask  = statvfs.ST_RDONLY
+      val mask = statvfs.ST_RDONLY
       (flags & mask) == mask
     }
   }

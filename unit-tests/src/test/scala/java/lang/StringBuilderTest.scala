@@ -23,8 +23,10 @@ class StringBuilderTest {
     assertEquals("true", newBuilder.append(true).toString)
     assertEquals("a", newBuilder.append('a').toString)
     assertEquals("abcd", newBuilder.append(Array('a', 'b', 'c', 'd')).toString)
-    assertEquals("bc",
-                 newBuilder.append(Array('a', 'b', 'c', 'd'), 1, 2).toString)
+    assertEquals(
+      "bc",
+      newBuilder.append(Array('a', 'b', 'c', 'd'), 1, 2).toString
+    )
     assertEquals("4", newBuilder.append(4.toByte).toString)
     assertEquals("304", newBuilder.append(304.toShort).toString)
     assertEquals("100000", newBuilder.append(100000).toString)
@@ -42,10 +44,14 @@ class StringBuilderTest {
     assertEquals("nu", newBuilder.insert(0, null: CharSequence, 0, 2).toString)
     assertEquals("true", newBuilder.insert(0, true).toString)
     assertEquals("a", newBuilder.insert(0, 'a').toString)
-    assertEquals("abcd",
-                 newBuilder.insert(0, Array('a', 'b', 'c', 'd')).toString)
-    assertEquals("bc",
-                 newBuilder.insert(0, Array('a', 'b', 'c', 'd'), 1, 2).toString)
+    assertEquals(
+      "abcd",
+      newBuilder.insert(0, Array('a', 'b', 'c', 'd')).toString
+    )
+    assertEquals(
+      "bc",
+      newBuilder.insert(0, Array('a', 'b', 'c', 'd'), 1, 2).toString
+    )
     assertEquals("4", newBuilder.insert(0, 4.toByte).toString)
     assertEquals("304", newBuilder.insert(0, 304.toShort).toString)
     assertEquals("100000", newBuilder.insert(0, 100000).toString)
@@ -75,7 +81,8 @@ class StringBuilderTest {
   @Test def insertStringBuilder(): Unit = {
     assertEquals(
       "abcdef",
-      initBuilder("abef").insert(2, initBuilder("abcde"), 2, 4).toString)
+      initBuilder("abef").insert(2, initBuilder("abcde"), 2, 4).toString
+    )
   }
 
   @Test def shouldAllowStringInterpolationToSurviveNullAndUndefined(): Unit = {
@@ -141,7 +148,7 @@ class StringBuilderTest {
     b.appendCodePoint(0x10000)
     assertEquals("a\uD800\uDC00", b.toString)
     b.append("fixture")
-    b.appendCodePoint(0x00010FFFF)
+    b.appendCodePoint(0x00010ffff)
     assertEquals("a\uD800\uDC00fixture\uDBFF\uDFFF", b.toString)
   }
 }

@@ -10,22 +10,23 @@ import scala.collection.mutable.ArrayBuffer
 class ZipOutputStream(_out: OutputStream, charset: Charset)
     extends DeflaterOutputStream(
       _out,
-      new Deflater(Deflater.DEFAULT_COMPRESSION, true))
+      new Deflater(Deflater.DEFAULT_COMPRESSION, true)
+    )
     with ZipConstants {
   import ZipOutputStream._
 
   def this(out: OutputStream) = this(out, StandardCharsets.UTF_8)
 
-  private var comment: String        = null
-  private var entries                = new ArrayBuffer[String]()
-  private var compressMethod         = DEFLATED
-  private var compressLevel          = Deflater.DEFAULT_COMPRESSION
-  private var cDir                   = new ByteArrayOutputStream()
+  private var comment: String = null
+  private var entries = new ArrayBuffer[String]()
+  private var compressMethod = DEFLATED
+  private var compressLevel = Deflater.DEFAULT_COMPRESSION
+  private var cDir = new ByteArrayOutputStream()
   private var currentEntry: ZipEntry = null
-  private val crc                    = new CRC32()
-  private var offset                 = 0
-  private var curOffset              = 0
-  private var nameLength             = 0
+  private val crc = new CRC32()
+  private var offset = 0
+  private var curOffset = 0
+  private var nameLength = 0
   private var nameBytes: Array[Byte] = null
 
   override def close(): Unit = {
@@ -60,13 +61,17 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
       curOffset += EXTHDR
       writeLong(out, EXTSIG)
       writeLong(out, { currentEntry.crc = crc.getValue(); currentEntry.crc })
-      writeLong(out, {
-        currentEntry.compressedSize = `def`.getTotalOut();
-        currentEntry.compressedSize
-      })
-      writeLong(out, {
-        currentEntry.size = `def`.getTotalIn(); currentEntry.size
-      })
+      writeLong(
+        out, {
+          currentEntry.compressedSize = `def`.getTotalOut();
+          currentEntry.compressedSize
+        }
+      )
+      writeLong(
+        out, {
+          currentEntry.size = `def`.getTotalIn(); currentEntry.size
+        }
+      )
     }
     // Update the CentralDirectory
     writeLong(cDir, CENSIG)
@@ -74,7 +79,8 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
     writeShort(cDir, ZIPLocalHeaderVersionNeeded) // Version to extract
     writeShort(
       cDir,
-      if (currentEntry.getMethod() == STORED) 0 else ZIPDataDescriptorFlag)
+      if (currentEntry.getMethod() == STORED) 0 else ZIPDataDescriptorFlag
+    )
     writeShort(cDir, currentEntry.getMethod())
     writeShort(cDir, currentEntry.time)
     writeShort(cDir, currentEntry.modDate)
@@ -100,7 +106,7 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
     }
     writeShort(cDir, 0) // Disk Start
     writeShort(cDir, 0) // Internal File Attributes
-    writeLong(cDir, 0)  // External File Attributes
+    writeLong(cDir, 0) // External File Attributes
     writeLong(cDir, offset)
     cDir.write(nameBytes)
     if (currentEntry.extra != null) {
@@ -130,12 +136,12 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
     val cdirSize = cDir.size()
     // Write Central Dir End
     writeLong(cDir, ENDSIG)
-    writeShort(cDir, 0)            // Disk Number
-    writeShort(cDir, 0)            // Start Disk
+    writeShort(cDir, 0) // Disk Number
+    writeShort(cDir, 0) // Start Disk
     writeShort(cDir, entries.size) // Number of entries
     writeShort(cDir, entries.size) // Number of entries (yes, twice)
-    writeLong(cDir, cdirSize)      // Size of central dir
-    writeLong(cDir, offset)        // Offset of central dir
+    writeLong(cDir, cdirSize) // Size of central dir
+    writeLong(cDir, offset) // Offset of central dir
     if (comment != null) {
       writeShort(cDir, comment.length())
       cDir.write(comment.getBytes())
@@ -184,7 +190,7 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
     if (currentEntry.getMethod() == -1) {
       currentEntry.setMethod(compressMethod)
     }
-    writeLong(out, LOCSIG)                       // Entry header
+    writeLong(out, LOCSIG) // Entry header
     writeShort(out, ZIPLocalHeaderVersionNeeded) // Extraction version
     writeShort(
       out,
@@ -225,7 +231,7 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
   }
 
   def setComment(comment: String): Unit = {
-    if (comment.length() > 0xFFFF) {
+    if (comment.length() > 0xffff) {
       throw new IllegalArgumentException("String is too long")
     } else {
       this.comment = comment
@@ -249,16 +255,16 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
 
   private def writeLong(os: OutputStream, i: Long): Long = {
     // Write out the long value as an unsigned int
-    os.write((i & 0xFF).toInt)
-    os.write(((i >> 8) & 0xFF).toInt)
-    os.write(((i >> 16) & 0xFF).toInt)
-    os.write(((i >> 24) & 0xFF).toInt)
+    os.write((i & 0xff).toInt)
+    os.write(((i >> 8) & 0xff).toInt)
+    os.write(((i >> 16) & 0xff).toInt)
+    os.write(((i >> 24) & 0xff).toInt)
     i
   }
 
   private def writeShort(os: OutputStream, i: Int): Int = {
-    os.write(i & 0xFF)
-    os.write((i >> 8) & 0xFF)
+    os.write(i & 0xff)
+    os.write((i >> 8) & 0xff)
     i
   }
 
@@ -286,14 +292,14 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
 object ZipOutputStream {
 
   private[zip] final val ZIPLocalHeaderVersionNeeded: Int = 20
-  private[zip] final val ZIPDataDescriptorFlag: Int       = 8
+  private[zip] final val ZIPDataDescriptorFlag: Int = 8
 
   final val DEFLATED: Int = 8
-  final val STORED: Int   = 0
+  final val STORED: Int = 0
 
   private def utf8Count(value: String): Int = {
     var total = 0
-    var i     = value.length - 1
+    var i = value.length - 1
     while (i >= 0) {
       val ch = value.charAt(i)
       if (ch < 0x80) {
@@ -310,8 +316,8 @@ object ZipOutputStream {
 
   private def toUTF8Bytes(value: String, length: Int): Array[Byte] = {
     val result = new Array[Byte](length)
-    var pos    = result.length
-    var i      = value.length - 1
+    var pos = result.length
+    var i = value.length - 1
     while (i >= 0) {
       val ch = value.charAt(i)
       if (ch < 0x80) {

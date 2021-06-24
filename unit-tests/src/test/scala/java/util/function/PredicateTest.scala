@@ -13,14 +13,15 @@ class PredicateTest {
   import PredicateTest._
 
   private val largerThan10 = makePredicate[Int](_ > 10)
-  private val even         = makePredicate[Int](_ % 2 == 0)
+  private val even = makePredicate[Int](_ % 2 == 0)
 
   private val throwingPredicate =
     makePredicate[Any](x => throw new ThrowingPredicateException(x))
 
   private val dontCallPredicate =
     makePredicate[Any](x =>
-      throw new AssertionError(s"dontCallPredicate.test($x)"))
+      throw new AssertionError(s"dontCallPredicate.test($x)")
+    )
 
   @Test def and(): Unit = {
     // Truth table
@@ -32,8 +33,10 @@ class PredicateTest {
 
     // Short-circuit
     assertFalse(largerThan10.and(dontCallPredicate).test(5))
-    assertThrows(classOf[ThrowingPredicateException],
-                 throwingPredicate.and(dontCallPredicate).test(5))
+    assertThrows(
+      classOf[ThrowingPredicateException],
+      throwingPredicate.and(dontCallPredicate).test(5)
+    )
   }
 
   @Test def negate(): Unit = {
@@ -53,8 +56,10 @@ class PredicateTest {
 
     // Short-circuit
     assertTrue(largerThan10.or(dontCallPredicate).test(15))
-    assertThrows(classOf[ThrowingPredicateException],
-                 throwingPredicate.or(dontCallPredicate).test(15))
+    assertThrows(
+      classOf[ThrowingPredicateException],
+      throwingPredicate.or(dontCallPredicate).test(15)
+    )
   }
 
   @Test def isEqual(): Unit = {

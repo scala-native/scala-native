@@ -7,7 +7,7 @@ import org.junit.Assert._
 class FileTimeTest {
 
   @Test def isComparableAgainstDiffTimeUnits(): Unit = {
-    val timestamp        = 1582230020000L
+    val timestamp = 1582230020000L
     val timestampSeconds = timestamp / 1000L
 
     val ft1 = FileTime.fromMillis(timestamp)
@@ -67,9 +67,13 @@ class FileTimeTest {
         unitIdentityEquals(Long.MinValue + 1, unit)
       }
 
-    assertEquals(Long.MaxValue - 1,
-                 FileTime.fromMillis(Long.MaxValue - 1).toMillis)
-    assertEquals(Long.MinValue + 1,
-                 FileTime.fromMillis(Long.MinValue + 1).toMillis)
+    assertEquals(
+      Long.MaxValue - 1,
+      FileTime.fromMillis(Long.MaxValue - 1).toMillis
+    )
+    assertEquals(
+      Long.MinValue + 1,
+      FileTime.fromMillis(Long.MinValue + 1).toMillis
+    )
   }
 }

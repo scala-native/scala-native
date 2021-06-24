@@ -42,8 +42,10 @@ class StringBufferTest {
     assertEquals("true", newBuf.insert(0, true).toString)
     assertEquals("a", newBuf.insert(0, 'a').toString)
     assertEquals("abcd", newBuf.insert(0, Array('a', 'b', 'c', 'd')).toString)
-    assertEquals("bc",
-                 newBuf.insert(0, Array('a', 'b', 'c', 'd'), 1, 2).toString)
+    assertEquals(
+      "bc",
+      newBuf.insert(0, Array('a', 'b', 'c', 'd'), 1, 2).toString
+    )
     assertEquals("4", newBuf.insert(0, 4.toByte).toString)
     assertEquals("304", newBuf.insert(0, 304.toShort).toString)
     assertEquals("100000", newBuf.insert(0, 100000).toString)
@@ -69,8 +71,10 @@ class StringBufferTest {
 
   // TODO: segfaults with EXC_BAD_ACCESS (code=1, address=0x0)
   @Test def insertStringBuffer(): Unit = {
-    assertEquals("abcdef",
-                 initBuf("abef").insert(2, initBuf("abcde"), 2, 4).toString)
+    assertEquals(
+      "abcdef",
+      initBuf("abef").insert(2, initBuf("abcde"), 2, 4).toString
+    )
   }
 
   @Test def deleteCharAt(): Unit = {
@@ -134,7 +138,7 @@ class StringBufferTest {
     buf.appendCodePoint(0x10000)
     assertEquals("a\uD800\uDC00", buf.toString)
     buf.append("fixture")
-    buf.appendCodePoint(0x00010FFFF)
+    buf.appendCodePoint(0x00010ffff)
     assertEquals("a\uD800\uDC00fixture\uDBFF\uDFFF", buf.toString)
   }
 }

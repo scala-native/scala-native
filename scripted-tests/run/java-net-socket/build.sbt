@@ -12,7 +12,8 @@ scalaVersion := {
   if (scalaVersion == null)
     throw new RuntimeException(
       """|The system property 'scala.version' is not defined.
-         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
+         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin
+    )
   else scalaVersion
 }
 
@@ -24,11 +25,11 @@ lazy val launchSilentServer =
 
 launchServer := {
   val echoServer = new ServerSocket(0)
-  val portFile   = Paths.get("server-port.txt")
+  val portFile = Paths.get("server-port.txt")
   Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
   val f = Future {
     val clientSocket = echoServer.accept
-    val out          = new PrintWriter(clientSocket.getOutputStream, true)
+    val out = new PrintWriter(clientSocket.getOutputStream, true)
     val in =
       new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
 
@@ -51,13 +52,13 @@ launchServer := {
 
 launchTcpEchoServer := {
   val echoServer = new ServerSocket(0)
-  val portFile   = Paths.get("server-port.txt")
+  val portFile = Paths.get("server-port.txt")
   Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
   val f = Future {
     val clientSocket = echoServer.accept
-    val out          = clientSocket.getOutputStream
-    val in           = clientSocket.getInputStream
-    val buffer       = new Array[Byte](4)
+    val out = clientSocket.getOutputStream
+    val in = clientSocket.getInputStream
+    val buffer = new Array[Byte](4)
 
     var count = in.read(buffer, 0, 4)
     out.write(buffer)
@@ -75,7 +76,7 @@ launchTcpEchoServer := {
 
 launchSilentServer := {
   val echoServer = new ServerSocket(0)
-  val portFile   = Paths.get("server-port.txt")
+  val portFile = Paths.get("server-port.txt")
   Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
   val f = Future {
     val clientSocket = echoServer.accept

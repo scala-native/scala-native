@@ -20,10 +20,10 @@ class CArrayBoxingTest {
   @noinline lazy val arr2: CArray[Byte, _4] = !malloc(64.toULong)
     .asInstanceOf[Ptr[CArray[Byte, _4]]]
 
-  @noinline def f[T](x: T): T      = x
-  @noinline def cond(): Boolean    = true
+  @noinline def f[T](x: T): T = x
+  @noinline def cond(): Boolean = true
   @noinline def retArrAsAny(): Any = arr
-  @noinline def retArrAsT[T](): T  = arr.asInstanceOf[T]
+  @noinline def retArrAsT[T](): T = arr.asInstanceOf[T]
 
   @Test def returnAsAny(): Unit = {
     assertTrue(retArrAsAny() == arr)
@@ -85,7 +85,7 @@ class CArrayBoxingTest {
 
   @Test def nullCastArr(): Unit = {
     val nullArr: Ptr[Byte] = null
-    val nullRef: Object    = null
+    val nullRef: Object = null
     assertTrue(nullRef.asInstanceOf[Ptr[Byte]] == nullArr)
   }
 
@@ -158,10 +158,12 @@ class CArrayBoxingTest {
   }
 
   @Test def testToString(): Unit = {
-    assertThrows(classOf[NullPointerException], {
-      val nullBoxed: Any = nullArr
-      nullBoxed.toString
-    })
+    assertThrows(
+      classOf[NullPointerException], {
+        val nullBoxed: Any = nullArr
+        nullBoxed.toString
+      }
+    )
     val boxed1: Any = arr
     assertTrue(boxed1.toString == ("CArray@" + toHexString(arr.at(0).toLong)))
     val boxed2: Any = arr2

@@ -21,18 +21,16 @@ import scalanative.util.unreachable
  *    nothing
  *  }}}
  *
- *  Primitive and aggregate types don't participate in
- *  subtyping and they have to be explicitly boxed to become
- *  compatible with a reference type.
+ *  Primitive and aggregate types don't participate in subtyping and they have
+ *  to be explicitly boxed to become compatible with a reference type.
  *
- *  Reference types form a simple lattice with java.lang.Object
- *  at the top and null type at the bottom. Subtyping between
- *  traits and classes is based on linearization of the all
- *  transitive parents, similarly to scalac.
+ *  Reference types form a simple lattice with java.lang.Object at the top and
+ *  null type at the bottom. Subtyping between traits and classes is based on
+ *  linearization of the all transitive parents, similarly to scalac.
  *
- *  Nothing is the common bottom type between reference and value
- *  types. It represents computations that may never complete
- *  normally (either loops forever or throws an exception).
+ *  Nothing is the common bottom type between reference and value types. It
+ *  represents computations that may never complete normally (either loops
+ *  forever or throws an exception).
  */
 object Sub {
 
@@ -53,8 +51,9 @@ object Sub {
     }
   }
 
-  def is(info: ScopeInfo, ty: Type.RefKind)(
-      implicit linked: linker.Result): Boolean = {
+  def is(info: ScopeInfo, ty: Type.RefKind)(implicit
+      linked: linker.Result
+  ): Boolean = {
     ty match {
       case ScopeRef(other) =>
         info.is(other)
@@ -63,8 +62,9 @@ object Sub {
     }
   }
 
-  def lub(tys: Seq[Type], bound: Option[Type])(
-      implicit linked: linker.Result): Type = {
+  def lub(tys: Seq[Type], bound: Option[Type])(implicit
+      linked: linker.Result
+  ): Type = {
     tys match {
       case Seq() =>
         unreachable
@@ -73,8 +73,9 @@ object Sub {
     }
   }
 
-  def lub(lty: Type, rty: Type, bound: Option[Type])(
-      implicit linked: linker.Result): Type = {
+  def lub(lty: Type, rty: Type, bound: Option[Type])(implicit
+      linked: linker.Result
+  ): Type = {
     (lty, rty) match {
       case _ if lty == rty =>
         lty
@@ -93,8 +94,8 @@ object Sub {
       case (lty: Type.RefKind, rty: Type.RefKind) =>
         val ScopeRef(linfo) = lty
         val ScopeRef(rinfo) = rty
-        val binfo           = bound.flatMap(ScopeRef.unapply)
-        val lubinfo         = lub(linfo, rinfo, binfo)
+        val binfo = bound.flatMap(ScopeRef.unapply)
+        val lubinfo = lub(linfo, rinfo, binfo)
         val exact =
           lubinfo.name == rinfo.name && rty.isExact &&
             lubinfo.name == linfo.name && lty.isExact
@@ -107,7 +108,8 @@ object Sub {
   }
 
   def lub(linfo: ScopeInfo, rinfo: ScopeInfo, boundInfo: Option[ScopeInfo])(
-      implicit linked: linker.Result): ScopeInfo = {
+      implicit linked: linker.Result
+  ): ScopeInfo = {
     if (linfo == rinfo) {
       linfo
     } else if (linfo.is(rinfo)) {

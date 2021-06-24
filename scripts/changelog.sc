@@ -56,7 +56,7 @@ def main(
     .withOAuthToken(token)
     .build()
 
-  val foundPRs  = mutable.Set.empty[Int]
+  val foundPRs = mutable.Set.empty[Int]
   val mergedPRs = ListBuffer[String]()
   for {
     // group in order to optimize API

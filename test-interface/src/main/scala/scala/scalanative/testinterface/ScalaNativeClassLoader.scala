@@ -14,14 +14,18 @@ private[testinterface] final class ScalaNativeClassLoader
         |to instantiate classes/objects.""".stripMargin)
   }
 
-  override def clearAssertionStatus(): Unit                    = nimp
-  override def getResource(name: String): URL                  = nimp
-  override def getResourceAsStream(name: String): InputStream  = nimp
+  override def clearAssertionStatus(): Unit = nimp
+  override def getResource(name: String): URL = nimp
+  override def getResourceAsStream(name: String): InputStream = nimp
   override def getResources(name: String): ju.Enumeration[URL] = nimp
-  override def loadClass(name: String): Class[_]               = nimp
-  override def setClassAssertionStatus(className: String,
-                                       enabled: Boolean): Unit   = nimp
+  override def loadClass(name: String): Class[_] = nimp
+  override def setClassAssertionStatus(
+      className: String,
+      enabled: Boolean
+  ): Unit = nimp
   override def setDefaultAssertionStatus(enabled: Boolean): Unit = nimp
-  override def setPackageAssertionStatus(packageName: String,
-                                         enabled: Boolean): Unit = nimp
+  override def setPackageAssertionStatus(
+      packageName: String,
+      enabled: Boolean
+  ): Unit = nimp
 }

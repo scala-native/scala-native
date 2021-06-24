@@ -11,7 +11,7 @@ import JarBytes._
 class JarEntryTest {
 
   @Test def constructorJarEntry(): Unit = {
-    val jarFile     = getJarFile()
+    val jarFile = getJarFile()
     val newJarEntry = new JarEntry(jarFile.getJarEntry(entryName))
     assertTrue(newJarEntry != null)
     jarFile.close()
@@ -30,7 +30,7 @@ class JarEntryTest {
   }
 
   @Test def getAttributes(): Unit = {
-    val attrJar       = getAttJarFile()
+    val attrJar = getAttJarFile()
     val attrsJarEntry = attrJar.getJarEntry(attEntryName)
     assertTrue(attrsJarEntry.getAttributes() != null)
 
@@ -41,7 +41,7 @@ class JarEntryTest {
 
   @Ignore("#956")
   @Test def getCertificates(): Unit = {
-    val jarFile  = getJarFile()
+    val jarFile = getJarFile()
     val zipEntry = jarFile.getEntry(entryName2)
     val jarEntry = new JarEntry(zipEntry)
     assertTrue(jarEntry.getCertificates() == null)
@@ -50,8 +50,8 @@ class JarEntryTest {
     val signedJar = getSignedJarFile()
     val jarEntry1 = signedJar.getJarEntry("Test.class")
     val jarEntry2 = signedJar.getJarEntry("Test.class")
-    val in        = jarFile.getInputStream(jarEntry1)
-    val buffer    = new Array[Byte](1024)
+    val in = jarFile.getInputStream(jarEntry1)
+    val buffer = new Array[Byte](1024)
     while (in.available() > 0) {
       assertTrue(jarEntry1.getCertificates() == null)
       assertTrue(jarEntry2.getCertificates() == null)
@@ -67,9 +67,9 @@ class JarEntryTest {
   @Ignore("#956")
   @Test def getCodeSigners(): Unit = {
     val signedJar = getSignedJarFile()
-    val jarEntry  = signedJar.getJarEntry("Test.class")
-    val in        = signedJar.getInputStream(jarEntry)
-    val buffer    = new Array[Byte](1024)
+    val jarEntry = signedJar.getJarEntry("Test.class")
+    val in = signedJar.getInputStream(jarEntry)
+    val buffer = new Array[Byte](1024)
     while (in.available > 0) {
       assertTrue(jarEntry.getCodeSigners() == null)
       in.read(buffer)
@@ -77,7 +77,7 @@ class JarEntryTest {
     assertTrue(in.read() == -1)
     val codeSigners = jarEntry.getCodeSigners()
     assertTrue(codeSigners != null && codeSigners.length == 2)
-    var certs_bob   = codeSigners(0).getSignerCertPath().getCertificates()
+    var certs_bob = codeSigners(0).getSignerCertPath().getCertificates()
     var certs_alice = codeSigners(1).getSignerCertPath().getCertificates()
     if (1 == certs_bob.size()) {
       val temp = certs_bob
@@ -99,9 +99,9 @@ class JarEntryTest {
   private def getSignedJarFile(): JarFile =
     JarBytes.getJarFile(signedJarBytes)
 
-  private val entryName     = "foo/bar/A.class"
-  private val entryName2    = "Blah.txt"
-  private val attEntryName  = "HasAttributes.txt"
+  private val entryName = "foo/bar/A.class"
+  private val entryName2 = "Blah.txt"
+  private val attEntryName = "HasAttributes.txt"
   private val attEntryName2 = "NoAttributes.txt"
 
 }

@@ -12,10 +12,10 @@ class AsInstanceOfTest {
   val isScala211 = scalaVersion.startsWith("2.11.")
 
   class C
-  val c                      = new C
+  val c = new C
   @noinline def anyNull: Any = null
-  @noinline def any42: Any   = 42
-  @noinline def anyC: Any    = c
+  @noinline def any42: Any = 42
+  @noinline def anyC: Any = c
 
   @Test def nullAsInstanceOfObject(): Unit = {
     assertTrue(anyNull.asInstanceOf[Object] == null)

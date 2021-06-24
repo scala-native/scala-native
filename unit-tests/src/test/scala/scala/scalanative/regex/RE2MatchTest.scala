@@ -10,17 +10,19 @@ class RE2MatchTest {
   @Test def testMatch(): Unit = {
     for (test <- FIND_TESTS) {
       val re = RE2.compile(test.pat)
-      var m  = re.match_(test.text)
+      var m = re.match_(test.text)
       if (m != (test.matches.length > 0))
         fail(
           "RE2.match failure on %s: %s should be %s"
-            .format(test, m, test.matches.length > 0))
+            .format(test, m, test.matches.length > 0)
+        )
       // now try bytes
       m = re.matchUTF8(GoTestUtils.utf8(test.text))
       if (m != (test.matches.length > 0))
         fail(
           "RE2.matchUTF8 failure on %s: %s should be %s"
-            .format(test, m, test.matches.length > 0))
+            .format(test, m, test.matches.length > 0)
+        )
     }
   }
 
@@ -30,7 +32,8 @@ class RE2MatchTest {
       if (m != (test.matches.length > 0))
         fail(
           "RE2.match failure on %s: %s should be %s"
-            .format(test, m, test.matches.length > 0))
+            .format(test, m, test.matches.length > 0)
+        )
     }
   }
 }

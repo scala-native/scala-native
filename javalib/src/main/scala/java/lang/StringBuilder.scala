@@ -84,9 +84,11 @@ final class StringBuilder
     this
   }
 
-  def append(str: Array[scala.Char],
-             offset: scala.Int,
-             len: scala.Int): StringBuilder = {
+  def append(
+      str: Array[scala.Char],
+      offset: scala.Int,
+      len: scala.Int
+  ): StringBuilder = {
     append0(str, offset, len)
     this
   }
@@ -97,9 +99,11 @@ final class StringBuilder
     this
   }
 
-  def append(seq: CharSequence,
-             start: scala.Int,
-             end: scala.Int): StringBuilder = {
+  def append(
+      seq: CharSequence,
+      start: scala.Int,
+      end: scala.Int
+  ): StringBuilder = {
     append0(seq, start, end)
     this
   }
@@ -159,10 +163,12 @@ final class StringBuilder
     this
   }
 
-  def insert(offset: scala.Int,
-             str: Array[scala.Char],
-             strOffset: scala.Int,
-             strLen: scala.Int): StringBuilder = {
+  def insert(
+      offset: scala.Int,
+      str: Array[scala.Char],
+      strOffset: scala.Int,
+      strLen: scala.Int
+  ): StringBuilder = {
     insert0(offset, str, strOffset, strLen)
     this
   }
@@ -177,10 +183,12 @@ final class StringBuilder
     this
   }
 
-  def insert(offset: scala.Int,
-             seq: CharSequence,
-             start: scala.Int,
-             end: scala.Int): StringBuilder = {
+  def insert(
+      offset: scala.Int,
+      seq: CharSequence,
+      start: scala.Int,
+      end: scala.Int
+  ): StringBuilder = {
     insert0(offset, seq, start, end)
     this
   }

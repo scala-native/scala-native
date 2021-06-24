@@ -12,7 +12,7 @@ class SerializerTest {
 
   @Test
   def serializeThrowableWithNullFields: Unit = {
-    val in  = new Throwable(null, null)
+    val in = new Throwable(null, null)
     val out = roundTrip(in)
     assertEquals(in.getMessage(), out.getMessage())
     assertEquals(in.getCause(), out.getCause())
@@ -23,7 +23,7 @@ class SerializerTest {
   // # 3611
   @Test
   def serializeStackTraceElementWithNullFilename: Unit = {
-    val st           = new StackTraceElement("MyClass", "myMethod", null, 1)
+    val st = new StackTraceElement("MyClass", "myMethod", null, 1)
     val deserialized = roundTrip(st)
     assertNull(deserialized.getFileName)
     assertEquals("MyClass.myMethod(Unknown Source)", deserialized.toString)

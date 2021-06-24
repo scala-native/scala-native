@@ -49,11 +49,13 @@ object select {
   //    } // fdsetPtr and memory it points to are not valid outsize of Zone.
 
   @name("scalanative_select")
-  def select(nfds: CInt,
-             readfds: Ptr[fd_set],
-             writefds: Ptr[fd_set],
-             exceptfds: Ptr[fd_set],
-             timeout: Ptr[time.timeval]): CInt = extern
+  def select(
+      nfds: CInt,
+      readfds: Ptr[fd_set],
+      writefds: Ptr[fd_set],
+      exceptfds: Ptr[fd_set],
+      timeout: Ptr[time.timeval]
+  ): CInt = extern
 
   @name("scalanative_fd_setsize")
   def FD_SETSIZE: CInt = extern

@@ -4,12 +4,13 @@ import org.junit.Test
 import org.junit.Assert._
 
 class DivisionOverflowTest {
-  @noinline def intMinus1  = -1
+  @noinline def intMinus1 = -1
   @noinline def longMinus1 = -1L
 
   @Test def integerMinValueDivideMinus1(): Unit = {
     assertTrue(
-      (java.lang.Integer.MIN_VALUE / intMinus1) == java.lang.Integer.MIN_VALUE)
+      (java.lang.Integer.MIN_VALUE / intMinus1) == java.lang.Integer.MIN_VALUE
+    )
   }
 
   @Test def integerMinValueRemainderMinus1(): Unit = {
@@ -18,7 +19,8 @@ class DivisionOverflowTest {
 
   @Test def longMinValueDivideMinus1(): Unit = {
     assertTrue(
-      (java.lang.Long.MIN_VALUE / longMinus1) == java.lang.Long.MIN_VALUE)
+      (java.lang.Long.MIN_VALUE / longMinus1) == java.lang.Long.MIN_VALUE
+    )
   }
 
   @Test def longMinValueRemainderMinus1(): Unit = {

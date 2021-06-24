@@ -11,11 +11,11 @@ final class State(block: Local) {
   var fresh = Fresh(block.id)
   /* Performance Note: OpenHashMap/LongMap/AnyRefMap have a faster clone()
    * operation. This really makes a difference on fullClone() */
-  var heap    = mutable.LongMap.empty[Instance]
-  var locals  = mutable.OpenHashMap.empty[Local, Val]
+  var heap = mutable.LongMap.empty[Instance]
+  var locals = mutable.OpenHashMap.empty[Local, Val]
   var delayed = mutable.AnyRefMap.empty[Op, Val]
   var emitted = mutable.AnyRefMap.empty[Op, Val]
-  var emit    = new nir.Buffer()(fresh)
+  var emit = new nir.Buffer()(fresh)
 
   private def alloc(kind: Kind, cls: Class, values: Array[Val]): Addr = {
     val addr = fresh().id
@@ -26,22 +26,24 @@ final class State(block: Local) {
     val fields = cls.fields.map(fld => Val.Zero(fld.ty).canonicalize)
     alloc(ClassKind, cls, fields.toArray[Val])
   }
-  def allocArray(elemty: Type, count: Int)(
-      implicit linked: linker.Result): Addr = {
-    val zero   = Val.Zero(elemty).canonicalize
+  def allocArray(elemty: Type, count: Int)(implicit
+      linked: linker.Result
+  ): Addr = {
+    val zero = Val.Zero(elemty).canonicalize
     val values = Array.fill[Val](count)(zero)
-    val cls    = linked.infos(Type.toArrayClass(elemty)).asInstanceOf[Class]
+    val cls = linked.infos(Type.toArrayClass(elemty)).asInstanceOf[Class]
     alloc(ArrayKind, cls, values)
   }
-  def allocBox(boxname: Global, value: Val)(
-      implicit linked: linker.Result): Addr = {
+  def allocBox(boxname: Global, value: Val)(implicit
+      linked: linker.Result
+  ): Addr = {
     val boxcls = linked.infos(boxname).asInstanceOf[Class]
     alloc(BoxKind, boxcls, Array(value))
   }
   def allocString(value: String)(implicit linked: linker.Result): Addr = {
     val charsArray = value.toArray
-    val charsAddr  = allocArray(Type.Char, charsArray.length)
-    val chars      = derefVirtual(charsAddr)
+    val charsAddr = allocArray(Type.Char, charsArray.length)
+    val chars = derefVirtual(charsAddr)
     charsArray.zipWithIndex.foreach {
       case (value, idx) =>
         chars.values(idx) = Val.Char(value)
@@ -58,15 +60,16 @@ final class State(block: Local) {
     if (delayed.contains(op)) {
       delayed(op)
     } else {
-      val addr  = fresh().id
+      val addr = fresh().id
       val value = Val.Virtual(addr)
       heap(addr) = DelayedInstance(op)
       delayed(op) = value
       value
     }
   }
-  def emit(op: Op, idempotent: Boolean = false)(
-      implicit position: Position): Val = {
+  def emit(op: Op, idempotent: Boolean = false)(implicit
+      position: Position
+  ): Val = {
     if (op.isIdempotent || idempotent) {
       if (emitted.contains(op)) {
         emitted(op)
@@ -223,8 +226,9 @@ final class State(block: Local) {
     case _ =>
       false
   }
-  def materialize(rootValue: Val)(implicit linked: linker.Result,
-                                  origPos: Position): Val = {
+  def materialize(
+      rootValue: Val
+  )(implicit linked: linker.Result, origPos: Position): Val = {
     val locals = mutable.Map.empty[Addr, Val]
 
     def reachAddr(addr: Addr): Unit = {
@@ -287,11 +291,13 @@ final class State(block: Local) {
             case (value, idx) =>
               if (!value.isZero) {
                 reachVal(value)
-                emit.arraystore(elemty,
-                                local,
-                                Val.Int(idx),
-                                escapedVal(value),
-                                Next.None)
+                emit.arraystore(
+                  elemty,
+                  local,
+                  Val.Int(idx),
+                  escapedVal(value),
+                  Next.None
+                )
               }
           }
         }
@@ -305,11 +311,13 @@ final class State(block: Local) {
           case (fld, value) =>
             if (!value.isZero) {
               reachVal(value)
-              emit.fieldstore(fld.ty,
-                              local,
-                              fld.name,
-                              escapedVal(value),
-                              Next.None)
+              emit.fieldstore(
+                fld.ty,
+                local,
+                fld.name,
+                escapedVal(value),
+                Next.None
+              )
             }
         }
       case DelayedInstance(op) =>

@@ -8,11 +8,13 @@ import org.scalatest.matchers.should.Matchers
 class FrameworkTest extends codegen.CodeGenSpec with Matchers {
 
   "The test framework" should "return the definitions for a single class" in {
-    link("A$",
-         """object A {
+    link(
+      "A$",
+      """object A {
            |  def main(args: Array[String]): Unit =
            |    println("Hello, world!")
-           |}""".stripMargin) {
+           |}""".stripMargin
+    ) {
       case (_, res) =>
         val defNames = res.defns map (_.name)
         defNames should contain(Global.Top("A$"))

@@ -10,7 +10,7 @@ import scalanative.unsigned._
 class ZoneTest {
   private def assertAccessible(bptr: Ptr[_], n: Int) {
     val ptr = bptr.asInstanceOf[Ptr[Int]]
-    var i   = 0
+    var i = 0
     while (i < n) {
       ptr(i) = i
       i += 1
@@ -63,8 +63,10 @@ class ZoneTest {
 
     zone.close()
 
-    assertThrows(classOf[IllegalStateException],
-                 zone.alloc(64.toUInt * sizeof[Int]))
+    assertThrows(
+      classOf[IllegalStateException],
+      zone.alloc(64.toUInt * sizeof[Int])
+    )
     assertThrows(classOf[IllegalStateException], zone.close())
   }
 }

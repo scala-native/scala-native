@@ -9,9 +9,9 @@ import java.nio._
 class CoderResult private (kind: Int, _length: Int) {
   import CoderResult._
 
-  @inline def isUnderflow(): Boolean  = kind == Underflow
-  @inline def isOverflow(): Boolean   = kind == Overflow
-  @inline def isMalformed(): Boolean  = kind == Malformed
+  @inline def isUnderflow(): Boolean = kind == Underflow
+  @inline def isOverflow(): Boolean = kind == Overflow
+  @inline def isMalformed(): Boolean = kind == Malformed
   @inline def isUnmappable(): Boolean = kind == Unmappable
 
   @inline def isError(): Boolean = isMalformed() || isUnmappable()
@@ -32,12 +32,12 @@ class CoderResult private (kind: Int, _length: Int) {
 }
 
 object CoderResult {
-  private final val Underflow  = 0
-  private final val Overflow   = 1
-  private final val Malformed  = 2
+  private final val Underflow = 0
+  private final val Overflow = 1
+  private final val Malformed = 2
   private final val Unmappable = 3
 
-  val OVERFLOW: CoderResult  = new CoderResult(Overflow, -1)
+  val OVERFLOW: CoderResult = new CoderResult(Overflow, -1)
   val UNDERFLOW: CoderResult = new CoderResult(Underflow, -1)
 
   private val Malformed1 = new CoderResult(Malformed, 1)

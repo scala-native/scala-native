@@ -37,9 +37,9 @@ class IdentifiersSuite extends ReachabilitySuite {
         |""".stripMargin
 
     val FooBar = Global.Top("$u0022Foo$u0022Bar$u0022$")
-    val Main   = Global.Top("Main$")
+    val Main = Global.Top("Main$")
 
-    val entry         = Main
+    val entry = Main
     val privateFooBar = Sig.Scope.Private(FooBar)
 
     val reachable = Seq(

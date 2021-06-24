@@ -10,11 +10,13 @@ import org.junit.Test
  */
 class DateTestExt {
   @Test def testToFromInstant(): Unit = {
-    def test(expectedEpochSecond: Long,
-             expectedNano: Int,
-             epochMilli: Long): Unit = {
+    def test(
+        expectedEpochSecond: Long,
+        expectedNano: Int,
+        epochMilli: Long
+    ): Unit = {
       val instant = Instant.ofEpochSecond(expectedEpochSecond, expectedNano)
-      val date    = new Date(epochMilli)
+      val date = new Date(epochMilli)
       assertEquals(instant, date.toInstant())
       assertEquals(date, Date.from(instant))
     }

@@ -66,7 +66,8 @@ class ExecTest {
     val re = RE2.compile("(?i:co(.)a)")
     assertTrue(
       "Assertion #1",
-      Array("Copa", "coba").sameElements(re.findAll("Copacobana", 10).toArray))
+      Array("Copa", "coba").sameElements(re.findAll("Copacobana", 10).toArray)
+    )
     val x = re.findAllSubmatch("Copacobana", 100)
     assertTrue("Assertion #2", Array("Copa", "p").sameElements(x.get(0)))
     assertTrue("Assertion #3", Array("coba", "b").sameElements(x.get(1)))
@@ -90,16 +91,16 @@ class ExecTest {
       in = new GZIPInputStream(in)
       file = file.substring(0, file.length - ".gz".length) // for errors
     }
-    var lineno  = 0
-    val r       = new UNIXBufferedReader(new InputStreamReader(in, "UTF-8"))
+    var lineno = 0
+    val r = new UNIXBufferedReader(new InputStreamReader(in, "UTF-8"))
     val strings = new ju.ArrayList[String]
-    var input   = 0
+    var input = 0
     // next index within strings to read
-    var inStrings    = false
-    var re: RE2      = null
-    var refull: RE2  = null
-    var nfail        = 0
-    var ncase        = 0
+    var inStrings = false
+    var re: RE2 = null
+    var refull: RE2 = null
+    var nfail = 0
+    var ncase = 0
     var line: String = null
     while ({ line = r.readLine(); line != null }) breakable {
       lineno += 1
@@ -114,7 +115,8 @@ class ExecTest {
         if (input < strings.size)
           fail(
             "%s:%d: out of sync: have %d strings left"
-              .format(file, lineno, strings.size - input))
+              .format(file, lineno, strings.size - input)
+          )
         strings.clear()
         inStrings = true
       } else if (line == "regexps") inStrings = false
@@ -126,7 +128,8 @@ class ExecTest {
             // Fatal because we'll get out of sync.
             fail(
               "%s:%d: unquote %s: %s"
-                .format(file, lineno, line, e.getMessage))
+                .format(file, lineno, line, e.getMessage)
+            )
             q = null // unreachable
 
         }
@@ -150,7 +153,8 @@ class ExecTest {
             }
             System.err.println(
               "%s:%d: compile %s: %s\n"
-                .format(file, lineno, q, e.getMessage))
+                .format(file, lineno, q, e.getMessage)
+            )
             nfail += 1
             if (nfail >= 100) fail("stopping after " + nfail + " errors")
             break
@@ -162,7 +166,8 @@ class ExecTest {
             // Fatal because q worked, so this should always work.
             fail(
               "%s:%d: compile full %s: %s"
-                .format(file, lineno, full, e.getMessage))
+                .format(file, lineno, full, e.getMessage)
+            )
         }
         input = 0
       } else if (first == '-' || '0' <= first && first <= '9') { // A sequence of match results.
@@ -186,7 +191,8 @@ class ExecTest {
         if (res.length != 4)
           fail(
             "%s:%d: have %d test results, want %d"
-              .format(file, lineno, res.length, 4))
+              .format(file, lineno, res.length, 4)
+          )
         var i = 0
         while (i < 4) {
           val partial = (i & 1) != 0
@@ -206,14 +212,17 @@ class ExecTest {
             if (line.contains("[[:")) {
               System.err.println(
                 "%s:%d: %s[partial=%b,longest=%b].findSubmatchIndex(%s) = %s, want %s\n"
-                  .format(file,
-                          lineno,
-                          re,
-                          partial,
-                          longest,
-                          text,
-                          ju.Arrays.toString(have),
-                          ju.Arrays.toString(want)))
+                  .format(
+                    file,
+                    lineno,
+                    re,
+                    partial,
+                    longest,
+                    text,
+                    ju.Arrays.toString(have),
+                    ju.Arrays.toString(want)
+                  )
+              )
               nfail += 1
               if (nfail >= 100) fail("stopping after " + nfail + " errors")
             }
@@ -224,7 +233,8 @@ class ExecTest {
           if (b != (want != null)) {
             System.err.println(
               "%s:%d: %s[partial=%b,longest=%b].match(%s) = %b, want %b\n"
-                .format(file, lineno, re, partial, longest, text, b, !b))
+                .format(file, lineno, re, partial, longest, text, b, !b)
+            )
             nfail += 1
             if (nfail >= 100)
               fail("stopping after " + nfail + " errors")
@@ -238,14 +248,15 @@ class ExecTest {
     if (input < strings.size)
       fail(
         "%s:%d: out of sync: have %d strings left at EOF"
-          .format(file, lineno, strings.size - input))
+          .format(file, lineno, strings.size - input)
+      )
     if (nfail > 0) fail("Of %d cases tested, %d failed".format(ncase, nfail))
     else System.err.println("%d cases tested\n".format(ncase))
   }
 
   // Returns true iff there are no runes with multibyte UTF-8 encodings in s.
   private def isSingleBytes(s: String): Boolean = {
-    var i   = 0
+    var i = 0
     val len = s.length
     while (i < len) {
       if (s.charAt(i) >= 0x80) return false
@@ -259,7 +270,7 @@ class ExecTest {
   private def utf16IndicesToUtf8(idx16: Array[Int], text: String) =
     try {
       val idx8 = new Array[Int](idx16.length)
-      var i    = 0
+      var i = 0
       while (i < idx16.length) {
         idx8(i) = text.substring(0, idx16(i)).getBytes("UTF-8").length
         i += 1
@@ -273,25 +284,26 @@ class ExecTest {
   private def parseResult(
       file: String,
       lineno: Int,
-      res: String): Array[Int] = { // A single - indicates no match.
+      res: String
+  ): Array[Int] = { // A single - indicates no match.
     if (res == "-") return null
     // Otherwise, a space-separated list of pairs.
     var n = 1
 
     // TODO(adonovan): is this safe or must we decode UTF-16?
     val len = res.length
-    var j   = 0
+    var j = 0
     while (j < len) {
       if (res.charAt(j) == ' ') n += 1
       j += 1
     }
     val out = new Array[Int](2 * n)
-    var i   = 0
+    var i = 0
     n = 0
     j = 0
     while (j <= len) {
       // Process a single pair.  - means no submatch.
-      if (j == len || res.charAt(j) == ' ') { 
+      if (j == len || res.charAt(j) == ' ') {
         val pair = res.substring(i, j)
         if (pair == "-") {
           out({
@@ -349,11 +361,11 @@ class ExecTest {
     var in: java.io.InputStream =
       new FileInputStream(new File("unit-tests/src/test/resources/" + file))
 
-    val r            = new UNIXBufferedReader(new InputStreamReader(in, "UTF-8"))
-    var lineno       = 0
-    var nerr         = 0
+    val r = new UNIXBufferedReader(new InputStreamReader(in, "UTF-8"))
+    var lineno = 0
+    var nerr = 0
     var line: String = null
-    var lastRegexp   = ""
+    var lastRegexp = ""
     while ({ line = r.readLine; line != null }) breakable {
       lineno += 1
       // if (line.isEmpty()) {
@@ -368,7 +380,7 @@ class ExecTest {
       //   0 pointer.
       if (line.isEmpty || line.charAt(0) == '#') break
       val field = NOTAB.findAll(line, -1)
-      var i     = 0
+      var i = 0
       while (i < field.size) {
         if (field.get(i) == "NULL") field.set(i, "")
         if (field.get(i) == "NIL") {
@@ -462,7 +474,8 @@ class ExecTest {
       // formats.
       if (field.size < 4) {
         System.err.println(
-          "%s:%d: too few fields: %s\n".format(file, lineno, line))
+          "%s:%d: too few fields: %s\n".format(file, lineno, line)
+        )
         nerr += 1
         break
       }
@@ -473,7 +486,8 @@ class ExecTest {
         catch {
           case NonFatal(e) =>
             System.err.println(
-              "%s:%d: cannot unquote %s\n".format(file, lineno, f))
+              "%s:%d: cannot unquote %s\n".format(file, lineno, f)
+            )
             nerr += 1
         }
         f = "\"" + field.get(2) + "\""
@@ -481,7 +495,8 @@ class ExecTest {
         catch {
           case NonFatal(e) =>
             System.err.println(
-              "%s:%d: cannot unquote %s\n".format(file, lineno, f))
+              "%s:%d: cannot unquote %s\n".format(file, lineno, f)
+            )
             nerr += 1
         }
       }
@@ -500,7 +515,8 @@ class ExecTest {
         case NonFatal(e) =>
           System.err.println(
             "%s:%d: cannot parse result %s\n"
-              .format(file, lineno, field.get(3)))
+              .format(file, lineno, field.get(3))
+          )
           nerr += 1
           break
       }
@@ -509,7 +525,7 @@ class ExecTest {
       var _break = false
       for (c <- flag.toCharArray if !_break) {
         var pattern = field.get(1)
-        var flags   = RE2.POSIX | RE2.CLASS_NL
+        var flags = RE2.POSIX | RE2.CLASS_NL
         c match {
           case 'E' =>
             // extended regexp (what we support)
@@ -529,7 +545,8 @@ class ExecTest {
               if (shouldCompileMatch(0)) {
                 System.err.println(
                   "%s:%d: %s did not compile\n"
-                    .format(file, lineno, pattern))
+                    .format(file, lineno, pattern)
+                )
                 nerr += 1
               }
               break
@@ -537,7 +554,8 @@ class ExecTest {
           if (!shouldCompileMatch(0)) {
             System.err.println(
               "%s:%d: %s should not compile\n"
-                .format(file, lineno, pattern))
+                .format(file, lineno, pattern)
+            )
             nerr += 1
             break
           }
@@ -545,7 +563,8 @@ class ExecTest {
           if (match0 != shouldCompileMatch(1)) {
             System.err.println(
               "%s:%d: %s.match(%s) = %s, want %s\n"
-                .format(file, lineno, pattern, text, match0, !match0))
+                .format(file, lineno, pattern, text, match0, !match0)
+            )
             nerr += 1
             break
           }
@@ -555,20 +574,23 @@ class ExecTest {
           if ((haveArray.length > 0) != match0) {
             System.err.println(
               "%s:%d: %s.match(%s) = %s, " + "but %s.findSubmatchIndex(%s) = %s\n"
-                .format(file,
-                        lineno,
-                        pattern,
-                        text,
-                        match0,
-                        pattern,
-                        text,
-                        ju.Arrays.toString(haveArray)))
+                .format(
+                  file,
+                  lineno,
+                  pattern,
+                  text,
+                  match0,
+                  pattern,
+                  text,
+                  ju.Arrays.toString(haveArray)
+                )
+            )
             nerr += 1
             break
           }
           // Convert int[] to List<Integer> and truncate to pos.length.
           val have = new ju.ArrayList[Integer]
-          var i    = 0
+          var i = 0
           while (i < pos.size) {
             have.add(haveArray(i))
             i += 1
@@ -576,7 +598,8 @@ class ExecTest {
           if (!(have == pos)) {
             System.err.println(
               "%s:%d: %s.findSubmatchIndex(%s) = %s, want %s\n"
-                .format(file, lineno, pattern, text, have, pos))
+                .format(file, lineno, pattern, text, have, pos)
+            )
             nerr += 1
             break
           }
@@ -588,8 +611,9 @@ class ExecTest {
 
   private def parseFowlerResult(
       _s: String,
-      shouldCompileMatch: Array[Boolean]): ju.List[Integer] = {
-    var s    = _s
+      shouldCompileMatch: Array[Boolean]
+  ): ju.List[Integer] = {
+    var s = _s
     val olds = s
     //   Field 4: the test outcome. This is either one of the posix error
     //     codes (with REG_ omitted) or the match array, a list of (m,n)

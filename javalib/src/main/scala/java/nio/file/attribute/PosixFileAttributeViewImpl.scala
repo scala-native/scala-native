@@ -22,9 +22,11 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
 
   override val name: String = "posix"
 
-  override def setTimes(lastModifiedTime: FileTime,
-                        lastAccessTime: FileTime,
-                        createTime: FileTime): Unit = Zone { implicit z =>
+  override def setTimes(
+      lastModifiedTime: FileTime,
+      lastAccessTime: FileTime,
+      createTime: FileTime
+  ): Unit = Zone { implicit z =>
     val sb = getStat()
 
     val buf = alloc[utime.utimbuf]
@@ -83,13 +85,13 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
 
   private def attributes =
     new PosixFileAttributes {
-      private[this] var st_ino: stat.ino_t    = _
-      private[this] var st_uid: stat.uid_t    = _
-      private[this] var st_gid: stat.gid_t    = _
+      private[this] var st_ino: stat.ino_t = _
+      private[this] var st_uid: stat.uid_t = _
+      private[this] var st_gid: stat.gid_t = _
       private[this] var st_size: unistd.off_t = _
       private[this] var st_atime: time.time_t = _
       private[this] var st_mtime: time.time_t = _
-      private[this] var st_mode: stat.mode_t  = _
+      private[this] var st_mode: stat.mode_t = _
 
       Zone { implicit z =>
         val buf = getStat()
@@ -155,16 +157,16 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
     val values =
       List(
         "lastModifiedTime" -> attrs.lastModifiedTime(),
-        "lastAccessTime"   -> attrs.lastAccessTime(),
-        "creationTime"     -> attrs.creationTime(),
-        "size"             -> Long.box(attrs.size()),
-        "isRegularFile"    -> Boolean.box(attrs.isRegularFile),
-        "isDirectory"      -> Boolean.box(attrs.isDirectory),
-        "isSymbolicLink"   -> Boolean.box(attrs.isSymbolicLink),
-        "isOther"          -> Boolean.box(attrs.isOther),
-        "fileKey"          -> attrs.fileKey(),
-        "permissions"      -> attrs.permissions(),
-        "group"            -> attrs.group()
+        "lastAccessTime" -> attrs.lastAccessTime(),
+        "creationTime" -> attrs.creationTime(),
+        "size" -> Long.box(attrs.size()),
+        "isRegularFile" -> Boolean.box(attrs.isRegularFile),
+        "isDirectory" -> Boolean.box(attrs.isDirectory),
+        "isSymbolicLink" -> Boolean.box(attrs.isSymbolicLink),
+        "isOther" -> Boolean.box(attrs.isOther),
+        "fileKey" -> attrs.fileKey(),
+        "permissions" -> attrs.permissions(),
+        "group" -> attrs.group()
       )
 
     val map = new ju.HashMap[String, Object]()

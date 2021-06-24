@@ -11,10 +11,12 @@ private[java] object WindowsHelperMethods {
     def getProcessToken =
       OpenProcessToken(GetCurrentProcess(), desiredAccess, tokenHandle)
     def getThreadToken =
-      OpenThreadToken(GetCurrentThread(),
-                      desiredAccess,
-                      openAsSelf = true,
-                      tokenHandle)
+      OpenThreadToken(
+        GetCurrentThread(),
+        desiredAccess,
+        openAsSelf = true,
+        tokenHandle
+      )
     if (getProcessToken || getThreadToken) {
       try {
         fn(!tokenHandle)

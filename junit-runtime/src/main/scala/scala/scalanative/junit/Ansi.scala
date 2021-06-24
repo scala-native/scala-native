@@ -16,8 +16,8 @@ private[junit] object Ansi {
       null
     } else {
       var r: String = ""
-      val len       = s.length
-      var i         = 0
+      val len = s.length
+      var i = 0
       while (i < len) {
         val c = s.charAt(i)
         if (c == '\u001B') {
@@ -33,9 +33,9 @@ private[junit] object Ansi {
     }
   }
 
-  final val RED     = "\u001B[31m"
-  final val YELLOW  = "\u001B[33m"
-  final val BLUE    = "\u001B[34m"
+  final val RED = "\u001B[31m"
+  final val YELLOW = "\u001B[33m"
+  final val BLUE = "\u001B[34m"
   final val MAGENTA = "\u001B[35m"
-  final val CYAN    = "\u001B[36m"
+  final val CYAN = "\u001B[36m"
 }

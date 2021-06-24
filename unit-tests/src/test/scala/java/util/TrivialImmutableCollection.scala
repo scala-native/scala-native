@@ -56,7 +56,8 @@ final class TrivialImmutableCollection[A] private (contents: Array[AnyRef])
 
   def remove(o: Any): Boolean =
     throw new UnsupportedOperationException(
-      "TrivialImmutableCollection.remove()")
+      "TrivialImmutableCollection.remove()"
+    )
 
   def containsAll(c: ju.Collection[_]): Boolean = {
     // scalastyle:off return
@@ -71,19 +72,23 @@ final class TrivialImmutableCollection[A] private (contents: Array[AnyRef])
 
   def addAll(c: ju.Collection[_ <: A]): Boolean =
     throw new UnsupportedOperationException(
-      "TrivialImmutableCollection.addAll()")
+      "TrivialImmutableCollection.addAll()"
+    )
 
   def removeAll(c: ju.Collection[_]): Boolean =
     throw new UnsupportedOperationException(
-      "TrivialImmutableCollection.removeAll()")
+      "TrivialImmutableCollection.removeAll()"
+    )
 
   def retainAll(c: ju.Collection[_]): Boolean =
     throw new UnsupportedOperationException(
-      "TrivialImmutableCollection.retainAll()")
+      "TrivialImmutableCollection.retainAll()"
+    )
 
   def clear(): Unit =
     throw new UnsupportedOperationException(
-      "TrivialImmutableCollection.clear()")
+      "TrivialImmutableCollection.clear()"
+    )
 
   /** Returns the `i`th element of this collection.
    *

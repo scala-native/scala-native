@@ -24,7 +24,7 @@ object GoTestUtils {
   // corresponding indices in the UTF-8 encoding of |text|.
   def utf16IndicesToUtf8(idx16: Array[Int], text: String): Array[Int] = {
     val idx8 = new Array[Int](idx16.length)
-    var i    = 0
+    var i = 0
     while (i < idx16.length) {
       idx8(i) =
         if (idx16(i) == -1) -1

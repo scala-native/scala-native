@@ -51,7 +51,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
   class CollectMethodInfo extends Traverser {
     var mutableVars = Set.empty[Symbol]
-    var labels      = Set.empty[LabelDef]
+    var labels = Set.empty[LabelDef]
 
     override def traverse(tree: Tree) = {
       tree match {
@@ -72,14 +72,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   }
 
   class StatBuffer {
-    private val buf          = mutable.UnrolledBuffer.empty[nir.Defn]
+    private val buf = mutable.UnrolledBuffer.empty[nir.Defn]
     def toSeq: Seq[nir.Defn] = buf.toSeq
 
     def +=(defn: nir.Defn): Unit = {
       buf += defn
     }
 
-    def isEmpty  = buf.isEmpty
+    def isEmpty = buf.isEmpty
     def nonEmpty = buf.nonEmpty
 
     def genClass(cd: ClassDef): Unit = {
@@ -93,11 +93,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genStruct(cd: ClassDef): Unit = {
-      val sym    = cd.symbol
-      val attrs  = genStructAttrs(sym)
-      val name   = genTypeName(sym)
+      val sym = cd.symbol
+      val attrs = genStructAttrs(sym)
+      val name = genTypeName(sym)
       val fields = genStructFields(sym)
-      val body   = cd.impl.body
+      val body = cd.impl.body
 
       buf += Defn.Class(attrs, name, None, Seq.empty)(cd.pos)
       genMethods(cd)
@@ -106,9 +106,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genStructAttrs(sym: Symbol): Attrs = Attrs.None
 
     def genNormalClass(cd: ClassDef): Unit = {
-      val sym    = cd.symbol
-      def attrs  = genClassAttrs(cd)
-      def name   = genTypeName(sym)
+      val sym = cd.symbol
+      def attrs = genClassAttrs(cd)
+      def name = genTypeName(sym)
       def parent = genClassParent(sym)
       def traits = genClassInterfaces(sym)
 
@@ -163,13 +163,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
     def genClassFields(cd: ClassDef): Unit = {
-      val sym   = cd.symbol
+      val sym = cd.symbol
       val attrs = nir.Attrs(isExtern = sym.isExternModule)
 
       for (f <- sym.info.decls
-           if !f.isMethod && f.isTerm && !f.isModule) {
-        val ty                = genType(f.tpe)
-        val name              = genFieldName(f)
+          if !f.isMethod && f.isTerm && !f.isModule) {
+        val ty = genType(f.tpe)
+        val name = genFieldName(f)
         val pos: nir.Position = f.pos
 
         buf += Defn.Var(attrs, name, ty, Val.Zero(ty))(pos)
@@ -206,7 +206,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genRegisterReflectiveInstantiation(cd: ClassDef): Unit = {
       val owner = genTypeName(curClassSym)
-      val name  = owner.member(nir.Sig.Clinit())
+      val name = owner.member(nir.Sig.Clinit())
 
       val staticInitBody =
         if (isStaticModule(curClassSym))
@@ -220,10 +220,12 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       staticInitBody.foreach {
         case body if body.nonEmpty =>
-          buf += Defn.Define(Attrs(),
-                             name,
-                             nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
-                             body)(cd.pos)
+          buf += Defn.Define(
+            Attrs(),
+            name,
+            nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
+            body
+          )(cd.pos)
         case _ => ()
       }
     }
@@ -232,7 +234,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     // which is expected to extend one of scala.runtime.AbstractFunctionX.
     private def genReflectiveInstantiationConstructor(
         reflInstBuffer: ReflectiveInstantiationBuffer,
-        superClass: Global)(implicit pos: nir.Position): Unit = {
+        superClass: Global
+    )(implicit pos: nir.Position): Unit = {
       withFreshExprBuffer { exprBuf =>
         val body = {
           // first argument is this
@@ -265,7 +268,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         exprBuf: ExprBuffer,
         name: Global,
         argTypes: Seq[nir.Type],
-        args: Seq[Val])(implicit pos: nir.Position): Val = {
+        args: Seq[Val]
+    )(implicit pos: nir.Position): Val = {
 
       val alloc = exprBuf.classalloc(name, unwind(curFresh))
       exprBuf.call(
@@ -278,10 +282,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genRegisterReflectiveInstantiationForModuleClass(
-        cd: ClassDef): Seq[Inst] = {
+        cd: ClassDef
+    ): Seq[Inst] = {
       import NirGenSymbols._
 
-      val fqSymId   = curClassSym.fullName + "$"
+      val fqSymId = curClassSym.fullName + "$"
       val fqSymName = Global.Top(fqSymId)
 
       implicit val pos: nir.Position = cd.pos
@@ -311,17 +316,22 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             Attrs(),
             reflInstBuffer.name.member(applyMethodSig),
             nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), jlObjectRef),
-            body)
+            body
+          )
         }
 
         // Generate the module loader class constructor.
-        genReflectiveInstantiationConstructor(reflInstBuffer,
-                                              srAbstractFunction0)
+        genReflectiveInstantiationConstructor(
+          reflInstBuffer,
+          srAbstractFunction0
+        )
 
-        reflInstBuffer += Defn.Class(Attrs(),
-                                     reflInstBuffer.name,
-                                     Some(srAbstractFunction0),
-                                     Seq(serializable))
+        reflInstBuffer += Defn.Class(
+          Attrs(),
+          reflInstBuffer.name,
+          Some(srAbstractFunction0),
+          Seq(serializable)
+        )
 
         // Allocate and return an instance of the generated class.
         allocAndConstruct(exprBuf, reflInstBuffer.name, Seq(), Seq())
@@ -330,14 +340,15 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       withFreshExprBuffer { exprBuf =>
         exprBuf.label(curFresh(), Seq())
 
-        val fqcnArg          = Val.String(fqSymId)
-        val runtimeClassArg  = Val.ClassOf(fqSymName)
+        val fqcnArg = Val.String(fqSymId)
+        val runtimeClassArg = Val.ClassOf(fqSymName)
         val loadModuleFunArg = genModuleLoaderAnonFun(exprBuf)
 
         exprBuf.genApplyModuleMethod(
           ReflectModule,
           Reflect_registerLoadableModuleClass,
-          Seq(fqcnArg, runtimeClassArg, loadModuleFunArg).map(ValTree(_)))
+          Seq(fqcnArg, runtimeClassArg, loadModuleFunArg).map(ValTree(_))
+        )
 
         exprBuf.ret(Val.Unit)
         exprBuf.toSeq
@@ -345,24 +356,29 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genRegisterReflectiveInstantiationForNormalClass(
-        cd: ClassDef): Seq[Inst] = {
+        cd: ClassDef
+    ): Seq[Inst] = {
       import NirGenSymbols._
 
-      val fqSymId   = curClassSym.fullName
+      val fqSymId = curClassSym.fullName
       val fqSymName = Global.Top(fqSymId)
 
       // Create a new Tuple2 and initialise it with the provided values.
-      def createTuple2(exprBuf: ExprBuffer, _1: Val, _2: Val)(
-          implicit pos: nir.Position): Val = {
-        allocAndConstruct(exprBuf,
-                          tuple2,
-                          Seq(jlObjectRef, jlObjectRef),
-                          Seq(_1, _2))
+      def createTuple2(exprBuf: ExprBuffer, _1: Val, _2: Val)(implicit
+          pos: nir.Position
+      ): Val = {
+        allocAndConstruct(
+          exprBuf,
+          tuple2,
+          Seq(jlObjectRef, jlObjectRef),
+          Seq(_1, _2)
+        )
       }
 
       def genClassConstructorsInfo(
           exprBuf: ExprBuffer,
-          ctors: Seq[global.Symbol])(implicit pos: nir.Position): Val = {
+          ctors: Seq[global.Symbol]
+      )(implicit pos: nir.Position): Val = {
         val applyMethodSig =
           Sig.Method("apply", Seq(jlObjectRef, jlObjectRef))
 
@@ -370,19 +386,22 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         // - tpes is an array with the runtime classes of the constructor arguments.
         // - inst is a function, which accepts an array with tpes and returns a new
         //   instance of the class.
-        val ctorsInfo = exprBuf.arrayalloc(Type.Array(tuple2Ref),
-                                           Val.Int(ctors.length),
-                                           unwind(curFresh))
+        val ctorsInfo = exprBuf.arrayalloc(
+          Type.Array(tuple2Ref),
+          Val.Int(ctors.length),
+          unwind(curFresh)
+        )
 
         // For each (public) constructor C, generate a lambda responsible for
         // initialising and returning an instance of the class, using C.
         for ((ctor, ctorIdx) <- ctors.zipWithIndex) {
-          val ctorSig                    = genMethodSig(ctor)
-          val ctorArgsSig                = ctorSig.args.map(_.mangle).mkString
+          val ctorSig = genMethodSig(ctor)
+          val ctorArgsSig = ctorSig.args.map(_.mangle).mkString
           implicit val pos: nir.Position = ctor.pos
 
           reflectiveInstantiationInfo += ReflectiveInstantiationBuffer(
-            fqSymId + ctorArgsSig)
+            fqSymId + ctorArgsSig
+          )
           val reflInstBuffer = reflectiveInstantiationInfo.last
 
           // Lambda generation consists of generating a class which extends
@@ -401,10 +420,12 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               val argsVals =
                 (for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) yield {
                   val elem =
-                    exprBuf.arrayload(jlObjectRef,
-                                      argsArg,
-                                      Val.Int(argIdx),
-                                      unwind(curFresh))
+                    exprBuf.arrayload(
+                      jlObjectRef,
+                      argsArg,
+                      Val.Int(argIdx),
+                      unwind(curFresh)
+                    )
                   // If the expected argument type can be boxed (i.e. is a primitive
                   // type), then we need to unbox it before passing it to C.
                   Type.box.get(arg) match {
@@ -416,10 +437,12 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 })
 
               // Allocate a new instance and call C.
-              val alloc = allocAndConstruct(exprBuf,
-                                            fqSymName,
-                                            ctorSig.args.tail,
-                                            argsVals)
+              val alloc = allocAndConstruct(
+                exprBuf,
+                fqSymName,
+                ctorSig.args.tail,
+                argsVals
+              )
 
               exprBuf.ret(alloc)
               exprBuf.toSeq
@@ -428,21 +451,26 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             reflInstBuffer += Defn.Define(
               Attrs(),
               reflInstBuffer.name.member(applyMethodSig),
-              nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name),
-                                    Type.Array(jlObjectRef)),
-                                jlObjectRef),
+              nir.Type.Function(
+                Seq(Type.Ref(reflInstBuffer.name), Type.Array(jlObjectRef)),
+                jlObjectRef
+              ),
               body
             )
           }
 
           // Generate the class instantiator constructor.
-          genReflectiveInstantiationConstructor(reflInstBuffer,
-                                                srAbstractFunction1)
+          genReflectiveInstantiationConstructor(
+            reflInstBuffer,
+            srAbstractFunction1
+          )
 
-          reflInstBuffer += Defn.Class(Attrs(),
-                                       reflInstBuffer.name,
-                                       Some(srAbstractFunction1),
-                                       Seq(serializable))
+          reflInstBuffer += Defn.Class(
+            Attrs(),
+            reflInstBuffer.name,
+            Some(srAbstractFunction1),
+            Seq(serializable)
+          )
 
           // Allocate an instance of the generated class.
           val instantiator =
@@ -451,26 +479,32 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           // Create the current constructor's info. We need:
           // - an array with the runtime classes of the ctor parameters.
           // - the instantiator function created above (instantiator).
-          val rtClasses = exprBuf.arrayalloc(jlClassRef,
-                                             Val.Int(ctorSig.args.tail.length),
-                                             unwind(curFresh))
+          val rtClasses = exprBuf.arrayalloc(
+            jlClassRef,
+            Val.Int(ctorSig.args.tail.length),
+            unwind(curFresh)
+          )
           for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
             // Store the runtime class in the array.
-            exprBuf.arraystore(jlClassRef,
-                               rtClasses,
-                               Val.Int(argIdx),
-                               Val.ClassOf(Type.typeToName(arg)),
-                               unwind(curFresh))
+            exprBuf.arraystore(
+              jlClassRef,
+              rtClasses,
+              Val.Int(argIdx),
+              Val.ClassOf(Type.typeToName(arg)),
+              unwind(curFresh)
+            )
           }
 
           // Allocate a tuple to store the current constructor's info
           val to = createTuple2(exprBuf, rtClasses, instantiator)
 
-          exprBuf.arraystore(tuple2Ref,
-                             ctorsInfo,
-                             Val.Int(ctorIdx),
-                             to,
-                             unwind(curFresh))
+          exprBuf.arraystore(
+            tuple2Ref,
+            ctorsInfo,
+            Val.Int(ctorIdx),
+            to,
+            unwind(curFresh)
+          )
         }
 
         ctorsInfo
@@ -492,7 +526,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         withFreshExprBuffer { exprBuf =>
           exprBuf.label(curFresh(), Seq())
 
-          val fqcnArg         = Val.String(fqSymId)
+          val fqcnArg = Val.String(fqSymId)
           val runtimeClassArg = Val.ClassOf(fqSymName)
 
           val instantiateClassFunArg =
@@ -502,7 +536,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             ReflectModule,
             Reflect_registerInstantiatableClass,
             Seq(fqcnArg, runtimeClassArg, instantiateClassFunArg).map(
-              ValTree(_)))
+              ValTree(_)
+            )
+          )
 
           exprBuf.ret(Val.Unit)
           exprBuf.toSeq
@@ -519,11 +555,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     private def genJavaDefaultMethodBody(dd: DefDef): Seq[nir.Inst] = {
       val fresh = Fresh()
-      val buf   = new ExprBuffer()(fresh)
+      val buf = new ExprBuffer()(fresh)
 
       implicit val pos: nir.Position = dd.pos
 
-      val sym               = dd.symbol
+      val sym = dd.symbol
       val implClassFullName = sym.owner.fullName + "$class"
 
       val implClassSym = findMemberFromRoot(TermName(implClassFullName))
@@ -541,7 +577,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
 
       val implName = Val.Global(genMethodName(implMethodSym), Type.Ptr)
-      val implSig  = genMethodSig(implMethodSym)
+      val implSig = genMethodSig(implMethodSym)
 
       val Type.Function(paramtys, retty) = implSig
 
@@ -556,7 +592,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genMethod(dd: DefDef): Unit = {
       val fresh = Fresh()
-      val env   = new MethodEnv(fresh)
+      val env = new MethodEnv(fresh)
 
       implicit val pos: nir.Position = dd.pos
 
@@ -567,11 +603,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         curFresh := fresh,
         curUnwindHandler := None
       ) {
-        val sym      = dd.symbol
-        val owner    = curClassSym.get
-        val attrs    = genMethodAttrs(sym)
-        val name     = genMethodName(sym)
-        val sig      = genMethodSig(sym)
+        val sym = dd.symbol
+        val owner = curClassSym.get
+        val attrs = genMethodAttrs(sym)
+        val name = genMethodName(sym)
+        val sig = genMethodSig(sym)
         val isStatic = owner.isExternModule || isImplClass(owner)
 
         dd.rhs match {
@@ -620,12 +656,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
-    protected def genLinktimeResolved(dd: DefDef, name: Global)(
-        implicit pos: nir.Position): Unit = {
+    protected def genLinktimeResolved(dd: DefDef, name: Global)(implicit
+        pos: nir.Position
+    ): Unit = {
       if (dd.symbol.isConstant) {
         globalError(
           dd.pos,
-          "Link-time property cannot be constant value, it would be inlined by scalac compiler")
+          "Link-time property cannot be constant value, it would be inlined by scalac compiler"
+        )
       }
 
       dd.rhs.symbol match {
@@ -641,7 +679,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case _ =>
           globalError(
             dd.pos,
-            s"Link-time resolved property must have ${ResolvedMethod.fullName} as body")
+            s"Link-time resolved property must have ${ResolvedMethod.fullName} as body"
+          )
       }
     }
 
@@ -649,15 +688,18 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     private def genLinktimeResolvedMethod(
         retty: nir.Type,
         propertyName: String,
-        methodName: nir.Global)(implicit pos: nir.Position): Unit = {
+        methodName: nir.Global
+    )(implicit pos: nir.Position): Unit = {
       implicit val fresh: Fresh = Fresh()
-      val buf                   = new ExprBuffer()
+      val buf = new ExprBuffer()
 
       buf.label(fresh())
-      val value = buf.call(Linktime.PropertyResolveFunctionTy(retty),
-                           Linktime.PropertyResolveFunction(retty),
-                           Val.String(propertyName) :: Nil,
-                           Next.None)
+      val value = buf.call(
+        Linktime.PropertyResolveFunctionTy(retty),
+        Linktime.PropertyResolveFunction(retty),
+        Val.String(propertyName) :: Nil,
+        Next.None
+      )
       buf.ret(value)
 
       curStatBuffer.get += Defn.Define(
@@ -668,16 +710,18 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       )
     }
 
-    def genExternMethod(attrs: nir.Attrs,
-                        name: nir.Global,
-                        origSig: nir.Type,
-                        rhs: Tree): Unit = {
+    def genExternMethod(
+        attrs: nir.Attrs,
+        name: nir.Global,
+        origSig: nir.Type,
+        rhs: Tree
+    ): Unit = {
       rhs match {
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
-          val moduleName  = genTypeName(curClassSym)
+          val moduleName = genTypeName(curClassSym)
           val externAttrs = Attrs(isExtern = true)
-          val externSig   = genExternMethodSig(curMethodSym)
-          val externDefn  = Defn.Declare(externAttrs, name, externSig)(rhs.pos)
+          val externSig = genExternMethodSig(curMethodSym)
+          val externDefn = Defn.Declare(externAttrs, name, externSig)(rhs.pos)
 
           buf += externDefn
 
@@ -697,7 +741,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           ref.symbol
         case _ =>
           unsupported(
-            "extern objects may only contain extern fields and methods")
+            "extern objects may only contain extern fields and methods"
+          )
       }.toSet
       for {
         f <- curClassSym.info.decls if f.isField
@@ -731,12 +776,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs)
     }
 
-    def genMethodBody(dd: DefDef,
-                      bodyp: Tree,
-                      isStatic: Boolean,
-                      isExtern: Boolean): Seq[nir.Inst] = {
+    def genMethodBody(
+        dd: DefDef,
+        bodyp: Tree,
+        isStatic: Boolean,
+        isExtern: Boolean
+    ): Seq[nir.Inst] = {
       val fresh = curFresh.get
-      val buf   = new ExprBuffer()(fresh)
+      val buf = new ExprBuffer()(fresh)
 
       implicit val pos: nir.Position = bodyp.pos
 
@@ -746,7 +793,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val ty = genType(curClassSym.tpe)
           Val.Local(fresh(), ty)
         case Some(sym) =>
-          val ty    = if (isExtern) genExternType(sym.tpe) else genType(sym.tpe)
+          val ty = if (isExtern) genExternType(sym.tpe) else genType(sym.tpe)
           val param = Val.Local(fresh(), ty)
           curMethodEnv.enter(sym, param)
           param
@@ -760,7 +807,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         if (isExtern) {
           paramSyms.zip(params).foreach {
             case (Some(sym), param) if isExtern =>
-              val ty    = genType(sym.tpe)
+              val ty = genType(sym.tpe)
               val value = buf.fromExtern(ty, param)
               curMethodEnv.enter(sym, value)
             case _ =>
@@ -772,7 +819,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       def genVars(): Unit = {
         val vars = curMethodInfo.mutableVars.toSeq
         vars.foreach { sym =>
-          val ty   = genType(sym.info)
+          val ty = genType(sym.info)
           val slot = buf.var_(ty, unwind(fresh))
           curMethodEnv.enter(sym, slot)
         }
@@ -783,7 +830,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         else {
           val syncedIn = curMethodThis.getOrElse {
             unsupported(
-              s"cannot generate `synchronized` for method ${curMethodSym.name}, curMethodThis was empty")
+              s"cannot generate `synchronized` for method ${curMethodSym.name}, curMethodThis was empty"
+            )
           }
           buf.genSynchronized(ValTree(syncedIn))(bodyGen)
         }
@@ -792,9 +840,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       def genBody(): Val = bodyp match {
         // Tailrec emits magical labeldefs that can hijack this reference is
         // current method. This requires special treatment on our side.
-        case Block(List(ValDef(_, nme.THIS, _, _)),
-                   label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
-          val local  = curMethodEnv.enterLabel(label)
+        case Block(
+              List(ValDef(_, nme.THIS, _, _)),
+              label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)
+            ) =>
+          val local = curMethodEnv.enterLabel(label)
           val values = params.take(label.params.length)
 
           buf.jump(local, values)(label.pos)
@@ -838,13 +888,16 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
   }
 
-  private def checkExplicitReturnTypeAnnotation(externMethodDd: DefDef,
-                                                methodKind: String): Unit = {
+  private def checkExplicitReturnTypeAnnotation(
+      externMethodDd: DefDef,
+      methodKind: String
+  ): Unit = {
     externMethodDd.tpt match {
       case resultTypeTree: global.TypeTree if resultTypeTree.wasEmpty =>
         global.reporter.error(
           externMethodDd.pos,
-          s"$methodKind ${externMethodDd.name} needs result type")
+          s"$methodKind ${externMethodDd.name} needs result type"
+        )
       case _ => ()
     }
   }
@@ -861,7 +914,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             case _ =>
               globalError(
                 tree.symbol.pos,
-                s"Name used to resolve link-time property needs to be non-null literal constant")
+                s"Name used to resolve link-time property needs to be non-null literal constant"
+              )
               None
           }
       }

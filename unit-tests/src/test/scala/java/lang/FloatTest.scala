@@ -223,7 +223,8 @@ class FloatTest {
     // Does not parse characters beyond IEEE754 spec.
     assertTrue(
       "a13",
-      Float.parseFloat("1.7976931348623157999999999") == 1.7976931348623157f)
+      Float.parseFloat("1.7976931348623157999999999") == 1.7976931348623157f
+    )
 
     assertThrows(classOf[NumberFormatException], Float.parseFloat(""))
     assertThrows(classOf[NumberFormatException], Float.parseFloat("F"))
@@ -232,24 +233,34 @@ class FloatTest {
     assertThrows(classOf[NumberFormatException], Float.parseFloat("0.potato"))
 
     assertThrows(classOf[NumberFormatException], Float.parseFloat("6.66 F"))
-    assertThrows(classOf[NumberFormatException],
-                 Float.parseFloat("6.66F  Bad  "))
-    assertThrows(classOf[NumberFormatException],
-                 Float.parseFloat("6.66F\u0000a"))
-    assertThrows(classOf[NumberFormatException],
-                 Float.parseFloat("6.66F \u0100"))
+    assertThrows(
+      classOf[NumberFormatException],
+      Float.parseFloat("6.66F  Bad  ")
+    )
+    assertThrows(
+      classOf[NumberFormatException],
+      Float.parseFloat("6.66F\u0000a")
+    )
+    assertThrows(
+      classOf[NumberFormatException],
+      Float.parseFloat("6.66F \u0100")
+    )
 
     // Out of IEE754 range handling
 
     //   Too big - java.lang.Float.MAX_VALUE times 10
-    assertTrue("a20",
-               Float.parseFloat("3.4028235E39") ==
-                 Float.POSITIVE_INFINITY)
+    assertTrue(
+      "a20",
+      Float.parseFloat("3.4028235E39") ==
+        Float.POSITIVE_INFINITY
+    )
 
     //   Too big - Negative java.lang.Float.MAX_VALUE times 10
-    assertTrue("a21",
-               Float.parseFloat("-3.4028235E39") ==
-                 Float.NEGATIVE_INFINITY)
+    assertTrue(
+      "a21",
+      Float.parseFloat("-3.4028235E39") ==
+        Float.NEGATIVE_INFINITY
+    )
 
     //   Too close to 0 - java.lang.Float.MIN_VALUE divided by 10
     assertTrue("a22", Float.parseFloat("1.4E-46") == 0.0f)
@@ -286,12 +297,12 @@ class FloatTest {
     assertF2sEquals("NaN", Float.NaN)
 
     // Test simple values around zero.
-    assertF2sEquals("0.0", 0.0F)
-    assertF2sEquals("-0.0", -0.0F)
-    assertF2sEquals("1.0", 1.0F)
-    assertF2sEquals("-1.0", -1.0F)
-    assertF2sEquals("2.0", 2.0F)
-    assertF2sEquals("-2.0", -2.0F)
+    assertF2sEquals("0.0", 0.0f)
+    assertF2sEquals("-0.0", -0.0f)
+    assertF2sEquals("1.0", 1.0f)
+    assertF2sEquals("-1.0", -1.0f)
+    assertF2sEquals("2.0", 2.0f)
+    assertF2sEquals("-2.0", -2.0f)
 
     // Test maximum & minima.
     assertF2sEquals("3.4028235E38", scala.Float.MaxValue)
@@ -300,15 +311,15 @@ class FloatTest {
 
     // Test correctness least significant digits  & number of digits after the
     // decimal point of values with 'infinite' number of fraction digits.
-    assertF2sEquals("3.1415927", (math.Pi * 1.0E+0).toFloat)
-    assertF2sEquals("31.415926", (math.Pi * 1.0E+1).toFloat)
-    assertF2sEquals("0.31415927", (math.Pi * 1.0E-1).toFloat)
+    assertF2sEquals("3.1415927", (math.Pi * 1.0e+0).toFloat)
+    assertF2sEquals("31.415926", (math.Pi * 1.0e+1).toFloat)
+    assertF2sEquals("0.31415927", (math.Pi * 1.0e-1).toFloat)
 
     // Test transitions to scientific notation.
-    assertF2sEquals("3141592.8", (math.Pi * 1.0E+6).toFloat)
-    assertF2sEquals("3.1415926E7", (math.Pi * 1.0E+7).toFloat)
-    assertF2sEquals("0.0031415927", (math.Pi * 1.0E-3).toFloat)
-    assertF2sEquals("3.1415926E-4", (math.Pi * 1.0E-4).toFloat)
+    assertF2sEquals("3141592.8", (math.Pi * 1.0e+6).toFloat)
+    assertF2sEquals("3.1415926E7", (math.Pi * 1.0e+7).toFloat)
+    assertF2sEquals("0.0031415927", (math.Pi * 1.0e-3).toFloat)
+    assertF2sEquals("3.1415926E-4", (math.Pi * 1.0e-4).toFloat)
   }
 
   @Test def isFinite(): Unit = {

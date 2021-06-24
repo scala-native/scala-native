@@ -12,10 +12,10 @@ class DirectoryStreamTest {
   @Test def filesNewDirectoryStreamPath(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
-      val f0  = dir.resolve("f0")
-      val f1  = dir.resolve("f1")
-      val d0  = dir.resolve("d0")
-      val f2  = d0.resolve("f2")
+      val f0 = dir.resolve("f0")
+      val f1 = dir.resolve("f1")
+      val d0 = dir.resolve("d0")
+      val f2 = d0.resolve("f2")
 
       Files.createDirectory(d0)
       Files.createFile(f0)
@@ -26,9 +26,9 @@ class DirectoryStreamTest {
       assertTrue(Files.exists(f1) && Files.isRegularFile(f1))
       assertTrue(Files.exists(f2) && Files.isRegularFile(f2))
 
-      val stream   = Files.newDirectoryStream(dir)
+      val stream = Files.newDirectoryStream(dir)
       val expected = Set(f0, f1, d0)
-      val result   = scala.collection.mutable.Set.empty[Path]
+      val result = scala.collection.mutable.Set.empty[Path]
 
       val it = stream.iterator()
       while (it.hasNext()) {
@@ -41,10 +41,10 @@ class DirectoryStreamTest {
   @Test def filesNewDirectoryStreamPathDirectoryStreamFilterPath(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
-      val f0  = dir.resolve("f0")
-      val f1  = dir.resolve("f1")
-      val d0  = dir.resolve("d0")
-      val f2  = d0.resolve("f2")
+      val f0 = dir.resolve("f0")
+      val f1 = dir.resolve("f1")
+      val d0 = dir.resolve("d0")
+      val f2 = d0.resolve("f2")
 
       Files.createDirectory(d0)
       Files.createFile(f0)
@@ -58,9 +58,9 @@ class DirectoryStreamTest {
       val filter = new DirectoryStream.Filter[Path] {
         override def accept(p: Path): Boolean = !p.toString.endsWith("f1")
       }
-      val stream   = Files.newDirectoryStream(dir, filter)
+      val stream = Files.newDirectoryStream(dir, filter)
       val expected = Set(f0, d0)
-      val result   = scala.collection.mutable.Set.empty[Path]
+      val result = scala.collection.mutable.Set.empty[Path]
 
       val it = stream.iterator()
       while (it.hasNext()) {
@@ -84,7 +84,7 @@ class DirectoryStreamTest {
 
   @Test def hasNextReturnsFalseAfterStreamIsClosed(): Unit = {
     val stream = Files.newDirectoryStream(Paths.get("."))
-    val it     = stream.iterator()
+    val it = stream.iterator()
     stream.close()
     assertFalse(it.hasNext())
     assertThrows(classOf[NoSuchElementException], it.next())

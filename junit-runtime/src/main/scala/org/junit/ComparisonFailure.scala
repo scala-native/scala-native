@@ -6,24 +6,27 @@ package org.junit
 object ComparisonFailure {
   private final val MAX_CONTEXT_LENGTH = 20
 
-  private class ComparisonCompactor(private val expected: String,
-                                    private val actual: String) {
+  private class ComparisonCompactor(
+      private val expected: String,
+      private val actual: String
+  ) {
 
-    private val ELLIPSIS: String   = "..."
-    private val DIFF_END: String   = "]"
+    private val ELLIPSIS: String = "..."
+    private val DIFF_END: String = "]"
     private val DIFF_START: String = "["
 
     def compact(message: String): String = {
       if (expected == null || actual == null || expected.equals(actual)) {
         Assert.format(message, expected, actual)
       } else {
-        val extractor       = new DiffExtractor()
+        val extractor = new DiffExtractor()
         val compactedPrefix = extractor.compactPrefix()
         val compactedSuffix = extractor.compactSuffix()
         Assert.format(
           message,
           compactedPrefix + extractor.expectedDiff() + compactedSuffix,
-          compactedPrefix + extractor.actualDiff() + compactedSuffix)
+          compactedPrefix + extractor.actualDiff() + compactedSuffix
+        )
       }
     }
 
@@ -39,12 +42,15 @@ object ComparisonFailure {
         s.charAt(s.length() - 1 - i)
 
       var suffixLength = 0
-      var maxSuffixLength = Math.min(expected.length() - prefix.length(),
-                                     actual.length() - prefix.length()) - 1
+      var maxSuffixLength = Math.min(
+        expected.length() - prefix.length(),
+        actual.length() - prefix.length()
+      ) - 1
       while (suffixLength <= maxSuffixLength &&
-             charAtFromEnd(expected, suffixLength) == charAtFromEnd(
-               actual,
-               suffixLength)) {
+          charAtFromEnd(expected, suffixLength) == charAtFromEnd(
+            actual,
+            suffixLength
+          )) {
         suffixLength += 1
       }
       expected.substring(expected.length() - suffixLength)
@@ -64,7 +70,8 @@ object ComparisonFailure {
           _sharedPrefix
         else
           ELLIPSIS + _sharedPrefix.substring(
-            _sharedPrefix.length() - MAX_CONTEXT_LENGTH)
+            _sharedPrefix.length() - MAX_CONTEXT_LENGTH
+          )
       }
 
       def compactSuffix(): String = {
@@ -75,8 +82,10 @@ object ComparisonFailure {
       }
 
       private def extractDiff(source: String): String = {
-        val sub = source.substring(_sharedPrefix.length(),
-                                   source.length() - _sharedSuffix.length())
+        val sub = source.substring(
+          _sharedPrefix.length(),
+          source.length() - _sharedSuffix.length()
+        )
         DIFF_START + sub + DIFF_END
       }
     }

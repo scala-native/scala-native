@@ -34,8 +34,8 @@ class PtrOpsTest {
 
   @Test def castsPtrByteToCFuncPtr(): Unit = {
     val fnPtr: Ptr[Byte] = CFuncPtr.toPtr(fn0)
-    val fnFromPtr        = CFuncPtr.fromPtr[CFuncPtr0[CInt]](fnPtr)
-    val expectedResult   = 1
+    val fnFromPtr = CFuncPtr.fromPtr[CFuncPtr0[CInt]](fnPtr)
+    val expectedResult = 1
 
     assertEquals(expectedResult, fn0())
     assertEquals(expectedResult, fnFromPtr())
@@ -46,10 +46,10 @@ class PtrOpsTest {
   @Test def castedCFuncPtrHandlesArguments(): Unit = {
     type Add1Fn = CFuncPtr1[Int, Int]
     val ptr: Ptr[Byte] = CFuncPtr.toPtr(fn1)
-    val fnFromPtr      = CFuncPtr.fromPtr[CFuncPtr1[Int, Int]](ptr)
-    val aliasedFn      = CFuncPtr.fromPtr[Add1Fn](ptr)
+    val fnFromPtr = CFuncPtr.fromPtr[CFuncPtr1[Int, Int]](ptr)
+    val aliasedFn = CFuncPtr.fromPtr[Add1Fn](ptr)
 
-    val in          = 1
+    val in = 1
     val expectedOut = 2
 
     val res0 = fn1(in)
@@ -71,21 +71,21 @@ class PtrOpsTest {
 
   @Test def castedCFuncPtrHandlesPointersAndStructs(): Unit = {
     type AssignCString = CFuncPtr2[CString, StructA, StructA]
-    val ptr       = CFuncPtr.toPtr(fn2)
+    val ptr = CFuncPtr.toPtr(fn2)
     val fnFromPtr = CFuncPtr.fromPtr[CFuncPtr2[CString, StructA, StructA]](ptr)
     val aliasedFn = CFuncPtr.fromPtr[AssignCString](ptr)
 
     def test(fn: CFuncPtr2[CString, StructA, StructA]): Unit = Zone {
       implicit z =>
-        val str     = alloc[StructA]
+        val str = alloc[StructA]
         val charset = java.nio.charset.StandardCharsets.UTF_8
 
         str._1 = 1
         str._2 = toCString("hello_world", charset)
 
-        val sarg      = toCString("fourty_two", charset)
-        val expected  = fromCString(sarg, charset)
-        val res       = fn(sarg, str)
+        val sarg = toCString("fourty_two", charset)
+        val expected = fromCString(sarg, charset)
+        val res = fn(sarg, str)
         val strResult = fromCString(res._2, charset)
         assertEquals(res._1, 42)
         assertEquals(strResult, expected)
@@ -96,7 +96,7 @@ class PtrOpsTest {
   }
 
   type ArrLen = Nat.Digit3[Nat._1, Nat._2, Nat._9]
-  type LLArr  = CArray[CUnsignedLongLong, ArrLen]
+  type LLArr = CArray[CUnsignedLongLong, ArrLen]
   val fn3: CFuncPtr3[CInt, CUnsignedLongLong, LLArr, LLArr] =
     (idx: CInt, value: CUnsignedLongLong, arr: LLArr) => {
       arr.update(idx, value)
@@ -108,16 +108,16 @@ class PtrOpsTest {
         val arr = alloc[LLArr]
 
         val value = ULong.MaxValue
-        val idx   = 5
+        val idx = 5
 
         val resultArray = fn(idx, value, arr)
-        val result      = !resultArray.at(idx)
+        val result = !resultArray.at(idx)
         // Some strange thing occurred here: assertEquals resulted in assertionFailed
         assert(result == value)
     }
 
     type FnAlias = CFuncPtr3[CInt, CUnsignedLongLong, LLArr, LLArr]
-    val fn  = fn3
+    val fn = fn3
     val ptr = CFuncPtr.toPtr(fn)
     val fnFromPtr =
       CFuncPtr.fromPtr[CFuncPtr3[CInt, CUnsignedLongLong, LLArr, LLArr]](ptr)

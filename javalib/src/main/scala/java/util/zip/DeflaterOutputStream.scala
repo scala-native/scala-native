@@ -4,11 +4,12 @@ package java.util.zip
 
 import java.io.{FilterOutputStream, IOException, OutputStream}
 
-class DeflaterOutputStream(os: OutputStream,
-                           protected var `def`: Deflater,
-                           size: Int,
-                           syncFlush: Boolean)
-    extends FilterOutputStream(os) {
+class DeflaterOutputStream(
+    os: OutputStream,
+    protected var `def`: Deflater,
+    size: Int,
+    syncFlush: Boolean
+) extends FilterOutputStream(os) {
 
   if (os == null || `def` == null) {
     throw new NullPointerException()

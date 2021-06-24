@@ -53,7 +53,7 @@ class Adler32Test {
 
   @Test def updateArrayByte(): Unit = {
     val byteArray = Array[Byte](1, 2)
-    val adl       = new Adler32()
+    val adl = new Adler32()
     adl.update(byteArray)
     assertTrue(adl.getValue() == 393220)
 
@@ -65,19 +65,23 @@ class Adler32Test {
 
   @Test def updateArrayByteWithInt(): Unit = {
     val byteArray = Array[Byte](1, 2, 3)
-    val adl       = new Adler32()
-    val off       = 2
-    val len       = 1
-    val lenError  = 3
-    val offError  = 4
+    val adl = new Adler32()
+    val off = 2
+    val len = 1
+    val lenError = 3
+    val offError = 4
     adl.update(byteArray, off, len)
     assertTrue(adl.getValue() == 262148)
 
-    assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                 adl.update(byteArray, off, lenError))
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException],
+      adl.update(byteArray, off, lenError)
+    )
 
-    assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                 adl.update(byteArray, offError, len))
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException],
+      adl.update(byteArray, offError, len)
+    )
   }
 
 }

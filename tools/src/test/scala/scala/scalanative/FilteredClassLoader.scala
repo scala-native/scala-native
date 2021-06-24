@@ -1,8 +1,7 @@
 package scala.scalanative
 
-/**
- * A `ClassLoader` that will let `parent` load classes that satisfy `allow`, and
- * throw a `ClassNotFoundException` for all other classes.
+/** A `ClassLoader` that will let `parent` load classes that satisfy `allow`,
+ *  and throw a `ClassNotFoundException` for all other classes.
  */
 class FilteredClassLoader(allow: String => Boolean, parent: ClassLoader)
     extends ClassLoader(parent) {

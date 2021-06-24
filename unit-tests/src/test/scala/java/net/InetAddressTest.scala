@@ -17,9 +17,9 @@ class InetAddressTest {
 
   @Test def getAddress(): Unit = {
     try {
-      val ia    = InetAddress.getByName("127.0.0.1")
+      val ia = InetAddress.getByName("127.0.0.1")
       val caddr = Array[Byte](127.toByte, 0.toByte, 0.toByte, 1.toByte)
-      val addr  = ia.getAddress()
+      val addr = ia.getAddress()
       for (i <- addr.indices)
         assertEquals(caddr(i), addr(i))
     } catch {
@@ -27,7 +27,7 @@ class InetAddressTest {
     }
 
     val origBytes = Array[Byte](0.toByte, 1.toByte, 2.toByte, 3.toByte)
-    val address   = InetAddress.getByAddress(origBytes)
+    val address = InetAddress.getByAddress(origBytes)
     origBytes(0) = -1
     val newBytes = address.getAddress()
     assertEquals(newBytes(0), 0.toByte)
@@ -71,8 +71,10 @@ class InetAddressTest {
 
   @Test def getHostAddress(): Unit = {
     assertEquals("1.3.0.4", InetAddress.getByName("1.3.4").getHostAddress())
-    assertEquals("0:0:0:0:0:0:0:1",
-                 InetAddress.getByName("::1").getHostAddress())
+    assertEquals(
+      "0:0:0:0:0:0:0:1",
+      InetAddress.getByName("::1").getHostAddress()
+    )
   }
 
   @Test def isReachable(): Unit = {

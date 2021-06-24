@@ -10,8 +10,8 @@ class CArrayOpsTest {
 
   @Test def atN(): Unit = {
     val alloc = stackalloc[CArray[Int, Digit2[_3, _2]]]
-    val carr  = !alloc
-    val ptr   = alloc.asInstanceOf[Ptr[Int]]
+    val carr = !alloc
+    val ptr = alloc.asInstanceOf[Ptr[Int]]
 
     assertTrue(ptr == carr.at(0))
     (1 to 31).foreach { i => assertTrue((ptr + i) == carr.at(i)) }
@@ -19,8 +19,8 @@ class CArrayOpsTest {
 
   @Test def applyUpdate(): Unit = {
     val alloc = stackalloc[CArray[Int, Digit2[_3, _2]]]
-    val carr  = !alloc
-    val ptr   = alloc.asInstanceOf[Ptr[Int]]
+    val carr = !alloc
+    val ptr = alloc.asInstanceOf[Ptr[Int]]
 
     (0 until 32).foreach { i =>
       carr(i) = i

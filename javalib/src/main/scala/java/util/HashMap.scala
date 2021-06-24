@@ -160,5 +160,5 @@ class HashMap[K, V] protected (inner: mutable.Map[AnyRef, V])
 
 object HashMap {
   private[HashMap] final val DEFAULT_INITIAL_CAPACITY = 16
-  private[HashMap] final val DEFAULT_LOAD_FACTOR      = 0.75f
+  private[HashMap] final val DEFAULT_LOAD_FACTOR = 0.75f
 }

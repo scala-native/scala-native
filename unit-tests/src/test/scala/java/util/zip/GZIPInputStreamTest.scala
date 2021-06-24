@@ -22,12 +22,15 @@ class GZIPInputStreamTest {
     assertTrue(inGZIP != null)
     assertTrue(inGZIP.getChecksum().getValue() == 0)
 
-    assertThrows(classOf[IllegalArgumentException],
-                 new TestGZIPInputStream(new ByteArrayInputStream(gInput), 0))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new TestGZIPInputStream(new ByteArrayInputStream(gInput), 0)
+    )
 
     assertThrows(
       classOf[IOException],
-      new TestGZIPInputStream(new ByteArrayInputStream(testInput), 200))
+      new TestGZIPInputStream(new ByteArrayInputStream(testInput), 200)
+    )
   }
 
   @Test def readArrayByteIntInt(): Unit = {
@@ -61,11 +64,11 @@ class GZIPInputStreamTest {
       i += 1
     }
     val bout = new ByteArrayOutputStream()
-    val out  = new GZIPOutputStream(bout)
+    val out = new GZIPOutputStream(bout)
     out.write(test)
     out.close()
-    val comp  = bout.toByteArray()
-    var gin2  = new GZIPInputStream(new ByteArrayInputStream(comp), 512)
+    val comp = bout.toByteArray()
+    var gin2 = new GZIPInputStream(new ByteArrayInputStream(comp), 512)
     var total = 0
     while ({ result = gin2.read(test); result != -1 }) {
       total += result
@@ -98,14 +101,16 @@ class GZIPInputStreamTest {
     gin2 = new GZIPInputStream(new ByteArrayInputStream(comp), 512)
     assertThrows(classOf[IOException], while (gin2.read(test) != -1) {})
 
-    val baos   = new ByteArrayOutputStream()
+    val baos = new ByteArrayOutputStream()
     val zipout = new GZIPOutputStream(baos)
     zipout.write(test)
     zipout.close()
     outBuf = new Array[Byte](530)
     val in = new GZIPInputStream(new ByteArrayInputStream(baos.toByteArray()))
-    assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                 in.read(outBuf, 530, 1))
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException],
+      in.read(outBuf, 530, 1)
+    )
 
     var eofReached = false
     while (!eofReached) {
@@ -137,8 +142,8 @@ class GZIPInputStreamTest {
   @Test def read(): Unit = {
     var result = 0
     var buffer = Array[Byte](1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-    val out    = new ByteArrayOutputStream()
-    val gout   = new GZIPOutputStream(out)
+    val out = new ByteArrayOutputStream()
+    val gout = new GZIPOutputStream(out)
 
     var i = 0
     while (i < 10) {

@@ -4,16 +4,18 @@ import scala.util.Try
 
 // Ported from Apache Harmony
 @SerialVersionUID(1L)
-class InetSocketAddress private[net] (private var addr: InetAddress,
-                                      private val port: Int,
-                                      private var hostName: String,
-                                      needsResolving: Boolean)
-    extends SocketAddress {
+class InetSocketAddress private[net] (
+    private var addr: InetAddress,
+    private val port: Int,
+    private var hostName: String,
+    needsResolving: Boolean
+) extends SocketAddress {
 
   if (port < 0 || port > 65535) {
     throw new IllegalArgumentException(
       "Port parameter: " + port +
-        " is outside of the 0-65535 range")
+        " is outside of the 0-65535 range"
+    )
   }
 
   if (needsResolving) {
@@ -35,17 +37,19 @@ class InetSocketAddress private[net] (private var addr: InetAddress,
     this(InetAddress.wildcard, port, InetAddress.wildcard.getHostName(), false)
 
   def this(hostname: String, port: Int) =
-    this(Try(InetAddress.getByName(hostname)).getOrElse(null),
-         port,
-         hostname,
-         false)
+    this(
+      Try(InetAddress.getByName(hostname)).getOrElse(null),
+      port,
+      hostname,
+      false
+    )
 
   def this(addr: InetAddress, port: Int) =
     this(addr, port, null, true)
 
-  final def getPort: Int            = port
+  final def getPort: Int = port
   final def getAddress: InetAddress = addr
-  final def getHostString: String   = hostName
+  final def getHostString: String = hostName
   final def getHostName: String = {
     if (!gotHostName && addr != null) {
       gotHostName = true

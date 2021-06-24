@@ -11,40 +11,43 @@ import java.io.{
 }
 import java.util.{Calendar, Date, GregorianCalendar}
 
-class ZipEntry private (private[zip] var name: String,
-                        private[zip] var comment: String,
-                        private[zip] var compressedSize: Long,
-                        private[zip] var crc: Long,
-                        private[zip] var size: Long,
-                        private[zip] var compressionMethod: Int,
-                        private[zip] var time: Int,
-                        private[zip] var modDate: Int,
-                        private[zip] var extra: Array[Byte],
-                        private[zip] var nameLen: Int,
-                        private[zip] var mLocalHeaderRelOffset: Long)
-    extends ZipConstants
+class ZipEntry private (
+    private[zip] var name: String,
+    private[zip] var comment: String,
+    private[zip] var compressedSize: Long,
+    private[zip] var crc: Long,
+    private[zip] var size: Long,
+    private[zip] var compressionMethod: Int,
+    private[zip] var time: Int,
+    private[zip] var modDate: Int,
+    private[zip] var extra: Array[Byte],
+    private[zip] var nameLen: Int,
+    private[zip] var mLocalHeaderRelOffset: Long
+) extends ZipConstants
     with Cloneable {
 
   def this(name: String) =
     this(name, null, -1, -1, -1, -1, -1, -1, null, -1, -1)
 
   def this(e: ZipEntry) =
-    this(e.name,
-         e.comment,
-         e.compressedSize,
-         e.crc,
-         e.size,
-         e.compressionMethod,
-         e.time,
-         e.modDate,
-         e.extra,
-         e.nameLen,
-         e.mLocalHeaderRelOffset)
+    this(
+      e.name,
+      e.comment,
+      e.compressedSize,
+      e.crc,
+      e.size,
+      e.compressionMethod,
+      e.time,
+      e.modDate,
+      e.extra,
+      e.nameLen,
+      e.mLocalHeaderRelOffset
+    )
 
   if (name == null) {
     throw new NullPointerException()
   }
-  if (name.length() > 0xFFFF) {
+  if (name.length() > 0xffff) {
     throw new IllegalArgumentException()
   }
 
@@ -90,7 +93,7 @@ class ZipEntry private (private[zip] var name: String,
     name.charAt(name.length - 1) == '/'
 
   def setComment(string: String): Unit =
-    if (string == null || string.length <= 0xFFFF) {
+    if (string == null || string.length <= 0xffff) {
       comment = string
     } else {
       throw new IllegalArgumentException()
@@ -100,7 +103,7 @@ class ZipEntry private (private[zip] var name: String,
     compressedSize = value
 
   def setCrc(value: Long): Unit = {
-    if (value >= 0 && value <= 0xFFFFFFFFL) {
+    if (value >= 0 && value <= 0xffffffffL) {
       crc = value
     } else {
       throw new IllegalArgumentException()
@@ -108,7 +111,7 @@ class ZipEntry private (private[zip] var name: String,
   }
 
   def setExtra(data: Array[Byte]): Unit = {
-    if (data == null || data.length <= 0xFFFF) {
+    if (data == null || data.length <= 0xffff) {
       extra = data
     } else {
       throw new IllegalArgumentException()
@@ -123,7 +126,7 @@ class ZipEntry private (private[zip] var name: String,
     }
 
   def setSize(value: Long): Unit =
-    if (value >= 0 && value <= 0xFFFFFFFFL) {
+    if (value >= 0 && value <= 0xffffffffL) {
       size = value
     } else {
       throw new IllegalArgumentException()
@@ -160,7 +163,7 @@ class ZipEntry private (private[zip] var name: String,
 
 object ZipEntry extends ZipConstants {
   final val DEFLATED: Int = 8
-  final val STORED: Int   = 0
+  final val STORED: Int = 0
 
   private def myReadFully(in: InputStream, b: Array[Byte]): Unit = {
     var len = b.length
@@ -194,29 +197,35 @@ object ZipEntry extends ZipConstants {
     myReadFully(in, hdrBuf)
 
     val sig =
-      ((hdrBuf(0) & 0xFF) | ((hdrBuf(1) & 0xFF) << 8) |
-      ((hdrBuf(2) & 0xFF) << 16) | ((hdrBuf(3) & 0xFF) << 24)).toLong &
-      0xFFFFFFFFL
+      ((hdrBuf(0) & 0xff) | ((hdrBuf(1) & 0xff) << 8) |
+        ((hdrBuf(2) & 0xff) << 16) | ((hdrBuf(3) & 0xff) << 24)).toLong &
+        0xffffffffL
     if (sig != CENSIG) {
       throw new ZipException("Central Directory Entry not found")
     }
 
     val compressionMethod = (hdrBuf(10) & 0xff) | ((hdrBuf(11) & 0xff) << 8)
-    val time              = (hdrBuf(12) & 0xff) | ((hdrBuf(13) & 0xff) << 8)
-    val modDate           = (hdrBuf(14) & 0xff) | ((hdrBuf(15) & 0xff) << 8)
+    val time = (hdrBuf(12) & 0xff) | ((hdrBuf(13) & 0xff) << 8)
+    val modDate = (hdrBuf(14) & 0xff) | ((hdrBuf(15) & 0xff) << 8)
     val crc =
-      (hdrBuf(16) & 0xff) | ((hdrBuf(17) & 0xff) << 8) | ((hdrBuf(18) & 0xff) << 16) | ((hdrBuf(
-        19) << 24) & 0xffffffffL)
-    val compressedSize = (hdrBuf(20) & 0xff) | ((hdrBuf(21) & 0xff) << 8) | ((hdrBuf(
-      22) & 0xff) << 16) | ((hdrBuf(23) << 24) & 0xffffffffL)
+      (hdrBuf(16) & 0xff) | ((hdrBuf(17) & 0xff) << 8) | ((hdrBuf(
+        18
+      ) & 0xff) << 16) | ((hdrBuf(19) << 24) & 0xffffffffL)
+    val compressedSize =
+      (hdrBuf(20) & 0xff) | ((hdrBuf(21) & 0xff) << 8) | ((hdrBuf(
+        22
+      ) & 0xff) << 16) | ((hdrBuf(23) << 24) & 0xffffffffL)
     val size =
-      (hdrBuf(24) & 0xff) | ((hdrBuf(25) & 0xff) << 8) | ((hdrBuf(26) & 0xff) << 16) | ((hdrBuf(
-        27) << 24) & 0xffffffffL)
-    val nameLen    = (hdrBuf(28) & 0xff) | ((hdrBuf(29) & 0xff) << 8)
-    val extraLen   = (hdrBuf(30) & 0xff) | ((hdrBuf(31) & 0xff) << 8)
+      (hdrBuf(24) & 0xff) | ((hdrBuf(25) & 0xff) << 8) | ((hdrBuf(
+        26
+      ) & 0xff) << 16) | ((hdrBuf(27) << 24) & 0xffffffffL)
+    val nameLen = (hdrBuf(28) & 0xff) | ((hdrBuf(29) & 0xff) << 8)
+    val extraLen = (hdrBuf(30) & 0xff) | ((hdrBuf(31) & 0xff) << 8)
     val commentLen = (hdrBuf(32) & 0xff) | ((hdrBuf(33) & 0xff) << 8)
-    val mLocalHeaderRelOffset = (hdrBuf(42) & 0xff) | ((hdrBuf(43) & 0xff) << 8) | ((hdrBuf(
-      44) & 0xff) << 16) | ((hdrBuf(45) << 24) & 0xffffffffL)
+    val mLocalHeaderRelOffset =
+      (hdrBuf(42) & 0xff) | ((hdrBuf(43) & 0xff) << 8) | ((hdrBuf(
+        44
+      ) & 0xff) << 16) | ((hdrBuf(45) << 24) & 0xffffffffL)
 
     val nameBytes = new Array[Byte](nameLen)
     myReadFully(in, nameBytes)
@@ -252,17 +261,19 @@ object ZipEntry extends ZipConstants {
       val comment =
         if (commentBytes != null) new String(commentBytes, "iso-8859-1")
         else null
-      new ZipEntry(name,
-                   comment,
-                   compressedSize,
-                   crc,
-                   size,
-                   compressionMethod,
-                   time,
-                   modDate,
-                   extra,
-                   nameLen,
-                   mLocalHeaderRelOffset)
+      new ZipEntry(
+        name,
+        comment,
+        compressedSize,
+        crc,
+        size,
+        compressionMethod,
+        time,
+        modDate,
+        extra,
+        nameLen,
+        mLocalHeaderRelOffset
+      )
     } catch {
       case uee: UnsupportedEncodingException =>
         throw new InternalError(uee.getMessage())
@@ -271,19 +282,19 @@ object ZipEntry extends ZipConstants {
 
   private[zip] class LittleEndianReader extends ZipConstants {
     private val b: Array[Byte] = new Array[Byte](4)
-    val hdrBuf                 = new Array[Byte](CENHDR)
+    val hdrBuf = new Array[Byte](CENHDR)
 
     def readShortLE(in: InputStream): Int =
       if (in.read(b, 0, 2) == 2) {
-        (b(0) & 0xFF) | ((b(1) & 0xFF) << 8)
+        (b(0) & 0xff) | ((b(1) & 0xff) << 8)
       } else {
         throw new EOFException()
       }
 
     def readIntLE(in: InputStream): Int =
       if (in.read(b, 0, 4) == 4) {
-        ((((b(0) & 0xFF) | ((b(1) & 0xFF) << 8) | ((b(2) & 0xFF) << 16) |
-          ((b(3) & 0xFF) << 24))).toLong & 0xFFFFFFFFL).toInt
+        ((((b(0) & 0xff) | ((b(1) & 0xff) << 8) | ((b(2) & 0xff) << 16) |
+          ((b(3) & 0xff) << 24))).toLong & 0xffffffffL).toInt
       } else {
         throw new EOFException()
       }

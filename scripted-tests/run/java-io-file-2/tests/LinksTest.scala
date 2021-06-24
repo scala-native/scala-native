@@ -5,7 +5,8 @@ object LinksTest {
     assert(directoryLinkedTo.exists)
     assert(linkToDirectory.exists)
     assert(
-      linkToDirectory.getCanonicalPath == directoryLinkedTo.getCanonicalPath)
+      linkToDirectory.getCanonicalPath == directoryLinkedTo.getCanonicalPath
+    )
     assert(linkToDirectory.getName != directoryLinkedTo.getName)
   }
 }

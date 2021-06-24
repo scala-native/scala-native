@@ -26,7 +26,8 @@ object URIEncoderDecoder {
             throw new URISyntaxException(
               s,
               "Invalid % sequence (" + s.substring(i, i + 3) + ")",
-              i)
+              i
+            )
           }
           i += 3
         } while (i < s.length && s.charAt(i) == '%')
@@ -93,9 +94,9 @@ object URIEncoderDecoder {
   }
 
   def decode(s: String): String = {
-    val result: StringBuilder      = new StringBuilder()
+    val result: StringBuilder = new StringBuilder()
     val out: ByteArrayOutputStream = new ByteArrayOutputStream()
-    var i: Int                     = 0
+    var i: Int = 0
     while (i < s.length) {
       val c: Char = s.charAt(i)
       if (c == '%') {
@@ -108,7 +109,8 @@ object URIEncoderDecoder {
           val d2: Int = java.lang.Character.digit(s.charAt(i + 2), 16)
           if (d1 == -1 || d2 == -1) {
             throw new IllegalArgumentException(
-              "Invalid % sequence (" + s.substring(i, i + 3) + ") at: " + i)
+              "Invalid % sequence (" + s.substring(i, i + 3) + ") at: " + i
+            )
           }
           out.write(((d1 << 4) + d2).toByte)
           i += 3

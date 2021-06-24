@@ -15,8 +15,10 @@ class ServerSocketTest {
       s1.bind(addr)
       val port = s1.getLocalPort
 
-      assertEquals(s1.getLocalSocketAddress,
-                   new InetSocketAddress(InetAddress.getLoopbackAddress, port))
+      assertEquals(
+        s1.getLocalSocketAddress,
+        new InetSocketAddress(InetAddress.getLoopbackAddress, port)
+      )
       assertTrue(s1.isBound)
 
       val s2 = new ServerSocket
@@ -36,7 +38,8 @@ class ServerSocketTest {
     try {
       assertThrows(
         classOf[BindException],
-        s4.bind(new InetSocketAddress(InetAddress.getByName("101.0.0.0"), 0)))
+        s4.bind(new InetSocketAddress(InetAddress.getByName("101.0.0.0"), 0))
+      )
     } finally {
       s4.close()
     }
@@ -45,8 +48,10 @@ class ServerSocketTest {
 
     val s5 = new ServerSocket
     try {
-      assertThrows(classOf[IllegalArgumentException],
-                   s5.bind(new UnsupportedSocketAddress))
+      assertThrows(
+        classOf[IllegalArgumentException],
+        s5.bind(new UnsupportedSocketAddress)
+      )
     } finally {
       s5.close()
     }
@@ -84,9 +89,11 @@ class ServerSocketTest {
     val s1 = new ServerSocket(0)
     try {
       val port1 = s1.getLocalPort
-      assertEquals("ServerSocket[addr=0.0.0.0/0.0.0.0,localport="
-                     + port1 + "]",
-                   s1.toString)
+      assertEquals(
+        "ServerSocket[addr=0.0.0.0/0.0.0.0,localport="
+          + port1 + "]",
+        s1.toString
+      )
 
       val s2 = new ServerSocket
       try {
@@ -94,8 +101,10 @@ class ServerSocketTest {
 
         s2.bind(new InetSocketAddress("127.0.0.1", 0))
         val port2 = s2.getLocalPort
-        assertEquals("ServerSocket[addr=/127.0.0.1,localport=" + port2 + "]",
-                     s2.toString)
+        assertEquals(
+          "ServerSocket[addr=/127.0.0.1,localport=" + port2 + "]",
+          s2.toString
+        )
       } finally {
         s2.close()
       }

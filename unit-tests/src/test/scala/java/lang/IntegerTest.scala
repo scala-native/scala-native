@@ -6,16 +6,16 @@ import org.junit.Assert._
 import scalanative.junit.utils.AssertThrows.assertThrows
 
 class IntegerTest {
-  val signedMaxValue     = Integer.MAX_VALUE
+  val signedMaxValue = Integer.MAX_VALUE
   val signedMaxValueText = "2147483647"
-  val signedMinValue     = Integer.MIN_VALUE
+  val signedMinValue = Integer.MIN_VALUE
   val signedMinValueText = "-2147483648"
 
-  val signedMaxPlusOneText  = "2147483648"
+  val signedMaxPlusOneText = "2147483648"
   val signedMinMinusOneText = "-2147483649"
 
-  val unsignedMaxValue       = -1
-  val unsignedMaxValueText   = "4294967295"
+  val unsignedMaxValue = -1
+  val unsignedMaxValueText = "4294967295"
   val unsignedMaxPlusOneText = "4294967296"
 
   def assertThrowsAndMessage[T <: Throwable, U](
@@ -105,12 +105,16 @@ class IntegerTest {
     assertThrowsAndMessage(classOf[NumberFormatException], decode("123a"))(
       """java.lang.NumberFormatException: For input string: "123a""""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           decode(signedMinMinusOneText))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      decode(signedMinMinusOneText)
+    )(
       s"""java.lang.NumberFormatException: For input string: "$signedMinMinusOneText""""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           decode(signedMaxPlusOneText))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      decode(signedMaxPlusOneText)
+    )(
       s"""java.lang.NumberFormatException: For input string: "$signedMaxPlusOneText""""
     )
   }
@@ -145,23 +149,31 @@ class IntegerTest {
     assertThrowsAndMessage(classOf[NumberFormatException], parse(""))(
       """java.lang.NumberFormatException: For input string: """""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           parse("123", Character.MIN_RADIX - 1))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse("123", Character.MIN_RADIX - 1)
+    )(
       """java.lang.NumberFormatException: radix 1 less than Character.MIN_RADIX"""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           parse("123", Character.MAX_RADIX + 1))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse("123", Character.MAX_RADIX + 1)
+    )(
       """java.lang.NumberFormatException: radix 37 greater than Character.MAX_RADIX"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], parse("123a", 10))(
       """java.lang.NumberFormatException: For input string: "123a""""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           parse(signedMinMinusOneText))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse(signedMinMinusOneText)
+    )(
       s"""java.lang.NumberFormatException: For input string: "$signedMinMinusOneText""""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           parse(signedMaxPlusOneText))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse(signedMaxPlusOneText)
+    )(
       s"""java.lang.NumberFormatException: For input string: "$signedMaxPlusOneText""""
     )
   }
@@ -192,19 +204,25 @@ class IntegerTest {
     assertThrowsAndMessage(classOf[NumberFormatException], parse("-1"))(
       """java.lang.NumberFormatException: Illegal leading minus sign on unsigned string -1."""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           parse("123", Character.MIN_RADIX - 1))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse("123", Character.MIN_RADIX - 1)
+    )(
       """java.lang.NumberFormatException: radix 1 less than Character.MIN_RADIX"""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           parse("123", Character.MAX_RADIX + 1))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse("123", Character.MAX_RADIX + 1)
+    )(
       """java.lang.NumberFormatException: radix 37 greater than Character.MAX_RADIX"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], parse("123a", 10))(
       """java.lang.NumberFormatException: For input string: "123a""""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           parse(unsignedMaxPlusOneText))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse(unsignedMaxPlusOneText)
+    )(
       s"""java.lang.NumberFormatException: String value $unsignedMaxPlusOneText exceeds range of unsigned int."""
     )
 

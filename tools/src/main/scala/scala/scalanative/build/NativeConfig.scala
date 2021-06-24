@@ -24,7 +24,8 @@ sealed trait NativeConfig {
   /** The compilation options passed to LLVM. */
   def compileOptions: Seq[String]
 
-  /** Optional target triple that defines current OS, ABI and CPU architecture. */
+  /** Optional target triple that defines current OS, ABI and CPU architecture.
+   */
   def targetTriple: Option[String]
 
   /** Should stubs be linked? */
@@ -42,7 +43,7 @@ sealed trait NativeConfig {
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
 
-  /** Map of properties resolved at linktime  */
+  /** Map of properties resolved at linktime */
   def linktimeProperties: Map[String, Any]
 
   /** Create a new config with given garbage collector. */
@@ -108,20 +109,21 @@ object NativeConfig {
       linktimeProperties = Map.empty
     )
 
-  private final case class Impl(clang: Path,
-                                clangPP: Path,
-                                linkingOptions: Seq[String],
-                                compileOptions: Seq[String],
-                                targetTriple: Option[String],
-                                gc: GC,
-                                mode: Mode,
-                                lto: LTO,
-                                linkStubs: Boolean,
-                                check: Boolean,
-                                dump: Boolean,
-                                optimize: Boolean,
-                                linktimeProperties: Map[String, Any])
-      extends NativeConfig {
+  private final case class Impl(
+      clang: Path,
+      clangPP: Path,
+      linkingOptions: Seq[String],
+      compileOptions: Seq[String],
+      targetTriple: Option[String],
+      gc: GC,
+      mode: Mode,
+      lto: LTO,
+      linkStubs: Boolean,
+      check: Boolean,
+      dump: Boolean,
+      optimize: Boolean,
+      linktimeProperties: Map[String, Any]
+  ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
       copy(clang = value)
@@ -180,9 +182,11 @@ object NativeConfig {
       }
       if (invalid.nonEmpty) {
         System.err.println(
-          s"Invalid link-time properties: \n ${invalid.mkString(" - ", "\n", "")}")
+          s"Invalid link-time properties: \n ${invalid.mkString(" - ", "\n", "")}"
+        )
         throw new BuildException(
-          "Link-time properties needs to be non-null primitives or non-empty string")
+          "Link-time properties needs to be non-null primitives or non-empty string"
+        )
       }
 
       copy(linktimeProperties = v)
@@ -193,7 +197,7 @@ object NativeConfig {
         if (linktimeProperties.isEmpty) ""
         else {
           val maxKeyLength = linktimeProperties.keys.map(_.length).max
-          val keyPadSize   = maxKeyLength.min(20)
+          val keyPadSize = maxKeyLength.min(20)
           "\n" + linktimeProperties.toSeq
             .sortBy(_._1)
             .map {

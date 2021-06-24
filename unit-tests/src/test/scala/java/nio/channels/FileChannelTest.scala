@@ -12,20 +12,20 @@ import scalanative.junit.utils.AssertThrows.assertThrows
 class FileChannelTest {
   @Test def fileChannelCanReadBufferFromFile(): Unit = {
     withTemporaryDirectory { dir =>
-      val f     = dir.resolve("f")
+      val f = dir.resolve("f")
       val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
       Files.write(f, bytes)
       assertTrue(Files.getAttribute(f, "size") == 5)
 
       val channel = FileChannel.open(f)
-      val buffer  = ByteBuffer.allocate(5)
+      val buffer = ByteBuffer.allocate(5)
 
       val bread = channel.read(buffer)
       buffer.flip()
 
       assertTrue(buffer.limit() == 5)
       assertTrue(buffer.position() == 0)
-      assertTrue(bread == 5l)
+      assertTrue(bread == 5L)
       assertTrue(buffer.array() sameElements bytes)
 
       channel.close()
@@ -34,7 +34,7 @@ class FileChannelTest {
 
   @Test def fileChannelCanReadBuffersFromFile(): Unit = {
     withTemporaryDirectory { dir =>
-      val f     = dir.resolve("f")
+      val f = dir.resolve("f")
       val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
       Files.write(f, bytes)
       assertTrue(Files.getAttribute(f, "size") == 5)
@@ -53,7 +53,7 @@ class FileChannelTest {
       assertTrue(bufferA.position() == 0)
       assertTrue(bufferB.position() == 0)
 
-      assertTrue(bread == 5l)
+      assertTrue(bread == 5L)
       assertTrue(bufferA.array() sameElements Array[Byte](1, 2))
       assertTrue(bufferB.array() sameElements Array[Byte](3, 4, 5))
 
@@ -63,15 +63,15 @@ class FileChannelTest {
 
   @Test def fileChannelCanWriteToFile(): Unit = {
     withTemporaryDirectory { dir =>
-      val f     = dir.resolve("f")
+      val f = dir.resolve("f")
       val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
-      val src   = ByteBuffer.wrap(bytes)
+      val src = ByteBuffer.wrap(bytes)
       val channel =
         FileChannel.open(f, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
       while (src.remaining() > 0) channel.write(src)
 
       val in = Files.newInputStream(f)
-      var i  = 0
+      var i = 0
       while (i < bytes.length) {
         assertTrue(in.read() == bytes(i))
         i += 1
@@ -86,13 +86,13 @@ class FileChannelTest {
       Files.write(f, "hello, world".getBytes("UTF-8"))
 
       val bytes = "goodbye".getBytes("UTF-8")
-      val src   = ByteBuffer.wrap(bytes)
+      val src = ByteBuffer.wrap(bytes)
       val channel =
         FileChannel.open(f, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
       while (src.remaining() > 0) channel.write(src)
 
       val in = Files.newInputStream(f)
-      var i  = 0
+      var i = 0
       while (i < bytes.length) {
         assertTrue(in.read() == bytes(i))
         i += 1
@@ -108,7 +108,7 @@ class FileChannelTest {
       assertTrue(lines.size() == 1)
       assertTrue(lines.get(0) == "abcdefgh")
 
-      val c   = FileChannel.open(f, StandardOpenOption.WRITE)
+      val c = FileChannel.open(f, StandardOpenOption.WRITE)
       val src = ByteBuffer.wrap("xyz".getBytes("UTF-8"))
       while (src.remaining() > 0) c.write(src)
 
@@ -121,10 +121,14 @@ class FileChannelTest {
   @Test def cannotCombineAppendAndTruncateExisting(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
-      assertThrows(classOf[IllegalArgumentException],
-                   FileChannel.open(f,
-                                    StandardOpenOption.APPEND,
-                                    StandardOpenOption.TRUNCATE_EXISTING))
+      assertThrows(
+        classOf[IllegalArgumentException],
+        FileChannel.open(
+          f,
+          StandardOpenOption.APPEND,
+          StandardOpenOption.TRUNCATE_EXISTING
+        )
+      )
     }
   }
 
@@ -133,7 +137,8 @@ class FileChannelTest {
       val f = dir.resolve("f")
       assertThrows(
         classOf[IllegalArgumentException],
-        FileChannel.open(f, StandardOpenOption.APPEND, StandardOpenOption.READ))
+        FileChannel.open(f, StandardOpenOption.APPEND, StandardOpenOption.READ)
+      )
     }
   }
 
@@ -146,8 +151,8 @@ class FileChannelTest {
       assertTrue(lines.size() == 1)
       assertTrue(lines.get(0) == "hello, ")
 
-      val bytes   = "world".getBytes("UTF-8")
-      val src     = ByteBuffer.wrap(bytes)
+      val bytes = "world".getBytes("UTF-8")
+      val src = ByteBuffer.wrap(bytes)
       val channel = FileChannel.open(f, StandardOpenOption.APPEND)
       while (src.remaining() > 0) channel.write(src)
 

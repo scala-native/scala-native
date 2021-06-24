@@ -81,7 +81,8 @@ class ResourceTest {
       // where -20 is least "nice", so highest priority.
       assertTrue(
         s"${c.name} result: ${result} not in inclusive range [-20, 19]",
-        ((result >= -20) && (result <= 19)))
+        ((result >= -20) && (result <= 19))
+      )
     }
   }
 
@@ -115,19 +116,27 @@ class ResourceTest {
 
         val result = getrlimit(c.value, rlimPtr)
 
-        assertEquals(s"${c.name} unexpected failure, errno: ${errno.errno}",
-                     0,
-                     result)
+        assertEquals(
+          s"${c.name} unexpected failure, errno: ${errno.errno}",
+          0,
+          result
+        )
 
         // Coarse grain sanity checks. Do better someday.
-        assertTrue(s"${c.name} rlim_cur: ${rlimPtr.rlim_cur} < 0",
-                   rlimPtr.rlim_cur >= 0.toUInt)
+        assertTrue(
+          s"${c.name} rlim_cur: ${rlimPtr.rlim_cur} < 0",
+          rlimPtr.rlim_cur >= 0.toUInt
+        )
 
-        assertTrue(s"${c.name} rlim_max: ${rlimPtr.rlim_max} < 0",
-                   rlimPtr.rlim_max >= 0.toUInt)
+        assertTrue(
+          s"${c.name} rlim_max: ${rlimPtr.rlim_max} < 0",
+          rlimPtr.rlim_max >= 0.toUInt
+        )
 
-        assertTrue(s"${c.name} rlim_cur > rlim_max",
-                   rlimPtr.rlim_cur <= rlimPtr.rlim_max)
+        assertTrue(
+          s"${c.name} rlim_cur > rlim_max",
+          rlimPtr.rlim_cur <= rlimPtr.rlim_max
+        )
       }
     }
   }
@@ -154,19 +163,24 @@ class ResourceTest {
 
       assertTrue(
         s"unexpected ru_utime.tv_sec: ${rusagePtr.ru_utime.tv_sec} < 0",
-        rusagePtr.ru_utime.tv_sec >= 0)
+        rusagePtr.ru_utime.tv_sec >= 0
+      )
 
       val MICROS_PER_SECOND = 1000 * 1000
 
       val utUsec = rusagePtr.ru_utime.tv_usec
-      assertTrue(s"unexpected ru_utime: ${rusagePtr.ru_utime.tv_sec} " +
-                   s"${rusagePtr.ru_utime.tv_usec}",
-                 (utUsec >= 0) && (utUsec < MICROS_PER_SECOND))
+      assertTrue(
+        s"unexpected ru_utime: ${rusagePtr.ru_utime.tv_sec} " +
+          s"${rusagePtr.ru_utime.tv_usec}",
+        (utUsec >= 0) && (utUsec < MICROS_PER_SECOND)
+      )
 
       val stUsec = rusagePtr.ru_stime.tv_usec
-      assertTrue(s"unexpected ru_stime: ${rusagePtr.ru_utime.tv_sec} " +
-                   s"${rusagePtr.ru_utime.tv_usec}",
-                 (stUsec >= 0) && (stUsec < MICROS_PER_SECOND))
+      assertTrue(
+        s"unexpected ru_stime: ${rusagePtr.ru_utime.tv_sec} " +
+          s"${rusagePtr.ru_utime.tv_usec}",
+        (stUsec >= 0) && (stUsec < MICROS_PER_SECOND)
+      )
     }
   }
 
@@ -183,11 +197,15 @@ class ResourceTest {
       // have been created or descendents were created but
       // all completed quickly.
 
-      assertTrue(s"unexpected ru_utime.tv_sec < 0",
-                 rusagePtr.ru_utime.tv_sec >= 0)
+      assertTrue(
+        s"unexpected ru_utime.tv_sec < 0",
+        rusagePtr.ru_utime.tv_sec >= 0
+      )
 
-      assertTrue(s"unexpected ru_stime.tv_sec < 0",
-                 rusagePtr.ru_stime.tv_sec >= 0)
+      assertTrue(
+        s"unexpected ru_stime.tv_sec < 0",
+        rusagePtr.ru_stime.tv_sec >= 0
+      )
     }
   }
 }

@@ -8,13 +8,16 @@ abstract class CharsetEncoder protected (
     cs: Charset,
     _averageBytesPerChar: Float,
     _maxBytesPerChar: Float,
-    private[this] var _replacement: Array[Byte]) {
+    private[this] var _replacement: Array[Byte]
+) {
 
   import CharsetEncoder._
 
-  protected def this(cs: Charset,
-                     _averageBytesPerChar: Float,
-                     _maxBytesPerChar: Float) =
+  protected def this(
+      cs: Charset,
+      _averageBytesPerChar: Float,
+      _maxBytesPerChar: Float
+  ) =
     this(cs, _averageBytesPerChar, _averageBytesPerChar, Array('?'.toByte))
 
   // Config
@@ -82,7 +85,8 @@ abstract class CharsetEncoder protected (
     _unmappableCharacterAction
 
   final def onUnmappableCharacter(
-      newAction: CodingErrorAction): CharsetEncoder = {
+      newAction: CodingErrorAction
+  ): CharsetEncoder = {
     if (newAction == null)
       throw new IllegalArgumentException("null CodingErrorAction")
     _unmappableCharacterAction = newAction
@@ -94,11 +98,13 @@ abstract class CharsetEncoder protected (
     ()
 
   final def averageBytesPerChar(): Float = _averageBytesPerChar
-  final def maxBytesPerChar(): Float     = _maxBytesPerChar
+  final def maxBytesPerChar(): Float = _maxBytesPerChar
 
-  final def encode(in: CharBuffer,
-                   out: ByteBuffer,
-                   endOfInput: Boolean): CoderResult = {
+  final def encode(
+      in: CharBuffer,
+      out: ByteBuffer,
+      endOfInput: Boolean
+  ): CoderResult = {
 
     if (status == FLUSHED || (!endOfInput && status == END))
       throw new IllegalStateException
@@ -229,7 +235,7 @@ abstract class CharsetEncoder protected (
 
       reset()
       val initLength = (in.remaining() * averageBytesPerChar()).toInt
-      val out        = loopFlush(loopEncode(ByteBuffer.allocate(initLength)))
+      val out = loopFlush(loopEncode(ByteBuffer.allocate(initLength)))
       out.flip()
       out
     }
@@ -237,8 +243,8 @@ abstract class CharsetEncoder protected (
 }
 
 object CharsetEncoder {
-  private final val INIT    = 0
+  private final val INIT = 0
   private final val ONGOING = 1
-  private final val END     = 2
+  private final val END = 2
   private final val FLUSHED = 3
 }

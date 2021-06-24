@@ -17,6 +17,6 @@ class HashMapFactory extends AbstractMapFactory {
   override def empty[K: ClassTag, V: ClassTag]: ju.HashMap[K, V] =
     new ju.HashMap[K, V]
 
-  def allowsNullKeys: Boolean   = true
+  def allowsNullKeys: Boolean = true
   def allowsNullValues: Boolean = true
 }

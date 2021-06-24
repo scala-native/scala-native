@@ -12,35 +12,36 @@ import java.io.{File, IOException}
 object FileHelpers {
   private[this] lazy val random = new scala.util.Random()
   final case class Dirent(name: String, tpe: CShort)
-  def list[T: ClassTag](path: String,
-                        f: (String, CShort) => T,
-                        allowEmpty: Boolean = false): Array[T] = Zone {
-    implicit z =>
-      val dir = opendir(toCString(path))
+  def list[T: ClassTag](
+      path: String,
+      f: (String, CShort) => T,
+      allowEmpty: Boolean = false
+  ): Array[T] = Zone { implicit z =>
+    val dir = opendir(toCString(path))
 
-      if (dir == null) {
-        if (!allowEmpty) throw UnixException(path, errno.errno)
-        null
-      } else {
-        val buffer = UnrolledBuffer.empty[T]
-        Zone { implicit z =>
-          var elem = alloc[dirent]
-          var res  = 0
-          while ({ res = readdir(dir, elem); res == 0 }) {
-            val name = fromCString(elem._2.at(0))
+    if (dir == null) {
+      if (!allowEmpty) throw UnixException(path, errno.errno)
+      null
+    } else {
+      val buffer = UnrolledBuffer.empty[T]
+      Zone { implicit z =>
+        var elem = alloc[dirent]
+        var res = 0
+        while ({ res = readdir(dir, elem); res == 0 }) {
+          val name = fromCString(elem._2.at(0))
 
-            // java doesn't list '.' and '..', we filter them out.
-            if (name != "." && name != "..") {
-              buffer += f(name, elem._3)
-            }
+          // java doesn't list '.' and '..', we filter them out.
+          if (name != "." && name != "..") {
+            buffer += f(name, elem._3)
           }
-          closedir(dir)
-          if (res == -1)
-            buffer.toArray
-          else
-            throw UnixException(path, res)
         }
+        closedir(dir)
+        if (res == -1)
+          buffer.toArray
+        else
+          throw UnixException(path, res)
       }
+    }
   }
 
   def createNewFile(path: String, throwOnError: Boolean = false): Boolean =
@@ -58,17 +59,19 @@ object FileHelpers {
         }
       }
 
-  def createTempFile(prefix: String,
-                     suffix: String,
-                     dir: File,
-                     minLength: Boolean,
-                     throwOnError: Boolean = false): File =
+  def createTempFile(
+      prefix: String,
+      suffix: String,
+      dir: File,
+      minLength: Boolean,
+      throwOnError: Boolean = false
+  ): File =
     if (prefix == null) throw new NullPointerException
     else if (minLength && prefix.length < 3)
       throw new IllegalArgumentException("Prefix string too short")
     else {
-      val tmpDir       = Option(dir).fold(tempDir())(_.toString)
-      val newSuffix    = Option(suffix).getOrElse(".tmp")
+      val tmpDir = Option(dir).fold(tempDir())(_.toString)
+      val newSuffix = Option(suffix).getOrElse(".tmp")
       var result: File = null
       do {
         result = genTempFile(prefix, newSuffix, tmpDir)
@@ -90,9 +93,11 @@ object FileHelpers {
     }
   }
 
-  private def genTempFile(prefix: String,
-                          suffix: String,
-                          directory: String): File = {
+  private def genTempFile(
+      prefix: String,
+      suffix: String,
+      directory: String
+  ): File = {
     val id = random.nextLong() match {
       case l if l == java.lang.Long.MIN_VALUE => 0
       case l                                  => math.labs(l)

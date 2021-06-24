@@ -125,7 +125,7 @@ class MatcherTest {
 
   @Test def appendReplacementAppendTailWithGroupReplacementByIndex(): Unit = {
     val buf = new StringBuffer()
-    val m   = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
+    val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
     import m._
     while (find()) {
       appendReplacement(buf, "{$0}")

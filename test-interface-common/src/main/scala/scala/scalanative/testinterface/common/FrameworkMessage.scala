@@ -2,8 +2,10 @@ package scala.scalanative.testinterface.common
 
 // Ported from Scala.js
 
-private[testinterface] final class FrameworkMessage(val workerId: Long,
-                                                    val msg: String)
+private[testinterface] final class FrameworkMessage(
+    val workerId: Long,
+    val msg: String
+)
 
 private[testinterface] object FrameworkMessage {
   implicit object FrameworkMessageSerializer

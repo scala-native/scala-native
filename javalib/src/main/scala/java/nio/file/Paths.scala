@@ -14,6 +14,7 @@ object Paths {
       fs.getPath(uri.getPath(), Array.empty)
     } else {
       throw new FileSystemNotFoundException(
-        s"Provider ${uri.getScheme()} is not installed.")
+        s"Provider ${uri.getScheme()} is not installed."
+      )
     }
 }

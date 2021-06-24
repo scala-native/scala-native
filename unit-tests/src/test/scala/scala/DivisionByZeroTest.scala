@@ -6,16 +6,16 @@ import org.junit.Assert._
 import scalanative.junit.utils.AssertThrows.assertThrows
 
 class DivisionByZeroTest {
-  @noinline def byte1  = 1.toByte
-  @noinline def char1  = 1.toChar
+  @noinline def byte1 = 1.toByte
+  @noinline def char1 = 1.toChar
   @noinline def short1 = 1.toShort
-  @noinline def int1   = 1
-  @noinline def long1  = 1L
-  @noinline def byte0  = 0.toByte
-  @noinline def char0  = 0.toChar
+  @noinline def int1 = 1
+  @noinline def long1 = 1L
+  @noinline def byte0 = 0.toByte
+  @noinline def char0 = 0.toChar
   @noinline def short0 = 0.toShort
-  @noinline def int0   = 0
-  @noinline def long0  = 0L
+  @noinline def int0 = 0
+  @noinline def long0 = 0L
 
   @Test def byteDivideZero(): Unit = {
     assertThrows(classOf[ArithmeticException], byte1 / byte0)

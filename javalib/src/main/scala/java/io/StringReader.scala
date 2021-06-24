@@ -3,8 +3,8 @@ package java.io
 class StringReader(s: String) extends Reader {
 
   private[this] var closed = false
-  private[this] var pos    = 0
-  private[this] var mark   = 0
+  private[this] var pos = 0
+  private[this] var mark = 0
 
   override def close(): Unit = {
     closed = true
@@ -37,7 +37,7 @@ class StringReader(s: String) extends Reader {
     if (len == 0) 0
     else {
       val count = Math.min(len, s.length - pos)
-      var i     = 0
+      var i = 0
       while (i < count) {
         cbuf(off + i) = s.charAt(pos + i)
         i += 1

@@ -14,9 +14,9 @@ class ArrayIntCopyTest {
     }
   }
 
-  val len      = 10
-  val arr      = new Array[Int](len)
-  val arr2     = new Array[Int](len + 2)
+  val len = 10
+  val arr = new Array[Int](len)
+  val arr2 = new Array[Int](len + 2)
   val arrEmpty = new Array[Int](0)
 
   @Test def init(): Unit = {
@@ -92,45 +92,61 @@ class ArrayIntCopyTest {
   }
 
   @Test def throwsNullPointerExceptionIfFromIsNull(): Unit = {
-    assertThrows(classOf[java.lang.NullPointerException],
-                 java.lang.System.arraycopy(null, 0, arr2, 5, 2))
+    assertThrows(
+      classOf[java.lang.NullPointerException],
+      java.lang.System.arraycopy(null, 0, arr2, 5, 2)
+    )
   }
 
   @Test def throwsNullPointerExceptionIfToIsNull(): Unit = {
-    assertThrows(classOf[java.lang.NullPointerException],
-                 java.lang.System.arraycopy(arr, 0, null, 5, 2))
+    assertThrows(
+      classOf[java.lang.NullPointerException],
+      java.lang.System.arraycopy(arr, 0, null, 5, 2)
+    )
   }
 
   @Test def throwsIndexOutOfBoundsExceptionIfLengthIsNegative(): Unit = {
-    assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                 java.lang.System.arraycopy(arr, 0, arr2, 5, -1))
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException],
+      java.lang.System.arraycopy(arr, 0, arr2, 5, -1)
+    )
   }
 
   @Test def throwsIndexOutOfBoundsExceptionIfToPosPlusLenGreaterThanToLength()
       : Unit = {
-    assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                 java.lang.System.arraycopy(arr, 0, arr2, 5, 10))
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException],
+      java.lang.System.arraycopy(arr, 0, arr2, 5, 10)
+    )
   }
 
   @Test def throwsIndexOutOfBoundsExceptionIfFromPosPlusLenGreaterThanFromLength()
       : Unit = {
-    assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                 java.lang.System.arraycopy(arr, 5, arr2, 0, 10))
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException],
+      java.lang.System.arraycopy(arr, 5, arr2, 0, 10)
+    )
   }
 
   @Test def throwsIndexOutOfBoundsExceptionIfToPosIsNegative(): Unit = {
-    assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                 java.lang.System.arraycopy(arr, 0, arr2, -1, 10))
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException],
+      java.lang.System.arraycopy(arr, 0, arr2, -1, 10)
+    )
   }
 
   @Test def throwsIndexOutOfBoundsExceptionIfFromPosIsNegative(): Unit = {
-    assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                 java.lang.System.arraycopy(arr, -1, arr2, 0, 10))
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException],
+      java.lang.System.arraycopy(arr, -1, arr2, 0, 10)
+    )
   }
 
   @Test def throwsArrayStoreExceptionIfCopyToDifferentTypeOfArray(): Unit = {
     val arrObject = new Array[String](len)
-    assertThrows(classOf[java.lang.ArrayStoreException],
-                 java.lang.System.arraycopy(arr, 0, arrObject, 5, 2))
+    assertThrows(
+      classOf[java.lang.ArrayStoreException],
+      java.lang.System.arraycopy(arr, 0, arrObject, 5, 2)
+    )
   }
 }

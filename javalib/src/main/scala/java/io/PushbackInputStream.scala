@@ -36,7 +36,7 @@ class PushbackInputStream(_in: InputStream, size: Int)
     if (buf == null) {
       throw new IOException()
     } else if (pos < buf.length) { // Is there a pushback byte available?
-      val b = buf(pos) & 0xFF
+      val b = buf(pos) & 0xff
       pos += 1
       b
     } else {
@@ -52,8 +52,8 @@ class PushbackInputStream(_in: InputStream, size: Int)
       throw new ArrayIndexOutOfBoundsException(s"Length out of bounds: $length")
     } else {
       var copiedBytes = 0
-      var copyLength  = 0
-      var newOffset   = offset
+      var copyLength = 0
+      var newOffset = offset
 
       if (pos < buf.length) {
         copyLength =

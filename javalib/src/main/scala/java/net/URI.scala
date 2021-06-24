@@ -36,19 +36,19 @@ final class URI private () extends Comparable[URI] with Serializable {
 
   private var string: String = _
 
-  @transient private var scheme: String             = _
+  @transient private var scheme: String = _
   @transient private var schemespecificpart: String = _
-  @transient private var authority: String          = _
-  @transient private var userinfo: String           = _
-  @transient private var host: String               = _
-  @transient private var port: Int                  = -1
-  @transient private var path: String               = _
-  @transient private var query: String              = _
-  @transient private var fragment: String           = _
-  @transient private var opaque: Boolean            = _
-  @transient private var absolute: Boolean          = _
-  @transient private var serverAuthority: Boolean   = false
-  @transient private var hash: Int                  = -1
+  @transient private var authority: String = _
+  @transient private var userinfo: String = _
+  @transient private var host: String = _
+  @transient private var port: Int = -1
+  @transient private var path: String = _
+  @transient private var query: String = _
+  @transient private var fragment: String = _
+  @transient private var opaque: Boolean = _
+  @transient private var absolute: Boolean = _
+  @transient private var serverAuthority: Boolean = false
+  @transient private var hash: Int = -1
 
   def this(str: String) = {
     this()
@@ -72,15 +72,17 @@ final class URI private () extends Comparable[URI] with Serializable {
     Helper.parseURI(uri.toString, false)
   }
 
-  def this(scheme: String,
-           userInfo: String,
-           host: String,
-           port: Int,
-           path: String,
-           query: String,
-           fragment: String) = {
+  def this(
+      scheme: String,
+      userInfo: String,
+      host: String,
+      port: Int,
+      path: String,
+      query: String,
+      fragment: String
+  ) = {
     this()
-    var hostVar   = host
+    var hostVar = host
     var earlyStop = false
     if (scheme == null && userInfo == null && host == null && path == null &&
         query == null &&
@@ -136,11 +138,13 @@ final class URI private () extends Comparable[URI] with Serializable {
   def this(scheme: String, host: String, path: String, fragment: String) =
     this(scheme, null, host, -1, path, null, fragment)
 
-  def this(scheme: String,
-           authority: String,
-           path: String,
-           query: String,
-           fragment: String) = {
+  def this(
+      scheme: String,
+      authority: String,
+      path: String,
+      query: String,
+      fragment: String
+  ) = {
     this()
     if (scheme != null && path != null &&
         path.length() > 0 &&
@@ -175,7 +179,7 @@ final class URI private () extends Comparable[URI] with Serializable {
     def parseURI(uri: String, forceServer: Boolean): Unit = {
       var temp: String = uri
       string = uri
-      var index: Int  = 0
+      var index: Int = 0
       var index1: Int = 0
       var index2: Int = 0
       var index3: Int = 0
@@ -199,9 +203,11 @@ final class URI private () extends Comparable[URI] with Serializable {
         validateScheme(uri, scheme, 0)
         schemespecificpart = temp.substring(index + 1)
         if (schemespecificpart.length() == 0) {
-          throw new URISyntaxException(uri,
-                                       "Scheme-specific part expected",
-                                       index + 1)
+          throw new URISyntaxException(
+            uri,
+            "Scheme-specific part expected",
+            index + 1
+          )
         }
       } else {
         absolute = false
@@ -230,9 +236,11 @@ final class URI private () extends Comparable[URI] with Serializable {
             authority = temp.substring(2)
             if (authority.length() == 0 && query == null
                 && fragment == null) {
-              throw new URISyntaxException(uri,
-                                           "Authority expected",
-                                           uri.length())
+              throw new URISyntaxException(
+                uri,
+                "Authority expected",
+                uri.length()
+              )
             }
 
             path = "";
@@ -273,10 +281,12 @@ final class URI private () extends Comparable[URI] with Serializable {
         URIEncoderDecoder.validateSimple(scheme, "+-.");
       } catch {
         case e: URISyntaxException =>
-          throw new URISyntaxException(uri,
-                                       "Illegal character in scheme",
-                                       index
-                                         + e.getIndex())
+          throw new URISyntaxException(
+            uri,
+            "Illegal character in scheme",
+            index
+              + e.getIndex()
+          )
       }
     }
 
@@ -288,7 +298,8 @@ final class URI private () extends Comparable[URI] with Serializable {
           throw new URISyntaxException(
             uri,
             e.getReason() + " in scheme specific part",
-            index + e.getIndex())
+            index + e.getIndex()
+          )
       }
     }
 
@@ -297,9 +308,11 @@ final class URI private () extends Comparable[URI] with Serializable {
         URIEncoderDecoder.validate(authority, "@[]" + someLegal)
       } catch {
         case e: URISyntaxException =>
-          throw new URISyntaxException(uri,
-                                       e.getReason() + " in authority",
-                                       index + e.getIndex())
+          throw new URISyntaxException(
+            uri,
+            e.getReason() + " in authority",
+            index + e.getIndex()
+          )
       }
     }
 
@@ -308,9 +321,11 @@ final class URI private () extends Comparable[URI] with Serializable {
         URIEncoderDecoder.validate(path, "/@" + someLegal)
       } catch {
         case e: URISyntaxException =>
-          throw new URISyntaxException(uri,
-                                       e.getReason() + " in path",
-                                       index + e.getIndex())
+          throw new URISyntaxException(
+            uri,
+            e.getReason() + " in path",
+            index + e.getIndex()
+          )
       }
     }
 
@@ -319,9 +334,11 @@ final class URI private () extends Comparable[URI] with Serializable {
         URIEncoderDecoder.validate(query, queryLegal)
       } catch {
         case e: URISyntaxException =>
-          throw new URISyntaxException(uri,
-                                       e.getReason() + " in query",
-                                       index + e.getIndex())
+          throw new URISyntaxException(
+            uri,
+            e.getReason() + " in query",
+            index + e.getIndex()
+          )
       }
     }
 
@@ -330,9 +347,11 @@ final class URI private () extends Comparable[URI] with Serializable {
         URIEncoderDecoder.validate(fragment, allLegal)
       } catch {
         case e: URISyntaxException =>
-          throw new URISyntaxException(uri,
-                                       e.getReason() + " in fragment",
-                                       index + e.getIndex())
+          throw new URISyntaxException(
+            uri,
+            e.getReason() + " in fragment",
+            index + e.getIndex()
+          )
       }
     }
 
@@ -340,12 +359,12 @@ final class URI private () extends Comparable[URI] with Serializable {
       if (authority == null) {
         return
       }
-      var temp: String         = null
+      var temp: String = null
       var tempUserinfo: String = null
-      var tempHost: String     = null
-      var index: Int           = 0
-      var hostindex: Int       = 0
-      var tempPort: Int        = -1
+      var tempHost: String = null
+      var index: Int = 0
+      var hostindex: Int = 0
+      var tempPort: Int = -1
       temp = authority
       index = temp.indexOf('@')
       if (index != -1) {
@@ -363,18 +382,22 @@ final class URI private () extends Comparable[URI] with Serializable {
             tempPort = java.lang.Integer.parseInt(temp.substring(index + 1))
             if (tempPort < 0) {
               if (forceServer) {
-                throw new URISyntaxException(authority,
-                                             "Invalid port number",
-                                             hostindex + index + 1)
+                throw new URISyntaxException(
+                  authority,
+                  "Invalid port number",
+                  hostindex + index + 1
+                )
               }
               return
             }
           } catch {
             case e: NumberFormatException => {
               if (forceServer) {
-                throw new URISyntaxException(authority,
-                                             "Invalid port number",
-                                             hostindex + index + 1)
+                throw new URISyntaxException(
+                  authority,
+                  "Invalid port number",
+                  hostindex + index + 1
+                )
               }
               return
             }
@@ -404,9 +427,11 @@ final class URI private () extends Comparable[URI] with Serializable {
       for (i <- 0 until userInfo.length()) {
         val ch: Char = userInfo.charAt(i)
         if (ch == ']' || ch == '[') {
-          throw new URISyntaxException(uri,
-                                       "Illegal character in userinfo",
-                                       index + i)
+          throw new URISyntaxException(
+            uri,
+            "Illegal character in userinfo",
+            index + i
+          )
         }
       }
     }
@@ -417,7 +442,8 @@ final class URI private () extends Comparable[URI] with Serializable {
           throw new URISyntaxException(
             host,
             "Expected a closing square bracket for ipv6 address",
-            0)
+            0
+          )
         }
         if (!isValidIP6Address(host)) {
           throw new URISyntaxException(host, "Malformed ipv6 address")
@@ -434,9 +460,11 @@ final class URI private () extends Comparable[URI] with Serializable {
           return true
         }
         if (forceServer) {
-          throw new URISyntaxException(host,
-                                       "Illegal character in host name",
-                                       0)
+          throw new URISyntaxException(
+            host,
+            "Illegal character in host name",
+            0
+          )
         }
         return false
       }
@@ -455,7 +483,7 @@ final class URI private () extends Comparable[URI] with Serializable {
       } catch {
         case e: URISyntaxException => return false
       }
-      var label: String       = null
+      var label: String = null
       val st: StringTokenizer = new StringTokenizer(host, ".")
       while (st.hasMoreTokens()) {
         label = st.nextToken()
@@ -473,7 +501,7 @@ final class URI private () extends Comparable[URI] with Serializable {
     }
 
     def isValidIPv4Address(host: String): Boolean = {
-      var index: Int  = 0
+      var index: Int = 0
       var index2: Int = 0
       try {
         var num: Int = 0
@@ -504,14 +532,14 @@ final class URI private () extends Comparable[URI] with Serializable {
     }
 
     def isValidIP6Address(ipAddress: String): Boolean = {
-      val length: Int          = ipAddress.length()
+      val length: Int = ipAddress.length()
       var doubleColon: Boolean = false
-      var numberOfColons: Int  = 0
+      var numberOfColons: Int = 0
       var numberOfPeriods: Int = 0
-      var word: String         = ""
-      var c: Char              = 0
-      var prevChar: Char       = 0
-      var offset: Int          = 0
+      var word: String = ""
+      var c: Char = 0
+      var prevChar: Char = 0
+      var offset: Int = 0
       if (length < 2) {
         return false
       }
@@ -540,7 +568,8 @@ final class URI private () extends Comparable[URI] with Serializable {
             if (ipAddress.charAt(0) != '[') {
               return false
             }
-          case '.' => { numberOfPeriods += 1; numberOfPeriods - 1 }
+          case '.' =>
+            { numberOfPeriods += 1; numberOfPeriods - 1 }
             if (numberOfPeriods > 3) {
               return false
             }
@@ -555,7 +584,8 @@ final class URI private () extends Comparable[URI] with Serializable {
               return false
             }
             word = ""
-          case ':' => { numberOfColons += 1; numberOfColons - 1 }
+          case ':' =>
+            { numberOfColons += 1; numberOfColons - 1 }
             if (numberOfColons > 7) {
               return false
             }
@@ -735,7 +765,7 @@ final class URI private () extends Comparable[URI] with Serializable {
       return s
     }
     var previndex: Int = 0
-    var index: Int     = s.indexOf('%', previndex)
+    var index: Int = s.indexOf('%', previndex)
     while (index != -1) {
       result.append(s.substring(previndex, index + 1))
       result.append(s.substring(index + 1, index + 3).toLowerCase())
@@ -752,13 +782,15 @@ final class URI private () extends Comparable[URI] with Serializable {
    * occur in pairs as above
    */
 
-  private def equalsHexCaseInsensitive(first: String,
-                                       second: String): Boolean = {
+  private def equalsHexCaseInsensitive(
+      first: String,
+      second: String
+  ): Boolean = {
     if (first.indexOf('%') != second.indexOf('%')) {
       return first == second
     }
     var previndex: Int = 0
-    var index: Int     = first.indexOf('%', previndex)
+    var index: Int = first.indexOf('%', previndex)
     while (index != -1 && second.indexOf('%', previndex) == index) {
       var `match`: Boolean = first.substring(previndex, index) == second
         .substring(previndex, index)
@@ -798,8 +830,10 @@ final class URI private () extends Comparable[URI] with Serializable {
       }
     }
     if (uri.opaque && opaque) {
-      return equalsHexCaseInsensitive(uri.schemespecificpart,
-                                      schemespecificpart)
+      return equalsHexCaseInsensitive(
+        uri.schemespecificpart,
+        schemespecificpart
+      )
     } else if (!uri.opaque && !opaque) {
       if (!equalsHexCaseInsensitive(path, uri.path)) {
         return false
@@ -891,7 +925,7 @@ final class URI private () extends Comparable[URI] with Serializable {
     var index = -1
     index = path.indexOf('/', index + 1)
     val pathlen: Int = path.length()
-    var size: Int    = 0
+    var size: Int = 0
     if (pathlen > 0 && path.charAt(0) != '/') {
       size += 1
     }
@@ -902,11 +936,11 @@ final class URI private () extends Comparable[URI] with Serializable {
       index = path.indexOf('/', index + 1)
     }
 
-    val seglist: Array[String]  = Array.ofDim[String](size)
+    val seglist: Array[String] = Array.ofDim[String](size)
     val include: Array[Boolean] = Array.ofDim[Boolean](size)
     // break the path into segments and store in the list
     var current: Int = 0
-    var index2: Int  = path.indexOf('/', index + 1)
+    var index2: Int = path.indexOf('/', index + 1)
     index = if (pathlen > 0 && path.charAt(0) == '/') 1 else 0
     while (index2 != -1) {
       seglist({ current += 1; current - 1 }) = path.substring(index, index2)
@@ -993,7 +1027,7 @@ final class URI private () extends Comparable[URI] with Serializable {
       return relative
     }
     // normalize both paths
-    var thisPath: String     = normalize(path)
+    var thisPath: String = normalize(path)
     val relativePath: String = normalize(relative.path)
     /*
      * if the paths aren't equal, then we need to determine if this URI's

@@ -52,7 +52,7 @@ trait NirGenName[G <: Global with Singleton] {
 
   def genFieldName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
-    val id    = nativeIdOf(sym)
+    val id = nativeIdOf(sym)
     val scope = {
       /* Variables are internally private, but with public setter/getter.
        * Removing this check would cause problems with reachability
@@ -72,8 +72,8 @@ trait NirGenName[G <: Global with Singleton] {
 
   def genMethodName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
-    val id    = nativeIdOf(sym)
-    val tpe   = sym.tpe.widen
+    val id = nativeIdOf(sym)
+    val tpe = sym.tpe.widen
     val scope =
       if (sym.isPrivate) nir.Sig.Scope.Private(owner)
       else nir.Sig.Scope.Public
@@ -109,7 +109,7 @@ trait NirGenName[G <: Global with Singleton] {
         if (id0.charAt(id0.length() - 1) != ' ') id0
         else id0.substring(0, id0.length() - 1) // strip trailing ' '
       } else if (sym.isMethod) {
-        val name                = sym.name.decoded
+        val name = sym.name.decoded
         val isScalaHashOrEquals = name.startsWith("__scala_")
         if (sym.owner == NObjectClass || isScalaHashOrEquals) {
           name.substring(2) // strip the __

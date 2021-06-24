@@ -12,8 +12,8 @@ import TestUtils._
 class NamedGroupTest {
 
   @Test def namedGroupIsStackSafe(): Unit = {
-    val buf                       = new StringBuffer()
-    var i                         = 0
+    val buf = new StringBuffer()
+    var i = 0
     def randomGroupName(): String = Random.alphanumeric.take(5).mkString("")
     while (i < 20000) {
       buf.append("(?<" + randomGroupName + ">test)")
@@ -75,8 +75,10 @@ class NamedGroupTest {
     )
     import m._
     find()
-    assertThrowsAnd(classOf[IllegalArgumentException],
-                    appendReplacement(buf, "such open ${S such closed ${D}"))(
+    assertThrowsAnd(
+      classOf[IllegalArgumentException],
+      appendReplacement(buf, "such open ${S such closed ${D}")
+    )(
       _.getMessage == "named capturing group is missing trailing '}'"
     )
 

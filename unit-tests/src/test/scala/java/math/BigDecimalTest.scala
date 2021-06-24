@@ -7,7 +7,7 @@ class BigDecimalTest {
 //   __scala_==
 
   @Test def bigDecimalEqualEqualBigDecimal(): Unit = {
-    val token                      = 2046.5
+    val token = 2046.5
     val jbd1: java.math.BigDecimal = java.math.BigDecimal.valueOf(token)
     val jbd2: java.math.BigDecimal = java.math.BigDecimal.valueOf(token)
 
@@ -16,7 +16,7 @@ class BigDecimalTest {
   }
 
   @Test def bigDecimalEqualsBigDecimal(): Unit = {
-    val token                      = 2046.5
+    val token = 2046.5
     val jbd1: java.math.BigDecimal = java.math.BigDecimal.valueOf(token)
     val jbd2: java.math.BigDecimal = java.math.BigDecimal.valueOf(token)
 
@@ -25,7 +25,7 @@ class BigDecimalTest {
   }
 
   @Test def bigDecimalDoesNotEqualEqualBigDecimalWithDifferentValue(): Unit = {
-    val token                      = 2046.5
+    val token = 2046.5
     val jbd1: java.math.BigDecimal = java.math.BigDecimal.valueOf(token)
     val jbd2: java.math.BigDecimal = java.math.BigDecimal.valueOf(token + 1.0)
 

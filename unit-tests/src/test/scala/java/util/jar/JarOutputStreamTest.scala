@@ -31,8 +31,8 @@ class JarOutputStreamTest {
 
   @Test def constructorOutputStream(): Unit = {
     val fooJar = File.createTempFile("hyts_", ".jar")
-    val fos    = new FileOutputStream(fooJar)
-    val ze     = new ZipEntry("Test")
+    val fos = new FileOutputStream(fooJar)
+    val ze = new ZipEntry("Test")
 
     val joutFoo = new JarOutputStream(fos)
     joutFoo.putNextEntry(ze)
@@ -41,10 +41,12 @@ class JarOutputStreamTest {
     fos.close()
     fooJar.delete()
 
-    assertThrows(classOf[IOException], {
-      val joutFoo = new JarOutputStream(fos)
-      joutFoo.putNextEntry(ze)
-    })
+    assertThrows(
+      classOf[IOException], {
+        val joutFoo = new JarOutputStream(fos)
+        joutFoo.putNextEntry(ze)
+      }
+    )
   }
 
 }
