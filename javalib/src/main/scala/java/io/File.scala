@@ -140,8 +140,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     resolvedName
   }
 
-  /** Finds the canonical path for `path`.
-   */
+  /** Finds the canonical path for `path`. */
   private def simplifyNonExistingPath(path: String): String =
     path
       .split(separatorChar)
