@@ -244,7 +244,7 @@ private[math] object Multiplication {
 
   /** Multiplies two BigIntegers.
    *
-   *  Implements traditional scholar algorithmdescribed by Knuth.
+   *  Implements traditional scholar algorithm described by Knuth.
    *
    *  <br> <tt> <table border="0"> <tbody>
    *
