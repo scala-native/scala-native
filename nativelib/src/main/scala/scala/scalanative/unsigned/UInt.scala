@@ -29,7 +29,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
 
   /** Returns the bitwise negation of this value.
    *  @example
-   *    {{{ ~5 == 4294967290 // in binary: ~00000101 == // 11111010 }}}
+   *    {{{~5 == 4294967290 // in binary: ~00000101 == // 11111010}}}
    */
   @inline final def unary_~ : UInt = new UInt(~underlying)
 

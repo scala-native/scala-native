@@ -22,7 +22,7 @@ final class UShort private[scalanative] (
 
   /** Returns the bitwise negation of this value.
    *  @example
-   *    {{{ ~5 == -6 // in binary: ~00000101 == // 11111010 }}}
+   *    {{{~5 == -6 // in binary: ~00000101 == // 11111010}}}
    */
   @inline final def unary_~ : UInt = ~toUInt
 
