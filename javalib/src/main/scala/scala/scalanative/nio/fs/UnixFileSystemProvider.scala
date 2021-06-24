@@ -165,9 +165,10 @@ class UnixFileSystemProvider extends FileSystemProvider {
     fromCString(res)
   }
 
-  private val knownFileAttributeViews: SMap[Class[
-    _ <: FileAttributeView
-  ], (Path, Array[LinkOption]) => FileAttributeView] =
+  private val knownFileAttributeViews: SMap[
+    Class[_ <: FileAttributeView],
+    (Path, Array[LinkOption]) => FileAttributeView
+  ] =
     SMap(
       classOf[BasicFileAttributeView] -> ((p, l) =>
         new PosixFileAttributeViewImpl(p, l)

@@ -821,9 +821,10 @@ object Files {
         setAttribute(path, name, value.asInstanceOf[AnyRef], Array.empty)
     }
 
-  private val attributesClassesToViews: SMap[Class[
-    _ <: BasicFileAttributes
-  ], Class[_ <: BasicFileAttributeView]] =
+  private val attributesClassesToViews: SMap[
+    Class[_ <: BasicFileAttributes],
+    Class[_ <: BasicFileAttributeView]
+  ] =
     SMap(
       classOf[BasicFileAttributes] -> classOf[BasicFileAttributeView],
       classOf[DosFileAttributes] -> classOf[DosFileAttributeView],
