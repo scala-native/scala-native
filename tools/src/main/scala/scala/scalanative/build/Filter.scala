@@ -58,8 +58,35 @@ private[scalanative] object Filter {
     }
   }
 
-  /** Check for a filtering properties file in destination native code
-   *  directory.
+  /**
+   * Partitions the native source file paths using the include function and
+   * deletes any of the excluded source with `.o` appended. This way if the
+   * options changed from the prior compile, the `.o` files generated from
+   * the source files that are not needed will be removed.
+   *
+   * @param allPaths All the identified source paths
+   * @param include A function that returns `true` for files to be included
+   * @return The included source paths
+   */
+  def filterPathsDeleteExcluded(allPaths: Seq[Path],
+                                include: String => Boolean): Seq[Path] = {
+    val (includePaths, excludePaths) = allPaths.map(_.abs).partition(include)
+
+    // delete .o files for all excluded source files
+    // avoids deleting .o files except when changing
+    // options that change the excluded list
+    excludePaths.foreach { path =>
+      val opath = Paths.get(path + oExt)
+      Files.deleteIfExists(opath)
+    }
+
+    val projectPaths = includePaths.map(Paths.get(_))
+    projectPaths
+  }
+
+  /**
+   * Check for a filtering properties file in destination
+   * native code directory.
    *
    *  @param nativeCodePath
    *    The native code directory

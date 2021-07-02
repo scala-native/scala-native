@@ -3,7 +3,7 @@ package plugin
 
 import scalanative.build.{BuildException, Filter}
 
-object BuildPluginFactory {
+private[build] object BuildPluginFactory {
   def create(name: String): BuildPlugin =
     name match {
       case "gc"      => new GcBuildPlugin

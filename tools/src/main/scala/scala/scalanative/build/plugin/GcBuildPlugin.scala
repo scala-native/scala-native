@@ -9,7 +9,7 @@ import scalanative.build.LLVM.oExt
 import scalanative.linker.Result
 
 /** Includes the GC code and filters unused code. */
-class GcBuildPlugin extends BuildPlugin {
+private[build] class GcBuildPlugin extends BuildPlugin {
   override def filterNativelib(config: Config,
                                linkerResult: Result,
                                nativeCodePath: Path,
@@ -32,19 +32,12 @@ class GcBuildPlugin extends BuildPlugin {
       }
     }
 
-    val (includePaths, excludePaths) = allPaths.map(_.abs).partition(include)
-
-    // delete .o files for all excluded source files
-    // avoids deleting .o files except when changing garbage collectors
-    excludePaths.foreach { path =>
-      val opath = Paths.get(path + oExt)
-      Files.deleteIfExists(opath)
-    }
+    val projectPaths = Filter.filterPathsDeleteExcluded(allPaths, include)
 
     val projectConfig = config.withCompilerConfig(
       _.withCompileOptions(
         config.compileOptions ++ gcIncludePaths.map("-I" + _)))
-    val projectPaths = includePaths.map(Paths.get(_))
+
     (projectPaths, projectConfig)
   }
 }

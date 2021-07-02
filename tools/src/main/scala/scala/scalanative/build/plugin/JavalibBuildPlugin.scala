@@ -9,7 +9,7 @@ import scalanative.build.LLVM.oExt
 import scalanative.linker.Result
 
 /** If used, includes the C code used for `java.util.zip` */
-class JavalibBuildPlugin extends BuildPlugin {
+private[build] class JavalibBuildPlugin extends BuildPlugin {
   override def filterNativelib(config: Config,
                                linkerResult: Result,
                                nativeCodePath: Path,
@@ -27,17 +27,8 @@ class JavalibBuildPlugin extends BuildPlugin {
       }
     }
 
-    val (includePaths, excludePaths) = allPaths.map(_.abs).partition(include)
+    val projectPaths = Filter.filterPathsDeleteExcluded(allPaths, include)
 
-    // delete .o files for all excluded source files
-    // avoids deleting .o files except when changing
-    // optional zip code
-    excludePaths.foreach { path =>
-      val opath = Paths.get(path + oExt)
-      Files.deleteIfExists(opath)
-    }
-
-    val projectPaths = includePaths.map(Paths.get(_))
     (projectPaths, config)
   }
 }
