@@ -397,13 +397,13 @@ object Assert {
 
   @noinline
   def assertThrows[T <: Throwable](expectedThrowable: Class[T],
-      runnable: ThrowingRunnable): T = {
+                                   runnable: ThrowingRunnable): T = {
     assertThrows(null, expectedThrowable, runnable)
   }
 
   @noinline
-  def assertThrows[T <: Throwable](message: String, 
-                                   expectedThrowable: Class[T], 
+  def assertThrows[T <: Throwable](message: String,
+                                   expectedThrowable: Class[T],
                                    runnable: ThrowingRunnable): T = {
 
     def buildPrefix: String =
@@ -412,23 +412,24 @@ object Assert {
     try {
       runnable.run()
     } catch {
-      case actualThrown: Throwable if (expectedThrowable.isInstance(actualThrown)) =>
-          return actualThrown.asInstanceOf[T]
+      case actualThrown: Throwable
+          if (expectedThrowable.isInstance(actualThrown)) =>
+        return actualThrown.asInstanceOf[T]
 
       case actualThrown: Throwable =>
-          val expected: String = formatClass(expectedThrowable);
-          val actual: String = formatClass(actualThrown.getClass());
+        val expected: String = formatClass(expectedThrowable);
+        val actual: String   = formatClass(actualThrown.getClass());
 
-          val mismatchMessage = buildPrefix + 
-            format("unexpected exception type thrown;", expected, actual)
+        val mismatchMessage = buildPrefix +
+          format("unexpected exception type thrown;", expected, actual)
 
-          val assertionError = new AssertionError(mismatchMessage)
-          assertionError.initCause(actualThrown)
-          throw assertionError
+        val assertionError = new AssertionError(mismatchMessage)
+        assertionError.initCause(actualThrown)
+        throw assertionError
     }
-    val notThrownMessage = buildPrefix + 
-        s"expected ${formatClass(expectedThrowable)} to be thrown," +
-        " but nothing was thrown"
+    val notThrownMessage = buildPrefix +
+      s"expected ${formatClass(expectedThrowable)} to be thrown," +
+      " but nothing was thrown"
     throw new AssertionError(notThrownMessage)
   }
 }

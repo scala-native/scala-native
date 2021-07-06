@@ -4,5 +4,5 @@
 package org.junit.function
 
 trait ThrowingRunnable {
-    def run(): Unit
+  def run(): Unit
 }

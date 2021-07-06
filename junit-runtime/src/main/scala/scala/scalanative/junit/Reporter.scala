@@ -63,15 +63,15 @@ private[junit] final class Reporter(eventHandler: EventHandler,
     }
   }
 
-  def reportAssumptionViolation(method: String,
+  def reportAssumptionViolation(method: Option[String],
                                 timeInSeconds: Double,
                                 e: Throwable): Unit = {
     logTestException(_.warn,
                      "Test assumption in test ",
-                     Some(method),
+                     method,
                      e,
                      timeInSeconds)
-    emitEvent(Some(method), Status.Skipped)
+    emitEvent(method, Status.Skipped)
   }
 
   private def logTestInfo(level: Reporter.Level,
@@ -89,18 +89,9 @@ private[junit] final class Reporter(eventHandler: EventHandler,
       (settings.logAssert || !ex.isInstanceOf[AssertionError])
     }
 
-    val fmtName = if (logException) {
-      val name = {
-        if (ex.isInstanceOf[AssumptionViolatedException])
-          classOf[internal.AssumptionViolatedException].getName
-        else
-          ex.getClass.getName
-      }
-
-      formatClass(name, Ansi.RED) + ": "
-    } else {
-      ""
-    }
+    val fmtName =
+      if (logException) formatClass(ex.getClass.getName, Ansi.RED) + ": "
+      else ""
 
     val m = formatTest(method, Ansi.RED)
     val msg =

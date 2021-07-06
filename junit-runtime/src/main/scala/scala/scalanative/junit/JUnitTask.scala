@@ -6,6 +6,7 @@ import sbt.testing._
 import scala.annotation.tailrec
 import scala.scalanative.reflect.Reflect
 import scala.util.{Failure, Success, Try}
+import org.junit.TestCouldNotBeSkippedException
 
 private[junit] final class JUnitTask(val taskDef: TaskDef,
                                      runSettings: RunSettings)
@@ -69,12 +70,17 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
 
     errors match {
       case e :: Nil if isAssumptionViolation(e) =>
-        reporter.reportIgnored(None)
-        ignored += 1
+        reporter.reportAssumptionViolation(None, timeInSeconds, e)
 
       case es =>
+        val errorsWithSkipped = es.map {
+          case error: org.junit.internal.AssumptionViolatedException =>
+            new TestCouldNotBeSkippedException(error)
+          case error =>
+            error
+        }
         failed += es.size
-        reporter.reportErrors("Test ", None, timeInSeconds, es)
+        reporter.reportErrors("Test ", None, timeInSeconds, errorsWithSkipped)
     }
 
     reporter.reportRunFinished(failed, ignored, total, timeInSeconds)
@@ -100,11 +106,20 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
 
     val failed = errors match {
       case e :: Nil if isAssumptionViolation(e) =>
-        reporter.reportAssumptionViolation(test.name, timeInSeconds, e)
+        reporter.reportAssumptionViolation(Some(test.name), timeInSeconds, e)
         0
 
       case es =>
-        reporter.reportErrors("Test ", Some(test.name), timeInSeconds, es)
+        val errorsWithSkipped = es.map {
+          case error: org.junit.internal.AssumptionViolatedException =>
+            new TestCouldNotBeSkippedException(error)
+          case error =>
+            error
+        }
+        reporter.reportErrors("Test ",
+                              Some(test.name),
+                              timeInSeconds,
+                              errorsWithSkipped)
         es.size
     }
 
