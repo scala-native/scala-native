@@ -6,7 +6,7 @@ import java.{util => ju}
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import scala.scalanative.junit.utils.AssertThrows._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 import scala.collection.{immutable => im}
 import scala.collection.{mutable => mu}
 
@@ -148,7 +148,7 @@ trait MapTest {
       assertEquals("one", mp.get(null))
     } else {
       val mp = factory.empty[String, String]
-      expectThrows(classOf[NullPointerException], mp.put(null, "one"))
+      assertThrows(classOf[NullPointerException], mp.put(null, "one"))
     }
   }
 
@@ -159,7 +159,7 @@ trait MapTest {
       assertNull(mp.get("one"))
     } else {
       val mp = factory.empty[String, String]
-      expectThrows(classOf[NullPointerException], mp.put("one", null))
+      assertThrows(classOf[NullPointerException], mp.put("one", null))
     }
   }
 
@@ -182,7 +182,7 @@ trait MapTest {
     if (factory.allowsNullKeysQueries)
       assertFalse(mp.containsKey(null))
     else
-      expectThrows(classOf[Throwable], mp.containsKey(null))
+      assertThrows(classOf[Throwable], mp.containsKey(null))
   }
 
   @Test def shouldCheckContainedValuePresence(): Unit = {
@@ -194,7 +194,7 @@ trait MapTest {
     if (factory.allowsNullValuesQueries)
       assertFalse(mp.containsValue(null))
     else
-      expectThrows(classOf[Throwable], mp.containsValue(null))
+      assertThrows(classOf[Throwable], mp.containsValue(null))
   }
 
   @Test def shouldGiveProperCollectionOverValues(): Unit = {
@@ -254,7 +254,7 @@ trait MapTest {
       assertEquals("y", mp.get(null))
       assertEquals("y", mp.get("X"))
     } else {
-      expectThrows(classOf[NullPointerException],
+      assertThrows(classOf[NullPointerException],
                    mp.putAll(nullMap.toJavaMap[String, String]))
     }
   }
@@ -322,7 +322,7 @@ trait MapTest {
     if (factory.allowsNullValuesQueries)
       assertFalse(values.contains(null))
     else
-      expectThrows(classOf[Throwable], mp.values().contains(null))
+      assertThrows(classOf[Throwable], mp.values().contains(null))
 
     mp.put("THREE", "three")
 
@@ -469,7 +469,7 @@ trait MapTest {
     if (factory.allowsNullKeysQueries)
       assertFalse(keySet.contains(null))
     else
-      expectThrows(classOf[Throwable], mp.keySet().contains(null))
+      assertThrows(classOf[Throwable], mp.keySet().contains(null))
 
     mp.put("THREE", "three")
 

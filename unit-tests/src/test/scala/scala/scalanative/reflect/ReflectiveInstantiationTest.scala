@@ -6,7 +6,7 @@ package reflect
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows._
+import scalanative.junit.utils.AssertThrows.assertThrows
 
 import scala.scalanative.reflect._
 import scala.scalanative.reflect.annotation._
@@ -156,7 +156,7 @@ class ReflectiveInstantiationTest {
       assertTrue(optClassData.isDefined)
       val classData = optClassData.get
 
-      expectThrows(classOf[InstantiationException], {
+      assertThrows(classOf[InstantiationException], {
         classData.newInstance()
       })
     }

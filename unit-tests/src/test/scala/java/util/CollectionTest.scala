@@ -12,7 +12,7 @@ import org.scalanative.testsuite.javalib.lang.IterableTest
 
 import scala.reflect.ClassTag
 
-import scala.scalanative.junit.utils.AssertThrows._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 import scala.scalanative.junit.utils.Utils._
 
 trait CollectionTest extends IterableTest {
@@ -172,7 +172,7 @@ trait CollectionTest extends IterableTest {
     if (factory.allowsNullElementQuery) {
       assertFalse(coll.contains(null))
     } else {
-      expectThrows(classOf[Exception], coll.contains(null))
+      assertThrows(classOf[Exception], coll.contains(null))
     }
   }
 

@@ -11,7 +11,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
-import scala.scalanative.junit.utils.AssertThrows._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 import scala.scalanative.junit.utils.Utils._
 
 import org.scalanative.testsuite.utils.Platform.hasCompliantAsInstanceOfs

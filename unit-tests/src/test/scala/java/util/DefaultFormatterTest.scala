@@ -10,7 +10,7 @@ import java.util.Formatter.BigDecimalLayoutForm
 import org.junit.Assert._
 import org.junit.{After, Before, Ignore, Test}
 import org.scalanative.testsuite.utils.Platform.executingInJVM
-import scala.scalanative.junit.utils.AssertThrows._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 class DefaultFormatterTest {
   private var root: Boolean         = false

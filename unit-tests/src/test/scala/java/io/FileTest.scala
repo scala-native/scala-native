@@ -5,7 +5,7 @@ import java.net.URI
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows._
+import scalanative.junit.utils.AssertThrows.assertThrows
 
 class FileTest {
 

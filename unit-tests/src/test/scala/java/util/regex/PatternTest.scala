@@ -9,7 +9,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.junit.utils.CollectionConverters._
-import scalanative.junit.utils._, AssertThrows._, ThrowsHelper._
+import scalanative.junit.utils._, AssertThrows.assertThrows, ThrowsHelper._
 
 class PatternTest {
 

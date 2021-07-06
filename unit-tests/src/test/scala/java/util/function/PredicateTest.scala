@@ -7,7 +7,7 @@ import java.util.function.Predicate
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.scalanative.junit.utils.AssertThrows._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 class PredicateTest {
   import PredicateTest._

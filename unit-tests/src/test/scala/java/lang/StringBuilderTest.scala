@@ -5,7 +5,7 @@ package java.lang
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows._
+import scalanative.junit.utils.AssertThrows.assertThrows
 
 class StringBuilderTest {
 
@@ -61,9 +61,9 @@ class StringBuilderTest {
                    .insert(2, Array('a', 'b', 'c', 'd', 'e'), 2, 2)
                    .toString)
 
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  initBuilder("abcd").insert(-1, "whatever"))
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  initBuilder("abcd").insert(5, "whatever"))
   }
 
@@ -86,9 +86,9 @@ class StringBuilderTest {
     assertEquals("023", initBuilder("0123").deleteCharAt(1).toString)
     assertEquals("123", initBuilder("0123").deleteCharAt(0).toString)
     assertEquals("012", initBuilder("0123").deleteCharAt(3).toString)
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  initBuilder("0123").deleteCharAt(-1))
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  initBuilder("0123").deleteCharAt(4))
   }
 
@@ -101,7 +101,7 @@ class StringBuilderTest {
     assertEquals("0xxxx123", initBuilder("0123").replace(1, 1, "xxxx").toString)
     assertEquals("0123x", initBuilder("0123").replace(4, 5, "x").toString)
 
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  initBuilder("0123").replace(-1, 3, "x"))
   }
 
@@ -115,8 +115,8 @@ class StringBuilderTest {
     b.setCharAt(5, 'h')
     assertEquals("foxbah", b.toString)
 
-    expectThrows(classOf[StringIndexOutOfBoundsException], b.setCharAt(-1, 'h'))
-    expectThrows(classOf[StringIndexOutOfBoundsException], b.setCharAt(6, 'h'))
+    assertThrows(classOf[StringIndexOutOfBoundsException], b.setCharAt(-1, 'h'))
+    assertThrows(classOf[StringIndexOutOfBoundsException], b.setCharAt(6, 'h'))
   }
 
   @Test def ensureCapacity(): Unit = {
@@ -128,7 +128,7 @@ class StringBuilderTest {
     val b = newBuilder
     b.append("foobar")
 
-    expectThrows(classOf[StringIndexOutOfBoundsException], b.setLength(-3))
+    assertThrows(classOf[StringIndexOutOfBoundsException], b.setLength(-3))
 
     assertEquals("foo", { b.setLength(3); b.toString })
     assertEquals("foo\u0000\u0000\u0000", { b.setLength(6); b.toString })
