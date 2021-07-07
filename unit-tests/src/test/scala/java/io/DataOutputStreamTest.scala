@@ -5,7 +5,7 @@ package java.io
 import org.junit._
 import org.junit.Assert._
 
-import scala.scalanative.junit.utils.AssertThrows._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 object DataOutputStreamTest {
   class DataOutputStreamWrittenAccess(out: OutputStream)

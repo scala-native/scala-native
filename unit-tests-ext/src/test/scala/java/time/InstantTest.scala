@@ -4,7 +4,7 @@ package java.time
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.junit.utils.AssertThrows._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 /** Sanity tests for the dummy implemenation of `java.time.Instant`.
  *

@@ -11,7 +11,7 @@ import StandardCopyOption._
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows._
+import scalanative.junit.utils.AssertThrows.assertThrows
 import scala.scalanative.junit.utils.CollectionConverters._
 
 class FilesTest {

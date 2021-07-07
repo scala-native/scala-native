@@ -7,7 +7,7 @@ import java.io.File
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows._
+import scalanative.junit.utils.AssertThrows.assertThrows
 
 class FileChannelTest {
   @Test def fileChannelCanReadBufferFromFile(): Unit = {

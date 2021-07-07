@@ -11,7 +11,7 @@ import java.{util => ju}
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.junit.utils.AssertThrows._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 class ObjectsTest {
 
@@ -106,7 +106,7 @@ class ObjectsTest {
       }
     }
 
-    val e = expectThrows(classOf[NullPointerException],
+    val e = assertThrows(classOf[NullPointerException],
                          ju.Objects.requireNonNull(null, successSupplier))
     assertEquals(message, e.getMessage())
 

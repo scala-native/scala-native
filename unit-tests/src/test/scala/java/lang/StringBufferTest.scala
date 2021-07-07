@@ -5,7 +5,7 @@ package java.lang
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows._
+import scalanative.junit.utils.AssertThrows.assertThrows
 
 class StringBufferTest {
 
@@ -56,9 +56,9 @@ class StringBufferTest {
       "abcdef",
       initBuf("abef").insert(2, Array('a', 'b', 'c', 'd', 'e'), 2, 2).toString)
 
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  initBuf("abcd").insert(-1, "whatever"))
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  initBuf("abcd").insert(5, "whatever"))
   }
 
@@ -77,9 +77,9 @@ class StringBufferTest {
     assertEquals("023", initBuf("0123").deleteCharAt(1).toString)
     assertEquals("123", initBuf("0123").deleteCharAt(0).toString)
     assertEquals("012", initBuf("0123").deleteCharAt(3).toString)
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  initBuf("0123").deleteCharAt(-1))
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  initBuf("0123").deleteCharAt(4))
   }
 
@@ -92,7 +92,7 @@ class StringBufferTest {
     assertEquals("0xxxx123", initBuf("0123").replace(1, 1, "xxxx").toString)
     assertEquals("0123x", initBuf("0123").replace(4, 5, "x").toString)
 
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  initBuf("0123").replace(-1, 3, "x"))
   }
 
@@ -106,9 +106,9 @@ class StringBufferTest {
     buf.setCharAt(5, 'h')
     assertEquals("foxbah", buf.toString)
 
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  buf.setCharAt(-1, 'h'))
-    expectThrows(classOf[StringIndexOutOfBoundsException],
+    assertThrows(classOf[StringIndexOutOfBoundsException],
                  buf.setCharAt(6, 'h'))
   }
 
@@ -121,7 +121,7 @@ class StringBufferTest {
     val buf = newBuf
     buf.append("foobar")
 
-    expectThrows(classOf[StringIndexOutOfBoundsException], buf.setLength(-3))
+    assertThrows(classOf[StringIndexOutOfBoundsException], buf.setLength(-3))
 
     assertEquals("foo", { buf.setLength(3); buf.toString })
     assertEquals("foo\u0000\u0000\u0000", { buf.setLength(6); buf.toString })

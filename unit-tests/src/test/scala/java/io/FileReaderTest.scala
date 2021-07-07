@@ -2,7 +2,7 @@ package java.io
 
 import org.junit.Test
 
-import scalanative.junit.utils.AssertThrows._
+import scalanative.junit.utils.AssertThrows.assertThrows
 
 class FileReaderTest {
 

@@ -2,7 +2,7 @@ package java.util
 
 import org.junit.Test
 
-import scala.scalanative.junit.utils.AssertThrows._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 class HashtableTest {
 

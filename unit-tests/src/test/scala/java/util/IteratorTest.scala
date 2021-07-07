@@ -8,7 +8,7 @@ import org.junit.Assert._
 import java.{util => ju}
 import java.util.function.Consumer
 
-import scala.scalanative.junit.utils.AssertThrows._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 class IteratorTest {
   @Test def testRemove(): Unit = {

@@ -6,7 +6,7 @@ import java.math.{BigDecimal, BigInteger}
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.scalanative.junit.utils.AssertThrows._
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
 class FormatterTest {
@@ -106,7 +106,7 @@ class FormatterTest {
                                             format: String,
                                             args: Any*): T = {
     val fmt = new Formatter()
-    expectThrows(exeption,
+    assertThrows(exeption,
                  fmt.format(format, args.asInstanceOf[Seq[AnyRef]]: _*))
   }
 

@@ -9,7 +9,7 @@ import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils._, AssertThrows._, ThrowsHelper._
+import scalanative.junit.utils._, AssertThrows.assertThrows, ThrowsHelper._
 
 class MatcherTest {
 

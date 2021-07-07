@@ -3,7 +3,7 @@ package java.lang
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows._
+import scalanative.junit.utils.AssertThrows.assertThrows
 import scalanative.junit.utils.ThrowsHelper._
 
 class ShortTest {
@@ -18,7 +18,7 @@ class ShortTest {
   def assertThrowsAndMessage[T <: Throwable, U](
       expectedThrowable: Class[T],
       code: => U)(expectedMsg: String): Unit = {
-    val exception = expectThrows(expectedThrowable, code)
+    val exception = assertThrows(expectedThrowable, code)
     assertEquals(expectedMsg, exception.toString)
   }
 
