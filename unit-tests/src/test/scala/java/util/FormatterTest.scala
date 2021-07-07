@@ -112,8 +112,10 @@ class FormatterTest {
       args: Any*
   ): T = {
     val fmt = new Formatter()
-    assertThrows(exeption,
-                 fmt.format(format, args.asInstanceOf[Seq[AnyRef]]: _*))
+    assertThrows(
+      exeption,
+      fmt.format(format, args.asInstanceOf[Seq[AnyRef]]: _*)
+    )
   }
 
   @noinline

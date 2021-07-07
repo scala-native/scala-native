@@ -73,14 +73,18 @@ private[junit] final class Reporter(
     }
   }
 
-  def reportAssumptionViolation(method: Option[String],
-                                timeInSeconds: Double,
-                                e: Throwable): Unit = {
-    logTestException(_.warn,
-                     "Test assumption in test ",
-                     method,
-                     e,
-                     timeInSeconds)
+  def reportAssumptionViolation(
+      method: Option[String],
+      timeInSeconds: Double,
+      e: Throwable
+  ): Unit = {
+    logTestException(
+      _.warn,
+      "Test assumption in test ",
+      method,
+      e,
+      timeInSeconds
+    )
     emitEvent(method, Status.Skipped)
   }
 

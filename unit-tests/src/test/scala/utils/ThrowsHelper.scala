@@ -8,7 +8,8 @@ import AssertThrows.assertThrows
 object ThrowsHelper {
   def assertThrowsAnd[T <: Throwable, U](
       expectedThrowable: Class[T],
-      code: => U)(cond: T => Boolean): Unit = {
+      code: => U
+  )(cond: T => Boolean): Unit = {
     val c = cond(assertThrows(expectedThrowable, code))
     assert(c)
   }

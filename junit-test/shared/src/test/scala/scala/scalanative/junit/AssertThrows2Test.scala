@@ -8,12 +8,14 @@ import scala.scalanative.junit.utils.JUnitTest
 
 class AssertThrows2Test {
   @Test def test(): Unit = {
-    assertThrows("This is the message",
-                 classOf[UnsupportedOperationException],
-                 new ThrowingRunnable {
-                   def run(): Unit =
-                     throw new IllegalAccessException("Exception message")
-                 })
+    assertThrows(
+      "This is the message",
+      classOf[UnsupportedOperationException],
+      new ThrowingRunnable {
+        def run(): Unit =
+          throw new IllegalAccessException("Exception message")
+      }
+    )
   }
 }
 

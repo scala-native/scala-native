@@ -824,8 +824,8 @@ lazy val testRunner =
 // JUnit modules and settings ------------------------------------------------
 
 lazy val jUnitJVMDependencies = Seq(
-  "com.novocode" % "junit-interface" % "0.11"   % "test",
-  "junit"        % "junit"           % "4.13.2" % "test"
+  "com.novocode" % "junit-interface" % "0.11" % "test",
+  "junit" % "junit" % "4.13.2" % "test"
 )
 
 lazy val junitRuntime =

@@ -254,8 +254,10 @@ trait MapTest {
       assertEquals("y", mp.get(null))
       assertEquals("y", mp.get("X"))
     } else {
-      assertThrows(classOf[NullPointerException],
-                   mp.putAll(nullMap.toJavaMap[String, String]))
+      assertThrows(
+        classOf[NullPointerException],
+        mp.putAll(nullMap.toJavaMap[String, String])
+      )
     }
   }
 

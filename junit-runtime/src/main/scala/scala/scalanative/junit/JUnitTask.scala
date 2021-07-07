@@ -125,10 +125,12 @@ private[junit] final class JUnitTask(
           case error =>
             error
         }
-        reporter.reportErrors("Test ",
-                              Some(test.name),
-                              timeInSeconds,
-                              errorsWithSkipped)
+        reporter.reportErrors(
+          "Test ",
+          Some(test.name),
+          timeInSeconds,
+          errorsWithSkipped
+        )
         es.size
     }
 

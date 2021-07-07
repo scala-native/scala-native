@@ -164,9 +164,11 @@ class ReflectiveInstantiationTest {
       assertTrue(optClassData.isDefined)
       val classData = optClassData.get
 
-      assertThrows(classOf[InstantiationException], {
-        classData.newInstance()
-      })
+      assertThrows(
+        classOf[InstantiationException], {
+          classData.newInstance()
+        }
+      )
     }
   }
 
