@@ -19,9 +19,9 @@ final class InstantiatableClass private[reflect] (
   /** Instantiates a new instance of this class using the zero-argument
    *  constructor.
    *
-   *  @throws
-   *    java.lang.InstantiationException (caused by a `NoSuchMethodException`)
-   *    If this class does not have a public zero-argument constructor.
+   *  @throws java.lang.InstantiationException
+   *    (caused by a `NoSuchMethodException`) If this class does not have a
+   *    public zero-argument constructor.
    */
   def newInstance(): Any = {
     getConstructor().fold[Any] {

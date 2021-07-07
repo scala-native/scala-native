@@ -30,10 +30,9 @@ trait Framework {
    *
    *  @return
    *    a <code>Runner</code> representing the newly started run.
-   *  @throws
-   *    java.lang.IllegalStateException if the test framework is unable to
-   *    initiate a run because it is already performing a previously initiated
-   *    run that has not yet completed.
+   *  @throws java.lang.IllegalStateException
+   *    if the test framework is unable to initiate a run because it is already
+   *    performing a previously initiated run that has not yet completed.
    */
   def runner(
       args: Array[String],

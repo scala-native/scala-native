@@ -1840,9 +1840,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
    *  @return
    *    the exact value of the integer part of {@code BigDecimal} when is
    *    possible
-   *  @throws
-   *    ArithmeticException when rounding is necessary or the number don't fit
-   *    in the primitive type
+   *  @throws ArithmeticException
+   *    when rounding is necessary or the number don't fit in the primitive type
    */
   private def valueExact(bitLengthOfType: Int): Long = {
     val bigInteger = toBigIntegerExact()
