@@ -65,22 +65,21 @@ object Build {
       val generated = ScalaNative.codegen(fconfig, optimized)
 
       val objectPaths = config.logger.time("Compiling to native code") {
+        // compile generated ll
+        val llObjectPaths = LLVM.compile(fconfig, generated)
+
         // find native libs
         val nativelibs = NativeLib.findNativeLibs(fconfig.classPath, workdir)
 
         // compile all libs
         val libObjectPaths = nativelibs
           .map { NativeLib.unpackNativeCode }
-          .map { destPath =>
+          .flatMap { destPath =>
             val paths = NativeLib.findNativePaths(workdir, destPath)
             val (projPaths, projConfig) =
               Filter.filterNativelib(fconfig, linked, destPath, paths)
             LLVM.compile(projConfig, projPaths)
           }
-          .flatten
-
-        // compile generated ll
-        val llObjectPaths = LLVM.compile(fconfig, generated)
 
         libObjectPaths ++ llObjectPaths
       }
