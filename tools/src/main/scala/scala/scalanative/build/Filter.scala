@@ -53,23 +53,27 @@ private[scalanative] object Filter {
             sys.error(s"Unable to read properties: ${file}")
         }
       val pluginName = props.getProperty(buildPluginKey)
-      val plugin     = BuildPluginFactory.create(pluginName)
+      val plugin = BuildPluginFactory.create(pluginName)
       plugin.filterNativelib(config, linkerResult, nativeCodePath, allPaths)
     }
   }
 
-  /**
-   * Partitions the native source file paths using the include function and
-   * deletes any of the excluded source with `.o` appended. This way if the
-   * options changed from the prior compile, the `.o` files generated from
-   * the source files that are not needed will be removed.
+  /** Partitions the native source file paths using the include function and
+   *  deletes any of the excluded source with `.o` appended. This way if the
+   *  options changed from the prior compile, the `.o` files generated from the
+   *  source files that are not needed will be removed.
    *
-   * @param allPaths All the identified source paths
-   * @param include A function that returns `true` for files to be included
-   * @return The included source paths
+   *  @param allPaths
+   *    All the identified source paths
+   *  @param include
+   *    A function that returns `true` for files to be included
+   *  @return
+   *    The included source paths
    */
-  def filterPathsDeleteExcluded(allPaths: Seq[Path],
-                                include: String => Boolean): Seq[Path] = {
+  def filterPathsDeleteExcluded(
+      allPaths: Seq[Path],
+      include: String => Boolean
+  ): Seq[Path] = {
     val (includePaths, excludePaths) = allPaths.map(_.abs).partition(include)
 
     // delete .o files for all excluded source files
@@ -84,9 +88,8 @@ private[scalanative] object Filter {
     projectPaths
   }
 
-  /**
-   * Check for a filtering properties file in destination
-   * native code directory.
+  /** Check for a filtering properties file in destination native code
+   *  directory.
    *
    *  @param nativeCodePath
    *    The native code directory
